@@ -1,0 +1,569 @@
+using Autonogrammer.Contracts.Dispatch;
+
+namespace Autonogrammer.Api.Dispatch.Store;
+
+/// <summary>
+/// Process-local <see cref="IDispatchStore"/>. Sequence allocation, the queue cap and the device cap share one lock.
+/// Feed identifiers are the in-memory twin of <c>accounts.feed_seq</c>.
+/// </summary>
+internal sealed class InMemoryDispatchStore : IDispatchStore
+{
+    private readonly Lock _gate = new();
+    private readonly DispatchStoreLimits _limits;
+    private readonly TimeProvider _time;
+    private readonly Dictionary<(string Account, string Device), DeviceRow> _devices = new();
+    private readonly Dictionary<(string Account, string Command), CommandRow> _commands = new();
+    private readonly Dictionary<(string Account, string Device, string Key), string> _idempotency = new();
+    private readonly Dictionary<string, FeedRow> _feeds = new(StringComparer.Ordinal);
+
+    /// <summary>Creates an empty store.</summary>
+    /// <param name="limits">Caps and retention.</param>
+    /// <param name="time">Clock used for feed and body retention.</param>
+    public InMemoryDispatchStore(DispatchStoreLimits limits, TimeProvider time)
+    {
+        ArgumentNullException.ThrowIfNull(limits);
+        ArgumentNullException.ThrowIfNull(time);
+        if (limits.MaxQueuedPerDevice < 1 || limits.DevicesPerAccount < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(limits));
+        }
+
+        _limits = limits;
+        _time = time;
+    }
+
+    /// <inheritdoc />
+    public ValueTask<DispatchDeviceCreateResult> CreateDeviceAsync(CreateDispatchDevice request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            var key = (request.AccountId, request.DeviceId);
+            if (_devices.ContainsKey(key))
+            {
+                return ValueTask.FromResult(new DispatchDeviceCreateResult(DispatchDeviceCreateStatus.DeviceIdTaken, null));
+            }
+
+            var active = 0;
+            foreach (var row in _devices.Values)
+            {
+                if (string.Equals(row.AccountId, request.AccountId, StringComparison.Ordinal) && row.RevokedAt is null)
+                {
+                    active++;
+                }
+            }
+
+            if (active >= _limits.DevicesPerAccount)
+            {
+                return ValueTask.FromResult(new DispatchDeviceCreateResult(DispatchDeviceCreateStatus.DeviceLimitReached, null));
+            }
+
+            var created = new DeviceRow
+            {
+                AccountId = request.AccountId,
+                DeviceId = request.DeviceId,
+                Name = request.Name,
+                PublicKey = request.PublicKey,
+                CredentialJti = request.CredentialJti,
+                CredentialExpiresAt = request.CredentialExpiresAt,
+                Capabilities = request.Capabilities,
+                PairedSessionId = request.PairedSessionId,
+            };
+            _devices.Add(key, created);
+            return ValueTask.FromResult(new DispatchDeviceCreateResult(DispatchDeviceCreateStatus.Created, created.ToRecord()));
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<DispatchDeviceRecord?> GetDeviceAsync(string accountId, string deviceId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(deviceId);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            return ValueTask.FromResult(_devices.TryGetValue((accountId, deviceId), out var row) ? row.ToRecord() : null);
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<DispatchDeviceRecord>> ListDevicesAsync(string accountId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            var list = new List<DispatchDeviceRecord>();
+            foreach (var row in _devices.Values)
+            {
+                if (string.Equals(row.AccountId, accountId, StringComparison.Ordinal))
+                {
+                    list.Add(row.ToRecord());
+                }
+            }
+
+            return ValueTask.FromResult<IReadOnlyList<DispatchDeviceRecord>>(list);
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<bool> RenameDeviceAsync(string accountId, string deviceId, string name, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(deviceId);
+        ArgumentNullException.ThrowIfNull(name);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            if (!_devices.TryGetValue((accountId, deviceId), out var row))
+            {
+                return ValueTask.FromResult(false);
+            }
+
+            row.Name = name;
+            return ValueTask.FromResult(true);
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<bool> RevokeDeviceAsync(string accountId, string deviceId, string? reason, DateTimeOffset revokedAt, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(deviceId);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            if (!_devices.TryGetValue((accountId, deviceId), out var row))
+            {
+                return ValueTask.FromResult(false);
+            }
+
+            row.RevokedAt = revokedAt;
+            row.RevokeReason = reason;
+            return ValueTask.FromResult(true);
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<bool> UpdateCredentialJtiAsync(string accountId, string deviceId, string credentialJti, DateTimeOffset credentialExpiresAt, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(deviceId);
+        ArgumentNullException.ThrowIfNull(credentialJti);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            if (!_devices.TryGetValue((accountId, deviceId), out var row))
+            {
+                return ValueTask.FromResult(false);
+            }
+
+            row.CredentialJti = credentialJti;
+            row.CredentialExpiresAt = credentialExpiresAt;
+            return ValueTask.FromResult(true);
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<bool> UpdateCapabilitySnapshotAsync(string accountId, string deviceId, IReadOnlyList<DispatchCapabilitySnapshot> capabilities, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(deviceId);
+        ArgumentNullException.ThrowIfNull(capabilities);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            if (!_devices.TryGetValue((accountId, deviceId), out var row))
+            {
+                return ValueTask.FromResult(false);
+            }
+
+            row.Capabilities = capabilities;
+            return ValueTask.FromResult(true);
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<bool> TouchLastSeenAsync(string accountId, string deviceId, DateTimeOffset lastSeenAt, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(deviceId);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            if (!_devices.TryGetValue((accountId, deviceId), out var row))
+            {
+                return ValueTask.FromResult(false);
+            }
+
+            row.LastSeenAt = lastSeenAt;
+            return ValueTask.FromResult(true);
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<bool> UpdatePairedSessionAsync(string accountId, string deviceId, string pairedSessionId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(deviceId);
+        ArgumentNullException.ThrowIfNull(pairedSessionId);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            if (!_devices.TryGetValue((accountId, deviceId), out var row))
+            {
+                return ValueTask.FromResult(false);
+            }
+
+            row.PairedSessionId = pairedSessionId;
+            return ValueTask.FromResult(true);
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<DispatchEnqueueResult> EnqueueAsync(EnqueueDispatchCommand request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            if (!_devices.TryGetValue((request.AccountId, request.DeviceId), out var device) || device.RevokedAt is not null)
+            {
+                return ValueTask.FromResult(new DispatchEnqueueResult(DispatchEnqueueStatus.NotFound, null));
+            }
+
+            if (TryReplay(request, out var replayed))
+            {
+                return ValueTask.FromResult(replayed);
+            }
+
+            if (CountQueued(request.DeviceId) >= _limits.MaxQueuedPerDevice)
+            {
+                return ValueTask.FromResult(new DispatchEnqueueResult(DispatchEnqueueStatus.QueueFull, null));
+            }
+
+            return ValueTask.FromResult(Insert(device, request));
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<DispatchCommandRecord?> GetCommandAsync(string accountId, string commandId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(commandId);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            if (!_commands.TryGetValue((accountId, commandId), out var row))
+            {
+                return ValueTask.FromResult<DispatchCommandRecord?>(null);
+            }
+
+            PurgeBody(row);
+            return ValueTask.FromResult<DispatchCommandRecord?>(row.ToRecord());
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<DispatchCommandRecord>> ListQueuedAfterAsync(string accountId, string deviceId, long afterSeq, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(deviceId);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            if (!_devices.ContainsKey((accountId, deviceId)))
+            {
+                return ValueTask.FromResult<IReadOnlyList<DispatchCommandRecord>>([]);
+            }
+
+            var list = new List<DispatchCommandRecord>();
+            foreach (var row in _commands.Values)
+            {
+                if (string.Equals(row.AccountId, accountId, StringComparison.Ordinal)
+                    && string.Equals(row.DeviceId, deviceId, StringComparison.Ordinal)
+                    && row.State == DispatchCommandState.Queued
+                    && row.Seq > afterSeq)
+                {
+                    list.Add(row.ToRecord());
+                }
+            }
+
+            list.Sort(static (left, right) => left.Seq.CompareTo(right.Seq));
+            return ValueTask.FromResult<IReadOnlyList<DispatchCommandRecord>>(list);
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<DispatchTransitionResult> TryTransitionAsync(
+        string accountId,
+        string commandId,
+        DispatchCommandState expected,
+        DispatchCommandState desired,
+        DispatchFailureReason? reason,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(commandId);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            if (!_commands.TryGetValue((accountId, commandId), out var row))
+            {
+                return ValueTask.FromResult(new DispatchTransitionResult(DispatchTransitionStatus.NotFound, null));
+            }
+
+            if (row.State != expected || !DispatchTransitions.Allows(expected, desired))
+            {
+                return ValueTask.FromResult(new DispatchTransitionResult(DispatchTransitionStatus.Rejected, row.State));
+            }
+
+            row.State = desired;
+            row.Reason = reason;
+            if (desired is DispatchCommandState.Completed or DispatchCommandState.Failed or DispatchCommandState.Cancelled or DispatchCommandState.Expired)
+            {
+                row.TerminalAt = _time.GetUtcNow();
+            }
+
+            return ValueTask.FromResult(new DispatchTransitionResult(DispatchTransitionStatus.Applied, row.State));
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<DispatchFeedEventRecord> AppendFeedEventAsync(string accountId, string kind, string? payload, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(kind);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            var feed = FeedFor(accountId);
+            Prune(feed);
+            feed.Seq++;
+            var stored = new DispatchFeedEventRecord(feed.Seq, accountId, kind, payload, _time.GetUtcNow());
+            feed.Events.Add(stored);
+            return ValueTask.FromResult(stored);
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<DispatchFeedPage> ReadFeedAsync(string accountId, long afterId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            var feed = FeedFor(accountId);
+            Prune(feed);
+            var oldest = feed.Events.Count == 0 ? feed.Seq + 1 : feed.Events[0].Id;
+            var resync = afterId + 1 < oldest;
+            var page = new List<DispatchFeedEventRecord>();
+            foreach (var item in feed.Events)
+            {
+                if (item.Id > afterId)
+                {
+                    page.Add(item);
+                }
+            }
+
+            return ValueTask.FromResult(new DispatchFeedPage(resync, page));
+        }
+    }
+
+    private void PurgeBody(CommandRow row)
+    {
+        if (row.BodyJson is null || row.TerminalAt is not { } terminal)
+        {
+            return;
+        }
+
+        if (_time.GetUtcNow() - terminal > _limits.BodyRetention)
+        {
+            row.BodyJson = null;
+        }
+    }
+
+    private FeedRow FeedFor(string accountId)
+    {
+        if (!_feeds.TryGetValue(accountId, out var feed))
+        {
+            feed = new FeedRow();
+            _feeds.Add(accountId, feed);
+        }
+
+        return feed;
+    }
+
+    private void Prune(FeedRow feed)
+    {
+        var now = _time.GetUtcNow();
+        feed.Events.RemoveAll(item => now - item.At > _limits.FeedRetention);
+    }
+
+    private bool TryReplay(EnqueueDispatchCommand request, out DispatchEnqueueResult result)
+    {
+        result = new DispatchEnqueueResult(DispatchEnqueueStatus.NotFound, null);
+        if (request.IdempotencyKey is not { Length: > 0 } key)
+        {
+            return false;
+        }
+
+        if (!_idempotency.TryGetValue((request.AccountId, request.DeviceId, key), out var existingId)
+            || !_commands.TryGetValue((request.AccountId, existingId), out var existing))
+        {
+            return false;
+        }
+
+        if (!string.Equals(existing.Fingerprint, request.Fingerprint, StringComparison.Ordinal))
+        {
+            result = new DispatchEnqueueResult(DispatchEnqueueStatus.IdempotencyKeyReused, null);
+            return true;
+        }
+
+        result = new DispatchEnqueueResult(DispatchEnqueueStatus.Replayed, existing.Accepted);
+        return true;
+    }
+
+    private int CountQueued(string deviceId)
+    {
+        var queued = 0;
+        foreach (var row in _commands.Values)
+        {
+            if (string.Equals(row.DeviceId, deviceId, StringComparison.Ordinal) && row.State == DispatchCommandState.Queued)
+            {
+                queued++;
+            }
+        }
+
+        return queued;
+    }
+
+    private DispatchEnqueueResult Insert(DeviceRow device, EnqueueDispatchCommand request)
+    {
+        device.CommandSeq++;
+        var accepted = new DispatchCommandAcceptedResponse
+        {
+            CommandId = request.CommandId,
+            Seq = device.CommandSeq,
+            State = DispatchCommandStateWire.ToWire(DispatchCommandState.Queued),
+        };
+        _commands.Add((request.AccountId, request.CommandId), new CommandRow
+        {
+            AccountId = request.AccountId,
+            DeviceId = request.DeviceId,
+            CommandId = request.CommandId,
+            Seq = device.CommandSeq,
+            State = DispatchCommandState.Queued,
+            Capability = request.Capability,
+            Op = request.Op,
+            Fingerprint = request.Fingerprint,
+            IdempotencyKey = request.IdempotencyKey,
+            BodyJson = request.BodyJson,
+            IssuedAt = request.IssuedAt,
+            ExpiresAt = request.ExpiresAt,
+            Accepted = accepted,
+        });
+        if (request.IdempotencyKey is { Length: > 0 } storedKey)
+        {
+            _idempotency[(request.AccountId, request.DeviceId, storedKey)] = request.CommandId;
+        }
+
+        return new DispatchEnqueueResult(DispatchEnqueueStatus.Accepted, accepted);
+    }
+
+    private sealed class DeviceRow
+    {
+        public required string AccountId { get; init; }
+
+        public required string DeviceId { get; init; }
+
+        public required string Name { get; set; }
+
+        public string? PublicKey { get; init; }
+
+        public string? CredentialJti { get; set; }
+
+        public DateTimeOffset? CredentialExpiresAt { get; set; }
+
+        public IReadOnlyList<DispatchCapabilitySnapshot> Capabilities { get; set; } = [];
+
+        public string? PairedSessionId { get; set; }
+
+        public DateTimeOffset? LastSeenAt { get; set; }
+
+        public DateTimeOffset? RevokedAt { get; set; }
+
+        public string? RevokeReason { get; set; }
+
+        public long CommandSeq { get; set; }
+
+        public DispatchDeviceRecord ToRecord() => new(
+            AccountId,
+            DeviceId,
+            Name,
+            PublicKey,
+            CredentialJti,
+            CredentialExpiresAt,
+            Capabilities,
+            PairedSessionId,
+            LastSeenAt,
+            RevokedAt,
+            RevokeReason);
+    }
+
+    private sealed class CommandRow
+    {
+        public required string AccountId { get; init; }
+
+        public required string DeviceId { get; init; }
+
+        public required string CommandId { get; init; }
+
+        public required long Seq { get; init; }
+
+        public required DispatchCommandState State { get; set; }
+
+        public required DispatchCapability Capability { get; init; }
+
+        public required DispatchOp Op { get; init; }
+
+        public required string Fingerprint { get; init; }
+
+        public string? IdempotencyKey { get; init; }
+
+        public string? BodyJson { get; set; }
+
+        public required DateTimeOffset IssuedAt { get; init; }
+
+        public required DateTimeOffset ExpiresAt { get; init; }
+
+        public DispatchFailureReason? Reason { get; set; }
+
+        public DateTimeOffset? TerminalAt { get; set; }
+
+        public required DispatchCommandAcceptedResponse Accepted { get; init; }
+
+        public DispatchCommandRecord ToRecord() => new(
+            AccountId,
+            DeviceId,
+            CommandId,
+            Seq,
+            State,
+            Capability,
+            Op,
+            Fingerprint,
+            IdempotencyKey,
+            BodyJson,
+            IssuedAt,
+            ExpiresAt,
+            Reason);
+    }
+
+    private sealed class FeedRow
+    {
+        public long Seq { get; set; }
+
+        public List<DispatchFeedEventRecord> Events { get; } = [];
+    }
+}
