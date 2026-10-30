@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Usage.UsageMeterView"
+             AutomationProperties.Name="Usage meter">
+
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+    <TextBlock Text="Usage"
+               FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+               AutomationProperties.Name="Usage heading" />
+
+    <TextBlock x:Name="UnavailableText"
+               Classes="muted"
+               IsVisible="False"
+               AutomationProperties.Name="Usage unavailable" />
+
+    <StackPanel x:Name="SessionRows"
+                AutomationProperties.Name="Usage per session" />
+
+    <StackPanel x:Name="DayRows"
+                AutomationProperties.Name="Usage per day" />
+
+  </StackPanel>
+
+</UserControl>

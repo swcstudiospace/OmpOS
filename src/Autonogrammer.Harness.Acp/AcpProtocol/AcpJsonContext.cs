@@ -40,6 +40,7 @@ namespace Autonogrammer.Harness.Acp.AcpProtocol;
 [JsonSerializable(typeof(AcpFrames.ToolCallPayload))]
 [JsonSerializable(typeof(AcpFrames.PlanUpdate))]
 [JsonSerializable(typeof(AcpFrames.UsageUpdate))]
+[JsonSerializable(typeof(AcpFrames.UsageCostFrame))]
 [JsonSerializable(typeof(AcpFrames.McpServerFrame))]
 [JsonSerializable(typeof(AcpFrames.NameValueFrame))]
 [JsonSerializable(typeof(AcpFrames.PermissionRequestParams))]

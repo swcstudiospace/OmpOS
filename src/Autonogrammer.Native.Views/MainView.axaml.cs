@@ -32,6 +32,7 @@ using Autonogrammer.Presentation.Chats;
 using Autonogrammer.Presentation.Checkpoints;
 using Autonogrammer.Presentation.Editor;
 using Autonogrammer.Presentation.Export;
+using Autonogrammer.Presentation.Usage;
 using Autonogrammer.Presentation.Kanban;
 using Autonogrammer.Presentation.Modes;
 using Autonogrammer.Presentation.Queue;
@@ -140,6 +141,12 @@ public partial class MainView : UserControl
     private McpToolsModel? _mcpTools;
     private bool _closed;
     private TopLevel? _keyHost;
+
+    /// <summary>
+    /// The ledger-backed history <see cref="CreateExport"/> lists. Null, or a source that returns no runs, keeps the previous empty history.
+    /// The host assigns it; this view does not construct the ledger.
+    /// </summary>
+    public IUsageHistorySource? UsageHistorySource { get; set; }
 
     /// <summary>
     /// Creates the main view over an <see cref="UnconnectedAgentPanel"/> in the current folder: no engine is connected, and every send and
@@ -1517,8 +1524,8 @@ public partial class MainView : UserControl
     }
 
     // The export view reads the transcript it was given, so it is built again on each open rather than kept.
-    private TranscriptExportView CreateExport() =>
-        new((_current?.ViewModel.Session ?? new SessionViewModel()).Tree, ExportTitle, new UsageHistory([]));
+    internal TranscriptExportView CreateExport() =>
+        new((_current?.ViewModel.Session ?? new SessionViewModel()).Tree, ExportTitle, UsageHistorySource?.Read() ?? new UsageHistory([]));
 
     private static void FocusFirst(Control? root)
     {
