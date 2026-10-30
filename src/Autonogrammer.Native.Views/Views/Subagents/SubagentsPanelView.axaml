@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sub="clr-namespace:Autonogrammer.Presentation.Subagents;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Subagents.SubagentsPanelView"
+             x:DataType="sub:SubagentPanelModel"
+             x:Name="Root"
+             Focusable="False"
+             AutomationProperties.Name="{x:Static sub:SubagentCopy.PanelName}">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+  </UserControl.Styles>
+
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+    <TextBlock x:Name="AcpNotice"
+               Classes="tone-secondary"
+               Text="{x:Static sub:SubagentCopy.AcpOnlyNotice}"
+               AutomationProperties.Name="{x:Static sub:SubagentCopy.AcpOnlyNotice}" />
+
+    <TextBlock x:Name="NamesNotice"
+               Classes="tone-secondary"
+               IsVisible="{CompiledBinding SubagentNamesUnavailable}"
+               Text="{x:Static sub:SubagentCopy.NamesUnavailable}"
+               AutomationProperties.Name="{x:Static sub:SubagentCopy.NamesUnavailable}" />
+
+    <TextBlock x:Name="RunningCount"
+               Classes="tone-primary"
+               Text="{CompiledBinding RunningCountText}"
+               AutomationProperties.Name="{x:Static sub:SubagentCopy.RunningCountName}" />
+
+    <TextBlock x:Name="StatusLive"
+               Classes="tone-secondary"
+               Text="{CompiledBinding LiveAnnouncement}"
+               AutomationProperties.Name="{x:Static sub:SubagentCopy.LiveRegionName}"
+               AutomationProperties.LiveSetting="Polite" />
+
+    <ItemsControl x:Name="Rows"
+                  ItemsSource="{CompiledBinding Rows}"
+                  AutomationProperties.Name="{x:Static sub:SubagentCopy.RowsName}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="sub:SubagentRowModel">
+          <Border Padding="{DynamicResource Autonogrammer.Gap.Xs}"
+                  AutomationProperties.Name="{CompiledBinding AccessibleName}">
+            <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+              <TextBlock Classes="tone-primary"
+                         Text="{CompiledBinding Name}"
+                         AutomationProperties.Name="{CompiledBinding Name}" />
+              <TextBlock Classes="tone-secondary"
+                         Text="{CompiledBinding StatusLabel}"
+                         AutomationProperties.Name="{CompiledBinding StatusLabel}" />
+              <TextBlock Classes="tone-secondary"
+                         Text="{CompiledBinding ElapsedText}"
+                         AutomationProperties.Name="{CompiledBinding ElapsedText}" />
+              <TextBlock Classes="tone-secondary"
+                         Text="{CompiledBinding LastLine}"
+                         AutomationProperties.Name="{CompiledBinding LastLine}" />
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>
