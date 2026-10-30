@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:cowork="clr-namespace:Autonogrammer.Native.Views.Cowork"
+             x:Class="Autonogrammer.Native.Views.Cowork.CoworkConversationView"
+             x:Name="Root"
+             Focusable="False"
+             AutomationProperties.Name="Conversation">
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+    <Border x:Name="Transcript"
+            Focusable="True"
+            IsTabStop="True"
+            KeyboardNavigation.TabIndex="0"
+            MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+            AutomationProperties.Name="Transcript">
+      <StackPanel x:Name="TranscriptBlocks" Spacing="{DynamicResource Autonogrammer.Gap.Sm}" />
+    </Border>
+    <cowork:CoworkComposerView x:Name="Composer"
+                               KeyboardNavigation.TabIndex="1" />
+    <StackPanel x:Name="Approvals"
+                Focusable="True"
+                IsTabStop="True"
+                KeyboardNavigation.TabIndex="2"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                AutomationProperties.Name="Approvals" />
+  </StackPanel>
+</UserControl>

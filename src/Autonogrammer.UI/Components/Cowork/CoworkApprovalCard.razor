@@ -1,0 +1,13 @@
+@namespace Autonogrammer.UI.Components.Cowork
+@using Autonogrammer.Presentation.Cowork
+
+<div class="autonogrammer-cowork-approval" role="group" aria-label="@Card.AccessibleName" tabindex="0">
+    <p aria-label="Approval target">@Card.Target</p>
+    <p aria-label="Approval details">@Card.Details</p>
+</div>
+
+@code {
+    /// <summary>Gets the card. Only the host-observed target and details are rendered.</summary>
+    [Parameter, EditorRequired]
+    public CoworkApprovalCardModel Card { get; set; } = null!;
+}

@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Cowork.CoworkComposerView"
+             Focusable="False"
+             AutomationProperties.Name="Composer">
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+    <TextBlock x:Name="ImageToolChip"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="Image tools" />
+    <StackPanel x:Name="ProviderChips" AutomationProperties.Name="Provider status" />
+    <StackPanel x:Name="AttachmentChips" AutomationProperties.Name="Attachment chips" />
+    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+      <Button x:Name="SendButton"
+              Content="Send"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              AutomationProperties.Name="Send"
+              Click="OnSendClick" />
+      <Button x:Name="RetryButton"
+              Content="Retry"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              AutomationProperties.Name="Retry"
+              Click="OnRetryClick" />
+      <Button x:Name="SteerButton"
+              Content="Steer"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              AutomationProperties.Name="Steer"
+              Click="OnSteerClick" />
+    </StackPanel>
+  </StackPanel>
+</UserControl>

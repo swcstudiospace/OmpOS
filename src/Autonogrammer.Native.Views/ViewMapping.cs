@@ -21,6 +21,7 @@ using Autonogrammer.Presentation.Chats;
 using Autonogrammer.Presentation.Composer;
 using Autonogrammer.Presentation.Editor;
 using Autonogrammer.Presentation.Kanban;
+using Autonogrammer.Presentation.Cowork;
 using Autonogrammer.Presentation.State;
 using Avalonia.Controls;
 
@@ -60,6 +61,9 @@ internal static class ViewMapping
             StageTimelineModel timeline => new PipelineStripView { DataContext = timeline },
             KanbanBoardModel board => new KanbanBoardView { DataContext = board },
             CoworkDockContent dock => new TextBlock { Text = dock.Label, Name = "DockPanelBody" },
+            CoworkConversationModel conversation => new CoworkConversationView { DataContext = conversation },
+            CoworkComposerModel composerSurface => new CoworkComposerView { DataContext = composerSurface },
+            CoworkApprovalCardModel approval => new CoworkApprovalCard { DataContext = approval },
             OmpTerminalViewModel terminal => new OmpTerminalView { DataContext = terminal },
             _ => throw new ArgumentOutOfRangeException(
                 nameof(viewModel),

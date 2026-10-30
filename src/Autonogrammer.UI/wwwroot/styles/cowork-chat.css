@@ -1,0 +1,22 @@
+/* Cowork conversation. Colours come from tokens. No transition, animation or keyframes: reduced motion is the global rule. */
+
+.autonogrammer-cowork-chat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-cowork-transcript,
+.autonogrammer-cowork-composer,
+.autonogrammer-cowork-approvals {
+  min-block-size: var(--autonogrammer-target-min);
+}
+
+.autonogrammer-cowork-attachment-remove {
+  min-block-size: var(--autonogrammer-target-min);
+  min-inline-size: var(--autonogrammer-target-min);
+}
+
+.autonogrammer-cowork-chat.reduced-motion {
+  scroll-behavior: auto;
+}
