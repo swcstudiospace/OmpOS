@@ -200,6 +200,40 @@ public sealed class RateLimitPartitionTests
         }
     }
 
+    /// <summary>
+    /// Subject-keyed policies give two subjects on one address two partitions, and one subject on two addresses one partition. Address-keyed policies
+    /// do the reverse. The address-keyed policies are named here, each name must be a discovered policy, and every other discovered policy is checked
+    /// as subject-keyed, so a policy that changes its key fails this test.
+    /// </summary>
+    [Fact]
+    public void EveryDiscoveredPolicy_KeysBySubjectOrAddressAsDocumented()
+    {
+        using var factory = new ApiFactory(JwtTestHost.DevelopmentConfig(), JwtTestHost.InjectStaticMetadata);
+        var discovered = DiscoveredPolicies(factory.Services);
+        string[] addressKeyed = ["AuthConfigRateLimiterPolicy", "AutomationWebhookRateLimiterPolicy", "ArtifactRenderRateLimiterPolicy", "DispatchConnectRateLimiterPolicy"];
+        foreach (var name in addressKeyed)
+        {
+            discovered.ShouldContain(entry => entry.PolicyType.Name == name, $"{name} is named as address-keyed but was not discovered");
+        }
+
+        foreach (var (type, policy) in discovered)
+        {
+            var alice = policy.GetPartition(CallerContext("alice", "10.0.0.1")).PartitionKey;
+            var bob = policy.GetPartition(CallerContext("bob", "10.0.0.1")).PartitionKey;
+            var aliceElsewhere = policy.GetPartition(CallerContext("alice", "10.0.0.2")).PartitionKey;
+            if (addressKeyed.Contains(type.Name, StringComparer.Ordinal))
+            {
+                bob.ShouldBe(alice, $"{type.FullName} is address-keyed, so two subjects on one address share a partition");
+                string.Equals(aliceElsewhere, alice, StringComparison.Ordinal).ShouldBeFalse($"{type.FullName} is address-keyed, so one subject on two addresses gets two partitions");
+            }
+            else
+            {
+                string.Equals(bob, alice, StringComparison.Ordinal).ShouldBeFalse($"{type.FullName} is subject-keyed, so two subjects on one address get two partitions");
+                aliceElsewhere.ShouldBe(alice, $"{type.FullName} is subject-keyed, so one subject keeps one partition across addresses");
+            }
+        }
+    }
+
     /// <summary>Creates a client that presents the subject's bearer token.</summary>
     /// <param name="factory">The test host.</param>
     /// <param name="subject">The token subject.</param>

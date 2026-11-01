@@ -120,34 +120,52 @@ public sealed class LedgerSinkTests
     }
 
     /// <summary>
-    /// Verifies a dispose that runs inside the stop's own cancellation returns at once. The dispose and the stop meet on one callback chain, so
-    /// waiting for the stop to finish from the dispose would wait on itself.
+    /// Verifies a dispose that runs while the stop is still cancelling returns before the stop completes. The stop runs its cancellation callbacks on a
+    /// thread-pool thread. This test's callback holds that cancellation open until the test releases it. It is registered after the emit's delay, so the
+    /// newest-first order runs it first: the emit has not unwound and the loop has not exited. A dispose that waited for the stop would not return until
+    /// the bound expires.
     /// </summary>
     [Fact]
-    public async Task DisposeInsideTheStopCancellation_ReturnsAndTheStopCompletes()
+    public async Task DisposeWhileTheStopIsCancelling_ReturnsPromptly()
     {
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        LedgerOutboxPump? pump = null;
+        var cancelling = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var release = new ManualResetEventSlim(false);
+        var holdCancellation = default(CancellationTokenRegistration);
         var handler = new ScriptedLedgerHandler(async (_, cancellationToken) =>
         {
-            entered.TrySetResult();
-            using var registration = cancellationToken.Register(() => pump!.Dispose());
-            while (!cancellationToken.IsCancellationRequested)
+            var delay = Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
+            holdCancellation = cancellationToken.Register(() =>
             {
-                await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
-            }
-
+                cancelling.TrySetResult();
+                release.Wait();
+            });
+            entered.TrySetResult();
+            await delay.ConfigureAwait(false);
             throw new OperationCanceledException(cancellationToken);
         });
         await using var provider = Build(enabled: true, handler, TimeProvider.System);
         var ledger = provider.GetRequiredService<IAuditLedger>();
-        pump = provider.GetRequiredService<LedgerOutboxPump>();
+        var pump = provider.GetRequiredService<LedgerOutboxPump>();
         await ledger.RecordAsync(Sample(), transaction: null, TestContext.Current.CancellationToken);
         await pump.StartAsync(CancellationToken.None);
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-        var stop = pump.StopAsync(TestContext.Current.CancellationToken);
+        var stop = Task.Run(() => pump.StopAsync(TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
+        try
+        {
+            await cancelling.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            var disposing = Task.Run(pump.Dispose, TestContext.Current.CancellationToken);
+            var returned = await Task.WhenAny(disposing, Task.Delay(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken));
+            returned.ShouldBe(disposing, "a dispose while the stop is cancelling must return before the stop completes");
+        }
+        finally
+        {
+            release.Set();
+            await holdCancellation.DisposeAsync().ConfigureAwait(true);
+        }
+
         var finished = await Task.WhenAny(stop, Task.Delay(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken));
-        finished.ShouldBe(stop, "a dispose inside the stop's cancellation must not wait for that stop");
+        finished.ShouldBe(stop, "the stop must complete once its cancellation is released");
         await stop.ConfigureAwait(true);
     }
 
