@@ -61,7 +61,6 @@ public sealed class DispatchDisabledTests
     /// <summary>
     /// Outside Development no device store is registered. With dispatch off the device credential cannot be checked, so the connect route answers 401
     /// instead of failing while its authentication handler is built.
-    /// A handler that cannot be built leaves the request pending on the test server, so this test then hangs rather than failing.
     /// </summary>
     [Fact]
     public async Task A_connect_with_dispatch_off_and_no_device_store_is_refused_as_unauthenticated()
