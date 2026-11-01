@@ -75,6 +75,37 @@ Planning reconciliation only. No gate is passed by these edits. Observations bel
 - Ship: `ultrathink-ship assess` returns `done: false`. Gaps: GSD roadmap 0/16 phases complete (66-07 through 77 pending); latest verification `human_needed` (phase 66.1). No PR was opened and nothing was pushed.
 - Still open: auth correlation `8514d046` remains blocked on the signed FAIL gates, and the controller record still shows zero auth test cases executed. This pass did run the auth tests above but did not update that controller record. The McpGateway test stalled once for 900 s and has not recurred in later direct or `dotnet test` runs. 81 SUP rows need a justification or removal.
 
+## CI and full-suite record (2026-11-01)
+
+Final tree `4ed9bb04`; pre-merge baseline `0db82d59` (a shared clone, restored for the smoke). Exit codes: `/root/consolidation-scratch/logs/ci-final.txt` and `ci-base.txt`. Smoke output: `/root/consolidation-scratch/web-smoke` and `web-smoke-base`.
+
+- Full suite on `c5ace2c3` (verify-only gate, no formatter rewrite): format verify 0; locked restore 0; `-warnaserror` build 0. `Api.IntegrationTests` 1435 total, 0 failed, 2 skipped, at default threads (3m 01s) and at `--max-threads 2` (4m 31s). 56 non-API projects rc 0; `Sessions.Postgres.Probe` reports no tests (rc 1 in both gates). Auth-filtered Web and UI `AuthGateTests` pass; McpGateway 3 of 3 pass.
+
+| Check (ci.yml step) | Final `4ed9bb04` | Pre-merge `0db82d59` | Note |
+| --- | --- | --- | --- |
+| repo-checks | fail | pass | runs `check-skip-markers`; see next row |
+| check-skip-markers | fail | pass | 6 `Assert.Skip` markers without SUP rows (BrowserUse live x5, X11 live x1) |
+| check-licences | pass | pass | stale on `c5ace2c3`; regenerated in `4ed9bb04` |
+| check-sbom | pass | pass | stale on `c5ace2c3`; regenerated in `4ed9bb04` |
+| secret-scan (gitleaks 8.30.1, full history) | fail | pass | 2 `generic-api-key` findings, both false positives on inspection (below) |
+| openapi-breaking vs `origin/main` | fail | not applicable | `/board` path removed; see below |
+| vulnerable packages | pass (`[]`) | pass (`[]`) | the baseline clone was not restored when this ran |
+| check-docs, check-brand, check-changelog, check-providers-doc | pass | pass | |
+| plugin-node-tests, py unittest, py openapi unit, node tests | pass | pass | |
+| web smoke, API half (`run-smoke.sh`) | fail (exit 1) | pass (exit 0) | reflow at 320 px and 400%: content 416 px wide (`div.autonogrammer-segmented` theme switch, settings dialog, session-not-found) |
+| web smoke, Demo half | fail (exit 1) | pass (exit 0) | `a11yRoutes`: `#autonogrammer-tab-cowork` and `#autonogrammer-tab-code` not found; the tabs are rendered by `src/Autonogrammer.UI/Components/Shell/SurfaceTabs.razor`, and the checks exist only in the merged `scripts/web-smoke/a11y/routes.mjs` |
+| web size budget | pass | pass | |
+| scan-images (trivy) | not run | not run | trivy is not installed; `install-trivy.sh` needs a network download |
+
+Findings for owner decisions (no waiver or suppression was added):
+
+- Skip markers without SUP rows: `tests/Autonogrammer.Harness.BrowserUse.Tests/Corpus/HostileCorpusLiveTests.cs:17`, `Live/HeadfulSmokeLiveTests.cs:18`, `Live/PipeConnectLiveTests.cs:21`, `Live/ScreenshotLadderLiveTests.cs:17`, `Site/SiteLiveTests.cs:17`, and `tests/Autonogrammer.Harness.ComputerUse.X11.Tests/Live/X11BackendLiveTests.cs:204`. Adding rows is a suppression decision.
+- gitleaks, two false positives on inspection: `src/Autonogrammer.Harness.Secrets.Os/LibsecretNativeMethods.cs:12` (`SecretLibrary` is the 16-character library name `libsecret-1.so.0`; commit `58d5e85a57`), and `tests/Autonogrammer.Harness.ComputerUse.X11.Tests/Live/X11BackendLiveTests.cs:173` (a `Run(...)` argument list; commit `01bfa004e0`). The scan covers full history, so only an allowlist entry clears it; that is a suppression decision.
+- openapi: `/board` is absent from `docs/api/openapi.json` at HEAD and present at `origin/main`. It was removed by `e6745a06` (feat(67-05), board cutover); `BoardCutoverTests` asserts that `/board` returns 404 and `/account/board` serves. The check needs an explicit `BREAKING-API:` reason from the owner.
+- Web smoke: a real regression introduced by the merge. A UI fix (reflow at 320 px, and the surface tabs in the Demo bundle) is required; it is not made in this pass.
+- Regenerated in `4ed9bb04`: `THIRD-PARTY-NOTICES.md` and `docs/legal/sbom.spdx.json`, by the repo generators. `c5ace2c3` is the last tree the full suite ran on; `AboutModelTests` checks only the notice file list and a URL, so the regeneration does not change its assertions.
+
+
 ## Canonical consolidation and prerequisite ledger (2026-10-31)
 
 - Sources: `local://ExpandedConsolidationPacket.json`, especially `inventories.ConsolidationEvidence#2`–`#4`, `compile_diagnostics`, `baseline` and `handover_metadata_fact`; appended authorization in `/root/src/backups/ompos-consolidation-recovery-20261031T010117Z/OPERATOR-RESUME.txt`; current controller coordination supplied with the verified assignment. Later coordination corrects the resume file's earlier unresolved metadata note and source-case expectations; it clears no gate.
