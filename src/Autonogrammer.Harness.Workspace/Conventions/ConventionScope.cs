@@ -11,4 +11,7 @@ public enum ConventionScope
 
     /// <summary>The application itself: a skill that ships inside it (<see cref="Autonogrammer.Workspace.BuiltinSkills.BuiltinSkillSource"/>). It has the lowest precedence: a project or user item of the same name wins.</summary>
     Builtin = 2,
+
+    /// <summary>A plugin bundle installed by the user. A project, user or built-in item of the same name wins.</summary>
+    Plugin = 3,
 }

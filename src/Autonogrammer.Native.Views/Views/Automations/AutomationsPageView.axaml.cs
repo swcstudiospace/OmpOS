@@ -1,5 +1,6 @@
 using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Presentation.Automations;
+using Autonogrammer.Presentation.Cowork.Scheduling;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -38,6 +39,23 @@ internal partial class AutomationsPageView : UserControl
 
     /// <summary>Gets the loading text.</summary>
     internal TextBlock Loading => LoadingText;
+    /// <summary>Shows session-target fields bound to <paramref name="task"/>.</summary>
+    /// <param name="task">The session task.</param>
+    internal void ShowSessionTargets(SessionTaskModel task)
+    {
+        ArgumentNullException.ThrowIfNull(task);
+        SessionTargets.IsVisible = true;
+        SessionSurface.Text = task.Surface;
+        SessionProject.Text = task.ProjectId;
+        SessionFolders.Text = string.Join(", ", task.TrustedFolders);
+        SessionApproval.Text = task.ApprovalMode;
+        SessionPreset.Text = task.SchedulePreset;
+        SessionMissed.Text = task.MissedRunPolicy;
+        SessionNextRun.Text = task.NextRunText;
+        SessionLastRun.Text = task.LastRunText;
+        SessionMissedRuns.Text = task.MissedRunsText;
+    }
+
 
     /// <summary>Gets the panel of the unavailable state.</summary>
     internal StackPanel Unavailable => UnavailablePanel;

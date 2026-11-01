@@ -1,0 +1,69 @@
+{
+  "note": "Hub and device MUST produce identical bytes for every vector.",
+  "vectors": [
+    {
+      "name": "dots-colons-dashes",
+      "v": "1",
+      "commandId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "seq": "1",
+      "userId": "user:acct",
+      "deviceId": "dev.one",
+      "capability": "sessions",
+      "op": "session.list",
+      "issuedAt": "1710000000",
+      "expiresAt": "1710000300",
+      "nonce": "abc-DEF_12",
+      "payloadSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "kid": "hub.key-1",
+      "canonical": "autonogrammer-dispatch-cmd-v1\nv=1\ncommandId=01ARZ3NDEKTSV4RRFFQ69G5FAV\nseq=1\nuserId=user:acct\ndeviceId=dev.one\ncapability=sessions\nop=session.list\nissuedAt=1710000000\nexpiresAt=1710000300\nnonce=abc-DEF_12\npayloadSha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\nkid=hub.key-1\n"
+    },
+    {
+      "name": "underscores",
+      "v": "1",
+      "commandId": "01ARZ3NDEKTSV4RRFFQ69G5FAW",
+      "seq": "2",
+      "userId": "acct_1",
+      "deviceId": "device_2",
+      "capability": "code",
+      "op": "code.prompt",
+      "issuedAt": "1710000001",
+      "expiresAt": "1710000301",
+      "nonce": "nonce_value",
+      "payloadSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "key_2",
+      "canonical": "autonogrammer-dispatch-cmd-v1\nv=1\ncommandId=01ARZ3NDEKTSV4RRFFQ69G5FAW\nseq=2\nuserId=acct_1\ndeviceId=device_2\ncapability=code\nop=code.prompt\nissuedAt=1710000001\nexpiresAt=1710000301\nnonce=nonce_value\npayloadSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\nkid=key_2\n"
+    },
+    {
+      "name": "cowork-boundary",
+      "v": "1",
+      "commandId": "cmd.with-dots",
+      "seq": "10",
+      "userId": "A.b_c:d-e",
+      "deviceId": "dev:1",
+      "capability": "cowork",
+      "op": "cowork.task",
+      "issuedAt": "0",
+      "expiresAt": "300",
+      "nonce": "n-1",
+      "payloadSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "kid": "kid.1",
+      "canonical": "autonogrammer-dispatch-cmd-v1\nv=1\ncommandId=cmd.with-dots\nseq=10\nuserId=A.b_c:d-e\ndeviceId=dev:1\ncapability=cowork\nop=cowork.task\nissuedAt=0\nexpiresAt=300\nnonce=n-1\npayloadSha256=cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\nkid=kid.1\n"
+    },
+    {
+      "name": "command-cancel",
+      "v": "1",
+      "commandId": "01ARZ3NDEKTSV4RRFFQ69G5FAX",
+      "seq": "11",
+      "userId": "acct",
+      "deviceId": "dev",
+      "capability": "sessions",
+      "op": "command.cancel",
+      "issuedAt": "1710000100",
+      "expiresAt": "1710000400",
+      "nonce": "Zz",
+      "payloadSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "kid": "k",
+      "canonical": "autonogrammer-dispatch-cmd-v1\nv=1\ncommandId=01ARZ3NDEKTSV4RRFFQ69G5FAX\nseq=11\nuserId=acct\ndeviceId=dev\ncapability=sessions\nop=command.cancel\nissuedAt=1710000100\nexpiresAt=1710000400\nnonce=Zz\npayloadSha256=dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\nkid=k\n"
+    }
+  ]
+}

@@ -96,9 +96,10 @@ internal sealed class PanelHost : IAgentPanelHost
     }
 
     /// <inheritdoc />
-    public AgentSessionViewModel OpenSession(AgentRow row)
+    public Task<AgentSessionViewModel> OpenSessionAsync(AgentRow row, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(row);
+        cancellationToken.ThrowIfCancellationRequested();
         var input = new PanelRunInput();
         var scheduler = new RunInputScheduler(input);
         var viewModel = new AgentSessionViewModel(new AgentSessionOptions
@@ -145,7 +146,7 @@ internal sealed class PanelHost : IAgentPanelHost
         ViewModels[row.Id] = viewModel;
         Schedulers[row.Id] = scheduler;
         Inputs[row.Id] = input;
-        return viewModel;
+        return Task.FromResult(viewModel);
     }
 
     /// <inheritdoc />

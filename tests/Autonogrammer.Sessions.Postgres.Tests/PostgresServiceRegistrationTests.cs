@@ -1,3 +1,4 @@
+using Autonogrammer.Sessions.Postgres.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -83,7 +84,7 @@ public sealed class PostgresServiceRegistrationTests(PostgresServerFixture serve
             try
             {
                 var dataSource = provider.GetRequiredService<NpgsqlDataSource>();
-                await PostgresSessionSchema.EnsureCreatedAsync(dataSource, ct).ConfigureAwait(true);
+                await new MigrationRunner(dataSource).MigrateAsync(ct).ConfigureAwait(true);
                 var repository = provider.GetRequiredService<PostgresSessionRepository>();
                 await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
                 await AppendDeltasAsync(repository, "s-1", 0, 2, ct).ConfigureAwait(true);

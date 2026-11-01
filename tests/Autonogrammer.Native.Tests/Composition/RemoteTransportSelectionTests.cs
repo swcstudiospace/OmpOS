@@ -84,7 +84,7 @@ public sealed class RemoteTransportSelectionTests
     {
         using var tree = new TempTree();
         var omp = new ScriptedOmp();
-        var head = AgentHead.Create(AgentLoopFixtures.Options(tree, omp));
+        var head = await AgentHead.CreateAsync(AgentLoopFixtures.Options(tree, omp)).ConfigureAwait(true);
         await using var headScope = head.ConfigureAwait(true);
         head.Services.ShouldBeNull();
         var (_, slot) = await AgentLoopFixtures.NewSlotAsync(head, Token).ConfigureAwait(true);
@@ -116,8 +116,9 @@ public sealed class RemoteTransportSelectionTests
                 GetVariable = static _ => null,
             },
             Token).ConfigureAwait(true);
+        await using var servicesScope = services.ConfigureAwait(true);
         var omp = new ScriptedOmp();
-        var head = AgentHead.Create(AgentLoopFixtures.Options(tree, omp, services: services));
+        var head = await AgentHead.CreateAsync(AgentLoopFixtures.Options(tree, omp, services: services)).ConfigureAwait(true);
         await using var headScope = head.ConfigureAwait(true);
         var (_, slot) = await AgentLoopFixtures.NewSlotAsync(head, Token).ConfigureAwait(true);
 

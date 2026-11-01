@@ -201,8 +201,20 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
-      "autonogrammer.harness.workspace": {
+      "autonogrammer.contracts": {
         "type": "Project"
+      },
+      "autonogrammer.harness.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.harness.workspace": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+        }
       },
       "Microsoft.Extensions.Configuration": {
         "type": "CentralTransitive",

@@ -1,0 +1,75 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:plugins="clr-namespace:Autonogrammer.Presentation.Settings.Plugins;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Settings.BundlesPageView"
+             x:DataType="plugins:BundleSectionModel"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <ScrollViewer Focusable="False"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Classes="settings-column">
+      <TextBlock Classes="settings-heading"
+                 Text="Plugin bundles" />
+      <TextBlock Classes="settings-description"
+                 Text="Install a folder or a zip. Skills load as an overlay. Hooks are listed and never run." />
+      <TextBlock Classes="settings-help"
+                 Text="{CompiledBinding LimitCopy}" />
+      <TextBlock Classes="settings-help"
+                 IsVisible="{CompiledBinding Banner, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding Banner}" />
+
+      <TextBox Classes="settings-mono"
+               PlaceholderText="Folder or zip path"
+               Text="{CompiledBinding InstallPath, Mode=TwoWay}"
+               AutomationProperties.Name="Bundle folder or zip path" />
+      <Button Content="Install bundle"
+              Command="{CompiledBinding InstallCommand}"
+              AutomationProperties.Name="Install bundle" />
+
+      <ItemsControl ItemsSource="{CompiledBinding Rows}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="plugins:BundleRowModel">
+            <Border Classes="settings-row"
+                    AutomationProperties.Name="{CompiledBinding EnableName}">
+              <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+                <TextBlock Classes="settings-label"
+                           Text="{CompiledBinding Id}" />
+                <ToggleSwitch Content="Enabled"
+                              IsChecked="{CompiledBinding Enabled, Mode=OneWay}"
+                              Command="{CompiledBinding ToggleCommand}"
+                              AutomationProperties.Name="{CompiledBinding EnableName}" />
+                <TextBlock Classes="settings-help"
+                           IsVisible="{CompiledBinding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                           Text="{CompiledBinding Notice}" />
+                <ItemsControl ItemsSource="{CompiledBinding ComponentStates}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Classes="settings-help"
+                                 Text="{CompiledBinding}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <ItemsControl ItemsSource="{CompiledBinding Skills}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="plugins:BundleSkillRowModel">
+                      <ToggleSwitch Content="{CompiledBinding Id}"
+                                    IsChecked="{CompiledBinding Enabled, Mode=OneWay}"
+                                    Command="{CompiledBinding ToggleCommand}"
+                                    AutomationProperties.Name="{CompiledBinding SwitchName}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

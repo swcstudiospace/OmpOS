@@ -1,3 +1,5 @@
+using Autonogrammer.Harness.Abstractions;
+
 namespace Autonogrammer.Harness.Acp;
 
 /// <summary>Options for starting an ACP session against <c>omp acp</c>.</summary>
@@ -81,6 +83,12 @@ public sealed record AcpClientOptions
     /// <c>*</c>. Ignored in <see cref="EngineEnvironmentMode.Inherit"/> mode. Defaults to none.
     /// </summary>
     public IReadOnlyList<string> EnvironmentAllowList { get; init; } = [];
+
+    /// <summary>
+    /// Gets the optional process wrapper applied after the environment policy. Null, the default, starts <c>omp acp</c> directly,
+    /// which is the hosted API path and the Code path.
+    /// </summary>
+    public IProcessLaunchWrapper? ProcessWrapper { get; init; }
 
     /// <summary>
     /// Gets the MCP servers attached to the session in <c>session/new</c> and <c>session/load</c>. Header and environment values may

@@ -425,7 +425,7 @@ public static class AcpFrames
         public string Status { get; init; } = string.Empty;
     }
 
-    /// <summary>A <c>usage_update</c>: how much of the context window the conversation uses.</summary>
+    /// <summary>A <c>usage_update</c>: how much of the context window the conversation uses, and the cost when the engine sent one.</summary>
     public sealed class UsageUpdate
     {
         /// <summary>Gets the tokens the conversation uses now.</summary>
@@ -433,6 +433,19 @@ public static class AcpFrames
 
         /// <summary>Gets the size of the context window in tokens, or zero when the agent did not send it.</summary>
         public long Size { get; init; }
+
+        /// <summary>Gets the cost object, or null when the engine did not send one.</summary>
+        public UsageCostFrame? Cost { get; init; }
+    }
+
+    /// <summary>The <c>cost</c> object of a <c>usage_update</c>: an amount and a currency, nothing else.</summary>
+    public sealed class UsageCostFrame
+    {
+        /// <summary>Gets the amount the engine reported.</summary>
+        public decimal Amount { get; init; }
+
+        /// <summary>Gets the currency code the engine reported.</summary>
+        public string Currency { get; init; } = string.Empty;
     }
 
     /// <summary>Parameters of <c>session/fork</c> (the unstable <c>unstable_forkSession</c> request).</summary>

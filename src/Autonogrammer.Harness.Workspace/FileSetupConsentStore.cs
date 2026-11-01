@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Autonogrammer.Harness.Abstractions;
 
 namespace Autonogrammer.Workspace;
 
@@ -47,7 +48,7 @@ public sealed class FileSetupConsentStore : ISetupConsentStore, IDisposable
             throw new InvalidOperationException("The platform has no per-user configuration directory for the setup consent file.");
         }
 
-        return Path.Combine(configuration, "Autonogrammer", "setup-consent.json");
+        return Path.Combine(UserDataDirectory.PathFor(configuration), "setup-consent.json");
     }
 
     /// <summary>

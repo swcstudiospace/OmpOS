@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Autonogrammer.Accounts.Desktop;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Ignore;
@@ -38,6 +39,7 @@ internal sealed class FileSettingsStore
     private const string IdleStopMember = "runtime.idleStopHours";
     private const string RetentionMember = "runtime.retentionDays";
     private const string IgnorePatternsMember = "ignore.globalPatterns";
+    private const string SurfaceMember = SettingsShellSection.SurfaceMember;
 
     private readonly System.Threading.Lock _gate = new();
 
@@ -75,6 +77,12 @@ internal sealed class FileSettingsStore
     /// <param name="motion">The setting.</param>
     /// <exception cref="SettingsSourceException">The file cannot be read or written; nothing is changed.</exception>
     public void SetMotion(MotionPreference motion) => Update(document => document.Motion = MotionText(motion));
+
+    /// <summary>Saves the selected surface. The stored words come from <see cref="Autonogrammer.Presentation.Cowork.SurfaceSwitchModel"/>.</summary>
+    /// <param name="surface">The surface to store.</param>
+    /// <exception cref="SettingsSourceException">The file cannot be read or written; nothing is changed.</exception>
+    public void SetSurface(Autonogrammer.Contracts.Sessions.SessionSurface surface) =>
+        Update(document => document.Surface = Autonogrammer.Presentation.Cowork.SurfaceSwitchModel.Format(surface));
 
     /// <summary>Saves the theme setting.</summary>
     /// <param name="theme">The setting.</param>
@@ -157,6 +165,34 @@ internal sealed class FileSettingsStore
         });
     }
 
+    /// <summary>Reads <see cref="AccountSettingsKeys.HasStoredSession"/>. Absent means false.</summary>
+    /// <returns>True when a signed-in session is stored.</returns>
+    public bool ReadHasStoredSession()
+    {
+        lock (_gate)
+        {
+            return ReadDocument().HasStoredSession == true;
+        }
+    }
+
+    /// <summary>Reads <see cref="AccountSettingsKeys.AllowFileSecretStore"/>. Absent means false.</summary>
+    /// <returns>True when the person consented to the file store.</returns>
+    public bool ReadAllowFileSecretStore()
+    {
+        lock (_gate)
+        {
+            return ReadDocument().AllowFileSecretStore == true;
+        }
+    }
+
+    /// <summary>Saves <see cref="AccountSettingsKeys.HasStoredSession"/>.</summary>
+    /// <param name="value">The value.</param>
+    public void SetHasStoredSession(bool value) => Update(document => document.HasStoredSession = value);
+
+    /// <summary>Saves <see cref="AccountSettingsKeys.AllowFileSecretStore"/>.</summary>
+    /// <param name="value">The value.</param>
+    public void SetAllowFileSecretStore(bool value) => Update(document => document.AllowFileSecretStore = value);
+
     private static IgnoreSettingsValues IgnoreOf(SettingsDocument document, string path)
     {
         var section = document.Ignore;
@@ -217,8 +253,15 @@ internal sealed class FileSettingsStore
 
         // The ignore section is validated here too, so a bad value is reported on every read and write and is never overwritten.
         _ = IgnoreOf(document, path);
+        if (document.Surface is not null && Autonogrammer.Presentation.Cowork.SurfaceSwitchModel.Parse(document.Surface) is null)
+        {
+            throw new SettingsSourceException(HeadSettingsCopy.SettingsBadMember(path, SurfaceMember));
+        }
 
-        return new StoredSettings(motion, theme, document.Terminal?.AutoRun ?? false, new RuntimeSettingsValues(idle, retention));
+        return new StoredSettings(motion, theme, document.Terminal?.AutoRun ?? false, new RuntimeSettingsValues(idle, retention))
+        {
+            Surface = document.Surface,
+        };
     }
 
     private StoredSettings ToValues(SettingsDocument document) => ToValues(document, FilePath);

@@ -1,0 +1,18 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Cowork.CoworkDockHost"
+             x:Name="DockRegion"
+             Focusable="True"
+             IsTabStop="True"
+             Width="{DynamicResource Autonogrammer.Size.CoworkDockWidth}"
+             AutomationProperties.Name="Dock">
+  <DockPanel>
+    <StackPanel x:Name="DockTabs"
+                DockPanel.Dock="Top"
+                Orientation="Horizontal"
+                IsVisible="False"
+                KeyboardNavigation.TabNavigation="Cycle"
+                AutomationProperties.Name="Dock panels" />
+    <ContentControl x:Name="DockContent" />
+  </DockPanel>
+</UserControl>

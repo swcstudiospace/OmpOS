@@ -20,4 +20,7 @@
 @import url('terminal.css');
 @import url('connect.css');
 @import url('about.css');
+@import url('browser-pane.css');
+@import url('surface.css');
+@import url('cowork-chat.css');
 @import url('a11y.css');

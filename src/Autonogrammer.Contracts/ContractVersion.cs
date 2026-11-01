@@ -6,7 +6,7 @@ namespace Autonogrammer.Contracts;
 public static class ContractVersion
 {
     /// <summary>The current contract version (semver).</summary>
-    public const string Current = "1.5.0";
+    public const string Current = "1.6.0";
 
     /// <summary>The header carrying the contract version.</summary>
     public const string HeaderName = "X-Autonogrammer-Contract-Version";

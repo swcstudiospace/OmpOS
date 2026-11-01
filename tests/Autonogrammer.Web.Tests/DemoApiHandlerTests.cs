@@ -46,6 +46,16 @@ public sealed class DemoApiHandlerTests : IDisposable
         entry.Messages.Single().Content.ShouldBe("hello");
     }
 
+    /// <summary>The Demo answers GET account/sessions with an empty list the client's JSON context reads.</summary>
+    /// <returns>A task that completes when the list was read.</returns>
+    [Fact]
+    public async Task AccountSessionsAreAnEmptyList()
+    {
+        var list = await _host.Api.GetAccountSessionsAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        list.Items.ShouldBeEmpty();
+    }
+
     /// <summary>The session stream resumes after a position, replays only later events and ends at the terminal event.</summary>
     /// <returns>A task that completes when the assertions ran.</returns>
     [Fact]

@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:notes="clr-namespace:Autonogrammer.Presentation.Notifications;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Notifications.NotificationsView"
+             x:DataType="notes:NotificationCentreModel"
+             Focusable="False"
+             AutomationProperties.Name="{x:Static notes:NotificationCentreModel.Heading}">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- Toast plus list. Title-only rows bind an empty summary until Show content is on. No colour literals. -->
+  <StackPanel Classes="settings-column">
+
+    <TextBlock Classes="settings-heading"
+               Text="{x:Static notes:NotificationCentreModel.Heading}" />
+
+    <CheckBox x:Name="ShowContentBox"
+              Content="{x:Static notes:NotificationCentreModel.ShowContentLabel}"
+              IsChecked="{CompiledBinding ShowContent, Mode=TwoWay}"
+              AutomationProperties.Name="{x:Static notes:NotificationCentreModel.ShowContentLabel}" />
+
+    <TextBlock x:Name="ToastText"
+               Classes="settings-body"
+               Text="{CompiledBinding LiveRegion}"
+               AutomationProperties.LiveSetting="Polite"
+               AutomationProperties.Name="{x:Static notes:NotificationCentreModel.LiveRegionName}" />
+
+    <ItemsControl x:Name="NotificationList"
+                  ItemsSource="{CompiledBinding Rows}"
+                  AutomationProperties.Name="{x:Static notes:NotificationCentreModel.ListName}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="notes:NotificationListEntry">
+          <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}"
+                      AutomationProperties.Name="{CompiledBinding AccessibleName}">
+            <TextBlock Classes="settings-label"
+                       Text="{CompiledBinding Kind}" />
+            <TextBlock Classes="settings-body"
+                       Text="{CompiledBinding Title}" />
+            <TextBlock Classes="settings-help"
+                       Text="{CompiledBinding SessionId}" />
+            <TextBlock Classes="settings-help"
+                       Text="{CompiledBinding Privacy}" />
+            <TextBlock Classes="settings-body"
+                       IsVisible="{CompiledBinding HasVisibleSummary}"
+                       Text="{CompiledBinding VisibleSummary}" />
+            <Button Classes="ghost"
+                    HorizontalAlignment="Left"
+                    MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                    Content="{CompiledBinding ApprovalLinkTarget}"
+                    IsVisible="{CompiledBinding HasApprovalLink}"
+                    AutomationProperties.Name="{CompiledBinding ApprovalLinkName}" />
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+  </StackPanel>
+
+</UserControl>

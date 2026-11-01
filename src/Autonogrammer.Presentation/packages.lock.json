@@ -41,6 +41,9 @@
           "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
+      "autonogrammer.harness.computeruse.abstractions": {
+        "type": "Project"
+      },
       "autonogrammer.parser": {
         "type": "Project",
         "dependencies": {

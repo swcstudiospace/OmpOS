@@ -1,0 +1,27 @@
+@namespace Autonogrammer.UI.Components.Cowork
+@using Autonogrammer.Contracts.Ui
+@using Autonogrammer.Presentation
+@using Autonogrammer.Presentation.Cowork
+@using Autonogrammer.UI.Components.Blocks
+
+<div class="autonogrammer-cowork-chat @(Model.ReducedMotion ? "reduced-motion" : null)">
+    <div class="autonogrammer-cowork-transcript" role="region" aria-label="@CoworkConversationModel.TranscriptName" tabindex="0">
+        @foreach (var block in Model.Session.Tree.Blocks)
+        {
+            <UiBlockRenderer Block="block" />
+        }
+    </div>
+    <CoworkComposer Model="Model" />
+    <div class="autonogrammer-cowork-approvals" role="region" aria-label="@CoworkConversationModel.ApprovalsName" tabindex="0">
+        @foreach (var card in Model.Approvals.Cards)
+        {
+            <CoworkApprovalCard Card="card" />
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>Gets the conversation model. The component declares no route and injects no auth or API client.</summary>
+    [Parameter, EditorRequired]
+    public CoworkConversationModel Model { get; set; } = null!;
+}

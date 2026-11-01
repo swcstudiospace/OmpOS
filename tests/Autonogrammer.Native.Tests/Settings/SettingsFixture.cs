@@ -1,3 +1,4 @@
+using Autonogrammer.Harness.ComputerUse.Abstractions;
 using Autonogrammer.Native.Tests.AgentPanel.Views;
 using Autonogrammer.Native.Tests.Mcp;
 using Autonogrammer.Native.Tests.Remote;
@@ -6,11 +7,13 @@ using Autonogrammer.Native.Views.Settings;
 using Autonogrammer.Presentation.Automations;
 using Autonogrammer.Presentation.Cloud;
 using Autonogrammer.Presentation.Commands.Handlers;
+using Autonogrammer.Presentation.Computer;
 using Autonogrammer.Presentation.Hooks;
 using Autonogrammer.Presentation.Mcp;
 using Autonogrammer.Presentation.Remote;
 using Autonogrammer.Presentation.Safety;
 using Autonogrammer.Presentation.Settings;
+using Autonogrammer.Presentation.Settings.BrowserUse;
 using Autonogrammer.Presentation.Settings.Customize;
 using Autonogrammer.Presentation.Settings.Ignore;
 using Autonogrammer.Presentation.Settings.Models;
@@ -24,7 +27,7 @@ using Avalonia.Threading;
 namespace Autonogrammer.Native.Tests.Settings;
 
 /// <summary>
-/// A real <see cref="SettingsWindow"/> over real page models whose sources are scripted. Only the sources are fake: the twenty-two pages, the
+/// A real <see cref="SettingsWindow"/> over real page models whose sources are scripted. Only the sources are fake: the thirty pages, the
 /// window model and the window are the product's. The pages are in the order the head's factory gives them when every service is supplied.
 /// The window is shown, and every page is loaded unless the test asks to keep them loading.
 /// </summary>
@@ -53,13 +56,22 @@ internal sealed class SettingsFixture : IDisposable
         CloudModel = new CloudAgentsViewModel(CloudHost, Clock);
         Cloud = new CloudSettingsPage(CloudModel);
         Automations = new AutomationsSettingsPage(new HostedAutomationsViewModel(AutomationsManager));
+        Browser = new BrowserUseSettingsPage(new FixtureBrowserUseSource());
         Privacy = new PrivacySettingsPage();
         Network = new NetworkSettingsPage(NetworkSource);
         Keyboard = new KeyboardSettingsPage(KeyboardSource);
+        Computer = new ComputerUseSettingsPage(Grants, Denylist, Audit, ComputerSettings, KillSwitch, ComputerStatus);
+        Bundles = new Autonogrammer.Presentation.Settings.Cowork.BundlesSettingsPage(new FixtureBundles());
+        Connectors = new Autonogrammer.Presentation.Settings.Cowork.ConnectorsSettingsPage(new Autonogrammer.Native.Composition.Connectors.ConnectorPermissionStore(Path.GetTempPath()));
+        Permissions = new Autonogrammer.Presentation.Settings.Cowork.CoworkPermissionsSettingsPage(new FixtureFolderGrants());
+        Isolation = new Autonogrammer.Presentation.Settings.Cowork.IsolationSettingsPage();
+        Usage = new Autonogrammer.Presentation.Settings.Cowork.UsageSettingsPage();
+        Notifications = new Autonogrammer.Presentation.Settings.Cowork.NotificationsSettingsPage();
         Model = new SettingsWindowModel(
         [
             Runtime, General, Display, Agents, RunMode, Models, Tab, Rules, Skills, Commands, Hooks, Mcp, Plugins,
-            Workspaces, Worktrees, Ignore, Remote, Cloud, Automations, Privacy, Network, Keyboard,
+            Workspaces, Worktrees, Ignore, Remote, Cloud, Automations, Browser, Privacy, Network, Keyboard, Computer,
+            Bundles, Connectors, Permissions, Isolation, Usage, Notifications,
         ]);
         Window = new SettingsWindow(Model);
         Runtime.Saved += (_, args) => RuntimeSaved.Add(args.Values);
@@ -194,6 +206,9 @@ internal sealed class SettingsFixture : IDisposable
     /// <summary>Gets the Automations page.</summary>
     internal AutomationsSettingsPage Automations { get; }
 
+    /// <summary>Gets the Browser page.</summary>
+    internal BrowserUseSettingsPage Browser { get; }
+
     /// <summary>Gets the Cloud page.</summary>
     internal CloudSettingsPage Cloud { get; }
 
@@ -209,6 +224,44 @@ internal sealed class SettingsFixture : IDisposable
     /// <summary>Gets the Keyboard page.</summary>
     internal KeyboardSettingsPage Keyboard { get; }
 
+    /// <summary>Gets the Computer Use page.</summary>
+    internal ComputerUseSettingsPage Computer { get; }
+
+    /// <summary>Gets the Bundles page.</summary>
+    internal Autonogrammer.Presentation.Settings.Cowork.BundlesSettingsPage Bundles { get; }
+
+    /// <summary>Gets the Connectors page.</summary>
+    internal Autonogrammer.Presentation.Settings.Cowork.ConnectorsSettingsPage Connectors { get; }
+
+    /// <summary>Gets the Cowork permissions page.</summary>
+    internal Autonogrammer.Presentation.Settings.Cowork.CoworkPermissionsSettingsPage Permissions { get; }
+
+    /// <summary>Gets the Isolation page.</summary>
+    internal Autonogrammer.Presentation.Settings.Cowork.IsolationSettingsPage Isolation { get; }
+
+    /// <summary>Gets the Usage page.</summary>
+    internal Autonogrammer.Presentation.Settings.Cowork.UsageSettingsPage Usage { get; }
+
+    /// <summary>Gets the Notifications page.</summary>
+    internal Autonogrammer.Presentation.Settings.Cowork.NotificationsSettingsPage Notifications { get; }
+
+    /// <summary>Gets the grant registry of the Computer Use page.</summary>
+    internal FixtureGrantRegistry Grants { get; } = new();
+
+    /// <summary>Gets the denylist of the Computer Use page.</summary>
+    internal FixtureDenylist Denylist { get; } = new();
+
+    /// <summary>Gets the audit reader of the Computer Use page.</summary>
+    internal FixtureAudit Audit { get; } = new();
+
+    /// <summary>Gets the settings store of the Computer Use page.</summary>
+    internal FixtureComputerSettings ComputerSettings { get; } = new();
+
+    /// <summary>Gets the kill switch of the Computer Use page.</summary>
+    internal FixtureKillSwitch KillSwitch { get; } = new();
+
+    /// <summary>Gets the status source of the Computer Use page.</summary>
+    internal FixtureComputerStatus ComputerStatus { get; } = new();
     /// <summary>Gets the window model.</summary>
     internal SettingsWindowModel Model { get; }
 
@@ -261,5 +314,98 @@ internal sealed class SettingsFixture : IDisposable
         _ = Model.RequestClose();
         Dispatcher.UIThread.RunJobs();
         CloudModel.Dispose();
+    }
+
+    internal sealed class FixtureGrantRegistry : IComputerGrantRegistry
+    {
+        public IReadOnlyList<ComputerGrantView> Snapshot() => [];
+
+        public void Revoke(string grantId)
+        {
+        }
+    }
+
+    internal sealed class FixtureDenylist : IComputerDenylistStore
+    {
+        public IReadOnlyList<ComputerDenylistEntry> BuiltInRows { get; } = [new() { AppIdentity = "login", BuiltIn = true }];
+
+        public ValueTask AddAsync(string appIdentity, CancellationToken cancellationToken) => ValueTask.CompletedTask;
+    }
+
+    internal sealed class FixtureAudit : IComputerAuditReader
+    {
+        public ValueTask<IReadOnlyList<AuditRecordView>> ReadAsync(int days, bool includeThumbnails, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<IReadOnlyList<AuditRecordView>>([]);
+    }
+
+    internal sealed class FixtureComputerSettings : IComputerUseSettingsStore
+    {
+        public ValueTask<ComputerUseUserSettings> LoadAsync(CancellationToken cancellationToken) =>
+            ValueTask.FromResult(new ComputerUseUserSettings());
+
+        public ValueTask SaveAsync(ComputerUseUserSettings settings, CancellationToken cancellationToken) => ValueTask.CompletedTask;
+    }
+
+    internal sealed class FixtureKillSwitch : IKillSwitchControl
+    {
+        public KillSwitchState State => KillSwitchState.Unregistered;
+
+        public event EventHandler<KillSwitchStateChangedEventArgs>? StateChanged
+        {
+            add { }
+            remove { }
+        }
+
+        public ValueTask TripAsync(CancellationToken cancellationToken) => ValueTask.CompletedTask;
+
+        public ValueTask RearmAsync(CancellationToken cancellationToken) => ValueTask.CompletedTask;
+    }
+
+    internal sealed class FixtureComputerStatus : IComputerStatusSource
+    {
+        public ValueTask<ComputerAvailability> GetAvailabilityAsync(CancellationToken cancellationToken) =>
+            ValueTask.FromResult(ComputerAvailability.Available);
+
+        public ValueTask<IReadOnlyList<ComputerPermissionStatus>> GetPermissionStatusAsync(CancellationToken cancellationToken) =>
+            ValueTask.FromResult<IReadOnlyList<ComputerPermissionStatus>>([]);
+
+        public ValueTask<ComputerPermissionStatus> RequestPermissionAsync(ComputerPermissionKind kind, CancellationToken cancellationToken) =>
+            ValueTask.FromResult(new ComputerPermissionStatus { Kind = kind, Granted = false, MessageId = "computer.permission.screen-recording" });
+    }
+
+    private sealed class FixtureBrowserUseSource : IBrowserUseSettingsSource
+    {
+        public Task<BrowserUseSnapshot> LoadAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(new BrowserUseSnapshot(BrowserUseChromiumState.Ready, "149", BrowserUseSettingsValues.Defaults, null));
+
+        public Task SaveAsync(BrowserUseSettingsValues values, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task AcquireAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class FixtureBundles : Autonogrammer.Presentation.Settings.Plugins.IBundleManagementSource
+    {
+        public Task<IReadOnlyList<Autonogrammer.Presentation.Settings.Plugins.BundleSnapshot>> ListAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<Autonogrammer.Presentation.Settings.Plugins.BundleSnapshot>>([]);
+
+        public Task<Autonogrammer.Presentation.Settings.Plugins.BundleSnapshot> InstallAsync(string path, CancellationToken cancellationToken) =>
+            Task.FromResult(new Autonogrammer.Presentation.Settings.Plugins.BundleSnapshot("demo", true, true, ["hooks listed, not run"], [], null));
+
+        public Task SetBundleEnabledAsync(string bundleId, bool enabled, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task SetSkillEnabledAsync(string bundleId, string skillId, bool enabled, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class FixtureFolderGrants : Autonogrammer.Presentation.Settings.Permissions.IFolderGrantSource
+    {
+        public IReadOnlyList<Autonogrammer.Presentation.Settings.Permissions.FolderGrantDraft> List() => [];
+
+        public void Grant(Autonogrammer.Presentation.Settings.Permissions.FolderGrantDraft grant)
+        {
+        }
+
+        public void Revoke(string path)
+        {
+        }
     }
 }

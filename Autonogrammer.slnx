@@ -45,6 +45,27 @@
     <Project Path="src/Autonogrammer.SessionRuns/Autonogrammer.SessionRuns.csproj" />
     <Project Path="src/Autonogrammer.UI/Autonogrammer.UI.csproj" />
     <Project Path="src/Autonogrammer.Workflows/Autonogrammer.Workflows.csproj" />
+    <Project Path="src/Autonogrammer.Resilience/Autonogrammer.Resilience.csproj" />
+    <Project Path="src/Autonogrammer.Cowork.Abstractions/Autonogrammer.Cowork.Abstractions.csproj" />
+    <Project Path="src/Autonogrammer.Harness.ComputerUse.Abstractions/Autonogrammer.Harness.ComputerUse.Abstractions.csproj" />
+    <Project Path="src/Autonogrammer.Harness.Secrets.Os/Autonogrammer.Harness.Secrets.Os.csproj" />
+    <Project Path="src/Autonogrammer.Accounts/Autonogrammer.Accounts.csproj" />
+    <Project Path="src/Autonogrammer.Cowork/Autonogrammer.Cowork.csproj" />
+    <Project Path="src/Autonogrammer.Cowork.Artifacts/Autonogrammer.Cowork.Artifacts.csproj" />
+    <Project Path="src/Autonogrammer.Cowork.Artifacts.Stores/Autonogrammer.Cowork.Artifacts.Stores.csproj" />
+    <Project Path="src/Autonogrammer.Harness.BrowserUse/Autonogrammer.Harness.BrowserUse.csproj" />
+    <Project Path="src/Autonogrammer.Harness.ComputerUse/Autonogrammer.Harness.ComputerUse.csproj" />
+    <Project Path="src/Autonogrammer.Harness.ComputerUse.X11/Autonogrammer.Harness.ComputerUse.X11.csproj" />
+    <Project Path="src/Autonogrammer.Harness.ComputerUse.Windows/Autonogrammer.Harness.ComputerUse.Windows.csproj" />
+    <Project Path="src/Autonogrammer.Harness.ComputerUse.MacOS/Autonogrammer.Harness.ComputerUse.MacOS.csproj" />
+    <Project Path="src/Autonogrammer.Cowork.Memory/Autonogrammer.Cowork.Memory.csproj" />
+    <Project Path="src/Autonogrammer.Cowork.Memory.Postgres/Autonogrammer.Cowork.Memory.Postgres.csproj" />
+    <Project Path="src/Autonogrammer.Harness.PluginBundles/Autonogrammer.Harness.PluginBundles.csproj" />
+    <Project Path="src/Autonogrammer.Harness.Isolation/Autonogrammer.Harness.Isolation.csproj" />
+    <Project Path="src/Autonogrammer.Harness.Notifications/Autonogrammer.Harness.Notifications.csproj" />
+    <Project Path="src/Autonogrammer.Accounts.Desktop/Autonogrammer.Accounts.Desktop.csproj" />
+    <Project Path="src/Autonogrammer.Dispatch.Client/Autonogrammer.Dispatch.Client.csproj" />
+    <Project Path="src/Autonogrammer.Dispatch.Desktop/Autonogrammer.Dispatch.Desktop.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Autonogrammer.ArchitectureTests/Autonogrammer.ArchitectureTests.csproj" />
@@ -88,5 +109,24 @@
     <Project Path="tests/Autonogrammer.AgentWorker.Tests/Autonogrammer.AgentWorker.Tests.csproj" />
     <Project Path="tests/Autonogrammer.Api.IntegrationTests/Autonogrammer.Api.IntegrationTests.csproj" />
     <Project Path="tests/Autonogrammer.Workflows.Tests/Autonogrammer.Workflows.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Resilience.Tests/Autonogrammer.Resilience.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Harness.Secrets.Os.Tests/Autonogrammer.Harness.Secrets.Os.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Accounts.Tests/Autonogrammer.Accounts.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Accounts.Desktop.Tests/Autonogrammer.Accounts.Desktop.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Cowork.Tests/Autonogrammer.Cowork.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Cowork.Artifacts.Tests/Autonogrammer.Cowork.Artifacts.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Cowork.Artifacts.Stores.Tests/Autonogrammer.Cowork.Artifacts.Stores.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Harness.BrowserUse.Tests/Autonogrammer.Harness.BrowserUse.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Harness.ComputerUse.Tests/Autonogrammer.Harness.ComputerUse.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Harness.ComputerUse.X11.Tests/Autonogrammer.Harness.ComputerUse.X11.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Harness.ComputerUse.Windows.Tests/Autonogrammer.Harness.ComputerUse.Windows.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Harness.ComputerUse.MacOS.Tests/Autonogrammer.Harness.ComputerUse.MacOS.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Dispatch.Client.Tests/Autonogrammer.Dispatch.Client.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Dispatch.Desktop.Tests/Autonogrammer.Dispatch.Desktop.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Cowork.Memory.Tests/Autonogrammer.Cowork.Memory.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Cowork.Memory.Postgres.Tests/Autonogrammer.Cowork.Memory.Postgres.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Harness.PluginBundles.Tests/Autonogrammer.Harness.PluginBundles.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Harness.Isolation.Tests/Autonogrammer.Harness.Isolation.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Harness.Notifications.Tests/Autonogrammer.Harness.Notifications.Tests.csproj" />
   </Folder>
 </Solution>

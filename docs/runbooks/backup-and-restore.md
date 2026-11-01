@@ -26,8 +26,8 @@ In scope: the session store in Postgres (TimescaleDB), the Dragonfly coordinatio
 |-------|-------|---------|-------|---------|
 | Session log | Postgres schema `autonogrammer`: `sessions` (header row per session, `owner_id`, `status`, `messages` jsonb), `session_events` (TimescaleDB hypertable on `occurred_at`, one-day chunks, primary key `(session_id, seq, occurred_at)`, `payload` jsonb), `session_tool_approvals` | Yes | Prompts, agent output, tool calls and results, file edits, tool approval decisions | Yes: dump and volume snapshot |
 | Cloud agent records | Postgres table `cloud_agents` (created when cloud agents are enabled [INFERENCE: `CloudAgentStoreStartup` is part of the cloud services]) | Yes | Agent records; no secret values | With the database |
-| Run leases and idempotency records | Dragonfly keys `autonogrammer:lease:run:<session>` (30 s lifetime, renewed every 10 s) and `autonogrammer:idem:<sha256>` (60 s while pending, 24 h once completed, with the response JSON); pub/sub channel `autonogrammer:signals` | Ephemeral by design | Lease owner ids; the response body of a replayable request | No |
-| Process memory of the API | `SessionRegistry`, `SessionLifecycleStore`, `RunRegistry`, in-memory cloud secrets | No | The session list and board index; run handles | No. After a restart `GET /sessions` and the board are empty or wrong until sessions are touched again (ADR-0031, Context); `GET /sessions/{id}` reads the database |
+| Run leases and idempotency records | Dragonfly keys `autonogrammer:v1:lease:run:<session>` (30 s lifetime, renewed every 10 s) and `autonogrammer:v1:idem:<sha256>` (60 s while pending, 24 h once completed, with the response JSON); pub/sub channels `autonogrammer:v1:sig:session` and `autonogrammer:v1:sig:dispatch` | Ephemeral by design | Lease owner ids; the response body of a replayable request | No |
+| Process memory of the API | `RunRegistry`, in-memory cloud secrets | No | Run handles | No. The session list and the closed flag live in the repository, so a restart keeps `GET /sessions` and the board; `GET /sessions/{id}` reads the same store |
 | omp agent directory | `~/.omp` of the API user, or `PI_CODING_AGENT_DIR`, or `Providers:AgentDirectory`. The API image creates no home directory and defines no volume for uid 10001 [INFERENCE: `useradd --no-create-home`], so where omp keeps it in the hosted container is open | Only if the owner mounts a volume | Provider credentials, `models.yml`, omp's own session files and settings | Credentials: no (recreate at the provider). Settings: optional |
 | Workspace folders | `Api:Workspace:Root`, `Worktrees:Root`, `Worktrees:Repository`, and the engine's working directory | Only if on a volume | Checked-out code and agent edits | Only if the agent's work is not in git |
 | Configuration | Railway service variables of the API, Postgres and Dragonfly | Yes, in Railway | Connection strings, passwords, the owner token digest, the OTLP header, provider keys | Yes: a record of names and non-secret values in git (`deploy/railway/README.md`); secret values in the operator's password manager |
@@ -42,7 +42,7 @@ Schema as built, for the restore checks:
 | `autonogrammer.session_tool_approvals` | primary key `(session_id, request_id)`, `tool_name`, `granted_tools jsonb`, `decision` (`Allow` or `Deny`), timestamps |
 | `autonogrammer.cloud_agents` | `id`, `owner_id`, `session_id`, `status`, `idempotency_key`, `record jsonb` |
 
-Source: `src/Autonogrammer.Sessions.Postgres/PostgresSessionSchema.cs`, `PostgresCloudAgentSchema.cs`. Connections set the search path `autonogrammer,public`.
+Source: `src/Autonogrammer.Sessions.Postgres/Migrations/M0001_SessionStore.cs` and the later `M000*` steps, applied by the migration runner into `autonogrammer.schema_migrations`. Connections set the search path `autonogrammer,public`.
 
 ## Recovery targets (proposals)
 
@@ -156,14 +156,14 @@ Run the drill once before the first public exposure and then once a quarter (pro
 
 ## Migrations as built
 
-How the schema changes today, from `src/Autonogrammer.Sessions.Postgres/PostgresSessionSchema.cs`, `PostgresCloudAgentSchema.cs` and `services/Autonogrammer.Api/Persistence/SessionStoreStartup.cs`:
+How the schema changes, from `src/Autonogrammer.Sessions.Postgres/Migrations/M0001_SessionStore.cs` and `services/Autonogrammer.Api/Persistence/SessionStoreStartup.cs`:
 
-- At every start, before the host serves any request, `SessionStoreStartup.StartingAsync` calls `PostgresSessionSchema.EnsureCreatedAsync`. It opens one transaction, takes `pg_advisory_xact_lock`, runs the statements `CREATE SCHEMA IF NOT EXISTS`, `CREATE EXTENSION IF NOT EXISTS timescaledb`, `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS` and `create_hypertable(..., if_not_exists => TRUE)`, and commits. Several instances starting together serialize on the lock.
-- In Production, `Sessions:Store=InMemory` is refused at start; so is any store other than Postgres.
-- **There is no version table.** Nothing records which statements ran or in which release. The only way to know the schema shape is to inspect it (`\d autonogrammer.*`).
-- **A statement that already ran is skipped by name, not by content.** Changing a column type or a constraint in a later release does not reach an existing database. The code comments say a later change adds statements guarded the same way (`ADD COLUMN IF NOT EXISTS`), so a database created by any earlier release converges to the same shape.
-- The runtime role and the DDL role are the same credential (ADR-0031, Context), and `CREATE EXTENSION` needs a privileged role.
-- There is no down migration and no dry run.
+- The API does not create the schema at start. An operator runs `deploy/data-plane/bootstrap.sql` once (roles, database, the TimescaleDB extension, schema grants). The one-shot service `autonogrammer-migrate` then runs `migrate` as `autonogrammer_migrator`. Each step is one transaction under the advisory lock `autonogrammer.schema.migrations`, recorded in `autonogrammer.schema_migrations`.
+- In Production, `Sessions:Store=InMemory` is refused at start; so is any store other than Postgres. `Sessions:Postgres:AutoMigrate=true` is also refused in Production.
+- **The version table is `autonogrammer.schema_migrations`.** A changed up-step checksum is refused. Down steps run only when an operator passes `migrate --down <version>`.
+- **Up steps are additive.** They do not drop objects or change a column type. A later contract step ships only after the code has stopped using the old shape.
+- The runtime role (`autonogrammer_app`) and the migrator role are different credentials. The API process does not hold the migrator secret and does not run `CREATE EXTENSION`.
+- There is no automatic down migration and no dry run.
 
 What this means for an upgrade and a rollback:
 
@@ -187,6 +187,6 @@ Take a dump before every deploy that changes a schema statement. The data-plane 
 
 ## How verified
 
-- Read: the schema classes and `ServiceCollectionExtensions.cs` of `src/Autonogrammer.Sessions.Postgres`, `SessionStoreStartup.cs`, `src/Autonogrammer.Coordination/CoordinationDefaults.cs`, `src/Autonogrammer.Coordination.Dragonfly/DragonflyKeys.cs`, `deploy/compose.yaml`, `deploy/api.Containerfile`, [Hosting](hosting.md), ADR-0031, `docs/runbooks/evidence/railway-autonogrammer-api-2026-10-21.md`.
+- Read: the migration steps and `ServiceCollectionExtensions.cs` of `src/Autonogrammer.Sessions.Postgres`, `SessionStoreStartup.cs`, `src/Autonogrammer.Coordination/CoordinationDefaults.cs`, `src/Autonogrammer.Coordination.Dragonfly/DragonflyKeyspace.cs`, `deploy/compose.yaml`, `deploy/api.Containerfile`, [Hosting](hosting.md), ADR-0031, `docs/runbooks/evidence/railway-autonogrammer-api-2026-10-21.md`.
 - Railway documentation consulted on 2026-10-29: the backups page (volume backups and point-in-time recovery for Postgres, via the documentation search tool; the full page was not retrievable) and the rollback guide snippets.
 - Not verified: no dump, restore or snapshot was run; the drill commands are untested; the Timescale restore procedure is recalled, not rechecked; the Railway backup features were not checked against the template service.

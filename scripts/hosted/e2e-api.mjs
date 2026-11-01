@@ -4,7 +4,7 @@
 //   AUTONOGRAMMER_E2E_TOKEN=<owner token> node scripts/hosted/e2e-api.mjs --api http://127.0.0.1:5187
 //
 // Steps (each can be skipped with --skip <name>[,<name>...]):
-//   auth-config      GET /auth/config: anonymous, no-store, only {mode, authority, audience}
+//   auth-config      GET /auth/config: anonymous; no-store without a client block; mode, authority, audience, and the optional client members
 //   unauthenticated  a request with no credential is 401                      (skipped in mode "development")
 //   bad-token        a wrong bearer token is 401 with a Bearer challenge; a body, if any, is ProblemDetails (skipped in mode "development")
 //   text-turn        create a session, stream a prompt: ids, text deltas, completed, session settles
@@ -283,10 +283,12 @@ async function step(name, fn) {
 await step("auth-config", async () => {
   const response = await call("GET", "/auth/config", { token: "" });
   const { json } = await expectStatus(response, 200, "GET /auth/config");
-  check(/\bno-store\b/i.test(response.headers.get("cache-control") ?? ""), `GET /auth/config: Cache-Control is "${response.headers.get("cache-control")}", expected no-store`);
+  const hasClient = json !== null && typeof json === "object" && !Array.isArray(json) && (json.projectUrl != null || json.publishableKey != null);
+  if (!hasClient) check(/\bno-store\b/i.test(response.headers.get("cache-control") ?? ""), `GET /auth/config: Cache-Control is "${response.headers.get("cache-control")}", expected no-store`);
   check(json !== null && typeof json === "object" && !Array.isArray(json), "GET /auth/config: the body is not an object");
-  const extra = Object.keys(json).filter((key) => !["mode", "authority", "audience"].includes(key));
-  check(extra.length === 0, `GET /auth/config: unexpected members ${extra.join(", ")} (the contract is mode, authority, audience)`);
+  const allowed = ["mode", "authority", "audience", "projectUrl", "publishableKey", "methods", "emailCode", "signupEmailHasCode"];
+  const extra = Object.keys(json).filter((key) => !allowed.includes(key));
+  check(extra.length === 0, `GET /auth/config: unexpected members ${extra.join(", ")} (the contract is mode, authority, audience plus the optional client block)`);
   check(MODES.includes(json.mode), `GET /auth/config: mode "${json.mode}" is not one of ${MODES.join(", ")}`);
   for (const key of ["authority", "audience"]) check(json[key] === null || typeof json[key] === "string", `GET /auth/config: ${key} must be a string or null`);
   report.mode = json.mode;

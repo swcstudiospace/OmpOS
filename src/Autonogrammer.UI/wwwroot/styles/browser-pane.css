@@ -1,0 +1,38 @@
+/* Browser pane. One transition, token colours only. Reduced motion disables that transition. The web head draws no frame. */
+
+.autonogrammer-browser-pane {
+  color: var(--autonogrammer-text);
+  background: var(--autonogrammer-surface);
+}
+
+.autonogrammer-browser-pane-chrome {
+  transition: inline-size var(--autonogrammer-duration) var(--autonogrammer-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .autonogrammer-browser-pane-chrome {
+    transition: none;
+  }
+}
+
+:root[data-motion="reduce"] .autonogrammer-browser-pane-chrome {
+  transition: none;
+}
+
+@media (forced-colors: active) {
+  .autonogrammer-browser-pane {
+    color: CanvasText;
+    background: Canvas;
+    border-color: ButtonText;
+    outline-color: Highlight;
+  }
+
+  .autonogrammer-browser-pane-chrome {
+    color: ButtonText;
+    background: ButtonFace;
+  }
+
+  .autonogrammer-browser-pane :focus-visible {
+    outline-color: Highlight;
+  }
+}

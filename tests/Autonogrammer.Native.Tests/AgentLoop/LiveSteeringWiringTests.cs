@@ -29,7 +29,7 @@ public sealed class LiveSteeringWiringTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         tree.WriteReadyPlugins();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var record = head.Host.Registry!.Create(title: null, tree.Workspace);
@@ -68,7 +68,7 @@ public sealed class LiveSteeringWiringTests
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
-            var head = AgentHead.Create(Options(tree, omp));
+            var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
             try
             {
                 await head.InitializeAsync(ct).ConfigureAwait(true);
@@ -107,7 +107,7 @@ public sealed class LiveSteeringWiringTests
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
-            var head = AgentHead.Create(Options(tree, omp));
+            var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
             try
             {
                 await head.InitializeAsync(ct).ConfigureAwait(true);
@@ -147,7 +147,7 @@ public sealed class LiveSteeringWiringTests
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
-            var head = AgentHead.Create(Options(tree, omp: null, ompPath: fake.Path));
+            var head = await AgentHead.CreateAsync(Options(tree, omp: null, ompPath: fake.Path)).ConfigureAwait(true);
             try
             {
                 await head.InitializeAsync(ct).ConfigureAwait(true);

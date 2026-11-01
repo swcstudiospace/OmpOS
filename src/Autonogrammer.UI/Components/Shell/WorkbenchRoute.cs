@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Autonogrammer.UI.Components.Shell;
 
 /// <summary>
-/// An address of the workbench shell: the Agents view, the Kanban view, one session, the Settings dialog or the About view. The shell reads it
+/// An address of the workbench shell: the Agents view, the Kanban view, one session, the Settings dialog, the About view or Cowork. The shell reads it
 /// from the browser address, so every view can be opened, shared and reached with Back and Forward.
 /// </summary>
 /// <param name="Kind">The kind of address.</param>
@@ -15,6 +15,7 @@ public sealed record WorkbenchRoute(WorkbenchViewKind Kind, string? SessionId = 
     private const string AboutSegment = "about";
     private const string SessionsSegment = "sessions";
     private const string SettingsSegment = "settings";
+    private const string CoworkSegment = "cowork";
 
     private static readonly char[] QueryOrFragment = ['?', '#'];
 
@@ -27,11 +28,15 @@ public sealed record WorkbenchRoute(WorkbenchViewKind Kind, string? SessionId = 
     /// <summary>Gets the About view.</summary>
     public static WorkbenchRoute About { get; } = new(WorkbenchViewKind.About);
 
+    /// <summary>Gets the Cowork surface.</summary>
+    public static WorkbenchRoute Cowork { get; } = new(WorkbenchViewKind.Cowork);
+
     /// <summary>Gets the path of this route relative to the base address, without a leading slash; the home page is an empty string.</summary>
     public string RelativePath => Kind switch
     {
         WorkbenchViewKind.Kanban => KanbanSegment,
         WorkbenchViewKind.About => AboutSegment,
+        WorkbenchViewKind.Cowork => CoworkSegment,
         WorkbenchViewKind.Session when SessionId is { Length: > 0 } id => SessionsSegment + "/" + Uri.EscapeDataString(id),
         WorkbenchViewKind.Settings => SettingsPage is { Length: > 0 } page ? SettingsSegment + "/" + Uri.EscapeDataString(page) : SettingsSegment,
         _ => string.Empty,
@@ -55,7 +60,7 @@ public sealed record WorkbenchRoute(WorkbenchViewKind Kind, string? SessionId = 
     /// <summary>Reads a path as a workbench route.</summary>
     /// <param name="relativePath">The path relative to the base address, with or without query and fragment; null is the home page.</param>
     /// <param name="route">The route, or null when the path is not one the workbench shows.</param>
-    /// <returns>True when the path is the home page, <c>kanban</c>, <c>about</c>, <c>sessions/{id}</c>, <c>settings</c> or <c>settings/{page}</c>.</returns>
+    /// <returns>True when the path is the home page, <c>kanban</c>, <c>about</c>, <c>cowork</c>, <c>sessions/{id}</c>, <c>settings</c> or <c>settings/{page}</c>.</returns>
     public static bool TryParse(string? relativePath, [NotNullWhen(true)] out WorkbenchRoute? route)
     {
         var path = relativePath ?? string.Empty;
@@ -71,6 +76,7 @@ public sealed record WorkbenchRoute(WorkbenchViewKind Kind, string? SessionId = 
             [] => Agents,
             [var only] when Is(only, KanbanSegment) => Kanban,
             [var only] when Is(only, AboutSegment) => About,
+            [var only] when Is(only, CoworkSegment) => Cowork,
             [var head, var id] when Is(head, SessionsSegment) && Unescape(id) is { Length: > 0 } session => ForSession(session),
             [var head] when Is(head, SettingsSegment) => ForSettings(null),
             [var head, var page] when Is(head, SettingsSegment) => ForSettings(Unescape(page)),

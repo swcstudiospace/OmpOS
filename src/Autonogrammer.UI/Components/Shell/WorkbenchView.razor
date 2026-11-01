@@ -6,6 +6,8 @@
 @using Autonogrammer.Presentation.Changes
 @using Autonogrammer.Presentation.Kanban
 @using Autonogrammer.Presentation.Settings
+@using Autonogrammer.Presentation.Cowork
+@using Autonogrammer.UI.Components.Cowork
 @using Autonogrammer.UI.Components.About
 @using Autonogrammer.UI.Components.Kanban
 @using Autonogrammer.UI.Components.Rail
@@ -16,15 +18,34 @@
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
-<AppShell SkipLinkHref="@(ShowsThread ? "#autonogrammer-conversation" : "#main")"
-          SkipLinkText="@(ShowsThread ? "Skip to conversation" : "Skip to main content")"
+@inject IServiceProvider Services
+<AppShell SkipLinkHref="@SkipHref"
+          SkipLinkText="@SkipText"
           WorkspaceLabel="@WorkspaceLabel"
-          Version="@Version">
+          Version="@Version"
+          RailLabel="@(IsCowork ? "Tasks" : "Agents")"
+          Chrome="Chrome">
+    <TopBarSurface>
+        @if (ShowSurfaceSwitch)
+        {
+            <SurfaceTabs @ref="_surfaceTabs" Selected="@(IsCowork ? SurfaceTabs.CoworkView : SurfaceTabs.CodeView)" SelectedChanged="SelectSurface" ChipText="@ChipText" />
+        }
+    </TopBarSurface>
     <TopBarTabs>
-        <ViewTabs @ref="_tabs" Selected="@TabSelection" SelectedChanged="SelectView" />
+        @if (!IsCowork)
+        {
+            <ViewTabs @ref="_tabs" Selected="@TabSelection" SelectedChanged="SelectView" />
+        }
     </TopBarTabs>
     <Rail>
-        <AgentRail Panel="Panel" OnOpened="OnOpenedAsync" OnNewCompleted="OnNewCompletedAsync" OnNewTerminalCompleted="OnNewCompletedAsync" OnOpenSettings="OpenSettings" />
+        @if (IsCowork && CoworkShell is not null)
+        {
+            <CoworkRail List="CoworkShell.Rail" />
+        }
+        else if (!IsCowork)
+        {
+            <AgentRail Panel="Panel" OnOpened="OnOpenedAsync" OnNewCompleted="OnNewCompletedAsync" OnNewTerminalCompleted="OnNewCompletedAsync" OnOpenSettings="OpenSettings" />
+        }
     </Rail>
     <ChildContent>
         <ViewTitle Text="@DocumentTitle" />
@@ -37,6 +58,13 @@
         {
             <div class="autonogrammer-view-panel" id="@ViewTabs.PanelId">
                 <AboutView Source="Source" />
+            </div>
+        }
+        else if (IsCowork)
+        {
+            <div class="autonogrammer-view-panel" id="@ViewTabs.PanelId">
+                <h1 class="autonogrammer-sr-only" tabindex="-1">Cowork</h1>
+                <CoworkWorkbench Shell="CoworkShell" LoadFailed="@CoworkLoadFailed" OnRetry="CoworkRetry" />
             </div>
         }
         else
@@ -126,6 +154,9 @@
     private const string SessionNotFoundBody = "No agent has this address. It may have been closed, or the link may be wrong.";
 
     private ViewTabs? _tabs;
+    private SurfaceTabs? _surfaceTabs;
+    private ICoworkAccess? _access;
+    private bool _restored;
     private IJSObjectReference? _module;
     private WorkbenchRoute _route = WorkbenchRoute.Agents;
     private WorkbenchRoute _background = WorkbenchRoute.Agents;
@@ -174,6 +205,26 @@
     [CascadingParameter]
     public RouteAnnouncer? Announcer { get; set; }
 
+    /// <summary>Gets the Cowork shell, or null when the head has not built one.</summary>
+    [Parameter]
+    public CoworkShellModel? CoworkShell { get; set; }
+
+    /// <summary>Gets whether the Cowork session list failed to load.</summary>
+    [Parameter]
+    public bool CoworkLoadFailed { get; set; }
+
+    /// <summary>Gets the reload of the Cowork session list.</summary>
+    [Parameter]
+    public EventCallback CoworkRetry { get; set; }
+
+    /// <summary>Gets header-end entries drawn on both surfaces.</summary>
+    [Parameter]
+    public SurfaceChromeModel? Chrome { get; set; }
+
+    /// <summary>Gets the hidden-surface activity chip.</summary>
+    [Parameter]
+    public string? ChipText { get; set; }
+
     // The Settings dialog opens over the view that was showing; every other route is the view itself.
     private WorkbenchRoute Shown => _route.Kind == WorkbenchViewKind.Settings ? _background : _route;
 
@@ -181,12 +232,20 @@
 
     private bool IsAgentsView => Shown.Kind is WorkbenchViewKind.Agents or WorkbenchViewKind.Session;
 
+    private bool IsCowork => Shown.Kind == WorkbenchViewKind.Cowork;
+
     private bool IsResolvingSession => _resolvePending && Shown.Kind == WorkbenchViewKind.Session && Panel.State != PanelState.Error;
+
+    private bool ShowSurfaceSwitch => _access?.IsAvailable == true;
+
+    private string SkipHref => IsCowork || ShowsThread ? "#autonogrammer-conversation" : "#main";
+
+    private string SkipText => IsCowork || ShowsThread ? CoworkCopy.SkipToConversation : "Skip to main content";
 
     private string TabSelection => Shown.Kind switch
     {
         WorkbenchViewKind.Kanban => ViewTabs.KanbanView,
-        WorkbenchViewKind.About => ViewTabs.NoView,
+        WorkbenchViewKind.About or WorkbenchViewKind.Cowork => ViewTabs.NoView,
         _ => ViewTabs.AgentsView,
     };
 
@@ -217,6 +276,7 @@
             {
                 WorkbenchViewKind.Kanban => ViewTitles.Compose(KanbanLabel),
                 WorkbenchViewKind.About => ViewTitles.Compose("About"),
+                WorkbenchViewKind.Cowork => ViewTitles.Compose("Cowork"),
                 WorkbenchViewKind.Session when _sessionMissing => ViewTitles.Compose(SessionNotFoundHeading),
                 WorkbenchViewKind.Session when Panel.Selected is { } selected && string.Equals(selected.Id, _route.SessionId, StringComparison.Ordinal) =>
                     ViewTitles.Compose(selected.Title, AgentsLabel),
@@ -229,6 +289,12 @@
     /// <inheritdoc />
     protected override void OnInitialized()
     {
+        _access = Services.GetService(typeof(ICoworkAccess)) as ICoworkAccess;
+        if (_access is not null)
+        {
+            _access.Changed += OnAccessChanged;
+        }
+
         _route = WorkbenchRoute.TryParse(CurrentPath(), out var initial) ? initial : WorkbenchRoute.Agents;
         _background = _route.Kind == WorkbenchViewKind.Settings ? WorkbenchRoute.Agents : _route;
         _resolvePending = Shown.Kind == WorkbenchViewKind.Session;
@@ -298,7 +364,7 @@
     // Applies the route to the shell at once, then moves the address to it. The address change comes back as a location change that finds the route already
     // applied, so a tab, a shortcut or a link changes the view in one step whether or not the navigation manager reports back before the next render. The
     // announcer is armed first for the same reason: the report may come after the render that shows the new title, and that title is what it announces.
-    private void GoTo(WorkbenchRoute route)
+    private void GoTo(WorkbenchRoute route, bool replace = false)
     {
         var navigates = !WorkbenchRoute.TryParse(CurrentPath(), out var current) || current != route;
         if (navigates)
@@ -309,9 +375,76 @@
         ApplyRoute(route, external: false);
         if (navigates)
         {
-            Navigation.NavigateTo(route.RelativePath);
+            Navigation.NavigateTo(route.RelativePath, new NavigationOptions { ReplaceHistoryEntry = replace });
         }
     }
+
+    private async Task SelectSurface(string view)
+    {
+        var cowork = string.Equals(view, SurfaceTabs.CoworkView, StringComparison.Ordinal);
+        GoTo(cowork ? WorkbenchRoute.Cowork : WorkbenchRoute.Agents, replace: true);
+        await WriteSurfaceAsync(cowork ? SurfaceSwitchModel.CoworkValue : SurfaceSwitchModel.CodeValue).ConfigureAwait(true);
+    }
+
+    private async Task RestoreSurfaceAsync()
+    {
+        if (_restored)
+        {
+            return;
+        }
+
+        string? saved;
+        try
+        {
+            saved = await JS.InvokeAsync<string?>("autonogrammerSurface.read").ConfigureAwait(true);
+        }
+        catch (JSException)
+        {
+            _restored = true;
+            return;
+        }
+
+        var available = _access?.IsAvailable == true;
+        if (string.Equals(saved, SurfaceSwitchModel.CoworkValue, StringComparison.Ordinal) && !available)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("autonogrammerSurface.paint", SurfaceSwitchModel.CodeValue).ConfigureAwait(true);
+            }
+            catch (JSException)
+            {
+                // The boot script is absent in a test that does not install it.
+            }
+
+            _restored = _access?.IsResolved != false;
+            return;
+        }
+
+        if (available && string.Equals(saved, SurfaceSwitchModel.CoworkValue, StringComparison.Ordinal) && _route.Kind == WorkbenchViewKind.Agents)
+        {
+            GoTo(WorkbenchRoute.Cowork, replace: true);
+        }
+
+        _restored = _access is null || _access.IsResolved;
+    }
+
+    private async Task WriteSurfaceAsync(string value)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("autonogrammerSurface.write", value).ConfigureAwait(true);
+        }
+        catch (JSException)
+        {
+            // Storage is reached only through the boot script. A missing script does not block the switch.
+        }
+    }
+
+    private void OnAccessChanged(object? sender, EventArgs e) => _ = InvokeAsync(async () =>
+    {
+        await RestoreSurfaceAsync().ConfigureAwait(true);
+        StateHasChanged();
+    });
 
     // external: the address changed without the shell asking (Back, Forward, a link, a deep link). The shell then focuses the new view's heading, and a
     // session address waits for the catalogue so it can select that session or say it does not exist.
@@ -384,6 +517,11 @@
     /// <inheritdoc />
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (firstRender)
+        {
+            await RestoreSurfaceAsync().ConfigureAwait(true);
+        }
+
         ResolveSessionRoute();
         if (_resetScroll)
         {
@@ -467,6 +605,14 @@
             case ShortcutHost.Agents:
                 GoTo(IsAgentsView ? Shown : WorkbenchRoute.Agents);
                 break;
+            case ShortcutHost.Code:
+                GoTo(WorkbenchRoute.Agents, replace: true);
+                await WriteSurfaceAsync(SurfaceSwitchModel.CodeValue).ConfigureAwait(true);
+                break;
+            case ShortcutHost.Cowork:
+                GoTo(WorkbenchRoute.Cowork, replace: true);
+                await WriteSurfaceAsync(SurfaceSwitchModel.CoworkValue).ConfigureAwait(true);
+                break;
             case ShortcutHost.Kanban:
                 GoTo(WorkbenchRoute.Kanban);
                 break;
@@ -490,6 +636,10 @@
         if (disposing)
         {
             Navigation.LocationChanged -= OnLocationChanged;
+            if (_access is not null)
+            {
+                _access.Changed -= OnAccessChanged;
+            }
         }
 
         base.Dispose(disposing);

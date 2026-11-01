@@ -54,7 +54,7 @@ public sealed class ContainerSessionSelectionTests
         var profile = ContainerProfile(container);
         await services.RemoteProfiles.SaveAsync(profile, Token).ConfigureAwait(true);
         var local = new ScriptedOmp();
-        var head = AgentHead.Create(AgentLoopFixtures.Options(tree, local, services: services));
+        var head = await AgentHead.CreateAsync(AgentLoopFixtures.Options(tree, local, services: services)).ConfigureAwait(true);
         await using var headScope = head.ConfigureAwait(true);
         services.NewSessionTarget.Set(new SessionTarget(SessionTargetKind.Container, "container: Dev box", profile));
 
@@ -81,7 +81,7 @@ public sealed class ContainerSessionSelectionTests
         using var tree = new TempTree();
         var services = await ServicesAsync(tree, container: null).ConfigureAwait(true);
         await using var servicesScope = services.ConfigureAwait(true);
-        var head = AgentHead.Create(AgentLoopFixtures.Options(tree, new ScriptedOmp(), services: services));
+        var head = await AgentHead.CreateAsync(AgentLoopFixtures.Options(tree, new ScriptedOmp(), services: services)).ConfigureAwait(true);
         await using var headScope = head.ConfigureAwait(true);
         var ghost = new EnvironmentProfile
         {
@@ -114,7 +114,7 @@ public sealed class ContainerSessionSelectionTests
             Wsl = new WslProfile { Distro = "Ubuntu", WorkspacePath = "/home/dev/app" },
         };
         await services.RemoteProfiles.SaveAsync(wsl, Token).ConfigureAwait(true);
-        var head = AgentHead.Create(AgentLoopFixtures.Options(tree, new ScriptedOmp(), services: services));
+        var head = await AgentHead.CreateAsync(AgentLoopFixtures.Options(tree, new ScriptedOmp(), services: services)).ConfigureAwait(true);
         await using var headScope = head.ConfigureAwait(true);
         services.NewSessionTarget.Set(new SessionTarget(SessionTargetKind.Wsl, "wsl: Ubuntu", wsl));
 

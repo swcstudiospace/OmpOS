@@ -37,6 +37,7 @@
 
     <!-- The shared control library: buttons, inputs, tabs, rows, menus, chips and the focus rule, in the Autonogrammer roles. -->
     <StyleInclude Source="avares://Autonogrammer.Native.Views/Themes/AutonogrammerControls.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Shell/SurfaceStyles.axaml" />
   </Application.Styles>
 
 </Application>

@@ -17,6 +17,7 @@ public sealed class KeyboardSettingsSourceTests
     [InlineData(Key.D1, KeyModifiers.Control, "Ctrl+1")]
     [InlineData(Key.D2, KeyModifiers.Control, "Ctrl+2")]
     [InlineData(Key.OemComma, KeyModifiers.Control, "Ctrl+,")]
+    [InlineData(Key.OemPeriod, KeyModifiers.Control | KeyModifiers.Shift, "Ctrl+Shift+.")]
     [InlineData(Key.F6, KeyModifiers.Shift, "Shift+F6")]
     [InlineData(Key.F6, KeyModifiers.None, "F6")]
     [InlineData(Key.Enter, KeyModifiers.Control | KeyModifiers.Shift, "Ctrl+Shift+Enter")]

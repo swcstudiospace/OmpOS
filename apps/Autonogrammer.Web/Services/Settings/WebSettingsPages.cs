@@ -43,6 +43,12 @@ internal static class WebSettingsPages
             var options = sp.GetRequiredService<WebWorkbenchOptions>();
             return WebInfoPages.Privacy(options.IsDemo, options.ApiHost);
         });
+        services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Bundles());
+        services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Connectors());
+        services.AddScoped<ISettingsPage>(static _ => WebInfoPages.CoworkPermissions());
+        services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Isolation());
+        services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Usage());
+        services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Notifications());
         return services;
     }
 }

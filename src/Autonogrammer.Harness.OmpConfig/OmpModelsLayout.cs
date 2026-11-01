@@ -21,6 +21,7 @@ internal sealed class OmpModelsLayout
 
     private readonly List<OmpYamlLine> _lines = [];
     private readonly List<OmpManagedBlockSpan> _blocks = [];
+    private readonly List<OmpManagedBlockSpan> _legacyBlocks = [];
     private readonly HashSet<string> _foreignKeys = new(StringComparer.Ordinal);
 
     private OmpModelsLayout()
@@ -59,6 +60,9 @@ internal sealed class OmpModelsLayout
 
     /// <summary>Gets the Autonogrammer blocks, in file order.</summary>
     public IReadOnlyList<OmpManagedBlockSpan> Blocks => _blocks;
+
+    /// <summary>Gets the legacy-family blocks superseded by a block of the new family with the same id, in file order.</summary>
+    public IReadOnlyList<OmpManagedBlockSpan> LegacyBlocks => _legacyBlocks;
 
     /// <summary>Gets the keys of <c>providers:</c> that are outside every Autonogrammer block.</summary>
     public IReadOnlySet<string> ForeignKeys => _foreignKeys;
@@ -295,9 +299,10 @@ internal sealed class OmpModelsLayout
         return index;
     }
 
-    private static bool TryMarker(string trimmed, out bool isBegin, out string id)
+    private static bool TryMarker(string trimmed, out bool isBegin, out string id, out bool legacy)
     {
         isBegin = false;
+        legacy = false;
         id = string.Empty;
         var text = trimmed.TrimEnd();
         if (text.StartsWith(BeginMarker, StringComparison.Ordinal))
@@ -308,6 +313,17 @@ internal sealed class OmpModelsLayout
         else if (text.StartsWith(EndMarker, StringComparison.Ordinal))
         {
             id = text[EndMarker.Length..];
+        }
+        else if (text.StartsWith(LegacyBrandNames.BeginMarker, StringComparison.Ordinal))
+        {
+            isBegin = true;
+            legacy = true;
+            id = text[LegacyBrandNames.BeginMarker.Length..];
+        }
+        else if (text.StartsWith(LegacyBrandNames.EndMarker, StringComparison.Ordinal))
+        {
+            legacy = true;
+            id = text[LegacyBrandNames.EndMarker.Length..];
         }
         else
         {
@@ -418,7 +434,7 @@ internal sealed class OmpModelsLayout
             return false;
         }
 
-        var isMarker = isComment && TryMarker(trimmed, out _, out _);
+        var isMarker = isComment && TryMarker(trimmed, out _, out _, out _);
         if (isComment && !isMarker)
         {
             return true;
@@ -443,8 +459,8 @@ internal sealed class OmpModelsLayout
                 return false;
             }
 
-            _ = TryMarker(trimmed, out var isBegin, out var markerId);
-            scan.Markers.Add((index, isBegin, markerId));
+            _ = TryMarker(trimmed, out var isBegin, out var markerId, out var markerLegacy);
+            scan.Markers.Add((index, isBegin, markerId, markerLegacy));
             return true;
         }
 
@@ -477,12 +493,14 @@ internal sealed class OmpModelsLayout
         return null;
     }
 
-    private bool TryPairMarkers(List<(int Index, bool IsBegin, string Id)> markers)
+    private bool TryPairMarkers(List<(int Index, bool IsBegin, string Id, bool Legacy)> markers)
     {
         string? openId = null;
+        var openLegacy = false;
         var openBegin = -1;
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var (index, isBegin, id) in markers)
+        var seen = new HashSet<(bool Legacy, string Id)>();
+        var spans = new List<(OmpManagedBlockSpan Span, bool Legacy)>();
+        foreach (var (index, isBegin, id, legacy) in markers)
         {
             if (isBegin)
             {
@@ -492,24 +510,25 @@ internal sealed class OmpModelsLayout
                     return false;
                 }
 
-                if (!seen.Add(id))
+                if (!seen.Add((legacy, id)))
                 {
                     Unsupported = $"The file holds two autonogrammer blocks for {id}. Edit models.yml by hand.";
                     return false;
                 }
 
                 openId = id;
+                openLegacy = legacy;
                 openBegin = index;
                 continue;
             }
 
-            if (openId is null || !string.Equals(openId, id, StringComparison.Ordinal))
+            if (openId is null || openLegacy != legacy || !string.Equals(openId, id, StringComparison.Ordinal))
             {
                 Unsupported = $"The autonogrammer end marker for {id} has no matching begin marker. Edit models.yml by hand.";
                 return false;
             }
 
-            _blocks.Add(new OmpManagedBlockSpan(id, openBegin, index));
+            spans.Add((new OmpManagedBlockSpan(id, openBegin, index), legacy));
             openId = null;
         }
 
@@ -517,6 +536,19 @@ internal sealed class OmpModelsLayout
         {
             Unsupported = $"The autonogrammer block for {openId} has no end marker. Edit models.yml by hand.";
             return false;
+        }
+
+        // A legacy block is canonical unless a block of the new family names the same id: then the new one wins and the legacy span is only recorded.
+        foreach (var (span, legacy) in spans)
+        {
+            if (legacy && seen.Contains((false, span.Id)))
+            {
+                _legacyBlocks.Add(span);
+            }
+            else
+            {
+                _blocks.Add(span);
+            }
         }
 
         return true;
@@ -541,7 +573,7 @@ internal sealed class OmpModelsLayout
 
     private bool InsideBlock(int index)
     {
-        foreach (var block in _blocks)
+        foreach (var block in _blocks.Concat(_legacyBlocks))
         {
             if (index >= block.Begin && index <= block.End)
             {
@@ -570,7 +602,7 @@ internal sealed class OmpModelsLayout
 
     private sealed class SectionScan
     {
-        public List<(int Index, bool IsBegin, string Id)> Markers { get; } = [];
+        public List<(int Index, bool IsBegin, string Id, bool Legacy)> Markers { get; } = [];
 
         public int ChildIndent { get; set; } = -1;
 

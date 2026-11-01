@@ -5,6 +5,7 @@ using Autonogrammer.Contracts.Serialization;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Harness.Abstractions;
+using Autonogrammer.Resilience;
 using Npgsql;
 
 namespace Autonogrammer.Sessions.Postgres;
@@ -45,14 +46,31 @@ public sealed class PostgresSessionRepository : ISessionRepository
         "INSERT INTO session_events (session_id, seq, correlation_id, occurred_at, payload) " +
         "VALUES (@session_id, @seq, @correlation_id, @occurred_at, CAST(@payload AS jsonb))";
 
+    private const string SessionColumns =
+        "id, owner_id, created_at, updated_at, status, sandbox_id, CAST(messages AS text), surface, closed_at";
+
+    // Surface and closed_at are written when the row is created and never by a later save: SetClosedAsync is the only writer of closed_at.
     private const string UpsertHeaderSql =
-        "INSERT INTO sessions (id, owner_id, created_at, updated_at, status, sandbox_id, messages) " +
-        "VALUES (@id, @owner_id, @created_at, @updated_at, @status, @sandbox_id, CAST(@messages AS jsonb)) " +
+        "INSERT INTO sessions (id, owner_id, created_at, updated_at, status, sandbox_id, messages, surface, closed_at) " +
+        "VALUES (@id, @owner_id, @created_at, @updated_at, @status, @sandbox_id, CAST(@messages AS jsonb), @surface, @closed_at) " +
         "ON CONFLICT (id) DO UPDATE SET owner_id = EXCLUDED.owner_id, created_at = EXCLUDED.created_at, " +
         "updated_at = EXCLUDED.updated_at, status = EXCLUDED.status, sandbox_id = EXCLUDED.sandbox_id, messages = EXCLUDED.messages";
 
-    private const string SelectHeaderSql =
-        "SELECT owner_id, created_at, updated_at, status, sandbox_id, CAST(messages AS text) FROM sessions WHERE id = @id";
+    private const string SelectHeaderSql = "SELECT " + SessionColumns + " FROM sessions WHERE id = @id";
+
+    private const string ListByOwnerSelectSql =
+        "SELECT " + SessionColumns + " FROM sessions WHERE owner_id = @owner_id AND surface = @surface AND (@include_closed OR closed_at IS NULL)";
+
+    // The C collation is byte order, the order of ordinal comparison in the in-memory repository, whatever the database collation.
+    private const string ListByOwnerFirstPageSql =
+        ListByOwnerSelectSql + " ORDER BY updated_at DESC, id COLLATE \"C\" DESC LIMIT @limit";
+
+    private const string ListByOwnerAfterCursorSql =
+        ListByOwnerSelectSql + " AND (updated_at, id COLLATE \"C\") < (@cursor_updated_at, @cursor_id) ORDER BY updated_at DESC, id COLLATE \"C\" DESC LIMIT @limit";
+
+    private const string CloseSessionSql = "UPDATE sessions SET closed_at = now() WHERE id = @id AND closed_at IS NULL";
+
+    private const string ReopenSessionSql = "UPDATE sessions SET closed_at = NULL WHERE id = @id AND closed_at IS NOT NULL";
 
     private const string SelectEventsSql =
         "SELECT seq, correlation_id, occurred_at, CAST(payload AS text) FROM session_events " +
@@ -88,25 +106,35 @@ public sealed class PostgresSessionRepository : ISessionRepository
     /// <summary>The most session identifiers one <see cref="ListSessionIdsByStatusAsync"/> call returns.</summary>
     private const int MaxSessionIdsPerListing = 200;
 
+    /// <summary>The most sessions one <see cref="ListByOwnerAsync"/> call returns.</summary>
+    private const int MaxSessionsPerListing = 200;
+
     private readonly NpgsqlDataSource _dataSource;
     private readonly PostgresSessionConnection _connection;
+    private readonly ResiliencePipeline _pipeline;
 
-    /// <summary>Creates a repository over an existing data source. The schema must already exist; see <see cref="PostgresSessionSchema"/>.</summary>
+    /// <summary>Creates a repository over an existing data source. The schema must already exist: the <c>MigrationRunner</c> creates it.</summary>
     /// <param name="dataSource">The data source for the session database. Its lifetime is owned by the caller.</param>
     /// <param name="connection">The connection string the store was configured with. Session locks connect with it directly.</param>
-    public PostgresSessionRepository(NpgsqlDataSource dataSource, PostgresSessionConnection connection)
+    /// <param name="resilience">The pipeline every command runs through, or <see langword="null"/> for a private pipeline with the default options.</param>
+    public PostgresSessionRepository(NpgsqlDataSource dataSource, PostgresSessionConnection connection, PostgresResilience? resilience = null)
     {
         ArgumentNullException.ThrowIfNull(dataSource);
         ArgumentNullException.ThrowIfNull(connection);
         _dataSource = dataSource;
         _connection = connection;
+        _pipeline = (resilience ?? PostgresResilience.CreateDefault()).Pipeline;
     }
 
     /// <inheritdoc />
-    public async Task<Session?> GetAsync(string id, CancellationToken cancellationToken)
+    public Task<Session?> GetAsync(string id, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(id);
+        return _pipeline.ExecuteAsync(OperationClass.Interactive, true, token => ReadSessionAsync(id, token), cancellationToken);
+    }
 
+    private async Task<Session?> ReadSessionAsync(string id, CancellationToken cancellationToken)
+    {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
@@ -137,10 +165,21 @@ public sealed class PostgresSessionRepository : ISessionRepository
     /// the stored log does not carry a Seq above the one before it. The message names the session and the first conflicting
     /// position. The header write is rolled back.
     /// </exception>
-    public async Task SaveAsync(Session session, CancellationToken cancellationToken)
+    public Task SaveAsync(Session session, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(session);
+        return _pipeline.ExecuteTransactionAsync(
+            OperationClass.Interactive,
+            async token =>
+            {
+                await WriteSessionAsync(session, token).ConfigureAwait(false);
+                return true;
+            },
+            cancellationToken);
+    }
 
+    private async Task WriteSessionAsync(Session session, CancellationToken cancellationToken)
+    {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
@@ -171,11 +210,22 @@ public sealed class PostgresSessionRepository : ISessionRepository
     /// before it chooses a Seq.
     /// </remarks>
     /// <exception cref="KeyNotFoundException">No session has the given identifier.</exception>
-    public async Task AppendAsync(string sessionId, StreamEvent evt, CancellationToken cancellationToken)
+    public Task AppendAsync(string sessionId, StreamEvent evt, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(sessionId);
         ArgumentNullException.ThrowIfNull(evt);
+        return _pipeline.ExecuteTransactionAsync(
+            OperationClass.Interactive,
+            async token =>
+            {
+                await AppendEventAsync(sessionId, evt, token).ConfigureAwait(false);
+                return true;
+            },
+            cancellationToken);
+    }
 
+    private async Task AppendEventAsync(string sessionId, StreamEvent evt, CancellationToken cancellationToken)
+    {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
@@ -269,11 +319,17 @@ public sealed class PostgresSessionRepository : ISessionRepository
 
     /// <inheritdoc />
     /// <exception cref="KeyNotFoundException">No session has the given identifier.</exception>
-    public async Task<bool> TryAddToolApprovalAsync(string sessionId, ToolApprovalRecord approval, CancellationToken cancellationToken)
+    public Task<bool> TryAddToolApprovalAsync(string sessionId, ToolApprovalRecord approval, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(sessionId);
         ArgumentNullException.ThrowIfNull(approval);
 
+        // Not retried: a retry after an insert that did commit would answer false for a request this call did add.
+        return _pipeline.ExecuteAsync(OperationClass.Interactive, false, token => AddToolApprovalAsync(sessionId, approval, token), cancellationToken);
+    }
+
+    private async Task<bool> AddToolApprovalAsync(string sessionId, ToolApprovalRecord approval, CancellationToken cancellationToken)
+    {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
@@ -301,11 +357,15 @@ public sealed class PostgresSessionRepository : ISessionRepository
     }
 
     /// <inheritdoc />
-    public async Task<ToolApprovalRecord?> GetToolApprovalAsync(string sessionId, string requestId, CancellationToken cancellationToken)
+    public Task<ToolApprovalRecord?> GetToolApprovalAsync(string sessionId, string requestId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(sessionId);
         ArgumentNullException.ThrowIfNull(requestId);
+        return _pipeline.ExecuteAsync(OperationClass.Interactive, true, token => ReadToolApprovalAsync(sessionId, requestId, token), cancellationToken);
+    }
 
+    private async Task<ToolApprovalRecord?> ReadToolApprovalAsync(string sessionId, string requestId, CancellationToken cancellationToken)
+    {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
@@ -340,7 +400,7 @@ public sealed class PostgresSessionRepository : ISessionRepository
     }
 
     /// <inheritdoc />
-    public async Task<bool> TryDecideToolApprovalAsync(
+    public Task<bool> TryDecideToolApprovalAsync(
         string sessionId,
         string requestId,
         PermissionDecision decision,
@@ -350,6 +410,17 @@ public sealed class PostgresSessionRepository : ISessionRepository
         ArgumentNullException.ThrowIfNull(sessionId);
         ArgumentNullException.ThrowIfNull(requestId);
 
+        // Not retried: a retry after an update that did commit would answer false for a decision this call did make.
+        return _pipeline.ExecuteAsync(OperationClass.Interactive, false, token => DecideToolApprovalAsync(sessionId, requestId, decision, decidedAt, token), cancellationToken);
+    }
+
+    private async Task<bool> DecideToolApprovalAsync(
+        string sessionId,
+        string requestId,
+        PermissionDecision decision,
+        DateTimeOffset decidedAt,
+        CancellationToken cancellationToken)
+    {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
@@ -373,7 +444,10 @@ public sealed class PostgresSessionRepository : ISessionRepository
     /// Ids are ordered with the <c>C</c> collation, which is byte order, the same order as ordinal comparison in the
     /// in-memory repository, whatever the database collation.
     /// </remarks>
-    public async Task<IReadOnlyList<string>> ListSessionIdsByStatusAsync(SessionStatus status, DateTimeOffset updatedBefore, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<string>> ListSessionIdsByStatusAsync(SessionStatus status, DateTimeOffset updatedBefore, CancellationToken cancellationToken) =>
+        _pipeline.ExecuteAsync(OperationClass.Background, true, token => ReadSessionIdsByStatusAsync(status, updatedBefore, token), cancellationToken);
+
+    private async Task<IReadOnlyList<string>> ReadSessionIdsByStatusAsync(SessionStatus status, DateTimeOffset updatedBefore, CancellationToken cancellationToken)
     {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -401,6 +475,122 @@ public sealed class PostgresSessionRepository : ISessionRepository
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// The listing is a keyset page on <c>(updated_at, id)</c> that the index <c>sessions_owner_updated_idx</c> serves; the owner and the surface
+    /// are part of every statement, so another owner's rows never leave the database.
+    /// </remarks>
+    public Task<IReadOnlyList<Session>> ListByOwnerAsync(
+        string ownerId,
+        SessionSurface surface,
+        bool includeClosed,
+        int limit,
+        SessionCursor? cursor,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(ownerId);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+        return _pipeline.ExecuteAsync(
+            OperationClass.Interactive,
+            true,
+            token => ReadOwnedSessionsAsync(ownerId, surface, includeClosed, Math.Min(limit, MaxSessionsPerListing), cursor, token),
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<bool> SetClosedAsync(string sessionId, bool closed, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(sessionId);
+
+        // Not retried: the conditional update answers true only for the call that changed the flag.
+        return _pipeline.ExecuteAsync(OperationClass.Interactive, false, token => ChangeClosedAsync(sessionId, closed, token), cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<Session>> ReadOwnedSessionsAsync(
+        string ownerId,
+        SessionSurface surface,
+        bool includeClosed,
+        int limit,
+        SessionCursor? cursor,
+        CancellationToken cancellationToken)
+    {
+        var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            var command = PostgresSql.Create(connection, null);
+            if (cursor is null)
+            {
+                command.CommandText = ListByOwnerFirstPageSql;
+            }
+            else
+            {
+                command.CommandText = ListByOwnerAfterCursorSql;
+            }
+            await using (command.ConfigureAwait(false))
+            {
+                command.Parameters.AddWithValue("owner_id", ownerId);
+                command.Parameters.AddWithValue("surface", SessionSurfaceColumn.ToColumn(surface));
+                command.Parameters.AddWithValue("include_closed", includeClosed);
+                command.Parameters.AddWithValue("limit", (long)limit);
+                if (cursor is not null)
+                {
+                    command.Parameters.AddWithValue("cursor_updated_at", cursor.UpdatedAt);
+                    command.Parameters.AddWithValue("cursor_id", cursor.Id);
+                }
+
+                var sessions = new List<Session>();
+                var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                await using (reader.ConfigureAwait(false))
+                {
+                    while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                    {
+                        sessions.Add(MapSession(reader));
+                    }
+                }
+
+                return sessions;
+            }
+        }
+    }
+
+    private async Task<bool> ChangeClosedAsync(string sessionId, bool closed, CancellationToken cancellationToken)
+    {
+        var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            var command = PostgresSql.Create(connection, null);
+            if (closed)
+            {
+                command.CommandText = CloseSessionSql;
+            }
+            else
+            {
+                command.CommandText = ReopenSessionSql;
+            }
+            await using (command.ConfigureAwait(false))
+            {
+                command.Parameters.AddWithValue("id", sessionId);
+
+                // The conditional UPDATE is the change detection: only a row whose flag differs is touched.
+                return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) == 1;
+            }
+        }
+    }
+
+    private static Session MapSession(NpgsqlDataReader reader) => new()
+    {
+        Id = reader.GetString(0),
+        OwnerId = reader.GetString(1),
+        CreatedAt = reader.GetFieldValue<DateTimeOffset>(2),
+        UpdatedAt = reader.GetFieldValue<DateTimeOffset>(3),
+        Status = Enum.Parse<SessionStatus>(reader.GetString(4)),
+        SandboxId = reader.IsDBNull(5) ? null : reader.GetString(5),
+        Messages = JsonSerializer.Deserialize(reader.GetString(6), PostgresJsonContext.Default.MessageArray) ?? [],
+        Surface = SessionSurfaceColumn.FromColumn(reader.GetString(7)),
+        ClosedAt = reader.IsDBNull(8) ? null : reader.GetFieldValue<DateTimeOffset>(8),
+        Events = [],
+    };
+
     private static async Task<Session?> ReadHeaderAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, string id, CancellationToken cancellationToken)
     {
         var command = PostgresSql.Create(connection, transaction);
@@ -417,17 +607,7 @@ public sealed class PostgresSessionRepository : ISessionRepository
                     return null;
                 }
 
-                return new Session
-                {
-                    Id = id,
-                    OwnerId = reader.GetString(0),
-                    CreatedAt = await reader.GetFieldValueAsync<DateTimeOffset>(1, cancellationToken).ConfigureAwait(false),
-                    UpdatedAt = await reader.GetFieldValueAsync<DateTimeOffset>(2, cancellationToken).ConfigureAwait(false),
-                    Status = Enum.Parse<SessionStatus>(reader.GetString(3)),
-                    SandboxId = await reader.IsDBNullAsync(4, cancellationToken).ConfigureAwait(false) ? null : reader.GetString(4),
-                    Messages = JsonSerializer.Deserialize(reader.GetString(5), PostgresJsonContext.Default.MessageArray) ?? [],
-                    Events = [],
-                };
+                return MapSession(reader);
             }
         }
     }
@@ -460,7 +640,10 @@ public sealed class PostgresSessionRepository : ISessionRepository
         return events;
     }
 
-    private async Task<List<StreamEvent>> ReadFromSeqAsync(string sessionId, long fromSeq, CancellationToken cancellationToken)
+    private Task<List<StreamEvent>> ReadFromSeqAsync(string sessionId, long fromSeq, CancellationToken cancellationToken) =>
+        _pipeline.ExecuteAsync(OperationClass.Interactive, true, token => ReadFromSeqCoreAsync(sessionId, fromSeq, token), cancellationToken);
+
+    private async Task<List<StreamEvent>> ReadFromSeqCoreAsync(string sessionId, long fromSeq, CancellationToken cancellationToken)
     {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -496,6 +679,8 @@ public sealed class PostgresSessionRepository : ISessionRepository
             command.Parameters.AddWithValue("updated_at", session.UpdatedAt);
             command.Parameters.AddWithValue("status", session.Status.ToString());
             command.Parameters.AddWithValue("sandbox_id", (object?)session.SandboxId ?? DBNull.Value);
+            command.Parameters.AddWithValue("surface", SessionSurfaceColumn.ToColumn(session.Surface));
+            command.Parameters.AddWithValue("closed_at", session.ClosedAt.HasValue ? session.ClosedAt.Value : DBNull.Value);
             command.Parameters.AddWithValue("messages", JsonSerializer.Serialize(session.Messages.ToArray(), PostgresJsonContext.Default.MessageArray));
 
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);

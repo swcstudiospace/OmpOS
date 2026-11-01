@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Autonogrammer.Cowork/Autonogrammer.Cowork.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Cowork.Abstractions/Autonogrammer.Cowork.Abstractions.csproj" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+</Project>

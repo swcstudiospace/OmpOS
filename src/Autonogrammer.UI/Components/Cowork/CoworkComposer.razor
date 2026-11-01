@@ -1,0 +1,40 @@
+@namespace Autonogrammer.UI.Components.Cowork
+@using Autonogrammer.Presentation.Cowork
+
+<div class="autonogrammer-cowork-composer" role="region" aria-label="@CoworkConversationModel.ComposerName" tabindex="0">
+    <p role="status" aria-label="@(Model.ImageToolsEnabled ? "Image tools, " + ProviderStatusChip.AvailableLabel : "Image tools, " + CoworkConversationModel.ModelCannotReadImages)">
+        @(Model.ImageToolMessage ?? ProviderStatusChip.AvailableLabel)
+    </p>
+    <ul aria-label="Provider status">
+        @foreach (var provider in Model.Providers)
+        {
+            <li aria-label="@provider.AccessibleName">@provider.Label</li>
+        }
+    </ul>
+    <ul aria-label="Attachment chips">
+        @foreach (var chip in Model.Attachments)
+        {
+            <li aria-label="@chip.AccessibleName">
+                @(chip.Reason ?? chip.Name)
+                <button type="button" class="autonogrammer-cowork-attachment-remove" aria-label="@chip.RemoveName" @onclick="() => Remove(chip.Id)">Remove</button>
+            </li>
+        }
+    </ul>
+    <button type="button" aria-label="@CoworkConversationModel.SendName" @onclick="SendAsync">Send</button>
+    <button type="button" aria-label="@CoworkConversationModel.RetryName" disabled="@(!Model.Session.CanRetry)" @onclick="RetryAsync">Retry</button>
+    <button type="button" aria-label="@CoworkConversationModel.SteerName" @onclick="SteerAsync">Steer</button>
+</div>
+
+@code {
+    /// <summary>Gets the conversation model the composer reads.</summary>
+    [Parameter, EditorRequired]
+    public CoworkConversationModel Model { get; set; } = null!;
+
+    private void Remove(string id) => Model.RemoveAttachment(id);
+
+    private async Task SendAsync() => await Model.TrySendAsync().ConfigureAwait(true);
+
+    private async Task RetryAsync() => await Model.RetryAsync().ConfigureAwait(true);
+
+    private async Task SteerAsync() => await Model.SteerAsync().ConfigureAwait(true);
+}

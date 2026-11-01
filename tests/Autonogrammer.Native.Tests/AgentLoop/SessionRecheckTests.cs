@@ -20,7 +20,7 @@ public sealed class SessionRecheckTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (_, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -60,7 +60,7 @@ public sealed class SessionRecheckTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (_, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -85,7 +85,7 @@ public sealed class SessionRecheckTests
         using var tree = new TempTree();
         tree.WriteReadyPlugins();
         using var substrate = new StubSubstrateHandler { HealthStatus = HttpStatusCode.ServiceUnavailable };
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp(), name => string.Equals(name, AgentLoopEnvironment.SubstrateUrlVariable, StringComparison.Ordinal) ? "http://127.0.0.1:7410" : null, substrate));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp(), name => string.Equals(name, AgentLoopEnvironment.SubstrateUrlVariable, StringComparison.Ordinal) ? "http://127.0.0.1:7410" : null, substrate)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (_, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);

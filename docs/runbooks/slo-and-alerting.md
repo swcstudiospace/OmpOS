@@ -170,6 +170,6 @@ There is no status page. For one operator the owner writes the status update in 
 
 ## How verified
 
-- Read: `services/Autonogrammer.Api/Metrics/ApiMetrics.cs`, `Cloud/CloudMetrics.cs`, `Telemetry/ApiTelemetry.cs`, `Health/*.cs`, `Coordination/CoordinationRegistration.cs`, `Program.cs` (lines 197 to 229 and 265 to 275), `Sse/SessionEventStreamer.cs`, `Services/PromptRunner.cs`, `src/Autonogrammer.Sessions.Postgres/PostgresSessionSchema.cs`, `src/Autonogrammer.Contracts/Streaming/StreamEventPayloadConverter.cs`, `src/Autonogrammer.Sessions/SessionService.cs`.
+- Read: `services/Autonogrammer.Api/Metrics/ApiMetrics.cs`, `Cloud/CloudMetrics.cs`, `Telemetry/ApiTelemetry.cs`, `Health/*.cs`, `Coordination/CoordinationRegistration.cs`, `Program.cs` (lines 197 to 229 and 265 to 275), `Sse/SessionEventStreamer.cs`, `Services/PromptRunner.cs`, `src/Autonogrammer.Sessions.Postgres/Migrations/M0001_SessionStore.cs`, `src/Autonogrammer.Contracts/Streaming/StreamEventPayloadConverter.cs`, `src/Autonogrammer.Sessions/SessionService.cs`.
 - Not done: no metric was observed in GreptimeDB (the API is not deployed, and the local smoke of 2026-10-21 did not record table names); no SQL above was run; no probe was created; no objective has data.
 - Open: the notification channel, the probe service and the names of the new metrics are owner decisions.

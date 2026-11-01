@@ -1,5 +1,6 @@
 using Autonogrammer.Native.Views.Automations;
 using Autonogrammer.Native.Views.Cloud;
+using Autonogrammer.Native.Views.Computer;
 using Autonogrammer.Native.Views.Hooks;
 using Autonogrammer.Native.Views.Mcp;
 using Autonogrammer.Native.Views.Remote;
@@ -8,11 +9,14 @@ using Autonogrammer.Native.Views.Settings;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Automations;
 using Autonogrammer.Presentation.Cloud;
+using Autonogrammer.Presentation.Computer;
 using Autonogrammer.Presentation.Hooks;
 using Autonogrammer.Presentation.Mcp;
 using Autonogrammer.Presentation.Remote;
 using Autonogrammer.Presentation.Safety;
 using Autonogrammer.Presentation.Settings;
+using Autonogrammer.Presentation.Settings.BrowserUse;
+using Autonogrammer.Presentation.Settings.Cowork;
 using Autonogrammer.Presentation.Settings.Customize;
 using Autonogrammer.Presentation.Settings.Ignore;
 using Autonogrammer.Presentation.Settings.Models;
@@ -50,17 +54,29 @@ public sealed class SettingsWindowTests
         (SettingsSection.Remote, RemoteCopy.Title, typeof(RemoteEnvironmentsPageView)),
         (SettingsSection.Cloud, CloudCopy.Title, typeof(CloudAgentsPageView)),
         (SettingsSection.Automations, AutomationsCopy.Title, typeof(AutomationsPageView)),
+        (SettingsSection.BrowserUse, BrowserUseCopy.Title, typeof(BrowserUsePageView)),
         (SettingsSection.Privacy, PrivacyCopy.Title, typeof(PrivacyPageView)),
         (SettingsSection.Network, NetworkCopy.Title, typeof(NetworkPageView)),
         (SettingsSection.Keyboard, KeyboardCopy.Title, typeof(KeyboardPageView)),
+        (SettingsSection.ComputerUse, ComputerUseCopy.Title, typeof(ComputerSettingsPage)),
+        (SettingsSection.Bundles, SettingsCopy.BundlesTitle, typeof(BundlesPageView)),
+        (SettingsSection.Connectors, SettingsCopy.ConnectorsTitle, typeof(ConnectorsPageView)),
+        (SettingsSection.CoworkPermissions, SettingsCopy.CoworkPermissionsTitle, typeof(PermissionsPageView)),
+        (SettingsSection.Isolation, SettingsCopy.IsolationTitle, typeof(IsolationPageView)),
+        (SettingsSection.Usage, SettingsCopy.UsageTitle, typeof(Autonogrammer.Native.Views.Usage.UsageMeterView)),
+        (SettingsSection.Notifications, SettingsCopy.NotificationsTitle, typeof(TextBlock)),
     ];
 
-    // The MCP and Cloud views draw the model their page holds; every other view draws the page.
+    // The MCP, Cloud, Automations, Bundles, Isolation and Usage views draw the model their page holds; every other view draws the page.
+    // The Permissions view wraps its three models in a state of its own, which is checked by its parts in the loop below.
     private static object ContextOf(ISettingsPage page) => page switch
     {
         McpSettingsPage mcp => mcp.Model,
         CloudSettingsPage cloud => cloud.Agents,
         AutomationsSettingsPage automations => automations.Model,
+        BundlesSettingsPage bundles => bundles.Model,
+        IsolationSettingsPage isolation => isolation.Model,
+        UsageSettingsPage usage => usage.Model,
         _ => page,
     };
 
@@ -87,7 +103,17 @@ public sealed class SettingsWindowTests
 
                 fixture.Model.SelectedSection.ShouldBe(section, title);
                 window.CurrentView.ShouldNotBeNull().GetType().ShouldBe(view, title);
-                window.CurrentView.DataContext.ShouldBeSameAs(ContextOf(fixture.Model.SelectedPage));
+                if (fixture.Model.SelectedPage is CoworkPermissionsSettingsPage permissions)
+                {
+                    // The Permissions view wraps its models in a state of its own on each build, so the state is checked by its parts.
+                    var state = window.CurrentView.DataContext.ShouldBeOfType<PermissionsPageState>(title);
+                    state.SelectedMode.ShouldBe(permissions.Modes.SelectedLabel, title);
+                    state.Statements.ShouldBe(permissions.Statements.Statements, title);
+                }
+                else
+                {
+                    window.CurrentView.DataContext.ShouldBeSameAs(ContextOf(fixture.Model.SelectedPage), title);
+                }
             }
         }, ct).ConfigureAwait(true);
     }

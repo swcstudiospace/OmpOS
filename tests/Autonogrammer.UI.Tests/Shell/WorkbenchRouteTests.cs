@@ -12,7 +12,7 @@ public sealed class WorkbenchRouteTests
     [InlineData("", WorkbenchViewKind.Agents, null, null)]
     [InlineData("/", WorkbenchViewKind.Agents, null, null)]
     [InlineData("kanban", WorkbenchViewKind.Kanban, null, null)]
-    [InlineData("Kanban/", WorkbenchViewKind.Kanban, null, null)]
+    [InlineData("cowork", WorkbenchViewKind.Cowork, null, null)]
     [InlineData("about?x=1", WorkbenchViewKind.About, null, null)]
     [InlineData("sessions/abc", WorkbenchViewKind.Session, "abc", null)]
     [InlineData("sessions/a%20b#top", WorkbenchViewKind.Session, "a b", null)]
@@ -51,6 +51,7 @@ public sealed class WorkbenchRouteTests
     {
         WorkbenchRoute.Agents.RelativePath.ShouldBeEmpty();
         WorkbenchRoute.Kanban.RelativePath.ShouldBe("kanban");
+        WorkbenchRoute.Cowork.RelativePath.ShouldBe("cowork");
         WorkbenchRoute.About.RelativePath.ShouldBe("about");
         WorkbenchRoute.ForSettings(null).RelativePath.ShouldBe("settings");
         WorkbenchRoute.ForSettings("models").RelativePath.ShouldBe("settings/models");

@@ -28,7 +28,7 @@ internal sealed class ScriptedPanelHost : IAgentPanelHost
     /// <summary>Gets the identifiers of the omp terminal sessions created, in order.</summary>
     internal List<string> CreatedTerminals { get; } = [];
 
-    /// <summary>Gets the identifiers passed to <see cref="OpenSession"/>, in order.</summary>
+    /// <summary>Gets the identifiers passed to <see cref="OpenSessionAsync"/>, in order.</summary>
     internal List<string> Opened { get; } = [];
 
     /// <summary>Gets the identifiers passed to <see cref="CloseSessionAsync"/>, in order.</summary>
@@ -91,8 +91,9 @@ internal sealed class ScriptedPanelHost : IAgentPanelHost
     }
 
     /// <inheritdoc />
-    public AgentSessionViewModel OpenSession(AgentRow row)
+    public Task<AgentSessionViewModel> OpenSessionAsync(AgentRow row, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         Opened.Add(row.Id);
         var composer = new ComposerViewModel(_ => Task.FromResult(true), () => Task.CompletedTask);
         var viewModel = new AgentSessionViewModel(new AgentSessionOptions
@@ -106,7 +107,7 @@ internal sealed class ScriptedPanelHost : IAgentPanelHost
             TaskContextSource = ContextSources?.Invoke(row.Id),
         });
         ViewModels[row.Id] = viewModel;
-        return viewModel;
+        return Task.FromResult(viewModel);
     }
 
     /// <inheritdoc />

@@ -84,5 +84,6 @@ public sealed class OmpAcpClient
             options.ExtraArguments,
             options.EnvironmentVariables,
             new EngineEnvironmentPolicy(options.EnvironmentMode, options.EnvironmentAllowList),
+            options.ProcessWrapper,
             loggerFactory?.CreateLogger<AcpStdioTransport>());
 }

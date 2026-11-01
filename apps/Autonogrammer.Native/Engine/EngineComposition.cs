@@ -103,6 +103,7 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
             EnvironmentAllowList = options.EnvironmentAllowList,
             HookGate = options.HookGate,
             McpServers = MergeServers(plan, options.ExtraMcpServers),
+            ProcessWrapper = options.ProcessWrapper,
         };
         var remote = options.Remote;
         if (remote is not null)

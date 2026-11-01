@@ -15,4 +15,9 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="../Autonogrammer.Contracts.Tests/Dispatch/Store/DispatchStoreContractTests.cs" Link="Dispatch/Store/Shared/DispatchStoreContractTests.cs" />
+    <None Include="../Autonogrammer.Contracts.Tests/Dispatch/TestData/dispatch-canonical-vectors.json" Link="Dispatch/TestData/dispatch-canonical-vectors.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

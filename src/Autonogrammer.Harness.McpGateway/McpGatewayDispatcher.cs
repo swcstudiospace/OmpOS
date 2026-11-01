@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Harness.Mcp;
 using ModelContextProtocol;
 using ModelContextProtocol.Protocol;
@@ -17,6 +18,7 @@ internal sealed class McpGatewayDispatcher
     private const string ServerName = "autonogrammer-mcp-gateway";
     private const string ServerVersion = "1.0.0";
     private const string NotApprovedText = "The tool call was not approved.";
+    private const string CoworkFailedText = "The Cowork tool could not complete the call.";
     private const string UpstreamFailedText = "The MCP server could not complete the call.";
 
     private static readonly string[] SupportedProtocolVersions = [LatestProtocolVersion, "2025-06-18", "2025-03-26"];
@@ -24,12 +26,15 @@ internal sealed class McpGatewayDispatcher
     private readonly McpToolRegistry _registry;
     private readonly McpToolInvoker _invoker;
     private readonly McpGatewaySessions _sessions;
+    private readonly ICoworkToolHost? _coworkTools;
+    private static readonly JsonElement EmptyArguments = CreateEmptyArguments();
 
     /// <summary>Creates a dispatcher.</summary>
     /// <param name="registry">The registry whose per-session enablement defines the grants. It must be the registry the invoker uses.</param>
     /// <param name="invoker">The only route to an upstream server.</param>
     /// <param name="sessions">The session tables shared with the HTTP layer.</param>
-    public McpGatewayDispatcher(McpToolRegistry registry, McpToolInvoker invoker, McpGatewaySessions sessions)
+    /// <param name="coworkTools">The Cowork host, or <c>null</c> when this gateway serves registry tools only.</param>
+    public McpGatewayDispatcher(McpToolRegistry registry, McpToolInvoker invoker, McpGatewaySessions sessions, ICoworkToolHost? coworkTools)
     {
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(invoker);
@@ -37,6 +42,7 @@ internal sealed class McpGatewayDispatcher
         _registry = registry;
         _invoker = invoker;
         _sessions = sessions;
+        _coworkTools = coworkTools;
     }
 
     /// <summary>Answers one <c>POST</c> body.</summary>
@@ -184,7 +190,7 @@ internal sealed class McpGatewayDispatcher
         return method switch
         {
             "ping" => Json(200, McpJsonRpc.Result(requestId, static writer => WriteEmptyObject(writer))),
-            "tools/list" => ListTools(requestId, registrySessionId),
+            "tools/list" => await ListToolsAsync(requestId, registrySessionId, cancellationToken).ConfigureAwait(false),
             "tools/call" => await CallToolAsync(requestId, root, registrySessionId, cancellationToken).ConfigureAwait(false),
             _ => Failure(requestId, McpJsonRpc.MethodNotFound, "Method not found."),
         };
@@ -232,9 +238,22 @@ internal sealed class McpGatewayDispatcher
         return new McpGatewayReply(200, body, transportSessionId);
     }
 
-    private McpGatewayReply ListTools(JsonElement id, string registrySessionId)
+    private async ValueTask<McpGatewayReply> ListToolsAsync(JsonElement id, string registrySessionId, CancellationToken cancellationToken)
     {
         var granted = _registry.GetOfferedTools(registrySessionId);
+        IReadOnlyList<CoworkToolDescriptor> cowork = [];
+        if (_coworkTools is not null)
+        {
+            try
+            {
+                cowork = await _coworkTools.ListOfferedAsync(registrySessionId, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception exception) when (IsCoworkFault(exception))
+            {
+                return Failure(id, McpJsonRpc.InvalidParams, CoworkFailedText);
+            }
+        }
+
         return Json(200, McpJsonRpc.Result(id, writer =>
         {
             writer.WriteStartObject();
@@ -244,9 +263,34 @@ internal sealed class McpGatewayDispatcher
                 WriteTool(writer, tool);
             }
 
+            foreach (var tool in cowork)
+            {
+                WriteCoworkTool(writer, tool);
+            }
+
             writer.WriteEndArray();
             writer.WriteEndObject();
         }));
+    }
+
+    private static void WriteCoworkTool(Utf8JsonWriter writer, CoworkToolDescriptor tool)
+    {
+        writer.WriteStartObject();
+        writer.WriteString("name", tool.Name);
+        writer.WriteString("description", tool.Description);
+        writer.WritePropertyName("inputSchema");
+        if (tool.InputSchema.ValueKind == JsonValueKind.Undefined)
+        {
+            writer.WriteStartObject();
+            writer.WriteString("type", "object");
+            writer.WriteEndObject();
+        }
+        else
+        {
+            tool.InputSchema.WriteTo(writer);
+        }
+
+        writer.WriteEndObject();
     }
 
     private async ValueTask<McpGatewayReply> CallToolAsync(
@@ -281,14 +325,29 @@ internal sealed class McpGatewayDispatcher
         var granted = _registry
             .GetOfferedTools(registrySessionId)
             .FirstOrDefault(tool => string.Equals(McpGatewayToolNames.Compose(tool.Id), name, StringComparison.Ordinal));
-        if (granted is null)
+        if (granted is not null)
+        {
+            return await InvokeGrantedAsync(id, registrySessionId, granted.Id, arguments, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (name is null || name.Contains(McpGatewayToolNames.Separator, StringComparison.Ordinal) || _coworkTools is null)
         {
             return Failure(id, McpJsonRpc.InvalidParams, "Unknown tool.");
         }
 
+        return await InvokeCoworkAsync(id, parameters, registrySessionId, name, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async ValueTask<McpGatewayReply> InvokeGrantedAsync(
+        JsonElement id,
+        string registrySessionId,
+        McpToolId tool,
+        Dictionary<string, object?> arguments,
+        CancellationToken cancellationToken)
+    {
         try
         {
-            var result = await _invoker.InvokeAsync(registrySessionId, granted.Id, arguments, cancellationToken).ConfigureAwait(false);
+            var result = await _invoker.InvokeAsync(registrySessionId, tool, arguments, cancellationToken).ConfigureAwait(false);
             return ToolResult(id, result);
         }
         catch (McpToolNotOfferedException)
@@ -303,5 +362,42 @@ internal sealed class McpGatewayDispatcher
         {
             return ToolResult(id, ErrorResult(UpstreamFailedText));
         }
+    }
+
+    private async ValueTask<McpGatewayReply> InvokeCoworkAsync(
+        JsonElement id,
+        JsonElement parameters,
+        string registrySessionId,
+        string name,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var offered = await _coworkTools!.ListOfferedAsync(registrySessionId, cancellationToken).ConfigureAwait(false);
+            if (!offered.Any(tool => string.Equals(tool.Name, name, StringComparison.Ordinal)))
+            {
+                return Failure(id, McpJsonRpc.InvalidParams, "Unknown tool.");
+            }
+
+            var coworkArguments = parameters.TryGetProperty("arguments", out var coworkArgumentsElement)
+                && coworkArgumentsElement.ValueKind == JsonValueKind.Object
+                ? coworkArgumentsElement.Clone()
+                : EmptyArguments;
+            var cowork = await _coworkTools.InvokeAsync(registrySessionId, name, coworkArguments, cancellationToken).ConfigureAwait(false);
+            return ToolResult(id, McpGatewayCoworkResults.ToCallToolResult(cowork));
+        }
+        catch (Exception exception) when (IsCoworkFault(exception))
+        {
+            return ToolResult(id, ErrorResult(CoworkFailedText));
+        }
+    }
+
+    private static bool IsCoworkFault(Exception exception) =>
+        exception is McpException or HttpRequestException or IOException or ObjectDisposedException or InvalidOperationException or InvalidDataException;
+
+    private static JsonElement CreateEmptyArguments()
+    {
+        using var document = JsonDocument.Parse("{}");
+        return document.RootElement.Clone();
     }
 }

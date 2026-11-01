@@ -28,8 +28,8 @@ The JSON files in this folder are therefore the reviewed record of the intended 
 | `deploy.healthcheckTimeout` | `120` | Owner decision of 2026-10-21; the start-up schema step and the omp check run before the first answer | `healthcheckTimeout` | Worker: yes (120 s) |
 | `deploy.restartPolicyType` | `ON_FAILURE` | A crash restarts; a clean exit does not | `restartPolicyType` | Worker: yes |
 | `deploy.restartPolicyMaxRetries` | `3` | A configuration error exits at start (exit 134, see the 2026-10-21 smoke evidence), so more retries only repeat it | `restartPolicyMaxRetries` | Worker: yes (3) |
-| `deploy.numReplicas` | `1` | Run-time indexes (`SessionRegistry`, `RunRegistry`) live in process memory and are not shared between instances | `regions` (for example `{"<region>": {"numReplicas": 1}}`; it replaces the whole region map) | Not run |
-| `deploy.drainingSeconds` | `35` | Five seconds above the host shutdown timeout of 30 s that unit api-hosting sets (`Hosting:ShutdownTimeoutSeconds`), so the host ends open streams first | `drainingSeconds` | Not run |
+| `deploy.numReplicas` | `1` | Run-time indexes (`RunRegistry`) live in process memory and are not shared between instances; the session list is the repository | `regions` (for example `{"<region>": {"numReplicas": 1}}`; it replaces the whole region map) | Not run |
+| `deploy.drainingSeconds` | `35` | Five seconds above the host shutdown timeout of 30 s that `Hosting:ShutdownTimeoutSeconds` sets, so the host ends open streams first | `drainingSeconds` | Not run |
 
 If the service should read the file, the service setting "config file path" (`railwayConfigFile` in `update-service`) names it; the default file name Railway looks for is `railway.json` at the root of the service source, not `api.railway.json`.
 
@@ -45,7 +45,7 @@ Source: this repository, build context at the repository root, `deploy/api.Conta
 
 The hosting topology uses the Railway template image `timescale-postgis-ssl:pg16-ts2.13` (PostgreSQL 16, TimescaleDB 2.13, TLS on), existing service `TimescaleDB` in the project `Ultrathink`. Local parity: `docker.io/timescale/timescaledb:2.13.1-pg16` (digest in `deploy/compose.yaml`). Notes:
 
-- The API creates its own schema `autonogrammer`, the `timescaledb` extension and the `session_events` hypertable at start (`IF NOT EXISTS`); it needs a role that may create them.
+- The schema, extension and tables are not created by the API at start. An operator runs `deploy/data-plane/bootstrap.sql`, then the one-shot `autonogrammer-migrate` service (`migrate`). See `docs/runbooks/data-plane.md`. Nothing here has been applied to Railway (OQ-73, OQ-100).
 - Use the private host `timescaledb.railway.internal` and the service's own `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD` through references. Do not copy values.
 - The connection uses TLS with `Trust Server Certificate=true`, because the template's certificate is self-signed.
 - Do not enable or keep a public TCP proxy on this service for the API's sake (threat model, T3.11).
@@ -54,15 +54,15 @@ The hosting topology uses the Railway template image `timescale-postgis-ssl:pg16
 
 ### Dragonfly
 
-Image `ghcr.io/dragonflydb/dragonfly:latest` on Railway (unpinned, open item Q-HOST-DFLY-PIN); local parity `docker.io/dragonflydb/dragonfly:v1.27.1`. Notes:
+Image `ghcr.io/dragonflydb/dragonfly:latest` on Railway (unpinned, open item Q-HOST-DFLY-PIN); local parity `docker.io/dragonflydb/dragonfly:v1.27.1`. A dedicated `autonogrammer-dragonfly` service is an operator step, not created by this tree. Notes:
 
 - Password in the variable `DFLY_requirepass` on the Dragonfly service. The API reads it through the reference in `Coordination__Dragonfly__ConnectionString`.
-- The API stores only leases (30 s), idempotency records (up to 24 h) and pub/sub wake-ups. Nothing needs a backup.
-- The connection string in the hosting runbook has no TLS option; the private network carries it in clear.
+- Keys use the prefix `autonogrammer:v1:` (leases, idempotency, presence, rate limits, nonces, signals). Nothing needs a backup.
+- The connection string in the hosting runbook has no TLS option; the private network carries it in clear. Do not add a TCP proxy or a public domain (OQ-347).
 
 ## Variables of `autonogrammer-api`
 
-Config keys use `:` in code and `__` in the environment. Mark every variable marked "secret: yes" as sealed or secret in Railway. "Added by unit" means the unit of program 66 that introduces the name; the names are fixed in the program contract and the unit is not merged when this page was written. "In progress" means the name was seen in the unit's unmerged worktree and is not part of the contract.
+Config keys use `:` in code and `__` in the environment. Mark every variable marked "secret: yes" as sealed or secret in Railway.
 
 ### Platform and runtime
 
@@ -78,7 +78,12 @@ Config keys use `:` in code and `__` in the environment. Mark every variable mar
 | Variable | Secret | Example placeholder | Read in | Safe default |
 |----------|--------|---------------------|---------|--------------|
 | `Sessions__Store` | no | `Postgres` | `Options/SessionsOptions.cs`, `Persistence/SessionStoreStartup.cs` | `InMemory` in `appsettings.json`; Production refuses it at start. Set `Postgres` |
-| `Sessions__Postgres__ConnectionString` | yes | `Host=${{TimescaleDB.PGHOST}};Port=${{TimescaleDB.PGPORT}};Database=${{TimescaleDB.PGDATABASE}};Username=${{TimescaleDB.PGUSER}};Password=${{TimescaleDB.PGPASSWORD}};Ssl Mode=Require;Trust Server Certificate=true` | `src/Autonogrammer.Sessions.Postgres/ServiceCollectionExtensions.cs` | None; start fails naming the key |
+| `Sessions__Postgres__ConnectionString` | yes | `Host=${{TimescaleDB.PGHOST}};Port=${{TimescaleDB.PGPORT}};Database=${{TimescaleDB.PGDATABASE}};Username=${{TimescaleDB.PGUSER}};Password=${{TimescaleDB.PGPASSWORD}};Ssl Mode=Require;Trust Server Certificate=true` | `src/Autonogrammer.Sessions.Postgres/ServiceCollectionExtensions.cs` | None; start fails naming the key. Hosted, this is the `autonogrammer_app` password, in `autonogrammer-api` only |
+| `Sessions__Postgres__MigratorConnectionString` | yes | Unset on the API | `src/Autonogrammer.Sessions.Postgres/ServiceCollectionExtensions.cs` | Unset on `autonogrammer-api`. The `autonogrammer_migrator` secret belongs only to the operator one-shot `autonogrammer-migrate` |
+| `Sessions__Postgres__AutoMigrate` | no | `false` | `Persistence/SessionStoreStartup.cs` | `false`. Production refuses `true` |
+| `DataPlane__Postgres__SchemaWaitSeconds` | no | `120` | data-plane options | `120`, equal to `deploy.healthcheckTimeout` |
+| `DataPlane__TenantHashPepper` | yes | `<pepper>` | data-plane options | Unset. Required when `Coordination__Store=Dragonfly`. Value never committed |
+| `DataPlane__Ledger__Enabled` | no | `false` | data-plane options | `false` |
 | `Coordination__Store` | no | `Dragonfly` | `Options/CoordinationOptions.cs`, `Coordination/CoordinationStartup.cs` | `InMemory` in `appsettings.json`; allowed in Production with a warning (not shared between instances). Set `Dragonfly` |
 | `Coordination__Dragonfly__ConnectionString` | yes | `dragonfly.railway.internal:6379,password=${{Dragonfly.DFLY_requirepass}},abortConnect=false` | `Options/CoordinationDragonflyOptions.cs` | None; start fails naming the key |
 
@@ -108,10 +113,22 @@ Config keys use `:` in code and `__` in the environment. Mark every variable mar
 | `Api__Auth__OwnerToken__Subject` | no | `owner` | `Options/ApiOwnerTokenOptions.cs` | `owner` |
 | `Api__Auth__OwnerToken__MaxFailuresPerMinute` | no | `10` | `Options/ApiOwnerTokenOptions.cs`, `Security/OwnerTokenFailureLimiter.cs` | `10` failed attempts per address per minute; a correct token is never throttled, so only the token's entropy limits guessing (use 32 random bytes) |
 | `Api__Auth__Authority`, `Api__Auth__Audience`, `Api__Auth__ValidIssuer` | no | `https://<issuer>` | `Options/ApiAuthOptions.cs`, `Options/ApiAuthOptionsValidator.cs` | Only for `Oidc` mode; in `OwnerToken` mode the validator refuses them. No identity provider is chosen (OD-03) |
-| `Api__Auth__AllowedSubjects__0`, `Api__Auth__AllowAnyAuthenticatedUser` | no | `<subject>`, `false` | `Options/ApiAuthOptions.cs`, `Security/AllowedSubjectAuthorizationHandler.cs` | Only for `Oidc` mode, where one of them is required outside Development |
+| `Api__Auth__Algorithms__0` (and `__1`) | no | `ES256` | `Options/ApiAuthOptions.cs`, `Security/JwtBearerSetup.cs` | Only for `Oidc` mode. Unset: ES256 only. Allowed values `ES256`, `RS256`; refused in `OwnerToken` mode |
+| `Api__Auth__Client__ProjectUrl`, `Api__Auth__Client__PublishableKey` | no (public by design) | `https://<project>.supabase.co`, `<publishable key>` | `Options/ApiAuthClientOptions.cs`, `Options/ApiAuthOptionsValidator.cs` | Only for `Oidc` mode. Unset. A secret key, a service-role token or a non-https URL stops startup; refused in `OwnerToken` mode |
+| `Api__Auth__AllowedSubjects__0`, `Api__Auth__AllowAnyAuthenticatedUser` | no | `<subject>`, `false` | `Options/ApiAuthOptions.cs`, `Security/AllowedSubjectAuthorizationHandler.cs` | Only for `Oidc` mode, where one of them is required outside Development. Open sign-up is deployed as `Api__Auth__AllowAnyAuthenticatedUser=true`, set on purpose |
 | `Api__Auth__AllowDevelopmentPrincipal` | no | not set | `Options/ApiAuthOptions.cs`, `Options/ApiAuthOptionsValidator.cs` | Unset. The validator refuses it outside Development |
 
 The owner token itself is never a Railway variable. See `docs/runbooks/incident-response.md` for generating the token and its digest.
+
+### Dispatch
+
+| Variable | Secret | Example placeholder | Read in | Safe default |
+|----------|--------|---------------------|---------|--------------|
+| `Dispatch__Enabled` | no | `false` | `Dispatch/Options/DispatchOptions.cs` | `false`. `true` requires `Api__Auth__Mode=Oidc` and `Hosting__ForwardedHeaders__Mode` so connect limits see the client address |
+| `Dispatch__Credentials__SigningKeyPem` | yes | `<PKCS#8 P-256 PEM>` | `Dispatch/Devices/DeviceCredentialIssuer.cs` | Unset while dispatch is off. Distinct from the command-signing key |
+| `Dispatch__CommandSigning__KeyPem` | yes | `<PKCS#8 P-256 PEM>` | `Dispatch/Devices/DeviceCredentialIssuer.cs` | Unset while dispatch is off |
+| `Dispatch__Credentials__Issuer` | no | `autonogrammer-dispatch` | `Dispatch/Options/DispatchOptions.cs` | `autonogrammer-dispatch` |
+| `Dispatch__ReplicaMode` | no | `Single` | `Dispatch/Options/DispatchOptionsValidator.cs` | `Single`. `Multi` also requires Dragonfly coordination and the Postgres session store |
 
 ### HTTP surface and hosting
 
@@ -135,7 +152,7 @@ The owner token itself is never a Railway variable. See `docs/runbooks/incident-
 | `Otel__Exporter` | no | `none` | `Options/OtelOptions.cs`, `Program.cs` line 204 | `none` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | no | `http://greptimedb.railway.internal:4000/v1/otlp` | .NET OpenTelemetry SDK | Unset; needed only for `otlp` |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | no | `http/protobuf` | .NET OpenTelemetry SDK | Unset; needed only for `otlp` |
-| `OTEL_EXPORTER_OTLP_HEADERS` | yes | `Authorization=<Basic credential>,X-Greptime-DB-Name=public,X-Greptime-Pipeline-Name=greptime_trace_v1` | .NET OpenTelemetry SDK; rule in `docs/runbooks/hosting.md` | Unset; needed only for `otlp` |
+| `OTEL_EXPORTER_OTLP_HEADERS` | yes | `Authorization=<Basic credential>,X-Greptime-DB-Name=autonogrammer,X-Greptime-Pipeline-Name=greptime_trace_v1` | .NET OpenTelemetry SDK; rule in `docs/runbooks/hosting.md` | Unset; needed only for `otlp`. Database name `autonogrammer`, not `public` |
 | `Autonogrammer__Debug__LogPrompts` | no | `false` | `Options/DebugOptions.cs` | `false`. `true` writes prompt text to logs |
 
 ### Leave unset

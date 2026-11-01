@@ -40,6 +40,7 @@ internal sealed class KeyboardSettingsSource : IKeyboardSettingsSource
         {
             >= Key.D0 and <= Key.D9 => ((int)gesture.Key - (int)Key.D0).ToString(System.Globalization.CultureInfo.InvariantCulture),
             Key.OemComma => ",",
+            Key.OemPeriod => ".",
             Key.Enter => "Enter",
             _ => null,
         };

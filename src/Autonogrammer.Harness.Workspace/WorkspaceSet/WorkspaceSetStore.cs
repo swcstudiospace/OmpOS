@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Autonogrammer.Harness.Abstractions;
 
 namespace Autonogrammer.Workspace.Sets;
 
@@ -45,7 +46,7 @@ public sealed class WorkspaceSetStore : IDisposable
             throw new InvalidOperationException("The platform has no per-user configuration directory for the workspace set file.");
         }
 
-        return Path.Combine(configuration, "Autonogrammer", "workspace-sets.json");
+        return Path.Combine(UserDataDirectory.PathFor(configuration), "workspace-sets.json");
     }
 
     /// <summary>

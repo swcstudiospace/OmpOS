@@ -1,0 +1,22 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Browser pane. No transition and no new colour role: fills and text use the existing surface and text tokens. -->
+  <Style Selector="UserControl.browser-pane">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Surface}" />
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+  </Style>
+
+  <Style Selector="Border.browser-pane-frame">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceSunken}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.Border}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <Style Selector="Border.browser-pane-chrome">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceRaised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.Border}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+
+</Styles>

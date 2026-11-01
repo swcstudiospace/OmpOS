@@ -38,6 +38,10 @@ internal sealed class SecurityHeadersMiddleware
     {
         var headers = context.Response.Headers;
         headers[HeaderNames.XContentTypeOptions] = "nosniff";
+        if (context.GetEndpoint()?.Metadata.GetMetadata<OwnResponseSecurityHeadersMetadata>() is not null)
+        {
+            return;
+        }
         headers[HeaderNames.XFrameOptions] = "DENY";
         headers["Referrer-Policy"] = "no-referrer";
         headers["Permissions-Policy"] = PermissionsPolicy;

@@ -16,8 +16,8 @@ public sealed class DragonflySignalHandlerFailureTests
         using var subscriberConnection = await ConnectionMultiplexer.ConnectAsync(DragonflyTestEnvironment.RequireConnectionString()).ConfigureAwait(true);
         using var publisherConnection = await ConnectionMultiplexer.ConnectAsync(DragonflyTestEnvironment.RequireConnectionString()).ConfigureAwait(true);
         var logger = new CapturingLogger<DragonflySessionSignals>();
-        var subscriber = new DragonflySessionSignals(subscriberConnection, logger);
-        var publisher = new DragonflySessionSignals(publisherConnection);
+        var subscriber = new DragonflySessionSignals(subscriberConnection, logger, DragonflyTestEnvironment.LiveResilience());
+        var publisher = new DragonflySessionSignals(publisherConnection, resilience: DragonflyTestEnvironment.LiveResilience());
         var failingId = DragonflyTestEnvironment.NewId();
         var healthyId = DragonflyTestEnvironment.NewId();
         var delivered = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);

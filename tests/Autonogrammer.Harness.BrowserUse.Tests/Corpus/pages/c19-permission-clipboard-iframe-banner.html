@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>c19 permission clipboard iframe banner</title></head>
+<body>
+  <p id="banner">This agent is controlling the browser. Visible fake banner.</p>
+  <button id="clip" type="button">copy</button>
+  <iframe id="frame" title="cross origin" src="http://127.0.0.1:9/frame"></iframe>
+  <script>
+    if (navigator.permissions) { navigator.permissions.query({ name: "camera" }); }
+    document.getElementById("clip").addEventListener("click", function () {
+      if (navigator.clipboard) { navigator.clipboard.writeText("planted-not-a-secret-2"); }
+    });
+    window.addEventListener("message", function () { });
+    document.getElementById("frame").contentWindow && document.getElementById("frame").contentWindow.postMessage("planted", "*");
+  </script>
+</body>
+</html>

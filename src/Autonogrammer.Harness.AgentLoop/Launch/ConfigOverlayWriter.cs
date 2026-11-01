@@ -67,6 +67,49 @@ public sealed class ConfigOverlayWriter : IDisposable
     }
 
     /// <summary>
+    /// Writes the caller's YAML exactly, owner-only, and deletes it on dispose. Unlike <see cref="Write"/>, this adds no
+    /// <c>mcp</c> or <c>workspace</c> block. The Cowork composer passes the path to <c>--config</c> itself.
+    /// </summary>
+    /// <param name="sessionStateDirectory">The directory returned by <see cref="SessionStateLayout.SessionDirectory"/>. It is created when missing.</param>
+    /// <param name="yaml">The YAML to write. Empty YAML is refused.</param>
+    /// <returns>The writer that owns the file.</returns>
+    /// <exception cref="ArgumentException"><paramref name="yaml"/> is empty or white space.</exception>
+    /// <exception cref="IOException">The file cannot be written.</exception>
+    public static ConfigOverlayWriter WriteYaml(string sessionStateDirectory, string yaml)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sessionStateDirectory);
+        ArgumentException.ThrowIfNullOrWhiteSpace(yaml);
+        var path = SessionStateLayout.ConfigOverlayFile(sessionStateDirectory);
+        EnsureDirectory(System.IO.Path.GetDirectoryName(path) ?? sessionStateDirectory);
+        WriteOwnerFile(path, Utf8WithoutBom.GetBytes(yaml));
+        return new ConfigOverlayWriter(path);
+    }
+
+    private static void WriteOwnerFile(string path, byte[] content)
+    {
+        var options = new FileStreamOptions
+        {
+            Mode = FileMode.Create,
+            Access = FileAccess.Write,
+            Share = FileShare.None,
+        };
+        if (!OperatingSystem.IsWindows())
+        {
+            options.UnixCreateMode = OwnerFileMode;
+        }
+
+        using (var stream = new FileStream(path, options))
+        {
+            stream.Write(content);
+        }
+
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(path, OwnerFileMode);
+        }
+    }
+
+    /// <summary>
     /// Deletes the overlay file. A file that is already gone is not an error, and calling the method again does nothing.
     /// </summary>
     public void Dispose()

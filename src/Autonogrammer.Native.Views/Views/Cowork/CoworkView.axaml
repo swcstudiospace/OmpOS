@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:cowork="clr-namespace:Autonogrammer.Native.Views.Cowork"
+             x:Class="Autonogrammer.Native.Views.Cowork.CoworkView"
+             Focusable="False">
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Shell/SurfaceStyles.axaml" />
+  </UserControl.Styles>
+  <DockPanel>
+    <Border x:Name="TopBar"
+            DockPanel.Dock="Top"
+            Height="{DynamicResource Autonogrammer.Size.TitleBarHeight}"
+            Background="{DynamicResource Autonogrammer.Color.SurfaceSunken}"
+            BorderBrush="{DynamicResource Autonogrammer.Color.Border}"
+            BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto,*,Auto">
+        <Border Grid.Column="0" Width="8" />
+        <TextBlock Grid.Column="1"
+                   VerticalAlignment="Center"
+                   Text="Cowork"
+                   AutomationProperties.Name="Cowork" />
+        <ContentControl x:Name="SurfaceSwitchSlot"
+                        Grid.Column="2"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Left" />
+        <ContentControl x:Name="HeaderEndSlot"
+                        Grid.Column="4"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Right" />
+        <Border Grid.Column="5" Width="8" />
+      </Grid>
+    </Border>
+    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+      <ContentControl x:Name="RailHost" Grid.Column="0" />
+      <DockPanel Grid.Column="1">
+        <Button x:Name="SkipLink"
+                DockPanel.Dock="Top"
+                Content="Skip to conversation"
+                AutomationProperties.Name="Skip to conversation"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                Click="OnSkipClick" />
+        <ContentControl x:Name="ConversationHost"
+                        Focusable="True"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Conversation" />
+      </DockPanel>
+      <GridSplitter Grid.Column="2"
+                    Width="4"
+                    ResizeDirection="Columns"
+                    Background="{DynamicResource Autonogrammer.Color.Border}" />
+      <ContentControl x:Name="DockHost" Grid.Column="3" />
+    </Grid>
+  </DockPanel>
+</UserControl>

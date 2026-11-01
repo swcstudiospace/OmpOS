@@ -1,6 +1,7 @@
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Harness.Abstractions;
+using Autonogrammer.Sessions.Postgres.Migrations;
 using Shouldly;
 using Xunit;
 using static Autonogrammer.Sessions.Postgres.Tests.SessionSamples;
@@ -26,7 +27,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         {
             var writer = schema.CreateRepository();
             var reader = schema.CreateRepository();
-            await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            await schema.MigrateAsync(ct).ConfigureAwait(true);
 
             await writer.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
             await AppendDeltasAsync(writer, "s-1", 0, 3, ct).ConfigureAwait(true);
@@ -56,7 +57,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         try
         {
             var repositories = Enumerable.Range(0, 4).Select(_ => schema.CreateRepository()).ToArray();
-            await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            await schema.MigrateAsync(ct).ConfigureAwait(true);
             await repositories[0].SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
 
             await Task.WhenAll(repositories.Select((repository, index) => AppendDeltasAsync(repository, "s-1", index * 25, 25, ct))).ConfigureAwait(true);
@@ -70,9 +71,9 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         }
     }
 
-    /// <summary>Many concurrent first starts on an empty schema all succeed, and a repeated start leaves stored data intact.</summary>
+    /// <summary>Many concurrent first runs on an empty schema all succeed, and a repeated run leaves stored data intact.</summary>
     [Fact]
-    public async Task ConcurrentAndRepeatedEnsureCreatedIsIdempotent()
+    public async Task ConcurrentAndRepeatedMigrateIsIdempotent()
     {
         var ct = TestContext.Current.CancellationToken;
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
@@ -80,14 +81,14 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         {
             var dataSources = Enumerable.Range(0, 6).Select(_ => schema.CreateDataSource()).ToArray();
 
-            await Task.WhenAll(dataSources.Select(dataSource => PostgresSessionSchema.EnsureCreatedAsync(dataSource, ct))).ConfigureAwait(true);
-            await PostgresSessionSchema.EnsureCreatedAsync(dataSources[0], ct).ConfigureAwait(true);
+            await Task.WhenAll(dataSources.Select(dataSource => new MigrationRunner(dataSource, schema.SchemaName).MigrateAsync(ct))).ConfigureAwait(true);
+            (await new MigrationRunner(dataSources[0], schema.SchemaName).MigrateAsync(ct).ConfigureAwait(true)).ShouldBeEmpty();
 
             var repository = new PostgresSessionRepository(dataSources[1], schema.Connection);
             await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
             await AppendDeltasAsync(repository, "s-1", 0, 2, ct).ConfigureAwait(true);
 
-            await PostgresSessionSchema.EnsureCreatedAsync(dataSources[2], ct).ConfigureAwait(true);
+            (await new MigrationRunner(dataSources[2], schema.SchemaName).MigrateAsync(ct).ConfigureAwait(true)).ShouldBeEmpty();
 
             var loaded = await repository.GetAsync("s-1", ct).ConfigureAwait(true);
             loaded.ShouldNotBeNull();
@@ -99,17 +100,17 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         }
     }
 
-    /// <summary>Creating the schema twice leaves <c>session_events</c> as one hypertable partitioned on <c>occurred_at</c> in one-day chunks.</summary>
+    /// <summary>Migrating twice leaves <c>session_events</c> as one hypertable partitioned on <c>occurred_at</c> in one-day chunks.</summary>
     [Fact]
-    public async Task EnsureCreatedTwiceLeavesEventsAsOneHypertableOnOccurredAt()
+    public async Task MigrateTwiceLeavesEventsAsOneHypertableOnOccurredAt()
     {
         var ct = TestContext.Current.CancellationToken;
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
             var dataSource = schema.CreateDataSource();
-            await PostgresSessionSchema.EnsureCreatedAsync(dataSource, ct).ConfigureAwait(true);
-            await PostgresSessionSchema.EnsureCreatedAsync(dataSource, ct).ConfigureAwait(true);
+            await new MigrationRunner(dataSource, schema.SchemaName).MigrateAsync(ct).ConfigureAwait(true);
+            await new MigrationRunner(dataSource, schema.SchemaName).MigrateAsync(ct).ConfigureAwait(true);
 
             using var count = dataSource.CreateCommand(
                 "SELECT count(*) FROM timescaledb_information.hypertables WHERE hypertable_schema = @schema AND hypertable_name = 'session_events'");
@@ -140,7 +141,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            await schema.MigrateAsync(ct).ConfigureAwait(true);
             var holder = schema.CreateRepository();
             var contender = schema.CreateRepository();
 
@@ -175,7 +176,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            await schema.MigrateAsync(ct).ConfigureAwait(true);
             var first = schema.CreateRepository();
             var second = schema.CreateRepository();
 
@@ -211,7 +212,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            await schema.MigrateAsync(ct).ConfigureAwait(true);
             var repository = schema.CreateRepository();
 
             var held = await repository.LockSessionAsync("never-saved", ct).ConfigureAwait(true);
@@ -238,7 +239,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            await schema.MigrateAsync(ct).ConfigureAwait(true);
             var repository = schema.CreateRepository();
             await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
             await AppendDeltasAsync(repository, "s-1", 0, 3, ct).ConfigureAwait(true);
@@ -276,7 +277,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            await schema.MigrateAsync(ct).ConfigureAwait(true);
             var repository = schema.CreateRepository();
             await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
             await AppendDeltasAsync(repository, "s-1", 0, 2, ct).ConfigureAwait(true);
@@ -315,7 +316,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            await schema.MigrateAsync(ct).ConfigureAwait(true);
             var first = schema.CreateRepository();
             var second = schema.CreateRepository();
             await first.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
@@ -351,7 +352,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            await schema.MigrateAsync(ct).ConfigureAwait(true);
             var repository = schema.CreateRepository();
             await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
 
@@ -372,7 +373,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            await schema.MigrateAsync(ct).ConfigureAwait(true);
             var repository = schema.CreateRepository();
 
             await Should.ThrowAsync<KeyNotFoundException>(() => repository.TryAddToolApprovalAsync("absent", Approval("absent", "req-1"), ct)).ConfigureAwait(true);
@@ -391,7 +392,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            await schema.MigrateAsync(ct).ConfigureAwait(true);
             var repository = schema.CreateRepository();
 
             await Should.ThrowAsync<KeyNotFoundException>(() => ListAsync(repository, "absent", 0, ct)).ConfigureAwait(true);

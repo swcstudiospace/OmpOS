@@ -1,0 +1,73 @@
+@namespace Autonogrammer.UI.Components.Cowork
+@using Autonogrammer.Presentation.Cowork
+@inherits ObservableComponent
+
+<div class="autonogrammer-cowork-rail-body">
+    <div class="autonogrammer-rail-header">
+        <button type="button" class="autonogrammer-btn autonogrammer-btn--primary autonogrammer-cowork-new" aria-label="New task" disabled title="New task is started on the desktop until ADR-0036 lands">New task</button>
+        <input type="search"
+               class="autonogrammer-input autonogrammer-cowork-filter"
+               aria-label="Filter tasks"
+               placeholder="Filter tasks"
+               autocomplete="off"
+               maxlength="@CoworkSessionListModel.MaxFilterChars"
+               value="@List.Filter"
+               @oninput="OnFilter" />
+    </div>
+
+    @if (List.TotalCount == 0)
+    {
+        <div class="autonogrammer-rail-state" data-state="empty">
+            <p class="autonogrammer-rail-state-body">@CoworkWorkbench.EmptyTasks</p>
+        </div>
+    }
+    else
+    {
+        <ul class="autonogrammer-cowork-groups" aria-label="Tasks">
+            @foreach (var group in List.Groups)
+            {
+                <li>
+                    <h3 class="autonogrammer-text-heading">@group.Heading</h3>
+                    <ul>
+                        @foreach (var row in group.Rows)
+                        {
+                            <li>
+                                <button type="button" class="autonogrammer-cowork-row" data-session="@row.Id" @onclick="() => List.Select(row.Id)">
+                                    <span class="autonogrammer-cowork-row-title">@row.Title</span>
+                                    <span class="autonogrammer-cowork-row-status">@row.StatusText</span>
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    /// <summary>Gets the rail model.</summary>
+    [Parameter, EditorRequired]
+    public CoworkSessionListModel List { get; set; } = default!;
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        List.Changed += OnChanged;
+    }
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            List.Changed -= OnChanged;
+        }
+
+        base.Dispose(disposing);
+    }
+
+    private void OnFilter(ChangeEventArgs args) => List.Filter = args.Value?.ToString() ?? string.Empty;
+
+    private void OnChanged(object? sender, EventArgs e) => _ = InvokeAsync(StateHasChanged);
+}

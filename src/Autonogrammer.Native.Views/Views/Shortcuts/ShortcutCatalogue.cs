@@ -10,6 +10,8 @@ namespace Autonogrammer.Native.Views.Shortcuts;
 /// </summary>
 public static class ShortcutCatalogue
 {
+    private static KeyModifiers CommandModifier => OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control;
+
     /// <summary>Gets the shortcuts in the order the Keyboard page lists them within each scope.</summary>
     public static IReadOnlyList<ShortcutEntry> Entries { get; } =
     [
@@ -18,6 +20,8 @@ public static class ShortcutCatalogue
         new(ShortcutIds.PreviousRegion, ShortcutCopy.PreviousRegion, new KeyGesture(Key.F6, KeyModifiers.Shift), KeyboardCopy.ScopeApplication),
         new(ShortcutIds.FocusAgentList, ShortcutCopy.FocusAgentList, new KeyGesture(Key.D1, KeyModifiers.Control), KeyboardCopy.ScopeApplication),
         new(ShortcutIds.FocusPrompt, ShortcutCopy.FocusPrompt, new KeyGesture(Key.D2, KeyModifiers.Control), KeyboardCopy.ScopeApplication),
+        new(ShortcutIds.ShowCodeSurface, ShortcutCopy.ShowCodeSurface, new KeyGesture(Key.D1, CommandModifier | KeyModifiers.Shift), KeyboardCopy.ScopeApplication),
+        new(ShortcutIds.ShowCoworkSurface, ShortcutCopy.ShowCoworkSurface, new KeyGesture(Key.D2, CommandModifier | KeyModifiers.Shift), KeyboardCopy.ScopeApplication),
         new(ShortcutIds.SearchTranscript, ShortcutCopy.SearchTranscript, new KeyGesture(Key.F, KeyModifiers.Control), KeyboardCopy.ScopeApplication),
         new(ShortcutIds.SearchConversations, ShortcutCopy.SearchConversations, new KeyGesture(Key.K, KeyModifiers.Control), KeyboardCopy.ScopeApplication),
         new(ShortcutIds.Dismiss, ShortcutCopy.Dismiss, new KeyGesture(Key.Escape), KeyboardCopy.ScopeApplication),
@@ -42,5 +46,6 @@ public static class ShortcutCatalogue
         new(ShortcutIds.CloseSettingsWithControlW, ShortcutCopy.CloseSettingsWithControlW, new KeyGesture(Key.W, KeyModifiers.Control), KeyboardCopy.ScopeSettings),
         new(ShortcutIds.FirstSection, ShortcutCopy.FirstSection, new KeyGesture(Key.Home), KeyboardCopy.ScopeSettings),
         new(ShortcutIds.LastSection, ShortcutCopy.LastSection, new KeyGesture(Key.End), KeyboardCopy.ScopeSettings),
+        new(ShortcutIds.StopBrowserControl, ShortcutCopy.StopBrowserControl, new KeyGesture(Key.OemPeriod, KeyModifiers.Control | KeyModifiers.Shift), KeyboardCopy.ScopeApplication),
     ];
 }

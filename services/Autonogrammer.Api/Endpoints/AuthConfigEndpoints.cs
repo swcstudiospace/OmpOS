@@ -1,6 +1,5 @@
 using Autonogrammer.Api.Options;
-using Autonogrammer.Api.Security;
-using Autonogrammer.Api.Serialization;
+using Autonogrammer.Contracts.Accounts;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
 
@@ -8,7 +7,7 @@ namespace Autonogrammer.Api.Endpoints;
 
 /// <summary>
 /// The anonymous <c>GET /auth/config</c> endpoint: tells a client how this deployment authenticates (<c>owner-token</c>, <c>oidc</c> or
-/// <c>development</c>). The answer carries no secret and is never cached. It has its own per-client-address rate-limit policy.
+/// <c>development</c>) and, in OIDC mode with a client block, the public sign-in settings. It has its own per-client-address rate-limit policy.
 /// </summary>
 internal static class AuthConfigEndpoints
 {
@@ -36,16 +35,37 @@ internal static class AuthConfigEndpoints
     {
         ArgumentNullException.ThrowIfNull(context);
         var auth = options.Value;
-        context.Response.Headers.CacheControl = "no-store";
+        var includeClient = auth.Mode == ApiAuthMode.Oidc && !auth.AllowDevelopmentPrincipal && auth.Client.HasAny;
+        context.Response.Headers.CacheControl = includeClient ? "public, max-age=300" : "no-store";
+        AuthConfigResponse response;
         if (auth.Mode == ApiAuthMode.OwnerToken)
         {
-            return TypedResults.Json(new AuthConfigResponse("owner-token", null, null), ApiJsonContext.Default.AuthConfigResponse);
+            response = new AuthConfigResponse("owner-token", null, null);
+        }
+        else if (auth.AllowDevelopmentPrincipal)
+        {
+            response = new AuthConfigResponse("development", null, null);
+        }
+        else if (!includeClient)
+        {
+            response = new AuthConfigResponse("oidc", Blank(auth.Authority), Blank(auth.Audience));
+        }
+        else
+        {
+            var client = auth.Client;
+            Uri? projectUrl = Uri.TryCreate(client.ProjectUrl, UriKind.Absolute, out var parsed) ? parsed : null;
+            response = new AuthConfigResponse(
+                "oidc",
+                Blank(auth.Authority),
+                Blank(auth.Audience),
+                projectUrl,
+                Blank(client.PublishableKey),
+                new AuthMethods(client.EmailCodeEnabled, client.MagicLinkEnabled),
+                new AuthEmailCode(client.EmailOtpExpirySeconds, client.ResendCooldownSeconds),
+                client.SignupEmailHasCode);
         }
 
-        var response = auth.AllowDevelopmentPrincipal
-            ? new AuthConfigResponse("development", null, null)
-            : new AuthConfigResponse("oidc", Blank(auth.Authority), Blank(auth.Audience));
-        return TypedResults.Json(response, ApiJsonContext.Default.AuthConfigResponse);
+        return TypedResults.Json(response, AccountsJsonContext.Default.AuthConfigResponse);
     }
 
     private static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;

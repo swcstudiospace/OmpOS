@@ -70,7 +70,7 @@ public sealed class ApiProblemMappingTests
     public async Task NonJsonBodyStillMapsByStatus()
     {
         using var handler = new RoutedHandler();
-        handler.On(HttpMethod.Get, "/board", _ => new HttpResponseMessage(HttpStatusCode.BadGateway) { Content = new StringContent("<html>bad gateway</html>", Encoding.UTF8, "text/html") });
+        handler.On(HttpMethod.Get, "/account/board", _ => new HttpResponseMessage(HttpStatusCode.BadGateway) { Content = new StringContent("<html>bad gateway</html>", Encoding.UTF8, "text/html") });
         using var http = new HttpClient(handler) { BaseAddress = new Uri("http://api.invalid/", UriKind.Absolute) };
 
         var problem = await Should.ThrowAsync<ApiProblemException>(() => new OmpApiClient(http).GetBoardAsync(TestContext.Current.CancellationToken)).ConfigureAwait(true);
@@ -121,7 +121,7 @@ public sealed class ApiProblemMappingTests
         const string token = "TOKEN-VALUE-123";
         using var routes = new RoutedHandler();
         routes.OnJson(HttpMethod.Get, "/sessions/s-1", SessionJson);
-        routes.OnProblem(HttpMethod.Get, "/board", HttpStatusCode.Unauthorized, null, "Unauthorized.", "Sign in.");
+        routes.OnProblem(HttpMethod.Get, "/account/board", HttpStatusCode.Unauthorized, null, "Unauthorized.", "Sign in.");
         using var anonymousHandler = new BearerTokenHandler(new NoApiTokenProvider(), routes);
         using var signedInHandler = new BearerTokenHandler(new FixedToken(token), routes);
         using var anonymous = new HttpClient(anonymousHandler, disposeHandler: false) { BaseAddress = new Uri("http://api.invalid/", UriKind.Absolute) };
@@ -142,7 +142,7 @@ public sealed class ApiProblemMappingTests
     public async Task CancellationIsHonoured()
     {
         using var handler = new RoutedHandler();
-        handler.OnJson(HttpMethod.Get, "/board", "{}");
+        handler.OnJson(HttpMethod.Get, "/account/board", "{}");
         using var http = new HttpClient(handler) { BaseAddress = new Uri("http://api.invalid/", UriKind.Absolute) };
         using var cancelled = new CancellationTokenSource();
         await cancelled.CancelAsync().ConfigureAwait(true);

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.AgentLoop.Substrate;
 
 namespace Autonogrammer.Native.Agents;
@@ -37,7 +38,6 @@ internal sealed class AgentLoopEnvironment
     internal const string RepositoryMarker = ".gitmodules";
 
     private const string XdgDataHomeVariable = "XDG_DATA_HOME";
-    private const string StateDirectoryName = "Autonogrammer";
     private const int MaxTokenFileBytes = 4096;
 
     private readonly Func<string, string?> _getVariable;
@@ -88,13 +88,37 @@ internal sealed class AgentLoopEnvironment
     /// <summary>Gets the directory the Substrate extensions read tokens from, or null to leave their default in force.</summary>
     public string? SubstrateTokensDirectory { get; }
 
-    /// <summary>Resolves the environment of the running process.</summary>
+    /// <summary>
+    /// Resolves the environment of the running process. This is the native startup path: it first moves a legacy per-user data directory under the
+    /// default state root (see <see cref="EnsureStateRootMigrated"/>), then resolves. A state directory the user configured is never migrated.
+    /// </summary>
     /// <returns>The resolved environment.</returns>
-    public static AgentLoopEnvironment Resolve() => Resolve(
-        static name => Environment.GetEnvironmentVariable(name),
-        AppContext.BaseDirectory,
-        Environment.CurrentDirectory,
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+    public static AgentLoopEnvironment Resolve()
+    {
+        Func<string, string?> getVariable = static name => Environment.GetEnvironmentVariable(name);
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        _ = EnsureStateRootMigrated(getVariable, home);
+        return Resolve(getVariable, AppContext.BaseDirectory, Environment.CurrentDirectory, home);
+    }
+
+    /// <summary>
+    /// Moves a legacy per-user data directory to the current one under the default data home, once. Migration applies to default roots only: when
+    /// <c>AUTONOGRAMMER_STATE_DIR</c> names the state root nothing is touched and null is returned. The data home is the one
+    /// state resolution uses (<c>XDG_DATA_HOME</c>, else <c>~/.local/share</c>).
+    /// </summary>
+    /// <param name="getVariable">Reads an environment variable, returning null when it is unset.</param>
+    /// <param name="homeDirectory">The user's home directory.</param>
+    /// <param name="warn">Receives a warning raised by the migration. Null sends it to the trace listeners.</param>
+    /// <returns>The outcome, or null when a configured state directory made migration not apply.</returns>
+    /// <exception cref="ArgumentNullException">A delegate or the home directory is null.</exception>
+    internal static UserDataMigration? EnsureStateRootMigrated(Func<string, string?> getVariable, string homeDirectory, Action<string>? warn = null)
+    {
+        ArgumentNullException.ThrowIfNull(getVariable);
+        ArgumentNullException.ThrowIfNull(homeDirectory);
+        return Clean(getVariable(StateDirectoryVariable)) is not null
+            ? null
+            : UserDataDirectory.EnsureCurrent(ResolveDataHome(getVariable, homeDirectory), warn);
+    }
 
     /// <summary>Resolves an environment from injected process facts, so the precedence rules can be checked without touching the process.</summary>
     /// <param name="getVariable">Reads an environment variable, returning null when it is unset.</param>
@@ -210,11 +234,13 @@ internal sealed class AgentLoopEnvironment
     private static string ResolveStateRoot(Func<string, string?> getVariable, string workspace, string homeDirectory)
     {
         var configured = Clean(getVariable(StateDirectoryVariable));
-        if (configured is not null)
-        {
-            return Path.GetFullPath(configured, workspace);
-        }
+        return configured is not null
+            ? Path.GetFullPath(configured, workspace)
+            : UserDataDirectory.PathFor(ResolveDataHome(getVariable, homeDirectory));
+    }
 
+    private static string ResolveDataHome(Func<string, string?> getVariable, string homeDirectory)
+    {
         var dataHome = Clean(getVariable(XdgDataHomeVariable));
         if (dataHome is null || !Path.IsPathRooted(dataHome))
         {
@@ -223,7 +249,7 @@ internal sealed class AgentLoopEnvironment
                 : Path.Combine(homeDirectory, ".local", "share");
         }
 
-        return Path.Combine(dataHome, StateDirectoryName);
+        return dataHome;
     }
 
     private static (SubstrateEndpoint? Endpoint, string? Problem) ResolveSubstrate(Func<string, string?> getVariable)

@@ -28,8 +28,11 @@ internal sealed class ScriptedPanelHost : IAgentPanelHost
     /// <summary>Gets the identifiers of the omp terminal sessions created, in order.</summary>
     internal List<string> CreatedTerminals { get; } = [];
 
-    /// <summary>Gets the identifiers passed to <see cref="OpenSession"/>, in order.</summary>
+    /// <summary>Gets the identifiers passed to <see cref="OpenSessionAsync"/>, in order.</summary>
     internal List<string> Opened { get; } = [];
+
+    /// <summary>Gets the startup requests and their cancellation tokens.</summary>
+    internal List<(string Id, CancellationToken Token)> OpenRequests { get; } = [];
 
     /// <summary>Gets the identifiers passed to <see cref="CloseSessionAsync"/>, in order.</summary>
     internal List<string> Closed { get; } = [];
@@ -57,6 +60,12 @@ internal sealed class ScriptedPanelHost : IAgentPanelHost
 
     /// <summary>Gets or sets the source of the task context of each session, or null for none.</summary>
     internal Func<string, ITaskContextSource?>? ContextSources { get; set; }
+
+    /// <summary>Gets or sets the controlled startup operation, or null for immediate startup.</summary>
+    internal Func<string, CancellationToken, Task>? OpenGate { get; set; }
+
+    /// <summary>Gets or sets an exception thrown before startup returns a view model.</summary>
+    internal Exception? OpenFailure { get; set; }
 
     /// <inheritdoc />
     public Task<string> CreateSessionAsync(CancellationToken cancellationToken)
@@ -91,9 +100,25 @@ internal sealed class ScriptedPanelHost : IAgentPanelHost
     }
 
     /// <inheritdoc />
-    public AgentSessionViewModel OpenSession(AgentRow row)
+    public Task<AgentSessionViewModel> OpenSessionAsync(AgentRow row, CancellationToken cancellationToken)
     {
         Opened.Add(row.Id);
+        OpenRequests.Add((row.Id, cancellationToken));
+        if (OpenFailure is not null)
+        {
+            throw OpenFailure;
+        }
+
+        return OpenAsync(row, cancellationToken);
+    }
+
+    private async Task<AgentSessionViewModel> OpenAsync(AgentRow row, CancellationToken cancellationToken)
+    {
+        if (OpenGate is not null)
+        {
+            await OpenGate(row.Id, cancellationToken).ConfigureAwait(true);
+        }
+
         var composer = new ComposerViewModel(_ => Task.FromResult(true), () => Task.CompletedTask);
         var viewModel = new AgentSessionViewModel(new AgentSessionOptions
         {

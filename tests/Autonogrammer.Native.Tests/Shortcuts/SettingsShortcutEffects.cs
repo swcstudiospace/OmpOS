@@ -39,7 +39,7 @@ internal static class SettingsShortcutEffects
 
         ShortcutKeys.Press(fixture.Window, gesture);
 
-        fixture.Model.SelectedSection.ShouldBe(first ? SettingsSection.Runtime : SettingsSection.Keyboard);
+        fixture.Model.SelectedSection.ShouldBe(first ? SettingsSection.Runtime : SettingsSection.Notifications);
         fixture.Window.CurrentView.ShouldNotBeNull().DataContext.ShouldBeSameAs(fixture.Model.SelectedPage);
     }
 }

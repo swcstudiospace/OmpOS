@@ -2,6 +2,7 @@ using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Terminal;
 using Autonogrammer.UI.Components.Auth;
 using Autonogrammer.Web.Services.Settings;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.JSInterop;
 
@@ -14,6 +15,7 @@ internal static class WebServiceRegistration
     /// Registers the services of the web head over one shared <see cref="HttpClient"/>. A real build sends the owner token its <see cref="OwnerTokenSession"/>
     /// holds (the sign-in of an owner-token deployment); a Demo build sends none. Another <see cref="IApiTokenProvider"/> registered first wins. Settings
     /// pages registered as <see cref="ISettingsPage"/> are added to the Settings window.
+    /// A 401 forwards the refused bearer token to the active session so a late refusal cannot clear a replacement owner token.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="createInnerHandler">Builds the handler that sends the requests: the browser handler for the real API, the Demo handler in Demo mode.</param>
@@ -32,14 +34,23 @@ internal static class WebServiceRegistration
         ArgumentNullException.ThrowIfNull(options);
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped(_ => new OwnerTokenSession());
-        services.AddScoped<IAuthSession>(sp => sp.GetRequiredService<OwnerTokenSession>());
+        services.AddScoped(sp => new WebAccountSession(sp.GetRequiredService<TimeProvider>(), sp));
+        services.AddScoped(sp => new WebAuthSessionRouter(sp.GetRequiredService<OwnerTokenSession>(), sp.GetRequiredService<WebAccountSession>()));
+        services.AddScoped<IAuthSession>(sp => sp.GetRequiredService<WebAuthSessionRouter>());
+        services.AddScoped<Autonogrammer.UI.Components.Cowork.ICoworkAccess>(sp => new WebCoworkAccess(sp.GetRequiredService<WebWorkbenchOptions>(), sp.GetService<IAuthSession>(), sp.GetService<IAuthConfigSource>()));
         services.TryAddScoped<IApiTokenProvider>(sp =>
-            sp.GetRequiredService<WebWorkbenchOptions>().IsDemo ? new NoApiTokenProvider() : sp.GetRequiredService<OwnerTokenSession>());
+            sp.GetRequiredService<WebWorkbenchOptions>().IsDemo
+                ? new NoApiTokenProvider()
+                : sp.GetRequiredService<WebAuthSessionRouter>());
         services.AddScoped(sp =>
         {
             var tokens = sp.GetRequiredService<IApiTokenProvider>();
             Action<string>? onUnauthorized = null;
-            if (tokens is OwnerTokenSession session)
+            if (tokens is WebAuthSessionRouter router)
+            {
+                onUnauthorized = router.Expire;
+            }
+            else if (tokens is OwnerTokenSession session)
             {
                 onUnauthorized = session.Expire;
             }
@@ -49,7 +60,11 @@ internal static class WebServiceRegistration
                 BaseAddress = resolveBaseAddress(sp),
             });
         });
-        services.AddScoped<IAuthConfigSource>(sp => new AuthConfigClient(sp.GetRequiredService<ApiHttp>().Client));
+        services.AddScoped<IAuthConfigSource>(sp => new AuthConfigClient(
+            sp.GetRequiredService<ApiHttp>().Client,
+            sp.GetRequiredService<IConfiguration>()[WebAuthOrigin.ConfigKey],
+            sp.GetRequiredService<WebAuthSessionRouter>(),
+            sp.GetRequiredService<NavigationManager>().BaseUri));
         services.AddScoped<IOmpApiClient>(sp => new OmpApiClient(sp.GetRequiredService<ApiHttp>().Client));
         services.AddScoped<IOwnerTokenConnector>(sp => new OwnerTokenConnector(sp.GetRequiredService<OwnerTokenSession>(), sp.GetRequiredService<IOmpApiClient>()));
         services.AddScoped<IUserEventFeed>(sp => new UserEventFeed(sp.GetRequiredService<ApiHttp>().Client, null, sp.GetRequiredService<TimeProvider>()));

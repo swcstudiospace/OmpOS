@@ -335,7 +335,7 @@ internal sealed class DemoWorld : IDisposable
         return new ChangeDecisionResponse { Path = path, Status = status, Applied = false, Reason = "Demo: the decision is recorded only; no file was written." };
     }
 
-    /// <summary>Gets the board (<c>GET /board</c>).</summary>
+    /// <summary>Gets the board (<c>GET /account/board</c>).</summary>
     /// <returns>The ten columns in desktop order.</returns>
     internal BoardResponse Board()
     {
@@ -364,6 +364,13 @@ internal sealed class DemoWorld : IDisposable
             })],
         };
     }
+
+    /// <summary>Gets the demo account (<c>GET /account</c>). The feature list is empty, so no Devices row is offered.</summary>
+    /// <returns>The account.</returns>
+#pragma warning disable CA1822
+    internal Autonogrammer.Contracts.Accounts.AccountResponse Account() =>
+        new("demo", null, null, null, []);
+#pragma warning restore CA1822
 
     /// <summary>Gets the card details (<c>GET /sessions/{id}/card-details</c>).</summary>
     /// <param name="id">The session.</param>

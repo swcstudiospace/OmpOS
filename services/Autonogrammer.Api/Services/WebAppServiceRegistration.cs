@@ -23,7 +23,6 @@ internal static class WebAppServiceRegistration
             options.SerializerOptions.TypeInfoResolverChain.Insert(0, SessionControlsJsonContext.Default);
         });
         _ = services.AddOptions<SessionWorkspaceOptions>().BindConfiguration(SessionWorkspaceOptions.SectionName);
-        services.TryAddSingleton<SessionLifecycleStore>();
         services.TryAddSingleton<WorkspaceLocator>();
         services.TryAddSingleton<ChangeDecisionStore>();
         services.TryAddSingleton<SessionLogAppender>();

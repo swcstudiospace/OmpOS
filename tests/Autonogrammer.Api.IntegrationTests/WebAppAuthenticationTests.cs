@@ -11,7 +11,10 @@ public sealed class WebAppAuthenticationTests
     public static TheoryData<string, string> Routes => new()
     {
         { "GET", "/sessions" },
-        { "GET", "/board" },
+        { "GET", "/account" },
+        { "GET", "/account/sessions" },
+        { "GET", "/account/sessions/x" },
+        { "GET", "/account/board" },
         { "GET", "/workspace" },
         { "GET", "/events" },
         { "GET", "/sessions/x/stages" },
@@ -60,7 +63,7 @@ public sealed class WebAppAuthenticationTests
 
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(true);
 
-        var expected = path is "/sessions" or "/board" or "/workspace" or "/events" ? HttpStatusCode.OK : HttpStatusCode.NotFound;
+        var expected = path is "/sessions" or "/account" or "/account/sessions" or "/account/board" or "/workspace" or "/events" ? HttpStatusCode.OK : HttpStatusCode.NotFound;
         response.StatusCode.ShouldBe(expected);
     }
 }

@@ -25,10 +25,10 @@ public sealed class WorkspaceSettingsAccessTests
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
-    /// <summary>With no owner list every authenticated caller reads every route.</summary>
+    /// <summary>With the default owner list of the host helper, a listed authenticated caller reads every route.</summary>
     [Theory]
     [MemberData(nameof(WorkspaceRoutes.All), MemberType = typeof(WorkspaceRoutes))]
-    public async Task WithNoOwnerList_AnyAuthenticatedCaller_Reads(string route)
+    public async Task WithTheDefaultOwnerList_AListedCaller_Reads(string route)
     {
         using var workspace = new TempWorkspace();
         _ = workspace.Write("a.txt", "a");
@@ -36,6 +36,46 @@ public sealed class WorkspaceSettingsAccessTests
         using var client = WebAppTestHost.AsPrincipal(factory, "bob");
 
         using var response = await WorkspaceHost.GetAsync(client, route, Token).ConfigureAwait(true);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    /// <summary>With an empty owner list and no developer principal every authenticated caller gets 404 on every route.</summary>
+    [Theory]
+    [MemberData(nameof(WorkspaceRoutes.All), MemberType = typeof(WorkspaceRoutes))]
+    public async Task WithAnEmptyOwnerList_EveryAuthenticatedCaller_Gets404(string route)
+    {
+        using var workspace = new TempWorkspace();
+        _ = workspace.Write("a.txt", "secret-text");
+        using var factory = WorkspaceHost.Jwt(workspace, owners: []);
+        using var client = WebAppTestHost.AsPrincipal(factory, "bob");
+
+        using var response = await WorkspaceHost.GetAsync(client, route, Token).ConfigureAwait(true);
+
+        await WorkspaceHost.ShouldBeProblemAsync(response, HttpStatusCode.NotFound, "workspace_not_found", Token).ConfigureAwait(true);
+    }
+
+    /// <summary>With an empty owner list the Development developer principal still reads.</summary>
+    [Fact]
+    public async Task WithAnEmptyOwnerList_TheDevelopmentPrincipal_Reads()
+    {
+        using var factory = WorkspaceHost.Dev(null);
+        using var client = factory.CreateClient();
+
+        using var response = await WorkspaceHost.GetAsync(client, "/settings/runtime", Token).ConfigureAwait(true);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    /// <summary>With an empty owner list the single operator of an owner-token deployment still reads.</summary>
+    [Fact]
+    public async Task WithAnEmptyOwnerList_TheOwnerTokenOperator_Reads()
+    {
+        using var factory = Security.OwnerTokenTestHost.CreateFactory();
+        using var client = factory.CreateClient();
+        Security.OwnerTokenTestHost.UseBearer(client, Security.OwnerTokenTestHost.Token);
+
+        using var response = await WorkspaceHost.GetAsync(client, "/settings/runtime", Token).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }

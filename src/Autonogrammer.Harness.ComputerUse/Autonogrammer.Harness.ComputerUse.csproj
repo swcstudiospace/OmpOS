@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../Autonogrammer.Harness.ComputerUse.Abstractions/Autonogrammer.Harness.ComputerUse.Abstractions.csproj" />
+    <ProjectReference Include="../Autonogrammer.Cowork.Abstractions/Autonogrammer.Cowork.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Autonogrammer.Harness.ComputerUse.Tests" />
+  </ItemGroup>
+
+</Project>

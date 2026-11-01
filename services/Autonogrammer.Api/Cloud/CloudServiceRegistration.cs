@@ -42,7 +42,6 @@ internal static class CloudServiceRegistration
             SessionsOptions.IsPostgresStore(provider.GetRequiredService<IOptions<SessionsOptions>>().Value.Store)
                 ? provider.GetRequiredService<PostgresCloudAgentStore>()
                 : provider.GetRequiredService<InMemoryCloudAgentStore>());
-        services.AddHostedService<CloudAgentStoreStartup>();
 
         // Secrets: write-only owner store first, operator-defined options second.
         services.AddSingleton<InMemoryCloudSecretStore>();

@@ -63,6 +63,7 @@ public static class TranscriptMarkdownExporter
         PermissionBlock => "Permission request",
         ToolResultBlock result => $"Tool result: {OneLine(result.ToolName)}",
         FileEditBlock edit => $"File edit: {OneLine(edit.Path)}",
+        ImageBlock image => $"Image: {OneLine(image.AltText)}",
         PlanBlock => "Plan",
         DiffPlaceholderBlock diff => $"Diff: {OneLine(diff.Path)}",
         ErrorBlock => "Error",
@@ -82,6 +83,7 @@ public static class TranscriptMarkdownExporter
         PermissionBlock permission => PermissionBody(permission),
         ToolResultBlock result => ToolResultBody(result),
         FileEditBlock edit => FileEditBody(edit),
+        ImageBlock image => ImageBody(image),
         PlanBlock plan => PlanBody(plan),
         DiffPlaceholderBlock diff => Normalize(diff.Reason),
         ErrorBlock error => ErrorBody(error),
@@ -149,6 +151,25 @@ public static class TranscriptMarkdownExporter
 
         lines.Add(string.Empty);
         lines.Add(Fence(string.Empty, Normalize(edit.NewText)));
+        return string.Join('\n', lines);
+    }
+
+
+    private static string ImageBody(ImageBlock image)
+    {
+        var lines = new List<string>
+        {
+            $"Alt: {OneLine(image.AltText)}",
+            $"MIME: {OneLine(image.MimeType)}",
+            $"Bytes: {image.ByteLength}",
+            $"Omitted: {(image.Omitted ? "yes" : "no")}",
+        };
+        if (image.DataUri is { Length: > 0 } uri)
+        {
+            lines.Add(string.Empty);
+            lines.Add(Fence("text", uri));
+        }
+
         return string.Join('\n', lines);
     }
 

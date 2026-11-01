@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:perm="clr-namespace:Autonogrammer.Native.Views.Settings"
+             x:Class="Autonogrammer.Native.Views.Settings.PermissionsPageView"
+             x:DataType="perm:PermissionsPageState"
+             Focusable="False">
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+  <StackPanel Spacing="8" Margin="16">
+    <TextBlock Classes="settings-label"
+               Text="Permission mode"
+               AutomationProperties.Name="Permission mode" />
+    <TextBlock Classes="settings-body"
+               Text="{CompiledBinding SelectedMode}"
+               AutomationProperties.Name="Selected permission mode" />
+    <ItemsControl ItemsSource="{CompiledBinding ModeLabels}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <TextBlock Classes="settings-body"
+                     Text="{CompiledBinding}"
+                     AutomationProperties.Name="{CompiledBinding}" />
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <TextBlock Classes="settings-help"
+               Text="{CompiledBinding SkipWarning}"
+               AutomationProperties.Name="Skip warning" />
+    <TextBlock Classes="settings-label"
+               Text="Folder grants"
+               AutomationProperties.Name="Folder grants" />
+    <ItemsControl ItemsSource="{CompiledBinding Grants}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <TextBlock Classes="settings-body"
+                     Text="{CompiledBinding}"
+                     AutomationProperties.Name="{CompiledBinding}" />
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <TextBlock Classes="settings-label"
+               Text="Limits"
+               AutomationProperties.Name="Limit statements" />
+    <ItemsControl ItemsSource="{CompiledBinding Statements}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <TextBlock Classes="settings-body"
+                     Text="{CompiledBinding}"
+                     AutomationProperties.Name="{CompiledBinding}" />
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

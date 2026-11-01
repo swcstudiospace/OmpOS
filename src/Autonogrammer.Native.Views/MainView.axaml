@@ -86,6 +86,10 @@
                        TextTrimming="CharacterEllipsis"
                        MaxLines="1" />
           </DockPanel>
+          <ContentControl x:Name="SurfaceSwitchSlot"
+                          Grid.Column="2"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Left" />
 
           <TabStrip x:Name="TopTabs"
                     Grid.Column="3"
@@ -101,6 +105,10 @@
                           Content="Kanban"
                           AutomationProperties.Name="Kanban" />
           </TabStrip>
+          <ContentControl x:Name="HeaderEndSlot"
+                          Grid.Column="4"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Right" />
 
           <Border x:Name="TopBarInsetRight"
                   Grid.Column="5"

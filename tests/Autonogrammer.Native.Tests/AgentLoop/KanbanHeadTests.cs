@@ -19,7 +19,7 @@ public sealed class KanbanHeadTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         head.Board.State.ShouldBe(BoardState.Loading);
 
@@ -43,7 +43,7 @@ public sealed class KanbanHeadTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var id = await head.Host.CreateSessionAsync(ct).ConfigureAwait(true);
@@ -72,7 +72,7 @@ public sealed class KanbanHeadTests
         tree.WriteReadyPlugins();
         using var substrate = new StubSubstrateHandler();
         var clock = new ManualTimeProvider(new DateTimeOffset(2026, 10, 26, 12, 0, 0, TimeSpan.Zero));
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp(), Substrate("http://127.0.0.1:7410"), substrate, clock: clock, detailsRefresh: AgentHead.DefaultDetailsRefreshInterval));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp(), Substrate("http://127.0.0.1:7410"), substrate, clock: clock, detailsRefresh: AgentHead.DefaultDetailsRefreshInterval)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var id = await head.Host.CreateSessionAsync(ct).ConfigureAwait(true);

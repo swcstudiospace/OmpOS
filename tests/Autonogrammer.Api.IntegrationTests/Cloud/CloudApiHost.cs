@@ -344,7 +344,6 @@ internal sealed class CloudApiHost : IAsyncDisposable
         services.AddApiSessionStore(configuration);
         services.AddApiCoordination(configuration);
         services.AddSingleton<SessionService>();
-        services.AddSingleton<SessionRegistry>();
         services.AddSingleton<IHarnessSessionFactory>(new LocalRunRefusedFactory());
         services.AddSingleton<PromptRunner>();
         services.AddSingleton<ISandboxProvider, FakeSandboxProvider>();

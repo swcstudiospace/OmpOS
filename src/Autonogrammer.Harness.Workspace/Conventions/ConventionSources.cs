@@ -2,12 +2,16 @@ using Autonogrammer.Workspace.BuiltinSkills;
 
 namespace Autonogrammer.Workspace.Conventions;
 
-/// <summary>The file trees a discovery run reads: the one that holds the workspace roots, the one that holds the user's home and, optionally, the skills that ship with the application.</summary>
+/// <summary>The file trees a discovery run reads: the one that holds the workspace roots, the one that holds the user's home and, optionally, the skills that ship with the application and the installed plugin bundles.</summary>
 /// <param name="Project">The source of the workspace roots.</param>
 /// <param name="User">The source of the user's home directory. For a remote workspace it is usually still the local machine.</param>
 /// <param name="Builtin">The skills that ship with the application, or <see langword="null"/> for none. They have the lowest precedence; see <see cref="ConventionScope.Builtin"/>.</param>
-public sealed record ConventionSources(IConventionFileSource Project, IConventionFileSource User, BuiltinSkillSource? Builtin = null)
+/// <param name="PluginRoots">Installed plugin bundle directories, or <see langword="null"/> for none. Read after built-in skills so a project, user or built-in item of the same name wins.</param>
+public sealed record ConventionSources(IConventionFileSource Project, IConventionFileSource User, BuiltinSkillSource? Builtin = null, IReadOnlyList<string>? PluginRoots = null)
 {
+    /// <summary>Gets a local source over <see cref="PluginRoots"/>, or <see langword="null"/> when no plugin roots were set.</summary>
+    public IConventionFileSource? Plugin => PluginRoots is null ? null : new LocalConventionFileSource(PluginRoots);
+
     /// <summary>Creates the sources of a local session: both trees are the local disk, each limited to its own roots.</summary>
     /// <param name="roots">The workspace roots.</param>
     /// <param name="userHome">The user's home directory, or null for none.</param>
@@ -24,4 +28,13 @@ public sealed record ConventionSources(IConventionFileSource Project, IConventio
     /// <param name="builtin">The bundled skills, or <see langword="null"/> for the <c>skills</c> folder next to the running application (<see cref="BuiltinSkillSource.CreateDefault"/>).</param>
     /// <returns>The sources, with <see cref="Builtin"/> set.</returns>
     public ConventionSources WithBuiltin(BuiltinSkillSource? builtin = null) => this with { Builtin = builtin ?? BuiltinSkillSource.CreateDefault() };
+
+    /// <summary>Returns these sources with installed plugin bundle directories added.</summary>
+    /// <param name="pluginRoots">The bundle directories. Each is a bundle root, not a skills folder.</param>
+    /// <returns>The sources, with <see cref="PluginRoots"/> set.</returns>
+    public ConventionSources WithPluginRoots(IReadOnlyList<string> pluginRoots)
+    {
+        ArgumentNullException.ThrowIfNull(pluginRoots);
+        return this with { PluginRoots = pluginRoots };
+    }
 }

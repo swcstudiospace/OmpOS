@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Autonogrammer.Contracts.Cloud;
+using Autonogrammer.Resilience;
 using Npgsql;
 
 namespace Autonogrammer.Sessions.Postgres;
@@ -10,7 +11,7 @@ namespace Autonogrammer.Sessions.Postgres;
 /// across processes; <see cref="UpdateAsync"/> takes the row lock with <c>SELECT … FOR UPDATE</c>. The lock order is always the owner
 /// lock first, then the row lock, so two changes cannot wait on each other.
 /// </summary>
-/// <remarks>The table is created by <see cref="PostgresCloudAgentSchema"/>. No column or JSON member holds a secret value.</remarks>
+/// <remarks>The table is created by migration M0002 of the <c>MigrationRunner</c>. No column or JSON member holds a secret value. Every command runs through the PostgreSQL <see cref="ResiliencePipeline"/>.</remarks>
 public sealed class PostgresCloudAgentStore : ICloudAgentStore
 {
     private const string SelectByIdSql = "SELECT record FROM cloud_agents WHERE id = @id";
@@ -48,20 +49,30 @@ public sealed class PostgresCloudAgentStore : ICloudAgentStore
     private const string OwnerLockSql = "SELECT pg_advisory_xact_lock(@key)";
 
     private readonly NpgsqlDataSource _dataSource;
+    private readonly ResiliencePipeline _pipeline;
 
     /// <summary>Initializes a new instance of the <see cref="PostgresCloudAgentStore"/> class.</summary>
     /// <param name="dataSource">The data source whose search path holds the <c>cloud_agents</c> table.</param>
-    public PostgresCloudAgentStore(NpgsqlDataSource dataSource)
+    /// <param name="resilience">The pipeline every command runs through, or <see langword="null"/> for a private pipeline with the default options.</param>
+    public PostgresCloudAgentStore(NpgsqlDataSource dataSource, PostgresResilience? resilience = null)
     {
         ArgumentNullException.ThrowIfNull(dataSource);
         _dataSource = dataSource;
+        _pipeline = (resilience ?? PostgresResilience.CreateDefault()).Pipeline;
     }
 
     /// <inheritdoc />
-    public async Task<CloudAgentCreateResult> CreateAsync(CloudAgentRecord record, CloudAgentLimits limits, CancellationToken cancellationToken)
+    public Task<CloudAgentCreateResult> CreateAsync(CloudAgentRecord record, CloudAgentLimits limits, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(record);
         ArgumentNullException.ThrowIfNull(limits);
+
+        // Not retried after a reply (a replayed create would answer Replayed for an agent this call created); a serialisation failure retries the whole transaction once.
+        return _pipeline.ExecuteTransactionAsync(OperationClass.Interactive, token => CreateCoreAsync(record, limits, token), cancellationToken);
+    }
+
+    private async Task<CloudAgentCreateResult> CreateCoreAsync(CloudAgentRecord record, CloudAgentLimits limits, CancellationToken cancellationToken)
+    {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
@@ -164,6 +175,7 @@ public sealed class PostgresCloudAgentStore : ICloudAgentStore
                 command.CommandText = SelectByOwnerSql;
                 command.Parameters.AddWithValue("owner_id", ownerId);
             },
+            OperationClass.Interactive,
             cancellationToken);
     }
 
@@ -178,18 +190,24 @@ public sealed class PostgresCloudAgentStore : ICloudAgentStore
                 command.CommandText = SelectByStatusSql;
                 command.Parameters.AddWithValue("statuses", names);
             },
+            OperationClass.Background,
             cancellationToken);
     }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<CloudAgentRecord>> ListAllAsync(CancellationToken cancellationToken) =>
-        QueryManyAsync(static command => command.CommandText = SelectAllSql, cancellationToken);
+        QueryManyAsync(static command => command.CommandText = SelectAllSql, OperationClass.Background, cancellationToken);
 
     /// <inheritdoc />
-    public async Task<CloudAgentRecord?> UpdateAsync(string id, Func<CloudAgentRecord, CloudAgentRecord> mutate, CancellationToken cancellationToken)
+    public Task<CloudAgentRecord?> UpdateAsync(string id, Func<CloudAgentRecord, CloudAgentRecord> mutate, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(mutate);
+        return _pipeline.ExecuteTransactionAsync(OperationClass.Interactive, token => UpdateCoreAsync(id, mutate, token), cancellationToken);
+    }
+
+    private async Task<CloudAgentRecord?> UpdateCoreAsync(string id, Func<CloudAgentRecord, CloudAgentRecord> mutate, CancellationToken cancellationToken)
+    {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
@@ -218,9 +236,14 @@ public sealed class PostgresCloudAgentStore : ICloudAgentStore
     }
 
     /// <inheritdoc />
-    public async Task<CloudAgentActivation> TryActivateAsync(string id, int maxActive, DateTimeOffset now, CancellationToken cancellationToken)
+    public Task<CloudAgentActivation> TryActivateAsync(string id, int maxActive, DateTimeOffset now, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(id);
+        return _pipeline.ExecuteTransactionAsync(OperationClass.Interactive, token => TryActivateCoreAsync(id, maxActive, now, token), cancellationToken);
+    }
+
+    private async Task<CloudAgentActivation> TryActivateCoreAsync(string id, int maxActive, DateTimeOffset now, CancellationToken cancellationToken)
+    {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
@@ -272,9 +295,16 @@ public sealed class PostgresCloudAgentStore : ICloudAgentStore
     }
 
     /// <inheritdoc />
-    public async Task<bool> DeleteAsync(string id, CancellationToken cancellationToken)
+    public Task<bool> DeleteAsync(string id, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(id);
+
+        // Not retried: a retry after a delete that did commit would answer false for a row this call removed.
+        return _pipeline.ExecuteAsync(OperationClass.Interactive, false, token => DeleteCoreAsync(id, token), cancellationToken);
+    }
+
+    private async Task<bool> DeleteCoreAsync(string id, CancellationToken cancellationToken)
+    {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
@@ -286,9 +316,14 @@ public sealed class PostgresCloudAgentStore : ICloudAgentStore
     }
 
     /// <inheritdoc />
-    public async Task<CloudAgentUsage> GetUsageAsync(string ownerId, CancellationToken cancellationToken)
+    public Task<CloudAgentUsage> GetUsageAsync(string ownerId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ownerId);
+        return _pipeline.ExecuteAsync(OperationClass.Interactive, true, token => ReadUsageAsync(ownerId, token), cancellationToken);
+    }
+
+    private async Task<CloudAgentUsage> ReadUsageAsync(string ownerId, CancellationToken cancellationToken)
+    {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
@@ -367,7 +402,10 @@ public sealed class PostgresCloudAgentStore : ICloudAgentStore
         }
     }
 
-    private async Task<CloudAgentRecord?> QueryOneAsync(Action<NpgsqlCommand> bind, CancellationToken cancellationToken)
+    private Task<CloudAgentRecord?> QueryOneAsync(Action<NpgsqlCommand> bind, CancellationToken cancellationToken) =>
+        _pipeline.ExecuteAsync(OperationClass.Interactive, true, token => ReadOneAsync(bind, token), cancellationToken);
+
+    private async Task<CloudAgentRecord?> ReadOneAsync(Action<NpgsqlCommand> bind, CancellationToken cancellationToken)
     {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -376,7 +414,10 @@ public sealed class PostgresCloudAgentStore : ICloudAgentStore
         }
     }
 
-    private async Task<IReadOnlyList<CloudAgentRecord>> QueryManyAsync(Action<NpgsqlCommand> bind, CancellationToken cancellationToken)
+    private Task<IReadOnlyList<CloudAgentRecord>> QueryManyAsync(Action<NpgsqlCommand> bind, OperationClass operationClass, CancellationToken cancellationToken) =>
+        _pipeline.ExecuteAsync(operationClass, true, token => ReadManyAsync(bind, token), cancellationToken);
+
+    private async Task<IReadOnlyList<CloudAgentRecord>> ReadManyAsync(Action<NpgsqlCommand> bind, CancellationToken cancellationToken)
     {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))

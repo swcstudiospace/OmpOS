@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../apps/Autonogrammer.Native/Autonogrammer.Native.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Native.Views/Autonogrammer.Native.Views.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Presentation/Autonogrammer.Presentation.csproj" />
     <ProjectReference Include="../Autonogrammer.Parity.Support/Autonogrammer.Parity.Support.csproj" />

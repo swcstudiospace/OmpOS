@@ -6,7 +6,7 @@
 //                                  (ArrowUp, ArrowDown, Tab) never move the caret or the focus; a key pressed during IME composition
 //                                  is hidden from Blazor, so a composition never sends a message.
 //   guardList(element)             ArrowUp, ArrowDown, Home and End never scroll the page while the focus is in the list.
-//   registerShortcuts(dotnet)      Ctrl or Command with Shift+A, Shift+K and the comma call dotnet.OnShortcut("agents"|"kanban"|"settings").
+//   registerShortcuts(dotnet)      Ctrl or Command with Shift+A, Shift+K, Shift+Digit1, Shift+Digit2 and the comma call dotnet.OnShortcut.
 //   watchOutside(container, dotnet)  Calls dotnet.OnOutside() when a pointer goes down, or the focus lands, outside the container (popups).
 //   ensureVisible(id)              Scrolls the element with that id into view inside its scroll container, without animation.
 //   resetScroll()                  Scrolls the document to the top (a view switch starts at the top).
@@ -72,7 +72,11 @@ export function registerShortcuts(dotnet) {
     }
     const key = event.key.toLowerCase();
     let id = null;
-    if (event.shiftKey && key === "a") {
+    if (event.shiftKey && event.code === "Digit1") {
+      id = "code";
+    } else if (event.shiftKey && event.code === "Digit2") {
+      id = "cowork";
+    } else if (event.shiftKey && key === "a") {
       id = "agents";
     } else if (event.shiftKey && key === "k") {
       id = "kanban";

@@ -4,6 +4,7 @@
 @page "/sessions/{SessionId}"
 @page "/settings"
 @page "/settings/{SettingsPage}"
+@page "/cowork"
 @using Microsoft.Extensions.Logging
 @using Autonogrammer.Presentation.AgentPanel
 @using Autonogrammer.Presentation.Changes
@@ -24,6 +25,9 @@
                IsDemo="Workbench.IsDemo"
                Source="Workbench.Source"
                Workspace="Workbench.Workspace"
+               CoworkShell="Workbench.CoworkShell"
+               CoworkLoadFailed="Workbench.CoworkSessions.HasFailed"
+               CoworkRetry="ReloadCowork"
                ChangesFactory="ChangesFor"
                RetryAsync="Workbench.RetryAsync" />
 
@@ -105,6 +109,8 @@
 
     // The workbench owns one change set per opened session, fed from the API; null until the session is opened.
     private ChangeSetModel? ChangesFor(AgentSessionViewModel session) => Workbench.ChangesOf(session.Id);
+
+    private Task ReloadCowork() => Workbench.CoworkSessions.RetryAsync(_lifetime.Token);
 
     private void OnWorkbenchChanged(object? sender, EventArgs e) => _ = InvokeAsync(StateHasChanged);
 }

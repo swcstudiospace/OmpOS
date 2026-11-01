@@ -20,7 +20,7 @@ public sealed class SessionLifecycleSweeperTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var clock = new ManualTimeProvider(Start);
-        var head = AgentHead.Create(Options(tree, clock));
+        var head = await AgentHead.CreateAsync(Options(tree, clock)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var id = await head.Host.CreateSessionAsync(ct).ConfigureAwait(true);
@@ -42,7 +42,7 @@ public sealed class SessionLifecycleSweeperTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var clock = new ManualTimeProvider(Start);
-        var head = AgentHead.Create(Options(tree, clock));
+        var head = await AgentHead.CreateAsync(Options(tree, clock)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var id = await head.Host.CreateSessionAsync(ct).ConfigureAwait(true);
@@ -69,7 +69,7 @@ public sealed class SessionLifecycleSweeperTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var clock = new ManualTimeProvider(Start);
-        var head = AgentHead.Create(Options(tree, clock));
+        var head = await AgentHead.CreateAsync(Options(tree, clock)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var id = await head.Host.CreateSessionAsync(ct).ConfigureAwait(true);
@@ -93,7 +93,7 @@ public sealed class SessionLifecycleSweeperTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var clock = new ManualTimeProvider(Start);
-        var head = AgentHead.Create(Options(tree, clock));
+        var head = await AgentHead.CreateAsync(Options(tree, clock)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var finished = await head.Host.CreateSessionAsync(ct).ConfigureAwait(true);
@@ -126,7 +126,7 @@ public sealed class SessionLifecycleSweeperTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var clock = new ManualTimeProvider(Start);
-        var head = AgentHead.Create(Options(tree, clock));
+        var head = await AgentHead.CreateAsync(Options(tree, clock)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var failed = await head.Host.CreateSessionAsync(ct).ConfigureAwait(true);
@@ -147,7 +147,7 @@ public sealed class SessionLifecycleSweeperTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var clock = new ManualTimeProvider(Start);
-        var head = AgentHead.Create(Options(tree, clock));
+        var head = await AgentHead.CreateAsync(Options(tree, clock)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var id = await head.Host.CreateSessionAsync(ct).ConfigureAwait(true);
@@ -170,7 +170,7 @@ public sealed class SessionLifecycleSweeperTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         new FileSettingsStore(tree.State).SetRuntime(new RuntimeSettingsValues(IdleStopHours: 5, RetentionDays: 2));
-        var head = AgentHead.Create(Options(tree, new ManualTimeProvider(Start)));
+        var head = await AgentHead.CreateAsync(Options(tree, new ManualTimeProvider(Start))).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
 
@@ -184,7 +184,7 @@ public sealed class SessionLifecycleSweeperTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var clock = new ManualTimeProvider(Start);
-        var head = AgentHead.Create(Options(tree, clock, sweep: TimeSpan.FromMinutes(5)));
+        var head = await AgentHead.CreateAsync(Options(tree, clock, sweep: TimeSpan.FromMinutes(5))).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var timer = clock.Timers.Single(static candidate => candidate.Period == TimeSpan.FromMinutes(5));
@@ -211,7 +211,7 @@ public sealed class SessionLifecycleSweeperTests
             MaintenanceInterval = Timeout.InfiniteTimeSpan,
             DetailsRefreshInterval = Timeout.InfiniteTimeSpan,
         };
-        var head = AgentHead.Create(options);
+        var head = await AgentHead.CreateAsync(options).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
 
         head.Settings.Sweeper.ShouldBeNull();

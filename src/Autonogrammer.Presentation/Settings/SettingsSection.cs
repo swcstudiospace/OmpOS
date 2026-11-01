@@ -68,4 +68,29 @@ public enum SettingsSection
 
     /// <summary>The automations: prompts that start an agent on a schedule.</summary>
     Automations = 21,
+
+    /// <summary>Computer Use: disclosure, grants, denylist additions, kill chord, security phrase and audit.</summary>
+    ComputerUse = 22,
+
+    /// <summary>Cowork Chromium: locate state, policy and a user-confirmed acquisition.</summary>
+    BrowserUse = 23,
+
+    /// <summary>Plugin bundles: install, enable and per-skill switches. Hooks are listed and never run.</summary>
+    Bundles = 24,
+
+    /// <summary>Connector permission matrix. Auto does not trust readOnlyHint.</summary>
+    Connectors = 25,
+
+    /// <summary>Cowork permission modes and folder grants. Auto is Auto (rules).</summary>
+    CoworkPermissions = 26,
+
+    /// <summary>Process isolation. Network is unrestricted.</summary>
+    Isolation = 27,
+
+    /// <summary>Local usage ledger. No plan limits and no billing.</summary>
+    Usage = 28,
+
+    /// <summary>Notification policy. OS text is title-only by default.</summary>
+    Notifications = 29,
+
 }

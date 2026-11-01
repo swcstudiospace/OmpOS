@@ -190,6 +190,30 @@ public sealed class AppShellTests : UiTestContext
         without.FindAll(".autonogrammer-workspace-label").Count.ShouldBe(0);
     }
 
+    /// <summary>The default rail label leaves the existing names unchanged.</summary>
+    [Fact]
+    public void TheDefaultRailLabelIsAgents()
+    {
+        var cut = Render<AppShell>();
+
+        cut.Find("nav").GetAttribute("aria-label").ShouldBe("Agents");
+        cut.Find(".autonogrammer-text-heading").TextContent.ShouldBe("Agents");
+        cut.Find(".autonogrammer-topbar-menu").GetAttribute("aria-label").ShouldBe("Agents panel");
+        cut.Find(".autonogrammer-rail-bar button").GetAttribute("aria-label").ShouldBe("Close agents panel");
+    }
+
+    /// <summary>A Tasks label renames the rail, the heading and the drawer controls.</summary>
+    [Fact]
+    public void ATasksLabelRenamesTheRail()
+    {
+        var cut = Render<AppShell>(parameters => parameters.Add(p => p.RailLabel, "Tasks"));
+
+        cut.Find("nav").GetAttribute("aria-label").ShouldBe("Tasks");
+        cut.Find(".autonogrammer-text-heading").TextContent.ShouldBe("Tasks");
+        cut.Find(".autonogrammer-topbar-menu").GetAttribute("aria-label").ShouldBe("Tasks panel");
+        cut.Find(".autonogrammer-rail-bar button").GetAttribute("aria-label").ShouldBe("Close tasks panel");
+    }
+
     private static string IdOf(object? argument) => ((ElementReference)argument!).Id;
 
     /// <summary>

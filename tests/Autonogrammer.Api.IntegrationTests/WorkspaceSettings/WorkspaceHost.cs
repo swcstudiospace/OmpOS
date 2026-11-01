@@ -11,6 +11,11 @@ namespace Autonogrammer.Api.IntegrationTests.WorkspaceSettings;
 /// <summary>Builds hosts for the workspace settings tests: a Development or token host, a workspace folder, no real home, and the spies that prove nothing is started.</summary>
 internal static class WorkspaceHost
 {
+    /// <summary>The subjects the workspace settings tests authenticate as; empty owners deny every caller, so a token host names them.</summary>
+    public static readonly IReadOnlyList<string> DefaultOwners = ["alice", "bob"];
+
+    private const string OwnersKey = "Api:Workspace:Owners";
+
     /// <summary>Creates a Development host (development principal on) with the workspace folder set and no process home.</summary>
     /// <param name="workspace">The workspace folder, or null for a host with none.</param>
     /// <param name="config">Further configuration overrides.</param>
@@ -22,9 +27,33 @@ internal static class WorkspaceHost
     /// <summary>Creates a host that validates bearer tokens, with the same defaults as <see cref="Dev"/>.</summary>
     /// <param name="workspace">The workspace folder, or null for a host with none.</param>
     /// <param name="config">Further configuration overrides.</param>
+    /// <param name="owners">
+    /// The <c>Api:Workspace:Owners</c> list. Null (the default) names the subjects the tests use (<see cref="DefaultOwners"/>) unless
+    /// <paramref name="config"/> sets the list itself; an explicit empty list leaves the owners empty.
+    /// </param>
     /// <returns>The host factory.</returns>
-    public static ApiFactory Jwt(TempWorkspace? workspace, Dictionary<string, string?>? config = null) =>
-        WebAppTestHost.Jwt(config: Merge(workspace, config), more: services => Configure(services, null));
+    public static ApiFactory Jwt(TempWorkspace? workspace, Dictionary<string, string?>? config = null, IReadOnlyList<string>? owners = null)
+    {
+        var merged = Merge(workspace, config);
+        if (owners is not null)
+        {
+            SetOwners(merged, owners);
+        }
+        else if (!merged.Keys.Any(static key => key.StartsWith(OwnersKey, StringComparison.Ordinal)))
+        {
+            SetOwners(merged, DefaultOwners);
+        }
+
+        return WebAppTestHost.Jwt(config: merged, more: services => Configure(services, null));
+    }
+
+    private static void SetOwners(Dictionary<string, string?> merged, IReadOnlyList<string> owners)
+    {
+        for (var index = 0; index < owners.Count; index++)
+        {
+            merged[$"{OwnersKey}:{index}"] = owners[index];
+        }
+    }
 
     /// <summary>Sends a GET request with a relative address.</summary>
     /// <param name="client">The client.</param>

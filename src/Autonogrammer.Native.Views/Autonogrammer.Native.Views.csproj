@@ -12,6 +12,8 @@
     <PackageReference Include="Iciclecreek.Avalonia.Terminal" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="TextMateSharp.Grammars" />
+    <PackageReference Include="Avalonia.Controls.WebView" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" />
   </ItemGroup>
 
   <ItemGroup>

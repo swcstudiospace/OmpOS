@@ -33,16 +33,7 @@ internal static class OmpModelsEditor
 
         if (existing.Id is not null)
         {
-            var replacement = ToLines(rendered, layout.EolStyle, lines[existing.End].Eol);
-            var current = lines.GetRange(existing.Begin, existing.End - existing.Begin + 1);
-            if (current.SequenceEqual(replacement))
-            {
-                return new OmpModelsEdit(OmpModelsWriteStatus.Unchanged, null, $"The provider {provider.Id} is already up to date.");
-            }
-
-            lines.RemoveRange(existing.Begin, existing.End - existing.Begin + 1);
-            lines.InsertRange(existing.Begin, replacement);
-            return Written(layout, lines, $"The provider {provider.Id} was updated.");
+            return Replace(layout, lines, existing, rendered, provider.Id);
         }
 
         if (layout.ProvidersLine >= 0)
@@ -83,9 +74,14 @@ internal static class OmpModelsEditor
 
         var lines = new List<OmpYamlLine>(layout.Lines);
         var originalLastLineHadNoEol = lines[^1].Eol.Length == 0;
-        var removedLastLine = block.End == lines.Count - 1;
-        var removedCount = block.End - block.Begin + 1;
-        lines.RemoveRange(block.Begin, removedCount);
+        var spans = AllSpans(layout, id);
+        var removedLastLine = spans.Any(span => span.End == lines.Count - 1);
+        var removedCount = 0;
+        foreach (var span in spans.OrderByDescending(span => span.Begin))
+        {
+            lines.RemoveRange(span.Begin, span.End - span.Begin + 1);
+            removedCount += span.End - span.Begin + 1;
+        }
 
         var sectionEnd = layout.SectionEnd - removedCount;
         if (layout.ProvidersCreatedByAutonogrammer && SectionIsBlank(lines, layout.ProvidersLine + 1, sectionEnd))
@@ -137,6 +133,42 @@ internal static class OmpModelsEditor
 
     private static OmpModelsEdit Written(OmpModelsLayout layout, List<OmpYamlLine> lines, string message) =>
         new(OmpModelsWriteStatus.Written, layout.Join(lines), message);
+
+    // The replacement always carries the new markers, so a legacy block is rewritten in the same write; a legacy twin of the same id is dropped.
+    private static OmpModelsEdit Replace(OmpModelsLayout layout, List<OmpYamlLine> lines, OmpManagedBlockSpan existing, List<string> rendered, string id)
+    {
+        var replacement = ToLines(rendered, layout.EolStyle, lines[existing.End].Eol);
+        var current = lines.GetRange(existing.Begin, existing.End - existing.Begin + 1);
+        var twins = layout.LegacyBlocks.Where(block => string.Equals(block.Id, id, StringComparison.Ordinal)).ToList();
+        if (twins.Count == 0 && current.SequenceEqual(replacement))
+        {
+            return new OmpModelsEdit(OmpModelsWriteStatus.Unchanged, null, $"The provider {id} is already up to date.");
+        }
+
+        var originalLastLineHadNoEol = lines[^1].Eol.Length == 0;
+        var twinEndedTheFile = twins.Any(twin => twin.End == lines.Count - 1);
+        var insertAt = existing.Begin;
+        foreach (var span in twins.Append(existing).OrderByDescending(span => span.Begin))
+        {
+            lines.RemoveRange(span.Begin, span.End - span.Begin + 1);
+            if (span.Begin < existing.Begin)
+            {
+                insertAt -= span.End - span.Begin + 1;
+            }
+        }
+
+        lines.InsertRange(insertAt, replacement);
+        if (originalLastLineHadNoEol && twinEndedTheFile)
+        {
+            lines[^1] = lines[^1] with { Eol = string.Empty };
+        }
+
+        return Written(layout, lines, $"The provider {id} was updated.");
+    }
+
+    // Every span of either marker family that names the id: the canonical block plus any superseded legacy twin.
+    private static List<OmpManagedBlockSpan> AllSpans(OmpModelsLayout layout, string id) =>
+        layout.Blocks.Concat(layout.LegacyBlocks).Where(span => string.Equals(span.Id, id, StringComparison.Ordinal)).ToList();
 
     private static bool SectionIsBlank(List<OmpYamlLine> lines, int start, int end)
     {

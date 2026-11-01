@@ -26,6 +26,12 @@ internal sealed class FailingSessionRepository : ISessionRepository
     public Task<IReadOnlyList<string>> ListSessionIdsByStatusAsync(SessionStatus status, DateTimeOffset updatedBefore, CancellationToken cancellationToken) => throw Unreachable();
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<Session>> ListByOwnerAsync(string ownerId, SessionSurface surface, bool includeClosed, int limit, SessionCursor? cursor, CancellationToken cancellationToken) => throw Unreachable();
+
+    /// <inheritdoc />
+    public Task<bool> SetClosedAsync(string sessionId, bool closed, CancellationToken cancellationToken) => throw Unreachable();
+
+    /// <inheritdoc />
     public Task<IAsyncDisposable> LockSessionAsync(string sessionId, CancellationToken cancellationToken) => throw Unreachable();
 
     /// <inheritdoc />

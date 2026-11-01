@@ -7,13 +7,15 @@ using StackExchange.Redis;
 namespace Autonogrammer.Coordination.Dragonfly;
 
 /// <summary>
-/// <see cref="ISessionSignals"/> backed by the Dragonfly pub/sub channel <c>autonogrammer:signals</c>. The payload is the session
+/// <see cref="ISessionSignals"/> backed by the Dragonfly pub/sub channel <c>autonogrammer:v1:sig:session</c>. The payload is the session
 /// id as UTF-8. Delivery is asynchronous: each subscription buffers signals and hands them to its handler in order, one
 /// at a time. A handler that throws affects only its own delivery. The subscription keeps delivering later signals.
 /// Handlers receive <see cref="CancellationToken.None"/>. Disposing the subscription stops new deliveries; a handler that
 /// is already running may finish after <c>DisposeAsync</c> returns.
 /// </summary>
 /// <remarks>
+/// Signals are open: when Dragonfly cannot answer, a publish is dropped and a subscribe returns a handle that delivers nothing. The reader's
+/// poll is the safety net, so an outage never fails a request.
 /// Each subscription's inbox holds at most 256 signals. When a handler falls behind, the oldest buffered signal is dropped
 /// to make room. A signal only says that a session changed and carries no change data, so a dropped signal is harmless:
 /// the reader is delayed until its next read, which is the same outcome as a lost signal. Publishers never wait for handlers.
@@ -22,6 +24,7 @@ public sealed class DragonflySessionSignals : ISessionSignals
 {
     private readonly ISubscriber _subscriber;
     private readonly ILogger<DragonflySessionSignals> _logger;
+    private readonly DragonflyResilience _resilience;
 
     /// <summary>The most signals one subscription buffers before the oldest is dropped.</summary>
     private const int SignalInboxCapacity = 256;
@@ -32,14 +35,22 @@ public sealed class DragonflySessionSignals : ISessionSignals
             new EventId(1, "SessionSignalHandlerFailed"),
             "A session signal handler failed on channel {Channel}.");
 
+    private static readonly Action<ILogger, string, Exception?> Unavailable =
+        LoggerMessage.Define<string>(
+            LogLevel.Warning,
+            new EventId(2, "SessionSignalsUnavailable"),
+            "Dragonfly could not answer a session signal {Operation}; the poll safety net applies.");
+
     /// <summary>Creates a signal hub over the subscriber of <paramref name="multiplexer"/>.</summary>
     /// <param name="multiplexer">The connection to Dragonfly. The caller owns its lifetime.</param>
     /// <param name="logger">Receives handler failures at Warning. Null discards them.</param>
-    public DragonflySessionSignals(IConnectionMultiplexer multiplexer, ILogger<DragonflySessionSignals>? logger = null)
+    /// <param name="resilience">The pipeline of the connection. Null builds one from the defaults.</param>
+    public DragonflySessionSignals(IConnectionMultiplexer multiplexer, ILogger<DragonflySessionSignals>? logger = null, DragonflyResilience? resilience = null)
     {
         ArgumentNullException.ThrowIfNull(multiplexer);
         _subscriber = multiplexer.GetSubscriber();
         _logger = logger ?? NullLogger<DragonflySessionSignals>.Instance;
+        _resilience = resilience ?? DragonflyResilience.Create();
     }
 
     /// <summary>
@@ -53,7 +64,11 @@ public sealed class DragonflySessionSignals : ISessionSignals
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
         cancellationToken.ThrowIfCancellationRequested();
 
-        await _subscriber.PublishAsync(DragonflyKeys.SignalChannel, sessionId).ConfigureAwait(false);
+        // The payload is the session id only; a duplicate wake-up is harmless, so the publish may be retried.
+        if (!await _resilience.TryOpenAsync(() => _subscriber.PublishAsync(DragonflyKeyspace.SignalSession, sessionId), cancellationToken).ConfigureAwait(false))
+        {
+            Unavailable(_logger, "publish", null);
+        }
     }
 
     /// <summary>Subscribes a handler to wake-ups. Dispose the returned handle to unsubscribe.</summary>
@@ -70,9 +85,14 @@ public sealed class DragonflySessionSignals : ISessionSignals
             FullMode = BoundedChannelFullMode.DropOldest,
             SingleReader = true,
         });
-        var channel = DragonflyKeys.SignalChannel;
+        var channel = DragonflyKeyspace.SignalSession;
         Action<RedisChannel, RedisValue> handler = (ignoredChannel, value) => inbox.Writer.TryWrite(value.ToString());
-        await _subscriber.SubscribeAsync(channel, handler).ConfigureAwait(false);
+        if (!await _resilience.TryOpenAsync(() => _subscriber.SubscribeAsync(channel, handler), cancellationToken).ConfigureAwait(false))
+        {
+            Unavailable(_logger, "subscribe", null);
+            _ = inbox.Writer.TryComplete();
+            return NoSubscription.Instance;
+        }
 
         var subscription = new DragonflySessionSignalSubscription(_subscriber, channel, handler, inbox.Writer);
         _ = PumpAsync(inbox.Reader, subscription, onSignal);
@@ -105,7 +125,7 @@ public sealed class DragonflySessionSignals : ISessionSignals
                 catch (Exception ex)
                 {
                     // This delivery failed; the subscription keeps delivering the next signal.
-                    HandlerFailed(_logger, DragonflyKeys.SignalChannel, ex);
+                    HandlerFailed(_logger, DragonflyKeyspace.SignalSession, ex);
                 }
             }
         }

@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Autonogrammer.Sessions.Postgres.Migrations;
 using Npgsql;
 
 namespace Autonogrammer.Sessions.Postgres.Tests;
@@ -36,6 +37,23 @@ internal sealed class PostgresTestSchema : IAsyncDisposable
         return schema;
     }
 
+    /// <summary>Creates a schema on the server and migrates it to the head with the production <see cref="MigrationRunner"/>, so the tables exist as they do in the API.</summary>
+    /// <param name="adminConnectionString">An administrative connection string for the server.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns>The new, migrated schema.</returns>
+    internal static async Task<PostgresTestSchema> CreateMigratedAsync(string adminConnectionString, CancellationToken cancellationToken)
+    {
+        var schema = await CreateAsync(adminConnectionString, cancellationToken).ConfigureAwait(false);
+        await schema.MigrateAsync(cancellationToken).ConfigureAwait(false);
+        return schema;
+    }
+
+    /// <summary>Runs the migration runner into this schema, as the migration role would: <c>schema_migrations</c> and every table land in this schema.</summary>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns>The versions applied by this call.</returns>
+    internal Task<IReadOnlyList<int>> MigrateAsync(CancellationToken cancellationToken) =>
+        new MigrationRunner(CreateDataSource(), SchemaName).MigrateAsync(cancellationToken);
+
     /// <summary>Creates a data source that uses this schema. The schema owns it and disposes it.</summary>
     /// <returns>A new data source over this schema.</returns>
     internal NpgsqlDataSource CreateDataSource()
@@ -62,7 +80,32 @@ internal sealed class PostgresTestSchema : IAsyncDisposable
         }
 
         _dataSources.Clear();
-        await ExecuteAdminAsync($"DROP SCHEMA IF EXISTS \"{SchemaName}\" CASCADE", CancellationToken.None).ConfigureAwait(false);
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await RemoveBackgroundJobsAsync(CancellationToken.None).ConfigureAwait(false);
+                await ExecuteAdminAsync($"DROP SCHEMA IF EXISTS \"{SchemaName}\" CASCADE", CancellationToken.None).ConfigureAwait(false);
+                return;
+            }
+            catch (PostgresException failure) when (string.Equals(failure.SqlState, "40P01", StringComparison.Ordinal) && attempt < 5)
+            {
+                // The retention policies the migrations add start TimescaleDB background jobs, which can take catalog locks against the drop. The server chose
+                // this statement as the deadlock victim and nothing was dropped, so run it again.
+                await Task.Delay(TimeSpan.FromMilliseconds(200 * attempt), CancellationToken.None).ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>Removes the TimescaleDB background jobs (the retention policies) of this schema's hypertables, so that none of them runs against the drop.</summary>
+    private async Task RemoveBackgroundJobsAsync(CancellationToken cancellationToken)
+    {
+        using var connection = new NpgsqlConnection(_adminConnectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT delete_job(job_id) FROM timescaledb_information.jobs WHERE hypertable_schema = @schema";
+        command.Parameters.AddWithValue("schema", SchemaName);
+        _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
     [SuppressMessage(

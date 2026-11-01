@@ -6,6 +6,7 @@ using Autonogrammer.Native.Views.Attachments;
 using Autonogrammer.Native.Views.Blocks;
 using Autonogrammer.Native.Views.Changes;
 using Autonogrammer.Native.Views.Chats;
+using Autonogrammer.Native.Views.Cowork;
 using Autonogrammer.Native.Views.Editor;
 using Autonogrammer.Native.Views.Explorer;
 using Autonogrammer.Native.Views.Kanban;
@@ -18,6 +19,7 @@ using Autonogrammer.Presentation.Agents;
 using Autonogrammer.Presentation.Changes;
 using Autonogrammer.Presentation.Chats;
 using Autonogrammer.Presentation.Composer;
+using Autonogrammer.Presentation.Cowork;
 using Autonogrammer.Presentation.Editor;
 using Autonogrammer.Presentation.Kanban;
 using Autonogrammer.Presentation.State;
@@ -58,7 +60,12 @@ internal static class ViewMapping
             AgentSessionViewModel agentSession => new ThreadHeaderView { DataContext = agentSession },
             StageTimelineModel timeline => new PipelineStripView { DataContext = timeline },
             KanbanBoardModel board => new KanbanBoardView { DataContext = board },
+            CoworkDockContent dock => new TextBlock { Text = dock.Label, Name = "DockPanelBody" },
+            CoworkConversationModel conversation => new CoworkConversationView { DataContext = conversation },
+            CoworkComposerModel composerSurface => new CoworkComposerView { DataContext = composerSurface },
+            CoworkApprovalCardModel approval => new CoworkApprovalCard { DataContext = approval },
             OmpTerminalViewModel terminal => new OmpTerminalView { DataContext = terminal },
+            Autonogrammer.Presentation.Subagents.SubagentPanelModel subagents => new Autonogrammer.Native.Views.Subagents.SubagentsPanelView { DataContext = subagents },
             _ => throw new ArgumentOutOfRangeException(
                 nameof(viewModel),
                 viewModel.GetType(),
@@ -95,6 +102,7 @@ internal static class ViewMapping
             ToolCallBlock toolCall => new ToolCallBlockView(toolCall),
             ToolResultBlock result => new ToolResultBlockView(result),
             FileEditBlock edit => new FileEditBlockView(edit),
+            ImageBlock image => new ImageBlockView(image),
             PermissionBlock permission => new PermissionBlockView(permission),
             PlanBlock plan => new PlanBlockView(plan),
             DiffPlaceholderBlock diff => new DiffPlaceholderView(diff),

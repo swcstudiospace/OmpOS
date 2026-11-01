@@ -15,9 +15,9 @@ namespace Autonogrammer.Presentation.AgentPanel;
 /// leaves the panel Ready with that session selected and offering Reopen; only a catalog with no session at all is Empty.
 /// </para>
 /// <para>
-/// Selection: selecting a row rebinds <see cref="Selected"/> to that session's view model (created once by the host and kept until the
-/// session leaves the catalog), cancels the context load of the session that was shown, and starts the load of the new one. A selection
-/// change never announces anything.
+/// Selection: selecting a row awaits the host's open and then activates its context. Only the latest selection may bind
+/// <see cref="Selected"/>. Immediate hosts still bind synchronously. Acquired view models are kept until their row leaves the catalog;
+/// cancellation stops obsolete startup and context loads. A selection change never announces anything.
 /// </para>
 /// <para>
 /// One place raises <see cref="ObservableModel.PropertyChanged"/>: every operation updates its fields and calls one private publisher,
@@ -29,6 +29,8 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
     private readonly SessionCatalogModel _catalog;
     private readonly IAgentPanelHost _host;
     private readonly Dictionary<string, AgentSessionViewModel> _sessions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Task<AgentSessionViewModel?>> _opening = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _retiredOpenings = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _lifetime = new();
     private readonly AgentPanelCommand _newSessionCommand;
     private readonly AgentPanelCommand _newTerminalCommand;
@@ -36,6 +38,7 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
     private AgentSessionViewModel? _selected;
     private int _initialising;
     private string? _hostError;
+    private string? _selectionError;
     private string? _actionError;
     private string? _announcement;
     private int _announcementVersion;
@@ -46,7 +49,9 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
     private string? _publishedAnnouncement;
     private int _publishedAnnouncementVersion;
     private string? _publishedActionError;
-    private TaskCompletionSource _selectionLoaded = CompletedSignal();
+    private Task _selectionLoad = Task.CompletedTask;
+    private CancellationTokenSource? _selectionCancellation;
+    private int _rebinding;
     private bool _disposed;
 
     /// <summary>Creates the panel over a catalog model and a host.</summary>
@@ -104,8 +109,12 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
     /// <summary>Gets the text of the last failed New agent or close, or null. The next successful action clears it.</summary>
     public string? ActionError => _publishedActionError;
 
-    /// <summary>Gets a task that completes when the context load of the latest selection ended. It never faults.</summary>
-    public Task SelectionLoad => _selectionLoaded.Task.WaitAsync(CancellationToken.None);
+    /// <summary>
+    /// Gets a task that completes after the latest selection's startup and context activation, including cleanup of superseded selections.
+    /// It never faults. After <see cref="Dispose"/>, awaiting it drains outstanding startup without adding an asynchronous disposal API.
+    /// The non-cancellable wait retains the current task's identity, including while its startup is pending.
+    /// </summary>
+    public Task SelectionLoad => _selectionLoad.WaitAsync(CancellationToken.None);
 
     /// <summary>Gets the command that creates a session and selects it. The view moves focus to the new session's prompt.</summary>
     public AgentPanelCommand NewSessionCommand => _newSessionCommand;
@@ -142,12 +151,18 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
     public async Task RetryLoadingAsync(CancellationToken cancellationToken)
     {
         _hostError = null;
+        var retrySelection = _selectionError is not null;
         using (BeginInitialising())
         {
             try
             {
                 await _host.ReloadAsync(cancellationToken).ConfigureAwait(true);
                 _catalog.Refresh();
+                if (retrySelection && _selectionError is not null)
+                {
+                    Rebind(_catalog.SelectedId);
+                    await SelectionLoad.WaitAsync(CancellationToken.None).ConfigureAwait(true);
+                }
             }
             catch (OperationCanceledException)
             {
@@ -168,6 +183,7 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
         var id = await _host.CreateSessionAsync(cancellationToken).ConfigureAwait(true);
         _catalog.Refresh();
         SelectSession(id);
+        await SelectionLoad.WaitAsync(CancellationToken.None).ConfigureAwait(true);
         SetActionError(null);
     }
 
@@ -179,10 +195,11 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
         var id = await _host.CreateTerminalSessionAsync(cancellationToken).ConfigureAwait(true);
         _catalog.Refresh();
         SelectSession(id);
+        await SelectionLoad.WaitAsync(CancellationToken.None).ConfigureAwait(true);
         SetActionError(null);
     }
 
-    /// <summary>Selects a session, which rebinds <see cref="Selected"/> and cancels the outstanding context load of the session that was shown.</summary>
+    /// <summary>Selects a catalog row immediately; <see cref="SelectionLoad"/> tracks its awaited startup and context activation.</summary>
     /// <param name="sessionId">The session to select, or null to clear the selection.</param>
     /// <returns>True when the selection now equals <paramref name="sessionId"/>; false when the catalog has no such session.</returns>
     public bool SelectSession(string? sessionId) => _catalog.Select(sessionId);
@@ -238,6 +255,9 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
         _catalog.SelectionChanged -= OnSelectionChanged;
         _catalog.CloseRequested -= OnCloseRequested;
         _lifetime.Cancel();
+        _selectionCancellation?.Dispose();
+        _selectionCancellation = null;
+        _selected?.Deactivate();
         foreach (var session in _sessions.Values.ToList())
         {
             Release(session);
@@ -328,6 +348,7 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
     {
         var rows = _catalog.Sessions;
         var live = rows.Select(row => row.Id).ToHashSet(StringComparer.Ordinal);
+        _retiredOpenings.UnionWith(_opening.Keys.Where(id => !live.Contains(id)));
         foreach (var id in _sessions.Keys.Where(known => !live.Contains(known)).ToList())
         {
             Release(_sessions[id]);
@@ -350,8 +371,21 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
         session.Dispose();
     }
 
-    private AgentSessionViewModel? Open(string sessionId)
+    private async Task<AgentSessionViewModel?> OpenAsync(string sessionId, CancellationToken cancellationToken)
     {
+        if (_opening.TryGetValue(sessionId, out var pending))
+        {
+            try
+            {
+                await pending.ConfigureAwait(true);
+            }
+            catch (Exception fault) when (fault is not OutOfMemoryException)
+            {
+                // A superseded attempt has finished its cleanup. A live selection retries rather than inheriting its failure.
+            }
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
         if (_sessions.TryGetValue(sessionId, out var existing))
         {
             return existing;
@@ -363,44 +397,108 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
             return null;
         }
 
-        var session = _host.OpenSession(row);
+        _retiredOpenings.Remove(sessionId);
+        var opening = OpenCoreAsync(row, cancellationToken);
+        _opening[sessionId] = opening;
+        try
+        {
+            return await opening.ConfigureAwait(true);
+        }
+        finally
+        {
+            if (_opening.TryGetValue(sessionId, out var current) && ReferenceEquals(current, opening))
+            {
+                _opening.Remove(sessionId);
+                _retiredOpenings.Remove(sessionId);
+            }
+        }
+    }
+
+    private async Task<AgentSessionViewModel?> OpenCoreAsync(AgentRow row, CancellationToken cancellationToken)
+    {
+        var session = await _host.OpenSessionAsync(row, cancellationToken).ConfigureAwait(true);
+        var currentRow = _catalog.Sessions.FirstOrDefault(candidate => string.Equals(candidate.Id, row.Id, StringComparison.Ordinal));
+        if (_disposed || currentRow is null || _retiredOpenings.Contains(row.Id))
+        {
+            Release(session);
+            return null;
+        }
+
+        // Even an obsolete request may finish successfully. Keep its model, but never activate it from that request.
+        session.ApplyRow(currentRow);
         session.CloseRequested += OnSessionCloseRequested;
         session.Timeline.PropertyChanged += OnTimelineChanged;
-        _sessions[sessionId] = session;
+        _sessions[row.Id] = session;
         return session;
     }
 
     private void Rebind(string? sessionId)
     {
-        // Cancel what the session that was shown still loads before the next one starts to load.
-        _selected?.Deactivate();
-        _selected = sessionId is null ? null : Open(sessionId);
-        _announcement = null;
-        var loaded = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        _selectionLoaded = loaded;
-        _ = ActivateSelectedAsync(_selected, loaded);
-        Publish();
+        if (_disposed)
+        {
+            return;
+        }
+
+        _rebinding++;
+        try
+        {
+            _selectionCancellation?.Cancel();
+            _selected?.Deactivate();
+            _selected = null;
+            _announcement = null;
+            _selectionError = null;
+            var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+            _selectionCancellation = cancellation;
+            _selectionLoad = RebindAsync(sessionId, cancellation, _selectionLoad, cancellation.Token);
+        }
+        finally
+        {
+            // Publish only after SelectionLoad is installed, even when startup and activation complete synchronously.
+            _rebinding--;
+            Publish();
+        }
     }
 
-    private static TaskCompletionSource CompletedSignal()
-    {
-        var signal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        signal.SetResult();
-        return signal;
-    }
-
-    private static async Task ActivateSelectedAsync(AgentSessionViewModel? session, TaskCompletionSource loaded)
+    private async Task RebindAsync(string? sessionId, CancellationTokenSource cancellation, Task previous, CancellationToken cancellationToken)
     {
         try
         {
-            if (session is not null)
+            // Use the token captured before startup; Dispose owns the source even while this operation is still draining.
+            var session = sessionId is null ? null : await OpenAsync(sessionId, cancellationToken).ConfigureAwait(true);
+            if (_disposed || cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            _selected = session;
+            Publish();
+            if (session is not null && !cancellationToken.IsCancellationRequested && !_disposed)
             {
                 await session.ActivateAsync().ConfigureAwait(true);
             }
         }
+        catch (OperationCanceledException)
+        {
+            // Cancellation is a normal end of a selection, not a load failure.
+        }
+        catch (Exception fault) when (fault is not OutOfMemoryException)
+        {
+            if (!_disposed && !cancellationToken.IsCancellationRequested)
+            {
+                _selectionError = PanelText.Plain(fault.Message, 200);
+                Publish();
+            }
+        }
         finally
         {
-            loaded.TrySetResult();
+            if (ReferenceEquals(_selectionCancellation, cancellation))
+            {
+                _selectionCancellation = null;
+            }
+
+            cancellation.Dispose();
+            // No superseded startup/cleanup task is abandoned, including when the latest selection is cleared or disposed.
+            await previous.WaitAsync(CancellationToken.None).ConfigureAwait(true);
         }
     }
 
@@ -425,12 +523,12 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
         return _catalog.TotalCount == 0 ? PanelState.Empty : PanelState.Ready;
     }
 
-    private string? ErrorReason => _hostError ?? _catalog.LoadError;
+    private string? ErrorReason => _hostError ?? _selectionError ?? _catalog.LoadError;
 
     /// <summary>The only place that raises <see cref="ObservableModel.PropertyChanged"/>: it announces whatever differs from the last publication.</summary>
     private void Publish()
     {
-        if (_disposed)
+        if (_disposed || _rebinding > 0)
         {
             return;
         }

@@ -14,6 +14,7 @@
 * [Web app guide](guides/web-app-guide.md)
 * [Local terminal](runbooks/local-terminal.md)
 * [Cloud terminals on Railway](runbooks/cloud-terminals.md)
+* [Cowork browser use](runbooks/browser-use.md)
 * [Agent loop and the four plugins](runbooks/agent-loop.md)
 
 ## Concepts
@@ -41,6 +42,9 @@
 * [Run modes, permissions.json and sandbox.json](reference/run-modes.md)
 * [MCP servers](reference/mcp.md)
 * [Built-in skills](reference/builtin-skills.md)
+* [Cowork extensions](reference/cowork-extensions.md)
+* [Cowork safety](reference/cowork-safety.md)
+* [Cowork isolation](runbooks/cowork-isolation.md)
 * [Automations](reference/automations.md)
 * [Checkpoints, worktrees, queue, modes, side chats and fork](reference/checkpoints-and-worktrees.md)
 
@@ -76,6 +80,8 @@
 * [Publish the docs with GitBook](runbooks/gitbook-publish.md)
 * [GitHub setup](runbooks/github-setup.md)
 * [Hosting](runbooks/hosting.md)
+* [Data plane](runbooks/data-plane.md)
+* [Accounts](runbooks/accounts.md)
 * [Deploy and rollback](runbooks/deploy-and-rollback.md)
 * [SLOs, alerting and uptime monitoring](runbooks/slo-and-alerting.md)
 * [Incident response](runbooks/incident-response.md)

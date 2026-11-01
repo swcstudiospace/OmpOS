@@ -4,7 +4,7 @@ namespace Autonogrammer.Sessions.Postgres.Tests;
 
 /// <summary>
 /// Runs the shared <see cref="ISessionRepository"/> contract against <see cref="PostgresSessionRepository"/>. Each test
-/// gets its own schema on the shared PostgreSQL server, created with <see cref="PostgresSessionSchema.EnsureCreatedAsync"/>.
+/// gets its own schema on the shared PostgreSQL server, migrated with the production <see cref="Migrations.MigrationRunner"/>.
 /// </summary>
 [Collection(PostgresServerGroup.Name)]
 public sealed class PostgresSessionRepositoryContractTests(PostgresServerFixture server)
@@ -15,9 +15,8 @@ public sealed class PostgresSessionRepositoryContractTests(PostgresServerFixture
     /// <inheritdoc />
     protected override async Task<PostgresSessionRepository> CreateRepositoryAsync(CancellationToken cancellationToken)
     {
-        var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, cancellationToken).ConfigureAwait(false);
+        var schema = await PostgresTestSchema.CreateMigratedAsync(server.AdminConnectionString, cancellationToken).ConfigureAwait(false);
         var dataSource = schema.CreateDataSource();
-        await PostgresSessionSchema.EnsureCreatedAsync(dataSource, cancellationToken).ConfigureAwait(false);
 
         var repository = new PostgresSessionRepository(dataSource, schema.Connection);
         _schemas.Add(repository, schema);

@@ -22,7 +22,7 @@ public sealed class AgentHeadPanelTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         head.Panel.State.ShouldBe(PanelState.Loading);
 
@@ -44,7 +44,7 @@ public sealed class AgentHeadPanelTests
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
-            var head = AgentHead.Create(Options(tree, omp));
+            var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
             try
             {
                 await head.InitializeAsync(ct).ConfigureAwait(true);
@@ -85,7 +85,7 @@ public sealed class AgentHeadPanelTests
         await using var sessionScope = session.ConfigureAwait(true);
         await session.RunAsync(async () =>
         {
-            var head = AgentHead.Create(Options(tree, omp));
+            var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
             try
             {
                 await head.InitializeAsync(ct).ConfigureAwait(true);
@@ -121,7 +121,7 @@ public sealed class AgentHeadPanelTests
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
-            var head = AgentHead.Create(Options(tree, omp));
+            var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
             try
             {
                 await head.InitializeAsync(ct).ConfigureAwait(true);
@@ -157,7 +157,7 @@ public sealed class AgentHeadPanelTests
     private static async Task<string> LeaveARunningTurnAsync(TempTree tree, CancellationToken cancellationToken)
     {
         var omp = new ScriptedOmp { HoldAfterFirstChunk = true };
-        var head = AgentHead.Create(Options(tree, omp));
+        var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
         await using (head.ConfigureAwait(true))
         {
             await head.InitializeAsync(cancellationToken).ConfigureAwait(true);

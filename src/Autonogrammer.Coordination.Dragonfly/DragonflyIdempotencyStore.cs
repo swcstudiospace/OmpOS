@@ -13,13 +13,16 @@ public sealed class DragonflyIdempotencyStore : IIdempotencyStore
     private const int MaxClaimAttempts = 3;
 
     private readonly IDatabase _database;
+    private readonly DragonflyResilience _resilience;
 
     /// <summary>Creates a store over the database of <paramref name="multiplexer"/>.</summary>
     /// <param name="multiplexer">The connection to Dragonfly. The caller owns its lifetime.</param>
-    public DragonflyIdempotencyStore(IConnectionMultiplexer multiplexer)
+    /// <param name="resilience">The pipeline of the connection. Null builds one from the defaults.</param>
+    public DragonflyIdempotencyStore(IConnectionMultiplexer multiplexer, DragonflyResilience? resilience = null)
     {
         ArgumentNullException.ThrowIfNull(multiplexer);
         _database = multiplexer.GetDatabase();
+        _resilience = resilience ?? DragonflyResilience.Create();
     }
 
     /// <summary>Claims a key in a scope for a request with the given fingerprint.</summary>
@@ -29,25 +32,27 @@ public sealed class DragonflyIdempotencyStore : IIdempotencyStore
     /// <param name="cancellationToken">Cancels the request before the first command is sent.</param>
     /// <returns>The claim outcome.</returns>
     /// <exception cref="InvalidOperationException">The stored record was malformed, or it expired during every claim attempt.</exception>
+    /// <exception cref="Autonogrammer.Resilience.DataPlaneTimeoutException">Dragonfly could not answer: the caller refuses the request with 503.</exception>
     public async Task<IdempotencyDecision> ClaimAsync(string scope, string key, string fingerprint, CancellationToken cancellationToken)
     {
         ValidateArguments(scope, key, fingerprint);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var redisKey = DragonflyKeys.Idempotency(scope, key);
+        var redisKey = DragonflyKeyspace.Idempotency(scope, key);
+        var pendingTimeToLive = DragonflyKeyspace.RequireTimeToLive(CoordinationDefaults.IdempotencyPendingTimeToLive);
         for (var attempt = 0; attempt < MaxClaimAttempts; attempt++)
         {
-            var claimed = await _database.StringSetAsync(
-                redisKey,
-                DragonflyKeys.PendingValue(fingerprint),
-                CoordinationDefaults.IdempotencyPendingTimeToLive,
-                when: When.NotExists).ConfigureAwait(false);
+            // SET NX is not idempotent: after a lost reply a retry would report a claim this caller already holds as taken.
+            var claimed = await _resilience.ClosedAsync(
+                false,
+                () => _database.StringSetAsync(redisKey, DragonflyKeyspace.PendingValue(fingerprint), pendingTimeToLive, when: When.NotExists),
+                cancellationToken).ConfigureAwait(false);
             if (claimed)
             {
                 return new IdempotencyDecision(IdempotencyOutcome.Claimed, null);
             }
 
-            var stored = await _database.StringGetAsync(redisKey).ConfigureAwait(false);
+            var stored = await _resilience.ClosedAsync(true, () => _database.StringGetAsync(redisKey), cancellationToken).ConfigureAwait(false);
             if (stored.HasValue)
             {
                 return Interpret(stored.ToString(), fingerprint);
@@ -72,15 +77,18 @@ public sealed class DragonflyIdempotencyStore : IIdempotencyStore
         ArgumentNullException.ThrowIfNull(responseJson);
         cancellationToken.ThrowIfCancellationRequested();
 
-        await _database.ScriptEvaluateAsync(
-            DragonflyScripts.CompleteIfPending,
-            new[] { DragonflyKeys.Idempotency(scope, key) },
-            new RedisValue[]
-            {
-                DragonflyKeys.PendingValue(fingerprint),
-                DragonflyKeys.CompletedValue(fingerprint, responseJson),
-                (long)CoordinationDefaults.IdempotencyCompletedTimeToLive.TotalMilliseconds,
-            }).ConfigureAwait(false);
+        var completedTimeToLive = DragonflyKeyspace.RequireTimeToLive(CoordinationDefaults.IdempotencyCompletedTimeToLive);
+        var redisKey = DragonflyKeyspace.Idempotency(scope, key);
+        RedisValue[] values =
+        [
+            DragonflyKeyspace.PendingValue(fingerprint),
+            DragonflyKeyspace.CompletedValue(fingerprint, responseJson),
+            (long)completedTimeToLive.TotalMilliseconds,
+        ];
+        await _resilience.ClosedAsync(
+            true,
+            () => _database.ScriptEvaluateAsync(DragonflyScripts.CompleteIfPending, new[] { redisKey }, values),
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Drops a pending claim made with the same fingerprint. Completed records are never removed.</summary>
@@ -94,25 +102,27 @@ public sealed class DragonflyIdempotencyStore : IIdempotencyStore
         ValidateArguments(scope, key, fingerprint);
         cancellationToken.ThrowIfCancellationRequested();
 
-        await _database.ScriptEvaluateAsync(
-            DragonflyScripts.DeleteIfValue,
-            new[] { DragonflyKeys.Idempotency(scope, key) },
-            new RedisValue[] { DragonflyKeys.PendingValue(fingerprint) }).ConfigureAwait(false);
+        var redisKey = DragonflyKeyspace.Idempotency(scope, key);
+        RedisValue[] values = [DragonflyKeyspace.PendingValue(fingerprint)];
+        await _resilience.ClosedAsync(
+            true,
+            () => _database.ScriptEvaluateAsync(DragonflyScripts.DeleteIfValue, new[] { redisKey }, values),
+            cancellationToken).ConfigureAwait(false);
     }
 
     private static IdempotencyDecision Interpret(string stored, string fingerprint)
     {
-        if (stored.StartsWith(DragonflyKeys.PendingPrefix, StringComparison.Ordinal))
+        if (stored.StartsWith(DragonflyKeyspace.PendingPrefix, StringComparison.Ordinal))
         {
-            var pendingFingerprint = stored[DragonflyKeys.PendingPrefix.Length..];
+            var pendingFingerprint = stored[DragonflyKeyspace.PendingPrefix.Length..];
             return string.Equals(pendingFingerprint, fingerprint, StringComparison.Ordinal)
                 ? new IdempotencyDecision(IdempotencyOutcome.InProgress, null)
                 : new IdempotencyDecision(IdempotencyOutcome.Conflict, null);
         }
 
-        if (stored.StartsWith(DragonflyKeys.CompletedPrefix, StringComparison.Ordinal))
+        if (stored.StartsWith(DragonflyKeyspace.CompletedPrefix, StringComparison.Ordinal))
         {
-            var body = stored[DragonflyKeys.CompletedPrefix.Length..];
+            var body = stored[DragonflyKeyspace.CompletedPrefix.Length..];
             var separator = body.IndexOf('|', StringComparison.Ordinal);
             if (separator < 0)
             {

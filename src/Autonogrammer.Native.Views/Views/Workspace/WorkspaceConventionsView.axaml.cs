@@ -2,6 +2,7 @@ using System.Collections;
 using Autonogrammer.Workspace;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input.Platform;
 using Avalonia.Threading;
 
 namespace Autonogrammer.Native.Views.Workspace;
@@ -24,11 +25,13 @@ internal partial class WorkspaceConventionsView : UserControl
         ModeRows.SelectionChanged += OnModeSelectionChanged;
     }
 
+    /// <summary>Gets the last command the copy affordance stored.</summary>
+    internal string? LastCopiedCommand { get; private set; }
+
     /// <summary>Binds the panel to the model in the data context and draws its current state.</summary>
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
-
         if (_model is not null)
         {
             _model.Changed -= OnModelChanged;
@@ -45,26 +48,23 @@ internal partial class WorkspaceConventionsView : UserControl
 
     private void OnModelChanged(object? sender, EventArgs e)
     {
-        // The catalog may reload on a watcher thread; the controls are drawn only on the thread that owns them.
         if (Dispatcher.UIThread.CheckAccess())
         {
             Render();
+            return;
         }
-        else
-        {
-            Dispatcher.UIThread.Post(() => Render());
-        }
+
+        Dispatcher.UIThread.Post(Render);
     }
 
     private void OnModeSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (_rendering || _model is null)
+        if (_rendering || _model is null || sender is not SelectingItemsControl control)
         {
             return;
         }
 
-        var chosen = (sender as SelectingItemsControl)?.SelectedItem as WorkspaceMode;
-        _model.SelectMode(chosen);
+        _model.SelectMode(control.SelectedItem as WorkspaceMode);
         Render();
     }
 
@@ -72,16 +72,15 @@ internal partial class WorkspaceConventionsView : UserControl
     {
         var snapshot = _model?.Snapshot ?? WorkspaceSnapshot.Empty;
         var selected = _model?.SelectedMode;
-
         _rendering = true;
         try
         {
+            SetItems(NoticeRows, (_model?.Notices ?? []).Select(notice => new LegacyConventionNoticeRow(notice, this)).ToList());
             SetItems(RuleRows, snapshot.Rules);
             SetItems(SkillRows, snapshot.Skills);
             SetItems(DiagnosticRows, snapshot.Diagnostics);
             SetItems(ModePicker, snapshot.Modes);
             SetItems(ModeRows, snapshot.Modes);
-
             SetSelection(ModePicker, selected);
             SetSelection(ModeRows, selected);
         }
@@ -97,9 +96,22 @@ internal partial class WorkspaceConventionsView : UserControl
         SelectedModeDetail.Text = DescribeMode(selected);
     }
 
+    /// <summary>Copies a repository move command. Git is never started.</summary>
+    /// <param name="command">The command text.</param>
+    internal async Task CopyRepoCommandAsync(string command)
+    {
+        LastCopiedCommand = command;
+        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+        if (clipboard is not null)
+        {
+            await clipboard.SetTextAsync(command).ConfigureAwait(true);
+        }
+    }
+
+    internal void MoveUser(string home) => _model?.MoveUserLegacyDirectory(home);
+
     private static void SetItems(ItemsControl target, IEnumerable items)
     {
-        // Assign only a new collection: resetting an unchanged list would drop the focused row.
         if (!ReferenceEquals(target.ItemsSource, items))
         {
             target.ItemsSource = items;
@@ -120,4 +132,5 @@ internal partial class WorkspaceConventionsView : UserControl
             : "Rules: " + JoinOrNone(mode.Rules) + ". Skills: " + JoinOrNone(mode.Skills) + ".";
 
     private static string JoinOrNone(IReadOnlyList<string> ids) => ids.Count == 0 ? "none" : string.Join(", ", ids);
+
 }

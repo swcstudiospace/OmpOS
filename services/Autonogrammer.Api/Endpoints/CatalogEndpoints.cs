@@ -12,9 +12,9 @@ using Microsoft.Extensions.Options;
 namespace Autonogrammer.Api.Endpoints;
 
 /// <summary>
-/// The session catalog of the web head: the session list with its catalog fields, the Kanban board built from it, the card details, the
-/// close, reopen and resume operations, and the workspace line of the top bar. Every route is scoped to the caller: a session another owner holds
-/// reads as absent (404), like every other session route.
+/// The session catalog of the web head: the session list with its catalog fields, the card details, the close, reopen and resume
+/// operations, and the workspace line of the top bar. The Kanban board is <c>GET /account/board</c>. Every route is scoped to the caller:
+/// a session another owner holds reads as absent (404), like every other session route. Listings read Code only.
 /// </summary>
 internal static class CatalogEndpoints
 {
@@ -28,10 +28,7 @@ internal static class CatalogEndpoints
         ArgumentNullException.ThrowIfNull(endpoints);
         endpoints.MapGet("/sessions", ListAsync)
             .WithTags(Tag)
-            .WithSummary("Lists the caller's sessions with their catalog fields.");
-        endpoints.MapGet("/board", BoardAsync)
-            .WithTags(Tag)
-            .WithSummary("Builds the Kanban board from the caller's sessions.");
+            .WithSummary("Lists the caller's Code sessions with their catalog fields.");
         endpoints.MapGet("/sessions/{id}/card-details", CardDetailsAsync)
             .WithTags(Tag)
             .WithSummary("Reads what the substrate knows about the session behind a card.")
@@ -57,38 +54,25 @@ internal static class CatalogEndpoints
         return endpoints;
     }
 
-    private static async Task<Ok<SessionCatalogEntry[]>> ListAsync(
-        SessionRegistry registry,
+    /// <summary>
+    /// Builds the Kanban board of the caller's Code sessions. The listing goes through <see cref="CodeBoardSource"/>.
+    /// </summary>
+    /// <param name="repository">The session store. The board reads it only through <see cref="CodeBoardSource"/>.</param>
+    /// <param name="user">The caller.</param>
+    /// <param name="time">The clock.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The board.</returns>
+    internal static async Task<BoardResponse> BuildBoardAsync(
         ISessionRepository repository,
-        SessionLifecycleStore lifecycle,
-        StageHub stages,
-        WorkspaceLocator workspace,
-        TimeProvider time,
         IUserContext user,
+        TimeProvider time,
         CancellationToken cancellationToken)
     {
-        var sessions = await LoadOwnedAsync(registry, repository, user, cancellationToken).ConfigureAwait(false);
-        var now = time.GetUtcNow();
-        var label = workspace.FolderLabel;
-        var entries = sessions
-            .Select(session => CatalogProjector.ToEntry(session, lifecycle.IsClosed(session.Id), now, stages.GraphIdOf(session.Id), label))
-            .ToArray();
-        return TypedResults.Ok(entries);
-    }
-
-    private static async Task<Ok<BoardResponse>> BoardAsync(
-        SessionRegistry registry,
-        ISessionRepository repository,
-        SessionLifecycleStore lifecycle,
-        TimeProvider time,
-        IUserContext user,
-        CancellationToken cancellationToken)
-    {
-        var sessions = await LoadOwnedAsync(registry, repository, user, cancellationToken).ConfigureAwait(false);
+        var sessions = await new CodeBoardSource(repository).ListAsync(user.Name, cancellationToken).ConfigureAwait(false);
         var now = time.GetUtcNow();
         var cards = sessions.Select(session =>
         {
-            var closed = lifecycle.IsClosed(session.Id);
+            var closed = session.ClosedAt is not null;
             var (row, _) = CatalogProjector.RowOf(session, closed, now);
             return new BoardCard
             {
@@ -109,7 +93,24 @@ internal static class CatalogEndpoints
             AcceptsDrop = column.AcceptsDrop,
             Cards = [.. cards.Where(card => string.Equals(card.ColumnKey, column.Key, StringComparison.Ordinal)).OrderByDescending(static card => card.LastActivityAt)],
         }).ToArray();
-        return TypedResults.Ok(new BoardResponse { State = cards.Length == 0 ? BoardStateKind.Empty : BoardStateKind.Ready, Columns = columns });
+        return new BoardResponse { State = cards.Length == 0 ? BoardStateKind.Empty : BoardStateKind.Ready, Columns = columns };
+    }
+
+    private static async Task<Ok<SessionCatalogEntry[]>> ListAsync(
+        CodeBoardSource source,
+        StageHub stages,
+        WorkspaceLocator workspace,
+        TimeProvider time,
+        IUserContext user,
+        CancellationToken cancellationToken)
+    {
+        var sessions = await source.ListAsync(user.Name, cancellationToken).ConfigureAwait(false);
+        var now = time.GetUtcNow();
+        var label = workspace.FolderLabel;
+        var entries = sessions
+            .Select(session => CatalogProjector.ToEntry(session, session.ClosedAt is not null, now, stages.GraphIdOf(session.Id), label))
+            .ToArray();
+        return TypedResults.Ok(entries);
     }
 
     private static async Task<Results<Ok<CardDetailsResponse>, ProblemHttpResult>> CardDetailsAsync(
@@ -147,7 +148,6 @@ internal static class CatalogEndpoints
     private static async Task<Results<Ok<SessionLifecycleResponse>, ProblemHttpResult>> CloseAsync(
         string id,
         ISessionRepository repository,
-        SessionLifecycleStore lifecycle,
         LiveSessionTracker tracker,
         CatalogChangeDetector detector,
         TimeProvider time,
@@ -172,15 +172,15 @@ internal static class CatalogEndpoints
             }
         }
 
-        _ = lifecycle.Close(id);
+        _ = await repository.SetClosedAsync(id, closed: true, cancellationToken).ConfigureAwait(false);
         await detector.ScanAsync(cancellationToken).ConfigureAwait(false);
-        return TypedResults.Ok(Lifecycle(session, lifecycle.IsClosed(id), time.GetUtcNow()));
+        var current = await repository.GetAsync(id, cancellationToken).ConfigureAwait(false) ?? session;
+        return TypedResults.Ok(Lifecycle(current, current.ClosedAt is not null, time.GetUtcNow()));
     }
 
     private static async Task<Results<Ok<SessionLifecycleResponse>, ProblemHttpResult>> ReopenAsync(
         string id,
         ISessionRepository repository,
-        SessionLifecycleStore lifecycle,
         CatalogChangeDetector detector,
         TimeProvider time,
         IUserContext user,
@@ -192,9 +192,10 @@ internal static class CatalogEndpoints
             return SessionEndpoints.SessionNotFound(id);
         }
 
-        _ = lifecycle.Reopen(id);
+        _ = await repository.SetClosedAsync(id, closed: false, cancellationToken).ConfigureAwait(false);
         await detector.ScanAsync(cancellationToken).ConfigureAwait(false);
-        return TypedResults.Ok(Lifecycle(session, lifecycle.IsClosed(id), time.GetUtcNow()));
+        var current = await repository.GetAsync(id, cancellationToken).ConfigureAwait(false) ?? session;
+        return TypedResults.Ok(Lifecycle(current, current.ClosedAt is not null, time.GetUtcNow()));
     }
 
     /// <summary>
@@ -208,7 +209,6 @@ internal static class CatalogEndpoints
         SessionService sessions,
         PromptRunner runner,
         SessionChangePublisher publisher,
-        SessionLifecycleStore lifecycle,
         CatalogChangeDetector detector,
         TimeProvider time,
         IUserContext user,
@@ -220,7 +220,7 @@ internal static class CatalogEndpoints
             return SessionEndpoints.SessionNotFound(id);
         }
 
-        if (lifecycle.IsClosed(id))
+        if (session.ClosedAt is not null)
         {
             return WebProblems.Of(409, WebProblems.SessionClosed, "Session is closed.", "Reopen the session before resuming it.");
         }
@@ -252,7 +252,7 @@ internal static class CatalogEndpoints
         await publisher.NotifyAsync(id).ConfigureAwait(false);
         await detector.ScanAsync(cancellationToken).ConfigureAwait(false);
         var settled = await repository.GetAsync(id, cancellationToken).ConfigureAwait(false) ?? session;
-        return TypedResults.Ok(Lifecycle(settled, lifecycle.IsClosed(id), time.GetUtcNow()));
+        return TypedResults.Ok(Lifecycle(settled, settled.ClosedAt is not null, time.GetUtcNow()));
     }
 
     private static async Task<Ok<WorkspaceInfo>> WorkspaceAsync(WorkspaceLocator workspace, IWorkspacePluginCheck pluginCheck, CancellationToken cancellationToken)
@@ -268,19 +268,4 @@ internal static class CatalogEndpoints
         return new SessionLifecycleResponse { Id = session.Id, Closed = closed, RowStatus = row, Group = group };
     }
 
-    private static async Task<List<Session>> LoadOwnedAsync(SessionRegistry registry, ISessionRepository repository, IUserContext user, CancellationToken cancellationToken)
-    {
-        var found = new List<Session>();
-        foreach (var id in registry.Ids)
-        {
-            var session = await repository.GetAsync(id, cancellationToken).ConfigureAwait(false);
-            if (session is not null && string.Equals(session.OwnerId, user.Name, StringComparison.Ordinal))
-            {
-                found.Add(session);
-            }
-        }
-
-        found.Sort(static (a, b) => a.CreatedAt.CompareTo(b.CreatedAt));
-        return found;
-    }
 }

@@ -220,4 +220,46 @@ public sealed class ToolBlocksFoldTests
 
     private static string Snapshot(IReadOnlyList<UiBlock> blocks, string streamingText) =>
         JsonSerializer.Serialize(blocks.ToArray(), AutonogrammerJsonContext.Default.UiBlockArray) + "|" + streamingText;
+
+    /// <summary>D-27: both folds emit the same image block, and a later update replaces it in place.</summary>
+    [Fact]
+    public void ImageUpdateFoldsIdenticallyInBothFolds()
+    {
+        const string payload = """
+            {"content":[{"type":"image","mimeType":"image/png","data":"aGVsbG8=","description":"chart"}]}
+            """;
+        HarnessEvent[] events =
+        [
+            new ToolCallEvent("call-1", "screenshot", "{}"),
+            new ToolCallUpdateEvent("call-1", "completed", payload),
+        ];
+
+        var tree = Fold(events);
+        var sessions = events.Aggregate(ProjectionState.Empty, HarnessEventProjection.Fold);
+        var image = tree.Blocks.OfType<ImageBlock>().ShouldHaveSingleItem();
+        image.Id.ShouldBe("call-1-image-0");
+        image.AltText.ShouldBe("chart");
+        image.Omitted.ShouldBeFalse();
+        Snapshot(tree.Blocks, tree.StreamingText).ShouldBe(Snapshot(sessions.Blocks, sessions.StreamingText));
+
+        const string later = """
+            {"content":[{"type":"image","mimeType":"image/png","data":"d29ybGQ=","description":"later"}]}
+            """;
+        var replaced = Fold(events[0], events[1], new ToolCallUpdateEvent("call-1", "completed", later));
+        replaced.Blocks.OfType<ImageBlock>().ShouldHaveSingleItem().Description.ShouldBe("later");
+    }
+
+    /// <summary>D-27: a 10 MiB image folds to a placeholder and is not decoded.</summary>
+    [Fact]
+    public void ATenMegabyteImageFoldsToAPlaceholder()
+    {
+        var data = new string('A', (ToolUpdateContent.MaxImageBytes / 3) * 4 + 4);
+        var payload = "{\"content\":[{\"type\":\"image\",\"mimeType\":\"image/png\",\"data\":\"" + data + "\",\"description\":\"huge\"}]}";
+        var tree = Fold(new ToolCallEvent("call-1", "screenshot", "{}"), new ToolCallUpdateEvent("call-1", "completed", payload));
+        var image = tree.Blocks.OfType<ImageBlock>().ShouldHaveSingleItem();
+        image.Omitted.ShouldBeTrue();
+        image.DataBase64.ShouldBeEmpty();
+        image.AltText.ShouldBe("huge");
+        image.ByteLength.ShouldBe(0);
+    }
 }

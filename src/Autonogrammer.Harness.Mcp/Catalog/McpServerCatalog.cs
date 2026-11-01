@@ -26,6 +26,7 @@ public sealed class McpServerCatalog
     private readonly McpPresetInstaller _presets;
     private readonly IMcpConnectionChecker? _checker;
     private readonly McpToolRegistry? _registry;
+    private readonly IMcpExtraServerSource? _extra;
     private readonly Dictionary<string, CheckRecord> _checks = new(StringComparer.Ordinal);
     private McpLocatorContext? _context;
     private McpConfigSet _config = McpConfigSet.Empty;
@@ -36,7 +37,8 @@ public sealed class McpServerCatalog
     /// <param name="stateStore">Where the user's choices are kept.</param>
     /// <param name="checker">Runs connection checks, or <see langword="null"/> when this host has none.</param>
     /// <param name="registry">The tool registry whose connected servers count as <see cref="McpServerState.Connected"/>, or <see langword="null"/>.</param>
-    public McpServerCatalog(IMcpFileStore files, IMcpStateStore stateStore, IMcpConnectionChecker? checker = null, McpToolRegistry? registry = null)
+    /// <param name="extra">Servers that do not come from configuration files, or <see langword="null"/> for none. They are never written back.</param>
+    public McpServerCatalog(IMcpFileStore files, IMcpStateStore stateStore, IMcpConnectionChecker? checker = null, McpToolRegistry? registry = null, IMcpExtraServerSource? extra = null)
     {
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(stateStore);
@@ -46,6 +48,7 @@ public sealed class McpServerCatalog
         _stateStore = stateStore;
         _checker = checker;
         _registry = registry;
+        _extra = extra;
         Current = McpCatalogSnapshot.Empty;
     }
 
@@ -68,7 +71,7 @@ public sealed class McpServerCatalog
         var config = await _loader.LoadAsync(context, cancellationToken).ConfigureAwait(false);
         var state = await _stateStore.LoadAsync(cancellationToken).ConfigureAwait(false);
         _context = context;
-        _config = config;
+        _config = AppendExtra(config, context);
         _state = state;
         return Rebuild();
     }
@@ -337,6 +340,23 @@ public sealed class McpServerCatalog
         var single = line.ToString().Trim();
         return single.Length <= MaxReasonLength ? single : single[..MaxReasonLength] + "...";
     }
+
+    private McpConfigSet AppendExtra(McpConfigSet config, McpLocatorContext context)
+    {
+        if (_extra is null)
+        {
+            return config;
+        }
+
+        var extra = _extra.Servers(context);
+        if (extra.Count == 0)
+        {
+            return config;
+        }
+
+        return config with { Servers = [.. config.Servers, .. extra] };
+    }
+
 
     private sealed record CheckRecord(string Identity, McpServerStatus Status);
 }

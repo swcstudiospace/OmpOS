@@ -34,6 +34,12 @@ public sealed class WebSettingsPagesTests : BunitContext
         "Privacy",
         "Network",
         "Keyboard",
+        "Bundles",
+        "Connectors",
+        "Cowork permissions",
+        "Isolation",
+        "Usage",
+        "Notifications",
     ];
 
     private readonly DemoTestHost _host = new();
@@ -78,7 +84,7 @@ public sealed class WebSettingsPagesTests : BunitContext
         kinds[SettingsSection.Plugins].ShouldBe(typeof(PluginsPage));
         kinds[SettingsSection.Network].ShouldBe(typeof(NetworkSettingsPage));
         kinds[SettingsSection.Keyboard].ShouldBe(typeof(KeyboardSettingsPage));
-        foreach (var section in new[] { SettingsSection.Workspaces, SettingsSection.Remote, SettingsSection.Cloud, SettingsSection.Privacy })
+        foreach (var section in new[] { SettingsSection.Workspaces, SettingsSection.Remote, SettingsSection.Cloud, SettingsSection.Privacy, SettingsSection.Bundles, SettingsSection.Connectors, SettingsSection.CoworkPermissions, SettingsSection.Isolation, SettingsSection.Usage, SettingsSection.Notifications })
         {
             kinds[section].ShouldBe(typeof(InfoSettingsPage));
         }
@@ -175,7 +181,7 @@ public sealed class WebSettingsPagesTests : BunitContext
     {
         var info = _pages.Window.Pages.OfType<InfoSettingsPage>().ToDictionary(static page => page.Section);
 
-        info.Keys.ShouldBe([SettingsSection.Agents, SettingsSection.RunMode, SettingsSection.Workspaces, SettingsSection.Remote, SettingsSection.Cloud, SettingsSection.Privacy], ignoreOrder: true);
+        info.Keys.ShouldBe([SettingsSection.Agents, SettingsSection.RunMode, SettingsSection.Workspaces, SettingsSection.Remote, SettingsSection.Cloud, SettingsSection.Privacy, SettingsSection.Bundles, SettingsSection.Connectors, SettingsSection.CoworkPermissions, SettingsSection.Isolation, SettingsSection.Usage, SettingsSection.Notifications], ignoreOrder: true);
         foreach (var (section, page) in info)
         {
             page.Facts.Count.ShouldBeGreaterThan(0, section.ToString());
