@@ -11643,6 +11643,9 @@ Fonts are under the SIL Open Font License 1.1 (text in section 8). Each director
 
 | Family | Directory | Copyright | Files |
 |---|---|---|---|
+| Anybody | `output/web/_content/Autonogrammer.UI/fonts/Anybody` | Copyright 2020 The Anybody Project Authors (https://github.com/Etcetera-Type-Co/Anybody) | Anybody-SemiBold.woff2 |
+| DMSans | `output/web/_content/Autonogrammer.UI/fonts/DMSans` | Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts) | DMSans-Medium.woff2, DMSans-Regular.woff2, DMSans-SemiBold.woff2 |
+| SpaceMono | `output/web/_content/Autonogrammer.UI/fonts/SpaceMono` | Copyright 2016 The Space Mono Project Authors (https://github.com/googlefonts/spacemono) | SpaceMono-Bold.woff2, SpaceMono-Regular.woff2 |
 | Anybody | `src/Autonogrammer.Native.Views/Assets/Fonts/Anybody` | Copyright 2020 The Anybody Project Authors (https://github.com/Etcetera-Type-Co/Anybody) | Anybody-SemiBold.ttf |
 | DMSans | `src/Autonogrammer.Native.Views/Assets/Fonts/DMSans` | Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts) | DMSans-Medium.ttf, DMSans-Regular.ttf, DMSans-SemiBold.ttf |
 | SpaceMono | `src/Autonogrammer.Native.Views/Assets/Fonts/SpaceMono` | Copyright 2016 The Space Mono Project Authors (https://github.com/googlefonts/spacemono) | SpaceMono-Bold.ttf, SpaceMono-Regular.ttf |
@@ -11698,6 +11701,18 @@ Fonts are under the SIL Open Font License 1.1 (text in section 8). Each director
 | `assets/brand/src/mark-small.svg` | b329e2237cfe | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
 | `assets/brand/src/mark.svg` | ccdd50fa8d4a | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
 | `assets/brand/src/social-preview.svg` | dbe0a0e415a0 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `output/web/apple-touch-icon.png` | a9d8dd010672 | provenance not recorded |
+| `output/web/favicon-32.png` | 4a125cd7cb34 | provenance not recorded |
+| `output/web/favicon.ico` | 418525b8a905 | provenance not recorded |
+| `output/web/favicon.png` | 946f8f9f543a | provenance not recorded |
+| `output/web/favicon.svg` | b329e2237cfe | provenance not recorded |
+| `output/web/icon-192.png` | 733f8020bfec | provenance not recorded |
+| `output/web/icon-512.png` | 2dffa1be9da0 | provenance not recorded |
+| `output/web/icon-maskable-512.png` | b0aface5a4d3 | provenance not recorded |
+| `output/web/_content/Autonogrammer.UI/brand/autonogrammer-logo-dark.svg` | 4406ada651c1 | provenance not recorded |
+| `output/web/_content/Autonogrammer.UI/brand/autonogrammer-logo.svg` | b75b347c2e23 | provenance not recorded |
+| `output/web/_content/Autonogrammer.UI/brand/autonogrammer-mark-dark.svg` | 0a58be11e347 | provenance not recorded |
+| `output/web/_content/Autonogrammer.UI/brand/autonogrammer-mark.svg` | ccdd50fa8d4a | provenance not recorded |
 | `src/Autonogrammer.Native.Views/Assets/Brand/autonogrammer-mark-256.png` | 19255a62aadb | provenance not recorded |
 | `src/Autonogrammer.UI/wwwroot/brand/autonogrammer-logo-dark.svg` | 4406ada651c1 | provenance not recorded |
 | `src/Autonogrammer.UI/wwwroot/brand/autonogrammer-logo.svg` | b75b347c2e23 | provenance not recorded |
