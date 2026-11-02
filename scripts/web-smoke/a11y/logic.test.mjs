@@ -77,6 +77,8 @@ test("analyzeRoute: landmarks must exist once and be told apart by name", () => 
 test("analyzeRoute: focus and the announcer after an in-app navigation", () => {
   const base = { route: "/kanban", mode: "inapp", layout: "shell", previousTitle: "Agents - Autonogrammer", expectFocus: ["h1"] };
   assert.deepEqual(ids(analyzeRoute({ ...base, snap: goodSnap({ activeIsH1: false, active: "button#x" }) })), ["focus-not-moved"]);
+  assert.deepEqual(ids(analyzeRoute({ ...base, expectFocus: ["unmoved"], snap: goodSnap({ activeIsH1: false, active: "body" }) })), []);
+  assert.deepEqual(ids(analyzeRoute({ ...base, expectFocus: ["unmoved"], snap: goodSnap({ activeIsH1: true, active: "h1" }) })), ["focus-not-moved"]);
   assert.deepEqual(ids(analyzeRoute({ ...base, snap: goodSnap({ announcer: "Agents - Autonogrammer" }) })), ["announcer-mismatch"]);
   assert.deepEqual(ids(analyzeRoute({ ...base, snap: goodSnap({ announcer: null }) })), ["announcer-mismatch"]);
   assert.deepEqual(ids(analyzeRoute({ ...base, previousTitle: "Kanban - Autonogrammer", snap: goodSnap() })), ["title-unchanged"]);

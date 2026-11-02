@@ -94,12 +94,11 @@ export async function checkConnect(page, report, { baseUrl, axeJs }) {
       return;
     }
     await page.waitFor("(document.querySelector('[data-route-announcer]')?.textContent ?? '').trim() === document.title", 5000);
-    await page.waitFor("document.activeElement && document.activeElement.tagName === 'H1'", 5000);
     await page.settle();
     report.count("connect:views");
 
     const snap = await page.lib("probeRouteState");
-    report.add(analyzeRoute({ route: "/connect", mode: "inapp", layout: "bare", snap, expectFocus: ["h1"] }).map((f) => ({ ...f, check: "connect", state })));
+    report.add(analyzeRoute({ route: "/connect", mode: "inapp", layout: "bare", snap, expectFocus: ["unmoved"] }).map((f) => ({ ...f, check: "connect", state })));
 
     const field = await readField(page);
     const bad = (id, message, wcag) => report.add(finding("connect", id, "error", message, { ...at, wcag, target: `#${TOKEN_ID}` }));
@@ -109,7 +108,7 @@ export async function checkConnect(page, report, { baseUrl, axeJs }) {
     if (field.autocomplete !== "current-password") bad("token-field-autocomplete", `the token field has autocomplete ${field.autocomplete}, current-password lets a password manager fill it`, "1.3.5");
     if (field.describedBy.length === 0 || field.describedByResolved.some((ok) => !ok)) bad("token-field-description", "the token field's aria-describedby does not point to existing, non-empty text", "3.3.2");
 
-    // Tab order and focus indicators: h1 (focused) -> token field -> Connect button.
+    // Tab order and focus indicators: no focus on load (the bare connect page renders no skip link) -> token field -> Connect button.
     const stops = [];
     for (let step = 0; step < 2; step += 1) {
       await page.key("Tab");
@@ -119,7 +118,7 @@ export async function checkConnect(page, report, { baseUrl, axeJs }) {
     report.add(analyzeStops(stops, { state, viewport: "1280x900" }).map((f) => ({ ...f, check: "connect" })));
     const order = stops.map((s) => (s.left ? "(page)" : s.id || s.tag));
     if (order[0] !== TOKEN_ID || stops[1].role !== "button") {
-      report.add(finding("connect", "tab-order", "error", `Tab from the heading reached ${order.join(" then ")}, expected the token field then the Connect button`, { ...at, wcag: "2.4.3" }));
+      report.add(finding("connect", "tab-order", "error", `Tab from the page reached ${order.join(" then ")}, expected the token field then the Connect button`, { ...at, wcag: "2.4.3" }));
     }
 
     // Empty submit with Enter in the field.
