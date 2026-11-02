@@ -86,6 +86,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     private IReadOnlyList<ResolvedPlugin> _plugins = [];
     private ITimer? _timer;
     private bool _disposed;
+    private readonly Lock _maintenanceGate = new();
     private readonly HeadServices? _services;
     private readonly SessionExtrasStore _extras;
     private readonly OmpSideChatEngine _sideChats;
@@ -1006,33 +1007,41 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     /// </summary>
     internal void RunMaintenance()
     {
-        var registry = Registry;
-        if (registry is null)
-        {
-            return;
-        }
-
-        try
+        lock (_maintenanceGate)
         {
             List<SessionSlot> active;
             lock (_gate)
             {
+                if (_disposed)
+                {
+                    return;
+                }
+
                 active = [.. _slots.Values.Where(static slot => slot.TurnActive)];
             }
 
-            foreach (var slot in active)
+            var registry = Registry;
+            if (registry is null)
             {
-                registry.Touch(slot.Id);
+                return;
             }
 
-            registry.DetectLost();
-        }
-        catch (Exception exception) when (exception is not OutOfMemoryException)
-        {
-            // The maintenance timer must never fault the process; the next tick tries again.
-            if (_logger is not null)
+            try
             {
-                MaintenanceFailed(_logger, exception.GetType().Name, null);
+                foreach (var slot in active)
+                {
+                    registry.Touch(slot.Id);
+                }
+
+                registry.DetectLost();
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+                // The maintenance timer must never fault the process; the next tick tries again.
+                if (_logger is not null)
+                {
+                    MaintenanceFailed(_logger, exception.GetType().Name, null);
+                }
             }
         }
     }
@@ -1055,6 +1064,11 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             _slots.Clear();
             timer = _timer;
             _timer = null;
+        }
+
+        // A maintenance tick that is already running holds the maintenance lock and finishes first. A tick that starts later sees the disposed flag and writes nothing.
+        lock (_maintenanceGate)
+        {
         }
 
         if (timer is not null)
