@@ -40,7 +40,7 @@ They live in `scripts/web-smoke/a11y/` and run at the end of both halves of the 
 | `axe` (`a11yAxe`) | axe-core with the tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa` and `best-practice` on every route and reachable state: default, running, slash palette, approval pending, completed with Changes, failed, closed, terminal, new conversation, Kanban, About, Settings, Settings Models, unknown session, unknown page. Zero violations of impact serious or critical; the rest are listed with their node target. | 1.x to 4.x (automatable subset) |
 | `connect` (`a11yConnect`, real bundle only) | The connect screen of an owner-token deployment, reached by answering `GET /auth/config` and `GET /workspace` inside the browser (the API is untouched): redirect, title, h1 with focus, the labelled password field, Tab order, empty and rejected token announced, the typed value cleared. | 1.3.5, 2.4.3, 3.3.1, 3.3.2, 4.1.2 |
 
-Focus after an in-app navigation: links and Back or Forward move focus to the new view's `h1`; opening an agent from the rail moves it to the conversation; a view tab keeps focus on the tab (the roving tablist pattern, where the arrow keys continue from it); the Settings dialog takes focus inside itself. The routes check encodes exactly this, so these are not misses.
+Focus after an in-app navigation: links and Back or Forward move focus to the new view's `h1`; opening an agent from the rail moves it to the conversation; a view tab keeps focus on the tab (the roving tablist pattern, where the arrow keys continue from it); the Settings dialog takes focus inside itself. A surface tab (Code or Cowork) keeps focus on itself in the same way. The routes check encodes exactly this, so these are not misses.
 
 ### Run
 
