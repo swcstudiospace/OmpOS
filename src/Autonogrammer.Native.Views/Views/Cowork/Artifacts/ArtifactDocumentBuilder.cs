@@ -7,12 +7,21 @@ namespace Autonogrammer.Native.Views.Cowork.Artifacts;
 
 /// <summary>
 /// Builds the host document a surface loads for one version (D-23). The policy text comes only from
-/// <see cref="ArtifactDocumentPolicy"/>; the meta element is always first. Html keeps scripts on, Svg is sanitised first, and
-/// Mermaid uses the bundle from <see cref="IMermaidAssetProvider"/>, so a missing bundle yields
+/// <see cref="ArtifactDocumentPolicy"/>; the meta element is always first. Html keeps scripts on, Svg is sanitised first and
+/// its policy allows no script, and Mermaid uses the bundle from <see cref="IMermaidAssetProvider"/>, so a missing bundle yields
 /// <see cref="ArtifactSurfaceReason.MermaidAssetMissing"/> and the caller shows the source.
 /// </summary>
+/// <remarks>
+/// The Avalonia WebKitGTK adapter installs <c>invokeCSharpAction</c> and a <c>window.webkit.messageHandlers</c> entry in every
+/// page, whether or not the app subscribes to messages, and the public API has no switch for it. The host document therefore
+/// removes both names as its first script, before any artifact script runs. The live probe checks the result.
+/// </remarks>
 public static class ArtifactDocumentBuilder
 {
+    /// <summary>The first script of every script-enabled host document. It removes the adapter's message names from the page.</summary>
+    public const string BridgeRemoval =
+        "<script>(function(){function drop(o,k){try{delete o[k];}catch(e){}if(typeof o[k]!=='undefined'){try{o[k]=undefined;}catch(e){}}}drop(window,'invokeCSharpAction');if(window.webkit){drop(window.webkit,'messageHandlers');}drop(window,'webkit');})();</script>";
+
     private const string DoctypePrefix = "<!DOCTYPE";
 
     /// <summary>Builds the document for one surface kind.</summary>
@@ -37,6 +46,21 @@ public static class ArtifactDocumentBuilder
         };
     }
 
+    /// <summary>Decodes stored bytes as strict UTF-8.</summary>
+    /// <param name="bytes">The stored bytes.</param>
+    /// <returns>The text, or null when the bytes are not valid UTF-8.</returns>
+    internal static string? Decode(ReadOnlyMemory<byte> bytes)
+    {
+        try
+        {
+            return new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true).GetString(bytes.Span);
+        }
+        catch (DecoderFallbackException)
+        {
+            return null;
+        }
+    }
+
     private static ArtifactDocumentResult BuildHtml(ArtifactContent content, IReadOnlyList<string> approvedOrigins)
     {
         var html = Decode(content.Bytes);
@@ -47,7 +71,7 @@ public static class ArtifactDocumentBuilder
 
         var policy = ArtifactDocumentPolicy.ForHtml(scripts: true, approvedOrigins);
         return ArtifactDocumentResult.Ready(
-            ArtifactDocumentPolicy.MetaElement(policy) + HtmlDocumentWrapper.DialogNoOpPrefix + StripDoctype(html));
+            WithBridgeRemoval(ArtifactDocumentPolicy.MetaElement(policy) + HtmlDocumentWrapper.DialogNoOpPrefix + StripDoctype(html)));
     }
 
     private static ArtifactDocumentResult BuildSvg(ArtifactContent content, IReadOnlyList<string> approvedOrigins)
@@ -72,23 +96,17 @@ public static class ArtifactDocumentBuilder
 
         var document = MermaidDocumentBuilder.Build(diagram, assets);
         return document.Available && document.Html is not null
-            ? ArtifactDocumentResult.Ready(document.Html)
+            ? ArtifactDocumentResult.Ready(WithBridgeRemoval(document.Html))
             : ArtifactDocumentResult.Refused(ArtifactSurfaceReason.MermaidAssetMissing);
     }
 
-    /// <summary>Decodes stored bytes as strict UTF-8.</summary>
-    /// <param name="bytes">The stored bytes.</param>
-    /// <returns>The text, or null when the bytes are not valid UTF-8.</returns>
-    internal static string? Decode(ReadOnlyMemory<byte> bytes)
+    /// <summary>Places the bridge removal directly after the policy meta element, which is the first element of every document.</summary>
+    /// <param name="document">A document that starts with its policy meta element.</param>
+    /// <returns>The document with the removal script after the meta element.</returns>
+    private static string WithBridgeRemoval(string document)
     {
-        try
-        {
-            return new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true).GetString(bytes.Span);
-        }
-        catch (DecoderFallbackException)
-        {
-            return null;
-        }
+        var metaEnd = document.IndexOf('>', StringComparison.Ordinal) + 1;
+        return document[..metaEnd] + BridgeRemoval + document[metaEnd..];
     }
 
     private static string StripDoctype(string html)
