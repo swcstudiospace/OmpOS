@@ -137,6 +137,9 @@ if wants api; then
   # Serve the published web head (runbook: "Serve the published web head").
   timeout "$PUBLISH_TIMEOUT" dotnet publish apps/Autonogrammer.Web/Autonogrammer.Web.csproj -c Release --no-restore -nodeReuse:false -o "$WORK/web" \
     >"$OUT_DIR/web-publish-$STAMP.log" 2>&1
+  # The API origin is the API_PORT this run serves. Written with the production finish step, which also refreshes the service-worker
+  # manifest for the edit: a stale appsettings.json hash stops the worker from installing, so a full load of an unknown path gets no app.
+  AUTONOGRAMMER_API_ORIGIN="http://127.0.0.1:$API_PORT" bash scripts/vercel/finish-web-bundle.sh "$WORK/web/wwwroot"
 
   # Serve the API with the in-memory adapter (runbook: "Serve the API (in-memory adapter)").
   timeout "$PUBLISH_TIMEOUT" dotnet publish services/Autonogrammer.Api/Autonogrammer.Api.csproj -c Release --no-restore -nodeReuse:false -o "$WORK/api" \
