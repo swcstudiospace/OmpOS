@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Cowork.Artifacts.ArtifactAccessReviewView"
+             Focusable="False"
+             AutomationProperties.Name="Access review">
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+    <TextBlock x:Name="Banner"
+               TextWrapping="Wrap"
+               FontWeight="SemiBold" />
+    <StackPanel x:Name="OriginList"
+                Spacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                AutomationProperties.Name="Requested hosts" />
+    <TextBlock x:Name="ReasonText"
+               TextWrapping="Wrap" />
+    <TextBlock x:Name="WarningText"
+               TextWrapping="Wrap" />
+    <TextBlock x:Name="DeadlineText"
+               TextWrapping="Wrap" />
+    <WrapPanel>
+      <Button x:Name="AllowSessionButton"
+              Content="Allow for this session"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              IsTabStop="True"
+              AutomationProperties.Name="Allow for this session" />
+      <Button x:Name="AllowVersionButton"
+              Content="Allow for this version"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              IsTabStop="True"
+              AutomationProperties.Name="Allow for this version" />
+      <Button x:Name="DenyButton"
+              Content="Deny"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              IsTabStop="True"
+              AutomationProperties.Name="Deny" />
+    </WrapPanel>
+  </StackPanel>
+</UserControl>

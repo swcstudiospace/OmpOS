@@ -7,6 +7,7 @@ using Autonogrammer.Native.Views.Blocks;
 using Autonogrammer.Native.Views.Changes;
 using Autonogrammer.Native.Views.Chats;
 using Autonogrammer.Native.Views.Cowork;
+using Autonogrammer.Native.Views.Cowork.Artifacts;
 using Autonogrammer.Native.Views.Editor;
 using Autonogrammer.Native.Views.Explorer;
 using Autonogrammer.Native.Views.Kanban;
@@ -20,6 +21,7 @@ using Autonogrammer.Presentation.Changes;
 using Autonogrammer.Presentation.Chats;
 using Autonogrammer.Presentation.Composer;
 using Autonogrammer.Presentation.Cowork;
+using Autonogrammer.Presentation.Cowork.Artifacts;
 using Autonogrammer.Presentation.Editor;
 using Autonogrammer.Presentation.Kanban;
 using Autonogrammer.Presentation.State;
@@ -55,6 +57,8 @@ internal static class ViewMapping
             McpToolsModel mcpTools => new McpToolsView { DataContext = mcpTools },
             WorkspaceSearchModel workspaceSearch => new WorkspaceSearchView { DataContext = workspaceSearch },
             ChangeSetModel changes => new ChangesBarView { DataContext = changes },
+            ArtifactPanelModel artifactPanel => new ArtifactPanelView { DataContext = artifactPanel },
+            ArtifactAccessReviewModel artifactReview => new ArtifactAccessReviewView { DataContext = artifactReview },
             SessionCatalogModel catalog => new AgentRailView { DataContext = catalog },
             AgentPanelViewModel panel => new PanelStateView { DataContext = panel },
             AgentSessionViewModel agentSession => new ThreadHeaderView { DataContext = agentSession },

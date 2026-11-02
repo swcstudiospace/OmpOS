@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Cowork.Artifacts.ArtifactTableView"
+             Focusable="False">
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+    <TextBlock x:Name="Caption"
+               TextWrapping="Wrap"
+               FontWeight="SemiBold" />
+    <TextBlock x:Name="Notice"
+               TextWrapping="Wrap"
+               IsVisible="False" />
+    <DataGrid x:Name="Grid"
+              IsReadOnly="True"
+              AutoGenerateColumns="False"
+              CanUserSortColumns="False"
+              CanUserReorderColumns="False"
+              CanUserResizeColumns="True"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}" />
+  </StackPanel>
+</UserControl>
