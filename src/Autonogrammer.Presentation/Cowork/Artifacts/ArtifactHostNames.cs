@@ -17,7 +17,8 @@ public static class ArtifactHostNames
     {
         ArgumentNullException.ThrowIfNull(host);
         var ascii = AsciiForm(host);
-        return new ArtifactOriginView(ascii, DecodedForm(ascii), MixedScript(host));
+        var decoded = DecodedForm(ascii);
+        return new ArtifactOriginView(ascii, decoded, MixedScript(decoded));
     }
 
     /// <summary>Returns the punycode form of a host, or the input unchanged when it cannot be converted.</summary>

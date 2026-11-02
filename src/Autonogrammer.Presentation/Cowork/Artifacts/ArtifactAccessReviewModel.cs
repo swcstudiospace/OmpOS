@@ -1,3 +1,4 @@
+using System.Globalization;
 using Autonogrammer.Presentation.Observable;
 
 namespace Autonogrammer.Presentation.Cowork.Artifacts;
@@ -43,7 +44,7 @@ public sealed class ArtifactAccessReviewModel : ObservableModel
 
         Version = version;
         RequestedOrigins = origins;
-        Origins = origins.Select(ArtifactHostNames.Describe).ToList();
+        Origins = origins.Select(DescribeOrigin).ToList();
         _clock = clock;
         _deadline = clock.GetUtcNow() + timeout;
     }
@@ -96,6 +97,25 @@ public sealed class ArtifactAccessReviewModel : ObservableModel
     {
         ArgumentNullException.ThrowIfNull(permission);
         return string.Equals(permission, "storage", StringComparison.Ordinal) ? StorageAnswer : null;
+    }
+
+    /// <summary>
+    /// Describes one origin: its scheme and port are kept, and its host is shown in ASCII and decoded forms with the mixed-script mark.
+    /// A value that is not an absolute URI is described as a bare host.
+    /// </summary>
+    /// <param name="origin">The origin as the artifact declared it.</param>
+    /// <returns>The display form.</returns>
+    private static ArtifactOriginView DescribeOrigin(string origin)
+    {
+        if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri) || string.IsNullOrEmpty(uri.IdnHost))
+        {
+            return ArtifactHostNames.Describe(origin);
+        }
+
+        var host = ArtifactHostNames.Describe(uri.IdnHost);
+        var prefix = uri.Scheme + "://";
+        var port = uri.IsDefaultPort ? string.Empty : ":" + uri.Port.ToString(CultureInfo.InvariantCulture);
+        return new ArtifactOriginView(prefix + host.Ascii + port, prefix + host.Decoded + port, host.MixedScript);
     }
 
     private ArtifactAccessDecision Decide(ArtifactAccessChoice choice, string reason)
