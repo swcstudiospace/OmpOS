@@ -41,6 +41,9 @@ internal sealed class BrowserUseCompositionRequest
 
     /// <summary>Gets the header slot. Null skips the indicator.</summary>
     public SurfaceChromeModel? Chrome { get; init; }
+
+    /// <summary>Gets the artifact tool provider added beside the browser provider. Null leaves the tool host as it was without it.</summary>
+    public ICoworkToolProvider? Artifacts { get; init; }
 }
 
 /// <summary>The desktop browser composition: options, settings, gate, provider and pane.</summary>
@@ -223,8 +226,19 @@ internal static class BrowserUseComposition
                 readiness: new CoworkProviderState(CoworkProviderAvailability.Available, null));
         }
 
+        var providers = new List<ICoworkToolProvider>();
+        if (provider is not null)
+        {
+            providers.Add(provider);
+        }
+
+        if (request.Artifacts is not null)
+        {
+            providers.Add(request.Artifacts);
+        }
+
         var host = new CoworkToolHost(
-            provider is null ? [] : [provider],
+            providers,
             new CoworkPolicyGate(new MemoryGrantStore(), static () => Autonogrammer.Cowork.Tools.CoworkPermissionMode.Skip),
             new DenyingBroker(),
             new MemoryGrantStore(),

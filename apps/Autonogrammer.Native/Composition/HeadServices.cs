@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using Autonogrammer.Accounts;
 using Autonogrammer.Accounts.Desktop;
 using Autonogrammer.Contracts.Accounts;
@@ -16,6 +17,7 @@ using Autonogrammer.Native.Cloud;
 using Autonogrammer.Native.Composition.Automations;
 using Autonogrammer.Native.Composition.Checkpoints;
 using Autonogrammer.Native.Composition.Connectors;
+using Autonogrammer.Native.Cowork;
 using Autonogrammer.Native.Settings;
 using Autonogrammer.Native.Views;
 using Autonogrammer.Native.Views.Safety;
@@ -65,6 +67,7 @@ internal sealed class HeadServices : IAsyncDisposable
     private readonly IDisposable? _cloudDisposable;
     private readonly DesktopAccountHost _account;
     private readonly Func<CancellationToken, ValueTask<string?>> _readToken;
+    private readonly ArtifactsComposition _artifacts;
     private readonly ILogger? _logger;
     private int _disposed;
 
@@ -95,6 +98,7 @@ internal sealed class HeadServices : IAsyncDisposable
         DesktopAccountHost account,
         Func<CancellationToken, ValueTask<string?>> readToken)
     {
+        _artifacts = new ArtifactsComposition(new NativeCoworkAccountGate(account.Session), options.StateRoot, apiClient, readToken, account.Session);
         SshOptions = sshOptions;
         PodmanOptions = containers.Podman;
         WslOptions = containers.Wsl;
@@ -229,6 +233,9 @@ internal sealed class HeadServices : IAsyncDisposable
     /// <summary>Gets the desktop account host, including the secret-store selector a test reads.</summary>
     internal DesktopAccountHost AccountHost => _account;
 
+    /// <summary>Gets the artifact composition of the signed-in account: its store, its tool provider and its panel. The head builds it once and disposes it with the head.</summary>
+    internal ArtifactsComposition Artifacts => _artifacts;
+
     /// <summary>Returns the bearer the cloud host sends: the signed-in account token, or the environment token only when signed out.</summary>
     /// <param name="cancellationToken">Cancels the account token read.</param>
     /// <returns>The token, or null when neither is available.</returns>
@@ -257,6 +264,7 @@ internal sealed class HeadServices : IAsyncDisposable
     /// <param name="cancellationToken">Cancels the opening of the hooks service and the display settings.</param>
     /// <returns>The services. The head disposes them after every session.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: automations are nulled once the head is created; until then the finally disposes them. The constructor creates the artifact composition, which the analyzer cannot see through.")]
     public static async Task<HeadServices> CreateAsync(HeadServicesOptions options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -504,6 +512,7 @@ internal sealed class HeadServices : IAsyncDisposable
 
         // The automations stop first: a run in flight uses the cloud host and the sessions.
         await Automations.DisposeAsync().ConfigureAwait(false);
+        _artifacts.Dispose();
         await _account.DisposeAsync().ConfigureAwait(false);
         _cloudDisposable?.Dispose();
         _apiClient?.Dispose();

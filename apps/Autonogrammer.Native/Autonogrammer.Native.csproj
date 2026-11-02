@@ -34,6 +34,7 @@
     <ProjectReference Include="../../src/Autonogrammer.Harness.Remote/Autonogrammer.Harness.Remote.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Terminal/Autonogrammer.Harness.Terminal.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Workspace/Autonogrammer.Harness.Workspace.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Cowork.Artifacts.Stores/Autonogrammer.Cowork.Artifacts.Stores.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Worktrees/Autonogrammer.Harness.Worktrees.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Accounts/Autonogrammer.Accounts.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Accounts.Desktop/Autonogrammer.Accounts.Desktop.csproj" />

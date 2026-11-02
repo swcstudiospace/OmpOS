@@ -304,6 +304,14 @@
           "Microsoft.Extensions.Options.ConfigurationExtensions": "[10.0.13, )"
         }
       },
+      "autonogrammer.cowork.artifacts.stores": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Artifacts": "[0.15.0, )",
+          "Npgsql": "[10.0.3, )"
+        }
+      },
       "autonogrammer.dispatch.client": {
         "type": "Project",
         "dependencies": {
@@ -752,6 +760,15 @@
           "Microsoft.Extensions.Caching.Abstractions": "10.0.13",
           "Microsoft.Extensions.Hosting.Abstractions": "10.0.13",
           "ModelContextProtocol.Core": "[2.3.0]"
+        }
+      },
+      "Npgsql": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w==",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.0"
         }
       },
       "Onigwrap": {

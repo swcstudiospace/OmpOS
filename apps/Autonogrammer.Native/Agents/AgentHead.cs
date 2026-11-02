@@ -104,7 +104,7 @@ internal sealed class AgentHead : IAsyncDisposable
         var completed = false;
         try
         {
-            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot });
+            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = services?.Artifacts.ToolProvider });
             // The Models page and the provider keys omp is started with are built together, so a key saved on the page reaches every omp the head starts.
             models = ModelsSettingsComposition.Create(new ModelsSettingsCompositionOptions { StateRoot = loop.StateRoot });
             var modelSource = models.Source;
@@ -223,7 +223,7 @@ internal sealed class AgentHead : IAsyncDisposable
         BrowserUseCompositionResult? browser = null;
         try
         {
-            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot });
+            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = options.Services?.Artifacts.ToolProvider });
             return await BuildAsync(
                 new SessionEngineSetOptions
                 {

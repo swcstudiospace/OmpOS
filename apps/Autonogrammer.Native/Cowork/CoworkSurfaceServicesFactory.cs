@@ -19,6 +19,8 @@ internal static class CoworkSurfaceServicesFactory
             return null;
         }
 
+        head.Services?.Artifacts.RegisterPanel(built.Shell);
+
         return built with
         {
             OpenConversation = sessionId => head.Cowork?.Sessions.ConversationOf(sessionId),
