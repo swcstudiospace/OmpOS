@@ -153,8 +153,18 @@ public sealed class NativeWebViewArtifactSurface : IArtifactSurface
             return false;
         }
 
-        NavigationBlocked?.Invoke(this, new ArtifactNavigationBlockedEventArgs(target));
+        Block(target);
         return true;
+    }
+
+    private void Block(Uri target)
+    {
+        if (State == ArtifactSurfaceState.Running)
+        {
+            Enter(ArtifactSurfaceState.NavigationBlocked, ArtifactSurfaceReason.None);
+        }
+
+        NavigationBlocked?.Invoke(this, new ArtifactNavigationBlockedEventArgs(target));
     }
 
     private NativeWebView? CreateView()
@@ -206,7 +216,7 @@ public sealed class NativeWebViewArtifactSurface : IArtifactSurface
         e.Handled = true;
         if (e.Request is { } target)
         {
-            NavigationBlocked?.Invoke(this, new ArtifactNavigationBlockedEventArgs(target));
+            Block(target);
         }
     }
 

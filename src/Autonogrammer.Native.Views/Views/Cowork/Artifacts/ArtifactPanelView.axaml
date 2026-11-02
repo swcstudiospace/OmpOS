@@ -85,9 +85,10 @@
                   IsVisible="False"
                   Spacing="2"
                   AutomationProperties.Name="Diff against the previous version" />
-      <HyperlinkButton x:Name="SkipLink"
+      <Button x:Name="SkipLink"
                        Content="Skip generated content"
                        IsVisible="False"
+                       MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
                        IsTabStop="True"
                        AutomationProperties.Name="Skip generated content" />
       <Border x:Name="FrameBorder"

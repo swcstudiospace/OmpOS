@@ -2,6 +2,7 @@ using System.Globalization;
 using Autonogrammer.Presentation.Cowork.Artifacts;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Threading;
 
 namespace Autonogrammer.Native.Views.Cowork.Artifacts;
 
@@ -23,7 +24,7 @@ public partial class ArtifactAccessReviewView : UserControl
         AllowVersionButton.Click += (_, _) => Choose(ArtifactAccessChoice.AllowVersion);
         DenyButton.Click += (_, _) => Choose(ArtifactAccessChoice.Deny);
         KeyDown += OnKeyDown;
-        AttachedToVisualTree += (_, _) => DenyButton.Focus();
+        AttachedToVisualTree += (_, _) => Dispatcher.UIThread.Post(() => DenyButton.Focus());
     }
 
     /// <summary>Occurs once, when the first answer is recorded.</summary>
@@ -51,7 +52,7 @@ public partial class ArtifactAccessReviewView : UserControl
     public static string OriginSentence(ArtifactOriginView origin)
     {
         ArgumentNullException.ThrowIfNull(origin);
-        var sentence = "Host: " + origin.Ascii;
+        var sentence = "Origin: " + origin.Ascii;
         if (!string.Equals(origin.Ascii, origin.Decoded, StringComparison.Ordinal))
         {
             sentence += ". Shown as: " + origin.Decoded;

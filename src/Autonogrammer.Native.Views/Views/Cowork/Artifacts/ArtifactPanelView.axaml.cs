@@ -54,7 +54,7 @@ public partial class ArtifactPanelView : UserControl
     public TextBlock AnnouncementText => Announcement;
 
     /// <summary>Gets the Skip generated content link. It sits before the frame.</summary>
-    public HyperlinkButton SkipGeneratedContentLink => SkipLink;
+    public Button SkipGeneratedContentLink => SkipLink;
 
     /// <summary>Gets the Return to chat button. It sits after the frame.</summary>
     public Button ReturnToChatButton => ReturnButton;
@@ -260,7 +260,7 @@ public partial class ArtifactPanelView : UserControl
             return;
         }
 
-        var surfaceActive = model.SurfaceState is ArtifactSurfaceState.Loading or ArtifactSurfaceState.Running;
+        var surfaceActive = model.SurfaceState is ArtifactSurfaceState.Loading or ArtifactSurfaceState.Running or ArtifactSurfaceState.NavigationBlocked;
         var row = new ArtifactListItem(item.ArtifactId, item.Title, item.Kind, item.VersionCount, item.RequestedOrigins);
         foreach (var state in ArtifactListModel.CommandsFor(row, surfaceActive))
         {
