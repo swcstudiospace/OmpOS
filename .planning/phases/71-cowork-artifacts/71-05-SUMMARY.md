@@ -1,6 +1,6 @@
 # Plan 71-05 SUMMARY: Presentation models and desktop artifact panel
 
-Status: Tasks 1, 2 and 3 are implemented and committed. The desktop composition is not registered (out of scope, see Gaps). The pinned Mermaid hash check fails until 71-06 embeds the bundle, as the plan designs. The architecture gates were not run.
+Status: Tasks 1, 2 and 3 are implemented and committed, with the desktop composition still open (see Gaps; plan 71-05 is NOT complete until it lands). The pinned Mermaid hash check fails until 71-06 embeds the bundle, as the plan designs. Architecture gates: ArchitectureTests 82/82 after the Native.Views reference and the ArchitectureTests relock (36a5188b). Blocker fixes: c04f75db (InternalsVisibleTo), 9d26aa29 (browser tool host reaches the gateway; Native Cowork 36/36).
 
 ## Commits
 
