@@ -234,3 +234,8 @@ No QF-101/QF-102 rows are added to the original140 register. Parser followups, f
 ## Machine companion and handoff boundary
 
 `local://CanonicalFindingTriage.json` is the requested machine companion, with a declared tuple schema, rule/disposition dictionaries, original FAIL references, chronology and per-row fields. Its raw SHA256 is an artifact checksum, **not** a canonical handover identity. Parent must validate exact140 unique original IDs and complete per-row identity/metadata against the original records, including original null locations/lines, and ensure the machine companion contains all rows before consuming it. This document itself is complete source/record authoring, not exercised verification or a docs-release declaration.
+
+## Owner decisions recorded 2026-11-02
+
+- SEC-9e472f70, SEC-d34dcf88 and SEC-36d088fa: the owner confirmed these literals are test fixtures that were never issued or trusted (the 66-07 run, answer "Confirm test fixtures and record"). Recorded as F on that owner confirmation; the source does not prove it by itself.
+- SEC-8e8d7a84 (DEFECT): fixed in plugins/agent-swarm on branch fix/taskstore-update-allowlist, commit 62378d3, pushed to origin. TaskStore.update() rejects keys outside the tasks columns before any SQL is built; tests/test_taskstore_update_allowlist.py has 8 passing tests. External reachability stays UNPROVEN, so the row stays for A10 adjudication.
