@@ -22,7 +22,7 @@
     "plan_check": true,
     "verifier": true,
     "nyquist_validation": true,
-    "auto_advance": true,
+    "auto_advance": false,
     "node_repair": true,
     "node_repair_budget": 2,
     "ui_phase": true,
@@ -51,7 +51,7 @@
     "tdd_mode": true,
     "ui_review": true,
     "use_worktrees": false,
-    "_auto_chain_active": true
+    "_auto_chain_active": false
   },
   "ship": {
     "pr_body_sections": [
