@@ -81,11 +81,15 @@ async function checkDirectLoads(page, report, baseUrl) {
 function inAppSteps(kind) {
   const steps = [
     { name: "Kanban tab", selector: "#autonogrammer-tab-kanban", path: "/kanban", expectFocus: ["trigger"], trigger: "autonogrammer-tab-kanban" },
-    { name: "Cowork tab", selector: "#autonogrammer-tab-cowork", path: "/cowork", expectFocus: ["trigger"], trigger: "autonogrammer-tab-cowork" },
-    { name: "Code tab", selector: "#autonogrammer-tab-code", path: "/", expectFocus: ["trigger"], trigger: "autonogrammer-tab-code" },
     { name: "About link in the footer", selector: ".autonogrammer-footer-about", path: "/about", expectFocus: ["h1"] },
     { name: "wordmark link", selector: ".autonogrammer-wordmark", path: "/", expectFocus: ["h1"] },
   ];
+  // The surface switch (the Code and Cowork tabs) renders only where Cowork is available. The Demo is never available (WebCoworkAccess), so its half leaves these two steps out.
+  if (kind !== "demo") {
+    steps.splice(1, 0,
+      { name: "Cowork tab", selector: "#autonogrammer-tab-cowork", path: "/cowork", expectFocus: ["trigger"], trigger: "autonogrammer-tab-cowork" },
+      { name: "Code tab", selector: "#autonogrammer-tab-code", path: "/", expectFocus: ["trigger"], trigger: "autonogrammer-tab-code" });
+  }
   const rowSelector = kind === "demo" ? `[data-row-id$="d002"]` : "[data-row-id]";
   steps.push({ name: "agent row in the rail", selector: rowSelector, pathStart: "/sessions/", expectFocus: ["conversation", "h1"], optional: kind !== "demo", session: true });
   steps.push({ name: "browser Back", history: "back", expectFocus: ["h1", "conversation"] });
