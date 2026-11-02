@@ -22,6 +22,9 @@ public sealed class PostgresServerFixture : IAsyncLifetime
     /// <summary>The name <c>scripts/test-services.sh</c> gives the throwaway PostgreSQL container. A server named by <see cref="ConnectionEnvironmentVariable"/> is assumed to be that container.</summary>
     public const string TestServicesContainerName = "autonogrammer-test-postgres";
 
+    /// <summary>The environment variable that names the throwaway PostgreSQL container of a named test-services run (scripts/test-services.sh exports it).</summary>
+    public const string ContainerEnvironmentVariable = "AUTONOGRAMMER_TEST_POSTGRES_CONTAINER";
+
     private static readonly TimeSpan StartTimeout = TimeSpan.FromMinutes(5);
 
     private PodmanPostgresContainer? _container;
@@ -40,6 +43,7 @@ public sealed class PostgresServerFixture : IAsyncLifetime
         if (!string.IsNullOrWhiteSpace(configured))
         {
             AdminConnectionString = configured;
+            ContainerName = Environment.GetEnvironmentVariable(ContainerEnvironmentVariable) is { Length: > 0 } named ? named : TestServicesContainerName;
         }
         else
         {

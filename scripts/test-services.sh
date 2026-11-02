@@ -123,6 +123,7 @@ up() {
   chmod 600 "$env_file"
   printf "export AUTONOGRAMMER_TEST_POSTGRES_CONNECTION='Host=127.0.0.1;Port=%s;Database=%s;Username=%s;Password=%s'\n" \
     "$postgres_port" "$DB" "$DB_USER" "$postgres_password" >>"$env_file"
+  printf "export AUTONOGRAMMER_TEST_POSTGRES_CONTAINER='%s'\n" "$POSTGRES_NAME" >>"$env_file"
   printf "export AUTONOGRAMMER_TEST_DRAGONFLY_CONNECTION='127.0.0.1:%s,password=%s,abortConnect=false'\n" \
     "$dragonfly_port" "$dragonfly_password" >>"$env_file"
   if [ "$with_greptime" = "1" ]; then
