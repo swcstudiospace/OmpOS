@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
+using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Native.Composition.Automations;
 using Autonogrammer.Native.Cowork;
 using Autonogrammer.Native.Logging;
@@ -477,7 +478,7 @@ internal sealed class AgentHead : IAsyncDisposable
             host = new SessionEngineSet(options);
             settings = HeadSettings.Create(host, store, options.TimeProvider, dispatch, settingsOptions);
             ownedModels = null;
-            cowork = await CreateCoworkAsync(options, services).ConfigureAwait(true);
+            cowork = await CreateCoworkAsync(options, services, browser.Host).ConfigureAwait(true);
             var head = await BuildModelsAsync(host, settings, cowork, options, dispatch, selectMostRecent, detailsInterval, services, browser).ConfigureAwait(true);
             host = null;
             settings = null;
@@ -540,7 +541,7 @@ internal sealed class AgentHead : IAsyncDisposable
         }
     }
 
-    private static Task<CoworkHead> CreateCoworkAsync(SessionEngineSetOptions options, Autonogrammer.Native.Composition.HeadServices? services) =>
+    private static Task<CoworkHead> CreateCoworkAsync(SessionEngineSetOptions options, Autonogrammer.Native.Composition.HeadServices? services, ICoworkToolHost? coworkTools) =>
         CoworkHead.CreateAsync(
             options.Loop.StateRoot,
             options.Loop.WorkspaceRoot,
@@ -550,7 +551,8 @@ internal sealed class AgentHead : IAsyncDisposable
             options.OmpPath,
             options.TimeProvider,
             options.ProviderKeys,
-            services?.Mcp);
+            services?.Mcp,
+            coworkTools);
 
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
     private static async Task<AgentHead> BuildModelsAsync(SessionEngineSet host, HeadSettings settings, CoworkHead cowork, SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, Autonogrammer.Native.Composition.HeadServices? services, BrowserUseCompositionResult browser)

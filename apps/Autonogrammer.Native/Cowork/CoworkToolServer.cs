@@ -1,4 +1,5 @@
 using System.Text;
+using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Harness.Mcp;
 using Autonogrammer.Harness.McpGateway;
 
@@ -16,7 +17,15 @@ internal sealed class CoworkToolServer : IAsyncDisposable
     private TaskCompletionSource? _opensDrained;
     private Task? _disposeTask;
     private McpGatewayServer? _gateway;
+    private readonly ICoworkToolHost? _coworkTools;
     private int _disposed;
+
+    /// <summary>Creates the server. Its gateway serves <paramref name="coworkTools"/> beside the registry; null serves registry tools only.</summary>
+    /// <param name="coworkTools">The Cowork tool host the gateway serves, or null.</param>
+    public CoworkToolServer(ICoworkToolHost? coworkTools = null)
+    {
+        _coworkTools = coworkTools;
+    }
 
     /// <summary>Gets the gateway, or null before it started or after it failed.</summary>
     public McpGatewayServer? Gateway => _gateway;
@@ -43,7 +52,7 @@ internal sealed class CoworkToolServer : IAsyncDisposable
             try
             {
                 var invoker = new McpToolInvoker(_registry, static (_, _) => ValueTask.FromResult(false));
-                _gateway = McpGatewayServer.Start(_registry, invoker);
+                _gateway = McpGatewayServer.Start(_registry, invoker, _coworkTools);
                 return null;
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)

@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Autonogrammer.Cowork;
+using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.Mcp.Catalog;
@@ -47,6 +48,7 @@ internal sealed class CoworkHead : IAsyncDisposable
     /// <param name="clock">The clock.</param>
     /// <param name="providerKeys">The provider keys, or null.</param>
     /// <param name="catalog">The catalog, or null when the head has no services.</param>
+    /// <param name="coworkTools">The Cowork tool host the gateway serves, or null for registry tools only.</param>
     /// <returns>The head. The gateway starts on the first session.</returns>
     [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: each owner is nulled once transferred to its composed holder; the finally disposes any owner still held directly.")]
     public static async Task<CoworkHead> CreateAsync(
@@ -58,14 +60,15 @@ internal sealed class CoworkHead : IAsyncDisposable
         string? ompPath,
         TimeProvider clock,
         ProviderKeyEnvironment? providerKeys,
-        McpServerCatalog? catalog)
+        McpServerCatalog? catalog,
+        ICoworkToolHost? coworkTools = null)
     {
         CoworkToolServer? tools = null;
         CoworkSessionHost? sessions = null;
         var completed = false;
         try
         {
-            tools = new CoworkToolServer();
+            tools = new CoworkToolServer(coworkTools);
             sessions = new CoworkSessionHost(new CoworkSessionHostOptions
             {
                 StateRoot = stateRoot,
