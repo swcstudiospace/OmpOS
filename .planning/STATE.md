@@ -152,6 +152,9 @@ Two sessions work on this repository by the owner's instruction ("work them toge
 | Phase | State | Resume |
 |-------|-------|--------|
 | 66.1 | verification_deferred_human | /gsd:verify-work 66.1 (Android lock restore in CI; ./bootstrap.sh at the phase 66 gate) |
+| 66.2 | verification_deferred_human | /gsd:verify-work 66.2 (hold 2026-11-01: never execute; per-plan commits feat(66.2-01) and later exist without per-plan summaries, so execute-phase would rebuild the phase) |
+| 66.3 | verification_deferred_human | /gsd:verify-work 66.3 (hold 2026-11-01: never execute; feat(66.3-01) exists without a per-plan summary) |
+| 66.4 | verification_deferred_human | /gsd:verify-work 66.4 (hold 2026-11-01: never execute; feat(66.4-01) exists without a per-plan summary) |
 
 ## Direction Update 2026-10-28 (ultrathink graph ut-mvs8ru79-82536fbd)
 
@@ -479,7 +482,7 @@ Recent decisions affecting current work:
 - Phase 36 CONTEXT, PLAN and VERIFICATION, when the run resumes (if the owner chooses to skip Phase 22).
 - Native Wayland opt-in decision (accessibility gap) before any Avalonia.Wayland change.
 
-### Blockers/Concerns
+### Historical blockers (v0.9 to v0.12; kept verbatim for the record, not current)
 
 - [Owner decision]: Phase 22 handling (skip or stop), while criteria 3 to 5 remain blocked.
 - [Owner decision]: ADE-21 scope (which VS Code extension APIs come first) is needed before work starts (Phase 30).
@@ -492,6 +495,18 @@ Recent decisions affecting current work:
 - [External, deploy]: Railway deploys paused (2026-10-21; the refusal did not recur on 2026-10-28, see "Final position 2026-10-28") blocked the Phase 26 cloud live run, the Phase 23 Vercel smoke (AUTONOGRAMMER_API_ORIGIN unset) and ADE-22.
 - [External, tracking]: Linear workspace free issue limit reached; the ultrathink Linear rows were not created.
 - [Known limit, Phase 21]: no live omp turn was exercised; OnClosed still has an unobserved MCP disposal (pre-existing).
+
+### Blockers/Concerns (v0.16.0, reconciled 2026-11-01)
+
+- [Owner decision]: verify 66.1 by hand (`/gsd:verify-work 66.1`: Android lock restore in CI; `./bootstrap.sh` at the phase 66 gate).
+- [Owner decision]: `/connect` first-load focus. `RouteFocus.razor` keeps the skip link as the first Tab stop (commit b23a11d1, WCAG 2.4.1); `scripts/web-smoke/a11y/connect.mjs` expects the h1 focused on the same first load (commit efad5b44). Both cannot hold; the owner picks one rule.
+- [Owner decision]: BREAKING-API reason for removing `/board` (commit e6745a06); `BoardCutoverTests` asserts the removal.
+- [Owner decision]: SUP rows for six `Assert.Skip` markers without rows (BrowserUse live x5; X11 live x1).
+- [Owner decision]: gitleaks allowlist for two false positives: `src/Autonogrammer.Harness.Secrets.Os/LibsecretNativeMethods.cs:12` and `tests/Autonogrammer.Harness.ComputerUse.X11.Tests/Live/X11BackendLiveTests.cs:173`.
+- [Owner or upstream]: `SEC-8e8d7a84` (taskstore `update()`) lives in the `plugins/agent-swarm` submodule: fix in swarm.git, push (needs approval), bump the pointer. The FU JWT literals `SEC-9e472f70` (claude-ultrathink submodule) and `SEC-d34dcf88` (agent-swarm submodule) need confirm-or-rotate. `SEC-36d088fa` is in-repo.
+- [External]: controller auth correlation `8514d046` stays BLOCKED on signed FAIL verdicts; zero auth cases executed under it.
+- [External, host]: `scan-images` (trivy) not run: trivy is not installed.
+- [Owner approval, irreversible]: milestone audit and complete; ship (PR, Greptile review, auto-merge).
 
 ## Deferred Items
 
