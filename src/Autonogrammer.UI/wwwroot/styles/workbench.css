@@ -1,10 +1,17 @@
 /* Workbench regions: the view tabs in the top bar, the view panel, the panel states and the permanent demo banner. */
 
+/* The view tab slot shrinks below its content so the tabs inside it can wrap at 320 px. */
 .autonogrammer-topbar-tabs {
   display: flex;
   align-items: stretch;
   align-self: stretch;
+  min-width: 0;
   margin-left: var(--autonogrammer-gap-12);
+}
+
+/* The surface switch slot shrinks below its content so its tabs can wrap at 320 px. */
+.autonogrammer-topbar-surface {
+  min-width: 0;
 }
 
 .autonogrammer-viewtabs {
