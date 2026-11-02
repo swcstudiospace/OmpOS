@@ -1002,6 +1002,7 @@
         "type": "Project",
         "dependencies": {
           "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Artifacts": "[0.15.0, )",
           "Autonogrammer.GenUi": "[0.15.0, )",
           "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
           "Autonogrammer.Harness.AgentLoop": "[0.15.0, )",
