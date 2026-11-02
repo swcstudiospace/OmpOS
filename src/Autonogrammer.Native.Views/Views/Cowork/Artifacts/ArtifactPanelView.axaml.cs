@@ -310,44 +310,44 @@ public partial class ArtifactPanelView : UserControl
         switch (content.Kind)
         {
             case ArtifactKind.Csv:
-            {
-                var table = new ArtifactTableView();
-                table.Show(content.Title, content.Bytes);
-                return table;
-            }
+                {
+                    var table = new ArtifactTableView();
+                    table.Show(content.Title, content.Bytes);
+                    return table;
+                }
 
             case ArtifactKind.Image:
-            {
-                var image = new ArtifactImageView();
-                image.Show(content.Title, content.MediaType, content.Bytes);
-                return image;
-            }
+                {
+                    var image = new ArtifactImageView();
+                    image.Show(content.Title, content.MediaType, content.Bytes);
+                    return image;
+                }
 
             case ArtifactKind.Markdown:
-            {
-                var text = ArtifactDocumentBuilder.Decode(content.Bytes);
-                if (text is null)
                 {
-                    return Message("This version is not valid UTF-8 text.");
-                }
+                    var text = ArtifactDocumentBuilder.Decode(content.Bytes);
+                    if (text is null)
+                    {
+                        return Message("This version is not valid UTF-8 text.");
+                    }
 
-                var markdown = new ArtifactMarkdownView();
-                markdown.Show(text);
-                return markdown;
-            }
+                    var markdown = new ArtifactMarkdownView();
+                    markdown.Show(text);
+                    return markdown;
+                }
 
             case ArtifactKind.Code:
-            {
-                var text = ArtifactDocumentBuilder.Decode(content.Bytes);
-                if (text is null)
                 {
-                    return Message("This version is not valid UTF-8 text.");
-                }
+                    var text = ArtifactDocumentBuilder.Decode(content.Bytes);
+                    if (text is null)
+                    {
+                        return Message("This version is not valid UTF-8 text.");
+                    }
 
-                var code = new ArtifactCodeView();
-                code.Show(content.Language, text);
-                return code;
-            }
+                    var code = new ArtifactCodeView();
+                    code.Show(content.Language, text);
+                    return code;
+                }
 
             default:
                 throw new InvalidOperationException("Surface kinds are shown through the surface, not a content view.");

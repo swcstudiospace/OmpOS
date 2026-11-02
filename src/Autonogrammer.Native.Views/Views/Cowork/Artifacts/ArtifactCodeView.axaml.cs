@@ -1,6 +1,6 @@
 using System.Collections.Frozen;
-using AvaloniaEdit.TextMate;
 using Avalonia.Controls;
+using AvaloniaEdit.TextMate;
 using TextMateSharp.Grammars;
 
 namespace Autonogrammer.Native.Views.Cowork.Artifacts;
