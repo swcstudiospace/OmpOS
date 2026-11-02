@@ -155,6 +155,7 @@ Two sessions work on this repository by the owner's instruction ("work them toge
 | 66.2 | verification_deferred_human | /gsd:verify-work 66.2 (hold 2026-11-01: never execute; per-plan commits feat(66.2-01) and later exist without per-plan summaries, so execute-phase would rebuild the phase) |
 | 66.3 | verification_deferred_human | /gsd:verify-work 66.3 (hold 2026-11-01: never execute; feat(66.3-01) exists without a per-plan summary) |
 | 66.4 | verification_deferred_human | /gsd:verify-work 66.4 (hold 2026-11-01: never execute; feat(66.4-01) exists without a per-plan summary) |
+| 69 | verification_deferred_human | /gsd:verify-work 69 (human-only checks from `69-VERIFICATION.md`: screen-reader pass on the Native and Web Code/Cowork switches and hidden-surface chip; pointer and visual check at 1280x800 on both heads; browser reservation of Ctrl+Shift+1/2, OQ-320). Automated verification is `passed` on all six criteria, commit d8b55289. |
 
 ## Direction Update 2026-10-28 (ultrathink graph ut-mvs8ru79-82536fbd)
 
