@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
+    <ProjectReference Include="../Autonogrammer.Cowork.Artifacts/Autonogrammer.Cowork.Artifacts.csproj" />
     <ProjectReference Include="../Autonogrammer.GenUi/Autonogrammer.GenUi.csproj" />
     <ProjectReference Include="../Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
     <ProjectReference Include="../Autonogrammer.Harness.AgentLoop/Autonogrammer.Harness.AgentLoop.csproj" />
