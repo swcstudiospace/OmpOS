@@ -41,3 +41,7 @@ ca7b53d77ad2abbf32725db6569a334084d94619:plugins/ompos-hooks-omp/test/helpers.mj
 # Allowlisted by fingerprint, not by path, so no other finding can hide behind it. The flagged line is the argument list
 # of an xdotool key chord in a live X11 hotkey test. It is not a credential. History is not rewritten.
 01bfa004e07c55b5dff0237ff31139db1223c18b:tests/Autonogrammer.Harness.ComputerUse.X11.Tests/Live/X11BackendLiveTests.cs:generic-api-key:173
+
+# The flagged text is the property name keyCount in the minified esbuild bundle of mermaid (src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js,
+# added in commit dba27a6a). It reads the size of a style map and is not a credential. History is not rewritten.
+dba27a6a2ac5e4b07af6265435397e448e63c2a2:src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:generic-api-key:636
