@@ -305,6 +305,7 @@ public sealed class TerminalSessionTests
                 await RunControlsHarness.UntilAsync(() => ResumeNotice(timeline) is not null, "the fresh-start notice in the timeline", ct).ConfigureAwait(true);
                 await terminal.StartAsync().ConfigureAwait(true);
                 await RunControlsHarness.UntilAsync(() => File.Exists(fake.PidFile), "the fake omp to record itself", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => head.Host.Registry!.TryGet(id, out var current) && current!.Lifecycle == SessionLifecycle.Running, "the fresh omp session to be running", ct).ConfigureAwait(true);
 
                 var notice = ResumeNotice(timeline).ShouldNotBeNull();
                 notice.Status.ShouldBe(StageStatus.Degraded);
