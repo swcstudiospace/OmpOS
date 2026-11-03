@@ -16,6 +16,8 @@ namespace Autonogrammer.Accounts;
 [JsonSerializable(typeof(TokenResponse))]
 [JsonSerializable(typeof(UserResponse))]
 [JsonSerializable(typeof(ErrorResponse))]
+[JsonSerializable(typeof(Web3TokenRequest))]
+[JsonSerializable(typeof(SettingsResponse))]
 internal sealed partial class GoTrueJsonContext : JsonSerializerContext
 {
 }

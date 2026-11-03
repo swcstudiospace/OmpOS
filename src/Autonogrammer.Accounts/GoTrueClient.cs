@@ -19,6 +19,11 @@ public sealed class GoTrueClient
     /// <summary>The time one request may take before it counts as a network failure.</summary>
     public static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(15);
 
+    /// <summary>The OAuth providers this client starts, by the names the service registers: <c>google</c>, and <c>x</c> for X API v2 (not the legacy <c>twitter</c> provider).</summary>
+    public static readonly IReadOnlySet<string> OAuthProviders = new HashSet<string>(StringComparer.Ordinal) { "google", "x" };
+
+    private const string EthereumChain = "ethereum";
+
     private const int MinCodeLength = 6;
     private const int MaxCodeLength = 10;
 
@@ -74,6 +79,8 @@ public sealed class GoTrueClient
         Refresh,
         Logout,
         User,
+        Web3,
+        Settings,
     }
 
     /// <summary>Gets the connection settings this client uses.</summary>
@@ -251,6 +258,80 @@ public sealed class GoTrueClient
             cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>Builds the URL that starts a PKCE sign-in with a third-party provider. The browser is sent there, and the service returns the person to <paramref name="redirectTo"/> with a code.</summary>
+    /// <param name="provider">The provider name the service registers: <c>google</c> or <c>x</c>.</param>
+    /// <param name="redirectTo">Where the service returns the person. It must be https, or http to a loopback address.</param>
+    /// <param name="codeChallenge">The S256 challenge of the verifier that the exchange reveals. The verifier never leaves this client.</param>
+    /// <returns>The authorize URL. It carries no secret.</returns>
+    public Uri BuildProviderAuthorizeUri(string provider, Uri redirectTo, string codeChallenge)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(provider);
+        ArgumentNullException.ThrowIfNull(redirectTo);
+        ArgumentException.ThrowIfNullOrWhiteSpace(codeChallenge);
+        if (!OAuthProviders.Contains(provider))
+        {
+            throw new ArgumentException("The provider is not one this client starts.", nameof(provider));
+        }
+
+        if (!IsAllowedRedirect(redirectTo))
+        {
+            throw new ArgumentException("The redirect must be https, or http to a loopback address.", nameof(redirectTo));
+        }
+
+        string query = "provider=" + Uri.EscapeDataString(provider)
+            + "&redirect_to=" + Uri.EscapeDataString(redirectTo.AbsoluteUri)
+            + "&code_challenge=" + Uri.EscapeDataString(codeChallenge)
+            + "&code_challenge_method=" + Pkce.ChallengeMethod;
+        return new Uri(Options.AuthBaseUri, "authorize?" + query);
+    }
+
+    /// <summary>Signs in with a wallet. The service verifies the signed Sign-In-With-Ethereum message and returns a session for its address.</summary>
+    /// <param name="message">The EIP-4361 message exactly as the wallet signed it (see <see cref="SiweMessage"/>).</param>
+    /// <param name="signature">The hexadecimal EIP-191 signature of the message.</param>
+    /// <param name="captchaToken">The CAPTCHA token the person solved, when the project requires one; otherwise null.</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <returns>The session, or why the wallet was not accepted.</returns>
+    public async Task<AuthResult<GoTrueSession>> SignInWithWeb3Async(string message, string signature, string? captchaToken, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        ArgumentException.ThrowIfNullOrWhiteSpace(signature);
+        GoTrueSecurity? security = string.IsNullOrWhiteSpace(captchaToken) ? null : new GoTrueSecurity(captchaToken);
+        var body = new Web3TokenRequest(message, signature, EthereumChain, security);
+        return await SendAsync(
+            Endpoint.Web3,
+            HttpMethod.Post,
+            "token?grant_type=web3",
+            () => JsonContent.Create(body, GoTrueJsonContext.Default.Web3TokenRequest),
+            bearer: null,
+            ReadSessionAsync,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Reads which sign-in methods the project has enabled, so a sign-in screen offers only those.</summary>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <returns>The enabled flags by provider name, or why the settings could not be read.</returns>
+    public async Task<AuthResult<AuthSettings>> GetSettingsAsync(CancellationToken cancellationToken)
+    {
+        return await SendAsync(
+            Endpoint.Settings,
+            HttpMethod.Get,
+            "settings",
+            contentFactory: null,
+            bearer: null,
+            async (response, ct) =>
+            {
+                SettingsResponse? settings = await response.Content.ReadFromJsonAsync(GoTrueJsonContext.Default.SettingsResponse, ct).ConfigureAwait(false);
+                return settings?.External is null
+                    ? AuthResult.Fail<AuthSettings>(new AuthFailure(AuthErrorKind.Unexpected, HttpStatus: (int)response.StatusCode))
+                    : AuthResult.Success(new AuthSettings(settings.External));
+            },
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private static bool IsAllowedRedirect(Uri redirectTo) =>
+        redirectTo.IsAbsoluteUri
+        && (string.Equals(redirectTo.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal) || (string.Equals(redirectTo.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal) && redirectTo.IsLoopback));
+
     private static string Name(Endpoint endpoint) => endpoint switch
     {
         Endpoint.Otp => "otp",
@@ -258,6 +339,8 @@ public sealed class GoTrueClient
         Endpoint.Pkce => "token/pkce",
         Endpoint.Refresh => "token/refresh",
         Endpoint.Logout => "logout",
+        Endpoint.Web3 => "token/web3",
+        Endpoint.Settings => "settings",
         _ => "user",
     };
 

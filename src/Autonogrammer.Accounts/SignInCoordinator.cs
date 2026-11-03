@@ -139,6 +139,56 @@ public sealed class SignInCoordinator
         return AuthResult.Success(next.ToChallenge());
     }
 
+    /// <summary>
+    /// Starts a sign-in with a third-party provider. The attempt keeps its verifier in memory, the same as a magic link, so <see cref="CompleteLinkAsync"/>
+    /// exchanges the code the provider returns in the tab that started it. The caller opens the returned address.
+    /// </summary>
+    /// <param name="provider">The provider name the service registers: <c>google</c> or <c>x</c>.</param>
+    /// <param name="linkRedirect">The return address for the given nonce. Null when none exists, and then the sign-in cannot start.</param>
+    /// <param name="cancellationToken">Cancels the client lookup.</param>
+    /// <returns>The authorize address, or why the provider sign-in cannot start.</returns>
+    public async Task<AuthResult<Uri>> BeginProviderAsync(string provider, Func<string, Uri?> linkRedirect, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(provider);
+        ArgumentNullException.ThrowIfNull(linkRedirect);
+        GoTrueClient? client = await _clientProvider(cancellationToken).ConfigureAwait(false);
+        if (client is null)
+        {
+            return AuthResult.Fail<Uri>(AuthErrorKind.ConfigUnavailable);
+        }
+
+        string nonce = Pkce.CreateNonce();
+        Uri? redirect = linkRedirect(nonce);
+        if (redirect is null)
+        {
+            return AuthResult.Fail<Uri>(AuthErrorKind.ConfigUnavailable);
+        }
+
+        SecretString verifier = Pkce.CreateVerifier();
+        Uri authorize;
+        try
+        {
+            authorize = client.BuildProviderAuthorizeUri(provider, redirect, Pkce.ComputeChallenge(verifier));
+        }
+        catch (ArgumentException)
+        {
+            return AuthResult.Fail<Uri>(AuthErrorKind.ConfigUnavailable);
+        }
+
+        DateTimeOffset now = _time.GetUtcNow();
+        lock (_gate)
+        {
+            _attempt = new Attempt(string.Empty, verifier, nonce, redirect)
+            {
+                SentAt = now,
+                ExpiresAt = now + client.Options.EmailCodeExpiry,
+                ResendAvailableAt = now + client.Options.ResendCooldown,
+            };
+        }
+
+        return AuthResult.Success(authorize);
+    }
+
     /// <summary>Requests another email for the attempt in progress, reusing its verifier and nonce.</summary>
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <returns>The new challenge, or why no email was requested.</returns>

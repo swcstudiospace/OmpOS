@@ -290,6 +290,7 @@ internal sealed class FakeGoTrueHandler : HttpMessageHandler
                 "token:refresh" => HandleRefresh(body),
                 "logout" => HandleLogout(query, bearer),
                 "user" => HandleUser(bearer),
+                "settings" => HandleSettings(),
                 _ => Error(404, "no_route", null),
             };
         }
@@ -303,8 +304,12 @@ internal sealed class FakeGoTrueHandler : HttpMessageHandler
         "user" => "user",
         "token" when query.Contains("grant_type=pkce", StringComparison.Ordinal) => "token:pkce",
         "token" when query.Contains("grant_type=refresh_token", StringComparison.Ordinal) => "token:refresh",
+        "token" when query.Contains("grant_type=web3", StringComparison.Ordinal) => "token:web3",
         _ => path,
     };
+
+    private static Answer HandleSettings() =>
+        Json(HttpStatusCode.OK, """{"external":{"google":true,"x":false,"email":true},"disable_signup":false}""");
 
     private static string Base64UrlSha256(string text) =>
         Convert.ToBase64String(SHA256.HashData(Encoding.ASCII.GetBytes(text))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
