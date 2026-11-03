@@ -234,3 +234,13 @@ A hand-written GoTrue REST client (`Autonogrammer.Accounts`) over the six calls 
 - The Windows and macOS stores are unrun; an unsigned macOS build may prompt on every launch.
 - Open sign-up gives every confirmed user of the shared project an Autonogrammer account; cost and abuse controls are the per-user limits and the disabled-by-default cloud module only.
 - A crash between a refresh response and the secret store write loses the session when it is longer than the 10 second reuse interval.
+
+## Amendment: Google, X and Ethereum wallet sign-in (owner decisions)
+
+Recorded while the v0.16.0 sign-in work was built. The status above is unchanged: the ADR stays Proposed until the live rows are answered.
+
+- Methods. Web: email code and magic link, Google, X and an Ethereum wallet (an EIP-4361 message signed with `personal_sign`, sent as `grant_type=web3` with `chain` `ethereum`). Desktop: email code and magic link, then Google and X once provider sign-in is wired (not yet). The wallet is web-only.
+- One account per person. Accounts are linked by a verified email address. The owner confirms the project's linking setting before the first live run; until then linking is [INFERENCE].
+- Wallet sign-in carries a CAPTCHA token when the project requires one. Supabase CAPTCHA protection is project-wide, so it stays off until the widget covers every sign-in path, including the email code.
+- Token sign-in is removed from the web sign-in surface. The owner-token mode remains in the API for operators and tests and is not offered as a sign-in method.
+- The web head keeps no browser storage. The PKCE verifier stays in memory in the tab that started sign-in, and the return reaches that tab through the existing magic-link hand-off (`SessionKeyHolderTests.NoWebHeadSourceUsesBrowserStorage`).
