@@ -8,4 +8,15 @@
     <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The oracle the verifier must agree with byte for byte, shared with the hub-side contract tests. -->
+    <None Include="../Autonogrammer.Contracts.Tests/Dispatch/TestData/dispatch-canonical-vectors.json" Link="TestData/dispatch-canonical-vectors.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The loopback WebSocket doubles the transport tests use, shared so the server exists once. -->
+    <Compile Include="../Autonogrammer.Harness.Acp.Tests/TestWebSocketServer.cs" Link="Shared/TestWebSocketServer.cs" />
+    <Compile Include="../Autonogrammer.Harness.Acp.Tests/TestWebSocketSession.cs" Link="Shared/TestWebSocketSession.cs" />
+  </ItemGroup>
+
 </Project>
