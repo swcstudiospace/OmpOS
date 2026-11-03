@@ -1,6 +1,6 @@
 # Runbook: desktop release packages (Autonogrammer.Native)
 
-Status: Workflow and packaging script written. The workflow has not run, and no tag has been pushed. Section 8 lists what is still unverified.
+Status: Workflow and packaging script written. The workflow has not run, no tag has been pushed, and its locked restore for a runtime identifier fails (section 8, item 3, verified 2026-11-03). Section 8 lists what is still unverified.
 
 This runbook covers the desktop app `apps/Autonogrammer.Native` (Avalonia) packaged for Linux x64, Windows x64 and macOS arm64, so that people can test it on each OS. It does not cover the API or worker containers.
 
@@ -102,7 +102,7 @@ If a published release named after the tag already exists, the desktop job fails
 
 1. **WebKitGTK on Linux.** `Avalonia.Controls.WebView.dll` (package 12.1.1) references `libwebkit2gtk` and `libsoup-3.0.so.0` in its GTK backend. The Artifacts panel creates a `NativeWebView` when it opens a document. Not verified: the WebKitGTK version the app needs (4.1 is the value the owner named), and what the app does when the library is missing.
 2. **WebView2 on Windows.** The package README names WebView2 as the Windows engine. Not verified: whether the runtime must be installed separately.
-3. **Locked restore for a runtime identifier.** The workflow restores with `--locked-mode`, as `release.yml` does. The `packages.lock.json` files contain no runtime-identifier targets. If restore reports NU1004 for a runtime, the lock file needs regenerating for that runtime. Not verified: no restore has run.
+3. **Locked restore for a runtime identifier fails (verified 2026-11-03).** The workflow restores with `--locked-mode`, as `release.yml` does. `dotnet restore -r` for `linux-x64`, `win-x64` and `osx-arm64` each fails with NU1004 for 43 projects of the desktop graph (`apps/Autonogrammer.Native` and the `src` projects it references), because their `packages.lock.json` files have no runtime-identifier targets. The fix is to declare the runtime identifiers in those projects and regenerate about 43 lock files, or to accept an unlocked release restore. That is an owner decision; until it is made the workflow cannot produce packages.
 4. **Publish has not run.** `Directory.Build.props` sets `TreatWarningsAsErrors` to `true` and `AnalysisLevel` to `latest-all`. A warning in the desktop projects would fail the build. Not verified.
 5. **Bundle identifier.** `com.swcstudiospace.autonogrammer` is the identifier the CHANGELOG names for the Android app. The Android project still uses `com.swcstudiospace.ompos`. The owner should confirm the macOS identifier.
 6. **`release.yml` conflict.** Section 2. Owner decision.

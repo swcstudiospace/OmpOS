@@ -5,6 +5,8 @@
 #                      job is skipped, so a dispatch run writes no SHA256SUMS.
 #   push of v*         builds the same packages, writes SHA256SUMS, and creates or updates a DRAFT pre-release named after
 #                      the tag. This workflow never publishes a release; a person publishes the draft in the GitHub UI.
+#   Known blocker (verified 2026-11-03): the locked restore for a runtime identifier fails with NU1004 for 43 desktop-graph projects.
+#                      See docs/runbooks/desktop-release.md, section 8, item 3. Until that is resolved a dispatch run cannot produce packages.
 #
 # Version rule (copied from release.yml): the tag is vMAJOR.MINOR.PATCH[-prerelease], it equals the <VersionPrefix> of
 # Directory.Build.props without the prerelease suffix, and the tagged commit is reachable from origin/main.

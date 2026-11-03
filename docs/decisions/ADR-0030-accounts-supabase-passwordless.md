@@ -234,13 +234,17 @@ A hand-written GoTrue REST client (`Autonogrammer.Accounts`) over the six calls 
 - The Windows and macOS stores are unrun; an unsigned macOS build may prompt on every launch.
 - Open sign-up gives every confirmed user of the shared project an Autonogrammer account; cost and abuse controls are the per-user limits and the disabled-by-default cloud module only.
 - A crash between a refresh response and the secret store write loses the session when it is longer than the 10 second reuse interval.
+- The provider and wallet switches (O5 to O7) apply to the whole shared project (line 15): Google, X or Web3 enabled there serve every app on the project, and CAPTCHA (O7) gates the website's and the other apps' sign-ins as well. The owner chooses; the runbook states what each switch changes.
+- Wallet sign-up has no email or phone and costs nothing to automate (Supabase's Web3 notes), so per-user limits do not bind it. The project-wide brakes are the Web3 rate limit and CAPTCHA; an API-side policy for email-less subjects is open (OQ-310).
+- A wallet identity is keyed by the EIP-55 checksum address. A client that writes another spelling of the same address creates a second user; the web head writes the checksum form.
+- X identities carry an email only when the X app requests it (O5). Without it X sign-in fails for lack of an email, and the identity cannot link by email (OQ-308).
 
 ## Amendment: Google, X and Ethereum wallet sign-in (owner decisions)
 
 Recorded while the v0.16.0 sign-in work was built. The status above is unchanged: the ADR stays Proposed until the live rows are answered.
 
-- Methods. Web: email code and magic link, Google, X and an Ethereum wallet (an EIP-4361 message signed with `personal_sign`, sent as `grant_type=web3` with `chain` `ethereum`). Desktop: email code and magic link, then Google and X once provider sign-in is wired (not yet). The wallet is web-only.
-- One account per person. Accounts are linked by a verified email address. The owner confirms the project's linking setting before the first live run; until then linking is [INFERENCE].
-- Wallet sign-in carries a CAPTCHA token when the project requires one. Supabase CAPTCHA protection is project-wide, so it stays off until the widget covers every sign-in path, including the email code.
+- Methods. Web: email code and magic link, plus Google, X and an Ethereum wallet. Each is offered only when the operator declares it (`Api:Auth:Client:Providers` for `google` and `x`, `Api:Auth:Client:WalletEnabled`), and `/auth/config` serves the declaration in `methods`. The identity project's settings endpoint does not report `x` or Web3, so the web head does not read it. Desktop: email code and magic link; Google and X once provider sign-in is wired (not yet). The wallet is web-only.
+- One account per person, linked by verified email, for identities that carry an email. A wallet identity has no email, and an X identity has one only when the X app requests it (O5), so those identities need an explicit link. The owner confirms the project's linking setting before the first live run (OQ-308).
+- The wallet identity uses the EIP-55 checksum address, the form the website's client writes.
 - Token sign-in is removed from the web sign-in surface. The owner-token mode remains in the API for operators and tests and is not offered as a sign-in method.
 - The web head keeps no browser storage. The PKCE verifier stays in memory in the tab that started sign-in, and the return reaches that tab through the existing magic-link hand-off (`SessionKeyHolderTests.NoWebHeadSourceUsesBrowserStorage`).
