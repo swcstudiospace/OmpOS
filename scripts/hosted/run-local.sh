@@ -7,14 +7,12 @@
 # owner token and the rate limiter work end to end; nothing is learned about a real model. No credential and no network egress are used,
 # and the real ~/.omp is never read or written.
 #
-# Usage:   scripts/hosted/run-local.sh [--web-bundle <dir>] [--out <dir>] [--no-approvals] [--skip <steps>]
-#            --web-bundle  a published real web bundle (scripts/vercel/build-web.sh with AUTONOGRAMMER_API_ORIGIN=http://127.0.0.1:5187
-#                          and AUTONOGRAMMER_API_ORIGIN_ALLOW_LOOPBACK=1); the browser check runs only when it is given
+# Usage:   scripts/hosted/run-local.sh [--out <dir>] [--no-approvals] [--skip <steps>]
 #            --out         report directory (default: a temporary directory that is kept and printed)
 #            --no-approvals  leave Harness:Acp:Approval at its default (deny everything) to check the default-deny behaviour
 #            --skip        steps of e2e-api.mjs to skip, comma separated (for example rate-limit)
 # Needs:   the Release build of services/Autonogrammer.Api, omp on PATH (or OMP_PATH), node 24, the .NET SDK in DOTNET_ROOT (default
-#          $HOME/.dotnet); Chrome only for the browser check. Ports: MODEL_PORT (18080), API_PORT (5187), WEB_PORT (5180).
+#          $HOME/.dotnet). Ports: MODEL_PORT (18080), API_PORT (5187).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -25,17 +23,14 @@ export PATH="$DOTNET_ROOT:$PATH"
 
 MODEL_PORT="${MODEL_PORT:-18080}"
 API_PORT="${API_PORT:-5187}"
-WEB_PORT="${WEB_PORT:-5180}"
 OMP="${OMP_PATH:-$(command -v omp || true)}"
 API_DLL="${API_DLL:-$ROOT/services/Autonogrammer.Api/bin/Release/net10.0/Autonogrammer.Api.dll}"
-WEB_BUNDLE=""
 OUT=""
 APPROVALS=1
 SKIP=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --web-bundle) WEB_BUNDLE="$2"; shift 2 ;;
     --out) OUT="$2"; shift 2 ;;
     --no-approvals) APPROVALS=0; shift ;;
     --skip) SKIP="$2"; shift 2 ;;
@@ -45,7 +40,6 @@ done
 
 [[ -n "$OMP" && -x "$OMP" ]] || { printf 'run-local: omp not found; put it on PATH or set OMP_PATH\n' >&2; exit 1; }
 [[ -f "$API_DLL" ]] || { printf 'run-local: %s not found; build services/Autonogrammer.Api in Release first\n' "$API_DLL" >&2; exit 1; }
-[[ -z "$WEB_BUNDLE" || -f "$WEB_BUNDLE/index.html" ]] || { printf 'run-local: %s has no index.html\n' "$WEB_BUNDLE" >&2; exit 1; }
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/autonogrammer-hosted.XXXXXX")"
 OUT="${OUT:-$WORK/report}"
@@ -81,9 +75,9 @@ trap cleanup EXIT
 port_busy() {
   (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null
 }
-for port in "$MODEL_PORT" "$API_PORT" "$WEB_PORT"; do
+for port in "$MODEL_PORT" "$API_PORT"; do
   if port_busy "$port"; then
-    printf 'run-local: port %s is already in use; stop what listens there or set MODEL_PORT, API_PORT or WEB_PORT\n' "$port" >&2
+    printf 'run-local: port %s is already in use; stop what listens there or set MODEL_PORT or API_PORT\n' "$port" >&2
     exit 1
   fi
 done
@@ -132,7 +126,6 @@ API_ENV=(
   "Harness__Acp__Environment__Mode=Allowlist"
   "Harness__Acp__WorkspaceRoot=$WORK/work"
   "Api__Auth__Mode=OwnerToken" "Api__Auth__OwnerToken__Sha256__0=$DIGEST"
-  "Api__Cors__Origins__0=http://127.0.0.1:$WEB_PORT"
 )
 if [[ "$APPROVALS" -eq 1 ]]; then
   API_ENV+=("Harness__Acp__Approval__Kinds__0=execute" "Harness__Acp__Approval__Kinds__1=edit" "Harness__Acp__Approval__GrantableTools__0=*")
@@ -142,7 +135,7 @@ PIDS+=("$!")
 waitfor "http://127.0.0.1:$API_PORT/health/ready" "the API" "${PIDS[-1]}"
 
 # 5. The API checks. The expected approval outcome depends on the policy that was started. The rate-limit step drains the session-creation bucket for
-#    about a minute, so it runs last, after the browser check, which creates a session of its own.
+#    about a minute, so it runs last.
 EXPECT="approved"
 [[ "$APPROVALS" -eq 0 ]] && EXPECT="policy-denied"
 FIRST_SKIP="rate-limit"
@@ -150,15 +143,7 @@ FIRST_SKIP="rate-limit"
 STATUS=0
 AUTONOGRAMMER_E2E_TOKEN="$TOKEN" node scripts/hosted/e2e-api.mjs --api "http://127.0.0.1:$API_PORT" --approval-expect "$EXPECT" --skip "$FIRST_SKIP" --out "$OUT/e2e-api.json" || STATUS=$?
 
-# 6. The browser check, only with a bundle.
-if [[ -n "$WEB_BUNDLE" ]]; then
-  python3 -m http.server "$WEB_PORT" --bind 127.0.0.1 --directory "$WEB_BUNDLE" >"$OUT/web.log" 2>&1 &
-  PIDS+=("$!")
-  waitfor "http://127.0.0.1:$WEB_PORT/" "the static server" "${PIDS[-1]}"
-  AUTONOGRAMMER_E2E_TOKEN="$TOKEN" node scripts/hosted/e2e-browser.mjs --url "http://127.0.0.1:$WEB_PORT/" --out "$OUT/browser" || STATUS=$?
-fi
-
-# 7. The rate limit, last.
+# 6. The rate limit, last.
 if [[ ",$SKIP," != *",rate-limit,"* ]]; then
   AUTONOGRAMMER_E2E_TOKEN="$TOKEN" node scripts/hosted/e2e-api.mjs --api "http://127.0.0.1:$API_PORT" --skip "auth-config,unauthenticated,bad-token,text-turn,tool-turn,resume" --out "$OUT/e2e-api-rate-limit.json" || STATUS=$?
 fi

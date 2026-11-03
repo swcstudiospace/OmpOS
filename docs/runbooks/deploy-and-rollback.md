@@ -227,7 +227,7 @@ curl -fsSN -H "Authorization: Bearer $TOKEN" "$API/sessions/$SID/events"        
 
 Expect 201 for the session, 202 for the prompt and an event stream that ends with `completed` or `error`. With no model credential the run ends in `error`; that proves routing, authentication and the store, not an agent turn. A real turn needs a model credential (HOST-04). After the run: `GET "$API/sessions/$SID"` returns 200; the session survives a restart of the API (`restart-service`, then the same GET).
 
-The same flow, with the owner token and the approval and rate-limit checks, is scripted: `scripts/hosted/e2e-api.mjs` and `scripts/hosted/e2e-browser.mjs` run against a local API (`scripts/hosted/run-local.sh`, recorded in [hosted-web-2026-10-29](evidence/hosted-web-2026-10-29/README.md)) and against a deployment (the harness README, "Against a deployment"; it needs a scripted model inside the container, so it proves the path, not a real model).
+The same flow, with the owner token and the approval and rate-limit checks, is scripted: `scripts/hosted/e2e-api.mjs` runs against a local API (`scripts/hosted/run-local.sh`, recorded in [hosted-web-2026-10-29](evidence/hosted-web-2026-10-29/README.md)) and against a deployment (the harness README, "Against a deployment"; it needs a scripted model inside the container, so it proves the path, not a real model). The browser check that ran in that record was removed with the web head's owner-token sign-in (OQ-312).
 
 Status: the manual commands above have not been run against a real deployment. The scripted flow ran against a local API and the real omp on 2026-10-29.
 
