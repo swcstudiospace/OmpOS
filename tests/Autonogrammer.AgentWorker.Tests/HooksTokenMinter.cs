@@ -25,8 +25,8 @@ internal static class HooksTokenMinter
         var claims = new Dictionary<string, object>(StringComparer.Ordinal)
         {
             ["sub"] = subject,
-            ["iss"] = "autonogrammer-api",
-            ["aud"] = "autonogrammer-worker",
+            ["iss"] = "ompos-api",
+            ["aud"] = "ompos-worker",
             ["iat"] = seconds,
             ["nbf"] = seconds,
             ["exp"] = seconds + 300,

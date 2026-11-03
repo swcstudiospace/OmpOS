@@ -201,8 +201,8 @@ internal sealed class FakeCloudWorker : IAsyncDisposable
             token,
             new TokenValidationParameters
             {
-                ValidIssuer = "autonogrammer-api",
-                ValidAudience = "autonogrammer-worker",
+                ValidIssuer = "ompos-api",
+                ValidAudience = "ompos-worker",
                 IssuerSigningKey = _verificationKey,
                 ValidAlgorithms = [SecurityAlgorithms.EcdsaSha256],
                 LifetimeValidator = TestTokenLifetime.Of(_clock),
