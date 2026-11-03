@@ -26,6 +26,6 @@ public sealed class MainWindowTitleTests
             {
                 window.Close();
             }
-        });
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 }
