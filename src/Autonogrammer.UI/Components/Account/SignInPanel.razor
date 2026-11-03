@@ -15,6 +15,24 @@
         <form class="autonogrammer-connect-form" @onsubmit="SubmitAsync" @onkeyup="OnKey">
             <AccountState @ref="_state" Model="_model" />
         </form>
+        @if (_model.ShowSignedOut && (_providers.Count > 0 || _walletAvailable))
+        {
+            <div class="autonogrammer-connect-alternatives" role="group" aria-label="@AccountCopy.OtherWaysHeading">
+                <p class="autonogrammer-auth-text">@AccountCopy.OtherWaysHeading</p>
+                @foreach (string provider in _providers)
+                {
+                    <button type="button" class="autonogrammer-button" @onclick="() => StartProviderAsync(provider)">@AccountCopy.ProviderButtonLabel(provider)</button>
+                }
+                @if (_walletAvailable)
+                {
+                    <button type="button" class="autonogrammer-button" @onclick="SignInWithWalletAsync">@AccountCopy.WalletButtonLabel</button>
+                }
+            </div>
+        }
+        @if (_notice is not null && _model.ShowSignedOut)
+        {
+            <p class="autonogrammer-auth-text" role="status">@_notice</p>
+        }
     </div>
 </main>
 
@@ -24,6 +42,11 @@
     private AccountState? _state;
     private PeriodicTimer? _clock;
     private AuthPhase _drawn;
+    private IReadOnlyList<string> _providers = [];
+    private bool _walletAvailable;
+    private string? _notice;
+    private IProviderSignInHost? _providerHost;
+    private IWalletSignInHost? _walletHost;
 
     /// <summary>Gets or sets the head that performs sign-in. The panel never sees a token.</summary>
     [Parameter]
@@ -45,6 +68,9 @@
         _drawn = _model.Phase;
         _clock = new PeriodicTimer(TimeSpan.FromSeconds(1), Time ?? TimeProvider.System);
         _ = TickAsync();
+        _providerHost = Host as IProviderSignInHost;
+        _walletHost = Host as IWalletSignInHost;
+        _ = LoadOptionsAsync();
     }
 
     /// <inheritdoc />
@@ -93,6 +119,55 @@
         {
             await _model.CancelFromEscapeAsync(_lifetime.Token).ConfigureAwait(true);
         }
+    }
+
+    private async Task LoadOptionsAsync()
+    {
+        try
+        {
+            if (_providerHost is not null)
+            {
+                _providers = await _providerHost.GetEnabledProvidersAsync(_lifetime.Token).ConfigureAwait(false);
+            }
+
+            if (_walletHost is not null)
+            {
+                _walletAvailable = await _walletHost.WalletAvailableAsync(_lifetime.Token).ConfigureAwait(false);
+            }
+
+            await InvokeAsync(StateHasChanged).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
+        {
+        }
+    }
+
+    private async Task StartProviderAsync(string provider)
+    {
+        if (_providerHost is null)
+        {
+            return;
+        }
+
+        bool started = await _providerHost.StartProviderSignInAsync(provider, _lifetime.Token).ConfigureAwait(true);
+        _notice = started ? AccountCopy.ProviderStartedSentence : AccountCopy.ProviderUnavailableSentence;
+    }
+
+    private async Task SignInWithWalletAsync()
+    {
+        if (_walletHost is null)
+        {
+            return;
+        }
+
+        WalletSignInOutcome outcome = await _walletHost.SignInWithWalletAsync(_lifetime.Token).ConfigureAwait(true);
+        _notice = outcome switch
+        {
+            WalletSignInOutcome.SignedIn => null,
+            WalletSignInOutcome.Declined => AccountCopy.WalletDeclinedSentence,
+            WalletSignInOutcome.Unavailable => AccountCopy.WalletUnavailableSentence,
+            _ => AccountCopy.WalletFailedSentence,
+        };
     }
 
     /// <inheritdoc />

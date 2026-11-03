@@ -14,22 +14,22 @@ internal sealed class AuthConfigClient : IAuthConfigSource
 
     private readonly HttpClient _http;
     private readonly string? _builtOrigin;
-    private readonly WebAuthSessionRouter? _router;
+    private readonly WebAccountSession? _account;
     private readonly string? _webOrigin;
     private readonly TimeSpan _timeout;
 
     /// <summary>Initializes a new instance of the <see cref="AuthConfigClient"/> class.</summary>
     /// <param name="http">An HTTP client whose base address is the API origin.</param>
     /// <param name="builtOrigin">The built <c>Auth:Origin</c>, or null when unset. Existing callers omit it.</param>
-    /// <param name="router">The session router to hand an accepted configuration to, or null.</param>
+    /// <param name="account">The web session to hand an accepted configuration to, or null.</param>
     /// <param name="webOrigin">The page origin used as the link redirect, or null.</param>
     /// <param name="timeout">How long loading may take; <see cref="DefaultTimeout"/> when null.</param>
-    internal AuthConfigClient(HttpClient http, string? builtOrigin = null, WebAuthSessionRouter? router = null, string? webOrigin = null, TimeSpan? timeout = null)
+    internal AuthConfigClient(HttpClient http, string? builtOrigin = null, WebAccountSession? account = null, string? webOrigin = null, TimeSpan? timeout = null)
     {
         ArgumentNullException.ThrowIfNull(http);
         _http = http;
         _builtOrigin = string.IsNullOrWhiteSpace(builtOrigin) ? null : builtOrigin;
-        _router = router;
+        _account = account;
         _webOrigin = webOrigin;
         _timeout = timeout ?? DefaultTimeout;
     }
@@ -58,7 +58,7 @@ internal sealed class AuthConfigClient : IAuthConfigSource
                 return null;
             }
 
-            _router?.Apply(config, _builtOrigin, _webOrigin);
+            _account?.Apply(config, _builtOrigin, _webOrigin);
             return config;
         }
         catch (Exception fault) when (WebFailureText.IsExpected(fault) || fault is JsonException)

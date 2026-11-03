@@ -29,33 +29,28 @@ public sealed class ConnectionPagesTests : BunitContext
         head.WaitForAssertion(() => head.Find("title").TextContent.ShouldBe("Page not found - Autonogrammer"));
     }
 
-    /// <summary>The connect page is the connect view at /connect, with its own title.</summary>
+    /// <summary>The connect page of a deployment without a Supabase sign-in says so, with its own title, and offers no token field.</summary>
     [Fact]
-    public void TheConnectPageShowsTheConnectView()
+    public void TheConnectPageSaysSignInIsUnavailableWithoutAnOidcConfiguration()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
-        var session = new OwnerTokenSession();
         using var account = new WebAccountSession(TimeProvider.System, new ServiceCollection().BuildServiceProvider());
-        using var routes = new RoutedHandler();
-        using var http = new HttpClient(routes, disposeHandler: false) { BaseAddress = new Uri("http://api.invalid/", UriKind.Absolute) };
-        Services.AddSingleton<IAuthSession>(session);
-        Services.AddSingleton<IOwnerTokenConnector>(new OwnerTokenConnector(session, new OmpApiClient(http)));
+        Services.AddSingleton(account);
         Services.AddSingleton<IAuthConfigSource>(new NoAuthConfigSource());
-        Services.AddSingleton(new WebAuthSessionRouter(session, account));
         var head = Render<HeadOutlet>();
 
         var cut = Render<Autonogrammer.Web.Pages.Connect>();
 
-        cut.WaitForAssertion(() => cut.FindAll("h1").Select(static heading => heading.TextContent).ShouldBe([AuthCopy.ConnectHeading]));
-        cut.Find("form input[type='password'][autocomplete='current-password']").ShouldNotBeNull();
-        head.WaitForAssertion(() => head.Find("title").TextContent.ShouldBe("Connect - Autonogrammer"));
+        cut.WaitForAssertion(() => cut.FindAll("h1").Select(static heading => heading.TextContent).ShouldBe([AuthCopy.OidcHeading]));
+        cut.FindAll("input[type='password']").ShouldBeEmpty();
+        head.WaitForAssertion(() => head.Find("title").TextContent.ShouldBe("Sign-in not available - Autonogrammer"));
         typeof(Autonogrammer.Web.Pages.Connect).GetCustomAttributes(typeof(RouteAttribute), inherit: false)
             .Cast<RouteAttribute>()
             .Select(static route => route.Template)
             .ShouldBe(["/connect"]);
     }
 
-    /// <summary>Answers the deployment configuration as unavailable, so the connect page shows the token view.</summary>
+    /// <summary>Answers no deployment configuration, so the connect page says that sign-in is not available here.</summary>
     private sealed class NoAuthConfigSource : IAuthConfigSource
     {
         public Task<AuthConfig?> LoadAsync(CancellationToken cancellationToken) => Task.FromResult<AuthConfig?>(null);

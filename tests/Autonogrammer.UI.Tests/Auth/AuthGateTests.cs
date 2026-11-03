@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Autonogrammer.UI.Tests.Auth;
 
-/// <summary>The gate that decides what a browser tab sees before it may use the API: the Demo and a development API pass through, an owner-token API needs a token, and a deployment that signs in with OIDC explains itself.</summary>
+/// <summary>The gate that decides what a browser tab sees before it may use the API: the Demo and a development API pass through, a deployment that signs in with OIDC and serves a client block sends an unsigned tab to connect, and any other deployment explains that sign-in is not available in this web build.</summary>
 public sealed class AuthGateTests : UiTestContext
 {
     private const string Content = "<p id=\"content\">the routed page</p>";
@@ -78,19 +78,21 @@ public sealed class AuthGateTests : UiTestContext
         Navigation.ToBaseRelativePath(Navigation.Uri).ShouldBeEmpty();
     }
 
-    /// <summary>An owner-token API with no token sends the tab to the connect page and remembers the page it asked for, in memory only.</summary>
+    /// <summary>A deployment whose API takes an owner token has no web sign-in: the tab is told so, and is neither sent to connect nor shown the page.</summary>
     [Fact]
-    public void AnOwnerTokenApiWithoutATokenRedirectsToConnectAndRemembersThePath()
+    public void AnOwnerTokenDeploymentIsExplainedWithoutARedirect()
     {
         Navigation.NavigateTo("sessions/abc?x=1");
         _config.Enqueue(new AuthConfig(AuthConfig.OwnerTokenMode, null, null));
 
         var cut = RenderGate();
 
-        cut.WaitForAssertion(() => Navigation.ToBaseRelativePath(Navigation.Uri).ShouldBe(AuthRoutes.ConnectPath));
-        _session.ReturnPath.ShouldBe("sessions/abc?x=1");
-        cut.WaitForAssertion(() => cut.Find("#content").ShouldNotBeNull());
-        RenderedOutsideConnect().ShouldBeEmpty("the page that asked for a token was never rendered, only the connect page that the gate lets through");
+        cut.WaitForAssertion(() => cut.Find("h1").TextContent.ShouldBe(AuthCopy.OidcHeading));
+        Navigation.ToBaseRelativePath(Navigation.Uri).ShouldBe("sessions/abc?x=1");
+        _session.ReturnPath.ShouldBeNull();
+        cut.FindAll("[role='alert']").ShouldBeEmpty();
+        cut.FindAll("#content").ShouldBeEmpty();
+        RenderedOutsideConnect().ShouldBeEmpty("the protected page never rendered for a deployment with no web sign-in");
     }
 
     /// <summary>The connect page itself is never gated, or nobody could sign in.</summary>
@@ -98,7 +100,7 @@ public sealed class AuthGateTests : UiTestContext
     public void TheConnectPageIsReachableWithoutAToken()
     {
         Navigation.NavigateTo(AuthRoutes.ConnectPath);
-        _config.Enqueue(new AuthConfig(AuthConfig.OwnerTokenMode, null, null));
+        _config.Enqueue(new AuthConfig(AuthConfig.OidcMode, "https://issuer.example", "autonogrammer", new Uri("https://project.example"), "sb_publishable_test"));
 
         var cut = RenderGate();
 
@@ -106,12 +108,12 @@ public sealed class AuthGateTests : UiTestContext
         _session.ReturnPath.ShouldBeNull();
     }
 
-    /// <summary>An owner-token API with a token shows the content, and losing the token (sign-out, a refused token) sends the tab to the connect page.</summary>
+    /// <summary>An OIDC session with a token shows the content, and losing the token (sign-out, a refused token) sends the tab to the connect page.</summary>
     [Fact]
-    public void AnOwnerTokenApiWithATokenShowsTheContentUntilTheTokenIsLost()
+    public void AnOidcSessionShowsTheContentUntilTheTokenIsLost()
     {
         _session.SetSignedIn(true);
-        _config.Enqueue(new AuthConfig(AuthConfig.OwnerTokenMode, null, null));
+        _config.Enqueue(new AuthConfig(AuthConfig.OidcMode, "https://issuer.example", "autonogrammer", new Uri("https://project.example"), "sb_publishable_test"));
 
         var cut = RenderGate();
 

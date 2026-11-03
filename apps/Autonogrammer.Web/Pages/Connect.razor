@@ -1,10 +1,11 @@
 @page "/connect"
 @using Autonogrammer.UI.Components.Account
 @using Autonogrammer.UI.Components.Auth
+@using Autonogrammer.UI.Components.Shell
 @using Autonogrammer.Web.Services
 @using Microsoft.JSInterop
 @inject IAuthConfigSource ConfigSource
-@inject WebAuthSessionRouter Router
+@inject WebAccountSession Account
 @inject IJSRuntime JS
 
 @if (!_ready)
@@ -13,11 +14,15 @@
 }
 else if (_oidc)
 {
-    <SignInPanel Host="Router.Account" CallbackSentence="@_callback" />
+    <SignInPanel Host="Account" CallbackSentence="@_callback" />
 }
 else
 {
-    <ConnectView />
+    <ViewTitle Text="@ViewTitles.Compose(AuthCopy.OidcTitle)" />
+    <main id="main" class="autonogrammer-auth-state">
+        <h1 class="autonogrammer-auth-heading" tabindex="-1">@AuthCopy.OidcHeading</h1>
+        <p class="autonogrammer-auth-text">@AuthCopy.OidcBody</p>
+    </main>
 }
 
 @code {
@@ -29,7 +34,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         var loaded = await ConfigSource.LoadAsync(CancellationToken.None).ConfigureAwait(true);
-        _oidc = loaded is { Mode: AuthConfig.OidcMode, HasClientBlock: true } && Router.UsesAccount;
+        _oidc = loaded is { Mode: AuthConfig.OidcMode, HasClientBlock: true };
         _callback = await ReadCallbackSentenceAsync().ConfigureAwait(true);
         _ready = true;
     }

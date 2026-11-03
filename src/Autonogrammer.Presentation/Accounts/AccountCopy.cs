@@ -29,6 +29,37 @@ public static class AccountCopy
     /// <summary>The label of the action that abandons a sign-in in progress.</summary>
     public const string CancelLabel = "Cancel sign-in";
 
+    /// <summary>The heading above the sign-in options that are not the email code.</summary>
+    public const string OtherWaysHeading = "Other ways to sign in";
+
+    /// <summary>The label of the button that starts a sign-in with an Ethereum wallet in this browser.</summary>
+    public const string WalletButtonLabel = "Continue with an Ethereum wallet";
+
+    /// <summary>The sentence after a provider sign-in opened its tab.</summary>
+    public const string ProviderStartedSentence = "Finish signing in in the new tab. This tab updates when the sign-in completes. If no tab opened, allow pop-ups for this site.";
+
+    /// <summary>The sentence when a provider sign-in could not start.</summary>
+    public const string ProviderUnavailableSentence = "That sign-in could not start. Try again, or use the email code.";
+
+    /// <summary>The sentence when the wallet request was refused or closed.</summary>
+    public const string WalletDeclinedSentence = "The wallet request was declined. Nothing was signed.";
+
+    /// <summary>The sentence when no wallet is available in this browser.</summary>
+    public const string WalletUnavailableSentence = "No Ethereum wallet is available in this browser.";
+
+    /// <summary>The sentence when the wallet sign-in could not be completed.</summary>
+    public const string WalletFailedSentence = "The wallet sign-in could not be completed. Try again, or use the email code.";
+
+    /// <summary>The label of the button that starts a sign-in with a provider.</summary>
+    /// <param name="provider">The provider name: <c>google</c> or <c>x</c>.</param>
+    /// <returns>The label.</returns>
+    public static string ProviderButtonLabel(string provider) => provider switch
+    {
+        "google" => "Continue with Google",
+        "x" => "Continue with X",
+        _ => "Continue with this account",
+    };
+
     /// <summary>The label of the action that signs out this device.</summary>
     public const string SignOutLabel = "Sign out";
 

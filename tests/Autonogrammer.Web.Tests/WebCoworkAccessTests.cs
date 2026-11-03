@@ -8,6 +8,9 @@ namespace Autonogrammer.Web.Tests;
 /// <summary>Cowork is available only after the auth answer, and never in the Demo.</summary>
 public sealed class WebCoworkAccessTests
 {
+    /// <summary>The OIDC deployment that serves a client block: the only deployment this head signs in to.</summary>
+    private static AuthConfig SignInHere => new(AuthConfig.OidcMode, "https://issuer.example", "autonogrammer", new Uri("https://project.example"), "sb_publishable_test");
+
     /// <summary>The Demo is never available and offers no sign-in link.</summary>
     [Fact]
     public async Task DemoIsNeverAvailable()
@@ -24,7 +27,7 @@ public sealed class WebCoworkAccessTests
     public async Task AHeldSessionIsAvailable()
     {
         var session = new FakeSession { HasToken = true };
-        var config = new FakeConfig(AuthConfig.OwnerTokenMode, hold: true);
+        var config = new FakeConfig(SignInHere, hold: true);
         using var access = new WebCoworkAccess(new WebWorkbenchOptions(false, "api"), session, config);
         access.IsAvailable.ShouldBeFalse();
         var raised = 0;
@@ -46,18 +49,29 @@ public sealed class WebCoworkAccessTests
         access.IsAvailable.ShouldBeTrue();
     }
 
-    /// <summary>Owner-token and OIDC without a session are not available, and they offer sign-in.</summary>
-    /// <param name="mode">The auth mode.</param>
+    /// <summary>A signed-out deployment that serves a client block is not available, and it offers sign-in.</summary>
+    [Fact]
+    public async Task ASignedOutOidcDeploymentOffersSignIn()
+    {
+        using var access = new WebCoworkAccess(new WebWorkbenchOptions(false, "api"), new FakeSession(), new FakeConfig(SignInHere));
+        await WaitAsync(access).ConfigureAwait(true);
+
+        access.IsAvailable.ShouldBeFalse();
+        access.OffersSignIn.ShouldBeTrue();
+    }
+
+    /// <summary>A deployment this head cannot sign in to is not available, and it offers no sign-in.</summary>
+    /// <param name="mode">The auth mode, without a client block.</param>
     [Theory]
     [InlineData(AuthConfig.OwnerTokenMode)]
     [InlineData(AuthConfig.OidcMode)]
-    public async Task ASignedOutModeIsNotAvailable(string mode)
+    public async Task ASignedOutDeploymentWithoutAClientBlockOffersNoSignIn(string mode)
     {
         using var access = new WebCoworkAccess(new WebWorkbenchOptions(false, "api"), new FakeSession(), new FakeConfig(mode));
         await WaitAsync(access).ConfigureAwait(true);
 
         access.IsAvailable.ShouldBeFalse();
-        access.OffersSignIn.ShouldBeTrue();
+        access.OffersSignIn.ShouldBeFalse();
     }
 
     /// <summary>A session change raises Changed.</summary>
@@ -65,7 +79,7 @@ public sealed class WebCoworkAccessTests
     public async Task ASessionChangeRaisesChanged()
     {
         var session = new FakeSession();
-        using var access = new WebCoworkAccess(new WebWorkbenchOptions(false, "api"), session, new FakeConfig(AuthConfig.OwnerTokenMode));
+        using var access = new WebCoworkAccess(new WebWorkbenchOptions(false, "api"), session, new FakeConfig(SignInHere));
         await WaitAsync(access).ConfigureAwait(true);
         var raised = 0;
         access.Changed += (_, _) => raised++;
@@ -106,8 +120,13 @@ public sealed class WebCoworkAccessTests
         private readonly TaskCompletionSource<AuthConfig?> _gate = new();
 
         public FakeConfig(string mode, bool hold = false)
+            : this(new AuthConfig(mode, null, null), hold)
         {
-            Answer = new AuthConfig(mode, null, null);
+        }
+
+        public FakeConfig(AuthConfig answer, bool hold = false)
+        {
+            Answer = answer;
             if (!hold)
             {
                 _gate.TrySetResult(Answer);

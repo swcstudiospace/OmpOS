@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Autonogrammer.Accounts;
 using Autonogrammer.Contracts.Accounts;
 using Autonogrammer.Harness.Secrets;
@@ -12,7 +13,7 @@ namespace Autonogrammer.Web.Services;
 /// The OIDC account session of one browser tab. Tokens and the verifier live in an <see cref="InMemorySessionSecretStore"/>; a reload constructs a
 /// new session and is signed out. A 429 waits <see cref="WebAuthOrigin.RateLimitCooldown"/> and never reads <c>Retry-After</c>.
 /// </summary>
-internal sealed class WebAccountSession : IApiTokenProvider, IAuthSession, IAccountHost, IDisposable
+internal sealed class WebAccountSession : IApiTokenProvider, IAuthSession, IAccountHost, IProviderSignInHost, IWalletSignInHost, IDisposable
 {
     private readonly TimeProvider _time;
     private readonly IServiceProvider _services;
@@ -298,6 +299,119 @@ internal sealed class WebAccountSession : IApiTokenProvider, IAuthSession, IAcco
         catch (InvalidOperationException)
         {
             Set(_state with { DevicesAvailable = false });
+        }
+    }
+
+    /// <summary>The providers the web head offers, in the order its sign-in screen shows them.</summary>
+    private static readonly string[] ProviderNames = ["google", "x"];
+
+    private const int WalletNonceBytes = 16;
+
+    private const string WalletStatement = "Sign in to Autonogrammer.";
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<string>> GetEnabledProvidersAsync(CancellationToken cancellationToken)
+    {
+        if (!_configured || _client is null)
+        {
+            return [];
+        }
+
+        AuthResult<AuthSettings> settings = await _client.GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+        return settings.IsSuccess ? ProviderNames.Where(settings.Value.IsEnabled).ToArray() : Array.Empty<string>();
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> StartProviderSignInAsync(string provider, CancellationToken cancellationToken)
+    {
+        if (!_configured || _client is null || _js is null)
+        {
+            return false;
+        }
+
+        AuthResult<Uri> begun = await _coordinator.BeginProviderAsync(provider, LinkRedirect, cancellationToken).ConfigureAwait(false);
+        if (!begun.IsSuccess)
+        {
+            ApplyFailure(begun.Failure, null);
+            return false;
+        }
+
+        try
+        {
+            return await _js.InvokeAsync<bool>("autonogrammerAuth.openWindow", begun.Value.AbsoluteUri).ConfigureAwait(false);
+        }
+        catch (JSException)
+        {
+            return false;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> WalletAvailableAsync(CancellationToken cancellationToken)
+    {
+        _ = cancellationToken;
+        if (!_configured || _js is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            return await _js.InvokeAsync<bool>("autonogrammerAuth.walletAvailable").ConfigureAwait(false);
+        }
+        catch (JSException)
+        {
+            return false;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<WalletSignInOutcome> SignInWithWalletAsync(CancellationToken cancellationToken)
+    {
+        if (!_configured || _client is null || _js is null || string.IsNullOrEmpty(_webOrigin))
+        {
+            return WalletSignInOutcome.Unavailable;
+        }
+
+        try
+        {
+            WalletAccount? account = await _js.InvokeAsync<WalletAccount?>("autonogrammerAuth.walletAccount").ConfigureAwait(false);
+            if (account is null)
+            {
+                return WalletSignInOutcome.Declined;
+            }
+
+            var origin = new Uri(_webOrigin, UriKind.Absolute);
+            string nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(WalletNonceBytes));
+            string message = SiweMessage.Build(new SiweFields(origin.Authority, account.Address, origin, account.ChainId, nonce, _time.GetUtcNow(), WalletStatement));
+            string? signature = await _js.InvokeAsync<string?>("autonogrammerAuth.walletSign", message, account.Address).ConfigureAwait(false);
+            if (string.IsNullOrEmpty(signature))
+            {
+                return WalletSignInOutcome.Declined;
+            }
+
+            AuthResult<GoTrueSession> signedIn = await _client.SignInWithWeb3Async(message, signature, captchaToken: null, cancellationToken).ConfigureAwait(false);
+            if (!signedIn.IsSuccess)
+            {
+                ApplyFailure(signedIn.Failure, null);
+                return WalletSignInOutcome.Failed;
+            }
+
+            await _manager.SignInAsync(signedIn.Value, _client.Options.Issuer, CancellationToken.None).ConfigureAwait(false);
+            await AdoptSignedInAsync(CancellationToken.None).ConfigureAwait(false);
+            return WalletSignInOutcome.SignedIn;
+        }
+        catch (JSException)
+        {
+            return WalletSignInOutcome.Failed;
+        }
+        catch (FormatException)
+        {
+            return WalletSignInOutcome.Failed;
+        }
+        catch (ArgumentException)
+        {
+            return WalletSignInOutcome.Failed;
         }
     }
 

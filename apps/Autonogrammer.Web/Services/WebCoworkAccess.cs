@@ -5,7 +5,7 @@ namespace Autonogrammer.Web.Services;
 
 /// <summary>
 /// The Web answer to <see cref="ICoworkAccess"/>. The Demo is never available. Every other head waits for <c>GET /auth/config</c>,
-/// then is available in development mode or while a session is held.
+/// then is available in development mode or while a session is held. It offers sign-in only where the deployment signs in with OIDC and serves a client block.
 /// </summary>
 internal sealed class WebCoworkAccess : ICoworkAccess, IDisposable
 {
@@ -67,8 +67,7 @@ internal sealed class WebCoworkAccess : ICoworkAccess, IDisposable
     private bool IsDevelopment => string.Equals(_config?.Mode, AuthConfig.DevelopmentMode, StringComparison.Ordinal);
 
     private bool NeedsSignIn =>
-        string.Equals(_config?.Mode, AuthConfig.OwnerTokenMode, StringComparison.Ordinal)
-        || string.Equals(_config?.Mode, AuthConfig.OidcMode, StringComparison.Ordinal);
+        _config is { Mode: AuthConfig.OidcMode } && _config.HasClientBlock;
 
     private async Task LoadAsync(IAuthConfigSource? config)
     {

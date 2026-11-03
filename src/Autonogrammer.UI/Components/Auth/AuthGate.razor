@@ -89,7 +89,7 @@ else
                 AuthConfig.DevelopmentMode => GateView.Content,
                 AuthConfig.OidcMode when _config.HasClientBlock => Session.HasToken || AuthRoutes.IsConnectLocation(Navigation) ? GateView.Content : GateView.Redirecting,
                 AuthConfig.OidcMode => GateView.SignInUnsupported,
-                _ => Session.HasToken || AuthRoutes.IsConnectLocation(Navigation) ? GateView.Content : GateView.Redirecting,
+                _ => GateView.SignInUnsupported,
             };
         }
     }
@@ -157,8 +157,7 @@ else
     }
 
     private bool NeedsConnect =>
-        _config is { Mode: AuthConfig.OwnerTokenMode }
-        || (_config is { Mode: AuthConfig.OidcMode } && _config.HasClientBlock);
+        _config is { Mode: AuthConfig.OidcMode } && _config.HasClientBlock;
 
 
     private void OnSessionChanged(object? sender, EventArgs e) => _ = InvokeAsync(Refresh);

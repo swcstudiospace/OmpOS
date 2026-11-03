@@ -112,6 +112,35 @@
     acknowledge: function () {
       post({ type: "ack" });
     },
+    walletAvailable: function () {
+      return !!window.ethereum && typeof window.ethereum.request === "function";
+    },
+    walletAccount: async function () {
+      var ethereum = window.ethereum;
+      if (!ethereum || typeof ethereum.request !== "function") {
+        return null;
+      }
+      var accounts = await ethereum.request({ method: "eth_requestAccounts" });
+      var chain = await ethereum.request({ method: "eth_chainId" });
+      if (!Array.isArray(accounts) || accounts.length === 0 || typeof chain !== "string") {
+        return null;
+      }
+      return { address: accounts[0], chainId: String(parseInt(chain, 16)) };
+    },
+    walletSign: async function (message, address) {
+      var ethereum = window.ethereum;
+      if (!ethereum || typeof ethereum.request !== "function") {
+        return null;
+      }
+      return await ethereum.request({ method: "personal_sign", params: [message, address] });
+    },
+    openWindow: function (url) {
+      if (typeof url !== "string" || url.indexOf("https://") !== 0) {
+        return false;
+      }
+      window.open(url, "_blank", "noopener");
+      return true;
+    },
   };
   Object.freeze(api);
   Object.defineProperty(window, "autonogrammerAuth", {
