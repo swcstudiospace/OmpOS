@@ -88,7 +88,7 @@ public sealed class ArtifactRenderTicketTests
     [Fact]
     public async Task RenderPathIsRedacted()
     {
-        var seen = new List<Activity>();
+        var seen = new System.Collections.Concurrent.ConcurrentBag<Activity>();
         using var listener = new ActivityListener
         {
             ShouldListenTo = static _ => true,
