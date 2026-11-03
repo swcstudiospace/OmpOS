@@ -126,6 +126,10 @@ public sealed class HostileCorpusTests
                 html.ShouldNotContain("securityLevel:\"loose\"");
                 MermaidDocumentBuilder.Build(text, new AbsentAssets()).Reason.ShouldBe("MermaidAssetMissing");
                 break;
+            case "script-link.md":
+                // Its outcome is asserted where the link policy lives: ArtifactMarkdownHostileTests (Autonogrammer.UI.Tests) renders this file.
+                text.ShouldContain("](javascript:", Case.Sensitive);
+                break;
             default:
                 throw new InvalidOperationException("No asserted outcome for " + name);
         }

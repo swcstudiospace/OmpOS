@@ -37,7 +37,7 @@ OUTPUT_NAME = "THIRD-PARTY-NOTICES.md"
 TEXTS = Path(__file__).resolve().parent / "license-texts"
 
 # SPDX identifiers this script holds a licence text for (scripts/legal/license-texts/<id>.txt).
-KNOWN_SPDX = ("Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "MIT", "PostgreSQL")
+KNOWN_SPDX = ("Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "EPL-2.0", "ISC", "MIT", "PostgreSQL")
 
 # Packages whose nuspec declares <license type="file">. The licence is the vendor-verified one; the
 # marker must appear in the file shipped inside the package, so a changed file in a newer version fails
@@ -467,7 +467,7 @@ def render(cache: Path) -> str:
     for b in bootstrap:
         w(f"| Bootstrap (`{b['dir']}`) | {b['version']} | MIT | {cell(b['copyright'])}; read from the banner of bootstrap.css; MIT text in section 8 |")
     for v in vendored:
-        w(f"| {cell(v['name'])} (`{v['dir']}`) | {v['version']} | {v['licence']} | npm package {cell(v['package'])}, vendored unmodified, no CDN; {cell(v['copyright'])}; read from its licence file; MIT text in section 8 |")
+        w(f"| {cell(v['name'])} (`{v['dir']}`) | {v['version']} | {v['licence']} | npm package {cell(v['package'])}, vendored unmodified, no CDN; {cell(v['copyright'])}; read from its licence file; {v['licence']} text in section 8 |")
     for axe in axe_rows():
         w(f"| axe-core (`scripts/web-smoke/{axe}`) | from the file name | MPL-2.0 | smoke-test tool downloaded at test time with `npm pack`; never committed or shipped, so its text is not reproduced |")
     w("")

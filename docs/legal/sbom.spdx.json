@@ -1,13 +1,13 @@
 {
   "SPDXID": "SPDXRef-DOCUMENT",
   "creationInfo": {
-    "created": "2026-11-01T22:05:05Z",
+    "created": "2026-11-03T10:51:26Z",
     "creators": [
       "Tool: generate-sbom.py"
     ]
   },
   "dataLicense": "CC0-1.0",
-  "documentNamespace": "https://github.com/swcstudiospace/OmpOS/sbom/56dee038b47c213ea5d4a92c1ce70766b0e5292c0f85d8eb2c3e1eb8b64c3b2b",
+  "documentNamespace": "https://github.com/swcstudiospace/OmpOS/sbom/083d1441b8ec603eb0eaa9b96a6e5d61ed88898d5e5998042c5fd66043c861a3",
   "name": "Autonogrammer",
   "packages": [
     {
@@ -6583,6 +6583,11 @@
       "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Native"
     },
     {
+      "relatedSpdxElement": "SPDXRef-Package-DiffPlex-1.9.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Native"
+    },
+    {
       "relatedSpdxElement": "SPDXRef-Package-HarfBuzzSharp-8.3.1.5",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Native"
@@ -6643,7 +6648,17 @@
       "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Native"
     },
     {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Native"
+    },
+    {
       "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration.Abstractions-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Native"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration.Binder-10.0.13",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Native"
     },
@@ -6688,6 +6703,11 @@
       "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Native"
     },
     {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Options.ConfigurationExtensions-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Native"
+    },
+    {
       "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Primitives-10.0.13",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Native"
@@ -6719,6 +6739,11 @@
     },
     {
       "relatedSpdxElement": "SPDXRef-Package-ModelContextProtocol.Core-2.3.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Native"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Npgsql-10.0.3",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Native"
     },
@@ -8653,6 +8678,11 @@
       "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Native.Views"
     },
     {
+      "relatedSpdxElement": "SPDXRef-Package-DiffPlex-1.9.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Native.Views"
+    },
+    {
       "relatedSpdxElement": "SPDXRef-Package-HarfBuzzSharp-8.3.1.5",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Native.Views"
@@ -8713,7 +8743,17 @@
       "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Native.Views"
     },
     {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Native.Views"
+    },
+    {
       "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration.Abstractions-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Native.Views"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration.Binder-10.0.13",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Native.Views"
     },
@@ -8744,6 +8784,11 @@
     },
     {
       "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Options-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Native.Views"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Options.ConfigurationExtensions-10.0.13",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Native.Views"
     },
@@ -19023,6 +19068,11 @@
       "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Native.Tests"
     },
     {
+      "relatedSpdxElement": "SPDXRef-Package-DiffPlex-1.9.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Native.Tests"
+    },
+    {
       "relatedSpdxElement": "SPDXRef-Package-EmptyFiles-4.4.0",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Native.Tests"
@@ -19108,6 +19158,11 @@
       "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Native.Tests"
     },
     {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration.Binder-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Native.Tests"
+    },
+    {
       "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration.FileExtensions-10.0.13",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Native.Tests"
@@ -19168,6 +19223,11 @@
       "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Native.Tests"
     },
     {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Options.ConfigurationExtensions-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Native.Tests"
+    },
+    {
       "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Primitives-10.0.13",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Native.Tests"
@@ -19224,6 +19284,11 @@
     },
     {
       "relatedSpdxElement": "SPDXRef-Package-ModelContextProtocol.Core-2.3.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Native.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Npgsql-10.0.3",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Native.Tests"
     },

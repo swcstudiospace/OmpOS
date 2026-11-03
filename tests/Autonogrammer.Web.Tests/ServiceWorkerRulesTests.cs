@@ -100,6 +100,17 @@ public sealed partial class ServiceWorkerRulesTests
         }
     }
 
+    /// <summary>The Mermaid bundle is left out of the precache: an artifact frame loads it on demand (D-48).</summary>
+    [Fact]
+    public void TheMermaidBundleIsNeverPrecached()
+    {
+        var worker = ReadWorker();
+        var list = worker.Split('\n').Single(static line => line.StartsWith("const NOT_CACHED_FILES", StringComparison.Ordinal));
+        list.ShouldContain(@"/(^|\/)lib\/mermaid\//", Case.Sensitive, "lib/mermaid/ is listed in NOT_CACHED_FILES");
+        MermaidBundlePath().IsMatch("lib/mermaid/mermaid.min.js").ShouldBeTrue();
+        MermaidBundlePath().IsMatch("lib/xterm/xterm.mjs").ShouldBeFalse();
+    }
+
     /// <summary>The development worker does nothing: it neither caches nor answers.</summary>
     [Fact]
     public void TheDevelopmentWorkerDoesNothing()
@@ -194,4 +205,7 @@ public sealed partial class ServiceWorkerRulesTests
 
     [GeneratedRegex("Map(?:Get|Post|Put|Delete|Patch|Group|Methods)\\(\"(?<root>/[^/\"{]+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 2000)]
     private static partial Regex RouteRoot();
+
+    [GeneratedRegex(@"(?:^|\/)lib\/mermaid\/", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 2000)]
+    private static partial Regex MermaidBundlePath();
 }

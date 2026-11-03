@@ -1,0 +1,61 @@
+@namespace Autonogrammer.UI.Components.Cowork.Artifacts
+@using System.Linq
+@using Autonogrammer.Cowork.Artifacts.Rendering
+@if (_result is null || !_result.IsSuccess)
+{
+    <p class="autonogrammer-artifact-notice" role="status">This table cannot be shown: @(_result?.Code ?? "the content is empty").</p>
+}
+else
+{
+    <figure class="autonogrammer-artifact-table">
+        <table>
+            <caption>@Caption</caption>
+            @if (_result.Rows.Count > 0)
+            {
+                <thead>
+                    <tr>
+                        @foreach (var cell in _result.Rows[0])
+                        {
+                            <th scope="col">@DisplayText(cell)</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in _result.Rows.Skip(1))
+                    {
+                        <tr>
+                            @foreach (var cell in row)
+                            {
+                                <td>@DisplayText(cell)</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            }
+        </table>
+        @if (!string.IsNullOrEmpty(_result.Notice))
+        {
+            <figcaption class="autonogrammer-artifact-notice">@_result.Notice</figcaption>
+        }
+    </figure>
+}
+
+@code {
+    /// <summary>The mark shown before a cell that a spreadsheet would read as a formula (D-14). The text is shown, never evaluated.</summary>
+    internal const string FormulaMark = "[formula] ";
+
+    private CsvReader.CsvReadResult? _result;
+
+    /// <summary>Gets the CSV bytes of the version.</summary>
+    [Parameter, EditorRequired]
+    public byte[] Content { get; set; } = [];
+
+    /// <summary>Gets the table caption, which names the artifact.</summary>
+    [Parameter]
+    public string Caption { get; set; } = "Table preview";
+
+    /// <summary>Reads the capped preview whenever the content changes.</summary>
+    protected override void OnParametersSet() => _result = CsvReader.Read(Content);
+
+    private static string DisplayText(CsvReader.CsvCell cell) => cell.FormulaLike ? FormulaMark + cell.Text : cell.Text;
+}

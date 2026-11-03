@@ -2,12 +2,14 @@
 # WEB-01 browser smoke, v2. Repeats docs/runbooks/local-dev.md: "Serve the API (in-memory adapter)",
 # "Serve the published web head", "Browser smoke" and "Re-run of axe-core", and adds the Demo half.
 #
-# Two halves, chosen with SMOKE_TARGETS (default "api demo"):
+# Three halves, chosen with SMOKE_TARGETS (default "api demo artifact"):
 #   api   the published web head against the in-memory API: first render, a prompt and its answer, reload, axe on the empty and the
 #         answered thread, the skip link and the error banner (scripts/web-smoke/smoke.mjs).
 #   demo  the published Demo bundle (scripts/vercel/build-demo.sh): every screen in light and dark at 1440, 1024 and 390 px with axe-core
 #         (zero violations, zero incomplete), no horizontal scroll, no console error, no failed request, the Demo banner, the skip link
 #         first in the tab order, the drawer's focus trap and the persistent theme switch (scripts/web-smoke/smoke-demo.mjs).
+#   artifact  the hostile Html and Mermaid fixtures of the Cowork artifact corpus framed in the web head's sandbox: no outbound request, no
+#         frame navigation and no parent access (scripts/web-smoke/artifact-page.mjs; the Demo policy of build-demo.sh applies).
 #
 # Both halves finish with the accessibility checks of scripts/web-smoke/a11y (WCAG 2.2 AA evidence: routes, keyboard walk and focus not obscured, the
 # Settings dialog, axe on every state, forced colours, contrast, reduced motion, dark scheme, reflow at 320 px and 400 percent, text spacing, target
@@ -49,7 +51,7 @@ OUT_DIR="${OUT_DIR:-$ROOT/docs/runbooks/evidence/quality-audit-2026-10-22}"
 API_PORT="${API_PORT:-5187}"
 WEB_PORT="${WEB_PORT:-5180}"
 DEMO_PORT="${DEMO_PORT:-5191}"
-SMOKE_TARGETS="${SMOKE_TARGETS:-api demo}"
+SMOKE_TARGETS="${SMOKE_TARGETS:-api demo artifact}"
 AXE_VERSION="4.14.0"
 A11Y_REPORT="${A11Y_REPORT_DIR:-}"
 
@@ -73,8 +75,8 @@ wants() {
 
 for target in $SMOKE_TARGETS; do
   case "$target" in
-    api | demo) ;;
-    *) echo "error: unknown SMOKE_TARGETS entry '$target' (use api and/or demo)" >&2; exit 2 ;;
+    api | demo | artifact) ;;
+    *) echo "error: unknown SMOKE_TARGETS entry '$target' (use api, demo and/or artifact)" >&2; exit 2 ;;
   esac
 done
 
@@ -243,6 +245,17 @@ if wants demo; then
   set -e
   echo "demo smoke exit=$DEMO_STATUS output=$OUT_DIR/web-smoke-demo-$STAMP.json"
   [ "$DEMO_STATUS" -eq 0 ] || STATUS=$DEMO_STATUS
+fi
+
+if wants artifact; then
+  set +e
+  CDP_PORT="$CDP_PORT" OUT_DIR="$OUT_DIR" COMMIT="$COMMIT" RUN_DATE="$RUN_DATE" \
+    timeout "$SMOKE_TIMEOUT" node "$ROOT/scripts/web-smoke/artifact-page.mjs" \
+    >"$OUT_DIR/web-smoke-artifact-summary-$STAMP.json" 2>"$OUT_DIR/web-smoke-artifact-$STAMP.log"
+  ARTIFACT_STATUS=$?
+  set -e
+  echo "artifact smoke exit=$ARTIFACT_STATUS output=$OUT_DIR/web-smoke-artifact-$STAMP.json"
+  [ "$ARTIFACT_STATUS" -eq 0 ] || STATUS=$ARTIFACT_STATUS
 fi
 
 exit "$STATUS"

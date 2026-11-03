@@ -7,6 +7,7 @@
 #         AUTONOGRAMMER_AUTH_ORIGIN                    optional https://host[:port] auth origin (no loopback exception)
 #         AUTONOGRAMMER_SIGNIN=1                       only the literal 1: a missing or invalid auth origin fails closed
 # Output: on success, exactly one line: connect-src 'self' <api origin> [<auth origin>]
+# Output with --frame-src: exactly one line, frame-src 'self' <api origin>, or nothing for the Demo and on a rejected origin.
 # Exit:   0 on success; 1 on any invalid or missing required origin. Origin values are never printed.
 set -euo pipefail
 
@@ -15,9 +16,21 @@ fail() {
   exit 1
 }
 
+# --frame-src prints the frame-src directive for the render origin (the API origin, validated the same way) instead of connect-src.
+# The Demo prints nothing for it. Any other argument is refused.
+frame_mode=0
+case "${1-}" in
+  "") ;;
+  --frame-src) frame_mode=1 ;;
+  *) fail "the only argument is --frame-src" ;;
+esac
+
 # The Demo makes no network call, so its CSP allows nothing but the page's own origin. Only the literal 1 selects it: any other value
 # (empty, 0, true) is a normal build and still fails closed without an origin below.
 if [[ "${AUTONOGRAMMER_DEMO-}" == "1" ]]; then
+  if [[ "$frame_mode" -eq 1 ]]; then
+    exit 0
+  fi
   printf "connect-src 'self'\n"
   exit 0
 fi
@@ -57,6 +70,11 @@ if [[ "$authority" == *:* ]]; then
   if (( 10#$port < 1 || 10#$port > 65535 )); then
     fail "AUTONOGRAMMER_API_ORIGIN port must be between 1 and 65535"
   fi
+fi
+
+if [[ "$frame_mode" -eq 1 ]]; then
+  printf "frame-src 'self' %s\n" "$origin"
+  exit 0
 fi
 
 auth="${AUTONOGRAMMER_AUTH_ORIGIN-}"

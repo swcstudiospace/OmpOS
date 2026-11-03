@@ -229,6 +229,16 @@ internal sealed class DemoApiHandler : HttpMessageHandler
             return settings;
         }
 
+        if (DemoArtifactRoutes.Resolve(request, path) is { } respond)
+        {
+            return respond(request);
+        }
+
+        return await RouteRemainingAsync(request, path, method, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<HttpResponseMessage> RouteRemainingAsync(HttpRequestMessage request, string[] path, HttpMethod method, CancellationToken cancellationToken)
+    {
         if (method == HttpMethod.Get)
         {
             var found = RouteGet(request, path);

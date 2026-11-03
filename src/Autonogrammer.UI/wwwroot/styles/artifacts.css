@@ -1,0 +1,129 @@
+/* Artifact surfaces of the web head: the card that opens the panel, the sandboxed frame, the captioned table, the access review and the
+   Markdown view. Colour comes only from the tokens of tokens.css, and a change is marked with text as well as colour (D-36). This file
+   holds no colour literal, no nested import and no transition, so the reduced-motion setting has nothing to stop here. Frames take
+   their border from the system colour in forced-colors mode, so the edge of the document stays visible. */
+
+.autonogrammer-artifact-card {
+  display: grid;
+  gap: var(--autonogrammer-gap-4);
+  padding: var(--autonogrammer-gap-12);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-10);
+  background: var(--autonogrammer-surface-raised);
+  color: var(--autonogrammer-text);
+}
+
+.autonogrammer-artifact-card-meta,
+.autonogrammer-artifact-static-label,
+.autonogrammer-artifact-notice {
+  margin: 0;
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-artifact-card-title {
+  margin: 0;
+  font-size: var(--autonogrammer-font-size-heading);
+  line-height: var(--autonogrammer-line-height-heading);
+}
+
+.autonogrammer-artifact-card .autonogrammer-btn,
+.autonogrammer-artifact-access-choices .autonogrammer-btn {
+  min-block-size: var(--autonogrammer-target-min);
+  min-inline-size: var(--autonogrammer-target-min);
+}
+
+.autonogrammer-artifact-frame {
+  display: block;
+  inline-size: 100%;
+  min-block-size: 16rem;
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-8);
+  background: var(--autonogrammer-surface);
+}
+
+@media (forced-colors: active) {
+  .autonogrammer-artifact-frame {
+    border: 1px solid CanvasText;
+  }
+}
+
+.autonogrammer-artifact-frame-state {
+  padding: var(--autonogrammer-gap-8);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-8);
+  font-size: var(--autonogrammer-font-size-body);
+  line-height: var(--autonogrammer-line-height-body);
+  color: var(--autonogrammer-text);
+}
+
+.autonogrammer-artifact-table {
+  margin: 0;
+  overflow-x: auto;
+}
+
+.autonogrammer-artifact-table table {
+  border-collapse: collapse;
+  font-size: var(--autonogrammer-font-size-body);
+  line-height: var(--autonogrammer-line-height-body);
+}
+
+.autonogrammer-artifact-table caption {
+  padding-block-end: var(--autonogrammer-gap-4);
+  text-align: start;
+  font-size: var(--autonogrammer-font-size-label);
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-artifact-table th,
+.autonogrammer-artifact-table td {
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-8);
+  border: 1px solid var(--autonogrammer-border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.autonogrammer-artifact-table th {
+  background: var(--autonogrammer-surface-sunken);
+}
+
+.autonogrammer-artifact-image {
+  display: block;
+  max-inline-size: 100%;
+  height: auto;
+}
+
+.autonogrammer-artifact-access {
+  display: grid;
+  gap: var(--autonogrammer-gap-8);
+  padding: var(--autonogrammer-gap-12);
+  border: 1px solid var(--autonogrammer-border-strong);
+  border-radius: var(--autonogrammer-radius-10);
+  background: var(--autonogrammer-surface-raised);
+  color: var(--autonogrammer-text);
+}
+
+.autonogrammer-artifact-access-title {
+  margin: 0;
+  font-size: var(--autonogrammer-font-size-heading);
+  line-height: var(--autonogrammer-line-height-heading);
+}
+
+.autonogrammer-artifact-access-hosts {
+  margin: 0;
+  padding-inline-start: var(--autonogrammer-gap-12);
+}
+
+.autonogrammer-artifact-access-ascii,
+.autonogrammer-artifact-access-warning {
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-artifact-access-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--autonogrammer-gap-8);
+}

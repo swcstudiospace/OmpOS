@@ -1,0 +1,39 @@
+@namespace Autonogrammer.UI.Components.Cowork.Artifacts
+@using Autonogrammer.Contracts.Ui
+@using Autonogrammer.Contracts.Artifacts
+<article class="autonogrammer-block autonogrammer-artifact-card">
+    <p class="autonogrammer-artifact-card-meta">@KindLabel(Block.ArtifactKind) version @Block.Version, @ActionLabel(Block.Action)</p>
+    <h3 class="autonogrammer-artifact-card-title">@Block.Title</h3>
+    <button type="button" class="autonogrammer-btn" aria-haspopup="dialog" aria-label="Open artifact: @Block.Title" @onclick="OpenAsync">Open artifact</button>
+</article>
+
+@code {
+    /// <summary>Gets the artifact card. Its content is not in the card: the panel loads it.</summary>
+    [Parameter, EditorRequired]
+    public ArtifactBlock Block { get; set; } = null!;
+
+    /// <summary>Gets the callback that opens the artifact panel on this card.</summary>
+    [Parameter]
+    public EventCallback<ArtifactBlock> OnOpen { get; set; }
+
+    private static string KindLabel(ArtifactKind kind) => kind switch
+    {
+        ArtifactKind.Markdown => "Markdown",
+        ArtifactKind.Code => "Code",
+        ArtifactKind.Html => "HTML",
+        ArtifactKind.Svg => "SVG",
+        ArtifactKind.Mermaid => "Mermaid",
+        ArtifactKind.Csv => "CSV",
+        ArtifactKind.Image => "Image",
+        _ => "Artifact",
+    };
+
+    private static string ActionLabel(ArtifactAction action) => action switch
+    {
+        ArtifactAction.Created => "created",
+        ArtifactAction.Updated => "updated",
+        _ => "changed",
+    };
+
+    private Task OpenAsync() => OnOpen.InvokeAsync(Block);
+}

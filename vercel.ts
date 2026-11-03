@@ -14,16 +14,24 @@ const connectSrc = execFileSync("bash", [path.join(process.cwd(), "scripts/verce
   env: process.env,
 }).trim();
 
+// frame-src for the ticketed render document of an interactive artifact, framed from the API origin. Empty for the Demo, which makes no frame request.
+const frameSrc = execFileSync("bash", [path.join(process.cwd(), "scripts/vercel/render-csp.sh"), "--frame-src"], {
+  encoding: "utf8",
+  stdio: ["ignore", "pipe", "inherit"],
+  env: process.env,
+}).trim();
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "script-src 'self' 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   connectSrc,
+  frameSrc,
   "img-src 'self' data:",
   "object-src 'none'",
   "base-uri 'self'",
   "frame-ancestors 'none'",
-].join("; ");
+].filter((directive) => directive !== "").join("; ");
 
 export const config = {
   framework: null,

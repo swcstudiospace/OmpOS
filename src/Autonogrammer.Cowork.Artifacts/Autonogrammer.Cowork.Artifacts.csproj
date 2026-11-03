@@ -11,6 +11,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Autonogrammer.Cowork.Artifacts.Tests" />
     <InternalsVisibleTo Include="Autonogrammer.Native.Views" />
+    <InternalsVisibleTo Include="Autonogrammer.UI" />
   </ItemGroup>
 
 </Project>

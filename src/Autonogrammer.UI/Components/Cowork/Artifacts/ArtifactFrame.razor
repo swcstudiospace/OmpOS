@@ -1,0 +1,116 @@
+@namespace Autonogrammer.UI.Components.Cowork.Artifacts
+@using Autonogrammer.UI.Components.Auth
+@using Microsoft.AspNetCore.Components.Web
+@implements IDisposable
+@inject IServiceProvider Services
+@if (_destroyed)
+{
+    <p class="autonogrammer-live autonogrammer-artifact-frame-state" role="status">@_closedText</p>
+}
+else
+{
+    if (StaticView)
+    {
+        <p class="autonogrammer-artifact-static-label">Static view: this view runs no script.</p>
+    }
+
+    if (RenderUrl is not null)
+    {
+        <iframe class="autonogrammer-artifact-frame" title="@Title" sandbox="allow-scripts" referrerpolicy="no-referrer" allow="" src="@RenderUrl" @onload="OnFrameLoadAsync"></iframe>
+    }
+    else if (SrcDoc is not null)
+    {
+        <iframe class="autonogrammer-artifact-frame" title="@Title" sandbox="allow-scripts" referrerpolicy="no-referrer" allow="" srcdoc="@SrcDoc" @onload="OnFrameLoadAsync"></iframe>
+    }
+}
+
+@code {
+    private IAuthSession? _session;
+    private int _loads;
+    private bool _destroyed;
+    private string _closedText = string.Empty;
+
+    /// <summary>Gets the accessible name of the frame.</summary>
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>Gets the ticketed render URL of an interactive Html version, or null. It is the only source of an interactive document.</summary>
+    [Parameter]
+    public string? RenderUrl { get; set; }
+
+    /// <summary>Gets the sandboxed document of a static view (Html without scripts, sanitized SVG, Mermaid), or null.</summary>
+    [Parameter]
+    public string? SrcDoc { get; set; }
+
+    /// <summary>Gets whether the frame is a static view, which is labelled as such.</summary>
+    [Parameter]
+    public bool StaticView { get; set; }
+
+    /// <summary>Gets the callback told when the frame was closed because it tried to open a second page.</summary>
+    [Parameter]
+    public EventCallback<string> OnClosed { get; set; }
+
+    /// <summary>Reads the sign-in state optionally, as the sign-out control does: a head without sign-in has no session.</summary>
+    protected override void OnInitialized()
+    {
+        _session = Services.GetService(typeof(IAuthSession)) as IAuthSession;
+        if (_session is null)
+        {
+            return;
+        }
+
+        _session.Changed += OnSessionChanged;
+        if (!_session.HasToken)
+        {
+            _destroyed = true;
+            _closedText = SignedOutText;
+        }
+    }
+
+    // The first load is the document the frame was given. A second load is a navigation: the frame is destroyed, not reloaded, and the
+    // reader is told the navigation was blocked. The frame element is removed, so the document cannot be reached again.
+    private async Task OnFrameLoadAsync()
+    {
+        _loads++;
+        if (_loads < 2 || _destroyed)
+        {
+            return;
+        }
+
+        Destroy(NavigationBlockedText);
+        await OnClosed.InvokeAsync(NavigationBlockedText);
+    }
+
+    private void OnSessionChanged(object? sender, EventArgs e)
+    {
+        if (_session is { HasToken: false } && !_destroyed)
+        {
+            _ = InvokeAsync(() =>
+            {
+                Destroy(SignedOutText);
+                StateHasChanged();
+            });
+        }
+    }
+
+    private void Destroy(string text)
+    {
+        _destroyed = true;
+        _closedText = text;
+    }
+
+    /// <summary>The text shown when a frame is closed for a second load.</summary>
+    internal const string NavigationBlockedText = "Navigation blocked: the artifact tried to open another page, so its frame was closed.";
+
+    /// <summary>The text shown when the frame is closed by a sign-out.</summary>
+    internal const string SignedOutText = "This frame was closed because you signed out.";
+
+    /// <summary>Unsubscribes from the sign-in state.</summary>
+    public void Dispose()
+    {
+        if (_session is not null)
+        {
+            _session.Changed -= OnSessionChanged;
+        }
+    }
+}

@@ -69,6 +69,7 @@ internal static class WebServiceRegistration
         services.AddScoped<IOwnerTokenConnector>(sp => new OwnerTokenConnector(sp.GetRequiredService<OwnerTokenSession>(), sp.GetRequiredService<IOmpApiClient>()));
         services.AddScoped<IUserEventFeed>(sp => new UserEventFeed(sp.GetRequiredService<ApiHttp>().Client, null, sp.GetRequiredService<TimeProvider>()));
         services.AddScoped(sp => new ApiSessionClient(sp.GetRequiredService<ApiHttp>().Client));
+        services.AddScoped(sp => new Artifacts.ArtifactWebClient(sp.GetRequiredService<ApiHttp>(), sp.GetRequiredService<TimeProvider>()));
         services.AddScoped(sp => new SseEventStream(sp.GetRequiredService<ApiHttp>().Client));
         services.AddScoped(options);
         services.AddWebSettingsPages();
