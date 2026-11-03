@@ -104,6 +104,10 @@ internal sealed class StubCompletionProvider : IAsyncDisposable
             {
                 return;
             }
+            catch (InvalidOperationException)
+            {
+                return;
+            }
 
             Answer(context);
         }
@@ -111,19 +115,26 @@ internal sealed class StubCompletionProvider : IAsyncDisposable
 
     private void Answer(HttpListenerContext context)
     {
-        using var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding);
-        var body = reader.ReadToEnd();
-
-        lock (_requests)
+        try
         {
-            _requests.Add(new StubRequest(context.Request.HttpMethod, context.Request.ContentType, body));
-        }
+            using var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding);
+            var body = reader.ReadToEnd();
 
-        var bytes = Encoding.UTF8.GetBytes(_responseBody);
-        context.Response.StatusCode = (int)_status;
-        context.Response.ContentType = "application/json";
-        context.Response.ContentLength64 = bytes.Length;
-        context.Response.OutputStream.Write(bytes);
-        context.Response.Close();
+            lock (_requests)
+            {
+                _requests.Add(new StubRequest(context.Request.HttpMethod, context.Request.ContentType, body));
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(_responseBody);
+            context.Response.StatusCode = (int)_status;
+            context.Response.ContentType = "application/json";
+            context.Response.ContentLength64 = bytes.Length;
+            context.Response.OutputStream.Write(bytes);
+            context.Response.Close();
+        }
+        catch (HttpListenerException)
+        {
+            // The client stopped waiting before the answer was written; there is nothing left to answer.
+        }
     }
 }

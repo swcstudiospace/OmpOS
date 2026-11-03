@@ -228,7 +228,7 @@ public sealed class SshCommandBuilderTests
             null,
             new Dictionary<string, string>(StringComparer.Ordinal) { ["HOME"] = temp.Combine("home") },
             ct).ConfigureAwait(true);
-        result.ExitCode.ShouldBe(0, "the remote shell must run the acp launch; stderr: " + result.StandardError);
+        result.ExitCode.ShouldBe(0, $"exit {result.ExitCode}; stderr: {result.StandardError}");
 
         result.StandardError.ShouldBeEmpty();
         result.StandardOutput.ShouldBe($"CWD={workspace}\nARG=acp\nARG=acp-arg\nARG=with space\nARG=it's\nARG=$(touch pwned)\n");
