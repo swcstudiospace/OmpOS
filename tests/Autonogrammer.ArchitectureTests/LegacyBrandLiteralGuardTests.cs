@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Shouldly;
@@ -5,16 +7,24 @@ using Xunit;
 
 namespace Autonogrammer.ArchitectureTests;
 
-/// <summary>Old-name literals may appear only in files named LegacyBrandNames.cs under src, services and apps.</summary>
+/// <summary>
+/// Old-name literals may appear under src, services and apps only in files that scripts/rebrand/rebrand.config.json
+/// freezes (content: true excluded globs, such as **/LegacyBrandNames.cs) or on spans it protects as identity-bearing
+/// (protectedUrlPatterns, optionally gated by lineMustMatch). Both lists and the brand regex are read from that config;
+/// nothing is hard-coded here except the pin count.
+/// </summary>
 public sealed class LegacyBrandLiteralGuardTests
 {
+    /// <summary>The LegacyBrandNames.cs pins tracked today (owner ruling, 2026-11-03).</summary>
+    private const int ExpectedLegacyBrandNamesPins = 14;
+
     /// <summary>The loaded pattern ignores the compose family and reports a planted literal as file:line.</summary>
     [Fact]
     public void SelfTestIgnoresComposeAndCatchesAPlantedLiteral()
     {
-        var pattern = LegacyBrandLiteralGuard.LoadPattern(ProjectGraphChecker.FindRepoRoot());
-        pattern.IsMatch("compose").ShouldBeFalse();
-        pattern.IsMatch("component").ShouldBeFalse();
+        var probe = LegacyBrandLiteralGuard.Load(ProjectGraphChecker.FindRepoRoot());
+        probe.Brand.IsMatch("compose").ShouldBeFalse();
+        probe.Brand.IsMatch("component").ShouldBeFalse();
         var root = Directory.CreateTempSubdirectory("literal-guard-").FullName;
         try
         {
@@ -22,7 +32,7 @@ public sealed class LegacyBrandLiteralGuardTests
             Directory.CreateDirectory(Path.GetDirectoryName(planted)!);
             File.WriteAllText(planted, "class X { string Name = \"" + string.Concat("om", "pos") + "\"; }\n");
             File.WriteAllText(Path.Combine(root, "src", "Compose.cs"), "class Y { string Name = \"compose component\"; }\n");
-            var hits = LegacyBrandLiteralGuard.Scan(root, pattern);
+            var hits = LegacyBrandLiteralGuard.Scan(root, probe);
             hits.ShouldHaveSingleItem().ShouldContain("Planted.cs:1:");
         }
         finally
@@ -31,50 +41,83 @@ public sealed class LegacyBrandLiteralGuardTests
         }
     }
 
-    /// <summary>The migrated tree has no old-name literal outside LegacyBrandNames.cs.</summary>
+    /// <summary>The migrated tree has no old-name literal outside frozen files and config-protected spans.</summary>
     [Fact]
     public void FullTreeScanPasses()
     {
         var root = ProjectGraphChecker.FindRepoRoot();
-        var hits = LegacyBrandLiteralGuard.Scan(root, LegacyBrandLiteralGuard.LoadPattern(root));
+        var hits = LegacyBrandLiteralGuard.Scan(root, LegacyBrandLiteralGuard.Load(root));
         hits.ShouldBeEmpty(string.Join(Environment.NewLine, hits));
     }
 
-    /// <summary>Loads the tool boundary pattern and scans product C# files. Literals in this file are built from fragments.</summary>
+    /// <summary>The migration pins are exactly the LegacyBrandNames.cs files tracked in the index.</summary>
+    [Fact]
+    public void LegacyBrandNamesPinCountMatchesTheTrackedFiles()
+    {
+        var root = ProjectGraphChecker.FindRepoRoot();
+        var pins = RunGit(root, "ls-files", "-z")
+            .Split('\0', StringSplitOptions.RemoveEmptyEntries)
+            .Where(static path => string.Equals(Path.GetFileName(path), "LegacyBrandNames.cs", StringComparison.Ordinal))
+            .ToList();
+        pins.Count.ShouldBe(ExpectedLegacyBrandNamesPins, string.Join(Environment.NewLine, pins));
+    }
+
+    private static string RunGit(string workingDirectory, params string[] arguments)
+    {
+        var startInfo = new ProcessStartInfo("git")
+        {
+            WorkingDirectory = workingDirectory,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+        };
+        foreach (var argument in arguments)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        using var git = Process.Start(startInfo) ?? throw new InvalidOperationException("could not start git");
+        var output = git.StandardOutput.ReadToEnd();
+        git.WaitForExit();
+        git.ExitCode.ShouldBe(0, "git " + string.Join(' ', arguments) + " must succeed");
+        return output;
+    }
+
+    /// <summary>Loads and scans with the probe built from the rebrand config. Literals in this file are built from fragments.</summary>
     private static class LegacyBrandLiteralGuard
     {
-        /// <summary>
-        /// GitHub URLs that still carry the old repository slug. The slug stays until the owner renames the repository, so
-        /// these exact forms are allowed: scripts/rebrand/rebrand.config.json protectedUrlPatterns ("github repo slug
-        /// swcstudiospace/OmpOS") and docs/runbooks/rebrand-autonogrammer.md (protected until --urls). A longer slug, or any
-        /// other path under it, is not allowed.
-        /// </summary>
-        private static readonly Regex ProtectedRepositoryUrls = new(
-            @"https://github\.com/swcstudiospace/OmpOS(?:/issues/new)?(?![A-Za-z0-9_/-])",
-            RegexOptions.CultureInvariant,
-            TimeSpan.FromSeconds(1));
+        private static readonly TimeSpan MatchTimeout = TimeSpan.FromSeconds(1);
 
-        public static Regex LoadPattern(string repoRoot)
+        /// <summary>A config-protected span: the pattern is blanked out of a line when lineMustMatch (if any) matches that line.</summary>
+        internal sealed record ProtectedSpan(Regex Pattern, Regex? LineMustMatch);
+
+        /// <summary>The brand regex, the protected spans and the frozen-file globs, all loaded from the config.</summary>
+        internal sealed record Probe(Regex Brand, IReadOnlyList<ProtectedSpan> Protected, IReadOnlyList<Regex> FrozenFiles);
+
+        public static Probe Load(string repoRoot)
         {
             var config = Path.Combine(repoRoot, "scripts", "rebrand", "rebrand.config.json");
             using var document = JsonDocument.Parse(File.ReadAllText(config));
-            if (!document.RootElement.TryGetProperty("brandRegex", out var property))
+            var root = document.RootElement;
+            if (!root.TryGetProperty("brandRegex", out var brand) || brand.GetString() is not { Length: > 0 } brandSource)
             {
                 throw new InvalidOperationException("scripts/rebrand/rebrand.config.json has no brandRegex key.");
             }
 
-            var source = property.GetString() ?? throw new InvalidOperationException("brandRegex is empty.");
-            try
-            {
-                return new Regex(source, RegexOptions.CultureInvariant | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
-            }
-            catch (RegexParseException exception)
-            {
-                throw new InvalidOperationException("brandRegex is not a compatible .NET regex.", exception);
-            }
+            var protectedSpans = root.GetProperty("protectedUrlPatterns").EnumerateArray()
+                .Select(static entry => new ProtectedSpan(
+                    new Regex(entry.GetProperty("pattern").GetString()!, RegexOptions.CultureInvariant, MatchTimeout),
+                    entry.TryGetProperty("lineMustMatch", out var gate)
+                        ? new Regex(gate.GetString()!, RegexOptions.CultureInvariant, MatchTimeout)
+                        : null))
+                .ToList();
+            var frozenFiles = root.GetProperty("excludedGlobs").EnumerateArray()
+                .Where(static entry => entry.TryGetProperty("content", out var content) && content.GetBoolean())
+                .Select(static entry => GlobToRegex(entry.GetProperty("glob").GetString()!))
+                .ToList();
+            return new Probe(new Regex(brandSource, RegexOptions.CultureInvariant, MatchTimeout), protectedSpans, frozenFiles);
         }
 
-        public static List<string> Scan(string root, Regex pattern)
+        public static List<string> Scan(string root, Probe probe)
         {
             var hits = new List<string>();
             foreach (var top in new[] { "src", "services", "apps" })
@@ -93,7 +136,7 @@ public sealed class LegacyBrandLiteralGuardTests
                         continue;
                     }
 
-                    if (string.Equals(Path.GetFileName(file), "LegacyBrandNames.cs", StringComparison.Ordinal))
+                    if (probe.FrozenFiles.Any(glob => glob.IsMatch(relative)))
                     {
                         continue;
                     }
@@ -101,7 +144,7 @@ public sealed class LegacyBrandLiteralGuardTests
                     var lines = File.ReadAllLines(file);
                     for (var index = 0; index < lines.Length; index++)
                     {
-                        if (pattern.IsMatch(ProtectedRepositoryUrls.Replace(lines[index], " ")))
+                        if (IsBrandLiteral(probe, lines[index]))
                         {
                             hits.Add(relative + ":" + (index + 1).ToString(System.Globalization.CultureInfo.InvariantCulture) + ":");
                         }
@@ -110,6 +153,67 @@ public sealed class LegacyBrandLiteralGuardTests
             }
 
             return hits;
+        }
+
+        private static bool IsBrandLiteral(Probe probe, string line)
+        {
+            var remaining = line;
+            foreach (var span in probe.Protected)
+            {
+                if (span.LineMustMatch is null || span.LineMustMatch.IsMatch(line))
+                {
+                    remaining = span.Pattern.Replace(remaining, " ");
+                }
+            }
+
+            return probe.Brand.IsMatch(remaining);
+        }
+
+        /// <summary>
+        /// Converts a root-relative config glob: '*' stays in one segment, '**/' matches any depth (including none),
+        /// '**' crosses segments, '?' is one non-separator character, and [...] is a character class.
+        /// </summary>
+        private static Regex GlobToRegex(string glob)
+        {
+            var pattern = new StringBuilder("^");
+            for (var index = 0; index < glob.Length; index++)
+            {
+                var character = glob[index];
+                if (character == '*' && index + 1 < glob.Length && glob[index + 1] == '*')
+                {
+                    index++;
+                    if (index + 1 < glob.Length && glob[index + 1] == '/')
+                    {
+                        index++;
+                        pattern.Append("(?:.*/)?");
+                    }
+                    else
+                    {
+                        pattern.Append(".*");
+                    }
+                }
+                else if (character == '*')
+                {
+                    pattern.Append("[^/]*");
+                }
+                else if (character == '?')
+                {
+                    pattern.Append("[^/]");
+                }
+                else if (character == '[' && glob.IndexOf(']', index + 1) > 0)
+                {
+                    var close = glob.IndexOf(']', index + 1);
+                    pattern.Append(glob, index, close - index + 1);
+                    index = close;
+                }
+                else
+                {
+                    pattern.Append(Regex.Escape(character.ToString()));
+                }
+            }
+
+            pattern.Append('$');
+            return new Regex(pattern.ToString(), RegexOptions.CultureInvariant, MatchTimeout);
         }
     }
 }

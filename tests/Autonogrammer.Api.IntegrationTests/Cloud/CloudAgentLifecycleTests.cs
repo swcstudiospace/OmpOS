@@ -61,8 +61,8 @@ public sealed class CloudAgentLifecycleTests
         host.Worker.Authorizations.ShouldHaveSingleItem().ShouldStartWith("Bearer ", Case.Sensitive);
         var claims = host.Worker.TokenClaims.ShouldHaveSingleItem();
         claims["sub"].ShouldBe(sessionId);
-        claims["aud"].ToString().ShouldBe("ompos-worker");
-        claims["iss"].ToString().ShouldBe("ompos-api");
+        claims["aud"].ToString().ShouldBe(Autonogrammer.Api.LegacyBrandNames.WorkerAudience);
+        claims["iss"].ToString().ShouldBe(Autonogrammer.Api.LegacyBrandNames.WorkerIssuer);
         (Convert.ToInt64(claims["exp"], System.Globalization.CultureInfo.InvariantCulture) - Convert.ToInt64(claims["iat"], System.Globalization.CultureInfo.InvariantCulture))
             .ShouldBeLessThanOrEqualTo(15 * 60);
     }

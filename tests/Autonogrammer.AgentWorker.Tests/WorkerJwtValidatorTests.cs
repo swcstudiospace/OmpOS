@@ -36,7 +36,7 @@ public sealed class WorkerJwtValidatorTests
         var now = clock.GetUtcNow().ToUnixTimeSeconds();
         var header = Base64UrlEncoder.Encode("{\"alg\":\"none\",\"typ\":\"JWT\"}");
         var payload = Base64UrlEncoder.Encode(
-            FormattableString.Invariant($"{{\"sub\":\"session-1\",\"iss\":\"ompos-api\",\"aud\":\"ompos-worker\",\"iat\":{now},\"exp\":{now + 300}}}"));
+            FormattableString.Invariant($"{{\"sub\":\"session-1\",\"iss\":\"{Autonogrammer.AgentWorker.LegacyBrandNames.WorkerIssuer}\",\"aud\":\"{Autonogrammer.AgentWorker.LegacyBrandNames.WorkerAudience}\",\"iat\":{now},\"exp\":{now + 300}}}"));
 
         var result = await new JsonWebTokenHandler().ValidateTokenAsync(header + "." + payload + ".", validator.Parameters).ConfigureAwait(true);
 

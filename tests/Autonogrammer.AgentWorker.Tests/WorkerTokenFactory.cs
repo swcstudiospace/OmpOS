@@ -34,8 +34,8 @@ internal sealed class WorkerTokenFactory : IDisposable
         DateTimeOffset now,
         TimeSpan? lifetime = null,
         TimeSpan? issuedAgo = null,
-        string? issuer = "ompos-api",
-        string? audience = "ompos-worker",
+        string? issuer = Autonogrammer.AgentWorker.LegacyBrandNames.WorkerIssuer,
+        string? audience = Autonogrammer.AgentWorker.LegacyBrandNames.WorkerAudience,
         bool includeIssuedAt = true,
         bool includeExpiry = true)
     {
@@ -55,7 +55,7 @@ internal sealed class WorkerTokenFactory : IDisposable
     {
         var descriptor = new SecurityTokenDescriptor
         {
-            Claims = BuildClaims(subject, now, null, null, "ompos-api", "ompos-worker", true, true),
+            Claims = BuildClaims(subject, now, null, null, Autonogrammer.AgentWorker.LegacyBrandNames.WorkerIssuer, Autonogrammer.AgentWorker.LegacyBrandNames.WorkerAudience, true, true),
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(PublicKeyPem)), SecurityAlgorithms.HmacSha256),
         };
         return new JsonWebTokenHandler().CreateToken(descriptor);
