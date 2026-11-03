@@ -5,18 +5,30 @@ depth: deep (static; nothing was built or run)
 status: issues_found
 sections:
   - "Stage A: plans 67-01 to 67-03"   # present
-  - "Stage B: plan 67-04"            # pending, added by a later pass
+  - "Stage B: plan 67-04"
 findings_stage_a:
   blocker: 0
   high: 3
   medium: 9
   low: 13
   total: 25
+findings_stage_b:
+  blocker: 0
+  high: 0
+  medium: 2
+  low: 3
+  total: 5
+open_after_fix_passes:   # counted after fix passes A1 and A2 and the Stage B review
+  blocker: 0
+  high: 2                # H-01 parts 2 and 3 (locked decision); H-02 in-process refusal (owner decision)
+  medium: 9              # Stage A: M-02, M-04 (RS256 part), M-05 to M-09; Stage B: B-01, B-02
+  low: 16                # Stage A: L-01 to L-13; Stage B: B-03 to B-05
+  total: 27
 ---
 
 # Phase 67 code review
 
-Status: **issues_found** for Stage A (no blocker, 3 high). Stage B (plan 67-04, Accounts.Desktop) is not reviewed yet.
+Status: **issues_found**. Stage A: no blocker; H-03 fixed; H-02 fixed except the in-process refusal (owner decision); H-01 parts 2 and 3 open (locked decision). Stage B (plan 67-04): no blocker and no HIGH; two MEDIUM and three LOW recorded open. Fix pass A2 changed no code: the H-02 and H-03 fixes and their regression tests were already committed in `4a1cffd2`.
 
 Method: static read of every file in scope, cross-checked against 67-CONTEXT D-01..D-64, the three PLANs and SUMMARYs. Nothing was compiled or executed, so every behavioural claim about a running system is marked `[INFERENCE]`. Line numbers are from the worktree at the time of review.
 
@@ -115,10 +127,6 @@ Fix: add rows: query/fragment refused; `HasAny` and exactly one of the two missi
 | D-33/D-51 metadata-driven OpenAPI security, anonymous list locked by test | Met (`SecuritySchemeTransformer.cs`, `OpenApiSecurityTests.cs`) |
 | D-42 error taxonomy of 16 kinds | Met (`AuthErrorKind.cs`, `TheErrorCatalogueIsClosed...`) |
 
-### Not reviewed here
-
-Plan 67-04 (`Autonogrammer.Accounts.Desktop`: file-lock `IRefreshGuard`, loopback listener, selector) and the consumers of `IRefreshGuard`/`linkRedirect` (findings H-03, L-06 and M-05(b) hand requirements to it). Nothing was built, tested or run for this report.
-
 ## Fix pass A1
 
 Scope: all HIGH findings, security F-01 and F-02, and the cheap one-file MEDIUM findings. Tests were written first for every behaviour fix. **Nothing was built or run in this pass**: free disk was 1.9 to 3.7 GB, under the 5 GB floor of the safety contract, so the code was checked by reading only. The main agent must run the checks listed at the end before treating any row below as verified. Commits: `4a1cffd2` (manager), `f0dcc251` (key refusal), `8e8cb642` (boundary test).
@@ -138,3 +146,45 @@ Scope: all HIGH findings, security F-01 and F-02, and the cheap one-file MEDIUM 
 | L-01 to L-13 | not fixed | none | Not requested. |
 
 Checks the main agent must run (nothing below was run here): `ag-dotnet test --project tests/Autonogrammer.Accounts.Tests -c Release --filter-not-trait "Category=Live"`; `ag-dotnet test --project tests/Autonogrammer.Api.IntegrationTests -c Release -- --filter-class "*ApiAuthOptionsValidator*"` and `--filter-class "*ApiAuthBoundary*"`. Expected to need a look on first run: the three updated startup tests rely on `ManualTimeProvider` stepping through the new 1 s retry, and the `hs256`/`alg-none` rows depend on JwtBearer rejecting by algorithm before signature work (if the `hs256` row returns 200, the `ValidAlgorithms` pin is broken, which is the point of the row).
+
+## Stage B: plan 67-04 (Accounts.Desktop)
+
+Scope: `src/Autonogrammer.Accounts.Desktop/*` (LoopbackListener, LoopbackResult, LoopbackOutcome, PkceSignInFlow, CrossProcessFileLock, AccountSecretStoreSelector, AccountSecretStoreMode, AccountSettingsKeys, DesktopLogMessages, AssemblyMarker), plus `apps/Autonogrammer.Native/Composition/DesktopAccountHost.cs` read only for how the stored-session flag is persisted. Static read only; nothing was built, tested or run, so every runtime claim is `[INFERENCE]`.
+
+Verified clean by reading: the listener binds `IPAddress.Loopback` only, requires `Host` to equal `127.0.0.1:<port>`, compares the nonce with `FixedTimeEquals`, answers with `Referrer-Policy: no-referrer`, `Cache-Control: no-store` and a CSP, and logs only fixed reason words; a stalled client holds one of eight slots for at most 5 s; the lock uses `FileShare.None` with an owner-only mode and never deletes the file; a device key name is routed to the system store only and never reaches memory or the file; the PKCE verifier stays in memory.
+
+### HIGH
+
+None.
+
+### MEDIUM
+
+**B-01 `AccountSecretStoreSelector.cs:294-310` and `:361-366` (with `AccountSessionManager.cs:811-813`): a degraded selector abandons a keyring entry it cannot remove, and sign-out then reports the secret cleared.**
+A system-store failure on set, get or remove calls `Degrade`, which sets `HasStoredSession` to false and the mode to MemoryOnly. The keyring entry from an earlier run stays, and nothing reads it again because the head persists `false` (`DesktopAccountHost.cs:194`, `:399`, `:422`). In MemoryOnly, `RemoveCoreAsync` removes from memory only and returns false when nothing was in memory, which the `ISecretStore.RemoveAsync` contract defines as "nothing stored". `TryRemoveStoredAsync` ignores that boolean and returns true on its retry. So a sign-out whose server revoke was not confirmed raises no `SignOutNotCleared` notice, and a live refresh token stays in the keyring. No automatic sign-in follows, so the harm is a lingering credential, not the H-02 re-sign-in, and the next sign-in overwrites the name. Fix (owner decision, because it changes the D-26 degrade behaviour): keep an "entry may exist" bit set by `Degrade`; while it is set, MemoryOnly removal retries the system store and, if that still fails, throws the degraded failure so the manager raises `SignOutNotCleared`. Test: system-store remove fails with Locked, then sign-out with an unconfirmed revoke, expecting `SignOutNotConfirmed | SignOutNotCleared`.
+
+**B-02 `LoopbackListener.cs:19-20` and `:363-368`, test `LoopbackListenerTests.cs:75`: a stray request does not end the wait, which differs from plan 67-04 Test 2.**
+Plan 67-04 Test 2 says each broken limit "yields LinkInvalidOrExpired". The implementation answers the probe with a fixed page and keeps waiting, so a local probe cannot cancel a sign-in. That is a sound choice and 67-04-SUMMARY deviation 2 discloses it, but the plan's acceptance text is not met as written. Needs owner acceptance or a plan amendment. No code changed.
+
+### LOW
+
+**B-03 `PkceSignInFlow.cs:82` and `:135-140`: a listener can outlive a failed send, and a call after dispose throws.**
+If `_coordinator.SendCodeAsync` throws (for example on cancellation) after `TryStart` bound a listener, `started` is never stored or disposed, so the port stays open until the listener's ten-minute timer ends it. `_lifetime.Token` at line 82 also throws `ObjectDisposedException` after `DisposeAsync` has disposed `_lifetime`. Fix: dispose `started` in a catch around the coordinator call, and check a disposed flag before using `_lifetime`.
+
+**B-04 `AccountSecretStoreSelector.cs:172-206`: consent in OperatingSystem mode leaves the keyring session behind.**
+`RememberWithoutSystemProtectionAsync` publishes `OwnerOnlyFile` without moving a keyring session and keeps `HasStoredSession` true, so the next start reads an empty file. The head offers consent from the `SessionNotRemembered` notice, which the selector only produces in MemoryOnly, so the UI path is not reachable; the public method is. Fix: return early unless the mode is MemoryOnly.
+
+**B-05 `DesktopLogMessages.cs:56-57` and `:110`, `AssemblyMarker.cs:5`: an unused log method and stale text.**
+`DeviceKeyRefused` is never called, so the selector never logs a device-key refusal and EventId 3086 is unused. The header comment says EventIds 3070 to 3089, but the highest used is 3087. `AssemblyMarker` still says "Behaviour arrives in Phase 67." Fix: delete the unused method and update the marker summary.
+
+Checks the main agent must run (none of them was run in this pass): `ag-dotnet test --project tests/Autonogrammer.Accounts.Tests -c Release --filter-not-trait "Category=Live"` and `ag-dotnet test --project tests/Autonogrammer.Accounts.Desktop.Tests -c Release --filter-not-trait "Category=Live"`.
+
+## Fix pass A2 (H-02 and H-03 re-check, Stage B review)
+
+Scope: H-02 and H-03 as named in this review, and the Stage B review. Result: no code change in this pass. Both fixes are on HEAD in `4a1cffd2` (an ancestor of HEAD; the working tree was clean when checked), and their regression tests are already in the tree. Verified by reading only.
+
+| Finding | Result | Evidence |
+| --- | --- | --- |
+| H-02 failed secret removal ignored by sign-out | fixed, residual open | `TryRemoveStoredAsync` returns a bool after one retry (`AccountSessionManager.cs:804-822`); `SignOutAsync` adds `SignOutNotCleared` when both the removal and the revoke failed (`:298-313`). Tests: `AStoreThatCannotRemoveTheSecretWithAnUnconfirmedRevokeRaisesTheNoticeAfterOneRetryAndNeverThrows` (`AccountSessionManagerTests.cs:608`), `AStoreThatCannotRemoveTheSecretWithAConfirmedRevokeNeedsNoNotice` (`:627`), `AOneOffRemovalFailureIsRetriedAndLeavesNoClearNotice` (`:641`). Residual: refusing to adopt the stored session at the next `StartAsync` is not implemented. `StartAsync` runs once per manager (`:162`) and a new process has no memory of an earlier failure, so an in-process form cannot cover a restart. Covering a restart needs a persisted tombstone, a new stored shape that D-23 does not allow. Owner decision. Stage B B-01 is a related gap. |
+| H-03 `_live` written outside the mutex and epoch | fixed | Every `_live` write is under `_mutation` and uses `Volatile.Write` (`:187`, `:222`, `:288`, `:545`, `:600`, `:631`). `AdoptAsync` rechecks the epoch and the live session before writing (`:532-558`). Test `AStoredTokenReadBeforeASignOutIsNeverAdoptedAfterItAndTheOldAccessTokenIsNotHandedOut` (`AccountSessionManagerTests.cs:585`) holds a store read with `HoldGets` while sign-out runs. |
+
+Frontmatter `open_after_fix_passes` counts the H-02 residual as open high.
