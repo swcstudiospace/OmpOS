@@ -7,7 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 namespace Autonogrammer.Api.Cloud;
 
 /// <summary>
-/// Signs the bearer token a worker requires on its WebSocket upgrade (ADR-0020 D4): ES256, <c>aud</c> <c>autonogrammer-worker</c>, <c>iss</c> from
+/// Signs the bearer token a worker requires on its WebSocket upgrade (ADR-0020 D4): ES256, <c>aud</c> the legacy worker audience (<c>LegacyBrandNames.WorkerAudience</c>), <c>iss</c> from
 /// <c>Cloud:Worker:Issuer</c>, <c>sub</c> the session identifier, a unique <c>jti</c>, <c>iat</c> and <c>exp</c> at most fifteen minutes apart. The private key comes from
 /// <c>Cloud:Worker:SigningKeyPem</c>; it is loaded once, never logged and never leaves this class. A token authorises one connection and is not
 /// renewed: every connect asks for a fresh one.
@@ -15,7 +15,7 @@ namespace Autonogrammer.Api.Cloud;
 internal sealed class WorkerTokenIssuer : IDisposable
 {
     /// <summary>The audience claim every worker requires.</summary>
-    public const string Audience = "autonogrammer-worker";
+    public const string Audience = LegacyBrandNames.WorkerAudience;
 
     private readonly ECDsa _key;
     private readonly SigningCredentials _credentials;

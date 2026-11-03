@@ -10,7 +10,7 @@ internal sealed class WorkerAuthOptions
     public const string SectionName = "Worker:Auth";
 
     /// <summary>Gets the audience every worker token must be issued for.</summary>
-    public const string Audience = "autonogrammer-worker";
+    public const string Audience = LegacyBrandNames.WorkerAudience;
 
     /// <summary>Gets the longest lifetime (<c>exp</c> minus <c>iat</c>) a worker token may have, and the longest <see cref="MaxTokenLifetime"/> that may be configured.</summary>
     public static readonly TimeSpan MaximumTokenLifetime = TimeSpan.FromMinutes(15);
@@ -18,8 +18,8 @@ internal sealed class WorkerAuthOptions
     /// <summary>Gets the largest clock skew that may be configured.</summary>
     public static readonly TimeSpan MaximumClockSkew = TimeSpan.FromMinutes(2);
 
-    /// <summary>Gets or sets the issuer a token must carry. Defaults to <c>autonogrammer-api</c>.</summary>
-    public string Issuer { get; set; } = "autonogrammer-api";
+    /// <summary>Gets or sets the issuer a token must carry. Defaults to the legacy issuer, <c>LegacyBrandNames.WorkerIssuer</c>.</summary>
+    public string Issuer { get; set; } = LegacyBrandNames.WorkerIssuer;
 
     /// <summary>
     /// Gets or sets the PEM-encoded public keys (SubjectPublicKeyInfo, ECDSA P-256 for ES256 or RSA of at least 2048 bits for RS256) a token

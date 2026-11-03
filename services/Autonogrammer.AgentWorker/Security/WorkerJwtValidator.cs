@@ -9,7 +9,7 @@ namespace Autonogrammer.AgentWorker.Security;
 
 /// <summary>
 /// Validates the bearer token the control plane mints for one session. A token is accepted only when its signature verifies against a
-/// configured public key with ES256 or RS256, it names the configured issuer and the <c>autonogrammer-worker</c> audience, it carries
+/// configured public key with ES256 or RS256, it names the configured issuer and the legacy worker audience (<c>LegacyBrandNames.WorkerAudience</c>), it carries
 /// <c>exp</c> and <c>iat</c>, it is not expired or issued in the future (beyond the clock skew), and <c>exp</c> minus <c>iat</c> does
 /// not exceed the maximum lifetime (15 minutes). The subject is the session id; <see cref="TryGetSessionId"/> accepts it only when it is a
 /// safe path segment and, for a pinned worker, equals the pinned session. Time comes from the injected <see cref="TimeProvider"/>.

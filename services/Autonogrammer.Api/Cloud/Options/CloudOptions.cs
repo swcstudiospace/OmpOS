@@ -153,8 +153,8 @@ internal sealed class CloudOptions
         /// <summary>Gets or sets the ES256 signing key as a PKCS#8 PEM (EC P-256). A secret. Required when cloud is enabled.</summary>
         public string SigningKeyPem { get; set; } = string.Empty;
 
-        /// <summary>Gets or sets the <c>iss</c> claim; the worker's <c>Worker:Auth:Issuer</c> must match. Defaults to <c>autonogrammer-api</c>.</summary>
-        public string Issuer { get; set; } = "autonogrammer-api";
+        /// <summary>Gets or sets the <c>iss</c> claim; the worker's <c>Worker:Auth:Issuer</c> must match. Defaults to the legacy issuer, <c>LegacyBrandNames.WorkerIssuer</c>.</summary>
+        public string Issuer { get; set; } = LegacyBrandNames.WorkerIssuer;
 
         /// <summary>Gets or sets how long a worker token lives. At most fifteen minutes; defaults to five.</summary>
         public TimeSpan TokenLifetime { get; set; } = TimeSpan.FromMinutes(5);
