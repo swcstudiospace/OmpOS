@@ -55,7 +55,7 @@ internal sealed class FakeGoTrueHost : IAsyncDisposable
             "authenticated",
             new Uri(ProjectAddress),
             PublishableKey,
-            new AuthMethods(EmailCode: true, MagicLink: magicLink),
+            new AuthMethods(EmailCode: true, MagicLink: magicLink, Providers: [], Wallet: false),
             new AuthEmailCode(ExpirySeconds: 3600, ResendCooldownSeconds: 60),
             SignupEmailHasCode: false)).Options!;
         _acceptLoop = Task.Run(AcceptLoopAsync);

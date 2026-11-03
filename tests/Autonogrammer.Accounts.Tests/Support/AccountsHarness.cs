@@ -19,7 +19,7 @@ internal sealed class AccountsHarness : IDisposable
             "authenticated",
             new Uri(FakeGoTrueHandler.ProjectUrl),
             FakeGoTrueHandler.PublishableKey,
-            new AuthMethods(EmailCode: true, MagicLink: magicLink),
+            new AuthMethods(EmailCode: true, MagicLink: magicLink, Providers: [], Wallet: false),
             new AuthEmailCode(ExpirySeconds: 3600, ResendCooldownSeconds: 60),
             SignupEmailHasCode: false)).Options!;
         Client = new GoTrueClient(Http, Options, Time, new CapturingLogger<GoTrueClient>(Sink));

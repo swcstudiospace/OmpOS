@@ -5538,7 +5538,9 @@
       "AuthMethods": {
         "required": [
           "emailCode",
-          "magicLink"
+          "magicLink",
+          "providers",
+          "wallet"
         ],
         "type": "object",
         "properties": {
@@ -5549,6 +5551,17 @@
           "magicLink": {
             "type": "boolean",
             "description": "True when the PKCE magic link flow is on (needs owner action O1); false means code only."
+          },
+          "providers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The OAuth providers the owner enabled in the identity project, by name: `google` and `x`. Empty when none. The project's settings do not report `x`, so the operator declares them."
+          },
+          "wallet": {
+            "type": "boolean",
+            "description": "True when Ethereum wallet sign-in is enabled in the identity project. The settings do not report it, so the operator declares it."
           }
         },
         "description": "Which sign-in methods the project offers."

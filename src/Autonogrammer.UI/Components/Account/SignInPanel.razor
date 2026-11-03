@@ -21,11 +21,11 @@
                 <p class="autonogrammer-auth-text">@AccountCopy.OtherWaysHeading</p>
                 @foreach (string provider in _providers)
                 {
-                    <button type="button" class="autonogrammer-button" @onclick="() => StartProviderAsync(provider)">@AccountCopy.ProviderButtonLabel(provider)</button>
+                    <button type="button" class="autonogrammer-btn" @onclick="() => StartProviderAsync(provider)">@AccountCopy.ProviderButtonLabel(provider)</button>
                 }
                 @if (_walletAvailable)
                 {
-                    <button type="button" class="autonogrammer-button" @onclick="SignInWithWalletAsync">@AccountCopy.WalletButtonLabel</button>
+                    <button type="button" class="autonogrammer-btn" @onclick="SignInWithWalletAsync">@AccountCopy.WalletButtonLabel</button>
                 }
             </div>
         }

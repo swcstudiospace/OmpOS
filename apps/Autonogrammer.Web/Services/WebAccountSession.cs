@@ -31,6 +31,8 @@ internal sealed class WebAccountSession : IApiTokenProvider, IAuthSession, IAcco
     private string? _issuedToken;
     private bool _configured;
     private string? _webOrigin;
+    private IReadOnlyList<string> _declaredProviders = Array.Empty<string>();
+    private bool _declaredWallet;
 
     /// <summary>Initializes a new instance of the <see cref="WebAccountSession"/> class.</summary>
     /// <param name="time">The clock of cooldowns.</param>
@@ -113,6 +115,8 @@ internal sealed class WebAccountSession : IApiTokenProvider, IAuthSession, IAcco
         }
 
         _configured = true;
+        _declaredProviders = (config.Methods?.Providers ?? Array.Empty<string>()).Where(name => Array.IndexOf(ProviderNames, name) >= 0).Distinct(StringComparer.Ordinal).ToArray();
+        _declaredWallet = config.Methods?.Wallet ?? false;
         _webOrigin = webOrigin;
         _authHttp?.Dispose();
         _authHttp = CreateAuthClient();
@@ -310,15 +314,11 @@ internal sealed class WebAccountSession : IApiTokenProvider, IAuthSession, IAcco
     private const string WalletStatement = "Sign in to Autonogrammer.";
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<string>> GetEnabledProvidersAsync(CancellationToken cancellationToken)
+    public Task<IReadOnlyList<string>> GetEnabledProvidersAsync(CancellationToken cancellationToken)
     {
-        if (!_configured || _client is null)
-        {
-            return [];
-        }
-
-        AuthResult<AuthSettings> settings = await _client.GetSettingsAsync(cancellationToken).ConfigureAwait(false);
-        return settings.IsSuccess ? ProviderNames.Where(settings.Value.IsEnabled).ToArray() : Array.Empty<string>();
+        _ = cancellationToken;
+        IReadOnlyList<string> offered = _configured && _client is not null ? _declaredProviders : Array.Empty<string>();
+        return Task.FromResult(offered);
     }
 
     /// <inheritdoc />
@@ -350,7 +350,7 @@ internal sealed class WebAccountSession : IApiTokenProvider, IAuthSession, IAcco
     public async Task<bool> WalletAvailableAsync(CancellationToken cancellationToken)
     {
         _ = cancellationToken;
-        if (!_configured || _js is null)
+        if (!_configured || !_declaredWallet || _js is null)
         {
             return false;
         }
@@ -380,11 +380,15 @@ internal sealed class WebAccountSession : IApiTokenProvider, IAuthSession, IAcco
             {
                 return WalletSignInOutcome.Declined;
             }
+            if (!EthereumAddress.TryToChecksumAddress(account.Address, out string? address))
+            {
+                return WalletSignInOutcome.Failed;
+            }
 
             var origin = new Uri(_webOrigin, UriKind.Absolute);
             string nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(WalletNonceBytes));
-            string message = SiweMessage.Build(new SiweFields(origin.Authority, account.Address, origin, account.ChainId, nonce, _time.GetUtcNow(), WalletStatement));
-            string? signature = await _js.InvokeAsync<string?>("autonogrammerAuth.walletSign", message, account.Address).ConfigureAwait(false);
+            string message = SiweMessage.Build(new SiweFields(origin.Authority, address, origin, account.ChainId, nonce, _time.GetUtcNow(), WalletStatement));
+            string? signature = await _js.InvokeAsync<string?>("autonogrammerAuth.walletSign", message, address).ConfigureAwait(false);
             if (string.IsNullOrEmpty(signature))
             {
                 return WalletSignInOutcome.Declined;

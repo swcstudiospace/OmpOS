@@ -97,6 +97,30 @@ public sealed class AuthConfigEndpointTests
         }
     }
 
+    /// <summary>Verifies the providers and the wallet the operator declared are the only ones the answer offers.</summary>
+    [Fact]
+    public async Task OidcMode_WithDeclaredMethods_AnswersThemAsOffered()
+    {
+        var config = JwtTestHost.DevelopmentConfig();
+        config["Api:Auth:Authority"] = JwtTestHost.Issuer;
+        config["Api:Auth:Client:ProjectUrl"] = "https://project.example";
+        config["Api:Auth:Client:PublishableKey"] = "sb_publishable_test";
+        config["Api:Auth:Client:Providers:0"] = "google";
+        config["Api:Auth:Client:Providers:1"] = "x";
+        config["Api:Auth:Client:WalletEnabled"] = "true";
+        using var factory = new ApiFactory(config, JwtTestHost.InjectStaticMetadata);
+        using var client = factory.CreateClient();
+
+        var (response, _, json) = await GetAsync(client).ConfigureAwait(true);
+        using (response)
+        {
+            response.StatusCode.ShouldBe(HttpStatusCode.OK);
+            JsonElement methods = json.GetProperty("methods");
+            methods.GetProperty("providers").EnumerateArray().Select(static provider => provider.GetString()).ShouldBe(["google", "x"]);
+            methods.GetProperty("wallet").GetBoolean().ShouldBeTrue();
+        }
+    }
+
     private static async Task<(HttpResponseMessage Response, string Text, JsonElement Json)> GetAsync(HttpClient client)
     {
         var testToken = TestContext.Current.CancellationToken;

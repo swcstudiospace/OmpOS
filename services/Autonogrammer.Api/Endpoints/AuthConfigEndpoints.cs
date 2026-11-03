@@ -60,7 +60,7 @@ internal static class AuthConfigEndpoints
                 Blank(auth.Audience),
                 projectUrl,
                 Blank(client.PublishableKey),
-                new AuthMethods(client.EmailCodeEnabled, client.MagicLinkEnabled),
+                new AuthMethods(client.EmailCodeEnabled, client.MagicLinkEnabled, client.Providers.Distinct(StringComparer.Ordinal).ToArray(), client.WalletEnabled),
                 new AuthEmailCode(client.EmailOtpExpirySeconds, client.ResendCooldownSeconds),
                 client.SignupEmailHasCode);
         }

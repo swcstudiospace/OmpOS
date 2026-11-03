@@ -8,7 +8,7 @@ public interface IProviderSignInHost
 {
     /// <summary>Reads which providers the deployment has enabled.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>The provider names the panel may offer, for example <c>google</c>. Empty when the read failed or the host is not configured.</returns>
+    /// <returns>The provider names the panel may offer, for example <c>google</c>, as the operator declared them. Empty when the head is not configured or declares none.</returns>
     Task<IReadOnlyList<string>> GetEnabledProvidersAsync(CancellationToken cancellationToken);
 
     /// <summary>Starts a sign-in with a provider in a new browser tab. The host's state changes when the sign-in completes.</summary>

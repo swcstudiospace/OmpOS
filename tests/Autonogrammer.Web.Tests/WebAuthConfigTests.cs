@@ -89,7 +89,7 @@ public sealed class WebAuthConfigTests
         null,
         new Uri("https://project.example"),
         "sb_publishable_test",
-        new AuthMethods(true, false));
+        new AuthMethods(true, false, [], false));
 
     private static async Task SignInAsync(WebAccountSession session)
     {

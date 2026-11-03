@@ -116,31 +116,4 @@ public sealed class GoTrueProviderTests
         result.IsSuccess.ShouldBeFalse();
         result.Failure.Kind.ShouldBe(AuthErrorKind.CaptchaRequired);
     }
-
-    [Fact]
-    public async Task SettingsReportOnlyTheProvidersTheProjectEnabled()
-    {
-        using AccountsHarness harness = AccountsHarness.Create();
-
-        AuthResult<AuthSettings> result = await harness.Client.GetSettingsAsync(Token);
-
-        result.IsSuccess.ShouldBeTrue();
-        result.Value.IsEnabled("google").ShouldBeTrue();
-        result.Value.IsEnabled("email").ShouldBeTrue();
-        result.Value.IsEnabled("x").ShouldBeFalse();
-        result.Value.IsEnabled("twitter").ShouldBeFalse();
-    }
-
-    [Fact]
-    public async Task SettingsServerErrorIsServiceUnavailableAndKeepsTheStatus()
-    {
-        using AccountsHarness harness = AccountsHarness.Create();
-        harness.Handler.ScriptError("settings", 500, null);
-
-        AuthResult<AuthSettings> result = await harness.Client.GetSettingsAsync(Token);
-
-        result.IsSuccess.ShouldBeFalse();
-        result.Failure.Kind.ShouldBe(AuthErrorKind.ServiceUnavailable);
-        result.Failure.HttpStatus.ShouldBe(500);
-    }
 }

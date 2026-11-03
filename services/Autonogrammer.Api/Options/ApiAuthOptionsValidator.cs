@@ -164,6 +164,22 @@ internal sealed class ApiAuthOptionsValidator : IValidateOptions<ApiAuthOptions>
         {
             failures.Add("Api:Auth:Client:ResendCooldownSeconds must not be negative.");
         }
+
+        if (client.Providers.Any(static provider => provider is not ("google" or "x")))
+        {
+            failures.Add("Api:Auth:Client:Providers may list only google and x.");
+        }
+
+        if (client.Providers.Distinct(StringComparer.Ordinal).Count() != client.Providers.Count)
+        {
+            failures.Add("Api:Auth:Client:Providers must not list a provider twice.");
+        }
+
+        if ((client.Providers.Count > 0 || client.WalletEnabled)
+            && (string.IsNullOrWhiteSpace(client.ProjectUrl) || string.IsNullOrWhiteSpace(client.PublishableKey)))
+        {
+            failures.Add("Api:Auth:Client:Providers and Api:Auth:Client:WalletEnabled require Api:Auth:Client:ProjectUrl and Api:Auth:Client:PublishableKey.");
+        }
     }
 
     private static bool ClientIsConfigured(ApiAuthClientOptions client) =>
@@ -172,7 +188,9 @@ internal sealed class ApiAuthOptionsValidator : IValidateOptions<ApiAuthOptions>
         || !client.EmailCodeEnabled
         || client.SignupEmailHasCode
         || client.EmailOtpExpirySeconds != DefaultOtpExpirySeconds
-        || client.ResendCooldownSeconds != DefaultResendCooldownSeconds;
+        || client.ResendCooldownSeconds != DefaultResendCooldownSeconds
+        || client.Providers.Count > 0
+        || client.WalletEnabled;
 
     /// <summary>Returns whether a key is a JWT whose payload carries <c>role</c> equal to <c>service_role</c>; a key that is not a readable JWT is not.</summary>
     private static bool IsServiceRoleJwt(string key)

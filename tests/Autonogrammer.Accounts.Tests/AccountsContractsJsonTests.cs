@@ -46,7 +46,7 @@ public sealed class AccountsContractsJsonTests
             "authenticated",
             new Uri("https://example.supabase.co"),
             "sb_publishable_x",
-            new AuthMethods(EmailCode: true, MagicLink: false),
+            new AuthMethods(EmailCode: true, MagicLink: false, Providers: ["google"], Wallet: true),
             new AuthEmailCode(ExpirySeconds: 3600, ResendCooldownSeconds: 60),
             SignupEmailHasCode: false);
 
@@ -55,10 +55,22 @@ public sealed class AccountsContractsJsonTests
 
         json.ShouldContain("\"projectUrl\":\"https://example.supabase.co\"");
         json.ShouldContain("\"publishableKey\":\"sb_publishable_x\"");
-        json.ShouldContain("\"methods\":{\"emailCode\":true,\"magicLink\":false}");
+        json.ShouldContain("\"methods\":{\"emailCode\":true,\"magicLink\":false,\"providers\":[\"google\"],\"wallet\":true}");
         json.ShouldContain("\"emailCode\":{\"expirySeconds\":3600,\"resendCooldownSeconds\":60}");
         json.ShouldContain("\"signupEmailHasCode\":false");
-        back.ShouldBe(config);
+        back.ShouldNotBeNull();
+        back.Mode.ShouldBe(config.Mode);
+        back.Authority.ShouldBe(config.Authority);
+        back.Audience.ShouldBe(config.Audience);
+        back.ProjectUrl.ShouldBe(config.ProjectUrl);
+        back.PublishableKey.ShouldBe(config.PublishableKey);
+        back.Methods.ShouldNotBeNull();
+        back.Methods.EmailCode.ShouldBe(config.Methods!.EmailCode);
+        back.Methods.MagicLink.ShouldBe(config.Methods.MagicLink);
+        back.Methods.Providers.ShouldBe(config.Methods.Providers);
+        back.Methods.Wallet.ShouldBe(config.Methods.Wallet);
+        back.EmailCode.ShouldBe(config.EmailCode);
+        back.SignupEmailHasCode.ShouldBe(config.SignupEmailHasCode);
     }
 
     [Fact]

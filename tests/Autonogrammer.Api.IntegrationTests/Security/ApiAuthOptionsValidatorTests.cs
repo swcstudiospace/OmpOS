@@ -261,6 +261,51 @@ public sealed class ApiAuthOptionsValidatorTests
         Validate(OwnerOptions(), Environments.Production).Succeeded.ShouldBeTrue();
     }
 
+    /// <summary>Verifies the declared providers and the wallet flag pass with the client block, and need no other settings.</summary>
+    [Fact]
+    public void Client_DeclaredProvidersAndWallet_PassWithTheClientBlock()
+    {
+        var options = ValidOidc();
+        options.Client = new ApiAuthClientOptions
+        {
+            ProjectUrl = "https://project.supabase.co",
+            PublishableKey = "sb_publishable_test",
+            Providers = ["google", "x"],
+            WalletEnabled = true,
+        };
+
+        Validate(options, Environments.Production).Succeeded.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies a declared provider other than google and x, or one listed twice, fails naming the key.</summary>
+    [Fact]
+    public void Client_DeclaredProviders_AreOnlyGoogleAndXOnce()
+    {
+        var unknown = ValidOidc();
+        unknown.Client = new ApiAuthClientOptions { ProjectUrl = "https://project.supabase.co", PublishableKey = "sb_publishable_test", Providers = ["twitter"] };
+        var twice = ValidOidc();
+        twice.Client = new ApiAuthClientOptions { ProjectUrl = "https://project.supabase.co", PublishableKey = "sb_publishable_test", Providers = ["x", "x"] };
+
+        Failures(unknown).ShouldContain(static m => m.Contains("Api:Auth:Client:Providers may list only google and x", StringComparison.Ordinal));
+        Failures(twice).ShouldContain(static m => m.Contains("Api:Auth:Client:Providers must not list a provider twice", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies declared providers or the wallet flag need the client block, and owner-token mode refuses them.</summary>
+    [Fact]
+    public void Client_DeclaredMethods_NeedTheClientBlockAndAreRefusedInOwnerTokenMode()
+    {
+        var providersWithoutBlock = ValidOidc();
+        providersWithoutBlock.Client = new ApiAuthClientOptions { Providers = ["google"] };
+        var walletWithoutBlock = ValidOidc();
+        walletWithoutBlock.Client = new ApiAuthClientOptions { WalletEnabled = true };
+        var owner = OwnerOptions();
+        owner.Client = new ApiAuthClientOptions { Providers = ["google"] };
+
+        Failures(providersWithoutBlock).ShouldContain(static m => m.Contains("Api:Auth:Client:Providers and Api:Auth:Client:WalletEnabled require", StringComparison.Ordinal));
+        Failures(walletWithoutBlock).ShouldContain(static m => m.Contains("Api:Auth:Client:Providers and Api:Auth:Client:WalletEnabled require", StringComparison.Ordinal));
+        Failures(owner).ShouldContain(static m => m.Contains("Api:Auth:Client must not be set", StringComparison.Ordinal));
+    }
+
     private static ApiAuthOptions ValidOidc()
     {
         var options = OidcOptions();

@@ -80,7 +80,6 @@ public sealed class GoTrueClient
         Logout,
         User,
         Web3,
-        Settings,
     }
 
     /// <summary>Gets the connection settings this client uses.</summary>
@@ -307,27 +306,6 @@ public sealed class GoTrueClient
             cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Reads which sign-in methods the project has enabled, so a sign-in screen offers only those.</summary>
-    /// <param name="cancellationToken">Cancels the request.</param>
-    /// <returns>The enabled flags by provider name, or why the settings could not be read.</returns>
-    public async Task<AuthResult<AuthSettings>> GetSettingsAsync(CancellationToken cancellationToken)
-    {
-        return await SendAsync(
-            Endpoint.Settings,
-            HttpMethod.Get,
-            "settings",
-            contentFactory: null,
-            bearer: null,
-            async (response, ct) =>
-            {
-                SettingsResponse? settings = await response.Content.ReadFromJsonAsync(GoTrueJsonContext.Default.SettingsResponse, ct).ConfigureAwait(false);
-                return settings?.External is null
-                    ? AuthResult.Fail<AuthSettings>(new AuthFailure(AuthErrorKind.Unexpected, HttpStatus: (int)response.StatusCode))
-                    : AuthResult.Success(new AuthSettings(settings.External));
-            },
-            cancellationToken).ConfigureAwait(false);
-    }
-
     private static bool IsAllowedRedirect(Uri redirectTo) =>
         redirectTo.IsAbsoluteUri
         && (string.Equals(redirectTo.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal) || (string.Equals(redirectTo.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal) && redirectTo.IsLoopback));
@@ -340,7 +318,6 @@ public sealed class GoTrueClient
         Endpoint.Refresh => "token/refresh",
         Endpoint.Logout => "logout",
         Endpoint.Web3 => "token/web3",
-        Endpoint.Settings => "settings",
         _ => "user",
     };
 

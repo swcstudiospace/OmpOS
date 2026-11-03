@@ -32,6 +32,15 @@ internal sealed class ApiAuthClientOptions
     /// <summary>Gets or sets whether the identity project's sign-up email carries a code rather than a link.</summary>
     public bool SignupEmailHasCode { get; set; }
 
+    /// <summary>
+    /// Gets or sets the sign-in providers the owner enabled in the identity project: <c>google</c> and <c>x</c>. The identity project's
+    /// settings do not report <c>x</c>, so the operator declares the providers here and a sign-in screen offers exactly these.
+    /// </summary>
+    public IList<string> Providers { get; set; } = [];
+
+    /// <summary>Gets or sets whether Ethereum wallet sign-in is enabled in the identity project. The settings do not report it, so the operator declares it here.</summary>
+    public bool WalletEnabled { get; set; }
+
     /// <summary>Gets a value indicating whether a project URL or a publishable key is set, which marks the block as in use.</summary>
     public bool HasAny => !string.IsNullOrWhiteSpace(ProjectUrl) || !string.IsNullOrWhiteSpace(PublishableKey);
 }

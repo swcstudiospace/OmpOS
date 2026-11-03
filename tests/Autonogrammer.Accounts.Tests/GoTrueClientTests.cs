@@ -109,7 +109,7 @@ public sealed class GoTrueClientTests
     public void OptionsFromAConfigRefuseMagicLinkWithoutEmailCode()
     {
         GoTrueOptionsResult result = GoTrueOptions.Create(new AuthConfigResponse(
-            "oidc", null, null, new Uri(FakeGoTrueHandler.ProjectUrl), "sb_publishable_abc", new AuthMethods(EmailCode: false, MagicLink: true), null, null));
+            "oidc", null, null, new Uri(FakeGoTrueHandler.ProjectUrl), "sb_publishable_abc", new AuthMethods(EmailCode: false, MagicLink: true, Providers: [], Wallet: false), null, null));
 
         result.IsValid.ShouldBeFalse();
         result.Field.ShouldBe("Methods.MagicLink");
