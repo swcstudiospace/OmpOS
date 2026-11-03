@@ -81,6 +81,10 @@
     {"glob": ".planning/phases/66-*/**", "class": "post-rename-planning", "content": true, "path": false, "reason": "written after the rename; they name old-name literals and absolute worktree paths on purpose"},
     {"glob": ".planning/phases/66.1-*/**", "class": "post-rename-planning", "content": true, "path": false, "reason": "written after the rename; they name old-name literals and absolute worktree paths on purpose"},
     {"glob": ".planning/phases/6[7-9]-*/**", "class": "post-rename-planning", "content": true, "path": false, "reason": "written after the rename; they name old-name literals and absolute worktree paths on purpose"},
+    {"glob": ".planning/ROADMAP.md", "class": "owner-kept", "content": true, "path": false, "reason": "GSD-managed planning state; owner decision 2026-11-03 (replay the 38 except ROADMAP and STATE)"},
+    {"glob": ".planning/STATE.md", "class": "owner-kept", "content": true, "path": false, "reason": "GSD-managed planning state; owner decision 2026-11-03 (replay the 38 except ROADMAP and STATE)"},
+    {"glob": "deploy/railway/README.md", "class": "owner-kept", "content": true, "path": false, "reason": "names live Railway resources ompos-worker and ompos-staging (OQ-171) until the owner renames them"},
+    {"glob": "tests/Autonogrammer.ArchitectureTests/DataPlaneGuardTests.cs", "class": "owner-kept", "content": true, "path": false, "reason": "holds the guard's forbidden legacy-schema literal; renaming it would turn the guard into a no-op"},
     {"glob": ".planning/phases/7[0-7]-*/**", "class": "post-rename-planning", "content": true, "path": false, "reason": "written after the rename; they name old-name literals and absolute worktree paths on purpose"}
   ],
   "binaryExtensions": [".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".icns", ".bmp", ".ttf", ".otf", ".woff", ".woff2", ".eot", ".pdf", ".zip", ".gz", ".tgz", ".7z", ".dll", ".exe", ".so", ".dylib", ".a", ".nupkg", ".jar", ".wasm", ".mp3", ".mp4", ".mov", ".webm", ".keystore", ".jks"],
