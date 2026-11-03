@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Diagnostics.CodeAnalysis;
 using Autonogrammer.Accounts;
 using Autonogrammer.Accounts.Desktop;
 using Autonogrammer.Contracts.Accounts;
@@ -94,17 +93,15 @@ internal sealed class HeadServices : IAsyncDisposable
         HttpClient? apiClient,
         SshClientOptions sshOptions,
         ContainerHosts containers,
-        AutomationsHost automations,
         DesktopAccountHost account,
         Func<CancellationToken, ValueTask<string?>> readToken)
     {
-        _artifacts = new ArtifactsComposition(new NativeCoworkAccountGate(account.Session), options.StateRoot, apiClient, readToken, account.Session);
         SshOptions = sshOptions;
         PodmanOptions = containers.Podman;
         WslOptions = containers.Wsl;
         ContainerEnvironments = containers.Environments;
         ContainerLister = containers.Lister;
-        Automations = automations;
+        _artifacts = new ArtifactsComposition(new NativeCoworkAccountGate(account.Session), options.StateRoot, apiClient, readToken, account.Session);
         StateRoot = options.StateRoot;
         PluginsRoot = options.PluginsRoot;
         WorkspaceRoot = options.WorkspaceRoot;
@@ -135,6 +132,8 @@ internal sealed class HeadServices : IAsyncDisposable
         Account = account;
         _account = account;
         _readToken = readToken;
+        // Created last: nothing after it can throw, so the automations never outlive a failed constructor.
+        Automations = CreateAutomations(options, configDirectory, cloud, TimeProvider);
     }
 
     /// <summary>Gets the root of all session state.</summary>
@@ -264,7 +263,6 @@ internal sealed class HeadServices : IAsyncDisposable
     /// <param name="cancellationToken">Cancels the opening of the hooks service and the display settings.</param>
     /// <returns>The services. The head disposes them after every session.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
-    [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: automations are nulled once the head is created; until then the finally disposes them. The constructor creates the artifact composition, which the analyzer cannot see through.")]
     public static async Task<HeadServices> CreateAsync(HeadServicesOptions options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -276,7 +274,6 @@ internal sealed class HeadServices : IAsyncDisposable
         // The stores and the API client are owned here until the services take them over; a failure part way disposes the ones that exist.
         Stores? stores = null;
         HttpClient? apiClient = null;
-        AutomationsHost? automations = null;
         var created = false;
         try
         {
@@ -294,18 +291,16 @@ internal sealed class HeadServices : IAsyncDisposable
             var opened = await OpenAccountAsync(options, clock, urlLauncher, cancellationToken).ConfigureAwait(false);
             apiClient = opened.Client;
             var containers = CreateContainerHosts(options, clock);
-            automations = CreateAutomations(options, config, opened.Cloud, clock);
 
             var services = new HeadServices(
                 options, runModeHub.HomeDirectory, config, hooks, hookApproval, stores.RemoteProfiles, remoteEnvironments, mcp, stores.Checkpoints, setupConsent, stores.ConsentStore,
-                worktrees, new AboutLauncher(), urlLauncher, display, runModeHub, runModes, stores.WorkspaceSets, opened.Cloud, apiClient, sshOptions, containers, automations, opened.Account, opened.Token);
+                worktrees, new AboutLauncher(), urlLauncher, display, runModeHub, runModes, stores.WorkspaceSets, opened.Cloud, apiClient, sshOptions, containers, opened.Account, opened.Token);
             holder.Owner = services;
             created = true;
 
-            // The services own the stores, the client and the automations from here on.
+            // The services own the stores and the client from here on.
             stores = null;
             apiClient = null;
-            automations = null;
             return services;
         }
         finally
@@ -314,11 +309,6 @@ internal sealed class HeadServices : IAsyncDisposable
             stores?.Dispose();
             if (!created)
             {
-                if (automations is not null)
-                {
-                    await automations.DisposeAsync().ConfigureAwait(false);
-                }
-
                 await hooks.DisposeAsync().ConfigureAwait(false);
             }
         }

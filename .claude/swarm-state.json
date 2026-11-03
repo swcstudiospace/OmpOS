@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "correlation_id": "8514d046-12ff-59da-bb27-7364638313e3",
+  "swarm_state": "INITIALIZING",
+  "updated_at": "2026-10-31T01:50:01Z",
+  "progress": {},
+  "source": "orchestrate subcommand handler"
+}
