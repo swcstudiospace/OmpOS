@@ -173,7 +173,7 @@ jobs:
             done
           }
           dragonfly_ping() {
-            { exec 3<>/dev/tcp/127.0.0.1/6379; } 2>/dev/null || return 1
+            { exec 3<>/dev/tcp/127.0.0.1/6380; } 2>/dev/null || return 1
             printf 'AUTH %s\r\nPING\r\n' "$AUTONOGRAMMER_DRAGONFLY_PASSWORD" >&3
             local auth="" pong=""
             IFS= read -r -t 5 auth <&3 || true
