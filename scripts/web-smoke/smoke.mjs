@@ -5,7 +5,7 @@
 //
 // Stdout: one JSON document. Stderr: progress lines. Exit 0 only when every assertion holds.
 //
-// After the runbook steps the accessibility checks of scripts/web-smoke/a11y run on their own page: the connect screen of an owner-token deployment, in-app
+// After the runbook steps the accessibility checks of scripts/web-smoke/a11y run on their own page: the sign-in explanation of an owner-token deployment, in-app
 // routes, keyboard walk, dialog, axe on every state (WCAG 2.2 tags), forced colours, contrast, reduced motion and dark scheme, reflow, target size and text
 // spacing. Each check group is one assertion named a11y<Group>. Optional: --a11y-report DIR (or A11Y_REPORT_DIR); AUTONOGRAMMER_SMOKE_A11Y=0 skips them.
 
