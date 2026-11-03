@@ -6,7 +6,7 @@
 // token, is answered with 401. Every other request goes to the real API untouched. The text typed into the token field is a fixed dummy string that
 // is not a credential of anything and is never printed or written.
 //
-// Asserted: the redirect from "/" to /connect, the title, one h1 with focus, the labelled password field (name, required, autocomplete, description),
+// Asserted: the redirect from "/" to /connect, the title, a main h1 and focus unmoved on load, the labelled password field (name, required, autocomplete, description),
 // the Tab order and the focus indicators, the empty submit (announced error, aria-invalid, focus stays in the field), the rejected token (announced error,
 // the typed value is gone, focus stays in the field), and axe, reflow, target size and text spacing on the screen in both states at both viewports.
 

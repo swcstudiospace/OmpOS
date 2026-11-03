@@ -19,7 +19,7 @@ public sealed class PostgresServerFixture : IAsyncLifetime
     /// <summary>The environment variable that names an existing administrative PostgreSQL connection string.</summary>
     public const string ConnectionEnvironmentVariable = "AUTONOGRAMMER_TEST_POSTGRES_CONNECTION";
 
-    /// <summary>The name <c>scripts/test-services.sh</c> gives the throwaway PostgreSQL container. A server named by <see cref="ConnectionEnvironmentVariable"/> is assumed to be that container.</summary>
+    /// <summary>The base name <c>scripts/test-services.sh</c> gives the throwaway PostgreSQL container, plus its services suffix when one is set. It is only the initial <see cref="ContainerName"/>; a configured server names its container through <see cref="ContainerEnvironmentVariable"/>.</summary>
     public const string TestServicesContainerName = "autonogrammer-test-postgres";
 
     /// <summary>The environment variable that names the throwaway PostgreSQL container of a named test-services run (scripts/test-services.sh exports it).</summary>
@@ -43,7 +43,9 @@ public sealed class PostgresServerFixture : IAsyncLifetime
         if (!string.IsNullOrWhiteSpace(configured))
         {
             AdminConnectionString = configured;
-            ContainerName = Environment.GetEnvironmentVariable(ContainerEnvironmentVariable) is { Length: > 0 } named ? named : TestServicesContainerName;
+            ContainerName = Environment.GetEnvironmentVariable(ContainerEnvironmentVariable) is { Length: > 0 } named
+                ? named
+                : throw new InvalidOperationException($"{ConnectionEnvironmentVariable} is set; set {ContainerEnvironmentVariable} to the container that holds that server.");
         }
         else
         {
