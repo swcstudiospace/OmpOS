@@ -68,6 +68,8 @@ BUILD_TIME_IDS = {
 }
 
 SKIP_DIRS = {".git", "bin", "obj", "node_modules", ".planning", ".swarm", ".dotnet", ".nuget"}
+# The root build output (.gitignore's /output/) holds copies of tracked assets; a nested output/ still counts.
+BUILD_OUTPUT_DIR = "output"
 SUBMODULE_LICENCES = {
     "plugins/claude-ultrathink": "AGPL-3.0-or-later (its LICENSE; same family as Autonogrammer)",
     "plugins/agent-swarm": "none published (no LICENSE file; OQ-102)",
@@ -86,7 +88,11 @@ def walk(root: Path):
     """Yield files under root in sorted order, skipping build output, caches and submodule checkouts."""
     for dirpath, dirnames, filenames in os.walk(root):
         rel = Path(dirpath).relative_to(REPO).as_posix()
-        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS and not (rel == "plugins" and d != "gsd-core-omp"))
+        at_root = rel == "."
+        dirnames[:] = sorted(
+            d for d in dirnames
+            if d not in SKIP_DIRS and not (rel == "plugins" and d != "gsd-core-omp") and not (at_root and d == BUILD_OUTPUT_DIR)
+        )
         for name in sorted(filenames):
             yield Path(dirpath) / name
 
