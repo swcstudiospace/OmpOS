@@ -5,6 +5,7 @@
 * [Getting started](guides/getting-started.md)
 * [Local development and the gate](runbooks/local-dev.md)
 * [Run the desktop app](runbooks/running-the-desktop-app.md)
+* [Desktop release packages](runbooks/desktop-release.md)
 * [Web head: real API, Demo and static deployment](runbooks/web-demo.md)
 * [Android and iOS terminals](runbooks/android-ios-terminals.md)
 
@@ -80,6 +81,7 @@
 * [Publish the docs with GitBook](runbooks/gitbook-publish.md)
 * [GitHub setup](runbooks/github-setup.md)
 * [Hosting](runbooks/hosting.md)
+* [Development API on the VPS](runbooks/vps-development-host.md)
 * [Data plane](runbooks/data-plane.md)
 * [Accounts](runbooks/accounts.md)
 * [Deploy and rollback](runbooks/deploy-and-rollback.md)

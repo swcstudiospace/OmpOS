@@ -20,6 +20,8 @@ mono_crash.*
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
+# Release packaging scripts are source; the ignore above is for build output.
+!scripts/release/
 [Rr]eleases/
 x64/
 x86/
