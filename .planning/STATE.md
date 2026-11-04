@@ -963,3 +963,15 @@ Pending pause (GREY, this packet): (1) uplift scope: audit first, fix phases now
 - OPEN (1): M-4 detached-path test. The test was removed because the harness did not trace the detached decision fault; cause not isolated. Attached path tested.
 - OPEN (2): the desktop composition passes no logger, so service ILogger output is discarded in the desktop app. Owner decision: wire ILoggerFactory into the desktop composition root, or accept silent desktop service faults.
 - Phase 25.5 stays open. Next: Phase 25.6 (F-E) unless the owner decides the open items first.
+
+## Open gates, autonomous run, 2026-11-04
+
+- Gate baseline: the full gate on a3af5dec passed (bootstrap OK; 14,490 tests, 0 failed, 3 skipped; secret scan OK; API, demo and artifact smokes exit 0). Commit a3af5dec fixes six test classes that leaked GUID temp directories.
+- Decision recorded: workflow.auto_advance set to true with GSD config-set (commit 2120d9ff, owner answer to the hold question). _auto_chain_active is left to the workflow.
+- Blocking question answered: quality bar scope is touched files only, plus the 25.1 register residuals.
+- Defaults applied (non-blocking): pattern changes match existing patterns; lint, analyzer, CI and numeric tooling stay as they are; TODO sources are explicit TODO or backlog files and .planning items, with inline markers only inside a phase surface.
+- Not run, by owner rule: ultrathink-kickoff and track complete (they create Notion and Linear rows, which were not requested); ultrathink-ship (owner answer says no PR or merge, and autoMerge is on); milestone complete with --confirm and cleanup (the audit has not passed).
+- Gate G1 (validation request): M-29, M-31, M-34 and H-4 are fixed in commit 523ac44 but have no automated test, and source-text assertions are forbidden. Default: accept the fixes and verify them on the next hosted or CI run.
+- Gate G2 (grey area): M-30 is an accepted residual (explicit Android workload version, 25.4). Default: keep the accepted record.
+- Owner decisions still open from the register: M-23 (OQ-34), M-24 (OQ-39), M-35 (image policy for caller-supplied images). M-20 is deferred as a large refactor.
+- Not started: reconcile the 25.6, 25.7 and 25.8 summaries; 13 Low findings rated fix with no record; 22 repo-buildable open questions; the 16 v0.16.0 phases; the 39 unchecked phases in v0.9.2 to v0.15.0, to classify.
