@@ -6,8 +6,10 @@ using Xunit;
 namespace Autonogrammer.Harness.BrowserUse.Tests.Tools;
 
 /// <summary>Downloads are denied unless quarantine rules all hold and a local card releases the file.</summary>
-public sealed class BrowserDownloadTests
+public sealed class BrowserDownloadTests : IDisposable
 {
+    private readonly List<string> _profiles = new();
+
     [Fact]
     public void Deny_RefusesEveryDownload()
     {
@@ -43,10 +45,22 @@ public sealed class BrowserDownloadTests
         File.ReadAllText(released).ShouldBe("hello");
     }
 
-    private static string NewProfile()
+    private string NewProfile()
     {
         var path = Path.Combine(Path.GetTempPath(), "ag-dl-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(path);
+        _profiles.Add(path);
         return path;
+    }
+
+    public void Dispose()
+    {
+        foreach (var path in _profiles)
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, recursive: true);
+            }
+        }
     }
 }

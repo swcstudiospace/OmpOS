@@ -8,7 +8,7 @@ using Xunit;
 namespace Autonogrammer.Cowork.Artifacts.Stores.Tests;
 
 /// <summary>Temp-directory tests for the authoritative file store.</summary>
-public sealed class FileArtifactStoreTests : ArtifactStoreContract
+public sealed class FileArtifactStoreTests : ArtifactStoreContract, IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "ag-artifacts-" + Guid.NewGuid().ToString("N"));
 
@@ -16,6 +16,15 @@ public sealed class FileArtifactStoreTests : ArtifactStoreContract
 
     /// <inheritdoc />
     protected override IArtifactStore CreateStore() => new FileArtifactStore(_root, "account-contract");
+
+    /// <summary>Deletes the temp root this test created.</summary>
+    public void Dispose()
+    {
+        if (Directory.Exists(_root))
+        {
+            Directory.Delete(_root, recursive: true);
+        }
+    }
 
     /// <summary>Two updates write v0001 and v0002 and the head is the highest version file.</summary>
     [Fact]

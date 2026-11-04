@@ -16,25 +16,35 @@ public sealed class BundleCompositionTests
     public async Task BundleServersArriveOffUntilEnabled()
     {
         var root = Path.Combine(Path.GetTempPath(), "ag-bundles-" + Guid.NewGuid().ToString("N"));
-        var state = Path.Combine(root, "state");
-        var bundle = Path.Combine(root, "plugins", "demo");
-        Directory.CreateDirectory(Path.Combine(bundle, "skills"));
-        await File.WriteAllTextAsync(Path.Combine(bundle, ".mcp.json"), """{"mcpServers":{"echo":{"command":"echo","args":["hi"]}}}""", TestContext.Current.CancellationToken).ConfigureAwait(true);
-        var composition = new BundleComposition(Path.Combine(root, "plugins"), state, projectScope: true);
-        var files = new MemoryFiles();
-        var catalog = new McpServerCatalog(files, files, extra: composition.ExtraServers);
-        var snapshot = await catalog.RefreshAsync(new McpLocatorContext([root], root, new Dictionary<string, string?>()), TestContext.Current.CancellationToken).ConfigureAwait(true);
-        var server = snapshot.Entries.ShouldHaveSingleItem().Server;
-        server.Origin.ShouldBe("plugin:demo");
-        server.Transport.ShouldBe(McpTransportKind.Stdio);
-        server.Priority.ShouldBeGreaterThan(10_000);
-        server.EnabledInFile.ShouldBeFalse();
-        snapshot.Entries[0].IsOffered.ShouldBeFalse();
+        try
+        {
+            var state = Path.Combine(root, "state");
+            var bundle = Path.Combine(root, "plugins", "demo");
+            Directory.CreateDirectory(Path.Combine(bundle, "skills"));
+            await File.WriteAllTextAsync(Path.Combine(bundle, ".mcp.json"), """{"mcpServers":{"echo":{"command":"echo","args":["hi"]}}}""", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            var composition = new BundleComposition(Path.Combine(root, "plugins"), state, projectScope: true);
+            var files = new MemoryFiles();
+            var catalog = new McpServerCatalog(files, files, extra: composition.ExtraServers);
+            var snapshot = await catalog.RefreshAsync(new McpLocatorContext([root], root, new Dictionary<string, string?>()), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            var server = snapshot.Entries.ShouldHaveSingleItem().Server;
+            server.Origin.ShouldBe("plugin:demo");
+            server.Transport.ShouldBe(McpTransportKind.Stdio);
+            server.Priority.ShouldBeGreaterThan(10_000);
+            server.EnabledInFile.ShouldBeFalse();
+            snapshot.Entries[0].IsOffered.ShouldBeFalse();
 
-        await catalog.SetEnabledAsync(server.Name, true, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        catalog.Current.Entries.ShouldHaveSingleItem().IsOffered.ShouldBeFalse();
-        await catalog.GrantConsentAsync(server.Name, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        catalog.Current.Entries.ShouldHaveSingleItem().IsOffered.ShouldBeTrue();
+            await catalog.SetEnabledAsync(server.Name, true, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            catalog.Current.Entries.ShouldHaveSingleItem().IsOffered.ShouldBeFalse();
+            await catalog.GrantConsentAsync(server.Name, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            catalog.Current.Entries.ShouldHaveSingleItem().IsOffered.ShouldBeTrue();
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
     }
 
     [Fact]

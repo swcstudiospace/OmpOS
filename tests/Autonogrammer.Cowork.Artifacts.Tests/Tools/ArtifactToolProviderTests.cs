@@ -52,29 +52,44 @@ public sealed class ArtifactToolProviderTests
     public async Task FromFileAndWriteLimitAreRefused()
     {
         var root = Directory.CreateTempSubdirectory("ag-art-");
-        var provider = Provider(out _, 2);
-        var session = Session(root.FullName);
-        var outside = (await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "hostile", "tools", "path-escape.txt"), TestContext.Current.CancellationToken).ConfigureAwait(true)).Trim();
-        outside.ShouldStartWith("/");
-        var escaped = await provider.InvokeAsync(session, Invoke("artifact_create", "{\"title\":\"X\",\"kind\":\"Markdown\",\"from_file\":\"" + outside + "\"}"), TestContext.Current.CancellationToken).ConfigureAwait(true);
-        ((CoworkTextBlock)escaped.Content[0]).Text.ShouldContain("file_not_allowed");
-        var link = Path.Combine(root.FullName, "leave");
         var target = Path.Combine(Path.GetTempPath(), "ag-art-outside-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(target);
-        await File.WriteAllTextAsync(Path.Combine(target, "secret.txt"), "secret", TestContext.Current.CancellationToken).ConfigureAwait(true);
-        File.CreateSymbolicLink(link, Path.Combine(target, "secret.txt"));
-        var linked = await provider.InvokeAsync(session, Invoke("artifact_create", "{\"title\":\"X\",\"kind\":\"Markdown\",\"from_file\":\"" + link + "\"}"), TestContext.Current.CancellationToken).ConfigureAwait(true);
-        ((CoworkTextBlock)linked.Content[0]).Text.ShouldContain("file_not_allowed");
-        var directory = await provider.InvokeAsync(session, Invoke("artifact_create", "{\"title\":\"X\",\"kind\":\"Markdown\",\"from_file\":\"" + root.FullName + "\"}"), TestContext.Current.CancellationToken).ConfigureAwait(true);
-        ((CoworkTextBlock)directory.Content[0]).Text.ShouldContain("file_not_allowed");
-        var first = await provider.InvokeAsync(session, Invoke("artifact_create", """{"title":"One","kind":"Markdown","content":"a"}"""), TestContext.Current.CancellationToken).ConfigureAwait(true);
-        first.IsError.ShouldBeFalse();
-        var second = await provider.InvokeAsync(session, Invoke("artifact_create", """{"title":"Two","kind":"Markdown","content":"b"}"""), TestContext.Current.CancellationToken).ConfigureAwait(true);
-        second.IsError.ShouldBeFalse();
-        var limited = await provider.InvokeAsync(session, Invoke("artifact_create", """{"title":"Three","kind":"Markdown","content":"c"}"""), TestContext.Current.CancellationToken).ConfigureAwait(true);
-        var text = ((CoworkTextBlock)limited.Content[0]).Text;
-        text.ShouldContain("rate_limited");
-        text.ShouldContain("retry-after");
+        try
+        {
+            var provider = Provider(out _, 2);
+            var session = Session(root.FullName);
+            var outside = (await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "hostile", "tools", "path-escape.txt"), TestContext.Current.CancellationToken).ConfigureAwait(true)).Trim();
+            outside.ShouldStartWith("/");
+            var escaped = await provider.InvokeAsync(session, Invoke("artifact_create", "{\"title\":\"X\",\"kind\":\"Markdown\",\"from_file\":\"" + outside + "\"}"), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            ((CoworkTextBlock)escaped.Content[0]).Text.ShouldContain("file_not_allowed");
+            var link = Path.Combine(root.FullName, "leave");
+            Directory.CreateDirectory(target);
+            await File.WriteAllTextAsync(Path.Combine(target, "secret.txt"), "secret", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            File.CreateSymbolicLink(link, Path.Combine(target, "secret.txt"));
+            var linked = await provider.InvokeAsync(session, Invoke("artifact_create", "{\"title\":\"X\",\"kind\":\"Markdown\",\"from_file\":\"" + link + "\"}"), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            ((CoworkTextBlock)linked.Content[0]).Text.ShouldContain("file_not_allowed");
+            var directory = await provider.InvokeAsync(session, Invoke("artifact_create", "{\"title\":\"X\",\"kind\":\"Markdown\",\"from_file\":\"" + root.FullName + "\"}"), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            ((CoworkTextBlock)directory.Content[0]).Text.ShouldContain("file_not_allowed");
+            var first = await provider.InvokeAsync(session, Invoke("artifact_create", """{"title":"One","kind":"Markdown","content":"a"}"""), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            first.IsError.ShouldBeFalse();
+            var second = await provider.InvokeAsync(session, Invoke("artifact_create", """{"title":"Two","kind":"Markdown","content":"b"}"""), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            second.IsError.ShouldBeFalse();
+            var limited = await provider.InvokeAsync(session, Invoke("artifact_create", """{"title":"Three","kind":"Markdown","content":"c"}"""), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            var text = ((CoworkTextBlock)limited.Content[0]).Text;
+            text.ShouldContain("rate_limited");
+            text.ShouldContain("retry-after");
+        }
+        finally
+        {
+            if (Directory.Exists(target))
+            {
+                Directory.Delete(target, recursive: true);
+            }
+
+            if (Directory.Exists(root.FullName))
+            {
+                Directory.Delete(root.FullName, recursive: true);
+            }
+        }
     }
 
     private static ArtifactToolProvider Provider(out ArtifactService service, int writes = 20)

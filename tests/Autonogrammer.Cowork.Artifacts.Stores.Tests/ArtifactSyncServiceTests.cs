@@ -8,8 +8,10 @@ using Xunit;
 namespace Autonogrammer.Cowork.Artifacts.Stores.Tests;
 
 /// <summary>Sync stays off until enabled, forks on divergence, and retries an offline queue in order.</summary>
-public sealed class ArtifactSyncServiceTests
+public sealed class ArtifactSyncServiceTests : IDisposable
 {
+    private readonly List<string> _roots = [];
+
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     /// <summary>While sync is off, no version body leaves the device.</summary>
@@ -83,9 +85,21 @@ public sealed class ArtifactSyncServiceTests
         handler.Writes.ShouldBe(2);
     }
 
-    private static (ArtifactSyncService Service, FileArtifactStore Store) Create(HttpClient client, bool enabled)
+    public void Dispose()
+    {
+        foreach (var root in _roots)
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    private (ArtifactSyncService Service, FileArtifactStore Store) Create(HttpClient client, bool enabled)
     {
         var root = Path.Combine(Path.GetTempPath(), "ag-sync-" + Guid.NewGuid().ToString("N"));
+        _roots.Add(root);
         var store = new FileArtifactStore(root, "sync-account");
         var remote = new HttpArtifactRemote(client, _ => ValueTask.FromResult<string?>("token"));
         var service = new ArtifactSyncService(store, remote) { Enabled = enabled };
