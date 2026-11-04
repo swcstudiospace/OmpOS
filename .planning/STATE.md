@@ -975,3 +975,4 @@ Pending pause (GREY, this packet): (1) uplift scope: audit first, fix phases now
 - Gate G2 (grey area): M-30 is an accepted residual (explicit Android workload version, 25.4). Default: keep the accepted record.
 - Owner decisions still open from the register: M-23 (OQ-34), M-24 (OQ-39), M-35 (image policy for caller-supplied images). M-20 is deferred as a large refactor.
 - Not started: reconcile the 25.6, 25.7 and 25.8 summaries; 13 Low findings rated fix with no record; 22 repo-buildable open questions; the 16 v0.16.0 phases; the 39 unchecked phases in v0.9.2 to v0.15.0, to classify.
+- Gate answers (owner, 2026-11-04): G1 accepted. The four fixes are verified on the next hosted or CI run, with no automated test. G2 kept as the accepted record.
