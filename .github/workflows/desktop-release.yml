@@ -14,8 +14,8 @@
 # Known conflict: release.yml creates a published (non-draft) release for every v* tag. When that release already exists,
 # the release job here refuses to modify it and fails. Resolving this is an owner decision; this file does not change release.yml.
 #
-# Runners: ubuntu-24.04, windows-2022 and macos-15. macos-14 is not used: GitHub retired all macOS 14 images on 2026-11-02
-# (actions/runner-images issue 15226). macos-15 is the arm64 image that replaces it.
+# Runners: ubuntu-24.04, windows-2025 and macos-26. macos-14 is not used: GitHub retired all macOS 14 images on 2026-11-02
+# (actions/runner-images issue 15226). macos-26 is the arm64 image that ADE plan Tier 1 (macOS 26) targets.
 #
 # The packages do not contain omp or Bun. The app needs both installed separately on the machine that runs it.
 #
@@ -51,9 +51,9 @@ jobs:
         include:
           - runner: ubuntu-24.04
             rid: linux-x64
-          - runner: windows-2022
+          - runner: windows-2025
             rid: win-x64
-          - runner: macos-15
+          - runner: macos-26
             rid: osx-arm64
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
