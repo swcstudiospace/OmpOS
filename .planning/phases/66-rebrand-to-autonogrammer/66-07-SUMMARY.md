@@ -110,3 +110,14 @@ Task 6 (`66-OWNER-ACTIONS.md` at `06400a79`):
 - Task 3 (decision 1): blocked on the owner.
 - Phase 66 close: needs decisions 1, 2 and 5 resolved, then Task 3 run for all four service-backed projects.
 - Owner actions 1 to 8 (`66-OWNER-ACTIONS.md`) stay open; none is claimed complete.
+
+## Owner decisions (2026-11-05)
+
+- Foreign containers: kept (owner). `autonogrammer-test-postgres` and `autonogrammer-test-dragonfly` stay. Task 3 remains blocked; 66-07 cannot close until they are removed or an isolation rule is approved.
+- Baseline: the post-decision report is the keep-count reference (owner). The original 363-count report is not recoverable, so the keep-count check is judged against the post-decision report.
+- Plan: `66-07-PLAN.md` corrected (owner approved). The service-backed set is four projects; the pure loop covers `Autonogrammer.ArchitectureTests` and `Autonogrammer.Harness.ContractTests`; the tool test count is 61; the pins are 14. An amendment paragraph in the objective states the correction, and the executable verify commands are corrected in place.
+- Ship: hold (owner). No PR until Phase 66 and the milestone are verified.
+
+## Task 1 under the corrected plan
+
+Restore, build, format and the four repo gates passed in this run. Pure projects that the corrected loop runs: 51 loop projects plus `Autonogrammer.ArchitectureTests` (83 tests, 0 failed) and `Autonogrammer.Harness.ContractTests` (9 tests, 0 failed), all exit 0. `Autonogrammer.Cowork.Artifacts.Stores.Tests` moves to the service-backed set. Task 1 passes under the corrected plan; the deferred set (Task 3) is blocked by decision 1.
