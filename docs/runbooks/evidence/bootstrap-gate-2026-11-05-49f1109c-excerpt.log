@@ -1,0 +1,11 @@
+Bootstrap gate excerpt, commit 49f1109c, run 2026-11-05, clean worktree, exit 0.
+The full log (/tmp/ag-recon/gate-49f1109c.log) and the smoke JSON of both halves (kept evidence directory /tmp/tmp.HMfKATAI90) are kept outside the repository: copying them in changes the rebrand census baseline, so storing them needs an owner decision.
+
+bootstrap: OK (SDK 10.0.402, locked restore, Release build, tests, format, web smoke with axe)
+build: 0 warnings, 0 errors (Release, warnings as errors)
+tests: total 14502, failed 0, succeeded 14499, skipped 3 (duration 4m 10s)
+api smoke exit=0; size budget exit=0; demo smoke exit=0; artifact smoke exit=0
+api half: routes:inapp 9 (every in-app step ran); demo half: routes:inapp 7
+route findings: none in either half; no sequence-retried and no boot-title-after-step warning
+api half direct loads: skipped by design (covered by the demo half)
+gate wall time: 1250 s
