@@ -21,11 +21,30 @@ internal static class SetupProcess
     /// <param name="workingDirectory">The existing working directory.</param>
     /// <param name="environment">Variables added to the inherited environment.</param>
     /// <param name="cancellationToken">Cancels the wait. The process tree is killed.</param>
-    public static async Task<StepExecution> RunAsync(
+    public static Task<StepExecution> RunAsync(
         string executable,
         IReadOnlyList<string> arguments,
         string workingDirectory,
         IReadOnlyDictionary<string, string> environment,
+        CancellationToken cancellationToken) =>
+        RunAsync(executable, arguments, workingDirectory, environment, KillEntireTree, cancellationToken);
+
+    /// <summary>
+    /// Runs a step with an explicit tree-kill action. Production code uses the public overload; the seam lets a test
+    /// make the OS refuse the kill.
+    /// </summary>
+    /// <param name="executable">The executable path or name.</param>
+    /// <param name="arguments">The argument list.</param>
+    /// <param name="workingDirectory">The existing working directory.</param>
+    /// <param name="environment">Variables added to the inherited environment.</param>
+    /// <param name="killTree">Stops the process tree. It may throw; a <see cref="Win32Exception"/> is reported as a failed step.</param>
+    /// <param name="cancellationToken">Cancels the wait. The process tree is killed through <paramref name="killTree"/>.</param>
+    internal static async Task<StepExecution> RunAsync(
+        string executable,
+        IReadOnlyList<string> arguments,
+        string workingDirectory,
+        IReadOnlyDictionary<string, string> environment,
+        Action<Process> killTree,
         CancellationToken cancellationToken)
     {
         using var process = new Process { StartInfo = BuildStartInfo(executable, arguments, workingDirectory, environment) };
@@ -48,7 +67,7 @@ internal static class SetupProcess
         }
         catch (OperationCanceledException)
         {
-            var killFailure = KillProcessTree(process);
+            var killFailure = KillProcessTree(process, killTree);
             await Task.WhenAll(standardOutput, standardError).ConfigureAwait(false);
             if (killFailure is not null)
             {
@@ -125,7 +144,16 @@ internal static class SetupProcess
         return line.Length <= MaxDetailCharacters ? line : line[..MaxDetailCharacters];
     }
 
-    private static Win32Exception? KillProcessTree(Process process)
+    private static void KillEntireTree(Process process) => process.Kill(entireProcessTree: true);
+
+    /// <summary>
+    /// Stops a process tree. A process that has already exited is not reported. A kill the OS refuses is returned
+    /// so the caller can report the step as failed.
+    /// </summary>
+    /// <param name="process">The process to stop.</param>
+    /// <param name="killTree">The action that performs the kill.</param>
+    /// <returns>The refusal, or null when the process is gone or was stopped.</returns>
+    internal static Win32Exception? KillProcessTree(Process process, Action<Process> killTree)
     {
         if (process.HasExited)
         {
@@ -134,7 +162,7 @@ internal static class SetupProcess
 
         try
         {
-            process.Kill(entireProcessTree: true);
+            killTree(process);
         }
         catch (InvalidOperationException)
         {
