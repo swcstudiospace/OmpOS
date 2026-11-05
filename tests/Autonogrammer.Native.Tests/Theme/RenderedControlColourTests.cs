@@ -15,7 +15,7 @@ namespace Autonogrammer.Native.Tests.Theme;
 
 /// <summary>
 /// The colour three shared controls draw, in both theme variants: a TextBox placeholder (OQ-48), a keyboard-focused
-/// ToggleButton (audit row 23), and the composer's stop square against its button (audit row 24).
+/// ToggleButton (audit row 23), and the stop square of the prompt input against its button (audit row 24).
 /// </summary>
 /// <remarks>
 /// The checks read what each control draws, not the XAML. The placeholder check reads the colour the Fluent
@@ -107,13 +107,13 @@ public sealed class RenderedControlColourTests
     }
 
     /// <summary>
-    /// The composer's stop square is drawn in TextPrimary and keeps at least 3:1 against the rendered background of the
+    /// The prompt input's stop square is drawn in TextPrimary and keeps at least 3:1 against the rendered background of the
     /// stop button it sits on, once that background's transition has ended.
     /// </summary>
     [Theory]
     [InlineData("Dark")]
     [InlineData("Light")]
-    public async Task TheComposerStopSquareContrastsWithItsButtonInEachTheme(string variantName)
+    public async Task TheStopSquareContrastsWithItsButtonInEachTheme(string variantName)
     {
         var variant = VariantOf(variantName);
         var cancellationToken = TestContext.Current.CancellationToken;
