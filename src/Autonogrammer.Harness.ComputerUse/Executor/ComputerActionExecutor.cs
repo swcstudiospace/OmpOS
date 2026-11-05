@@ -16,7 +16,7 @@ public sealed class ComputerActionExecutor : IDisposable
     private readonly IComputerUseBackend _backend;
     private readonly ComputerActionGate _gate;
     private readonly KillSwitchCoordinator _killSwitch;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly int _takeoverPx;
     private readonly SemaphoreSlim _serial = new(1, 1);
     private int _queued;
@@ -43,7 +43,7 @@ public sealed class ComputerActionExecutor : IDisposable
         _backend = backend;
         _gate = gate;
         _killSwitch = killSwitch;
-        _time = time;
+        _timeProvider = time;
         _takeoverPx = takeoverPx;
     }
 
@@ -79,7 +79,7 @@ public sealed class ComputerActionExecutor : IDisposable
             }
 
             if (!allowed.Ticket.Matches(request.ActionHash)
-                || !allowed.Ticket.IsWithinLifetime(_time.GetUtcNow())
+                || !allowed.Ticket.IsWithinLifetime(_timeProvider.GetUtcNow())
                 || !allowed.Ticket.TryConsume())
             {
                 return new ComputerExecutionResult(DenialCode.InternalError);

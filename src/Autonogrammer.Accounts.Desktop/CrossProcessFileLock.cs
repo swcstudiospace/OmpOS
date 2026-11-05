@@ -21,7 +21,7 @@ public sealed class CrossProcessFileLock : IRefreshGuard
 
     private readonly string _path;
     private readonly SemaphoreSlim _processGate;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<CrossProcessFileLock>? _logger;
 
     /// <summary>Initializes a new instance of the <see cref="CrossProcessFileLock"/> class.</summary>
@@ -33,7 +33,7 @@ public sealed class CrossProcessFileLock : IRefreshGuard
         ArgumentException.ThrowIfNullOrWhiteSpace(lockFilePath);
         _path = Path.GetFullPath(lockFilePath);
         _processGate = ProcessGates.GetOrAdd(_path, static _ => new SemaphoreSlim(1, 1));
-        _time = timeProvider ?? TimeProvider.System;
+        _timeProvider = timeProvider ?? TimeProvider.System;
         _logger = logger;
     }
 
@@ -43,7 +43,7 @@ public sealed class CrossProcessFileLock : IRefreshGuard
     /// <inheritdoc />
     public async ValueTask<IAsyncDisposable> AcquireAsync(CancellationToken cancellationToken)
     {
-        long started = _time.GetTimestamp();
+        long started = _timeProvider.GetTimestamp();
         if (!await _processGate.WaitAsync(0, cancellationToken).ConfigureAwait(false))
         {
             DesktopLogMessages.RefreshLockWaiting(_logger);
@@ -104,13 +104,13 @@ public sealed class CrossProcessFileLock : IRefreshGuard
                 return opened;
             }
 
-            if (_time.GetElapsedTime(started) > MaximumWait)
+            if (_timeProvider.GetElapsedTime(started) > MaximumWait)
             {
                 DesktopLogMessages.RefreshLockTimedOut(_logger);
                 throw new TimeoutException("The refresh lock stayed held too long.");
             }
 
-            await Task.Delay(poll, _time, cancellationToken).ConfigureAwait(false);
+            await Task.Delay(poll, _timeProvider, cancellationToken).ConfigureAwait(false);
             poll = poll * 2 > LongestPoll ? LongestPoll : poll * 2;
         }
     }

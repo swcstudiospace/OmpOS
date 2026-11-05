@@ -12,7 +12,7 @@ public sealed class VisionPipeline
 {
     private readonly ComputerUseOptions _options;
     private readonly IComputerUseBackend _backend;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly string? _modelId;
     private readonly Dictionary<string, SessionFrames> _sessions = new(StringComparer.Ordinal);
 
@@ -25,7 +25,7 @@ public sealed class VisionPipeline
     {
         _options = options;
         _backend = backend;
-        _time = time;
+        _timeProvider = time;
         _modelId = modelId;
     }
 
@@ -80,7 +80,7 @@ public sealed class VisionPipeline
 
         if (_options.SettleMs > 0)
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(_options.SettleMs), _time, cancellationToken).ConfigureAwait(false);
+            await Task.Delay(TimeSpan.FromMilliseconds(_options.SettleMs), _timeProvider, cancellationToken).ConfigureAwait(false);
         }
 
         RawFrame raw = await _backend.CaptureAsync(
@@ -114,12 +114,12 @@ public sealed class VisionPipeline
             Cursor = model.X.ToString(CultureInfo.InvariantCulture) + "," + model.Y.ToString(CultureInfo.InvariantCulture),
             Sha256 = hash,
             Png = encoded.Bytes!,
-            CapturedAt = _time.GetUtcNow(),
+            CapturedAt = _timeProvider.GetUtcNow(),
             Number = session.Count,
             IdenticalHashHint = hint,
         };
         session.Latest = frame;
-        session.Touched = _time.GetUtcNow();
+        session.Touched = _timeProvider.GetUtcNow();
         return new VisionCapture(frame, null);
     }
 
@@ -133,7 +133,7 @@ public sealed class VisionPipeline
             return null;
         }
 
-        if (_time.GetUtcNow() - session.Touched >= TimeSpan.FromSeconds(60))
+        if (_timeProvider.GetUtcNow() - session.Touched >= TimeSpan.FromSeconds(60))
         {
             session.Latest = null;
             return null;

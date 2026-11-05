@@ -12,7 +12,7 @@ public sealed class ScreenshotPipeline
     /// <summary>The fixed viewport height.</summary>
     public const int ViewportHeight = 800;
 
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly Func<TimeSpan, CancellationToken, Task> _delay;
     private DateTimeOffset _last = DateTimeOffset.MinValue;
 
@@ -21,8 +21,8 @@ public sealed class ScreenshotPipeline
     /// <param name="delay">The wait used to honour the 500 ms floor. Null waits on the clock token.</param>
     public ScreenshotPipeline(TimeProvider? time = null, Func<TimeSpan, CancellationToken, Task>? delay = null)
     {
-        _time = time ?? TimeProvider.System;
-        _delay = delay ?? ((span, token) => Task.Delay(span, _time, token));
+        _timeProvider = time ?? TimeProvider.System;
+        _delay = delay ?? ((span, token) => Task.Delay(span, _timeProvider, token));
     }
 
     /// <summary>Gets the last enforced wait. Tests read this.</summary>
@@ -88,7 +88,7 @@ public sealed class ScreenshotPipeline
 
     private async Task HonourIntervalAsync(CancellationToken cancellationToken)
     {
-        var now = _time.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
         var elapsed = now - _last;
         if (_last != DateTimeOffset.MinValue && elapsed < MinimumInterval)
         {
@@ -100,6 +100,6 @@ public sealed class ScreenshotPipeline
             LastWait = TimeSpan.Zero;
         }
 
-        _last = _time.GetUtcNow();
+        _last = _timeProvider.GetUtcNow();
     }
 }

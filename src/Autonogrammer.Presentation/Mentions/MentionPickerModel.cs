@@ -29,7 +29,7 @@ public sealed class MentionPickerModel : ObservableModel, IDisposable
     ];
 
     private readonly IReadOnlyList<IMentionSource> _sources;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly TimeSpan _sourceTimeout;
     private CancellationTokenSource? _search;
     private int _version;
@@ -63,7 +63,7 @@ public sealed class MentionPickerModel : ObservableModel, IDisposable
         }
 
         _sources = sources;
-        _time = timeProvider ?? TimeProvider.System;
+        _timeProvider = timeProvider ?? TimeProvider.System;
         _sourceTimeout = sourceTimeout ?? TimeSpan.FromSeconds(3);
     }
 
@@ -352,7 +352,7 @@ public sealed class MentionPickerModel : ObservableModel, IDisposable
 
     private async Task<SourceOutcome> SearchOneAsync(IMentionSource source, string query, int limit, CancellationToken token)
     {
-        using var timeout = new CancellationTokenSource(_sourceTimeout, _time);
+        using var timeout = new CancellationTokenSource(_sourceTimeout, _timeProvider);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, timeout.Token);
         try
         {

@@ -47,6 +47,7 @@ public sealed class WorkspaceSearch
         {
             throw new ArgumentOutOfRangeException(nameof(request), request.MaxHits, "The hit limit must be at least 1.");
         }
+        // Search is synchronous: it enumerates directories, reads whole files and runs regex, so it is offloaded to keep those blocking calls off the caller's thread.
         return Task.Run(() => Search(request, cancellationToken), cancellationToken);
     }
 

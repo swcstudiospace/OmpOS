@@ -32,7 +32,7 @@ public sealed class McpConnectionChecker : IMcpConnectionChecker
             "MCP connection check failed with {ExceptionType}.");
 
     private readonly McpConnectionCheckOptions _options;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
 
     /// <summary>Creates a checker that runs only when <see cref="CheckAsync"/> is called.</summary>
@@ -42,7 +42,7 @@ public sealed class McpConnectionChecker : IMcpConnectionChecker
     public McpConnectionChecker(McpConnectionCheckOptions? options = null, TimeProvider? time = null, ILogger? logger = null)
     {
         _options = options ?? new McpConnectionCheckOptions();
-        _time = time ?? TimeProvider.System;
+        _timeProvider = time ?? TimeProvider.System;
         _logger = logger ?? NullLogger.Instance;
     }
 
@@ -52,7 +52,7 @@ public sealed class McpConnectionChecker : IMcpConnectionChecker
         ArgumentNullException.ThrowIfNull(server);
         using var operation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var work = RunAsync(server, operation.Token);
-        var finished = await Task.WhenAny(work, Task.Delay(_options.Timeout, _time, CancellationToken.None)).ConfigureAwait(false);
+        var finished = await Task.WhenAny(work, Task.Delay(_options.Timeout, _timeProvider, CancellationToken.None)).ConfigureAwait(false);
         if (!ReferenceEquals(finished, work))
         {
             await operation.CancelAsync().ConfigureAwait(false);

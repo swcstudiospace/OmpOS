@@ -19,7 +19,7 @@ internal sealed class SlashPaletteBinding : IDisposable
     private readonly IOmpSessionCommands _control;
     private readonly Func<CancellationToken, Task>? _connect;
     private readonly ISlashDiscoverySource? _discoverySource;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly SlashCommandDispatcher _dispatcher;
     private readonly CancellationTokenSource _lifetime = new();
     private ISlashActionHost? _host;
@@ -55,7 +55,7 @@ internal sealed class SlashPaletteBinding : IDisposable
         _connect = connect;
         _host = host;
         _discoverySource = discovery;
-        _time = time ?? TimeProvider.System;
+        _timeProvider = time ?? TimeProvider.System;
         _dispatcher = new SlashCommandDispatcher(new SlashCommandResolver(registry));
         Palette = new SlashPaletteModel(registry);
         Palette.SetActionHost(host);
@@ -90,7 +90,7 @@ internal sealed class SlashPaletteBinding : IDisposable
         {
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetime.Token);
             var found = await _discoverySource.LoadAsync(linked.Token).ConfigureAwait(true);
-            _lastDiscovery = _time.GetUtcNow();
+            _lastDiscovery = _timeProvider.GetUtcNow();
             if (Volatile.Read(ref _disposed) == 0)
             {
                 _discovery = found;
@@ -165,7 +165,7 @@ internal sealed class SlashPaletteBinding : IDisposable
             _ = ConnectAsync(_connect);
         }
 
-        if (_discoverySource is not null && (_lastDiscovery is not { } last || _time.GetUtcNow() - last >= DiscoveryRefreshInterval))
+        if (_discoverySource is not null && (_lastDiscovery is not { } last || _timeProvider.GetUtcNow() - last >= DiscoveryRefreshInterval))
         {
             _ = RefreshDiscoveryAsync(CancellationToken.None);
         }

@@ -9,7 +9,7 @@ namespace Autonogrammer.Cowork.Memory;
 public sealed class InMemoryMemoryStore : IMemoryStore
 {
     private readonly Lock _gate = new();
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly IMemoryNoticeSink? _notices;
     private readonly List<MemoryEntry> _entries = [];
     private readonly Dictionary<string, MemorySettings> _settings = new(StringComparer.Ordinal);
@@ -19,7 +19,7 @@ public sealed class InMemoryMemoryStore : IMemoryStore
     /// <param name="notices">The notice sink, or null.</param>
     public InMemoryMemoryStore(TimeProvider? time = null, IMemoryNoticeSink? notices = null)
     {
-        _time = time ?? TimeProvider.System;
+        _timeProvider = time ?? TimeProvider.System;
         _notices = notices;
     }
 
@@ -62,7 +62,7 @@ public sealed class InMemoryMemoryStore : IMemoryStore
                 return Task.FromResult(refused);
             }
 
-            var now = _time.GetUtcNow();
+            var now = _timeProvider.GetUtcNow();
             var entry = new MemoryEntry
             {
                 Id = Guid.NewGuid().ToString("n"),
@@ -168,7 +168,7 @@ public sealed class InMemoryMemoryStore : IMemoryStore
             return new MemoryMutation(false, MemoryCodes.MemoryCapReached, limit, null);
         }
 
-        var since = _time.GetUtcNow().AddHours(-1);
+        var since = _timeProvider.GetUtcNow().AddHours(-1);
         var saves = _entries.Count(entry => string.Equals(entry.AccountId, scope.AccountId, StringComparison.Ordinal) && string.Equals(entry.SourceSession, scope.SessionId, StringComparison.Ordinal) && entry.CreatedAt >= since);
         if (saves >= MemoryOptions.MaxSavesPerSessionPerHour)
         {

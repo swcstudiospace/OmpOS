@@ -18,7 +18,7 @@ public sealed class ComputerApprovalViewModel : ObservableModel, IDisposable
     public const int PreviewLimit = 40;
 
     private TaskCompletionSource<ComputerApprovalChoice> _choice = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly ITimer _timer;
     private int _completed;
 
@@ -30,7 +30,7 @@ public sealed class ComputerApprovalViewModel : ObservableModel, IDisposable
     public ComputerApprovalViewModel(ComputerApprovalFacts facts, TimeProvider? time = null, ReadOnlyMemory<byte> crop = default)
     {
         ArgumentNullException.ThrowIfNull(facts);
-        _time = time ?? TimeProvider.System;
+        _timeProvider = time ?? TimeProvider.System;
         Facts = facts;
         QuotedTitle = Quote(facts.SanitizedTitle);
         ApplicationName = Plain(facts.ApplicationName, 80);
@@ -46,7 +46,7 @@ public sealed class ComputerApprovalViewModel : ObservableModel, IDisposable
         Deny = new ChoiceCommand(() => Complete(ComputerApprovalChoice.Deny));
         AllowOnce = new ChoiceCommand(() => Complete(ComputerApprovalChoice.AllowOnce));
         AllowForSession = new ChoiceCommand(() => Complete(ComputerApprovalChoice.AllowForSession));
-        _timer = _time.CreateTimer(OnTimeout, null, ComputerApprovalFacts.Timeout, Timeout.InfiniteTimeSpan);
+        _timer = _timeProvider.CreateTimer(OnTimeout, null, ComputerApprovalFacts.Timeout, Timeout.InfiniteTimeSpan);
     }
 
     /// <summary>Gets the facts. Callers must not treat any member as model text.</summary>

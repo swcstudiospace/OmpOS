@@ -19,7 +19,7 @@ public sealed class ArtifactService
     };
 
     private readonly IArtifactStore _store;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly ArtifactOptions _options;
     private readonly Lock _writes = new();
     private readonly Dictionary<string, Queue<DateTimeOffset>> _writesBySession = new(StringComparer.Ordinal);
@@ -34,7 +34,7 @@ public sealed class ArtifactService
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(options);
         _store = store;
-        _time = timeProvider;
+        _timeProvider = timeProvider;
         _options = options.Value;
     }
 
@@ -283,7 +283,7 @@ public sealed class ArtifactService
 
         var id = Guid.CreateVersion7().ToString("D");
         var hash = Hash(content);
-        var createdAt = _time.GetUtcNow();
+        var createdAt = _timeProvider.GetUtcNow();
         var artifact = new ArtifactRecord(id, kind, title, resolvedType, resolvedLanguage, sessionId, derivedFrom);
         var version = new ArtifactVersionRecord(id, 1, content.ToArray(), hash, null, null, author, createdAt, changeNote);
         mutation.Insert(artifact, version);
@@ -352,7 +352,7 @@ public sealed class ArtifactService
             latest.Number,
             latest.ContentSha256,
             author,
-            _time.GetUtcNow(),
+            _timeProvider.GetUtcNow(),
             changeNote);
         mutation.Append(next);
         return ArtifactResults.Ok(ToSnapshot(artifact, next));
@@ -365,7 +365,7 @@ public sealed class ArtifactService
             return true;
         }
 
-        var now = _time.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
         lock (_writes)
         {
             if (!_writesBySession.TryGetValue(sessionId, out var window))

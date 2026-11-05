@@ -43,7 +43,7 @@ public sealed class LoopbackListener : IAsyncDisposable
     private readonly TcpListener _listener;
     private readonly byte[] _nonce;
     private readonly string _hostHeader;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger? _logger;
     private readonly CancellationTokenSource _acceptStop = new();
     private readonly CancellationTokenSource _stop = new();
@@ -59,7 +59,7 @@ public sealed class LoopbackListener : IAsyncDisposable
     {
         _listener = listener;
         _nonce = Encoding.ASCII.GetBytes(nonce);
-        _time = timeProvider;
+        _timeProvider = timeProvider;
         _logger = logger;
         Port = ((IPEndPoint)listener.LocalEndpoint).Port;
         _hostHeader = IPAddress.Loopback + ":" + Port.ToString(CultureInfo.InvariantCulture);
@@ -213,7 +213,7 @@ public sealed class LoopbackListener : IAsyncDisposable
 
     private void Begin()
     {
-        _lifetimeTimer = _time.CreateTimer(static state => ((LoopbackListener)state!).Expire(), this, Lifetime, Timeout.InfiniteTimeSpan);
+        _lifetimeTimer = _timeProvider.CreateTimer(static state => ((LoopbackListener)state!).Expire(), this, Lifetime, Timeout.InfiniteTimeSpan);
         _acceptLoop = Task.Run(AcceptLoopAsync);
         DesktopLogMessages.LoopbackStarted(_logger);
     }
@@ -312,7 +312,7 @@ public sealed class LoopbackListener : IAsyncDisposable
     private async Task HandleAsync(TcpClient client)
     {
         NetworkStream stream = client.GetStream();
-        using var timeout = new CancellationTokenSource(ReadTimeout, _time);
+        using var timeout = new CancellationTokenSource(ReadTimeout, _timeProvider);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, _stop.Token);
         CancellationToken token = linked.Token;
 

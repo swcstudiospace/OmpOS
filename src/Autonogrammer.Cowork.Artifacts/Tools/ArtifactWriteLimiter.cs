@@ -7,7 +7,7 @@ namespace Autonogrammer.Cowork.Artifacts.Tools;
 /// </summary>
 public sealed class ArtifactWriteLimiter
 {
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly ConcurrentDictionary<string, Queue<DateTimeOffset>> _windows = new(StringComparer.Ordinal);
 
     /// <summary>Initializes a new instance of the <see cref="ArtifactWriteLimiter"/> class.</summary>
@@ -15,7 +15,7 @@ public sealed class ArtifactWriteLimiter
     public ArtifactWriteLimiter(TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(time);
-        _time = time;
+        _timeProvider = time;
     }
 
     /// <summary>Records one write when the session is under the cap.</summary>
@@ -27,7 +27,7 @@ public sealed class ArtifactWriteLimiter
     {
         ArgumentNullException.ThrowIfNull(sessionId);
         retryAfter = TimeSpan.FromSeconds(1);
-        var now = _time.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
         var window = _windows.GetOrAdd(sessionId, static _ => new Queue<DateTimeOffset>());
         lock (window)
         {

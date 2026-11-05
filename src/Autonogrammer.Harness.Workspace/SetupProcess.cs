@@ -28,6 +28,53 @@ internal static class SetupProcess
         IReadOnlyDictionary<string, string> environment,
         CancellationToken cancellationToken)
     {
+        using var process = new Process { StartInfo = BuildStartInfo(executable, arguments, workingDirectory, environment) };
+        try
+        {
+            process.Start();
+        }
+        catch (Win32Exception exception)
+        {
+            return StepExecution.Failed($"could not start '{executable}': {exception.Message}");
+        }
+
+        process.StandardInput.Close();
+        var standardOutput = DrainAsync(process.StandardOutput);
+        var standardError = DrainAsync(process.StandardError);
+
+        try
+        {
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            var killFailure = KillProcessTree(process);
+            await Task.WhenAll(standardOutput, standardError).ConfigureAwait(false);
+            if (killFailure is not null)
+            {
+                return StepExecution.Failed($"could not stop '{executable}' after cancellation: {killFailure.Message}");
+            }
+            throw;
+        }
+
+        await Task.WhenAll(standardOutput, standardError).ConfigureAwait(false);
+        if (process.ExitCode == 0)
+        {
+            return StepExecution.Success;
+        }
+
+        var detail = FirstLine(await standardError.ConfigureAwait(false));
+        return StepExecution.Failed(detail.Length == 0
+            ? $"exited with code {process.ExitCode}"
+            : $"exited with code {process.ExitCode}: {detail}");
+    }
+
+    private static ProcessStartInfo BuildStartInfo(
+        string executable,
+        IReadOnlyList<string> arguments,
+        string workingDirectory,
+        IReadOnlyDictionary<string, string> environment)
+    {
         var startInfo = new ProcessStartInfo
         {
             FileName = executable,
@@ -51,41 +98,7 @@ internal static class SetupProcess
             startInfo.Environment[name] = value;
         }
 
-        using var process = new Process { StartInfo = startInfo };
-        try
-        {
-            process.Start();
-        }
-        catch (Win32Exception exception)
-        {
-            return StepExecution.Failed($"could not start '{executable}': {exception.Message}");
-        }
-
-        process.StandardInput.Close();
-        var standardOutput = DrainAsync(process.StandardOutput);
-        var standardError = DrainAsync(process.StandardError);
-
-        try
-        {
-            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            KillProcessTree(process);
-            await Task.WhenAll(standardOutput, standardError).ConfigureAwait(false);
-            throw;
-        }
-
-        await Task.WhenAll(standardOutput, standardError).ConfigureAwait(false);
-        if (process.ExitCode == 0)
-        {
-            return StepExecution.Success;
-        }
-
-        var detail = FirstLine(await standardError.ConfigureAwait(false));
-        return StepExecution.Failed(detail.Length == 0
-            ? $"exited with code {process.ExitCode}"
-            : $"exited with code {process.ExitCode}: {detail}");
+        return startInfo;
     }
 
     private static async Task<string> DrainAsync(StreamReader reader)
@@ -112,11 +125,11 @@ internal static class SetupProcess
         return line.Length <= MaxDetailCharacters ? line : line[..MaxDetailCharacters];
     }
 
-    private static void KillProcessTree(Process process)
+    private static Win32Exception? KillProcessTree(Process process)
     {
         if (process.HasExited)
         {
-            return;
+            return null;
         }
 
         try
@@ -125,12 +138,15 @@ internal static class SetupProcess
         }
         catch (InvalidOperationException)
         {
-            // The process exited between the check and the kill.
+            // The process exited between the check and the kill; nothing is left to stop.
         }
-        catch (Win32Exception)
+        catch (Win32Exception exception)
         {
-            // The process exited between the check and the kill.
+            // The OS refused the signal, so the process may still be running. The caller reports it.
+            return exception;
         }
+
+        return null;
     }
 
     /// <summary>

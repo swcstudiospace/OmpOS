@@ -6,7 +6,7 @@ namespace Autonogrammer.Harness.ComputerUse.Policy;
 /// </summary>
 public sealed class RateLimiter
 {
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly int _perMinute;
     private readonly int _burst;
     private readonly int _stepLimit;
@@ -31,7 +31,7 @@ public sealed class RateLimiter
     public RateLimiter(TimeProvider time, int perMinute = 60, int burst = 10, int stepLimit = 300, int continueGrant = 100, int failurePause = 5)
     {
         ArgumentNullException.ThrowIfNull(time);
-        _time = time;
+        _timeProvider = time;
         _perMinute = perMinute;
         _burst = burst;
         _stepLimit = stepLimit;
@@ -92,7 +92,7 @@ public sealed class RateLimiter
             }
 
             _tokens -= 1;
-            _window.Enqueue(_time.GetUtcNow());
+            _window.Enqueue(_timeProvider.GetUtcNow());
             _steps++;
             return RateLimitReason.None;
         }
@@ -150,7 +150,7 @@ public sealed class RateLimiter
 
     private void Refill()
     {
-        DateTimeOffset now = _time.GetUtcNow();
+        DateTimeOffset now = _timeProvider.GetUtcNow();
         while (_window.Count > 0 && now - _window.Peek() >= TimeSpan.FromMinutes(1))
         {
             _window.Dequeue();

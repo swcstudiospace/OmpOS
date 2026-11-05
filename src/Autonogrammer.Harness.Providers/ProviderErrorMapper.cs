@@ -17,14 +17,14 @@ public sealed class ProviderErrorMapper
     private static readonly string[] QuotaWords = ["quota", "balance", "billing", "配额", "额度"];
     private static readonly string[] RateWords = ["rate limit", "rate-limit", "too many", "速率"];
 
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
 
     /// <summary>Creates a mapper that reads today's date from <paramref name="time"/>.</summary>
     /// <param name="time">The clock used to decide whether a plan end date has passed.</param>
     public ProviderErrorMapper(TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(time);
-        _time = time;
+        _timeProvider = time;
     }
 
     /// <summary>Maps a failed request to a message for the user.</summary>
@@ -111,7 +111,7 @@ public sealed class ProviderErrorMapper
 
     private ProviderErrorMessage MapRejected(CodingPlanEntry? plan, string name, string status, DateOnly? validUntil, Uri? url)
     {
-        if (plan is not null && validUntil is { } last && DateOnly.FromDateTime(_time.GetUtcNow().UtcDateTime) > last)
+        if (plan is not null && validUntil is { } last && DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime) > last)
         {
             var validity = plan.ValidityDays is { } days
                 ? string.Create(CultureInfo.InvariantCulture, $" Each paid period is valid for {days} days.")

@@ -3,7 +3,7 @@ namespace Autonogrammer.Harness.Notifications;
 /// <summary>Remembers identical notification keys so repeats inside a window collapse to one operating-system delivery.</summary>
 public sealed class NotificationCoalescer
 {
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly Dictionary<string, DateTimeOffset> _seen = new(StringComparer.Ordinal);
 
     /// <summary>Initializes a new instance of the <see cref="NotificationCoalescer"/> class.</summary>
@@ -12,7 +12,7 @@ public sealed class NotificationCoalescer
     public NotificationCoalescer(TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(time);
-        _time = time;
+        _timeProvider = time;
     }
 
     /// <summary>Reports whether <paramref name="key"/> was already admitted inside <paramref name="window"/>.</summary>
@@ -23,7 +23,7 @@ public sealed class NotificationCoalescer
     public bool IsDuplicate(string key, TimeSpan window)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
-        var now = _time.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
         Prune(now, window);
         return _seen.TryGetValue(key, out var seenAt) && now - seenAt < window;
     }
@@ -34,7 +34,7 @@ public sealed class NotificationCoalescer
     public void Remember(string key)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
-        _seen[key] = _time.GetUtcNow();
+        _seen[key] = _timeProvider.GetUtcNow();
     }
 
     private void Prune(DateTimeOffset now, TimeSpan window)

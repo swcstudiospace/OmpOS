@@ -68,7 +68,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
 
     private readonly ISecretStore _store;
     private readonly Func<CancellationToken, ValueTask<GoTrueClient?>> _clientProvider;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly IRefreshGuard _guard;
     private readonly ILogger<AccountSessionManager>? _logger;
     private readonly CancellationTokenSource _lifetime = new();
@@ -102,7 +102,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
         ArgumentNullException.ThrowIfNull(timeProvider);
         _store = store;
         _clientProvider = clientProvider;
-        _time = timeProvider;
+        _timeProvider = timeProvider;
         _guard = refreshGuard ?? NoRefreshGuard.Instance;
         _logger = logger;
         Jitter = DefaultJitter;
@@ -258,7 +258,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
             return AuthResult.Fail<SecretString>(AuthErrorKind.SessionEnded);
         }
 
-        if (live.AccessToken is not null && (refreshed.IsSuccess || _time.GetUtcNow() < live.ExpiresAt))
+        if (live.AccessToken is not null && (refreshed.IsSuccess || _timeProvider.GetUtcNow() < live.ExpiresAt))
         {
             return AuthResult.Success(live.AccessToken);
         }
@@ -347,7 +347,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
         }
 
         TimeSpan margin = TimeSpan.FromTicks(Math.Max(MinimumRefreshMargin.Ticks, live.Lifetime.Ticks / 5));
-        return live.ExpiresAt - _time.GetUtcNow() > margin;
+        return live.ExpiresAt - _timeProvider.GetUtcNow() > margin;
     }
 
     private Task<AuthResult<AuthUnit>> RefreshSharedAsync(bool startup)
@@ -451,7 +451,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
                     if (!lostResponseRetried)
                     {
                         lostResponseRetried = true;
-                        await Task.Delay(LostResponseRetryDelay, _time, cancellationToken).ConfigureAwait(false);
+                        await Task.Delay(LostResponseRetryDelay, _timeProvider, cancellationToken).ConfigureAwait(false);
                         break;
                     }
 
@@ -565,7 +565,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
 
     private async Task<AuthResult<GoTrueSession>> RequestRefreshAsync(GoTrueClient client, SecretString refreshToken, TimeSpan? budget, CancellationToken cancellationToken)
     {
-        using CancellationTokenSource? limit = budget is { } span ? new CancellationTokenSource(span, _time) : null;
+        using CancellationTokenSource? limit = budget is { } span ? new CancellationTokenSource(span, _timeProvider) : null;
         using CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, limit?.Token ?? CancellationToken.None);
         try
         {
@@ -661,10 +661,10 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
     {
         try
         {
-            DateTimeOffset deadline = _time.GetUtcNow() + OfflineRetryWindow;
-            while (_time.GetUtcNow() < deadline)
+            DateTimeOffset deadline = _timeProvider.GetUtcNow() + OfflineRetryWindow;
+            while (_timeProvider.GetUtcNow() < deadline)
             {
-                await Task.Delay(Jitter(OfflineRetryInterval), _time, cancellationToken).ConfigureAwait(false);
+                await Task.Delay(Jitter(OfflineRetryInterval), _timeProvider, cancellationToken).ConfigureAwait(false);
                 if (_live is null || State.Connectivity != AccountConnectivity.Offline)
                 {
                     return;
@@ -697,7 +697,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
             return AuthResult.Fail<AuthUnit>(AuthErrorKind.ConfigUnavailable);
         }
 
-        using var budget = new CancellationTokenSource(SignOutBudget, _time);
+        using var budget = new CancellationTokenSource(SignOutBudget, _timeProvider);
         using CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, budget.Token);
         try
         {
@@ -726,11 +726,11 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
             return AuthResult.Fail<AuthUnit>(AuthErrorKind.ConfigUnavailable);
         }
 
-        using var budget = new CancellationTokenSource(SignOutBudget, _time);
+        using var budget = new CancellationTokenSource(SignOutBudget, _timeProvider);
         using CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, budget.Token);
         try
         {
-            SecretString? access = live.AccessToken is not null && _time.GetUtcNow() < live.ExpiresAt ? live.AccessToken : null;
+            SecretString? access = live.AccessToken is not null && _timeProvider.GetUtcNow() < live.ExpiresAt ? live.AccessToken : null;
             if (access is null)
             {
                 AuthResult<GoTrueSession> refreshed = await client.RefreshAsync(live.RefreshToken, linked.Token).ConfigureAwait(false);

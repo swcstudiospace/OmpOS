@@ -8,7 +8,7 @@ namespace Autonogrammer.Harness.ComputerUse.Policy;
 /// </summary>
 public sealed class GrantStore : IComputerGrantRegistry
 {
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly Lock _gate = new();
     private readonly List<ComputerGrant> _grants = [];
     private readonly Dictionary<string, string> _windowSets = new(StringComparer.Ordinal);
@@ -18,13 +18,13 @@ public sealed class GrantStore : IComputerGrantRegistry
     /// <param name="time">Clock. Tests pass a manual provider.</param>
     public GrantStore(TimeProvider time)
     {
-        _time = time;
+        _timeProvider = time;
     }
 
     /// <inheritdoc/>
     public IReadOnlyList<ComputerGrantView> Snapshot()
     {
-        DateTimeOffset now = _time.GetUtcNow();
+        DateTimeOffset now = _timeProvider.GetUtcNow();
         lock (_gate)
         {
             return _grants.Where(grant => grant.Expiry > now).Select(static grant => grant.ToView()).ToArray();
@@ -61,7 +61,7 @@ public sealed class GrantStore : IComputerGrantRegistry
     {
         ArgumentException.ThrowIfNullOrEmpty(sessionId);
         ArgumentException.ThrowIfNullOrEmpty(appIdentity);
-        DateTimeOffset now = _time.GetUtcNow();
+        DateTimeOffset now = _timeProvider.GetUtcNow();
         DateTimeOffset expiry = origin == ComputerActionOrigin.Dispatch
             ? DispatchExpiry(now, commandEnd)
             : LocalExpiry(now, commandEnd);
@@ -145,7 +145,7 @@ public sealed class GrantStore : IComputerGrantRegistry
     /// <returns>The grant, or <see langword="null"/>.</returns>
     public ComputerGrant? FindActive(string sessionId, string appIdentity, ComputerActionOrigin origin)
     {
-        DateTimeOffset now = _time.GetUtcNow();
+        DateTimeOffset now = _timeProvider.GetUtcNow();
         lock (_gate)
         {
             for (int i = _grants.Count - 1; i >= 0; i--)

@@ -21,7 +21,7 @@ public sealed class PostgresMemoryStore : IMemoryStore
     public const string SearchIndexName = "cowork_memory_entries_search_idx";
 
     private readonly NpgsqlDataSource _dataSource;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly IMemoryNoticeSink? _notices;
 
     /// <summary>Initializes a new instance of the <see cref="PostgresMemoryStore"/> class.</summary>
@@ -32,7 +32,7 @@ public sealed class PostgresMemoryStore : IMemoryStore
     {
         ArgumentNullException.ThrowIfNull(dataSource);
         _dataSource = dataSource;
-        _time = time ?? TimeProvider.System;
+        _timeProvider = time ?? TimeProvider.System;
         _notices = notices;
     }
 
@@ -202,7 +202,7 @@ public sealed class PostgresMemoryStore : IMemoryStore
         {
             command.Parameters.Add(Account(scope.AccountId));
             command.Parameters.Add(new NpgsqlParameter("session_id", NpgsqlDbType.Text) { Value = scope.SessionId });
-            command.Parameters.Add(new NpgsqlParameter("since", NpgsqlDbType.TimestampTz) { Value = _time.GetUtcNow().AddHours(-1) });
+            command.Parameters.Add(new NpgsqlParameter("since", NpgsqlDbType.TimestampTz) { Value = _timeProvider.GetUtcNow().AddHours(-1) });
             var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
             await using (reader.ConfigureAwait(false))
             {
@@ -224,7 +224,7 @@ public sealed class PostgresMemoryStore : IMemoryStore
 
     private async Task<MemoryMutation> InsertAsync(MemoryScope scope, MemoryDraft draft, CancellationToken cancellationToken)
     {
-        var now = _time.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
         var id = Guid.NewGuid().ToString("n");
         var command = _dataSource.CreateCommand(
             """

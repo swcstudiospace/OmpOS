@@ -10,7 +10,7 @@ namespace Autonogrammer.Presentation.Subagents;
 /// <remarks>Not thread-safe: it runs on the UI context that owns the presentation models.</remarks>
 public sealed class SubagentPanelModel : ObservableModel
 {
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly List<Row> _rows = [];
     private readonly Dictionary<string, DateTimeOffset> _started = new(StringComparer.Ordinal);
     private readonly Dictionary<string, TimeSpan> _frozen = new(StringComparer.Ordinal);
@@ -26,7 +26,7 @@ public sealed class SubagentPanelModel : ObservableModel
     public SubagentPanelModel(TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(time);
-        _time = time;
+        _timeProvider = time;
     }
 
     /// <summary>Gets the notice that this view reads the ACP stream only.</summary>
@@ -75,7 +75,7 @@ public sealed class SubagentPanelModel : ObservableModel
         }
 
         var index = IndexOf(update.CallId);
-        var now = _time.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
         if (index < 0)
         {
             var named = !string.IsNullOrWhiteSpace(update.AgentName);
@@ -129,7 +129,7 @@ public sealed class SubagentPanelModel : ObservableModel
 
     private void Publish(string? changedCallId, bool statusChanged)
     {
-        var now = _time.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
         var published = new SubagentRowModel[_rows.Count];
         var running = 0;
         var unnamed = false;

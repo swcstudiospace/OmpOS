@@ -17,7 +17,7 @@ public sealed class ComputerActionGate : IComputerActionGate
     private readonly KillSwitchCoordinator _killSwitch;
     private readonly IComputerApprovalPrompt _prompt;
     private readonly IComputerUseAuditSink _audit;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly HashSet<string> _optedIn = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _frames = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ComputerHostAction> _hostActions = new(StringComparer.Ordinal);
@@ -55,7 +55,7 @@ public sealed class ComputerActionGate : IComputerActionGate
         _killSwitch = killSwitch;
         _prompt = prompt;
         _audit = audit;
-        _time = time;
+        _timeProvider = time;
     }
 
     /// <summary>Opts a session in.</summary>
@@ -160,7 +160,7 @@ public sealed class ComputerActionGate : IComputerActionGate
 
         return new ComputerGateAllowed
         {
-            Ticket = new ComputerActionTicket(request.ActionHash, _time.GetUtcNow()),
+            Ticket = new ComputerActionTicket(request.ActionHash, _timeProvider.GetUtcNow()),
         };
     }
 
@@ -342,14 +342,14 @@ public sealed class ComputerActionGate : IComputerActionGate
             return null;
         }
 
-        DateTimeOffset started = _time.GetUtcNow();
+        DateTimeOffset started = _timeProvider.GetUtcNow();
         ComputerApprovalChoice choice = await _prompt.RequestAsync(BuildFacts(request, target), cancellationToken).ConfigureAwait(false);
         if (choice != ComputerApprovalChoice.Deny)
         {
             return null;
         }
 
-        DateTimeOffset finished = _time.GetUtcNow();
+        DateTimeOffset finished = _timeProvider.GetUtcNow();
         return finished - started >= ComputerApprovalFacts.Timeout
             ? Deny(DenialCode.ApprovalTimeout)
             : Deny(DenialCode.ApprovalDenied);

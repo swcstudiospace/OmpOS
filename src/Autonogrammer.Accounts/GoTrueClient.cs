@@ -52,7 +52,7 @@ public sealed class GoTrueClient
             "The auth service answer to {Endpoint} could not be read.");
 
     private readonly HttpClient _http;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<GoTrueClient>? _logger;
 
     /// <summary>Creates a client.</summary>
@@ -67,7 +67,7 @@ public sealed class GoTrueClient
         ArgumentNullException.ThrowIfNull(timeProvider);
         _http = http;
         Options = options;
-        _time = timeProvider;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -392,7 +392,7 @@ public sealed class GoTrueClient
         return AuthResult.Success(new GoTrueSession(
             new SecretString(token.AccessToken),
             new SecretString(token.RefreshToken),
-            _time.GetUtcNow() + lifetime,
+            _timeProvider.GetUtcNow() + lifetime,
             lifetime,
             token.User.Id,
             token.User.Email));
@@ -424,7 +424,7 @@ public sealed class GoTrueClient
         Func<HttpResponseMessage, CancellationToken, Task<AuthResult<T>>> onSuccess,
         CancellationToken cancellationToken)
     {
-        using var timeout = new CancellationTokenSource(RequestTimeout, _time);
+        using var timeout = new CancellationTokenSource(RequestTimeout, _timeProvider);
         using CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         string name = Name(endpoint);
         try
@@ -457,7 +457,7 @@ public sealed class GoTrueClient
                 RequestRefused(_logger, name, status, kind, serverCode ?? "none", null);
             }
 
-            return AuthResult.Fail<T>(new AuthFailure(kind, ReadRetryAfter(response, _time), status, serverCode));
+            return AuthResult.Fail<T>(new AuthFailure(kind, ReadRetryAfter(response, _timeProvider), status, serverCode));
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {

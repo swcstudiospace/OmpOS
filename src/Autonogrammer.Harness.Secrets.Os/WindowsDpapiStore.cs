@@ -25,7 +25,7 @@ internal sealed class WindowsDpapiStore : ISecretStore
     private readonly string? _directory;
     private readonly IDpapiProtector _protector;
     private readonly ILogger? _logger;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
 
     /// <summary>Creates a store in <c>Autonogrammer\secrets</c> under the per-user local application data folder. Nothing is read or written until a method is called.</summary>
     /// <param name="logger">Receives operation messages. They carry no secret name or value.</param>
@@ -46,7 +46,7 @@ internal sealed class WindowsDpapiStore : ISecretStore
         _directory = directory;
         _protector = protector;
         _logger = logger;
-        _time = timeProvider ?? TimeProvider.System;
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     /// <inheritdoc />
@@ -259,7 +259,7 @@ internal sealed class WindowsDpapiStore : ISecretStore
     private async Task<T> RunAsync<T>(string operation, Func<Task<T>> work, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        long started = _time.GetTimestamp();
+        long started = _timeProvider.GetTimestamp();
         T result;
         try
         {
@@ -283,7 +283,7 @@ internal sealed class WindowsDpapiStore : ISecretStore
             throw new SecretStoreException(StoreGuards.Describe(StoreDescription, failure), failure, exception);
         }
 
-        OsStoreLogMessages.OperationCompleted(_logger, StoreName, operation, (long)_time.GetElapsedTime(started).TotalMilliseconds);
+        OsStoreLogMessages.OperationCompleted(_logger, StoreName, operation, (long)_timeProvider.GetElapsedTime(started).TotalMilliseconds);
         return result;
     }
 }

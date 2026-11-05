@@ -18,7 +18,7 @@ public sealed class SignInCoordinator
 
     private readonly AccountSessionManager _session;
     private readonly Func<CancellationToken, ValueTask<GoTrueClient?>> _clientProvider;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<SignInCoordinator>? _logger;
     private readonly Lock _gate = new();
     private Attempt? _attempt;
@@ -39,7 +39,7 @@ public sealed class SignInCoordinator
         ArgumentNullException.ThrowIfNull(timeProvider);
         _session = session;
         _clientProvider = clientProvider;
-        _time = timeProvider;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -105,7 +105,7 @@ public sealed class SignInCoordinator
         }
 
         bool resend = current is not null && string.Equals(current.Email, address, StringComparison.OrdinalIgnoreCase);
-        DateTimeOffset now = _time.GetUtcNow();
+        DateTimeOffset now = _timeProvider.GetUtcNow();
         if (resend && now < current!.ResendAvailableAt)
         {
             AccountLogMessages.Cooldown(_logger);
@@ -121,7 +121,7 @@ public sealed class SignInCoordinator
             return AuthResult.Fail<SignInChallenge>(sent.Failure);
         }
 
-        DateTimeOffset sentAt = _time.GetUtcNow();
+        DateTimeOffset sentAt = _timeProvider.GetUtcNow();
         next = next with
         {
             SentAt = sentAt,
@@ -175,7 +175,7 @@ public sealed class SignInCoordinator
             return AuthResult.Fail<Uri>(AuthErrorKind.ConfigUnavailable);
         }
 
-        DateTimeOffset now = _time.GetUtcNow();
+        DateTimeOffset now = _timeProvider.GetUtcNow();
         lock (_gate)
         {
             _attempt = new Attempt(string.Empty, verifier, nonce, redirect)
@@ -228,7 +228,7 @@ public sealed class SignInCoordinator
 
         if (GoTrueClient.NormalizeCode(code) is null
             || attempt.WrongCodes >= MaxWrongCodes
-            || _time.GetUtcNow() >= attempt.ExpiresAt)
+            || _timeProvider.GetUtcNow() >= attempt.ExpiresAt)
         {
             return AuthResult.Fail<AuthUnit>(AuthErrorKind.CodeInvalidOrExpired);
         }

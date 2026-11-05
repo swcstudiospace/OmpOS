@@ -26,7 +26,7 @@ public sealed class ComputerPermissionAdvisor : ObservableModel, IComputerPermis
     public const string WindowsPrivacyDeepLink = "ms-settings:privacy";
 
     private readonly IComputerStatusSource _status;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly Lock _gate = new();
     private ITimer? _timer;
     private Task? _refresh;
@@ -41,7 +41,7 @@ public sealed class ComputerPermissionAdvisor : ObservableModel, IComputerPermis
     {
         ArgumentNullException.ThrowIfNull(status);
         _status = status;
-        _time = time ?? TimeProvider.System;
+        _timeProvider = time ?? TimeProvider.System;
     }
 
     /// <inheritdoc />
@@ -114,8 +114,8 @@ public sealed class ComputerPermissionAdvisor : ObservableModel, IComputerPermis
         lock (_gate)
         {
             _timer?.Dispose();
-            _openedAt = _time.GetUtcNow();
-            _timer = _time.CreateTimer(OnTick, null, PollInterval, PollInterval);
+            _openedAt = _timeProvider.GetUtcNow();
+            _timer = _timeProvider.CreateTimer(OnTick, null, PollInterval, PollInterval);
         }
 
         NotifyPropertyChanged(nameof(IsPolling));
@@ -157,7 +157,7 @@ public sealed class ComputerPermissionAdvisor : ObservableModel, IComputerPermis
 
     private void OnTick(object? state)
     {
-        if (_time.GetUtcNow() - _openedAt >= PollLimit)
+        if (_timeProvider.GetUtcNow() - _openedAt >= PollLimit)
         {
             Close();
             return;

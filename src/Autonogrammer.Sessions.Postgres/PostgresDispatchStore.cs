@@ -28,7 +28,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
 
     private readonly NpgsqlDataSource _dataSource;
     private readonly DispatchStoreLimits _limits;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly Func<string, string> _tenantHash;
     private readonly ResiliencePipeline _pipeline;
 
@@ -56,7 +56,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
 
         _dataSource = dataSource;
         _limits = limits;
-        _time = time;
+        _timeProvider = time;
         _tenantHash = tenantHash;
         _pipeline = (resilience ?? PostgresResilience.CreateDefault()).Pipeline;
     }
@@ -183,7 +183,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
 
     private async Task<DispatchDeviceCreateResult> CreateDeviceCoreAsync(CreateDispatchDevice request, CancellationToken cancellationToken)
     {
-        var now = _time.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
@@ -431,7 +431,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
             command.Parameters.AddWithValue("device_id", deviceId);
             command.Parameters.AddWithValue("state", Queued);
             command.Parameters.AddWithValue("after", afterSeq);
-            command.Parameters.AddWithValue("now", _time.GetUtcNow());
+            command.Parameters.AddWithValue("now", _timeProvider.GetUtcNow());
             var list = new List<DispatchCommandRecord>();
             var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
             await using (reader.ConfigureAwait(false))
@@ -476,7 +476,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
 
     private async Task<DispatchFeedEventRecord> AppendFeedCoreAsync(string accountId, string kind, string? payload, CancellationToken cancellationToken)
     {
-        var now = _time.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
         var connection = await OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
@@ -496,7 +496,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
 
     private async Task<DispatchFeedPage> ReadFeedCoreAsync(string accountId, long afterId, CancellationToken cancellationToken)
     {
-        var now = _time.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
         var connection = await OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
@@ -544,7 +544,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
         }
 
         var terminal = ParseTime(terminalAt);
-        return _time.GetUtcNow() - terminal > _limits.BodyRetention;
+        return _timeProvider.GetUtcNow() - terminal > _limits.BodyRetention;
     }
 
     private static async Task InsertDeviceAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, CreateDispatchDevice request, DateTimeOffset now, CancellationToken cancellationToken)
@@ -665,7 +665,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
         var meta = loaded.Meta with { Text = string.Empty };
         using var purge = PostgresSql.Create(connection, transaction);
         purge.CommandText = "UPDATE dispatch_commands SET body = NULL, body_purged_at = @purged, result = CAST(@result AS jsonb) WHERE id = @id AND account_id = @account_id";
-        purge.Parameters.AddWithValue("purged", _time.GetUtcNow());
+        purge.Parameters.AddWithValue("purged", _timeProvider.GetUtcNow());
         purge.Parameters.AddWithValue("result", meta.Write());
         purge.Parameters.AddWithValue("id", commandId);
         purge.Parameters.AddWithValue("account_id", accountId);
@@ -680,12 +680,12 @@ public sealed class PostgresDispatchStore : IDispatchStore
         var meta = loaded.Meta with
         {
             Reason = reason is { } failure ? DispatchFailureReasonWire.ToWire(failure) : loaded.Meta.Reason,
-            TerminalAt = terminal ? _time.GetUtcNow().ToString("o", CultureInfo.InvariantCulture) : loaded.Meta.TerminalAt,
+            TerminalAt = terminal ? _timeProvider.GetUtcNow().ToString("o", CultureInfo.InvariantCulture) : loaded.Meta.TerminalAt,
         };
         using var update = PostgresSql.Create(connection, transaction);
         update.CommandText = "UPDATE dispatch_commands SET state = @state, updated_at = @updated, result = CAST(@result AS jsonb) WHERE id = @id AND account_id = @account_id";
         update.Parameters.AddWithValue("state", DispatchCommandStateWire.ToWire(desired));
-        update.Parameters.AddWithValue("updated", _time.GetUtcNow());
+        update.Parameters.AddWithValue("updated", _timeProvider.GetUtcNow());
         update.Parameters.AddWithValue("result", meta.Write());
         update.Parameters.AddWithValue("id", commandId);
         update.Parameters.AddWithValue("account_id", accountId);
@@ -842,7 +842,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
         using var command = PostgresSql.Create(connection, transaction);
         command.CommandText = "INSERT INTO dispatch_audit (account_id_hash, occurred_at, device_id, command_id, op, outcome) VALUES (@hash, @at, @device_id, @command_id, @op, @outcome)";
         command.Parameters.AddWithValue("hash", _tenantHash(accountId));
-        command.Parameters.AddWithValue("at", _time.GetUtcNow());
+        command.Parameters.AddWithValue("at", _timeProvider.GetUtcNow());
         command.Parameters.AddWithValue("device_id", (object?)deviceId ?? DBNull.Value);
         command.Parameters.AddWithValue("command_id", (object?)commandId ?? DBNull.Value);
         command.Parameters.AddWithValue("op", op);

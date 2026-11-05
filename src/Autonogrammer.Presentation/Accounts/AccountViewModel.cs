@@ -10,7 +10,7 @@ namespace Autonogrammer.Presentation.Accounts;
 public sealed class AccountViewModel : ObservableModel
 {
     private readonly IAccountHost _host;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private AuthPhase _phase = AuthPhase.SignedOut;
     private string _email = string.Empty;
     private string _code = string.Empty;
@@ -29,7 +29,7 @@ public sealed class AccountViewModel : ObservableModel
     {
         ArgumentNullException.ThrowIfNull(host);
         _host = host;
-        _time = timeProvider ?? TimeProvider.System;
+        _timeProvider = timeProvider ?? TimeProvider.System;
         _host.Changed += OnHostChanged;
         Apply(_host.State, announce: false);
     }
@@ -359,7 +359,7 @@ public sealed class AccountViewModel : ObservableModel
             return 0;
         }
 
-        var span = at.Value - _time.GetUtcNow();
+        var span = at.Value - _timeProvider.GetUtcNow();
         if (span <= TimeSpan.Zero)
         {
             return 0;

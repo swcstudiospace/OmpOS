@@ -25,7 +25,7 @@ public sealed class BrowserPaneViewModel : ObservableModel, IDockPanel, IDisposa
 {
     private readonly IBrowserPaneFeed _feed;
     private readonly IBrowserPaneControl _control;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private DateTimeOffset? _lastAnnouncement;
     private IReadOnlyList<BrowserListedModel> _listed = [];
 
@@ -39,7 +39,7 @@ public sealed class BrowserPaneViewModel : ObservableModel, IDockPanel, IDisposa
         ArgumentNullException.ThrowIfNull(control);
         _feed = feed;
         _control = control;
-        _time = time ?? TimeProvider.System;
+        _timeProvider = time ?? TimeProvider.System;
         _feed.Changed += OnFeedChanged;
     }
 
@@ -125,7 +125,7 @@ public sealed class BrowserPaneViewModel : ObservableModel, IDockPanel, IDisposa
         LastImageByteCount = bytes.Length;
         LastImageFormat = bytes.Length >= 2 && bytes.Span[0] == 0xFF && bytes.Span[1] == 0xD8 ? "jpeg" : "unknown";
         (LastImageWidth, LastImageHeight) = ReadJpegSize(bytes.Span);
-        LastImageTime = _time.GetUtcNow();
+        LastImageTime = _timeProvider.GetUtcNow();
         NotifyPropertyChanged(nameof(LastImageByteCount));
         NotifyPropertyChanged(nameof(LastImageFormat));
         NotifyPropertyChanged(nameof(LastImageWidth));
@@ -202,7 +202,7 @@ public sealed class BrowserPaneViewModel : ObservableModel, IDockPanel, IDisposa
 
     private void Announce(string sentence)
     {
-        var now = _time.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
         if (_lastAnnouncement is { } last && now - last < TimeSpan.FromSeconds(2))
         {
             return;

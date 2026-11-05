@@ -19,7 +19,7 @@ public sealed class LocalBrowserPaneFeed : IBrowserPaneFeed
 
     private readonly ScreencastPump _pump = new();
     private readonly ICDPSession _session;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly Lock _gate = new();
     private DateTimeOffset _lastPublished = DateTimeOffset.MinValue;
     private bool _published;
@@ -31,7 +31,7 @@ public sealed class LocalBrowserPaneFeed : IBrowserPaneFeed
     {
         ArgumentNullException.ThrowIfNull(session);
         _session = session;
-        _time = time ?? TimeProvider.System;
+        _timeProvider = time ?? TimeProvider.System;
     }
 
     /// <inheritdoc />
@@ -67,7 +67,7 @@ public sealed class LocalBrowserPaneFeed : IBrowserPaneFeed
 
     private Task ConsumeAsync(BrowserFrame frame)
     {
-        var now = _time.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
         var publish = false;
         lock (_gate)
         {

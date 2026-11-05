@@ -24,7 +24,7 @@ public sealed class NotificationPolicy : INotificationSink
 
     private readonly Lock _gate = new();
     private readonly NotificationCoalescer _coalescer;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly List<NotificationRequest> _inApp = [];
     private readonly Queue<DateTimeOffset> _deliveries = new();
     private int _drops;
@@ -35,7 +35,7 @@ public sealed class NotificationPolicy : INotificationSink
     public NotificationPolicy(TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(time);
-        _time = time;
+        _timeProvider = time;
         _coalescer = new NotificationCoalescer(time);
     }
 
@@ -98,7 +98,7 @@ public sealed class NotificationPolicy : INotificationSink
             }
 
             _coalescer.Remember(key);
-            _deliveries.Enqueue(_time.GetUtcNow());
+            _deliveries.Enqueue(_timeProvider.GetUtcNow());
             return Receipt(request, true, null, summary);
         }
     }
@@ -108,7 +108,7 @@ public sealed class NotificationPolicy : INotificationSink
 
     private void PruneRate()
     {
-        var now = _time.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
         while (_deliveries.Count > 0 && now - _deliveries.Peek() >= RateWindow)
         {
             _deliveries.Dequeue();

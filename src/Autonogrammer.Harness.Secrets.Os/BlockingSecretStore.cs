@@ -8,7 +8,7 @@ namespace Autonogrammer.Harness.Secrets.Os;
 /// </summary>
 internal abstract class BlockingSecretStore(ILogger? logger, TimeProvider? timeProvider) : ISecretStore
 {
-    private readonly TimeProvider _time = timeProvider ?? TimeProvider.System;
+    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
 
     /// <summary>Gets the short store name used in log messages, for example <c>libsecret</c>.</summary>
     protected abstract string StoreName { get; }
@@ -85,7 +85,7 @@ internal abstract class BlockingSecretStore(ILogger? logger, TimeProvider? timeP
     private async Task<T> RunAsync<T>(string operation, Func<T> work, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        long started = _time.GetTimestamp();
+        long started = _timeProvider.GetTimestamp();
         T result;
         try
         {
@@ -103,7 +103,7 @@ internal abstract class BlockingSecretStore(ILogger? logger, TimeProvider? timeP
             throw new SecretStoreException(StoreGuards.Describe(StoreDescription, failure), failure, exception);
         }
 
-        OsStoreLogMessages.OperationCompleted(logger, StoreName, operation, (long)_time.GetElapsedTime(started).TotalMilliseconds);
+        OsStoreLogMessages.OperationCompleted(logger, StoreName, operation, (long)_timeProvider.GetElapsedTime(started).TotalMilliseconds);
         return result;
     }
 }

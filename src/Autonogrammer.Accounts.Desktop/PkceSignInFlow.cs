@@ -23,7 +23,7 @@ public sealed class PkceSignInFlow : IAsyncDisposable
     public const string LinkOnAnotherDeviceSentence = "A link opened on another device cannot sign you in here; use the code from the email instead.";
 
     private readonly SignInCoordinator _coordinator;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<PkceSignInFlow>? _logger;
     private readonly CancellationTokenSource _lifetime = new();
     private LoopbackListener? _listener;
@@ -39,7 +39,7 @@ public sealed class PkceSignInFlow : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(coordinator);
         ArgumentNullException.ThrowIfNull(timeProvider);
         _coordinator = coordinator;
-        _time = timeProvider;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -62,7 +62,7 @@ public sealed class PkceSignInFlow : IAsyncDisposable
             email,
             nonce =>
             {
-                started = LoopbackListener.TryStart(nonce, _time, _logger);
+                started = LoopbackListener.TryStart(nonce, _timeProvider, _logger);
                 startedNonce = nonce;
                 return started?.RedirectUri;
             },

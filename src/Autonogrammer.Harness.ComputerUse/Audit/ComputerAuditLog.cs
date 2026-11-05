@@ -19,7 +19,7 @@ public sealed class ComputerAuditLog : IComputerAuditReader, IComputerUseAuditSi
     public const string GenesisPrev = "0000000000000000000000000000000000000000000000000000000000000000";
 
     private readonly string _directory;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly bool _thumbnails;
     private readonly Lock _gate = new();
     private long _seq;
@@ -32,7 +32,7 @@ public sealed class ComputerAuditLog : IComputerAuditReader, IComputerUseAuditSi
     {
         ArgumentException.ThrowIfNullOrEmpty(stateDirectory);
         _directory = Path.Combine(stateDirectory, "computer-use", "audit");
-        _time = time;
+        _timeProvider = time;
         _thumbnails = thumbnails;
         Directory.CreateDirectory(_directory);
         OwnerOnly(_directory);
@@ -77,7 +77,7 @@ public sealed class ComputerAuditLog : IComputerAuditReader, IComputerUseAuditSi
             lock (_gate)
             {
                 Rotate();
-                string path = PathFor(_time.GetUtcNow());
+                string path = PathFor(_timeProvider.GetUtcNow());
                 string line = Line(write, Previous(path));
                 using FileStream stream = new(path, FileMode.Append, FileAccess.Write, FileShare.Read);
                 stream.Write(Encoding.UTF8.GetBytes(line + "\n"));
@@ -152,7 +152,7 @@ public sealed class ComputerAuditLog : IComputerAuditReader, IComputerUseAuditSi
         _ = includeThumbnails;
         _ = _thumbnails;
         cancellationToken.ThrowIfCancellationRequested();
-        DateTimeOffset now = _time.GetUtcNow();
+        DateTimeOffset now = _timeProvider.GetUtcNow();
         DateTimeOffset start = new(now.Year, now.Month, now.Day, 0, 0, 0, TimeSpan.Zero);
         start = start.AddDays(1 - days);
         List<AuditRecordView> rows = [];
@@ -207,7 +207,7 @@ public sealed class ComputerAuditLog : IComputerAuditReader, IComputerUseAuditSi
         string title = write.Title.Length <= 80 ? write.Title : write.Title[..80];
         StringBuilder builder = new();
         builder.Append("{\"seq\":").Append(_seq.ToString(CultureInfo.InvariantCulture));
-        builder.Append(",\"time\":").Append(Json(_time.GetUtcNow().ToString("O", CultureInfo.InvariantCulture)));
+        builder.Append(",\"time\":").Append(Json(_timeProvider.GetUtcNow().ToString("O", CultureInfo.InvariantCulture)));
         builder.Append(",\"session\":").Append(Json(write.SessionId));
         builder.Append(",\"tool\":").Append(Json(write.Tool));
         builder.Append(",\"summary\":").Append(Json(write.Summary));
@@ -226,7 +226,7 @@ public sealed class ComputerAuditLog : IComputerAuditReader, IComputerUseAuditSi
 
     private void Rotate()
     {
-        DateTimeOffset now = _time.GetUtcNow();
+        DateTimeOffset now = _timeProvider.GetUtcNow();
         DateTimeOffset cutoff = new DateTimeOffset(now.Year, now.Month, now.Day, 0, 0, 0, TimeSpan.Zero).AddDays(-30);
         foreach (string path in Directory.GetFiles(_directory, "*.jsonl"))
         {
