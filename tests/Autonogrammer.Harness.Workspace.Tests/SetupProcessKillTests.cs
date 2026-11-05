@@ -35,6 +35,28 @@ public sealed class SetupProcessKillTests
     }
 
     [Fact]
+    public async Task AggregateKillRefusalAfterCancellationIsReportedAsFailedStep()
+    {
+        HostCommand.Require(SleepPath);
+        using var cancelled = new CancellationTokenSource();
+        await cancelled.CancelAsync();
+        var refusal = new AggregateException(
+            "Not all processes in the associated process's descendant tree could be terminated.",
+            new Win32Exception(1, "Operation not permitted"));
+
+        var result = await SetupProcess.RunAsync(
+            SleepPath,
+            ["1"],
+            Path.GetTempPath(),
+            new Dictionary<string, string>(StringComparer.Ordinal),
+            _ => throw refusal,
+            cancelled.Token);
+
+        result.Succeeded.ShouldBeFalse();
+        result.Failure.ShouldBe($"could not stop '{SleepPath}' after cancellation: Operation not permitted");
+    }
+
+    [Fact]
     public void KillOfAlreadyExitedProcessIsNotReported()
     {
         HostCommand.Require(TruePath);

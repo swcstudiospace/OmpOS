@@ -68,15 +68,17 @@ internal static class SetupProcess
         catch (OperationCanceledException)
         {
             var killFailure = KillProcessTree(process, killTree);
-            await Task.WhenAll(standardOutput, standardError).ConfigureAwait(false);
             if (killFailure is not null)
             {
                 return StepExecution.Failed($"could not stop '{executable}' after cancellation: {killFailure.Message}");
             }
             throw;
         }
+        finally
+        {
+            await Task.WhenAll(standardOutput, standardError).ConfigureAwait(false);
+        }
 
-        await Task.WhenAll(standardOutput, standardError).ConfigureAwait(false);
         if (process.ExitCode == 0)
         {
             return StepExecution.Success;
@@ -172,6 +174,12 @@ internal static class SetupProcess
         {
             // The OS refused the signal, so the process may still be running. The caller reports it.
             return exception;
+        }
+        catch (AggregateException exception)
+        {
+            // Process.Kill(true) throws this when some descendants could not be stopped. Report the first OS refusal.
+            return exception.InnerExceptions.OfType<Win32Exception>().FirstOrDefault()
+                ?? new Win32Exception(exception.Message);
         }
 
         return null;
