@@ -1,0 +1,692 @@
+Cloning into '/tmp/ag-gate-8d01a160/plugins/agent-substrate'...
+Cloning into '/tmp/ag-gate-8d01a160/plugins/agent-swarm'...
+Cloning into '/tmp/ag-gate-8d01a160/plugins/claude-ultrathink'...
+Submodule path 'plugins/agent-substrate': checked out '754c51a17a9e6ffbc222d04bdaf4e783b4eca720'
+Submodule path 'plugins/agent-swarm': checked out '1944a6bbbf4a09ffe6569843af7f85bf1937527a'
+Submodule path 'plugins/claude-ultrathink': checked out '71101ed069a66b3862fa5da5b01995a60c2160c2'
+
+    ○
+    │╲
+    │ ○
+    ○ ░
+    ░    gitleaks
+
+secret scan: OK (gitleaks 8.30.1)
+▶ connection report content
+  ✔ lists sorted raw tool and command names with mode, pid and version (8.965018ms)
+  ✔ commandsAvailable is false and commands empty when the API has no command lister (0.974928ms)
+  ✔ a throwing tool or command lister degrades to empty lists (0.336663ms)
+  ✔ the write is atomic (tmp then rename) with mode 0600 (0.876487ms)
+  ✔ creates a missing parent directory (mode 0700) before the atomic write (0.848577ms)
+  ✔ a reporter whose directory is missing still produces the report on its first notify (1.922314ms)
+  ✔ never throws when the fs fails (0.712626ms)
+✔ connection report content (15.962103ms)
+▶ connection reporter
+  ✔ inactive without an absolute file: no fs call and no timer (1.463412ms)
+  ✔ the first notify writes; an unchanged list is not rewritten (1.021088ms)
+  ✔ a changed tool list is rewritten after the 2 s gap, not before (1.207939ms)
+  ✔ a change after the gap is rewritten immediately (1.056578ms)
+  ✔ stop cancels the pending rewrite (0.610784ms)
+✔ connection reporter (6.60306ms)
+▶ resolveGsdHome
+  ✔ honours GSD_CORE_HOME > KIMI_CONFIG_DIR > ~/.config/agents > ~/.agents (6.41982ms)
+  ✔ GSD_CORE_HOME wins even when it does not exist, and blank values are ignored (4.391593ms)
+  ✔ falls back to ~/.agents/gsd-core when nothing is installed (0.725076ms)
+✔ resolveGsdHome (14.875843ms)
+▶ listAuthoritativeAgents
+  ✔ excludes *.compact.md and names already present in the user's agents dir (4.114532ms)
+  ✔ a dangling user symlink still counts as present (5.25269ms)
+✔ listAuthoritativeAgents (9.746913ms)
+▶ linkAgents
+  ✔ creates absolute symlinks to the authoritative profiles only (9.283841ms)
+  ✔ is idempotent (2.185398ms)
+  ✔ never overwrites an existing file or a symlink to elsewhere (2.802031ms)
+  ✔ refuses a profile whose real path escapes gsdHome/agents (2.886853ms)
+  ✔ refuses unsafe file names (1.41062ms)
+  ✔ dry-run changes nothing (2.384118ms)
+  ✔ reports a conflict instead of linking when the plugin dir is the GSD agents dir (1.434551ms)
+  ✔ never throws when gsdHome is missing (0.551434ms)
+✔ linkAgents (23.623541ms)
+▶ probe
+  ✔ not installed: exit code 3, never throws (1.030969ms)
+  ✔ degraded before linking (agents missing): exit code 2; healthy after linking: exit code 0 (98.131361ms)
+  ✔ degraded when gsd-tools is missing (3.018973ms)
+  ✔ degraded when runtime-identity fails or prints garbage (131.137395ms)
+  ✔ a hanging runtime-identity is cut off by the timeout (309.695183ms)
+  ✔ without spawn it does not run gsd-tools (3.367025ms)
+  ✔ reports the omp link state from the plugin manager directory (3.060493ms)
+✔ probe (549.968404ms)
+▶ syncAgents
+  ✔ links when installed and returns link=null when not, without throwing (2.674429ms)
+✔ syncAgents (2.784901ms)
+▶ bin scripts
+  ✔ probe prints one JSON object and exits 3 when GSD-Core is absent (53.080736ms)
+  ✔ probe exits 2 when degraded and reports the gsd-tools identity (95.446651ms)
+  ✔ link --dry-run reports and writes nothing; unknown flags exit 64 (98.539605ms)
+  ✔ link exits 3 when GSD-Core is not installed (48.736483ms)
+✔ bin scripts (296.181459ms)
+▶ steering inbox delivery
+  ✔ mode steer reaches deliver and writes a delivered ack (6.259389ms)
+  ✔ mode followUp reaches deliver and writes a delivered ack (1.717823ms)
+  ✔ mode aside reaches deliver and writes a delivered ack (4.266323ms)
+  ✔ rejects invalid-json ({not json) (2.120976ms)
+  ✔ rejects invalid-schema (schema case) (1.987786ms)
+  ✔ rejects invalid-schema (schema case) (2.234447ms)
+  ✔ rejects invalid-schema (schema case) (1.373521ms)
+  ✔ rejects invalid-schema (schema case) (3.383325ms)
+  ✔ rejects invalid-schema (schema case) (2.188426ms)
+  ✔ rejects invalid-schema ([1,2]) (5.419641ms)
+  ✔ rejects bad-id (schema case) (1.571662ms)
+  ✔ rejects bad-id (schema case) (1.45553ms)
+  ✔ rejects blank-text (schema case) (1.704223ms)
+  ✔ rejects too-large (schema case) (1.803524ms)
+  ✔ rejects too-large (schema case) (1.28514ms)
+  ✔ rejects too-large (schema case) (1.022567ms)
+  ✔ a duplicate id is never delivered twice and the first ack survives (1.830484ms)
+  ✔ a duplicate of a done directive without an ack is acked rejected/duplicate (1.196309ms)
+  ✔ a file name that cannot carry an ack is quarantined without an ack (2.246267ms)
+  ✔ ignores *.tmp files and symlinks (2.004806ms)
+  ✔ delivers in file-name order (1.678983ms)
+  ✔ examines at most 64 files per pass; the rest wait for the next pass (26.883586ms)
+  ✔ acks and the heartbeat are atomic: only .tmp files are written, then renamed over the final name (2.489139ms)
+  ✔ a throwing deliver becomes a failed ack and the inbox keeps working (2.097476ms)
+  ✔ a failing fs never throws out of start, poll or stop (1.20746ms)
+✔ steering inbox delivery (84.728638ms)
+▶ steering inbox lifecycle
+  ✔ heartbeat is written at start and refreshed every 5 s by the clock (1.905245ms)
+  ✔ the poll timer delivers files that arrive later (0.907298ms)
+  ✔ stop clears timers and stops delivering and heartbeating (1.001517ms)
+  ✔ start is idempotent (1.337301ms)
+  ✔ inactive for dir undefined: no fs call at all (0.352803ms)
+  ✔ inactive for dir "": no fs call at all (0.271332ms)
+  ✔ inactive for dir "relative/steer": no fs call at all (0.360893ms)
+✔ steering inbox lifecycle (6.414688ms)
+ℹ tests 69
+ℹ suites 10
+ℹ pass 69
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1027.172111
+▶ tool name mapping
+  ✔ maps omp tools to Cursor names (1.895145ms)
+✔ tool name mapping (5.278941ms)
+▶ registration
+  ✔ registers every event without touching fs/network at load (1.16422ms)
+✔ registration (1.32877ms)
+▶ tool_call
+  ✔ bash: preToolUse then beforeShellExecution with Cursor payloads (2.026916ms)
+  ✔ MCP: beforeMCPExecution carries JSON string input and server (0.642694ms)
+  ✔ MCP detection via getAllTools sourceInfo (0.468634ms)
+  ✔ read: beforeReadFile resolves path and includes file content (0.611304ms)
+  ✔ read: unreadable file omits content (0.516513ms)
+  ✔ other tools only post preToolUse (0.256012ms)
+  ✔ deny on preToolUse short-circuits and maps reason (0.337993ms)
+  ✔ deny falls back to user_message then default (0.521404ms)
+  ✔ deny on beforeShellExecution after allow on preToolUse (0.416753ms)
+  ✔ updated_input: last wins, later payloads see it, additional_context joined (0.440574ms)
+  ✔ omp section: posts kind omp only when active; omp_result merged, block sticky (0.777986ms)
+  ✔ omp events are not posted when not in activeOmpEvents (0.271902ms)
+✔ tool_call (7.967571ms)
+▶ tool_result
+  ✔ postToolUse with tool_output JSON and duration (0.995988ms)
+  ✔ error result -> postToolUseFailure (0.317592ms)
+  ✔ bash -> afterShellExecution (4.543084ms)
+  ✔ MCP -> afterMCPExecution; updated_mcp_tool_output replaces content; details win for names (0.777676ms)
+  ✔ updated_mcp_tool_output ignored for non-MCP tools (0.346702ms)
+  ✔ edit/write/ast_edit success -> afterFileEdit; error does not (1.153039ms)
+  ✔ task -> subagentStop with followup mapped to additionalContext (1.546082ms)
+  ✔ task without agent defaults to generalPurpose and error status (0.375432ms)
+  ✔ tool_output and output truncated to 256 KiB (7.264886ms)
+  ✔ truncateUtf8 never splits multibyte characters (0.362283ms)
+  ✔ omp_result merged into tool_result (0.409093ms)
+✔ tool_result (18.789125ms)
+▶ input
+  ✔ beforeSubmitPrompt payload; allow returns nothing (0.294592ms)
+  ✔ continue:false or deny -> handled with notify (0.306342ms)
+✔ input (0.697455ms)
+▶ session events
+  ✔ session_start/session_shutdown payloads and duration (0.445063ms)
+  ✔ session_start is fire-and-forget; shutdown uses 2 s timeout (0.419313ms)
+  ✔ session_stop: followup_message -> continue + additionalContext (0.280153ms)
+  ✔ session_stop: empty followup -> nothing (0.134831ms)
+  ✔ before_subagent_spawn payload and deny (0.277232ms)
+  ✔ before_subagent_spawn omp_result passes model/note (0.210872ms)
+  ✔ session_before_compact: preCompact numbers, observe-only, cancel from omp_result (0.381302ms)
+  ✔ compaction without cancel returns nothing; auto_compaction_start sets trigger auto (0.283402ms)
+  ✔ message_end: assistant text and thinking (0.325842ms)
+  ✔ message_end for user role posts nothing (0.136432ms)
+  ✔ omp-only observers post kind omp when active (0.493204ms)
+  ✔ safeCopy bounds depth, arrays and strings (0.389513ms)
+✔ session events (4.153542ms)
+▶ inactive / inert
+  ✔ skips events not in activeEvents (0.414102ms)
+  ✔ inert without URL or token: no reads, no posts (0.221051ms)
+  ✔ no env and no filesystem or network access at load / without events (0.145361ms)
+  ✔ subagent contexts never post (0.128431ms)
+  ✔ startup file read lazily once and cached (0.241531ms)
+✔ inactive / inert (1.385062ms)
+▶ loopback guard
+  ✔ refuses http://example.com/v1/hook (0.272032ms)
+  ✔ refuses http://10.0.0.5:80/v1/hook (0.11638ms)
+  ✔ refuses https://127.0.0.1/v1/hook (0.095041ms)
+  ✔ refuses not a url (0.098362ms)
+  ✔ refuses http://127.0.0.1.evil.com/v1/hook (0.064061ms)
+  ✔ accepts http://localhost:1/v1/hook (0.185091ms)
+  ✔ accepts http://[::1]:1/v1/hook (0.145272ms)
+  ✔ accepts http://127.0.0.1:1/v1/hook (0.122551ms)
+✔ loopback guard (1.39267ms)
+▶ fail policy
+  ✔ fail-closed deny on 401 (0.719676ms)
+  ✔ fail-open on 401 when not configured fail-closed (0.317353ms)
+  ✔ fail-closed deny on 500 (0.265122ms)
+  ✔ fail-open on 500 when not configured fail-closed (2.085005ms)
+  ✔ fail-closed deny on unreachable (0.539143ms)
+  ✔ fail-open on unreachable when not configured fail-closed (0.336822ms)
+  ✔ fail-closed deny on bad json (0.467483ms)
+  ✔ fail-open on bad json when not configured fail-closed (0.215132ms)
+  ✔ fail-closed deny on non-object json (0.240783ms)
+  ✔ fail-open on non-object json when not configured fail-closed (0.196881ms)
+  ✔ beforeShellExecution fail-closed only for that event (0.303593ms)
+  ✔ non-blockable events in failClosedEvents never deny (stop, post events) (0.235672ms)
+  ✔ blockable event is still waiting after 6 s and aborts only at requestTimeoutMs (default 130000) (28.846491ms)
+  ✔ requestTimeoutMs from startup file is used and clamped to 1000..900000 (1.439272ms)
+  ✔ timeout per event: awaited ones use requestTimeoutMs, observers keep 5 s (2.859542ms)
+  ✔ timer is cleared after a successful response (0.326033ms)
+  ✔ startup file missing: all events active, nothing fail-closed (0.296362ms)
+  ✔ startup file malformed: all events active, nothing fail-closed (0.180171ms)
+  ✔ startup file wrong shape: all events active, nothing fail-closed (0.13696ms)
+  ✔ unset startup env var behaves like a missing file (0.184602ms)
+✔ fail policy (41.067906ms)
+▶ no leaks
+  ✔ nothing is written to console and the token never leaves the Authorization header (0.510855ms)
+  ✔ handlers never throw even for hostile events (1.117409ms)
+✔ no leaks (1.734303ms)
+▶ loopback end to end
+  ✔ real fetch POSTs JSON with bearer token and parses the decision (28.73586ms)
+  ✔ deny and fail-closed over real HTTP (13.572045ms)
+✔ loopback end to end (53.34418ms)
+ℹ tests 76
+ℹ suites 11
+ℹ pass 76
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 223.421211
+check-brand: ok (28 PNGs, 9 SVGs, 18 other files)
+check-changelog: /tmp/ag-gate-8d01a160/CHANGELOG.md is valid (8 versions)
+WARN  1 relative links leave the GitBook root (rerun with --list-outside-root to list them)
+202 markdown files, 105 listed in SUMMARY.md, 0 errors, 1 warnings
+docs/reference/providers.md is up to date
+check-skip-markers: ok (92 marker kinds across 90 files)
+repo-checks: ok
+10.0.402
+  Determining projects to restore...
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.ComputerUse/Autonogrammer.Harness.ComputerUse.csproj (in 549 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Workflows/Autonogrammer.Workflows.csproj (in 549 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Dispatch.Client/Autonogrammer.Dispatch.Client.csproj (in 549 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Sessions.Postgres.Tests/Autonogrammer.Sessions.Postgres.Tests.csproj (in 261 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Terminal.Tests/Autonogrammer.Harness.Terminal.Tests.csproj (in 854 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.EngineHost.Tests/Autonogrammer.EngineHost.Tests.csproj (in 871 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Workflows.Tests/Autonogrammer.Workflows.Tests.csproj (in 870 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Isolation.Tests/Autonogrammer.Harness.Isolation.Tests.csproj (in 853 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Sessions.Tests/Autonogrammer.Sessions.Tests.csproj (in 281 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Sessions.Postgres.Probe/Autonogrammer.Sessions.Postgres.Probe.csproj (in 16 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Resilience.Tests/Autonogrammer.Resilience.Tests.csproj (in 9 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Web.Tests/Autonogrammer.Web.Tests.csproj (in 879 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Presentation.Tests/Autonogrammer.Presentation.Tests.csproj (in 16 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.SessionRuns.Tests/Autonogrammer.SessionRuns.Tests.csproj (in 42 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Parser.Tests/Autonogrammer.Parser.Tests.csproj (in 33 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.UI.Tests/Autonogrammer.UI.Tests.csproj (in 285 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Worktrees.Tests/Autonogrammer.Harness.Worktrees.Tests.csproj (in 13 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Parity.Support/Autonogrammer.Parity.Support.csproj (in 33 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Secrets.Tests/Autonogrammer.Harness.Secrets.Tests.csproj (in 9 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Sandbox.Tests/Autonogrammer.Sandbox.Tests.csproj (in 59 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Workspace.Tests/Autonogrammer.Harness.Workspace.Tests.csproj (in 21 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Rpc.Tests/Autonogrammer.Harness.Rpc.Tests.csproj (in 11 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Providers.Tests/Autonogrammer.Harness.Providers.Tests.csproj (in 13 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Plugins.Tests/Autonogrammer.Harness.Plugins.Tests.csproj (in 13 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Registry.Tests/Autonogrammer.Harness.Registry.Tests.csproj (in 13 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Secrets.Os.Tests/Autonogrammer.Harness.Secrets.Os.Tests.csproj (in 46 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.PluginBundles.Tests/Autonogrammer.Harness.PluginBundles.Tests.csproj (in 13 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.OmpLauncher.Tests/Autonogrammer.Harness.OmpLauncher.Tests.csproj (in 22 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Notifications.Tests/Autonogrammer.Harness.Notifications.Tests.csproj (in 30 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.OmpConfig.Tests/Autonogrammer.Harness.OmpConfig.Tests.csproj (in 34 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Secrets.Os/Autonogrammer.Harness.Secrets.Os.csproj (in 7 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Mcp.Fixtures/Autonogrammer.Harness.Mcp.Fixtures.csproj (in 33 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Remote.Tests/Autonogrammer.Harness.Remote.Tests.csproj (in 72 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Herdr.Tests/Autonogrammer.Harness.Herdr.Tests.csproj (in 20 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Mcp.Tests/Autonogrammer.Harness.Mcp.Tests.csproj (in 53 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ContractTests/Autonogrammer.Harness.ContractTests.csproj (in 14 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.X11.Tests/Autonogrammer.Harness.ComputerUse.X11.Tests.csproj (in 10 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.InMemory.Tests/Autonogrammer.Harness.InMemory.Tests.csproj (in 28 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.McpGateway.Tests/Autonogrammer.Harness.McpGateway.Tests.csproj (in 70 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.Windows.Tests/Autonogrammer.Harness.ComputerUse.Windows.Tests.csproj (in 10 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.MacOS.Tests/Autonogrammer.Harness.ComputerUse.MacOS.Tests.csproj (in 14 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Completion.Tests/Autonogrammer.Harness.Completion.Tests.csproj (in 10 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Automations.Tests/Autonogrammer.Harness.Automations.Tests.csproj (in 17 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Acp.Tests/Autonogrammer.Harness.Acp.Tests.csproj (in 21 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.Tests/Autonogrammer.Harness.ComputerUse.Tests.csproj (in 45 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Agent.Tests/Autonogrammer.Harness.Agent.Tests.csproj (in 12 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Abstractions.Tests/Autonogrammer.Harness.Abstractions.Tests.csproj (in 20 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Dispatch.Client.Tests/Autonogrammer.Dispatch.Client.Tests.csproj (in 20 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Memory.Tests/Autonogrammer.Cowork.Memory.Tests.csproj (in 35 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Memory.Postgres.Tests/Autonogrammer.Cowork.Memory.Postgres.Tests.csproj (in 32 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.AgentLoop.Tests/Autonogrammer.Harness.AgentLoop.Tests.csproj (in 37 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.BrowserUse.Tests/Autonogrammer.Harness.BrowserUse.Tests.csproj (in 73 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Tests/Autonogrammer.Cowork.Tests.csproj (in 23 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Artifacts.Tests/Autonogrammer.Cowork.Artifacts.Tests.csproj (in 19 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Contracts.Tests/Autonogrammer.Contracts.Tests.csproj (in 11 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Dispatch.Desktop.Tests/Autonogrammer.Dispatch.Desktop.Tests.csproj (in 85 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Artifacts.Stores.Tests/Autonogrammer.Cowork.Artifacts.Stores.Tests.csproj (in 32 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.UI/Autonogrammer.UI.csproj (in 15 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Coordination.Tests/Autonogrammer.Coordination.Tests.csproj (in 64 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Accounts.Tests/Autonogrammer.Accounts.Tests.csproj (in 19 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Accounts.Desktop.Tests/Autonogrammer.Accounts.Desktop.Tests.csproj (in 21 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Sessions/Autonogrammer.Sessions.csproj (in 5 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Sessions.Postgres/Autonogrammer.Sessions.Postgres.csproj (in 10 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Sandbox.Abstractions/Autonogrammer.Sandbox.Abstractions.csproj (in 4 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Resilience/Autonogrammer.Resilience.csproj (in 3 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Sandbox/Autonogrammer.Sandbox.csproj (in 12 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.SessionRuns/Autonogrammer.SessionRuns.csproj (in 14 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Parser/Autonogrammer.Parser.csproj (in 4 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Worktrees/Autonogrammer.Harness.Worktrees.csproj (in 6 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Presentation/Autonogrammer.Presentation.csproj (in 18 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Secrets/Autonogrammer.Harness.Secrets.csproj (in 2 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Terminal/Autonogrammer.Harness.Terminal.csproj (in 4 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Workspace/Autonogrammer.Harness.Workspace.csproj (in 7 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Registry/Autonogrammer.Harness.Registry.csproj (in 3 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Rpc/Autonogrammer.Harness.Rpc.csproj (in 6 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Providers/Autonogrammer.Harness.Providers.csproj (in 9 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Plugins/Autonogrammer.Harness.Plugins.csproj (in 9 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.AgentWorker.Tests/Autonogrammer.AgentWorker.Tests.csproj (in 189 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.PluginBundles/Autonogrammer.Harness.PluginBundles.csproj (in 5 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.OmpLauncher/Autonogrammer.Harness.OmpLauncher.csproj (in 10 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Remote/Autonogrammer.Harness.Remote.csproj (in 24 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Notifications/Autonogrammer.Harness.Notifications.csproj (in 5 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.OmpConfig/Autonogrammer.Harness.OmpConfig.csproj (in 9 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.McpGateway/Autonogrammer.Harness.McpGateway.csproj (in 12 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Isolation/Autonogrammer.Harness.Isolation.csproj (in 8 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Herdr/Autonogrammer.Harness.Herdr.csproj (in 3 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.InMemory/Autonogrammer.Harness.InMemory.csproj (in 15 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.ComputerUse.X11/Autonogrammer.Harness.ComputerUse.X11.csproj (in 16 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Mcp/Autonogrammer.Harness.Mcp.csproj (in 14 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.ComputerUse.Windows/Autonogrammer.Harness.ComputerUse.Windows.csproj (in 6 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.ComputerUse.MacOS/Autonogrammer.Harness.ComputerUse.MacOS.csproj (in 7 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.ComputerUse.Abstractions/Autonogrammer.Harness.ComputerUse.Abstractions.csproj (in 3 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Completion/Autonogrammer.Harness.Completion.csproj (in 4 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.BrowserUse/Autonogrammer.Harness.BrowserUse.csproj (in 6 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Automations/Autonogrammer.Harness.Automations.csproj (in 3 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Acp/Autonogrammer.Harness.Acp.csproj (in 5 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Agent/Autonogrammer.Harness.Agent.csproj (in 6 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.AgentLoop/Autonogrammer.Harness.AgentLoop.csproj (in 8 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj (in 7 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.GenUi/Autonogrammer.GenUi.csproj (in 4 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.EngineHost/Autonogrammer.EngineHost.csproj (in 7 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Cowork.Memory/Autonogrammer.Cowork.Memory.csproj (in 5 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Cowork/Autonogrammer.Cowork.csproj (in 16 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Cowork.Artifacts/Autonogrammer.Cowork.Artifacts.csproj (in 7 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Dispatch.Desktop/Autonogrammer.Dispatch.Desktop.csproj (in 16 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Cowork.Memory.Postgres/Autonogrammer.Cowork.Memory.Postgres.csproj (in 6 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Api.IntegrationTests/Autonogrammer.Api.IntegrationTests.csproj (in 281 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Cowork.Abstractions/Autonogrammer.Cowork.Abstractions.csproj (in 4 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Cowork.Artifacts.Stores/Autonogrammer.Cowork.Artifacts.Stores.csproj (in 7 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Coordination/Autonogrammer.Coordination.csproj (in 3 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Contracts/Autonogrammer.Contracts.csproj (in 10 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Coordination.Dragonfly/Autonogrammer.Coordination.Dragonfly.csproj (in 15 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Accounts.Desktop/Autonogrammer.Accounts.Desktop.csproj (in 7 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Accounts/Autonogrammer.Accounts.csproj (in 4 ms).
+  Restored /tmp/ag-gate-8d01a160/services/Autonogrammer.AgentWorker/Autonogrammer.AgentWorker.csproj (in 13 ms).
+  Restored /tmp/ag-gate-8d01a160/services/Autonogrammer.Api/Autonogrammer.Api.csproj (in 40 ms).
+  Restored /tmp/ag-gate-8d01a160/src/Autonogrammer.Native.Views/Autonogrammer.Native.Views.csproj (in 307 ms).
+  Restored /tmp/ag-gate-8d01a160/apps/Autonogrammer.Web/Autonogrammer.Web.csproj (in 94 ms).
+  Restored /tmp/ag-gate-8d01a160/apps/Autonogrammer.Native/Autonogrammer.Native.csproj (in 65 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.Native.Tests/Autonogrammer.Native.Tests.csproj (in 794 ms).
+  Restored /tmp/ag-gate-8d01a160/tests/Autonogrammer.ArchitectureTests/Autonogrammer.ArchitectureTests.csproj (in 461 ms).
+THIRD-PARTY-NOTICES.md is up to date
+licence checks passed
+  Autonogrammer.Coordination -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Coordination/bin/Release/net10.0/Autonogrammer.Coordination.dll
+  Autonogrammer.Resilience -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Resilience/bin/Release/net10.0/Autonogrammer.Resilience.dll
+  Autonogrammer.Harness.Completion -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Completion/bin/Release/net10.0/Autonogrammer.Harness.Completion.dll
+  Autonogrammer.Harness.Herdr -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Herdr/bin/Release/net10.0/Autonogrammer.Harness.Herdr.dll
+  Autonogrammer.Harness.Registry -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Registry/bin/Release/net10.0/Autonogrammer.Harness.Registry.dll
+  Autonogrammer.Harness.ComputerUse.Abstractions -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.ComputerUse.Abstractions/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.Abstractions.dll
+  Autonogrammer.Harness.Plugins -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Plugins/bin/Release/net10.0/Autonogrammer.Harness.Plugins.dll
+  Autonogrammer.Harness.Terminal -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Terminal/bin/Release/net10.0/Autonogrammer.Harness.Terminal.dll
+  Autonogrammer.Coordination.Dragonfly -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Coordination.Dragonfly/bin/Release/net10.0/Autonogrammer.Coordination.Dragonfly.dll
+  Autonogrammer.Contracts -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Contracts/bin/Release/net10.0/Autonogrammer.Contracts.dll
+  Autonogrammer.Harness.ComputerUse.X11 -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.ComputerUse.X11/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.X11.dll
+  Autonogrammer.Harness.Automations -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Automations/bin/Release/net10.0/Autonogrammer.Harness.Automations.dll
+  Autonogrammer.Harness.Secrets -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Secrets/bin/Release/net10.0/Autonogrammer.Harness.Secrets.dll
+  Autonogrammer.Harness.Mcp.Fixtures -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Mcp.Fixtures/bin/Release/net10.0/Autonogrammer.Harness.Mcp.Fixtures.dll
+  Autonogrammer.Harness.Worktrees -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Worktrees/bin/Release/net10.0/Autonogrammer.Harness.Worktrees.dll
+  Autonogrammer.Harness.Providers -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Providers/bin/Release/net10.0/Autonogrammer.Harness.Providers.dll
+  Autonogrammer.Harness.ComputerUse.MacOS -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.ComputerUse.MacOS/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.MacOS.dll
+  Autonogrammer.Harness.Secrets.Os -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Secrets.Os/bin/Release/net10.0/Autonogrammer.Harness.Secrets.Os.dll
+  Autonogrammer.Harness.Plugins.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Plugins.Tests/bin/Release/net10.0/Autonogrammer.Harness.Plugins.Tests.dll
+  Autonogrammer.Harness.Herdr.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Herdr.Tests/bin/Release/net10.0/Autonogrammer.Harness.Herdr.Tests.dll
+  Autonogrammer.Workflows -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Workflows/bin/Release/net10.0/Autonogrammer.Workflows.dll
+  Autonogrammer.Harness.ComputerUse.Windows -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.ComputerUse.Windows/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.Windows.dll
+  Autonogrammer.Harness.Abstractions -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Abstractions/bin/Release/net10.0/Autonogrammer.Harness.Abstractions.dll
+  Autonogrammer.GenUi -> /tmp/ag-gate-8d01a160/src/Autonogrammer.GenUi/bin/Release/net10.0/Autonogrammer.GenUi.dll
+  Autonogrammer.Sandbox.Abstractions -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Sandbox.Abstractions/bin/Release/net10.0/Autonogrammer.Sandbox.Abstractions.dll
+  Autonogrammer.Cowork.Abstractions -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Cowork.Abstractions/bin/Release/net10.0/Autonogrammer.Cowork.Abstractions.dll
+  Autonogrammer.Harness.Worktrees.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Worktrees.Tests/bin/Release/net10.0/Autonogrammer.Harness.Worktrees.Tests.dll
+  Autonogrammer.Harness.Automations.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Automations.Tests/bin/Release/net10.0/Autonogrammer.Harness.Automations.Tests.dll
+  Autonogrammer.Harness.Providers.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Providers.Tests/bin/Release/net10.0/Autonogrammer.Harness.Providers.Tests.dll
+  Autonogrammer.Sessions -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Sessions/bin/Release/net10.0/Autonogrammer.Sessions.dll
+  Autonogrammer.Harness.Agent -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Agent/bin/Release/net10.0/Autonogrammer.Harness.Agent.dll
+  Autonogrammer.Accounts -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Accounts/bin/Release/net10.0/Autonogrammer.Accounts.dll
+  Autonogrammer.Harness.Notifications -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Notifications/bin/Release/net10.0/Autonogrammer.Harness.Notifications.dll
+  Autonogrammer.Harness.ComputerUse -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.ComputerUse/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.dll
+  Autonogrammer.Contracts.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Contracts.Tests/bin/Release/net10.0/Autonogrammer.Contracts.Tests.dll
+  Autonogrammer.Harness.Acp -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Acp/bin/Release/net10.0/Autonogrammer.Harness.Acp.dll
+  Autonogrammer.Harness.Rpc -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Rpc/bin/Release/net10.0/Autonogrammer.Harness.Rpc.dll
+  Autonogrammer.Harness.InMemory -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.InMemory/bin/Release/net10.0/Autonogrammer.Harness.InMemory.dll
+  Autonogrammer.Harness.Isolation -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Isolation/bin/Release/net10.0/Autonogrammer.Harness.Isolation.dll
+  Autonogrammer.Harness.Abstractions.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Abstractions.Tests/bin/Release/net10.0/Autonogrammer.Harness.Abstractions.Tests.dll
+  Autonogrammer.Cowork.Memory -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Cowork.Memory/bin/Release/net10.0/Autonogrammer.Cowork.Memory.dll
+  Autonogrammer.Resilience.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Resilience.Tests/bin/Release/net10.0/Autonogrammer.Resilience.Tests.dll
+  Autonogrammer.Cowork.Artifacts -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Cowork.Artifacts/bin/Release/net10.0/Autonogrammer.Cowork.Artifacts.dll
+  Autonogrammer.Harness.Secrets.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Secrets.Tests/bin/Release/net10.0/Autonogrammer.Harness.Secrets.Tests.dll
+  Autonogrammer.Harness.Completion.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Completion.Tests/bin/Release/net10.0/Autonogrammer.Harness.Completion.Tests.dll
+  Autonogrammer.Parser -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Parser/bin/Release/net10.0/Autonogrammer.Parser.dll
+  Autonogrammer.Workflows.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Workflows.Tests/bin/Release/net10.0/Autonogrammer.Workflows.Tests.dll
+  Autonogrammer.Harness.Rpc.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Rpc.Tests/bin/Release/net10.0/Autonogrammer.Harness.Rpc.Tests.dll
+  Autonogrammer.Harness.PluginBundles -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.PluginBundles/bin/Release/net10.0/Autonogrammer.Harness.PluginBundles.dll
+  Autonogrammer.Harness.Workspace -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Workspace/bin/Release/net10.0/Autonogrammer.Harness.Workspace.dll
+  Autonogrammer.Sessions.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Sessions.Tests/bin/Release/net10.0/Autonogrammer.Sessions.Tests.dll
+  Autonogrammer.Harness.BrowserUse -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.BrowserUse/bin/Release/net10.0/Autonogrammer.Harness.BrowserUse.dll
+  Autonogrammer.Harness.Registry.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Registry.Tests/bin/Release/net10.0/Autonogrammer.Harness.Registry.Tests.dll
+  Autonogrammer.Accounts.Desktop -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Accounts.Desktop/bin/Release/net10.0/Autonogrammer.Accounts.Desktop.dll
+  Autonogrammer.Cowork.Memory.Postgres -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Cowork.Memory.Postgres/bin/Release/net10.0/Autonogrammer.Cowork.Memory.Postgres.dll
+  Autonogrammer.Parser.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Parser.Tests/bin/Release/net10.0/Autonogrammer.Parser.Tests.dll
+  Autonogrammer.Accounts.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Accounts.Tests/bin/Release/net10.0/Autonogrammer.Accounts.Tests.dll
+  Autonogrammer.Harness.ContractTests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ContractTests/bin/Release/net10.0/Autonogrammer.Harness.ContractTests.dll
+  Autonogrammer.Harness.Notifications.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Notifications.Tests/bin/Release/net10.0/Autonogrammer.Harness.Notifications.Tests.dll
+  Autonogrammer.Coordination.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Coordination.Tests/bin/Release/net10.0/Autonogrammer.Coordination.Tests.dll
+  Autonogrammer.Harness.Workspace.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Workspace.Tests/bin/Release/net10.0/Autonogrammer.Harness.Workspace.Tests.dll
+  Autonogrammer.Harness.Terminal.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Terminal.Tests/bin/Release/net10.0/Autonogrammer.Harness.Terminal.Tests.dll
+  Autonogrammer.Harness.ComputerUse.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.Tests.dll
+  Autonogrammer.Harness.InMemory.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.InMemory.Tests/bin/Release/net10.0/Autonogrammer.Harness.InMemory.Tests.dll
+  Autonogrammer.Harness.Acp.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Acp.Tests/bin/Release/net10.0/Autonogrammer.Harness.Acp.Tests.dll
+  Autonogrammer.Harness.ComputerUse.X11.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.X11.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.X11.Tests.dll
+  Autonogrammer.Harness.OmpLauncher -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.OmpLauncher/bin/Release/net10.0/Autonogrammer.Harness.OmpLauncher.dll
+  Autonogrammer.Harness.Agent.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Agent.Tests/bin/Release/net10.0/Autonogrammer.Harness.Agent.Tests.dll
+  Autonogrammer.Harness.ComputerUse.MacOS.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.MacOS.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.MacOS.Tests.dll
+  Autonogrammer.Harness.AgentLoop -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.AgentLoop/bin/Release/net10.0/Autonogrammer.Harness.AgentLoop.dll
+  Autonogrammer.Sessions.Postgres -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Sessions.Postgres/bin/Release/net10.0/Autonogrammer.Sessions.Postgres.dll
+  Autonogrammer.Harness.PluginBundles.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.PluginBundles.Tests/bin/Release/net10.0/Autonogrammer.Harness.PluginBundles.Tests.dll
+  Autonogrammer.Harness.ComputerUse.Windows.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.Windows.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.Windows.Tests.dll
+  Autonogrammer.Accounts.Desktop.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Accounts.Desktop.Tests/bin/Release/net10.0/Autonogrammer.Accounts.Desktop.Tests.dll
+  Autonogrammer.Harness.Isolation.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Isolation.Tests/bin/Release/net10.0/Autonogrammer.Harness.Isolation.Tests.dll
+  Autonogrammer.Harness.Secrets.Os.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Secrets.Os.Tests/bin/Release/net10.0/Autonogrammer.Harness.Secrets.Os.Tests.dll
+  Autonogrammer.Presentation -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Presentation/bin/Release/net10.0/Autonogrammer.Presentation.dll
+  Autonogrammer.Harness.OmpConfig -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.OmpConfig/bin/Release/net10.0/Autonogrammer.Harness.OmpConfig.dll
+  Autonogrammer.Harness.Mcp -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Mcp/bin/Release/net10.0/Autonogrammer.Harness.Mcp.dll
+  Autonogrammer.EngineHost -> /tmp/ag-gate-8d01a160/src/Autonogrammer.EngineHost/bin/Release/net10.0/Autonogrammer.EngineHost.dll
+  Autonogrammer.Harness.McpGateway -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.McpGateway/bin/Release/net10.0/Autonogrammer.Harness.McpGateway.dll
+  Autonogrammer.Cowork.Artifacts.Stores -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Cowork.Artifacts.Stores/bin/Release/net10.0/Autonogrammer.Cowork.Artifacts.Stores.dll
+  Autonogrammer.Cowork.Artifacts.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Artifacts.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Artifacts.Tests.dll
+  Autonogrammer.Harness.OmpLauncher.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.OmpLauncher.Tests/bin/Release/net10.0/Autonogrammer.Harness.OmpLauncher.Tests.dll
+  Autonogrammer.Cowork -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Cowork/bin/Release/net10.0/Autonogrammer.Cowork.dll
+  Autonogrammer.Harness.Mcp.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Mcp.Tests/bin/Release/net10.0/Autonogrammer.Harness.Mcp.Tests.dll
+  Autonogrammer.Dispatch.Desktop -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Dispatch.Desktop/bin/Release/net10.0/Autonogrammer.Dispatch.Desktop.dll
+  Autonogrammer.Parity.Support -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Parity.Support/bin/Release/net10.0/Autonogrammer.Parity.Support.dll
+  Autonogrammer.Sessions.Postgres.Probe -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Sessions.Postgres.Probe/bin/Release/net10.0/Autonogrammer.Sessions.Postgres.Probe.dll
+  Autonogrammer.Harness.AgentLoop.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.AgentLoop.Tests/bin/Release/net10.0/Autonogrammer.Harness.AgentLoop.Tests.dll
+  Autonogrammer.Dispatch.Client -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Dispatch.Client/bin/Release/net10.0/Autonogrammer.Dispatch.Client.dll
+  Autonogrammer.Cowork.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Tests.dll
+  Autonogrammer.Harness.McpGateway.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.McpGateway.Tests/bin/Release/net10.0/Autonogrammer.Harness.McpGateway.Tests.dll
+  Autonogrammer.EngineHost.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.EngineHost.Tests/bin/Release/net10.0/Autonogrammer.EngineHost.Tests.dll
+  Autonogrammer.Dispatch.Client.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Dispatch.Client.Tests/bin/Release/net10.0/Autonogrammer.Dispatch.Client.Tests.dll
+  Autonogrammer.Presentation.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Presentation.Tests/bin/Release/net10.0/Autonogrammer.Presentation.Tests.dll
+  Autonogrammer.Harness.Remote -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Harness.Remote/bin/Release/net10.0/Autonogrammer.Harness.Remote.dll
+  Autonogrammer.AgentWorker -> /tmp/ag-gate-8d01a160/services/Autonogrammer.AgentWorker/bin/Release/net10.0/Autonogrammer.AgentWorker.dll
+  Autonogrammer.Cowork.Memory.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Memory.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Memory.Tests.dll
+  Autonogrammer.Harness.BrowserUse.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.BrowserUse.Tests/bin/Release/net10.0/Autonogrammer.Harness.BrowserUse.Tests.dll
+  Autonogrammer.Cowork.Artifacts.Stores.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Artifacts.Stores.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Artifacts.Stores.Tests.dll
+  Autonogrammer.Harness.Remote.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Remote.Tests/bin/Release/net10.0/Autonogrammer.Harness.Remote.Tests.dll
+  Autonogrammer.Dispatch.Desktop.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Dispatch.Desktop.Tests/bin/Release/net10.0/Autonogrammer.Dispatch.Desktop.Tests.dll
+  Autonogrammer.AgentWorker.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.AgentWorker.Tests/bin/Release/net10.0/Autonogrammer.AgentWorker.Tests.dll
+  Autonogrammer.Cowork.Memory.Postgres.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Memory.Postgres.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Memory.Postgres.Tests.dll
+  Autonogrammer.Native.Views -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Native.Views/bin/Release/net10.0/Autonogrammer.Native.Views.dll
+  Autonogrammer.Harness.OmpConfig.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.OmpConfig.Tests/bin/Release/net10.0/Autonogrammer.Harness.OmpConfig.Tests.dll
+  Autonogrammer.Native -> /tmp/ag-gate-8d01a160/apps/Autonogrammer.Native/bin/Release/net10.0/Autonogrammer.Native.dll
+  Autonogrammer.SessionRuns -> /tmp/ag-gate-8d01a160/src/Autonogrammer.SessionRuns/bin/Release/net10.0/Autonogrammer.SessionRuns.dll
+  Autonogrammer.UI -> /tmp/ag-gate-8d01a160/src/Autonogrammer.UI/bin/Release/net10.0/Autonogrammer.UI.dll
+  Autonogrammer.Sandbox -> /tmp/ag-gate-8d01a160/src/Autonogrammer.Sandbox/bin/Release/net10.0/Autonogrammer.Sandbox.dll
+  Autonogrammer.SessionRuns.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.SessionRuns.Tests/bin/Release/net10.0/Autonogrammer.SessionRuns.Tests.dll
+  Autonogrammer.Sessions.Postgres.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Sessions.Postgres.Tests/bin/Release/net10.0/Autonogrammer.Sessions.Postgres.Tests.dll
+  Autonogrammer.Sandbox.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Sandbox.Tests/bin/Release/net10.0/Autonogrammer.Sandbox.Tests.dll
+  Autonogrammer.Web -> /tmp/ag-gate-8d01a160/apps/Autonogrammer.Web/bin/Release/net10.0/Autonogrammer.Web.dll
+  Autonogrammer.Web (Blazor output) -> /tmp/ag-gate-8d01a160/apps/Autonogrammer.Web/bin/Release/net10.0/wwwroot
+  Autonogrammer.Web.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Web.Tests/bin/Release/net10.0/Autonogrammer.Web.Tests.dll
+  Autonogrammer.Native.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Native.Tests/bin/Release/net10.0/Autonogrammer.Native.Tests.dll
+  Autonogrammer.Api -> /tmp/ag-gate-8d01a160/services/Autonogrammer.Api/bin/Release/net10.0/Autonogrammer.Api.dll
+  Autonogrammer.UI.Tests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.UI.Tests/bin/Release/net10.0/Autonogrammer.UI.Tests.dll
+  
+  GenerateOpenApiDocuments:
+    dotnet "/root/.nuget/packages/microsoft.extensions.apidescription.server/10.0.13/build/../tools/dotnet-getdocument.dll" --assembly "/tmp/ag-gate-8d01a160/services/Autonogrammer.Api/bin/Release/net10.0/Autonogrammer.Api.dll" --file-list "obj/Autonogrammer.Api.OpenApiFiles.cache" --framework ".NETCoreApp,Version=v10.0" --output "/tmp/ag-gate-8d01a160/docs/api" --project "Autonogrammer.Api" --assets-file "/tmp/ag-gate-8d01a160/services/Autonogrammer.Api/obj/project.assets.json" --platform "AnyCPU" --file-name openapi --openapi-version OpenApi3_1
+  warn: Autonogrammer.Api[114]
+        Process inspection is not restricted because Hosting:RestrictProcessInspection is false. A process of the same user, including the engine's tools, can read this API's environment through /proc.
+  info: Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager[62]
+        User profile is available. Using '/root/.aspnet/DataProtection-Keys' as key repository; keys will not be encrypted at rest.
+  warn: Autonogrammer.Api.Accounts.AccountsModule.SignupHint[3090]
+        Magic link is off and the sign-up email has no code; first-time users follow the link-then-code path.
+  info: Autonogrammer.Api.Hosting.StartupGateHostedService[1]
+        Startup gate opened: the session store is reachable.
+  Generating document named 'v1'.
+  Using discovered `GenerateAsync` overload with version parameter.
+  info: Microsoft.AspNetCore.Mvc.Infrastructure.DefaultActionDescriptorCollectionProvider[1]
+        No action descriptors found. This may indicate an incorrectly configured application or missing application parts. To learn more, visit https://aka.ms/aspnet/mvc/app-parts
+  Writing document named 'v1' to '/tmp/ag-gate-8d01a160/docs/api/openapi.json'.
+  Autonogrammer.ArchitectureTests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.ArchitectureTests/bin/Release/net10.0/Autonogrammer.ArchitectureTests.dll
+  Autonogrammer.Api.IntegrationTests -> /tmp/ag-gate-8d01a160/tests/Autonogrammer.Api.IntegrationTests/bin/Release/net10.0/Autonogrammer.Api.IntegrationTests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:01:55.13
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ContractTests/bin/Release/net10.0/Autonogrammer.Harness.ContractTests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.AgentWorker.Tests/bin/Release/net10.0/Autonogrammer.AgentWorker.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.X11.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.X11.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Workflows.Tests/bin/Release/net10.0/Autonogrammer.Workflows.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Accounts.Desktop.Tests/bin/Release/net10.0/Autonogrammer.Accounts.Desktop.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.Windows.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.Windows.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Accounts.Tests/bin/Release/net10.0/Autonogrammer.Accounts.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.X11.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.X11.Tests.dll (net10.0|x64) passed (670ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Workflows.Tests/bin/Release/net10.0/Autonogrammer.Workflows.Tests.dll (net10.0|x64) passed (720ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.Windows.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.Windows.Tests.dll (net10.0|x64) passed (770ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ContractTests/bin/Release/net10.0/Autonogrammer.Harness.ContractTests.dll (net10.0|x64) passed (989ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Automations.Tests/bin/Release/net10.0/Autonogrammer.Harness.Automations.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.BrowserUse.Tests/bin/Release/net10.0/Autonogrammer.Harness.BrowserUse.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Completion.Tests/bin/Release/net10.0/Autonogrammer.Harness.Completion.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.Tests.dll (net10.0|x64) passed (1s 415ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.MacOS.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.MacOS.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Accounts.Desktop.Tests/bin/Release/net10.0/Autonogrammer.Accounts.Desktop.Tests.dll (net10.0|x64) passed (1s 870ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Resilience.Tests/bin/Release/net10.0/Autonogrammer.Resilience.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Accounts.Tests/bin/Release/net10.0/Autonogrammer.Accounts.Tests.dll (net10.0|x64) passed (2s 534ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Sandbox.Tests/bin/Release/net10.0/Autonogrammer.Sandbox.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Completion.Tests/bin/Release/net10.0/Autonogrammer.Harness.Completion.Tests.dll (net10.0|x64) passed (1s 313ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.SessionRuns.Tests/bin/Release/net10.0/Autonogrammer.SessionRuns.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.BrowserUse.Tests/bin/Release/net10.0/Autonogrammer.Harness.BrowserUse.Tests.dll (net10.0|x64) passed (1s 824ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.MacOS.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.MacOS.Tests.dll (net10.0|x64) passed (1s 324ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Resilience.Tests/bin/Release/net10.0/Autonogrammer.Resilience.Tests.dll (net10.0|x64) passed (1s 297ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Herdr.Tests/bin/Release/net10.0/Autonogrammer.Harness.Herdr.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Api.IntegrationTests/bin/Release/net10.0/Autonogrammer.Api.IntegrationTests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.ArchitectureTests/bin/Release/net10.0/Autonogrammer.ArchitectureTests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.InMemory.Tests/bin/Release/net10.0/Autonogrammer.Harness.InMemory.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.SessionRuns.Tests/bin/Release/net10.0/Autonogrammer.SessionRuns.Tests.dll (net10.0|x64) passed (1s 415ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Automations.Tests/bin/Release/net10.0/Autonogrammer.Harness.Automations.Tests.dll (net10.0|x64) passed (3s 314ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Isolation.Tests/bin/Release/net10.0/Autonogrammer.Harness.Isolation.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.InMemory.Tests/bin/Release/net10.0/Autonogrammer.Harness.InMemory.Tests.dll (net10.0|x64) passed (1s 393ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Sessions.Postgres.Tests/bin/Release/net10.0/Autonogrammer.Sessions.Postgres.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Herdr.Tests/bin/Release/net10.0/Autonogrammer.Harness.Herdr.Tests.dll (net10.0|x64) passed (2s 126ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Sessions.Tests/bin/Release/net10.0/Autonogrammer.Sessions.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.UI.Tests/bin/Release/net10.0/Autonogrammer.UI.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Isolation.Tests/bin/Release/net10.0/Autonogrammer.Harness.Isolation.Tests.dll (net10.0|x64) passed (1s 530ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Web.Tests/bin/Release/net10.0/Autonogrammer.Web.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Sessions.Tests/bin/Release/net10.0/Autonogrammer.Sessions.Tests.dll (net10.0|x64) passed (2s 420ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Contracts.Tests/bin/Release/net10.0/Autonogrammer.Contracts.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.AgentWorker.Tests/bin/Release/net10.0/Autonogrammer.AgentWorker.Tests.dll (net10.0|x64) passed (10s 451ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Coordination.Tests/bin/Release/net10.0/Autonogrammer.Coordination.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Contracts.Tests/bin/Release/net10.0/Autonogrammer.Contracts.Tests.dll (net10.0|x64) passed (2s 577ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Mcp.Tests/bin/Release/net10.0/Autonogrammer.Harness.Mcp.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.UI.Tests/bin/Release/net10.0/Autonogrammer.UI.Tests.dll (net10.0|x64) passed (12s 602ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.McpGateway.Tests/bin/Release/net10.0/Autonogrammer.Harness.McpGateway.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Coordination.Tests/bin/Release/net10.0/Autonogrammer.Coordination.Tests.dll (net10.0|x64) passed (10s 399ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Notifications.Tests/bin/Release/net10.0/Autonogrammer.Harness.Notifications.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Sandbox.Tests/bin/Release/net10.0/Autonogrammer.Sandbox.Tests.dll (net10.0|x64) passed (22s 478ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Notifications.Tests/bin/Release/net10.0/Autonogrammer.Harness.Notifications.Tests.dll (net10.0|x64) passed (2s 599ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.OmpConfig.Tests/bin/Release/net10.0/Autonogrammer.Harness.OmpConfig.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Artifacts.Stores.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Artifacts.Stores.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Mcp.Tests/bin/Release/net10.0/Autonogrammer.Harness.Mcp.Tests.dll (net10.0|x64) passed (16s 990ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Artifacts.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Artifacts.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Artifacts.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Artifacts.Tests.dll (net10.0|x64) passed (2s 534ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.OmpLauncher.Tests/bin/Release/net10.0/Autonogrammer.Harness.OmpLauncher.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Artifacts.Stores.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Artifacts.Stores.Tests.dll (net10.0|x64) passed (7s 230ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.PluginBundles.Tests/bin/Release/net10.0/Autonogrammer.Harness.PluginBundles.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.PluginBundles.Tests/bin/Release/net10.0/Autonogrammer.Harness.PluginBundles.Tests.dll (net10.0|x64) passed (1s 495ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Plugins.Tests/bin/Release/net10.0/Autonogrammer.Harness.Plugins.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.OmpLauncher.Tests/bin/Release/net10.0/Autonogrammer.Harness.OmpLauncher.Tests.dll (net10.0|x64) passed (6s 969ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Memory.Postgres.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Memory.Postgres.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.OmpConfig.Tests/bin/Release/net10.0/Autonogrammer.Harness.OmpConfig.Tests.dll (net10.0|x64) passed (15s 202ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Memory.Postgres.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Memory.Postgres.Tests.dll (net10.0|x64) passed (832ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Memory.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Memory.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Memory.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Memory.Tests.dll (net10.0|x64) passed (1s 616ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Dispatch.Client.Tests/bin/Release/net10.0/Autonogrammer.Dispatch.Client.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Plugins.Tests/bin/Release/net10.0/Autonogrammer.Harness.Plugins.Tests.dll (net10.0|x64) passed (7s 558ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Secrets.Tests/bin/Release/net10.0/Autonogrammer.Harness.Secrets.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Tests.dll (net10.0|x64) passed (2s 663ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Dispatch.Client.Tests/bin/Release/net10.0/Autonogrammer.Dispatch.Client.Tests.dll (net10.0|x64) passed (776ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Terminal.Tests/bin/Release/net10.0/Autonogrammer.Harness.Terminal.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Workspace.Tests/bin/Release/net10.0/Autonogrammer.Harness.Workspace.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Secrets.Tests/bin/Release/net10.0/Autonogrammer.Harness.Secrets.Tests.dll (net10.0|x64) passed (1s 377ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Worktrees.Tests/bin/Release/net10.0/Autonogrammer.Harness.Worktrees.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Terminal.Tests/bin/Release/net10.0/Autonogrammer.Harness.Terminal.Tests.dll (net10.0|x64) passed (2s 268ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Dispatch.Desktop.Tests/bin/Release/net10.0/Autonogrammer.Dispatch.Desktop.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Workspace.Tests/bin/Release/net10.0/Autonogrammer.Harness.Workspace.Tests.dll (net10.0|x64) passed (4s 728ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.EngineHost.Tests/bin/Release/net10.0/Autonogrammer.EngineHost.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.McpGateway.Tests/bin/Release/net10.0/Autonogrammer.Harness.McpGateway.Tests.dll (net10.0|x64) passed (32s 402ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.EngineHost.Tests/bin/Release/net10.0/Autonogrammer.EngineHost.Tests.dll (net10.0|x64) passed (1s 832ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Worktrees.Tests/bin/Release/net10.0/Autonogrammer.Harness.Worktrees.Tests.dll (net10.0|x64) passed (6s 265ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Remote.Tests/bin/Release/net10.0/Autonogrammer.Harness.Remote.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Rpc.Tests/bin/Release/net10.0/Autonogrammer.Harness.Rpc.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Registry.Tests/bin/Release/net10.0/Autonogrammer.Harness.Registry.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Dispatch.Desktop.Tests/bin/Release/net10.0/Autonogrammer.Dispatch.Desktop.Tests.dll (net10.0|x64) passed (6s 188ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Registry.Tests/bin/Release/net10.0/Autonogrammer.Harness.Registry.Tests.dll (net10.0|x64) passed (1s 970ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Secrets.Os.Tests/bin/Release/net10.0/Autonogrammer.Harness.Secrets.Os.Tests.dll (net10.0|x64)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Abstractions.Tests/bin/Release/net10.0/Autonogrammer.Harness.Abstractions.Tests.dll (net10.0|x64)
+skipped Autonogrammer.Harness.Remote.Tests.RemotePreflightTests.AReadOnlyDirectoryIsReported
+  A privileged user can write to a read-only directory.
+  from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Remote.Tests/bin/Release/net10.0/Autonogrammer.Harness.Remote.Tests.dll (net10.0|x64)
+skipped Autonogrammer.Harness.Abstractions.Tests.UserDataDirectoryTests.ALegacyDirectoryWithRevokedAccessIsLeftAloneWithAWarning
+  Revoked access is only observable for an unprivileged process on a Unix file system.
+  from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Abstractions.Tests/bin/Release/net10.0/Autonogrammer.Harness.Abstractions.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Abstractions.Tests/bin/Release/net10.0/Autonogrammer.Harness.Abstractions.Tests.dll (net10.0|x64) passed (1s 856ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Acp.Tests/bin/Release/net10.0/Autonogrammer.Harness.Acp.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Secrets.Os.Tests/bin/Release/net10.0/Autonogrammer.Harness.Secrets.Os.Tests.dll (net10.0|x64) passed (3s 020ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Agent.Tests/bin/Release/net10.0/Autonogrammer.Harness.Agent.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Agent.Tests/bin/Release/net10.0/Autonogrammer.Harness.Agent.Tests.dll (net10.0|x64) passed (4s 627ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.AgentLoop.Tests/bin/Release/net10.0/Autonogrammer.Harness.AgentLoop.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Rpc.Tests/bin/Release/net10.0/Autonogrammer.Harness.Rpc.Tests.dll (net10.0|x64) passed (11s 810ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Native.Tests/bin/Release/net10.0/Autonogrammer.Native.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Acp.Tests/bin/Release/net10.0/Autonogrammer.Harness.Acp.Tests.dll (net10.0|x64) passed (10s 401ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Parser.Tests/bin/Release/net10.0/Autonogrammer.Parser.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Parser.Tests/bin/Release/net10.0/Autonogrammer.Parser.Tests.dll (net10.0|x64) passed (1s 271ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Presentation.Tests/bin/Release/net10.0/Autonogrammer.Presentation.Tests.dll (net10.0|x64)
+skipped Autonogrammer.Harness.Remote.Tests.RemoteConventionFileSourceTests.AnUnreadableFileIsADiagnostic
+  A privileged user can read any file, so a file cannot be made unreadable.
+  from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Remote.Tests/bin/Release/net10.0/Autonogrammer.Harness.Remote.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Remote.Tests/bin/Release/net10.0/Autonogrammer.Harness.Remote.Tests.dll (net10.0|x64) passed (19s 266ms)
+Running tests from /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Providers.Tests/bin/Release/net10.0/Autonogrammer.Harness.Providers.Tests.dll (net10.0|x64)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.AgentLoop.Tests/bin/Release/net10.0/Autonogrammer.Harness.AgentLoop.Tests.dll (net10.0|x64) passed (8s 692ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Providers.Tests/bin/Release/net10.0/Autonogrammer.Harness.Providers.Tests.dll (net10.0|x64) passed (2s 530ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Presentation.Tests/bin/Release/net10.0/Autonogrammer.Presentation.Tests.dll (net10.0|x64) passed (6s 699ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Web.Tests/bin/Release/net10.0/Autonogrammer.Web.Tests.dll (net10.0|x64) passed (1m 33s 714ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Sessions.Postgres.Tests/bin/Release/net10.0/Autonogrammer.Sessions.Postgres.Tests.dll (net10.0|x64) passed (1m 47s 877ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.ArchitectureTests/bin/Release/net10.0/Autonogrammer.ArchitectureTests.dll (net10.0|x64) passed (2m 17s 784ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Native.Tests/bin/Release/net10.0/Autonogrammer.Native.Tests.dll (net10.0|x64) passed (2m 48s 384ms)
+/tmp/ag-gate-8d01a160/tests/Autonogrammer.Api.IntegrationTests/bin/Release/net10.0/Autonogrammer.Api.IntegrationTests.dll (net10.0|x64) passed (5m 12s 173ms)
+
+Test run summary: Passed!
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.SessionRuns.Tests/bin/Release/net10.0/Autonogrammer.SessionRuns.Tests.dll (net10.0|x64) passed (1s 415ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.EngineHost.Tests/bin/Release/net10.0/Autonogrammer.EngineHost.Tests.dll (net10.0|x64) passed (1s 832ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Memory.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Memory.Tests.dll (net10.0|x64) passed (1s 616ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Providers.Tests/bin/Release/net10.0/Autonogrammer.Harness.Providers.Tests.dll (net10.0|x64) passed (2s 530ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ContractTests/bin/Release/net10.0/Autonogrammer.Harness.ContractTests.dll (net10.0|x64) passed (989ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Isolation.Tests/bin/Release/net10.0/Autonogrammer.Harness.Isolation.Tests.dll (net10.0|x64) passed (1s 530ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Resilience.Tests/bin/Release/net10.0/Autonogrammer.Resilience.Tests.dll (net10.0|x64) passed (1s 297ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.UI.Tests/bin/Release/net10.0/Autonogrammer.UI.Tests.dll (net10.0|x64) passed (12s 602ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Mcp.Tests/bin/Release/net10.0/Autonogrammer.Harness.Mcp.Tests.dll (net10.0|x64) passed (16s 990ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Worktrees.Tests/bin/Release/net10.0/Autonogrammer.Harness.Worktrees.Tests.dll (net10.0|x64) passed (6s 265ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Secrets.Tests/bin/Release/net10.0/Autonogrammer.Harness.Secrets.Tests.dll (net10.0|x64) passed (1s 377ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Completion.Tests/bin/Release/net10.0/Autonogrammer.Harness.Completion.Tests.dll (net10.0|x64) passed (1s 313ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.OmpConfig.Tests/bin/Release/net10.0/Autonogrammer.Harness.OmpConfig.Tests.dll (net10.0|x64) passed (15s 202ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.BrowserUse.Tests/bin/Release/net10.0/Autonogrammer.Harness.BrowserUse.Tests.dll (net10.0|x64) passed (1s 824ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Sessions.Tests/bin/Release/net10.0/Autonogrammer.Sessions.Tests.dll (net10.0|x64) passed (2s 420ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Native.Tests/bin/Release/net10.0/Autonogrammer.Native.Tests.dll (net10.0|x64) passed (2m 48s 384ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.X11.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.X11.Tests.dll (net10.0|x64) passed (670ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.AgentWorker.Tests/bin/Release/net10.0/Autonogrammer.AgentWorker.Tests.dll (net10.0|x64) passed (10s 451ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Registry.Tests/bin/Release/net10.0/Autonogrammer.Harness.Registry.Tests.dll (net10.0|x64) passed (1s 970ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Terminal.Tests/bin/Release/net10.0/Autonogrammer.Harness.Terminal.Tests.dll (net10.0|x64) passed (2s 268ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Agent.Tests/bin/Release/net10.0/Autonogrammer.Harness.Agent.Tests.dll (net10.0|x64) passed (4s 627ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.AgentLoop.Tests/bin/Release/net10.0/Autonogrammer.Harness.AgentLoop.Tests.dll (net10.0|x64) passed (8s 692ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Coordination.Tests/bin/Release/net10.0/Autonogrammer.Coordination.Tests.dll (net10.0|x64) passed (10s 399ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Artifacts.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Artifacts.Tests.dll (net10.0|x64) passed (2s 534ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.OmpLauncher.Tests/bin/Release/net10.0/Autonogrammer.Harness.OmpLauncher.Tests.dll (net10.0|x64) passed (6s 969ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Automations.Tests/bin/Release/net10.0/Autonogrammer.Harness.Automations.Tests.dll (net10.0|x64) passed (3s 314ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Acp.Tests/bin/Release/net10.0/Autonogrammer.Harness.Acp.Tests.dll (net10.0|x64) passed (10s 401ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Artifacts.Stores.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Artifacts.Stores.Tests.dll (net10.0|x64) passed (7s 230ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Accounts.Desktop.Tests/bin/Release/net10.0/Autonogrammer.Accounts.Desktop.Tests.dll (net10.0|x64) passed (1s 870ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Dispatch.Client.Tests/bin/Release/net10.0/Autonogrammer.Dispatch.Client.Tests.dll (net10.0|x64) passed (776ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Secrets.Os.Tests/bin/Release/net10.0/Autonogrammer.Harness.Secrets.Os.Tests.dll (net10.0|x64) passed (3s 020ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Memory.Postgres.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Memory.Postgres.Tests.dll (net10.0|x64) passed (832ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Workspace.Tests/bin/Release/net10.0/Autonogrammer.Harness.Workspace.Tests.dll (net10.0|x64) passed (4s 728ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.Windows.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.Windows.Tests.dll (net10.0|x64) passed (770ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Contracts.Tests/bin/Release/net10.0/Autonogrammer.Contracts.Tests.dll (net10.0|x64) passed (2s 577ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Accounts.Tests/bin/Release/net10.0/Autonogrammer.Accounts.Tests.dll (net10.0|x64) passed (2s 534ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Abstractions.Tests/bin/Release/net10.0/Autonogrammer.Harness.Abstractions.Tests.dll (net10.0|x64) passed (1s 856ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.ArchitectureTests/bin/Release/net10.0/Autonogrammer.ArchitectureTests.dll (net10.0|x64) passed (2m 17s 784ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.McpGateway.Tests/bin/Release/net10.0/Autonogrammer.Harness.McpGateway.Tests.dll (net10.0|x64) passed (32s 402ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Api.IntegrationTests/bin/Release/net10.0/Autonogrammer.Api.IntegrationTests.dll (net10.0|x64) passed (5m 12s 173ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Web.Tests/bin/Release/net10.0/Autonogrammer.Web.Tests.dll (net10.0|x64) passed (1m 33s 714ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Remote.Tests/bin/Release/net10.0/Autonogrammer.Harness.Remote.Tests.dll (net10.0|x64) passed (19s 266ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.MacOS.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.MacOS.Tests.dll (net10.0|x64) passed (1s 324ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Cowork.Tests/bin/Release/net10.0/Autonogrammer.Cowork.Tests.dll (net10.0|x64) passed (2s 663ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.InMemory.Tests/bin/Release/net10.0/Autonogrammer.Harness.InMemory.Tests.dll (net10.0|x64) passed (1s 393ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Notifications.Tests/bin/Release/net10.0/Autonogrammer.Harness.Notifications.Tests.dll (net10.0|x64) passed (2s 599ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.PluginBundles.Tests/bin/Release/net10.0/Autonogrammer.Harness.PluginBundles.Tests.dll (net10.0|x64) passed (1s 495ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Parser.Tests/bin/Release/net10.0/Autonogrammer.Parser.Tests.dll (net10.0|x64) passed (1s 271ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Rpc.Tests/bin/Release/net10.0/Autonogrammer.Harness.Rpc.Tests.dll (net10.0|x64) passed (11s 810ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Presentation.Tests/bin/Release/net10.0/Autonogrammer.Presentation.Tests.dll (net10.0|x64) passed (6s 699ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Workflows.Tests/bin/Release/net10.0/Autonogrammer.Workflows.Tests.dll (net10.0|x64) passed (720ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Dispatch.Desktop.Tests/bin/Release/net10.0/Autonogrammer.Dispatch.Desktop.Tests.dll (net10.0|x64) passed (6s 188ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Sandbox.Tests/bin/Release/net10.0/Autonogrammer.Sandbox.Tests.dll (net10.0|x64) passed (22s 478ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Sessions.Postgres.Tests/bin/Release/net10.0/Autonogrammer.Sessions.Postgres.Tests.dll (net10.0|x64) passed (1m 47s 877ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Herdr.Tests/bin/Release/net10.0/Autonogrammer.Harness.Herdr.Tests.dll (net10.0|x64) passed (2s 126ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.ComputerUse.Tests/bin/Release/net10.0/Autonogrammer.Harness.ComputerUse.Tests.dll (net10.0|x64) passed (1s 415ms)
+  /tmp/ag-gate-8d01a160/tests/Autonogrammer.Harness.Plugins.Tests/bin/Release/net10.0/Autonogrammer.Harness.Plugins.Tests.dll (net10.0|x64) passed (7s 558ms)
+
+  total: 14501
+  failed: 0
+  succeeded: 14498
+  skipped: 3
+  duration: 5m 16s 042ms
+commit=8d01a160 date=2026-11-05 chrome=/usr/bin/google-chrome targets=api demo artifact
+render-web-config: Api:BaseUrl set to http://127.0.0.1:5187 in /tmp/tmp.UHrJVpzLd9/web/wwwroot/appsettings.json
+refresh-web-manifest: manifest already matches, nothing changed
+refresh-web-manifest: 127 assets match the manifest
+check-no-demo: /tmp/tmp.UHrJVpzLd9/web/wwwroot carries no Demo code
+axe.min.js: OK
+api smoke exit=1 output=/tmp/tmp.0MJPC6sqdt/web-smoke-8d01a160-2026-11-05.json
+size budget exit=0 output=/tmp/tmp.0MJPC6sqdt/size-budget-8d01a160-2026-11-05.json
+demo smoke exit=0 output=/tmp/tmp.0MJPC6sqdt/web-smoke-demo-8d01a160-2026-11-05.json
+artifact smoke exit=0 output=/tmp/tmp.0MJPC6sqdt/web-smoke-artifact-8d01a160-2026-11-05.json
+web smoke evidence kept at /tmp/tmp.0MJPC6sqdt
