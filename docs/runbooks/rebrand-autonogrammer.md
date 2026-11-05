@@ -56,12 +56,12 @@ Before apply:
 Acceptance probes after apply (all cheap):
 
 ```sh
-git grep -niP '(?<!c)ompos' -- . ':!docs/runbooks/evidence' ':!.planning/milestones' ':!THIRD-PARTY-NOTICES.md' ':!docs/api/openapi.json' ':!**/packages.lock.json' ':!scripts/rebrand' ':!.gitleaksignore' ':!CHANGELOG.md' ':!**/LegacyBrandNames.cs' ':!tests/*/TestData/frames' ':!docs/runbooks/rebrand-autonogrammer.md' ':!docs/plans/v0.16.0-research/01-rename-inventory.md'
+git grep -niP '(?<!c)ompos' -- . ':!docs/runbooks/evidence' ':!.planning/milestones' ':!THIRD-PARTY-NOTICES.md' ':!docs/api/openapi.json' ':!**/packages.lock.json' ':!scripts/rebrand' ':!.gitleaksignore' ':!CHANGELOG.md' ':!**/LegacyBrandNames.cs' ':!tests/*/TestData/frames/**' ':!docs/runbooks/rebrand-autonogrammer.md' ':!docs/plans/v0.16.0-research/01-rename-inventory.md'
 git ls-files | grep -i ompos          # only evidence and milestone paths remain
 git grep -c 'omp acp'                 # unchanged outside excluded zones
 ```
 
-The first probe uses `(?<!c)ompos`, so the compose family (`compose`, `composition`, `composer`) does not match. At 72f90911 the bare `ompos` pattern matched 4,944 lines in 944 files, 4,462 of them compose-family; the lookbehind pattern matches 491 lines in 149 files. Those hits are protected URLs and hostnames (listed by the dry-run report), owner-kept documents, post-rename planning records and historical notes. A hit in product code is accepted only when it is one of those protected URLs.
+The first probe uses `(?<!c)ompos`, so the compose family (`compose`, `composition`, `composer`) does not match. The bare `ompos` pattern matches 4,936 lines in 940 files, most of them compose-family; the lookbehind probe matches 489 lines in 147 files at the current tree. Those hits are protected URLs and hostnames (listed by the dry-run report), owner-kept documents, post-rename planning records and historical notes. A hit in product code is accepted only when it is one of those protected URLs.
 
 ## 3. Re-running on a newer base
 

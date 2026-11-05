@@ -5,7 +5,7 @@ bootstrap: OK (SDK 10.0.402, locked restore, Release build, tests, format, web s
 build: 0 warnings, 0 errors (Release, warnings as errors)
 tests: total 14502, failed 0, succeeded 14499, skipped 3 (duration 4m 10s)
 api smoke exit=0; size budget exit=0; demo smoke exit=0; artifact smoke exit=0
-api half: routes:inapp 9 (every in-app step ran); demo half: routes:inapp 7
-route findings: none in either half; no sequence-retried and no boot-title-after-step warning
+api half: routes:inapp 9 counts the second pass only; the first pass restarted at the Kanban tab. Demo half: routes:inapp 7 in one pass.
+route findings: api half 2 warnings (routes errors 0, warnings 2): boot-title-after-step at the Kanban tab (the title still read the boot title after the step's waits; routes step 154 s), then sequence-retried; the restart passed. Demo half: none. The gate passed because of the restart; the race is not fixed.
 api half direct loads: skipped by design (covered by the demo half)
 gate wall time: 1250 s
