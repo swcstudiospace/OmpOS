@@ -56,12 +56,12 @@ Before apply:
 Acceptance probes after apply (all cheap):
 
 ```sh
-git grep -niE 'ompos' -- . ':!docs/runbooks/evidence' ':!.planning/milestones' ':!THIRD-PARTY-NOTICES.md' ':!docs/api/openapi.json' ':!**/packages.lock.json' ':!scripts/rebrand' ':!.gitleaksignore' ':!CHANGELOG.md' ':!**/LegacyBrandNames.cs' ':!tests/*/TestData/frames' ':!docs/runbooks/rebrand-autonogrammer.md' ':!docs/plans/v0.16.0-research/01-rename-inventory.md'
+git grep -niP '(?<!c)ompos' -- . ':!docs/runbooks/evidence' ':!.planning/milestones' ':!THIRD-PARTY-NOTICES.md' ':!docs/api/openapi.json' ':!**/packages.lock.json' ':!scripts/rebrand' ':!.gitleaksignore' ':!CHANGELOG.md' ':!**/LegacyBrandNames.cs' ':!tests/*/TestData/frames' ':!docs/runbooks/rebrand-autonogrammer.md' ':!docs/plans/v0.16.0-research/01-rename-inventory.md'
 git ls-files | grep -i ompos          # only evidence and milestone paths remain
 git grep -c 'omp acp'                 # unchanged outside excluded zones
 ```
 
-The first probe is a raw search, not a filter. It also matches the post-rename planning records (`.planning/phases/66-*` to `77-*`), which name the old literals on purpose, so its output is not only protected URLs. The dry-run report lists every protected URL, and each occurrence is an owner action.
+The first probe uses `(?<!c)ompos`, so the compose family (`compose`, `composition`, `composer`) does not match. At 72f90911 the bare `ompos` pattern matched 4,944 lines in 944 files, 4,462 of them compose-family; the lookbehind pattern matches 491 lines in 149 files. Those hits are protected URLs and hostnames (listed by the dry-run report), owner-kept documents, post-rename planning records and historical notes. A hit in product code is accepted only when it is one of those protected URLs.
 
 ## 3. Re-running on a newer base
 

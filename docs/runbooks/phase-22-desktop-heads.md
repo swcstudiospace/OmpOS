@@ -36,6 +36,7 @@ Phase 22 has no plan files yet (`.planning/ROADMAP.md`: Plans TBD). This runbook
 - Linux host recorded in the spike README: Ubuntu 24.04.4 LTS, kernel 6.8.0-147-generic, x64. Ubuntu 24.x is Avalonia Tier 2, not Tier 1.
 - `.github/workflows/ci.yml`: the `build-test` job runs on `ubuntu-latest`, and its image version is not pinned in the repo. It builds `Autonogrammer.Linux.slnf`, which includes `Autonogrammer.Native`. The `shells` job runs on `macos-15`, not macOS 26, and builds only `apps/Autonogrammer.App` (MAUI, Android target). No CI step builds `Autonogrammer.Native` on macOS. No Windows job exists.
 - The matrix in `docs/plans/ade-harness-plan.md` states that the hosted `windows-2025` image is Windows Server 2025 and does not guarantee Windows 11 24H2.
+- Update 2026-11-05 (runner move, commits 72673e14 and 90acf50d): `build-test`, `image-scan`, `android` and the Linux desktop entry run on `ubuntu-24.04`; the desktop matrix runs on `windows-2025` and `macos-26` (arm64). Every desktop entry builds `apps/Autonogrammer.Native` with warnings as errors, so the head is built on Windows and macOS in CI. No `shells` job exists in `ci.yml` any more. These labels have not yet run on GitHub: the first run after the ship hold lifts confirms them.
 
 ## Platform matrix (XP-02, XP-03, XP-04, XP-11)
 
