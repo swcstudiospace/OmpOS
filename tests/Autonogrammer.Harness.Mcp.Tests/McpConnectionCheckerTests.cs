@@ -78,6 +78,41 @@ public sealed class McpConnectionCheckerTests : IDisposable
     }
 
     [Fact]
+    public async Task CancelledCallerIsRefusedEvenWhenTheSpecFailsBeforeConnecting()
+    {
+        var blank = new McpServerSpec
+        {
+            Name = "blank",
+            Transport = McpTransportKind.Stdio,
+            Scope = McpScope.User,
+            Format = McpConfigFormat.Autonogrammer,
+            Origin = "~/.autonogrammer/mcp.json",
+            Priority = 1,
+            Command = " ",
+            Args = [],
+            Env = new Dictionary<string, string>(StringComparer.Ordinal),
+            ConsentIdentity = "consent",
+        };
+        var noUrl = new McpServerSpec
+        {
+            Name = "nourl",
+            Transport = McpTransportKind.Http,
+            Scope = McpScope.User,
+            Format = McpConfigFormat.Autonogrammer,
+            Origin = "~/.autonogrammer/mcp.json",
+            Priority = 1,
+            Url = null,
+            ConsentIdentity = "consent",
+        };
+        using var cancelled = new CancellationTokenSource();
+        await cancelled.CancelAsync().ConfigureAwait(true);
+        var checker = new McpConnectionChecker();
+
+        await Should.ThrowAsync<OperationCanceledException>(() => checker.CheckAsync(blank, cancelled.Token)).ConfigureAwait(true);
+        await Should.ThrowAsync<OperationCanceledException>(() => checker.CheckAsync(noUrl, cancelled.Token)).ConfigureAwait(true);
+    }
+
+    [Fact]
     public void ConstructingTheCatalog_DoesNotCheck()
     {
         var fake = new FakeMcpConnectionChecker(_ => new McpConnectionResult(McpConnectionOutcome.Connected));
