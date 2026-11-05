@@ -48,6 +48,8 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 - GitHub-hosted restore uses a private SDK 10.0.402. The runner image's runtime 10.0.14 otherwise changes `Microsoft.NET.Sdk.WebAssembly.Pack` from 10.0.13 to 10.0.14 and locked restore fails.
 
 ### Fixed
+- Setup steps: a process tree the operating system refuses to stop after cancellation now reports a failed step (`could not stop '<exe>' after cancellation`) instead of a silent cancellation. The kill failure was previously dropped.
+- Native TextBox placeholder: the unused `PART_Watermark` style is removed. The placeholder already draws the TextSecondary token through the Fluent `TextControlPlaceholderForeground` keys, and a headless test now pins that rendered colour in both themes.
 
 - The API image build no longer fails while `deploy/omp-deps.lock.json` is still pending. `bun pm ls` exits when the install wrote no lockfile, and that happened before the pending check.
 - GitHub-hosted CI keeps roll-forward on inside the private SDK 10.0.402. Disabling it stopped the OpenAPI document tool, which targets runtime 10.0.0, from using the installed 10.0.13.
