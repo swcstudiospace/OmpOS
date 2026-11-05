@@ -173,7 +173,8 @@ async function runStep(page, report, step, history, position) {
     position = history.length - 1;
   }
   // The title is set by a component after the render; the announcer follows it; focus is moved after both.
-  await page.waitFor(`document.title !== ${JSON.stringify(before.title)}`, STEP_WAIT_MS);
+  // While a page title is unmounted the static boot title shows, so the wait must not accept it: a step that stays on the boot title times out and restarts the sequence.
+  await page.waitFor(`document.title !== ${JSON.stringify(before.title)} && document.title !== ${JSON.stringify(BOOT_TITLE)}`, STEP_WAIT_MS);
   await page.waitFor("(document.querySelector('[data-route-announcer]')?.textContent ?? '').trim() === document.title", STEP_WAIT_MS);
   const focusExpression = step.expectFocus.map((name) => (name === "trigger" ? `document.activeElement && document.activeElement.id === ${JSON.stringify(step.trigger ?? "")}` : FOCUS_CONDITIONS[name])).map((c) => `(${c})`).join(" || ");
   await page.waitFor(focusExpression, STEP_WAIT_MS);
