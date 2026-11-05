@@ -50,6 +50,7 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 ### Fixed
 - Setup steps: a process tree the operating system refuses to stop after cancellation now reports a failed step (`could not stop '<exe>' after cancellation`) instead of a silent cancellation. The kill failure was previously dropped.
 - Setup steps: a refusal that `Process.Kill(true)` reports as an `AggregateException` is reported as the same failed step. Its output drain now runs on the cancellation path too, which the aggregate previously skipped.
+- Setup steps: a cancelled step no longer waits without bound on its output pipes. A refused kill, or a child that kept the pipes open, now fails the step within 2 seconds instead of hanging. The normal exit path is unchanged.
 - Native TextBox placeholder: the unused `PART_Watermark` style is removed. The placeholder already draws the TextSecondary token through the Fluent `TextControlPlaceholderForeground` keys, and a headless test now pins that rendered colour in both themes.
 
 - The API image build no longer fails while `deploy/omp-deps.lock.json` is still pending. `bun pm ls` exits when the install wrote no lockfile, and that happened before the pending check.

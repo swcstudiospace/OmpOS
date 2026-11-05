@@ -33,7 +33,7 @@ Artifacts are PLAN, SUMMARY and VERIFICATION counts (P/S/V) in the phase directo
 | --- | --- | --- | --- | --- | --- |
 | 6 | Per-Sandbox Credential Issuance | none | EXTERNAL | LATE | A verified vendor revoke call (owner action) |
 | 12 | Hosted Deploy Config and Exposure Gate | none | EXTERNAL | LATE | OD-03 sign-in authority; Railway deploys paused |
-| 13 | Hosted Routed harness (title as in ROADMAP) | none (commit 3f18b99 only) | EXTERNAL | LATE | OD-03; Railway deploy for criterion 2 |
+| 13 | Hosted Routed harness (ROADMAP title names the engine) | none (commit 3f18b99 only) | EXTERNAL | LATE | OD-03; Railway deploy for criterion 2 |
 | 14 | Vercel Web Against Production Origin | none | EXTERNAL | LATE | Production origin unset (HO-07); OD-03 |
 | 22 | Desktop Heads | P0/S1/V0 | EXTERNAL | LATE | Windows runner (criterion 3); Mac channel signing (criteria 4 and 5) |
 | 23 | Web Head on Shared Presentation Layer | P1/S1/V0 | REPO-BUILDABLE | MID | Vercel static hosting step is owner-side |

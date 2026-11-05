@@ -61,7 +61,7 @@ git ls-files | grep -i ompos          # only evidence and milestone paths remain
 git grep -c 'omp acp'                 # unchanged outside excluded zones
 ```
 
-The first command lists only protected URLs until `--urls` is used.
+The first probe is a raw search, not a filter. It also matches the post-rename planning records (`.planning/phases/66-*` to `77-*`), which name the old literals on purpose, so its output is not only protected URLs. The dry-run report lists every protected URL, and each occurrence is an owner action.
 
 ## 3. Re-running on a newer base
 
