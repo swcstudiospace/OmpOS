@@ -18,9 +18,10 @@ namespace Autonogrammer.Native.Tests.Theme;
 /// ToggleButton (audit row 23), and the composer's stop square against its button (audit row 24).
 /// </summary>
 /// <remarks>
-/// The checks read what each control draws, not the XAML. The placeholder check replaces the Fluent placeholder keys
-/// with a sentinel colour, so a placeholder that draws TextSecondary can only do so through the TextBox style in
-/// <c>Themes/AutonogrammerControls.axaml</c>, whichever part the template names the watermark.
+/// The checks read what each control draws, not the XAML. The placeholder check reads the colour the Fluent
+/// <c>TextControlPlaceholderForeground</c> key draws. That key is aliased to <c>Autonogrammer.Color.TextSecondary</c>
+/// in <c>Themes/AutonogrammerTokens.axaml</c>, in both the light and the dark variant, so a placeholder that draws
+/// TextSecondary does so through that token alias.
 /// </remarks>
 public sealed class RenderedControlColourTests
 {
