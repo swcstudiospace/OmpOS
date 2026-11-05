@@ -128,7 +128,8 @@ async function runSequence(page, report, kind) {
   for (const step of inAppSteps(kind)) {
     const snap = await runStep(page, report, step, history, position);
     if (snap && snap.title.trim() === BOOT_TITLE) {
-      report.add({ check: "routes", id: "boot-title-after-step", severity: "warning", message: `${step.name}: the title read the boot title at ${snap.path}, so the in-app sequence restarts`, state: `in-app ${step.name}`, viewport: "inapp" });
+      const probe = await page.evalValue("JSON.stringify({ titleElements: document.head.querySelectorAll('title').length, kanbanRendered: !!document.querySelector('.autonogrammer-kanban'), mainHeading: !!document.querySelector('main h1') })");
+      report.add({ check: "routes", id: "boot-title-after-step", severity: "warning", message: `${step.name}: the title read the boot title at ${snap.path} (previous title "${snap.previousTitle}"; probe ${probe}), so the in-app sequence restarts`, state: `in-app ${step.name}`, viewport: "inapp" });
       return null;
     }
     if (!snap) continue;
