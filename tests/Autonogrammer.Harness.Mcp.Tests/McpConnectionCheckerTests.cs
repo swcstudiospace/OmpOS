@@ -166,6 +166,7 @@ public sealed class McpConnectionCheckerTests : IDisposable
     {
         private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
         private readonly CancellationTokenSource _stop = new();
+        private readonly System.Collections.Concurrent.ConcurrentBag<TcpClient> _accepted = new();
         private bool _disposed;
 
         public HangListener()
@@ -188,6 +189,10 @@ public sealed class McpConnectionCheckerTests : IDisposable
             _stop.Cancel();
             _listener.Stop();
             _listener.Dispose();
+            while (_accepted.TryTake(out var accepted))
+            {
+                accepted.Dispose();
+            }
             _stop.Dispose();
         }
 
@@ -197,7 +202,8 @@ public sealed class McpConnectionCheckerTests : IDisposable
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    _ = await _listener.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
+                    var accepted = await _listener.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
+                    _accepted.Add(accepted);
                 }
             }
             catch (Exception exception) when (exception is OperationCanceledException or ObjectDisposedException or SocketException)
