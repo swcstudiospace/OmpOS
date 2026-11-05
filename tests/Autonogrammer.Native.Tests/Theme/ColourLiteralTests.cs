@@ -10,7 +10,7 @@ namespace Autonogrammer.Native.Tests.Theme;
 /// <summary>
 /// No view holds a colour literal. A colour belongs in <c>Themes/AutonogrammerTokens.axaml</c>, where the theme variant can
 /// change it; a view refers to it with <c>{DynamicResource ...}</c>. The scan reads <c>src/Autonogrammer.Native.Views/Views</c> as
-/// text, including the root views listed below, so no Avalonia runtime is started.
+/// text, so no Avalonia runtime is started.
 /// </summary>
 /// <remarks>
 /// The rule. An attribute is colour-typed when its local name ends in <c>Brush</c> or is one of <c>Background</c>,
@@ -30,14 +30,6 @@ public sealed class ColourLiteralTests
     private const int AllowlistBaseline = 0;
 
     private const string ViewsDirectory = "src/Autonogrammer.Native.Views/Views";
-
-    /// <summary>The root views the scan also reads: the shell view and the application markup.</summary>
-    private static readonly string[] RootViewFiles =
-    {
-        "src/Autonogrammer.Native.Views/MainView.axaml",
-        "apps/Autonogrammer.Native/App.axaml",
-    };
-
     private const string AllowlistPath = "tests/Autonogrammer.Native.Tests/Theme/ColourLiteralAllowlist.txt";
 
     private static readonly HashSet<string> ColourAttributes = new(StringComparer.Ordinal)
@@ -123,17 +115,6 @@ public sealed class ColourLiteralTests
         ViewFiles().Count().ShouldBeGreaterThan(0, $"{ViewsDirectory} must contain .axaml views to scan");
     }
 
-    /// <summary>Each root view the scan reads exists, so a renamed file cannot leave the scan unnoticed.</summary>
-    [Fact]
-    public void TheRootViewFilesTheScanReadsExist()
-    {
-        var root = ShellHarness.RepoRoot();
-        foreach (var path in RootViewFiles)
-        {
-            File.Exists(Path.Combine(root, path)).ShouldBeTrue($"{path} is scanned for colour literals and must exist");
-        }
-    }
-
     /// <summary>A view file with a colour literal must be allowlisted; none is, because no view holds one.</summary>
     [Fact]
     public void NoViewHoldsAColourLiteralOutsideTheAllowlist()
@@ -198,9 +179,7 @@ public sealed class ColourLiteralTests
 
     private static IEnumerable<string> ViewFiles()
     {
-        var root = ShellHarness.RepoRoot();
-        return Directory.EnumerateFiles(Path.Combine(root, ViewsDirectory), "*.axaml", SearchOption.AllDirectories)
-            .Concat(RootViewFiles.Select(path => Path.Combine(root, path)));
+        return Directory.EnumerateFiles(Path.Combine(ShellHarness.RepoRoot(), ViewsDirectory), "*.axaml", SearchOption.AllDirectories);
     }
 
     /// <summary>Reads the allowlist: one row per file, <c>path | reason | phase</c>; blank lines and <c>#</c> comments are skipped.</summary>

@@ -1,3 +1,4 @@
+using Autonogrammer.Native.Tests.AgentPanel.Shell;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -23,7 +24,7 @@ namespace Autonogrammer.Native.Tests.Theme;
 /// </remarks>
 public sealed class RenderedControlColourTests
 {
-    /// <summary>The Fluent placeholder keys. The sentinel replaces them so the style alone decides the placeholder colour.</summary>
+    /// <summary>The WCAG floor for a non-text graphic against its background.</summary>
     private const double MinimumNonTextContrast = 3.0;
 
     /// <summary>The most Tab presses the toggle test allows, so a broken tab order fails instead of looping.</summary>
@@ -104,15 +105,19 @@ public sealed class RenderedControlColourTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>The composer's stop square is drawn in TextPrimary and keeps at least 3:1 against the button it sits on.</summary>
+    /// <summary>
+    /// The composer's stop square is drawn in TextPrimary and keeps at least 3:1 against the rendered background of the
+    /// stop button it sits on, once that background's transition has ended.
+    /// </summary>
     [Theory]
     [InlineData("Dark")]
     [InlineData("Light")]
     public async Task TheComposerStopSquareContrastsWithItsButtonInEachTheme(string variantName)
     {
         var variant = VariantOf(variantName);
+        var cancellationToken = TestContext.Current.CancellationToken;
         await using var session = TestAppBuilder.StartSession();
-        await session.Dispatch(() =>
+        await session.RunAsync(async () =>
         {
             var window = ShellHarness.Show();
             window.RequestedThemeVariant = variant;
@@ -123,12 +128,21 @@ public sealed class RenderedControlColourTests
             var fill = Colour(square.Fill);
             fill.ShouldBe(Role(variant, "TextPrimary"), $"{variantName}: the stop square is drawn in the TextPrimary token");
 
-            // Read the rest background from its token: ButtonBackground aliases SurfaceRaised (AutonogrammerTokens.axaml:41).
-            // The animated Background property still runs its 100 ms transition right after a theme switch.
-            var ratio = ContrastRatio(fill, Role(variant, "SurfaceRaised"));
-            ratio.ShouldBeGreaterThanOrEqualTo(MinimumNonTextContrast, $"{variantName}: the stop square is {ratio:0.00}:1 against its button");
+            // The button Background animates for 100 ms after a theme switch, so an immediate read measures a mid-transition
+            // colour. Wait, bounded by ShellWait's deadline and pumping the dispatcher, until the rendered brush reaches the
+            // rest colour, then measure that rendered brush. ButtonBackground aliases SurfaceRaised (AutonogrammerTokens.axaml:41).
+            var restBackground = Role(variant, "SurfaceRaised");
+            await ShellWait.UntilAsync(
+                window,
+                () => stop.Background is ISolidColorBrush brush && brush.Color == restBackground,
+                $"{variantName}: the stop button background to settle",
+                cancellationToken).ConfigureAwait(true);
+
+            var rendered = Colour(stop.Background);
+            var ratio = ContrastRatio(fill, rendered);
+            ratio.ShouldBeGreaterThanOrEqualTo(MinimumNonTextContrast, $"{variantName}: the stop square is {ratio:0.00}:1 against its rendered button background");
             window.Close();
-        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }, cancellationToken).ConfigureAwait(true);
     }
 
     private static ThemeVariant VariantOf(string name) =>
