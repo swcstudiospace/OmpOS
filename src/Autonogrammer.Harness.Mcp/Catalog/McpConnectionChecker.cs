@@ -68,7 +68,9 @@ public sealed class McpConnectionChecker : IMcpConnectionChecker
             return Failed(ConnectorCheckTimedOut);
         }
 
-        return await work.ConfigureAwait(false);
+        var result = await work.ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        return result;
     }
 
     private async Task<McpConnectionResult> RunAsync(McpServerSpec server, CancellationToken cancellationToken)
