@@ -44,11 +44,12 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 - Outside Development the engine process starts with an allow-listed environment instead of the API's whole environment; `Harness:Acp:Environment:Mode=Inherit` there needs `Harness:Acp:AllowInheritedEnvironment=true`.
 - `scripts/web-smoke/size-budget.json` is now measured on a real publish of the web head (2026-10-29: 12.4 MB raw, 4.8 MB gzip, 3.8 MB Brotli) with 10 percent headroom, instead of a provisional ceiling taken from the Avalonia spike; the budget check no longer reads a comment in a stylesheet as an import.
 - Breaking: outside Development the API stops at start when the non-dumpable setting (`Hosting:RestrictProcessInspection`, on by default) cannot be applied, instead of continuing; `Api:Cors:Origins` entries must be `scheme://host[:port]` and are checked at start.
-- CI runs on GitHub-hosted runners (`ubuntu-24.04`, `windows-2022`, `macos-14`) instead of the Omega self-hosted pool. The Linux job installs rootful podman and Chrome; desktop jobs publish the Avalonia head on Linux, Windows and macOS. Docker is still not used.
+- CI runs on GitHub-hosted runners (`ubuntu-24.04`, `windows-2025`, `macos-26`) instead of the Omega self-hosted pool. The Linux job installs rootful podman and Chrome; desktop jobs publish the Avalonia head on Linux, Windows and macOS. Docker is still not used. `macos-14` retired on GitHub Actions on 2026-11-02, and the desktop-release workflow moved to the same three labels.
 - GitHub-hosted restore uses a private SDK 10.0.402. The runner image's runtime 10.0.14 otherwise changes `Microsoft.NET.Sdk.WebAssembly.Pack` from 10.0.13 to 10.0.14 and locked restore fails.
 
 ### Fixed
 - Setup steps: a process tree the operating system refuses to stop after cancellation now reports a failed step (`could not stop '<exe>' after cancellation`) instead of a silent cancellation. The kill failure was previously dropped.
+- Setup steps: a refusal that `Process.Kill(true)` reports as an `AggregateException` is reported as the same failed step. Its output drain now runs on the cancellation path too, which the aggregate previously skipped.
 - Native TextBox placeholder: the unused `PART_Watermark` style is removed. The placeholder already draws the TextSecondary token through the Fluent `TextControlPlaceholderForeground` keys, and a headless test now pins that rendered colour in both themes.
 
 - The API image build no longer fails while `deploy/omp-deps.lock.json` is still pending. `bun pm ls` exits when the install wrote no lockfile, and that happened before the pending check.
