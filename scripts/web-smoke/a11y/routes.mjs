@@ -17,6 +17,11 @@ import { DEMO_SESSION, LOAD_TIMEOUT_MS, loadApp } from "./states.mjs";
 // a reload. Restarting one step would lose the history the later steps depend on, so Back and Forward would pass without being checked.
 const STEP_WAIT_MS = Math.max(30000, Math.round(LOAD_TIMEOUT_MS / 3));
 const BOOT_TITLE = "Autonogrammer";
+// The page head and route state read before and after each in-app step. HeadOutlet appends its title at head::after, after <base>; the static
+// title in index.html sits before <base>. Both give one title element, so the position is what tells them apart.
+const PAGE_STATE = "JSON.stringify((() => { const head = document.head; const kids = [...head.children]; const titles = [...head.querySelectorAll('title')]; const base = head.querySelector('base'); const first = titles[0] ?? null; return { title: document.title, titleElements: titles.length, titleIndex: first ? kids.indexOf(first) : -1, titleIsLastHeadChild: first ? kids[kids.length - 1] === first : null, titleBeforeBase: first && base ? (first.compareDocumentPosition(base) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0 : null, baseIndex: base ? kids.indexOf(base) : -1, headChildren: kids.length, kanbanRendered: !!document.querySelector('.autonogrammer-kanban') }; })())";
+// Page exceptions and console errors that CDP reports for the page; runStep reads the slice that arrived during its step.
+const pageErrors = [];
 
 /**
  * The finding for a sequence whose second attempt also landed on the boot shell, or null when the attempt produced entries.
@@ -101,6 +106,11 @@ function inAppSteps(kind) {
 /** In-app navigation with the keyboard (both bundles). */
 async function checkInAppNavigation(page, report, { baseUrl, kind }) {
   await page.setViewport(1440, 900);
+  pageErrors.length = 0;
+  page.on("Runtime.exceptionThrown", (params) => pageErrors.push(`exception: ${params.exceptionDetails?.exception?.description ?? params.exceptionDetails?.text ?? "?"}`.slice(0, 240)));
+  page.on("Runtime.consoleAPICalled", (params) => {
+    if (params.type === "error") pageErrors.push(`console.error: ${(params.args ?? []).map((a) => a.value ?? a.description ?? "").join(" ")}`.slice(0, 240));
+  });
   if (!(await loadApp(page, baseUrl, report, { group: "routes", viewport: "inapp" }))) return;
   let entries = await runSequence(page, report, kind);
   if (entries === null) {
@@ -128,8 +138,8 @@ async function runSequence(page, report, kind) {
   for (const step of inAppSteps(kind)) {
     const snap = await runStep(page, report, step, history, position);
     if (snap && snap.title.trim() === BOOT_TITLE) {
-      const probe = await page.evalValue("JSON.stringify({ titleElements: document.head.querySelectorAll('title').length, kanbanRendered: !!document.querySelector('.autonogrammer-kanban'), mainHeading: !!document.querySelector('main h1') })");
-      report.add({ check: "routes", id: "boot-title-after-step", severity: "warning", message: `${step.name}: the title read the boot title at ${snap.path} (previous title "${snap.previousTitle}"; probe ${probe}), so the in-app sequence restarts`, state: `in-app ${step.name}`, viewport: "inapp" });
+      const detail = JSON.stringify({ previousTitle: snap.previousTitle, before: snap.stateBefore, after: snap.stateAfter, pageErrors: snap.pageErrors });
+      report.add({ check: "routes", id: "boot-title-after-step", severity: "warning", message: `${step.name}: the title read the boot title at ${snap.path}, so the in-app sequence restarts; detail ${detail}`, state: `in-app ${step.name}`, viewport: "inapp" });
       return null;
     }
     if (!snap) continue;
@@ -143,6 +153,8 @@ async function runSequence(page, report, kind) {
 /** Runs one in-app step. Returns the page snapshot with the history position, or null when the step could not be acted on. */
 async function runStep(page, report, step, history, position) {
   const before = await page.lib("probeRouteState");
+  const errorMark = pageErrors.length;
+  const stateBefore = JSON.parse(await page.evalValue(PAGE_STATE));
   let expected = step.path;
   let acted;
   if (step.history) {
@@ -183,6 +195,9 @@ async function runStep(page, report, step, history, position) {
   snap.activeIsTrigger = step.trigger ? await page.evalValue(`!!document.activeElement && document.activeElement.id === ${JSON.stringify(step.trigger)}`) : false;
   snap.previousTitle = before.title;
   snap.position = position;
+  snap.stateBefore = stateBefore;
+  snap.stateAfter = JSON.parse(await page.evalValue(PAGE_STATE));
+  snap.pageErrors = pageErrors.slice(errorMark);
   return snap;
 }
 
