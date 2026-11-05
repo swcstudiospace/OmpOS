@@ -5,7 +5,7 @@ Partial and blocked. Phase 66 is not closed by this summary.
 - Pass: Task 4 (web smoke on private ports), Task 5 (desktop window title, routes A and B), Task 6 (owner-action list).
 - Task 1: restore, build, format and the repo gates pass. The pure test projects pass except `Autonogrammer.Cowork.Artifacts.Stores.Tests`, whose three Postgres tests need the test service. The plan does not list that project as service-backed.
 - Task 2: the tool tests and the fresh rebrand verify pass. The original-baseline keep-count check cannot pass as written (see decisions).
-- Task 3: blocked. Two foreign containers with the new-test prefix exist and were not started by this task.
+- Task 3: passed under the owner's suffix isolation rule (run 2026-11-05): 1,644 service-backed tests, 0 failed, 0 skipped, Live excluded. See the Task 3 section below.
 - Task 7: this record and its commit.
 
 Evidence was produced on 2026-11-04 at repo HEAD `deb1fcdb`. Raw logs are outside the repo in `/tmp/ag-recon/` (listed under Verification).
@@ -99,7 +99,7 @@ Task 6 (`66-OWNER-ACTIONS.md` at `06400a79`):
 | 7 Final record and gate commit | This record | Committed with explicit paths; no other tracked change. |
 
 ## Owner or orchestrator decisions outstanding
-1. Foreign containers (owner). `autonogrammer-test-postgres` and `autonogrammer-test-dragonfly` were created on 2026-11-03 at 10:17 UTC. Task 3 cannot run while they exist, because the plan's precheck stops on any new-test-prefix name this task did not start. Options: confirm they are disposable and remove them, or accept a different isolation rule. Not touched.
+1. Foreign containers (owner): resolved 2026-11-05 (see Owner decisions). The suffix isolation rule was approved, and Task 3 ran under it. The two kept containers were not touched.
 2. Service-backed set (plan correction). Task 1 and Task 3 list three service-backed projects. `Autonogrammer.Cowork.Artifacts.Stores.Tests` needs Postgres too, so the set is four. Task 3 must also run that project with the sourced env. Plan not edited in this run.
 3. Glob (plan correction). Task 1's `tests/*/*.Tests.csproj` misses `Autonogrammer.ArchitectureTests` and `Autonogrammer.Harness.ContractTests`. Both were run separately and pass.
 4. Plan counts (plan correction). Task 2 expects 49 tool tests and 12 pins. The current counts are 61 and the owner-ruled 14. Both pass at the current counts.
@@ -107,20 +107,32 @@ Task 6 (`66-OWNER-ACTIONS.md` at `06400a79`):
 6. Widened GitHub-slug exemption (owner). Confirm (see Changes).
 
 ## Blockers carried forward
-- Task 3 (decision 1): blocked on the owner.
-- Phase 66 close: needs decisions 1, 2 and 5 resolved, then Task 3 run for all four service-backed projects.
+- Task 3: done under the owner's suffix rule (see below). The two kept containers were not touched.
+- Phase 66 close: Task 3 is done. Owner actions 1 to 8 (`66-OWNER-ACTIONS.md`) stay open, and the ship stays on hold.
 - Owner actions 1 to 8 (`66-OWNER-ACTIONS.md`) stay open; none is claimed complete.
 
 ## Owner decisions (2026-11-05)
 
-- Foreign containers: kept (owner). `autonogrammer-test-postgres` and `autonogrammer-test-dragonfly` stay. Task 3 remains blocked; 66-07 cannot close until they are removed or an isolation rule is approved.
+- Foreign containers: kept (owner). Isolation rule approved (owner, 2026-11-05): Task 3 runs with `AUTONOGRAMMER_TEST_SERVICES_NAME=g6607`, and the precheck asserts only the suffixed names absent. The kept containers are never targeted.
 - Baseline: the post-decision report is the keep-count reference (owner). The original 363-count report is not recoverable, so the keep-count check is judged against the post-decision report.
 - Plan: `66-07-PLAN.md` corrected (owner approved). The service-backed set is four projects; the pure loop covers `Autonogrammer.ArchitectureTests` and `Autonogrammer.Harness.ContractTests`; the tool test count is 61; the pins are 14. An amendment paragraph in the objective states the correction, and the executable verify commands are corrected in place.
 - Ship: hold (owner). No PR until Phase 66 and the milestone are verified.
 
 ## Task 1 under the corrected plan
 
-Restore, build, format and the four repo gates passed in this run. Pure projects that the corrected loop runs: 51 loop projects plus `Autonogrammer.ArchitectureTests` (83 tests, 0 failed) and `Autonogrammer.Harness.ContractTests` (9 tests, 0 failed), all exit 0. `Autonogrammer.Cowork.Artifacts.Stores.Tests` moves to the service-backed set. Task 1 passes under the corrected plan; the deferred set (Task 3) is blocked by decision 1.
+Restore, build, format and the four repo gates passed in this run. Pure projects that the corrected loop runs: 51 loop projects plus `Autonogrammer.ArchitectureTests` (83 tests, 0 failed) and `Autonogrammer.Harness.ContractTests` (9 tests, 0 failed), all exit 0. `Autonogrammer.Cowork.Artifacts.Stores.Tests` moves to the service-backed set. Task 1 passes under the corrected plan; the deferred set ran as Task 3 on 2026-11-05 (next section).
+
+## Task 3 under the suffix rule (2026-11-05)
+
+Run at HEAD `9eb081cb` with the IsTrimmable change in the working tree (committed as `ffd156f7` after the run; the four projects are not changed by it). Script `/tmp/ag-recon/t3-run.sh`; logs in `/tmp/ag-recon/t3/` (outside the repo). The plan's literal precheck would block on the two kept containers. Under the owner's ruling, the precheck asserts only the three suffixed names absent (`autonogrammer-test-postgres-g6607`, `autonogrammer-test-dragonfly-g6607`, `autonogrammer-test-greptimedb-g6607`). The kept containers were present before and after, and their uptime was unchanged (41 hours), so they were not restarted. The plan text is not edited.
+
+- Precheck: the suffixed names were absent (`precheck_ok`).
+- Build of the four service-backed projects with warnings as errors: exit 0 each.
+- Up: exit 0. The env file was mode 600. The three variables were checked non-empty; no value was printed. During the window the suffixed postgres and dragonfly containers were up.
+- Tests with `--filter-not-trait "Category=Live"`: Coordination 87 of 87 passed; Sessions.Postgres 107 of 107; Api.IntegrationTests 1437 of 1437; Cowork.Artifacts.Stores 13 of 13 (3 of 13 failed without the env in the Task 1 run). Total 1644: 0 failed, 0 skipped; exit 0 each.
+- Down, twice: exit 0 and 0. The suffixed names were absent afterwards. The kept containers were still up.
+- Secret check: 2 secrets, 0 occurrences in 8 logs (counts only). The env file was removed.
+- Not run: Live-tagged service tests (`Cowork.Memory.Postgres.Tests/PostgresMemoryStoreTests.cs:14`, `Coordination.Tests/DragonflyAclTests.cs:14`, `Api.IntegrationTests/DataPlane/GreptimeLiveTests.cs:20`, `SubstrateLiveRefusalTests.cs:16`). The owner's Live ruling is still open.
 
 ## Corrections and follow-ups (2026-11-05)
 
