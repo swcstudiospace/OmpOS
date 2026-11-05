@@ -127,7 +127,10 @@ async function runSequence(page, report, kind) {
   let position = 0;
   for (const step of inAppSteps(kind)) {
     const snap = await runStep(page, report, step, history, position);
-    if (snap && snap.title.trim() === BOOT_TITLE) return null;
+    if (snap && snap.title.trim() === BOOT_TITLE) {
+      report.add({ check: "routes", id: "boot-title-after-step", severity: "warning", message: `${step.name}: the title read the boot title at ${snap.path}, so the in-app sequence restarts`, state: `in-app ${step.name}`, viewport: "inapp" });
+      return null;
+    }
     if (!snap) continue;
     position = snap.position;
     entries.push({ route: snap.path, mode: "inapp", layout: "shell", snap, previousTitle: snap.previousTitle, expectFocus: step.expectFocus, stepName: step.name });
