@@ -1,29 +1,29 @@
 # Queue and verdicts, 2026-11-05
 
-Scope: the 22 repo-buildable open-question rows in `docs/open-questions.md`; the 39 unchecked phases in v0.9.2 to v0.15.0; the remaining items of phases 66.1 to 66.4. Verdicts come from repository reads, the Task 1 build and restore logs (`/tmp/ag-recon/v66-07-task1.log`), a headless run of `KeyboardFocusTests` (9 of 9 passed, `/tmp/ag-recon/v-oq-keyboardfocus.log`), and one primary-source read of Avalonia issue #22021. The register rows are not edited here; their status text stays as it was until an owner confirms each verdict.
+Scope: the 22 repo-buildable open-question rows in `docs/open-questions.md`; the 39 unchecked phases in v0.9.2 to v0.15.0; the remaining items of phases 66.1 to 66.4. Verdicts come from repository reads; the Task 1 build and restore logs (`/tmp/ag-recon/v66-07-task1.log`); headless runs of `KeyboardFocusTests` (9 of 9) and `FontFaceResolutionTests` (7 of 7) on this host (Ubuntu 24.04.4, Avalonia 12.1.4); two throwaway headless probes, deleted after their runs; and one primary-source read of Avalonia issue #22021. The register rows are not edited here; their status text stays as it was until an owner confirms each verdict.
 
 ## 1. Open-question verdicts
 
 | ID | Category | Verdict | Evidence |
 | --- | --- | --- | --- |
 | OQ-30 | Answered from a primary source | Not fixed. Avalonia issue #22021 is open (fetched 2026-11-05; last updated 2026-10-14), and the 12.1.4 release notes list no fix. Keep the mitigation. | https://github.com/AvaloniaUI/Avalonia/issues/22021; tests/Autonogrammer.Native.Tests/TestAppBuilder.cs:10 |
-| OQ-31 | Answered by a headless run | Reverse focus and the Shift member pass: KeyboardFocusTests 9 of 9, Avalonia 12.1.4, this host. | tests/Autonogrammer.Native.Tests/KeyboardFocusTests.cs:17-19 |
-| OQ-32 | Answered by a headless run | The focus-visible and FocusAdorner-null assertions pass in the same 9 of 9 run. | KeyboardFocusTests.cs:250 |
+| OQ-31 | Answered by a passing test | ShiftTabMovesFocusBack passes: KeyboardFocusTests 9 of 9 on Avalonia 12.1.4, Ubuntu 24.04.4, this host. The class remark at lines 17-19 is not the evidence. | tests/Autonogrammer.Native.Tests/KeyboardFocusTests.cs:54 |
+| OQ-32 | Answered by a passing test | KeyboardFocusedSharedControlsShowTheAccentRing (lines 73-97) calls AssertAccentRing, whose focus-adorner-null assertion at line 250 passes in the 9 of 9 run. | tests/Autonogrammer.Native.Tests/KeyboardFocusTests.cs:250 |
 | OQ-33 | Answered by the build | The call compiles in the Linux solution, which includes the Native head: warnings as errors, exit 0, no warning lines. | Autonogrammer.Linux.slnf:44; Task 1 log |
-| OQ-35 | Answered by the build | No warning-level analyzer diagnostic fires in that build, which covers the XAML partial classes. Info-level suggestions do not appear in the build log. | Task 1 log |
-| OQ-36 | Answered by the build | No warning-level AVLN diagnostic fires in the same build. | Task 1 log |
-| OQ-40 | Pending, repo-buildable | The default Focusable value at 12.1.4 is not answered. Needs the Avalonia package documentation or a headless probe of the control default. Not run. | src/Autonogrammer.Native.Views/Views/SessionView.axaml:5-8 |
-| OQ-41 | Pending, repo-buildable | DM Sans is not installed as a system font on this host (`fc-list` finds none), so resolution depends on the bundled resource. Needs a headless FontFamily probe. Not run. | apps/Autonogrammer.Native/App.axaml:20 |
-| OQ-42 | Pending, repo-buildable | Trim-analysis warnings need a publish with IsTrimmable. Not run. | Row text |
-| OQ-43 | Answered by restore | Locked restore passes (Task 1: exit 0, no NU1004), so the transitive pins match the lock files. | Task 1 log |
+| OQ-35 | Answered by the build, net of suppressions | No warning-level analyzer diagnostic reaches the Linux build (warnings as errors, 0 warnings). The recorded suppressions and .editorconfig overrides can hide a diagnostic, so this does not prove that none would fire. | Task 1 log; 25.1-FINDINGS.md section 10 |
+| OQ-36 | Answered by the build, net of suppressions | No warning-level AVLN diagnostic reaches the same build. The same suppression caveat applies. | Task 1 log; 25.1-FINDINGS.md section 10 |
+| OQ-40 | Answered by a headless probe | ScrollViewer defaults to Focusable=False (IsTabStop=True) in the headless app, measured on a detached control. SessionView sets Focusable="True" explicitly on TranscriptScroll, so the explicit setting is needed. The probe was deleted after the run. | src/Autonogrammer.Native.Views/Views/SessionView.axaml:5-8 |
+| OQ-41 | Answered by a passing test | FontFaceResolutionTests passes 7 of 7 on this host: each Autonogrammer.Font.Family weight (400, 500, 600) resolves to a bundled face whose family is DM Sans, with no fallback and no synthesised bold. The embedded TTFs are used; fontconfig is not involved. | tests/Autonogrammer.Native.Tests/Theme/FontFaceResolutionTests.cs:39-59 |
+| OQ-42 | Pending: half answered, publish running | IsTrimmable is true for the Native head (Directory.Build.props:33; only test projects set it false, at :47). The trim analyzer ran in the Task 1 warnings-as-errors build, which had 0 warnings. The full publish runs in a disposable worktree with CI unset, so the restore is unlocked. The locked restore is CI-gated (:36-38), not a local blocker. | Directory.Build.props:33, :36-38 |
+| OQ-43 | Answered by the committed lock files | The transitive pins are in the committed packages.lock.json files, and the locked restore passes (Task 1: exit 0, no NU1004). | packages.lock.json files; Task 1 log |
 | OQ-45 | Answered by the build | The container usage compiles on 12.1.4 under the Linux build gate. The container type is confirmed by compilation, not by reading code. | src/Autonogrammer.Native.Views/Views/Automations/AutomationsPageView.axaml.cs:142 |
-| OQ-46 | Answered by a headless run | The Thickness assertion is at KeyboardFocusTests.cs:249 (the row cites :219) and passes in the 9 of 9 run. | KeyboardFocusTests.cs:249 |
-| OQ-48 | Pending, repo-buildable | No test references PART_Watermark, so the 12.1.4 Fluent part name is unverified. Needs a headless template probe. Not run. | src/Autonogrammer.Native.Views/Themes/AutonogrammerControls.axaml:358 |
+| OQ-46 | Answered by a passing test | The Thickness assertion is at KeyboardFocusTests.cs:249; the row's :219 citation is stale. It sits in AssertAccentRing, called by KeyboardFocusedSharedControlsShowTheAccentRing, which passes in the 9 of 9 run. | tests/Autonogrammer.Native.Tests/KeyboardFocusTests.cs:249 |
+| OQ-48 | Answered by a headless probe; defect found | The 12.1.4 TextBox template has no PART_Watermark. Its placeholder parts are PART_Placeholder and PART_FloatingPlaceholder, so the style at AutonogrammerControls.axaml:358-360 matches nothing. The TextSecondary token resolves (#55555a, light). The fix and a regression test are a separate item. | src/Autonogrammer.Native.Views/Themes/AutonogrammerControls.axaml:358 |
 | OQ-56 | Answered in the repo | The MCP revision is pinned to 2025-11-25 and used by PinnedOptions. Re-verifying on each SDK upgrade stays a process step. | src/Autonogrammer.Harness.Mcp/McpClientConnector.cs:14,109 |
 | KL-01 to KL-07 | Known limit | Retained as documented limits, with no code change in this milestone. Owner acceptance is not recorded. | Each row's file and line |
 | Q-HOST-DFLY-PIN | Owner decision | The owner chooses the Railway tag and digest. Local compose pins dragonfly v1.27.1 by digest, while Railway runs the unpinned ghcr.io `:latest` image. | deploy/compose.yaml:29; deploy/railway/README.md |
 
-Counts: 17 rows answered or recorded as known limits; 4 pending repo-buildable checks (OQ-40, OQ-41, OQ-42, OQ-48); 1 owner decision (Q-HOST-DFLY-PIN).
+Counts: 20 of the 22 rows answered or recorded as known limits (OQ-30, OQ-31, OQ-32, OQ-33, OQ-35, OQ-36, OQ-40, OQ-41, OQ-43, OQ-45, OQ-46, OQ-48, OQ-56 and KL-01 to KL-07). OQ-42 is half answered, with its publish running. Q-HOST-DFLY-PIN needs the owner's choice.
 
 ## 2. Unchecked phases v0.9.2 to v0.15.0: classification and queue
 
@@ -45,8 +45,8 @@ Artifacts are PLAN, SUMMARY and VERIFICATION counts (P/S/V) in the phase directo
 | 29 | Browser Pane, Completion and Export | P0/S1/V0 | REPO-BUILDABLE | MID | No browser pane code (OQ-51) |
 | 30 | Later Compatibility and Admin | P0/S1/V0 | EXTERNAL | LATE | OD-03 via phase 26; XP-09 gate |
 | 31 | Plugin Manifests and Hooks | none | REPO-BUILDABLE | EARLY | No head loads manifests or runs hooks (OQ-84); foundation for 32 and 33 |
-| 32 | Automations | none | UNKNOWN | MID | Read the status line first; depends on phase 31 |
-| 33 | Omp CLI Terminal and Shared Registry | none | UNKNOWN | MID | Read the status line first; needs phase 28 registry and MCP gateway |
+| 32 | Automations | none | REPO-BUILDABLE | MID | Partial: the engine, guards and presentation model pass; nothing composes the engine or starts a run, and there is no view. Depends on phase 31 (ROADMAP status at :734). |
+| 33 | Omp CLI Terminal and Shared Registry | none | REPO-BUILDABLE | MID | Partial: criteria 1 and 4 met live; criteria 2 and 3 partial. The status line (:748) says no head references Harness.McpGateway, but apps/Autonogrammer.Native references it (Autonogrammer.Native.csproj:32; Cowork/CoworkToolServer.cs:4), so re-audit before queueing. ADR-0010 is Proposed: owner acceptance needed. |
 | 34 | Remote Development | none | SUPERSEDED in part | LATE | Phase 58 (ADR-0015) supersedes most of it; the live remainder waits on OD-06 |
 | 35 | Code Quality Bar | P1/S1/V1 | REPO-BUILDABLE | LATE | Criteria 1 and 4 partly met; best done after feature phases |
 | 37 | Session Runtime, Streaming and Local Terminal | P1/S1/V1 | EXTERNAL | MID | Owner durability decision; real herdr endpoint (VX-06) |
@@ -71,7 +71,7 @@ Artifacts are PLAN, SUMMARY and VERIFICATION counts (P/S/V) in the phase directo
 | 62 | Providers, EU US CN and Coding Plans | P1/S1/V1 | EXTERNAL | LATE | Live provider key check needs owner keys (OQ-71) |
 | 63 | Cursor Feature Completion | P1/S1/V1 | REPO-BUILDABLE | LATE | PR, browser, terminal-output and side-chat features not wired; depends on phases 56 to 62 |
 
-Totals: 39 phases. REPO-BUILDABLE 17, EXTERNAL 18, plus phase 25.4 (mixed), UNKNOWN 2 (phases 32 and 33), SUPERSEDED in part 1 (phase 34). Queue: EARLY 5 (27, 31, 39, 44, 51), MID 13, LATE the rest. Phases 32 and 33 need their status lines read before they are queued for real.
+Totals: 39 phases. REPO-BUILDABLE 19, EXTERNAL 18, plus phase 25.4 (mixed), SUPERSEDED in part 1 (phase 34), UNKNOWN 0. Queue: EARLY 5 (27, 31, 39, 44, 51), MID 13, LATE the rest.
 
 ## 3. Phases 66.1 to 66.4: remaining items
 
