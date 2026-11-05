@@ -68,16 +68,16 @@ internal static class SetupProcess
         catch (OperationCanceledException)
         {
             var killFailure = KillProcessTree(process, killTree);
+            await WaitForPipesAfterStopAsync(standardOutput, standardError).ConfigureAwait(false);
             if (killFailure is not null)
             {
                 return StepExecution.Failed($"could not stop '{executable}' after cancellation: {killFailure.Message}");
             }
+
             throw;
         }
-        finally
-        {
-            await Task.WhenAll(standardOutput, standardError).ConfigureAwait(false);
-        }
+
+        await Task.WhenAll(standardOutput, standardError).ConfigureAwait(false);
 
         if (process.ExitCode == 0)
         {
@@ -136,6 +136,25 @@ internal static class SetupProcess
         }
 
         return captured.ToString();
+    }
+
+    /// <summary>How long a stopped step waits for its output pipes to close.</summary>
+    private static readonly TimeSpan PipeCloseGrace = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// Waits briefly for the output pipes of a step that was stopped. A process the OS refused to stop, or a child that inherited
+    /// the pipes, keeps them open, so the wait is bounded and the stop is reported, not the text.
+    /// </summary>
+    private static async Task WaitForPipesAfterStopAsync(Task standardOutput, Task standardError)
+    {
+        try
+        {
+            await Task.WhenAll(standardOutput, standardError).WaitAsync(PipeCloseGrace).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is TimeoutException or IOException or ObjectDisposedException)
+        {
+            // The pipes stayed open, or broke while the step was stopped.
+        }
     }
 
     private static string FirstLine(string text)

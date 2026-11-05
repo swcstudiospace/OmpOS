@@ -35,6 +35,29 @@ public sealed class SetupProcessKillTests
     }
 
     [Fact]
+    public async Task RefusedKillOfALongLivedProcessReturnsWithoutWaitingForItsPipes()
+    {
+        HostCommand.Require(SleepPath);
+        using var cancelled = new CancellationTokenSource();
+        await cancelled.CancelAsync();
+        var refusal = new Win32Exception(1, "Operation not permitted");
+        var started = Stopwatch.StartNew();
+
+        // The kill is refused by construction, so the process runs on for its full 30 seconds and keeps its output pipes open.
+        var result = await SetupProcess.RunAsync(
+            SleepPath,
+            ["30"],
+            Path.GetTempPath(),
+            new Dictionary<string, string>(StringComparer.Ordinal),
+            _ => throw refusal,
+            cancelled.Token);
+
+        result.Succeeded.ShouldBeFalse();
+        result.Failure.ShouldBe($"could not stop '{SleepPath}' after cancellation: Operation not permitted");
+        started.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(15), "a refused kill must not wait for a process that keeps its output pipes open");
+    }
+
+    [Fact]
     public async Task AggregateKillRefusalAfterCancellationIsReportedAsFailedStep()
     {
         HostCommand.Require(SleepPath);
