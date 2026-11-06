@@ -49,14 +49,77 @@ public sealed class CoworkSessionHostTests
     public async Task TurnOriginSetPerPromptAndModelOriginIgnored()
     {
         using var root = new TempDir();
-        await using var host = Host(root.Path, new ScriptedOmp());
-        var id = await host.CreateSessionAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
-        await host.OpenSessionAsync(Row(id), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = Host(root.Path, new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true });
+        var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+        var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
         using var arguments = JsonDocument.Parse("{\"origin\":\"Dispatch\",\"text\":\"hi\"}");
-        await host.SendAsync(id, "hello", arguments.RootElement, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        await host.RetryAsync(id, arguments.RootElement, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        await host.SteerAsync(id, "left", arguments.RootElement, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await host.SendAsync(id, "hello", arguments.RootElement, ct).ConfigureAwait(true);
+        await UntilRunningAsync(view, ct).ConfigureAwait(true);
+        await host.RetryAsync(id, arguments.RootElement, ct).ConfigureAwait(true);
+        await host.SteerAsync(id, "left", arguments.RootElement, ct).ConfigureAwait(true);
         host.OriginsOf(id).ShouldBe([CoworkTurnOrigin.Local, CoworkTurnOrigin.Local, CoworkTurnOrigin.Local]);
+    }
+
+    [Fact]
+    public async Task ASentPromptReachesTheEngineAsAPrompt()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var root = new TempDir();
+        var omp = new ScriptedOmp();
+        await using var host = Host(root.Path, omp);
+        var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+        await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
+
+        await host.SendAsync(id, "hello cowork", null, ct).ConfigureAwait(true);
+
+        (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("hello cowork");
+    }
+
+    [Fact]
+    public async Task ASendDuringARunIsDeliveredIntoThatRunAsASteer()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var root = new TempDir();
+        var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true };
+        await using var host = Host(root.Path, omp);
+        var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+        var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
+        await host.SendAsync(id, "first", null, ct).ConfigureAwait(true);
+        await UntilRunningAsync(view, ct).ConfigureAwait(true);
+        (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("first");
+
+        await host.SendAsync(id, "second", null, ct).ConfigureAwait(true);
+
+        (await RequestTextAsync(omp, "_session/steering", ct).ConfigureAwait(true)).ShouldBe("second");
+        omp.Requests("session/prompt").Count.ShouldBe(1);
+    }
+
+    private static async Task UntilRunningAsync(AgentSessionViewModel view, CancellationToken cancellationToken)
+    {
+        var runtime = AgentSessionRuntime.For(view).ShouldNotBeNull();
+        for (var attempt = 0; attempt < 500 && !runtime.IsRunActive; attempt++)
+        {
+            await Task.Delay(10, cancellationToken).ConfigureAwait(true);
+        }
+
+        runtime.IsRunActive.ShouldBeTrue("the first turn should be running");
+    }
+
+    private static async Task<string> RequestTextAsync(ScriptedOmp omp, string method, CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; attempt < 500; attempt++)
+        {
+            var requests = omp.Requests(method);
+            if (requests.Count > 0)
+            {
+                return requests[0]["params"]!["prompt"]![0]!["text"]!.GetValue<string>();
+            }
+
+            await Task.Delay(10, cancellationToken).ConfigureAwait(true);
+        }
+
+        throw new TimeoutException($"The fake omp never received {method}.");
     }
 
     [Fact]

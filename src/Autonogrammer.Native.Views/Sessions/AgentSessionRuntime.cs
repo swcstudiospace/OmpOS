@@ -251,6 +251,9 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// <summary>Gets the scheduler that routes steering messages and queued follow-ups to the active run.</summary>
     internal RunInputScheduler Runs { get; }
 
+    /// <summary>Gets whether a run is active. A message sent now steers that run instead of starting another.</summary>
+    public bool IsRunActive => Runs.IsRunActive;
+
     /// <summary>Gets the motion setting the head supplied.</summary>
     public MotionPreference Motion => _options.Motion;
 

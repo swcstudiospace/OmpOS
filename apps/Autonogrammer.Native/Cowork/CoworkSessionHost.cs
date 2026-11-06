@@ -6,6 +6,8 @@ using Autonogrammer.Cowork;
 using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Cowork.Chat;
 using Autonogrammer.Cowork.Sessions;
+using Autonogrammer.EngineHost;
+using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Logging;
@@ -241,10 +243,10 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
     /// <returns>The task.</returns>
     public async Task SteerAsync(string sessionId, string text, JsonElement? arguments, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(text);
         cancellationToken.ThrowIfCancellationRequested();
         SetOrigin(sessionId);
-        _ = text;
-        await Task.CompletedTask.ConfigureAwait(false);
+        await SendOrSteerAsync(SlotOf(sessionId), text, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Stops engines after confirmation. Rows stay in the registry.</summary>
@@ -360,9 +362,10 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
     private async Task TurnAsync(string sessionId, string prompt, CancellationToken cancellationToken)
     {
         SetOrigin(sessionId);
-        SlotOf(sessionId).LastPrompt = prompt;
+        var slot = SlotOf(sessionId);
+        slot.LastPrompt = prompt;
         cancellationToken.ThrowIfCancellationRequested();
-        await Task.CompletedTask.ConfigureAwait(false);
+        await SendOrSteerAsync(slot, prompt, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task DisposeSlotsAsync(Slot[] slots)
@@ -436,7 +439,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         {
             lease = new HostLease();
             engine = await ComposeEngineAsync(row, directory, lease, cancellationToken).ConfigureAwait(false);
-            runtime = new AgentSessionRuntime(RuntimeOptions(row, directory));
+            runtime = new AgentSessionRuntime(RuntimeOptions(row, directory, engine));
             cancellationToken.ThrowIfCancellationRequested();
             var slot = new Slot(runtime, lease, engine);
             runtime = null;
@@ -550,16 +553,65 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         }
     }
 
-    private AgentSessionRuntimeOptions RuntimeOptions(AgentRow row, string directory) => new()
+    private AgentSessionRuntimeOptions RuntimeOptions(AgentRow row, string directory, EngineComposition engine) => new()
     {
         Row = row,
-        Prompts = new UnconnectedPromptChannel(),
+        Prompts = new CoworkPromptChannel(engine),
+        NativeSteering = engine.Host.LiveSteering,
         Approvals = new CoworkApprovalBridge(Broker),
         Scope = new StageObservationScope { SessionId = row.Id, WorkspaceRoot = _options.WorkingDirectory, SessionStateDirectory = directory },
         Stages = new IdleStages(),
         Context = new IdleContext(),
         TimeProvider = _options.Clock,
     };
+
+    // A message sent while a run is active steers that run. With no run active it starts one, as the chat composer does.
+    private static async Task SendOrSteerAsync(Slot slot, string text, CancellationToken cancellationToken)
+    {
+        if (slot.Runtime.IsRunActive)
+        {
+            var answer = await slot.Engine.Host.LiveSteering.SteerAsync(text, OmpSteerLane.Steering, cancellationToken).ConfigureAwait(false);
+            switch (answer.Outcome)
+            {
+                case OmpSteerOutcome.Injected:
+                    return;
+                case OmpSteerOutcome.PromptRequired:
+                case OmpSteerOutcome.NotRunning:
+                    // The run ended while the message was sent, so the message starts a turn below.
+                    break;
+                case OmpSteerOutcome.Unsupported:
+                    throw new InvalidOperationException("This omp cannot take a message into a running turn.");
+                default:
+                    throw new InvalidOperationException(string.IsNullOrWhiteSpace(answer.Reason) ? "omp could not take the message." : answer.Reason);
+            }
+        }
+
+        if (!await slot.Runtime.StartTurnAsync(text, cancellationToken).ConfigureAwait(false))
+        {
+            throw new InvalidOperationException("The session has no engine to take the message.");
+        }
+    }
+
+    // The send path of a Cowork session: it forwards to the engine the slot composed, as the Code surface's slot channel does.
+    private sealed class CoworkPromptChannel(EngineComposition engine) : IPromptChannel
+    {
+        public IAsyncEnumerable<HarnessEvent> SubmitAsync(string prompt, CancellationToken cancellationToken) =>
+            SubmitAsync(prompt, new PromptOptions(), cancellationToken);
+
+        public IAsyncEnumerable<HarnessEvent> SubmitAsync(string prompt, PromptOptions options, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(prompt);
+            ArgumentNullException.ThrowIfNull(options);
+            IEngineHost host = engine.Reconnecting is { } reconnecting ? reconnecting : engine.Host;
+            return host.SubmitPromptAsync(prompt, options, cancellationToken);
+        }
+
+        public Task CancelAsync(CancellationToken cancellationToken) =>
+            engine.Reconnecting?.CancelAsync(cancellationToken) ?? engine.Host.CancelAsync(cancellationToken);
+
+        // The slot owns the engine, so closing the send path of a runtime stops nothing.
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
 
     private sealed class Slot(AgentSessionRuntime runtime, HostLease lease, EngineComposition engine) : IAsyncDisposable
     {
