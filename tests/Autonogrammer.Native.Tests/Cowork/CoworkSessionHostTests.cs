@@ -89,6 +89,7 @@ public sealed class CoworkSessionHostTests
                 var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
                 await host.SendAsync(id, "first", null, ct).ConfigureAwait(true);
                 await UntilRunningAsync(view, ct).ConfigureAwait(true);
+                (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("first");
 
                 await Should.ThrowAsync<InvalidOperationException>(() => host.RetryAsync(id, null, ct)).ConfigureAwait(true);
 
