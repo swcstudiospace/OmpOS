@@ -251,9 +251,6 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// <summary>Gets the scheduler that routes steering messages and queued follow-ups to the active run.</summary>
     internal RunInputScheduler Runs { get; }
 
-    /// <summary>Gets whether a run is active. A message sent now steers that run instead of starting another.</summary>
-    public bool IsRunActive => Runs.IsRunActive;
-
     /// <summary>Gets the motion setting the head supplied.</summary>
     public MotionPreference Motion => _options.Motion;
 
@@ -611,7 +608,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// <param name="text">The message.</param>
     /// <param name="cancellationToken">Cancels the hand-over.</param>
     /// <returns>The delivery the steering history records.</returns>
-    private async Task<SteeringDelivery> SubmitAsNewTurnAsync(string text, CancellationToken cancellationToken)
+    internal async Task<SteeringDelivery> SubmitAsNewTurnAsync(string text, CancellationToken cancellationToken)
     {
         if (_stopRequested)
         {

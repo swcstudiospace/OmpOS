@@ -231,6 +231,12 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
     /// <returns>The task.</returns>
     public async Task RetryAsync(string sessionId, JsonElement? arguments, CancellationToken cancellationToken)
     {
+        // A retry starts a new turn from the last prompt. A turn that is still running cannot be retried, so the caller waits for it.
+        if (SlotOf(sessionId).Runtime.Runs.IsRunActive)
+        {
+            throw new InvalidOperationException("The turn is still running, so it cannot be retried. Wait for it to finish.");
+        }
+
         var prompt = PromptOf(sessionId);
         await TurnAsync(sessionId, prompt, cancellationToken).ConfigureAwait(false);
     }
@@ -565,10 +571,11 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         TimeProvider = _options.Clock,
     };
 
-    // A message sent while a run is active steers that run. With no run active it starts one, as the chat composer does.
+    // A message sent while a run is active steers that run. Otherwise the runtime's own hand-over takes it: it starts a turn, or queues it
+    // behind a run that began meanwhile, as the chat composer does.
     private static async Task SendOrSteerAsync(Slot slot, string text, CancellationToken cancellationToken)
     {
-        if (slot.Runtime.IsRunActive)
+        if (slot.Runtime.Runs.IsRunActive)
         {
             var answer = await slot.Engine.Host.LiveSteering.SteerAsync(text, OmpSteerLane.Steering, cancellationToken).ConfigureAwait(false);
             switch (answer.Outcome)
@@ -577,7 +584,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
                     return;
                 case OmpSteerOutcome.PromptRequired:
                 case OmpSteerOutcome.NotRunning:
-                    // The run ended while the message was sent, so the message starts a turn below.
+                    // The run ended while the message was in flight, so the hand-over below takes the message.
                     break;
                 case OmpSteerOutcome.Unsupported:
                     throw new InvalidOperationException("This omp cannot take a message into a running turn.");
@@ -586,9 +593,10 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             }
         }
 
-        if (!await slot.Runtime.StartTurnAsync(text, cancellationToken).ConfigureAwait(false))
+        var delivery = await slot.Runtime.SubmitAsNewTurnAsync(text, cancellationToken).ConfigureAwait(false);
+        if (delivery.IsFailure)
         {
-            throw new InvalidOperationException("The session has no engine to take the message.");
+            throw new InvalidOperationException(delivery.Reason ?? "The message was not sent.");
         }
     }
 

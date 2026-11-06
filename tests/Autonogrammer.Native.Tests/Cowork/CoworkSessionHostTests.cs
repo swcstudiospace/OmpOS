@@ -56,9 +56,46 @@ public sealed class CoworkSessionHostTests
         using var arguments = JsonDocument.Parse("{\"origin\":\"Dispatch\",\"text\":\"hi\"}");
         await host.SendAsync(id, "hello", arguments.RootElement, ct).ConfigureAwait(true);
         await UntilRunningAsync(view, ct).ConfigureAwait(true);
-        await host.RetryAsync(id, arguments.RootElement, ct).ConfigureAwait(true);
+        await Should.ThrowAsync<InvalidOperationException>(() => host.RetryAsync(id, arguments.RootElement, ct)).ConfigureAwait(true);
         await host.SteerAsync(id, "left", arguments.RootElement, ct).ConfigureAwait(true);
-        host.OriginsOf(id).ShouldBe([CoworkTurnOrigin.Local, CoworkTurnOrigin.Local, CoworkTurnOrigin.Local]);
+        host.OriginsOf(id).ShouldBe([CoworkTurnOrigin.Local, CoworkTurnOrigin.Local]);
+    }
+
+    [Fact]
+    public async Task ARetryWhileATurnRunsIsRefusedAndSendsNothing()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var root = new TempDir();
+        var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true };
+        await using var host = Host(root.Path, omp);
+        var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+        var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
+        await host.SendAsync(id, "first", null, ct).ConfigureAwait(true);
+        await UntilRunningAsync(view, ct).ConfigureAwait(true);
+
+        await Should.ThrowAsync<InvalidOperationException>(() => host.RetryAsync(id, null, ct)).ConfigureAwait(true);
+
+        omp.Requests("_session/steering").ShouldBeEmpty();
+        omp.Requests("session/prompt").Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task AMessageThatTheTurnEndsOnAsItIsSteeredIsHandedOverWithoutASecondTurn()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var root = new TempDir();
+        var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true, SteerOutcome = "promptRequired" };
+        await using var host = Host(root.Path, omp);
+        var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+        var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
+        await host.SendAsync(id, "first", null, ct).ConfigureAwait(true);
+        await UntilRunningAsync(view, ct).ConfigureAwait(true);
+        (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("first");
+
+        await host.SendAsync(id, "second", null, ct).ConfigureAwait(true);
+
+        (await RequestTextAsync(omp, "_session/steering", ct).ConfigureAwait(true)).ShouldBe("second");
+        omp.Requests("session/prompt").Count.ShouldBe(1);
     }
 
     [Fact]
@@ -98,12 +135,12 @@ public sealed class CoworkSessionHostTests
     private static async Task UntilRunningAsync(AgentSessionViewModel view, CancellationToken cancellationToken)
     {
         var runtime = AgentSessionRuntime.For(view).ShouldNotBeNull();
-        for (var attempt = 0; attempt < 500 && !runtime.IsRunActive; attempt++)
+        for (var attempt = 0; attempt < 500 && !runtime.Runs.IsRunActive; attempt++)
         {
             await Task.Delay(10, cancellationToken).ConfigureAwait(true);
         }
 
-        runtime.IsRunActive.ShouldBeTrue("the first turn should be running");
+        runtime.Runs.IsRunActive.ShouldBeTrue("the first turn should be running");
     }
 
     private static async Task<string> RequestTextAsync(ScriptedOmp omp, string method, CancellationToken cancellationToken)
