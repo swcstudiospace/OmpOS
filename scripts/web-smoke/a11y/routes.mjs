@@ -197,6 +197,9 @@ async function runStep(page, report, step, history, position) {
   snap.position = position;
   snap.stateBefore = stateBefore;
   snap.stateAfter = JSON.parse(await page.evalValue(PAGE_STATE));
+  report.count(`routes:head:titleElements=${snap.stateAfter.titleElements}`);
+  report.count(`routes:head:titleBeforeBase=${snap.stateAfter.titleBeforeBase}`);
+  report.count(`routes:head:titleLastChild=${snap.stateAfter.titleIsLastHeadChild}`);
   snap.pageErrors = pageErrors.slice(errorMark);
   return snap;
 }
