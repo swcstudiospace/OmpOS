@@ -103,11 +103,11 @@ public sealed class CoworkSessionHostTests
     }
 
     [Fact]
-    public async Task AMessageThatTheTurnEndsOnAsItIsSteeredIsHandedOverWithoutASecondTurn()
+    public async Task AMessageSentWhileATurnRunsIsDeliveredWhenThatTurnEnds()
     {
         var ct = TestContext.Current.CancellationToken;
         using var root = new TempDir();
-        var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true, SteerOutcome = "promptRequired" };
+        var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true, SteerOutcome = "promptRequired", EndTurnOnSteer = true };
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
@@ -123,7 +123,8 @@ public sealed class CoworkSessionHostTests
                 await host.SendAsync(id, "second", null, ct).ConfigureAwait(true);
 
                 (await RequestTextAsync(omp, "_session/steering", ct).ConfigureAwait(true)).ShouldBe("second");
-                omp.Requests("session/prompt").Count.ShouldBe(1);
+                (await RequestTextAsync(omp, "session/prompt", ct, index: 1).ConfigureAwait(true)).ShouldBe("second");
+                omp.Requests("session/prompt").Count.ShouldBe(2);
             }
             finally
             {
@@ -239,20 +240,20 @@ public sealed class CoworkSessionHostTests
         runtime.Runs.IsRunActive.ShouldBeTrue("the first turn should be running");
     }
 
-    private static async Task<string> RequestTextAsync(ScriptedOmp omp, string method, CancellationToken cancellationToken)
+    private static async Task<string> RequestTextAsync(ScriptedOmp omp, string method, CancellationToken cancellationToken, int index = 0)
     {
         for (var attempt = 0; attempt < 500; attempt++)
         {
             var requests = omp.Requests(method);
-            if (requests.Count > 0)
+            if (requests.Count > index)
             {
-                return requests[0]["params"]!["prompt"]![0]!["text"]!.GetValue<string>();
+                return requests[index]["params"]!["prompt"]![0]!["text"]!.GetValue<string>();
             }
 
             await Task.Delay(10, cancellationToken).ConfigureAwait(true);
         }
 
-        throw new TimeoutException($"The fake omp never received {method}.");
+        throw new TimeoutException($"The fake omp never received {method} request {index + 1}.");
     }
 
     [Fact]
