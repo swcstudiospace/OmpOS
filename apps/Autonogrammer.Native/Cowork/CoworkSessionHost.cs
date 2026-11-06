@@ -14,6 +14,7 @@ using Autonogrammer.Native.Logging;
 using Autonogrammer.Native.Views.Sessions;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Composer.Attachments;
+using Avalonia.Threading;
 
 namespace Autonogrammer.Native.Cowork;
 
@@ -229,17 +230,17 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
     /// <param name="arguments">Model-supplied arguments.</param>
     /// <param name="cancellationToken">Cancels the retry.</param>
     /// <returns>The task.</returns>
-    public async Task RetryAsync(string sessionId, JsonElement? arguments, CancellationToken cancellationToken)
-    {
-        // A retry starts a new turn from the last prompt. A turn that is still running cannot be retried, so the caller waits for it.
-        if (SlotOf(sessionId).Runtime.Runs.IsRunActive)
+    public Task RetryAsync(string sessionId, JsonElement? arguments, CancellationToken cancellationToken) =>
+        OnUiThreadAsync(async () =>
         {
-            throw new InvalidOperationException("The turn is still running, so it cannot be retried. Wait for it to finish.");
-        }
+            // A run still going cannot be retried: the retry would replay the last prompt into the turn that is answering it.
+            if (SlotOf(sessionId).Runtime.Runs.IsRunActive)
+            {
+                throw new InvalidOperationException("The turn is still running, so it cannot be retried. Wait for it to finish.");
+            }
 
-        var prompt = PromptOf(sessionId);
-        await TurnAsync(sessionId, prompt, cancellationToken).ConfigureAwait(false);
-    }
+            await TurnOnUiThreadAsync(sessionId, PromptOf(sessionId), cancellationToken).ConfigureAwait(true);
+        });
 
     /// <summary>Steers the running turn through the native steering channel after setting the local origin.</summary>
     /// <param name="sessionId">The session.</param>
@@ -247,13 +248,14 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
     /// <param name="arguments">Model-supplied arguments.</param>
     /// <param name="cancellationToken">Cancels the steer.</param>
     /// <returns>The task.</returns>
-    public async Task SteerAsync(string sessionId, string text, JsonElement? arguments, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-        cancellationToken.ThrowIfCancellationRequested();
-        SetOrigin(sessionId);
-        await SendOrSteerAsync(SlotOf(sessionId), text, cancellationToken).ConfigureAwait(false);
-    }
+    public Task SteerAsync(string sessionId, string text, JsonElement? arguments, CancellationToken cancellationToken) =>
+        OnUiThreadAsync(async () =>
+        {
+            ArgumentNullException.ThrowIfNull(text);
+            cancellationToken.ThrowIfCancellationRequested();
+            SetOrigin(sessionId);
+            await SendOrSteerAsync(SlotOf(sessionId), text, cancellationToken).ConfigureAwait(true);
+        });
 
     /// <summary>Stops engines after confirmation. Rows stay in the registry.</summary>
     /// <param name="confirmed">Whether the user confirmed sign-out.</param>
@@ -365,13 +367,16 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         return DisposeSlotsAsync(slots);
     }
 
-    private async Task TurnAsync(string sessionId, string prompt, CancellationToken cancellationToken)
+    private Task TurnAsync(string sessionId, string prompt, CancellationToken cancellationToken) =>
+        OnUiThreadAsync(() => TurnOnUiThreadAsync(sessionId, prompt, cancellationToken));
+
+    private async Task TurnOnUiThreadAsync(string sessionId, string prompt, CancellationToken cancellationToken)
     {
         SetOrigin(sessionId);
         var slot = SlotOf(sessionId);
         slot.LastPrompt = prompt;
         cancellationToken.ThrowIfCancellationRequested();
-        await SendOrSteerAsync(slot, prompt, cancellationToken).ConfigureAwait(false);
+        await SendOrSteerAsync(slot, prompt, cancellationToken).ConfigureAwait(true);
     }
 
     private async Task DisposeSlotsAsync(Slot[] slots)
@@ -571,13 +576,17 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         TimeProvider = _options.Clock,
     };
 
+    // The runtime and its run input are UI-affine: the held-message queue has no lock, and change notifications
+    // reach the views on the UI thread. Every send, steer and retry therefore runs there, whichever thread its caller is on.
+    private static Task OnUiThreadAsync(Func<Task> work) => Dispatcher.UIThread.InvokeAsync(work);
+
     // A message sent while a run is active steers that run. Otherwise the runtime's own hand-over takes it: it starts a turn, or queues it
-    // behind a run that began meanwhile, as the chat composer does.
+    // behind a run that began meanwhile, as the chat composer does. Runs on the UI thread, so each await resumes there.
     private static async Task SendOrSteerAsync(Slot slot, string text, CancellationToken cancellationToken)
     {
         if (slot.Runtime.Runs.IsRunActive)
         {
-            var answer = await slot.Engine.Host.LiveSteering.SteerAsync(text, OmpSteerLane.Steering, cancellationToken).ConfigureAwait(false);
+            var answer = await slot.Engine.Host.LiveSteering.SteerAsync(text, OmpSteerLane.Steering, cancellationToken).ConfigureAwait(true);
             switch (answer.Outcome)
             {
                 case OmpSteerOutcome.Injected:
@@ -593,7 +602,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             }
         }
 
-        var delivery = await slot.Runtime.SubmitAsNewTurnAsync(text, cancellationToken).ConfigureAwait(false);
+        var delivery = await slot.Runtime.SubmitAsNewTurnAsync(text, cancellationToken).ConfigureAwait(true);
         if (delivery.IsFailure)
         {
             throw new InvalidOperationException(delivery.Reason ?? "The message was not sent.");

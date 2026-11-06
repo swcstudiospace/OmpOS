@@ -12,6 +12,7 @@ using Autonogrammer.Native.Cowork;
 using Autonogrammer.Native.Tests.AgentLoop;
 using Autonogrammer.Native.Views.Sessions;
 using Autonogrammer.Presentation.AgentPanel;
+using Avalonia.Threading;
 using Shouldly;
 using Xunit;
 
@@ -50,15 +51,26 @@ public sealed class CoworkSessionHostTests
     {
         using var root = new TempDir();
         var ct = TestContext.Current.CancellationToken;
-        await using var host = Host(root.Path, new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true });
-        var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
-        var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
-        using var arguments = JsonDocument.Parse("{\"origin\":\"Dispatch\",\"text\":\"hi\"}");
-        await host.SendAsync(id, "hello", arguments.RootElement, ct).ConfigureAwait(true);
-        await UntilRunningAsync(view, ct).ConfigureAwait(true);
-        await Should.ThrowAsync<InvalidOperationException>(() => host.RetryAsync(id, arguments.RootElement, ct)).ConfigureAwait(true);
-        await host.SteerAsync(id, "left", arguments.RootElement, ct).ConfigureAwait(true);
-        host.OriginsOf(id).ShouldBe([CoworkTurnOrigin.Local, CoworkTurnOrigin.Local]);
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var host = Host(root.Path, new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true });
+            try
+            {
+                var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+                var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
+                using var arguments = JsonDocument.Parse("{\"origin\":\"Dispatch\",\"text\":\"hi\"}");
+                await host.SendAsync(id, "hello", arguments.RootElement, ct).ConfigureAwait(true);
+                await UntilRunningAsync(view, ct).ConfigureAwait(true);
+                await Should.ThrowAsync<InvalidOperationException>(() => host.RetryAsync(id, arguments.RootElement, ct)).ConfigureAwait(true);
+                await host.SteerAsync(id, "left", arguments.RootElement, ct).ConfigureAwait(true);
+                host.OriginsOf(id).ShouldBe([CoworkTurnOrigin.Local, CoworkTurnOrigin.Local]);
+            }
+            finally
+            {
+                await host.DisposeAsync().ConfigureAwait(true);
+            }
+        }, ct).ConfigureAwait(true);
     }
 
     [Fact]
@@ -67,16 +79,27 @@ public sealed class CoworkSessionHostTests
         var ct = TestContext.Current.CancellationToken;
         using var root = new TempDir();
         var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true };
-        await using var host = Host(root.Path, omp);
-        var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
-        var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
-        await host.SendAsync(id, "first", null, ct).ConfigureAwait(true);
-        await UntilRunningAsync(view, ct).ConfigureAwait(true);
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var host = Host(root.Path, omp);
+            try
+            {
+                var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+                var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
+                await host.SendAsync(id, "first", null, ct).ConfigureAwait(true);
+                await UntilRunningAsync(view, ct).ConfigureAwait(true);
 
-        await Should.ThrowAsync<InvalidOperationException>(() => host.RetryAsync(id, null, ct)).ConfigureAwait(true);
+                await Should.ThrowAsync<InvalidOperationException>(() => host.RetryAsync(id, null, ct)).ConfigureAwait(true);
 
-        omp.Requests("_session/steering").ShouldBeEmpty();
-        omp.Requests("session/prompt").Count.ShouldBe(1);
+                omp.Requests("_session/steering").ShouldBeEmpty();
+                omp.Requests("session/prompt").Count.ShouldBe(1);
+            }
+            finally
+            {
+                await host.DisposeAsync().ConfigureAwait(true);
+            }
+        }, ct).ConfigureAwait(true);
     }
 
     [Fact]
@@ -85,17 +108,28 @@ public sealed class CoworkSessionHostTests
         var ct = TestContext.Current.CancellationToken;
         using var root = new TempDir();
         var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true, SteerOutcome = "promptRequired" };
-        await using var host = Host(root.Path, omp);
-        var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
-        var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
-        await host.SendAsync(id, "first", null, ct).ConfigureAwait(true);
-        await UntilRunningAsync(view, ct).ConfigureAwait(true);
-        (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("first");
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var host = Host(root.Path, omp);
+            try
+            {
+                var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+                var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
+                await host.SendAsync(id, "first", null, ct).ConfigureAwait(true);
+                await UntilRunningAsync(view, ct).ConfigureAwait(true);
+                (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("first");
 
-        await host.SendAsync(id, "second", null, ct).ConfigureAwait(true);
+                await host.SendAsync(id, "second", null, ct).ConfigureAwait(true);
 
-        (await RequestTextAsync(omp, "_session/steering", ct).ConfigureAwait(true)).ShouldBe("second");
-        omp.Requests("session/prompt").Count.ShouldBe(1);
+                (await RequestTextAsync(omp, "_session/steering", ct).ConfigureAwait(true)).ShouldBe("second");
+                omp.Requests("session/prompt").Count.ShouldBe(1);
+            }
+            finally
+            {
+                await host.DisposeAsync().ConfigureAwait(true);
+            }
+        }, ct).ConfigureAwait(true);
     }
 
     [Fact]
@@ -104,13 +138,24 @@ public sealed class CoworkSessionHostTests
         var ct = TestContext.Current.CancellationToken;
         using var root = new TempDir();
         var omp = new ScriptedOmp();
-        await using var host = Host(root.Path, omp);
-        var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
-        await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var host = Host(root.Path, omp);
+            try
+            {
+                var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+                await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
 
-        await host.SendAsync(id, "hello cowork", null, ct).ConfigureAwait(true);
+                await host.SendAsync(id, "hello cowork", null, ct).ConfigureAwait(true);
 
-        (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("hello cowork");
+                (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("hello cowork");
+            }
+            finally
+            {
+                await host.DisposeAsync().ConfigureAwait(true);
+            }
+        }, ct).ConfigureAwait(true);
     }
 
     [Fact]
@@ -119,17 +164,68 @@ public sealed class CoworkSessionHostTests
         var ct = TestContext.Current.CancellationToken;
         using var root = new TempDir();
         var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true };
-        await using var host = Host(root.Path, omp);
-        var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
-        var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
-        await host.SendAsync(id, "first", null, ct).ConfigureAwait(true);
-        await UntilRunningAsync(view, ct).ConfigureAwait(true);
-        (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("first");
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var host = Host(root.Path, omp);
+            try
+            {
+                var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+                var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
+                await host.SendAsync(id, "first", null, ct).ConfigureAwait(true);
+                await UntilRunningAsync(view, ct).ConfigureAwait(true);
+                (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("first");
 
-        await host.SendAsync(id, "second", null, ct).ConfigureAwait(true);
+                await host.SendAsync(id, "second", null, ct).ConfigureAwait(true);
 
-        (await RequestTextAsync(omp, "_session/steering", ct).ConfigureAwait(true)).ShouldBe("second");
-        omp.Requests("session/prompt").Count.ShouldBe(1);
+                (await RequestTextAsync(omp, "_session/steering", ct).ConfigureAwait(true)).ShouldBe("second");
+                omp.Requests("session/prompt").Count.ShouldBe(1);
+            }
+            finally
+            {
+                await host.DisposeAsync().ConfigureAwait(true);
+            }
+        }, ct).ConfigureAwait(true);
+    }
+
+    [Fact]
+    public async Task ASendFromAPoolThreadRaisesItsRunChangesOnTheUiThread()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var root = new TempDir();
+        var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true, SteerOutcome = "promptRequired" };
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var host = Host(root.Path, omp);
+            try
+            {
+                var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+                var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
+                var runs = AgentSessionRuntime.For(view).ShouldNotBeNull().Runs;
+                var changes = 0;
+                var changesOffTheUiThread = 0;
+                runs.PropertyChanged += (_, _) =>
+                {
+                    changes++;
+                    if (!Dispatcher.UIThread.CheckAccess())
+                    {
+                        changesOffTheUiThread++;
+                    }
+                };
+
+                await Task.Run(() => host.SendAsync(id, "first", null, ct), ct).ConfigureAwait(true);
+                await UntilRunningAsync(view, ct).ConfigureAwait(true);
+                await Task.Run(() => host.SendAsync(id, "second", null, ct), ct).ConfigureAwait(true);
+
+                changes.ShouldBeGreaterThan(0);
+                changesOffTheUiThread.ShouldBe(0);
+            }
+            finally
+            {
+                await host.DisposeAsync().ConfigureAwait(true);
+            }
+        }, ct).ConfigureAwait(true);
     }
 
     private static async Task UntilRunningAsync(AgentSessionViewModel view, CancellationToken cancellationToken)
@@ -202,22 +298,33 @@ public sealed class CoworkSessionHostTests
         using var root = new TempDir();
         await using var tools = new CoworkToolServer();
         await tools.DisposeAsync().ConfigureAwait(true);
-        await using var host = Host(root.Path, new ScriptedOmp(), tools);
-        var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var host = Host(root.Path, new ScriptedOmp(), tools);
+            try
+            {
+                var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
 
-        var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
+                var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
 
-        view.Id.ShouldBe(id);
-        AgentSessionRuntime.For(view).ShouldNotBeNull();
-        host.ConversationOf(id).ShouldBe(host.Broker.Cards);
-        host.Notices.ShouldHaveSingleItem().ShouldStartWith(CoworkToolServer.UnavailablePrefix);
-        tools.Gateway.ShouldBeNull();
-        await host.SendAsync(id, "hello", null, ct).ConfigureAwait(true);
-        host.OriginsOf(id).ShouldBe([CoworkTurnOrigin.Local]);
+                view.Id.ShouldBe(id);
+                AgentSessionRuntime.For(view).ShouldNotBeNull();
+                host.ConversationOf(id).ShouldBe(host.Broker.Cards);
+                host.Notices.ShouldHaveSingleItem().ShouldStartWith(CoworkToolServer.UnavailablePrefix);
+                tools.Gateway.ShouldBeNull();
+                await host.SendAsync(id, "hello", null, ct).ConfigureAwait(true);
+                host.OriginsOf(id).ShouldBe([CoworkTurnOrigin.Local]);
 
-        await host.CloseSessionAsync(id, ct).ConfigureAwait(true);
+                await host.CloseSessionAsync(id, ct).ConfigureAwait(true);
 
-        host.ConversationOf(id).ShouldBeNull();
+                host.ConversationOf(id).ShouldBeNull();
+            }
+            finally
+            {
+                await host.DisposeAsync().ConfigureAwait(true);
+            }
+        }, ct).ConfigureAwait(true);
     }
 
     [Fact]
