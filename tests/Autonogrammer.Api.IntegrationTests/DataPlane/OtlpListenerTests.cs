@@ -14,10 +14,10 @@ namespace Autonogrammer.Api.IntegrationTests.DataPlane;
 /// is selected the way a deployment does it, through the process environment, which is restored in every case (D-63).
 /// </summary>
 /// <remarks>
-/// The process environment is shared by every host of the test run. Hosts that other classes build while it is set also export to the collector of the running
-/// test, which carries the same headers; the assertions only look for the presence of what a host of this test sends.
+/// The process environment is shared by every host of the test run. The class runs in the collection that runs alone (<c>ProcessPathSerialization</c>),
+/// so no other test's host is built while the exporter variables are set.
 /// </remarks>
-[Collection(nameof(OtlpListenerTests))]
+[Collection(ProcessPathSerialization.Name)]
 public sealed class OtlpListenerTests
 {
     private const string GreptimeHeaders = "X-Greptime-DB-Name=autonogrammer,X-Greptime-Pipeline-Name=greptime_trace_v1,X-Greptime-Trace-Table-Name=autonogrammer_traces";

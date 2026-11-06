@@ -11,6 +11,7 @@ namespace Autonogrammer.Api.IntegrationTests.DataPlane;
 /// It runs only when <c>AUTONOGRAMMER_LIVE_GREPTIME=1</c> and <c>AUTONOGRAMMER_TEST_GREPTIME_URL</c> is set, which
 /// <c>bash scripts/test-services.sh up --with-greptime</c> does (D-54).
 /// </summary>
+[Collection(ProcessPathSerialization.Name)]
 public sealed class GreptimeLiveTests
 {
     private const string Headers = "X-Greptime-DB-Name=autonogrammer,X-Greptime-Pipeline-Name=greptime_trace_v1,X-Greptime-Trace-Table-Name=autonogrammer_traces";

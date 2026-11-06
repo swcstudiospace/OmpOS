@@ -18,9 +18,10 @@ namespace Autonogrammer.Api.IntegrationTests;
 /// <c>Program</c> reads <c>Otel:Exporter</c> while it composes the host, and the test host applies its configuration overrides after that
 /// (see <c>SessionStoreRegistration</c>). The selection is therefore made through the process environment (<c>Otel__Exporter</c>), the
 /// source a deployment uses. The variable is process-wide: a host created while it is set builds an otlp exporter for its own default
-/// endpoint, which never reaches this collector. xUnit runs the tests of one class sequentially, so the positive case never overlaps the
-/// negative case.
+/// endpoint, which never reaches this collector. The class runs in the collection that runs alone (<c>ProcessPathSerialization</c>), so no
+/// other test's host is built while the variable is set.
 /// </remarks>
+[Collection(ProcessPathSerialization.Name)]
 public sealed class OtlpExporterSelectionTests
 {
     private const string ExporterVariable = "Otel__Exporter";
