@@ -1,0 +1,11 @@
+Bootstrap gate excerpt, commit 141ad91e, run 2026-11-06, clean worktree, exit 0 (1250 s).
+The full log (/tmp/ag-recon/gate-141ad91e.log) and the smoke JSON and logs (kept evidence directory /tmp/tmp.BRydf6d3JQ) stay outside the repository, as before.
+
+bootstrap: OK (SDK 10.0.402, locked restore, Release build, tests, format, web smoke with axe)
+build: 0 warnings, 0 errors (Release, warnings as errors)
+tests: total 14503, failed 0, succeeded 14500, skipped 3 (duration 4m 57s)
+api smoke exit=0; size budget exit=0; demo smoke exit=0; artifact smoke exit=0
+api half: routes:inapp 9 in one pass; no route findings. Head state of all 9 steps: titleElements=1, titleBeforeBase=false, titleLastChild=true.
+demo half: routes:inapp 7 in one pass; no route findings. Head state of all 7 steps: titleElements=1, titleBeforeBase=false, titleLastChild=true.
+reading: in normal operation the document holds one title element, the one HeadOutlet writes; it sits after base and is the last head child. The static title of index.html is not present.
+race: not reproduced in this gate. Gate 49f1109c restarted the api half once (boot-title-after-step at the Kanban tab, then sequence-retried); the restart passed.
