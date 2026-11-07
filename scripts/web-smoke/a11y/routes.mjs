@@ -42,6 +42,13 @@ const DIRECT_ROUTES = [
   { route: "/does-not-exist-a11y", layout: "bare", ready: "!!document.querySelector('.autonogrammer-notfound-page h1')" },
 ];
 
+/** The ready state DIRECT_ROUTES checks for a route, or null when the route has none (session pages). */
+function readyFor(path) {
+  return DIRECT_ROUTES.find((spec) => spec.route === path)?.ready ?? null;
+}
+// runStep returns this when the target route did not render its ready state: the address moved and the render did not, so the sequence restarts.
+const NOT_READY = Symbol("not-ready");
+
 const FOCUS_CONDITIONS = {
   h1: "document.activeElement && document.activeElement.tagName === 'H1'",
   conversation: "document.activeElement && document.activeElement.id === 'autonogrammer-conversation'",
@@ -137,6 +144,10 @@ async function runSequence(page, report, kind) {
   let position = 0;
   for (const step of inAppSteps(kind)) {
     const snap = await runStep(page, report, step, history, position);
+    if (snap === NOT_READY) {
+      report.add({ check: "routes", id: "route-not-ready", severity: "warning", message: `${step.name}: the route did not render its ready state within ${Math.round(STEP_WAIT_MS / 1000)} s; the in-app sequence restarts`, state: `in-app ${step.name}`, viewport: "inapp" });
+      return null;
+    }
     if (snap && snap.title.trim() === BOOT_TITLE) {
       const detail = JSON.stringify({ previousTitle: snap.previousTitle, before: snap.stateBefore, after: snap.stateAfter, pageErrors: snap.pageErrors });
       report.add({ check: "routes", id: "boot-title-after-step", severity: "warning", message: `${step.name}: the title read the boot title at ${snap.path}, so the in-app sequence restarts; detail ${detail}`, state: `in-app ${step.name}`, viewport: "inapp" });
@@ -150,7 +161,7 @@ async function runSequence(page, report, kind) {
   return entries;
 }
 
-/** Runs one in-app step. Returns the page snapshot with the history position, or null when the step could not be acted on. */
+/** Runs one in-app step. Returns the page snapshot with the history position, NOT_READY when the route did not render, or null when the step could not be acted on. */
 async function runStep(page, report, step, history, position) {
   const before = await page.lib("probeRouteState");
   const errorMark = pageErrors.length;
@@ -180,6 +191,10 @@ async function runStep(page, report, step, history, position) {
     report.add({ check: "routes", id: "route-not-reached", severity: "error", message: `${step.name}: the address did not become ${expected ?? `${step.pathStart}…`}`, state: `in-app ${step.name}`, viewport: "inapp" });
     return null;
   }
+  // The address moves before the render does. Wait for the target route's own ready state, so no entry is recorded from a page still
+  // on the boot shell. A route with no ready state (session pages) keeps the waits below.
+  const ready = readyFor(expected);
+  if (ready && !(await page.waitFor(ready, STEP_WAIT_MS))) return NOT_READY;
   if (!step.history) {
     history.length = position + 1;
     history.push(await page.evalValue("location.pathname"));
