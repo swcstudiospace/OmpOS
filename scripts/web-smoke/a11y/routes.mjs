@@ -145,7 +145,7 @@ async function runSequence(page, report, kind) {
   for (const step of inAppSteps(kind)) {
     const snap = await runStep(page, report, step, history, position);
     if (snap === NOT_READY) {
-      report.add({ check: "routes", id: "route-not-ready", severity: "warning", message: `${step.name}: the route did not render its ready state within ${Math.round(STEP_WAIT_MS / 1000)} s; the in-app sequence restarts`, state: `in-app ${step.name}`, viewport: "inapp" });
+      report.add({ check: "routes", id: "route-not-ready", severity: "warning", message: `${step.name}: the route did not render its ready state within ${Math.round(LOAD_TIMEOUT_MS / 1000)} s; the in-app sequence restarts`, state: `in-app ${step.name}`, viewport: "inapp" });
       return null;
     }
     if (snap && snap.title.trim() === BOOT_TITLE) {
@@ -192,9 +192,9 @@ async function runStep(page, report, step, history, position) {
     return null;
   }
   // The address moves before the render does. Wait for the target route's own ready state, so no entry is recorded from a page still
-  // on the boot shell. A route with no ready state (session pages) keeps the waits below.
+  // on the boot shell, within the budget a direct load gets. A route with no ready state (session pages) keeps the waits below.
   const ready = readyFor(expected);
-  if (ready && !(await page.waitFor(ready, STEP_WAIT_MS))) return NOT_READY;
+  if (ready && !(await page.waitFor(ready, LOAD_TIMEOUT_MS))) return NOT_READY;
   if (!step.history) {
     history.length = position + 1;
     history.push(await page.evalValue("location.pathname"));
