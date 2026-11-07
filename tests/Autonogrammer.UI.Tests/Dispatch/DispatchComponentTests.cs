@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Autonogrammer.UI.Tests.Dispatch;
 
-/// <summary>The Dispatch components: each state has its text, the approval prompt has its three named actions, Stop is a named button, and the page announces politely.</summary>
+/// <summary>The Dispatch components: each state has its text, failures are announced assertively, the approval prompt has its three named actions, Stop is a named button, and the page announces politely through one region.</summary>
 public sealed class DispatchComponentTests : UiTestContext
 {
     private static DispatchPageModel EmptyPage() => new(DevicesViewModel.Loaded([]), [], PairThisDevice: null);
@@ -33,6 +33,30 @@ public sealed class DispatchComponentTests : UiTestContext
         var cut = Render<DispatchPageView>(parameters => parameters.Add(p => p.Model, page));
 
         cut.Markup.ShouldContain(DispatchCopy.ForFailure(DispatchFailureReason.Timeout));
+    }
+
+    /// <summary>A failed command is announced through the assertive region, with the text for its failure reason.</summary>
+    [Fact]
+    public void AFailedCommandIsAnnouncedAssertively()
+    {
+        var row = DispatchCommandRowModel.From("command-1", "run", DispatchPhase.Failed, "Fix the build", DispatchFailureReason.Timeout);
+        var page = new DispatchPageModel(DevicesViewModel.Loaded([]), [row], PairThisDevice: null);
+
+        var cut = Render<DispatchPageView>(parameters => parameters.Add(p => p.Model, page));
+
+        cut.Find("[aria-live='assertive']").TextContent.ShouldContain(DispatchCopy.ForFailure(DispatchFailureReason.Timeout));
+    }
+
+    /// <summary>An unreachable service is announced through the assertive region, with the text for its phase.</summary>
+    [Fact]
+    public void AnUnreachableServiceIsAnnouncedAssertively()
+    {
+        var devices = DevicesViewModel.Failed(new DispatchHostException(DispatchHostFailureKind.Unavailable, "The service is down."));
+        var page = new DispatchPageModel(devices, [], PairThisDevice: null);
+
+        var cut = Render<DispatchPageView>(parameters => parameters.Add(p => p.Model, page));
+
+        cut.Find("[aria-live='assertive']").TextContent.ShouldContain(DispatchCopy.ForPhase(DispatchPhase.Unreachable));
     }
 
     /// <summary>The approval prompt names its three actions in order, and Approve once raises its callback.</summary>
@@ -72,7 +96,7 @@ public sealed class DispatchComponentTests : UiTestContext
         stopped.ShouldBeTrue();
     }
 
-    /// <summary>The page announces its changes through a polite live region.</summary>
+    /// <summary>The page announces its transient message through one polite live region.</summary>
     [Fact]
     public void ThePageAnnouncesPolitely()
     {

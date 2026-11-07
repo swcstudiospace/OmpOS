@@ -1,52 +1,59 @@
 @namespace Autonogrammer.UI.Components.Dispatch
 @using Autonogrammer.Presentation.Dispatch
 
-<section class="autonogrammer-dispatch" aria-labelledby="autonogrammer-dispatch-title">
-    <h2 class="autonogrammer-settings-page-title" id="autonogrammer-dispatch-title">@DispatchCopy.PageHeading</h2>
-    @if (Model.Devices.Phase is { } phase)
+<section class="dispatch-page" aria-labelledby="dispatch-page-heading">
+    <h2 id="dispatch-page-heading">@DispatchCopy.PageHeading</h2>
+
+    <p class="dispatch-status">@Model.Devices.StatusText</p>
+
+    <div class="dispatch-failures" aria-live="assertive" aria-atomic="true">
+        @if (Model.Devices.Phase == DispatchPhase.Unreachable)
+        {
+            <p>@Model.Devices.StatusText</p>
+        }
+        @foreach (var failed in Model.Commands.Where(command => command.Phase == DispatchPhase.Failed))
+        {
+            <p>@failed.StatusText</p>
+        }
+    </div>
+
+    @if (Model.Devices.Rows.Count > 0)
     {
-        <p class="autonogrammer-dispatch-status" data-phase="@phase">@Model.Devices.StatusText</p>
-    }
-    else
-    {
-        <ul class="autonogrammer-dispatch-list" aria-label="@DispatchCopy.DevicesLabel">
-            @foreach (var row in Model.Devices.Rows)
+        <ul class="dispatch-devices" aria-label="@DispatchCopy.DevicesLabel">
+            @foreach (var device in Model.Devices.Rows)
             {
-                <li class="autonogrammer-dispatch-row">
-                    <span>@row.Name</span>
-                    <span class="autonogrammer-dispatch-status">@row.StatusText</span>
+                <li>
+                    <span>@device.Name</span>
+                    <span class="dispatch-muted">@device.StatusText</span>
                 </li>
             }
         </ul>
     }
-    <ul class="autonogrammer-dispatch-list" aria-label="@DispatchCopy.CommandsLabel">
-        @foreach (var command in Model.Commands)
-        {
-            <li class="autonogrammer-dispatch-row" data-phase="@command.Phase">
-                <span class="autonogrammer-dispatch-task">@command.TaskText</span>
-                <span class="autonogrammer-dispatch-status">@command.StatusText</span>
-            </li>
-        }
-    </ul>
-    @if (Model.PairThisDevice is { } pair)
+
+    @if (Model.Commands.Count > 0)
     {
-        <section class="autonogrammer-dispatch-pair" aria-label="@DispatchCopy.PageHeading">
-            <p class="autonogrammer-dispatch-status">@pair.StatusText</p>
-        </section>
+        <ul class="dispatch-commands" aria-label="@DispatchCopy.CommandsLabel">
+            @foreach (var command in Model.Commands)
+            {
+                <li>
+                    <span>@command.TaskText</span>
+                    <span class="dispatch-muted">@command.StatusText</span>
+                </li>
+            }
+        </ul>
     }
-    else
-    {
-        <p class="autonogrammer-dispatch-status">@DispatchCopy.PairInDesktopApp</p>
-    }
-    <span class="autonogrammer-live-region" role="status" aria-live="polite" aria-atomic="true">@Announcement</span>
+
+    <p class="dispatch-pair">@(Model.PairThisDevice is { } pair ? pair.StatusText : DispatchCopy.PairInDesktopApp)</p>
+
+    <p class="dispatch-announcement" aria-live="polite" aria-atomic="true">@Announcement</p>
 </section>
 
 @code {
-    /// <summary>Gets the page to draw.</summary>
+    /// <summary>The page model: devices or their one phase, command rows, and this device's pairing when the head has one.</summary>
     [Parameter, EditorRequired]
     public DispatchPageModel Model { get; set; } = default!;
 
-    /// <summary>Gets the text announced politely when the page changes.</summary>
+    /// <summary>A short status message the page announces politely when its state changes, such as "Command sent."</summary>
     [Parameter]
     public string? Announcement { get; set; }
 }

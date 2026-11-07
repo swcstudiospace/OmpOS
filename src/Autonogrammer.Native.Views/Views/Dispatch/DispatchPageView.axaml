@@ -9,7 +9,7 @@
     <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
   </UserControl.Styles>
 
-  <!-- The Dispatch page. The status line is the one phase or the device count; the rows follow in XAML order. -->
+  <!-- The Dispatch page. The status line is polite, the failure line is assertive; the rows and the pairing text follow in XAML order. -->
   <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
 
     <TextBlock x:Name="PageHeading"
@@ -20,6 +20,11 @@
                Text="{CompiledBinding Devices.StatusText}"
                TextWrapping="Wrap"
                AutomationProperties.LiveSetting="Polite" />
+
+    <TextBlock x:Name="FailureText"
+               Classes="settings-body"
+               TextWrapping="Wrap"
+               AutomationProperties.LiveSetting="Assertive" />
 
     <ItemsControl x:Name="DeviceList"
                   ItemsSource="{CompiledBinding Devices.Rows}">
@@ -57,8 +62,7 @@
 
     <TextBlock x:Name="PairText"
                Classes="settings-body"
-               TextWrapping="Wrap"
-               AutomationProperties.LiveSetting="Polite" />
+               TextWrapping="Wrap" />
 
   </StackPanel>
 </UserControl>

@@ -1,15 +1,39 @@
+using Autonogrammer.Contracts.Dispatch;
 using Autonogrammer.Native.Views.Dispatch;
 using Autonogrammer.Presentation.Dispatch;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 
 namespace Autonogrammer.Native.Tests.Dispatch;
 
-/// <summary>The Dispatch views draw the presentation models in their own text, and each button raises the decision it names.</summary>
+/// <summary>The Dispatch views draw the presentation models in their own text, announce failures assertively, and each button raises the decision it names.</summary>
 public sealed class DispatchViewTests
 {
+    /// <summary>The page reads its devices through the Dispatch host port, the way every head does, and shows the device names it lists.</summary>
+    [Fact]
+    public async Task ThePageShowsTheDevicesTheFakeHostLists()
+    {
+        var headless = TestAppBuilder.StartSession();
+        await using var headlessScope = headless.ConfigureAwait(true);
+
+        await headless.RunAsync(async () =>
+        {
+            var host = new FakeDispatchHost([new DispatchDevice("device-1", "Office Mac", Online: true, PresenceKnown: true)]);
+            var devices = await host.ListDevicesAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+            var view = new DispatchPageView { DataContext = new DispatchPageModel(DevicesViewModel.Loaded(devices), [], PairThisDevice: null) };
+            var window = new Window { Content = view };
+            window.Show();
+            ShellHarness.Settle(window);
+
+            view.GetVisualDescendants().OfType<TextBlock>().Any(text => string.Equals(text.Text, "Office Mac", StringComparison.Ordinal)).ShouldBeTrue();
+            window.Close();
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
     /// <summary>An account with no devices shows the no-devices text in the page's status line.</summary>
     [Fact]
     public async Task ThePageShowsTheNoDevicesText()
@@ -47,6 +71,50 @@ public sealed class DispatchViewTests
             ShellHarness.Settle(window);
 
             view.FindControl<TextBlock>("PairText")!.Text.ShouldBe(DispatchCopy.PairInDesktopApp);
+            window.Close();
+            return Task.CompletedTask;
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>A failed command is announced through the failure line, which is assertive.</summary>
+    [Fact]
+    public async Task AFailedCommandIsAnnouncedAssertively()
+    {
+        var headless = TestAppBuilder.StartSession();
+        await using var headlessScope = headless.ConfigureAwait(true);
+
+        await headless.RunAsync(() =>
+        {
+            var row = DispatchCommandRowModel.From("command-1", "run", DispatchPhase.Failed, "Fix the build", DispatchFailureReason.Timeout);
+            var view = new DispatchPageView { DataContext = new DispatchPageModel(DevicesViewModel.Loaded([]), [row], PairThisDevice: null) };
+            var window = new Window { Content = view };
+            window.Show();
+            ShellHarness.Settle(window);
+
+            var failure = view.FindControl<TextBlock>("FailureText")!;
+            failure.Text!.ShouldContain(DispatchCopy.ForFailure(DispatchFailureReason.Timeout));
+            AutomationProperties.GetLiveSetting(failure).ToString().ShouldBe("Assertive");
+            window.Close();
+            return Task.CompletedTask;
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>An unreachable service is announced through the failure line, with the text for its phase.</summary>
+    [Fact]
+    public async Task AnUnreachableServiceIsAnnouncedAssertively()
+    {
+        var headless = TestAppBuilder.StartSession();
+        await using var headlessScope = headless.ConfigureAwait(true);
+
+        await headless.RunAsync(() =>
+        {
+            var devices = DevicesViewModel.Failed(new DispatchHostException(DispatchHostFailureKind.Unavailable, "The service is down."));
+            var view = new DispatchPageView { DataContext = new DispatchPageModel(devices, [], PairThisDevice: null) };
+            var window = new Window { Content = view };
+            window.Show();
+            ShellHarness.Settle(window);
+
+            view.FindControl<TextBlock>("FailureText")!.Text!.ShouldContain(DispatchCopy.ForPhase(DispatchPhase.Unreachable));
             window.Close();
             return Task.CompletedTask;
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
