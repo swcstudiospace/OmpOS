@@ -109,8 +109,32 @@
           "Microsoft.JSInterop": "10.0.13"
         }
       },
+      "autonogrammer.accounts": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
+        }
+      },
       "autonogrammer.contracts": {
         "type": "Project"
+      },
+      "autonogrammer.cowork.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.cowork.artifacts": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
+          "DiffPlex": "[1.9.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
+          "Microsoft.Extensions.Options.ConfigurationExtensions": "[10.0.13, )"
+        }
       },
       "autonogrammer.genui": {
         "type": "Project",
@@ -118,7 +142,13 @@
           "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
+      "autonogrammer.harness.computeruse.abstractions": {
+        "type": "Project"
+      },
       "autonogrammer.harness.providers": {
+        "type": "Project"
+      },
+      "autonogrammer.harness.secrets": {
         "type": "Project"
       },
       "autonogrammer.parser": {
@@ -133,6 +163,7 @@
         "dependencies": {
           "Autonogrammer.Contracts": "[0.15.0, )",
           "Autonogrammer.GenUi": "[0.15.0, )",
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.15.0, )",
           "Autonogrammer.Parser": "[0.15.0, )",
           "Markdig": "[1.4.2, )"
         }
@@ -141,10 +172,17 @@
         "type": "Project",
         "dependencies": {
           "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Artifacts": "[0.15.0, )",
           "Autonogrammer.GenUi": "[0.15.0, )",
           "Autonogrammer.Presentation": "[0.15.0, )",
           "Microsoft.AspNetCore.Components.Web": "[10.0.13, )"
         }
+      },
+      "DiffPlex": {
+        "type": "CentralTransitive",
+        "requested": "[1.9.0, )",
+        "resolved": "1.9.0",
+        "contentHash": "Z4IDEH6iOb6d+Y2QUjsbq1Fp5I/kwZzNdr/evBTbCGq+ShAjE4baLm7lX1tfjV2p34QI3V9kctCQziFuuKqeCA=="
       },
       "Markdig": {
         "type": "CentralTransitive",

@@ -238,6 +238,12 @@
       "autonogrammer.contracts": {
         "type": "Project"
       },
+      "autonogrammer.cowork.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )"
+        }
+      },
       "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
@@ -268,6 +274,7 @@
       "autonogrammer.harness.mcpgateway": {
         "type": "Project",
         "dependencies": {
+          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
           "Autonogrammer.Harness.Mcp": "[0.15.0, )"
         }
       },

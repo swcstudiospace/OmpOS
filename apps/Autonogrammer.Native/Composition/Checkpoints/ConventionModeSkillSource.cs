@@ -34,8 +34,10 @@ internal sealed class ConventionModeSkillSource : IModeSkillSource
     /// <inheritdoc />
     public async Task<IReadOnlyList<ModeSkill>> ListAsync(CancellationToken cancellationToken)
     {
+        var local = ConventionSources.Local(_roots, _userHome);
+        var pluginRoots = Autonogrammer.Native.Composition.Plugins.BundleComposition.PluginRootsFor?.Invoke(false);
         var sources = _files is null
-            ? ConventionSources.Local(_roots, _userHome)
+            ? (pluginRoots is { Count: > 0 } ? local.WithPluginRoots(pluginRoots) : local)
             : new ConventionSources(_files, _files);
         var set = await ConventionCatalog.DiscoverAsync(_roots, _userHome, sources, null, cancellationToken).ConfigureAwait(false);
         var paths = new Dictionary<string, string>(StringComparer.Ordinal);

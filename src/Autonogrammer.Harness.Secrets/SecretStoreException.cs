@@ -25,4 +25,26 @@ public sealed class SecretStoreException : Exception
         : base(message, innerException)
     {
     }
+
+    /// <summary>Initializes a new instance of the <see cref="SecretStoreException"/> class with a message and a classified failure.</summary>
+    /// <param name="message">The sentence that says what failed. It must not contain a secret.</param>
+    /// <param name="failure">The kind of failure.</param>
+    public SecretStoreException(string message, SecretStoreFailure failure)
+        : base(message)
+    {
+        Failure = failure;
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="SecretStoreException"/> class with a message, a classified failure and the failure behind it.</summary>
+    /// <param name="message">The sentence that says what failed. It must not contain a secret.</param>
+    /// <param name="failure">The kind of failure.</param>
+    /// <param name="innerException">The failure behind the message. It must not carry a secret.</param>
+    public SecretStoreException(string message, SecretStoreFailure failure, Exception innerException)
+        : base(message, innerException)
+    {
+        Failure = failure;
+    }
+
+    /// <summary>Gets the kind of failure. It is <see cref="SecretStoreFailure.Other"/> unless the store classified the error.</summary>
+    public SecretStoreFailure Failure { get; } = SecretStoreFailure.Other;
 }

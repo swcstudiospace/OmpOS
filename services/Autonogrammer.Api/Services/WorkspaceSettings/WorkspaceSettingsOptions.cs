@@ -21,8 +21,8 @@ internal sealed class WorkspaceSettingsOptions
     public bool IncludeUserScope { get; set; }
 
     /// <summary>
-    /// Gets or sets the subjects that may read the workspace and settings endpoints. Empty means every authenticated caller. A caller outside a
-    /// non-empty list gets 404, as a caller of another owner's session does.
+    /// Gets or sets the subjects that may read the workspace and settings endpoints. Empty denies every caller (404), except the single operator of an
+    /// owner-token deployment and the Development-only developer principal. A caller outside a non-empty list gets 404, as a caller of another owner's session does.
     /// </summary>
     public List<string> Owners { get; set; } = [];
 

@@ -23,6 +23,7 @@ public sealed class UiBlockJsonTests
         { "diff", new DiffPlaceholderBlock { Id = "b6", Path = "src/a.cs", Reason = "Too large" } },
         { "tool_result", new ToolResultBlock { Id = "b10", CallId = "call-1", ToolName = "bash", Status = "completed", Output = "a.txt" } },
         { "file_edit", new FileEditBlock { Id = "b11", CallId = "call-2", Path = "src/a.cs", OldText = "old", NewText = "new" } },
+        { "image", new ImageBlock { Id = "b12", CallId = "call-3", ToolName = "screenshot", MimeType = "image/png", DataBase64 = "aGVsbG8=", Description = "chart", ByteLength = 5, Omitted = false } },
         { "a2ui-surface", new A2uiSurfaceBlock { Id = "b8", SurfaceId = "s1", Payload = JsonDocument.Parse("""{"catalog":"core"}""").RootElement.Clone() } },
         { "error", new ErrorBlock { Id = "b7", Message = "boom", Retryable = true } },
         { "unknown", new UnknownBlock { Id = "b9", OriginalKind = "unknown", Raw = JsonDocument.Parse("""{"kind":"unknown","id":"b9","note":"kept"}""").RootElement.Clone() } },

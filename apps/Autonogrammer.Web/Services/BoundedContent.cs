@@ -53,6 +53,19 @@ internal static class BoundedContent
         return await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>Reads a bounded body as raw bytes, as an artifact version body is (never decoded here).</summary>
+    /// <param name="content">The response content.</param>
+    /// <param name="maxBytes">The largest body accepted, in bytes.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The body bytes.</returns>
+    /// <exception cref="ApiClientException">The body is larger than <paramref name="maxBytes"/>.</exception>
+    internal static async Task<byte[]> ReadBytesAsync(HttpContent content, long maxBytes, CancellationToken cancellationToken)
+    {
+        using var buffer = new MemoryStream();
+        await CopyBoundedAsync(content, buffer, maxBytes, cancellationToken).ConfigureAwait(false);
+        return buffer.ToArray();
+    }
+
     /// <summary>Copies a body into <paramref name="destination"/>, refusing it once it would exceed <paramref name="maxBytes"/>.</summary>
     /// <param name="content">The response content.</param>
     /// <param name="destination">The buffer that receives the body.</param>

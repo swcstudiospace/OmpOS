@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "later": true,
+  "projects": [
+    {
+      "id": "old-1",
+      "name": "Legacy",
+      "folder": "/tmp/legacy-desk",
+      "instructions": "keep the old note",
+      "mystery": 7
+    }
+  ]
+}

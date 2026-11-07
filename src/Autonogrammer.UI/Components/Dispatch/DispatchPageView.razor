@@ -1,0 +1,73 @@
+@namespace Autonogrammer.UI.Components.Dispatch
+@using Autonogrammer.Presentation.Dispatch
+
+<section class="dispatch-page" aria-labelledby="dispatch-page-heading">
+    <h3 id="dispatch-page-heading" tabindex="-1" @ref="_heading">@DispatchCopy.PageHeading</h3>
+
+    <p class="dispatch-status">@Model.Devices.StatusLine</p>
+
+    <div class="dispatch-failures" aria-live="assertive" aria-atomic="true">
+        @foreach (var line in Model.Failures)
+        {
+            <p>@line</p>
+        }
+    </div>
+
+    @if (Model.Devices.Rows.Count > 0)
+    {
+        <ul class="dispatch-devices" aria-label="@DispatchCopy.DevicesLabel">
+            @foreach (var device in Model.Devices.Rows)
+            {
+                <li>
+                    <span>@device.Name</span>
+                    <span class="dispatch-muted">@device.StatusText</span>
+                </li>
+            }
+        </ul>
+    }
+
+    @if (Model.Commands.Count > 0)
+    {
+        <ul class="dispatch-commands" aria-label="@DispatchCopy.CommandsLabel">
+            @foreach (var command in Model.Commands)
+            {
+                <li>
+                    <span>@command.TaskText</span>
+                    <span class="dispatch-muted">@command.StatusText</span>
+                    @if (command.CanCancel)
+                    {
+                        <button type="button" class="dispatch-cancel" aria-label="@CancelName(command)" @onclick="() => CancelAsync(command.CommandId)">@DispatchCopy.CancelLabel</button>
+                    }
+                </li>
+            }
+        </ul>
+    }
+
+    <p class="dispatch-pair">@(Model.PairThisDevice is { } pair ? pair.StatusText : DispatchCopy.PairInDesktopApp)</p>
+
+    <p class="dispatch-announcement" aria-live="polite" aria-atomic="true">@Announcement</p>
+</section>
+
+@code {
+    private ElementReference _heading;
+
+    /// <summary>The page model: devices or their one phase, the failure lines, command rows, and this device's pairing when the head has one.</summary>
+    [Parameter, EditorRequired]
+    public DispatchPageModel Model { get; set; } = default!;
+
+    /// <summary>A short status message the page announces politely when its state changes, such as "Command sent."</summary>
+    [Parameter]
+    public string? Announcement { get; set; }
+
+    /// <summary>Raised when the user asks to cancel a running command; the argument is the command identifier.</summary>
+    [Parameter]
+    public EventCallback<string> OnCancel { get; set; }
+
+    private static string CancelName(DispatchCommandRowModel command) => $"{DispatchCopy.CancelLabel}: {command.TaskText}";
+
+    private async Task CancelAsync(string commandId)
+    {
+        await OnCancel.InvokeAsync(commandId).ConfigureAwait(true);
+        await _heading.FocusAsync().ConfigureAwait(true);
+    }
+}

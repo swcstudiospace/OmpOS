@@ -950,6 +950,20 @@ public static class SlashCommandCatalogue
             "E01"),
         (
             Make(
+                "create-plugin",
+                SlashCommandGroup.BuiltInSkill,
+                "Built-in skill: writes plugin bundles with skills, commands, agents and optional MCP and hooks files.",
+                SlashHandlerKind.Skill,
+                SlashCommandStatus.Built,
+                "skill.create-plugin",
+                "",
+                BuiltinNote,
+                actionArgument: null,
+                engineCommand: null,
+                aliasOf: null),
+            "E02"),
+        (
+            Make(
                 "add-dir",
                 SlashCommandGroup.Cli,
                 "Adds a directory mid-session; refreshes skills and custom commands.",

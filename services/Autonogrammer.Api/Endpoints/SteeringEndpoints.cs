@@ -55,7 +55,6 @@ internal static class SteeringEndpoints
         SessionService sessions,
         ISessionRepository repository,
         LiveSessionTracker tracker,
-        SessionLifecycleStore lifecycle,
         SessionChangePublisher publisher,
         IOptions<ApiOptions> options,
         IUserContext user,
@@ -85,7 +84,7 @@ internal static class SteeringEndpoints
             return SessionEndpoints.ProblemResponse(400, "Invalid steering message.", $"The message exceeds the maximum length of {options.Value.MaxPromptLength} characters.");
         }
 
-        if (lifecycle.IsClosed(id))
+        if (session.ClosedAt is not null)
         {
             return WebProblems.Of(409, WebProblems.SessionClosed, "Session is closed.", "Reopen the session before steering it.");
         }

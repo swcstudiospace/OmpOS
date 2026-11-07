@@ -2,7 +2,7 @@
 #   podman build -f deploy/worker.Containerfile -t autonogrammer-agent-worker:local .
 # Run it locally (loopback only; the public key is the PEM of the control plane's token signing key):
 #   podman run --rm -p 127.0.0.1:8088:8080 -v autonogrammer-worker-data:/data \
-#     -e Worker__Auth__PublicKeysPem__0="$AUTONOGRAMMER_WORKER_JWT_PUBLIC_KEY_PEM" -e Worker__Auth__Issuer=autonogrammer-api \
+#     -e Worker__Auth__PublicKeysPem__0="$AUTONOGRAMMER_WORKER_JWT_PUBLIC_KEY_PEM" -e Worker__Auth__Issuer=ompos-api \
 #     -e Worker__WorkspaceRoot=/data/work -e PORT=8080 localhost/autonogrammer-agent-worker:local
 #
 # Base image tags (identical to deploy/api.Containerfile):

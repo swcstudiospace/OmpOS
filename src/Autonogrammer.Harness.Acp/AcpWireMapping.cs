@@ -184,7 +184,8 @@ internal static class AcpWireMapping
     private static ContextUsageEvent Usage(JsonElement update)
     {
         var usage = update.Deserialize(AcpJsonContext.Default.UsageUpdate) ?? throw new JsonException("usage_update carries no usage.");
-        return new ContextUsageEvent(Math.Max(usage.Used, 0), Math.Max(usage.Size, 0));
+        UsageCost? cost = usage.Cost is null ? null : UsageCost.Create(usage.Cost.Amount, usage.Cost.Currency);
+        return new ContextUsageEvent(Math.Max(usage.Used, 0), Math.Max(usage.Size, 0), cost);
     }
 
     private static string Box(string status) => status switch

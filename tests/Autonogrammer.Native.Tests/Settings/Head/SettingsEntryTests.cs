@@ -1,3 +1,4 @@
+#pragma warning disable MA0004
 using Autonogrammer.Native.Agents;
 using Autonogrammer.Native.Settings;
 using Autonogrammer.Native.Tests.AgentLoop;
@@ -205,7 +206,7 @@ public sealed class SettingsEntryTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var head = AgentHead.Create(new AgentHeadOptions
+        var head = await AgentHead.CreateAsync(new AgentHeadOptions
         {
             PluginsRoot = tree.Plugins,
             StateRoot = tree.State,
@@ -214,7 +215,7 @@ public sealed class SettingsEntryTests
             MaintenanceInterval = Timeout.InfiniteTimeSpan,
             DetailsRefreshInterval = Timeout.InfiniteTimeSpan,
             RuntimeSweepInterval = Timeout.InfiniteTimeSpan,
-        });
+        }).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await using var session = TestAppBuilder.StartSession();
         await session.Dispatch(() =>
@@ -250,3 +251,5 @@ public sealed class SettingsEntryTests
         }
     }
 }
+
+#pragma warning restore MA0004

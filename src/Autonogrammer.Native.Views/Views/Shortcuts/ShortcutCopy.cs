@@ -18,6 +18,12 @@ public static class ShortcutCopy
     /// <summary>The label of the shortcut that focuses the prompt.</summary>
     public const string FocusPrompt = "Focus the prompt";
 
+    /// <summary>The label of the shortcut that shows the Code workspace.</summary>
+    public const string ShowCodeSurface = "Show the Code workspace";
+
+    /// <summary>The label of the shortcut that shows the Cowork workspace.</summary>
+    public const string ShowCoworkSurface = "Show the Cowork workspace";
+
     /// <summary>The label of the shortcut that opens the transcript search.</summary>
     public const string SearchTranscript = "Search the transcript";
 
@@ -89,4 +95,7 @@ public static class ShortcutCopy
 
     /// <summary>The label of the shortcut that selects the last Settings section.</summary>
     public const string LastSection = "Select the last section";
+
+    /// <summary>The label of the shortcut that stops browser control.</summary>
+    public const string StopBrowserControl = "Stop browser control";
 }

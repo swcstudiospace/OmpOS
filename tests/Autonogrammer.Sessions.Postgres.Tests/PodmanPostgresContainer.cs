@@ -27,6 +27,9 @@ internal sealed class PodmanPostgresContainer : IAsyncDisposable
     /// <summary>Gets the administrative connection string for the running server (user postgres, database postgres).</summary>
     internal string ConnectionString { get; }
 
+    /// <summary>Gets the name of the container, for <c>podman exec</c>.</summary>
+    internal string Name => _name;
+
     /// <summary>Starts a container, waits until it accepts connections, and returns it.</summary>
     /// <param name="cancellationToken">Cancels the start.</param>
     /// <returns>The running container.</returns>

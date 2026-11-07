@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+             x:Class="Autonogrammer.Native.Views.Cowork.Artifacts.ArtifactCodeView"
+             Focusable="False">
+  <ae:TextEditor x:Name="Editor"
+                 IsReadOnly="True"
+                 ShowLineNumbers="True"
+                 Background="{DynamicResource Autonogrammer.Color.SurfaceSunken}"
+                 Foreground="{DynamicResource Autonogrammer.Color.TextPrimary}"
+                 FontFamily="{DynamicResource Autonogrammer.Font.Mono}"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Mono}"
+                 AutomationProperties.Name="Code" />
+</UserControl>

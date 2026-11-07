@@ -25,7 +25,7 @@ public sealed class BuiltinSkillsDesktopTests : IDisposable
     private async Task<SlashDiscovery> DiscoverAsync() =>
         await new ConventionSlashDiscoverySource([_workspace.Root], null).LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
-    /// <summary>The skills folder is next to the test application and the default desktop discovery finds the ten shipped skills in the built-in scope, each as a file on disk, with no problem.</summary>
+    /// <summary>The skills folder is next to the test application and the default desktop discovery finds the eleven shipped skills in the built-in scope, each as a file on disk, with no problem.</summary>
     [Fact]
     public async Task TheDesktopDiscoveryFindsEveryShippedSkillInTheRealFolder()
     {
@@ -49,7 +49,7 @@ public sealed class BuiltinSkillsDesktopTests : IDisposable
             .Order(StringComparer.Ordinal)
             .ToArray();
 
-        tokens.ShouldBe(["agent-review", "create-hook", "create-rule", "create-skill", "create-subagent", "migrate-to-skills", "review", "review-security", "split-to-prs", "update-settings"]);
+        tokens.ShouldBe(["agent-review", "create-hook", "create-plugin", "create-rule", "create-skill", "create-subagent", "migrate-to-skills", "review", "review-security", "split-to-prs", "update-settings"]);
         tokens.ShouldBe(ShippedNames());
         var resolver = new SlashCommandResolver(SlashCommandCatalogue.Shipped);
         var context = new SlashResolutionContext([], discovery, null);

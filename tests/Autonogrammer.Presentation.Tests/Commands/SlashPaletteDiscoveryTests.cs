@@ -46,7 +46,7 @@ public sealed class SlashPaletteDiscoveryTests
         var palette = Shipped();
         palette.UpdateDraft("/create-");
 
-        palette.Entries.Select(entry => entry.Name).ShouldBe(["create-hook", "create-rule", "create-skill", "create-subagent"]);
+        palette.Entries.Select(entry => entry.Name).ShouldBe(["create-hook", "create-plugin", "create-rule", "create-skill", "create-subagent"]);
         palette.Entries.ShouldAllBe(entry => !entry.IsEnabled && entry.Source == SlashPaletteSource.Cursor);
 
         palette.SetDiscovered(Discovery());
@@ -55,7 +55,7 @@ public sealed class SlashPaletteDiscoveryTests
         rule.Source.ShouldBe(SlashPaletteSource.Skill);
         rule.IsEnabled.ShouldBeTrue();
         rule.ScopeLabel.ShouldBe("user");
-        palette.Entries.Count.ShouldBe(4, "the built-in row is replaced, not repeated");
+        palette.Entries.Count.ShouldBe(5, "the built-in row is replaced, not repeated");
     }
 
     /// <summary>A skill that omp advertises as skill:&lt;name&gt; also stands for the built-in row.</summary>

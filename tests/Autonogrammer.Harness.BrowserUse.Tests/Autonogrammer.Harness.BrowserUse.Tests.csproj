@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Autonogrammer.Cowork/Autonogrammer.Cowork.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.BrowserUse/Autonogrammer.Harness.BrowserUse.csproj" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Site/pages/*.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Corpus/pages/*.html" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

@@ -1,4 +1,6 @@
 using Autonogrammer.Contracts.Cloud;
+using Autonogrammer.Resilience;
+using Autonogrammer.Sessions.Postgres.Migrations;
 using Npgsql;
 using Shouldly;
 using Xunit;
@@ -23,8 +25,8 @@ public sealed class PostgresCloudAgentStoreTests(PostgresServerFixture server)
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => PostgresCloudAgentSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct))).ConfigureAwait(true);
-            await PostgresCloudAgentSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => new MigrationRunner(schema.CreateDataSource(), schema.SchemaName).MigrateAsync(ct))).ConfigureAwait(true);
+            (await new MigrationRunner(schema.CreateDataSource(), schema.SchemaName).MigrateAsync(ct).ConfigureAwait(true)).ShouldBeEmpty();
 
             var store = new PostgresCloudAgentStore(schema.CreateDataSource());
             (await store.ListAllAsync(ct).ConfigureAwait(true)).ShouldBeEmpty();
@@ -169,8 +171,12 @@ public sealed class PostgresCloudAgentStoreTests(PostgresServerFixture server)
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            var first = await CreateStoreAsync(schema, ct).ConfigureAwait(true);
-            var second = new PostgresCloudAgentStore(schema.CreateDataSource());
+            await schema.MigrateAsync(ct).ConfigureAwait(true);
+
+            // Forty updates at once exceed the default interactive bulkhead of sixteen by design; this test is about atomicity, so the pipeline admits them all.
+            var resilience = PostgresResilience.Create(new PostgresResilienceOptions { PoolInteractive = 64 });
+            var first = new PostgresCloudAgentStore(schema.CreateDataSource(), resilience);
+            var second = new PostgresCloudAgentStore(schema.CreateDataSource(), resilience);
             _ = await first.CreateAsync(Record("a1", "alice"), new CloudAgentLimits(5, 5), ct).ConfigureAwait(true);
 
             await Task.WhenAll(Enumerable.Range(0, 40).Select(index => (index % 2 == 0 ? first : second).UpdateAsync("a1", static record => record with { ComputeSeconds = record.ComputeSeconds + 1 }, ct))).ConfigureAwait(true);
@@ -297,7 +303,7 @@ public sealed class PostgresCloudAgentStoreTests(PostgresServerFixture server)
     private static async Task<PostgresCloudAgentStore> CreateStoreAsync(PostgresTestSchema schema, CancellationToken cancellationToken)
     {
         var dataSource = schema.CreateDataSource();
-        await PostgresCloudAgentSchema.EnsureCreatedAsync(dataSource, cancellationToken).ConfigureAwait(false);
+        await new MigrationRunner(dataSource, schema.SchemaName).MigrateAsync(cancellationToken).ConfigureAwait(false);
         return new PostgresCloudAgentStore(dataSource);
     }
 

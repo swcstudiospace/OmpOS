@@ -2,15 +2,18 @@
 gsd_state_version: "1.0"
 milestone: v0.16.0
 milestone_name: Autonogrammer: accounts, Cowork and Dispatch
-status: executing
-last_updated: "2026-10-29"
-last_activity: 2026-10-29
+current_phase: "66"
+current_phase_name: Rebrand to Autonogrammer
+current_plan: "7"
+status: blocked
+last_updated: "2026-10-31"
+last_activity: 2026-10-31
 progress:
   total_phases: 16
-  completed_phases: 2
-  total_plans: 3
-  completed_plans: 2
-  percent: 12
+  completed_phases: 0
+  total_plans: 89
+  completed_plans: 69
+  percent: 0
 ---
 
 # Project State
@@ -20,14 +23,106 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-21)
 
 **Core value:** A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
+**Current focus:** v0.16.0 Autonogrammer: accounts, Cowork and Dispatch; lossless consolidation in canonical `/root/src/repos/ompos`, graph `ut-mvw138h5-b5d2e49a`. Execution is blocked on the unfinished merge, auth rework and expanded prerequisites. The current verified-completion projection is **0/16 phases**; the artifact inventory is **69/89 summarized plan slots**, leaving **20 unsummarized plans**. Summaries and source edits do not establish acceptance or a passing gate.
+
+### Historical focus (v0.15.0; retained provenance, not current-tree proof)
+
 **Current focus:** Milestone v0.15.0, Cursor completeness, brand and public launch (Phases 51 to 65), released 2026-10-28 as v0.15.0: `./bootstrap.sh` passed on a clean worktree of `e24e6851` (12215 tests, 0 failed, 2 skipped), `origin/main` was fast-forwarded to `9d4e0075`, the tag `v0.15.0` and the GitHub Release exist (https://github.com/swcstudiospace/OmpOS/releases/tag/v0.15.0). Five phases are complete (52, 53, 58, 64, 65; 52, 58, 64 and 65 with caveats), ten are Partial, and none is claimed that needs a live model turn, Windows, macOS, Android, a Railway deploy of the API or of a cloud agent, the sign-in authority or a GitBook publish (after the release a staged private worker was deployed to Railway and handshaken; see "Final position 2026-10-28"). The GitHub `ci` workflow failed for both release pushes at 'Start test services' (OQ-168); the local gate is the gate of record. The previous focus, v0.14.0 (audited at `d75fd88` on 2026-10-27), is in the section "Final position 2026-10-27". The audit of the final tree is `docs/quality/cursor-parity-audit-2026-10-28.md` (re-graded at `7535859`); the records are `.planning/phases/51-*` to `65-*`.
 
 ## Current Position
 
-Phase: v0.16.0 Autonogrammer: accounts, Cowork and Dispatch (Phases 66, 66.1, 66.2, 66.3, 66.4 and 67 to 77, 16 phases). The branch `feat/autonogrammer-integration` (base `origin/main` at `2e21f8df`) holds the rename line replayed onto the v0.15.0 line (`docs/runbooks/integration-autonogrammer-2026-10-29.md`) and Phases 66.2 (hosted real web app, complete, not deployed), 66.3 (web accessibility, complete with caveats) and 66.4 (quality uplift, complete with caveats: the full gate ran in two passes). Phases 66 and 66.1 are recorded by the other session on its branch `feat/autonogrammer-next`; this file does not repeat them.
-Plan: the roadmap section, the requirements (AG-66-* to AG-77-*, AG-SC-1 to AG-SC-6, AG-HW-*, AG-AX-*, AG-QU-*) and the research (`docs/plans/v0.16.0-research/`, ADR-0030 to ADR-0037) are written. Execution order after 66.4: 68 with 67 units 1 to 3, 69, 70, then 71, 72, 73 and 75 in parallel, then 74 and 76, then 77.
-Status: the web head, the API and the engine path run end to end on one machine with the real omp and a scripted model; the scripted accessibility checks report no error finding on the built Demo and real bundles. Nothing is deployed, pushed or provisioned: that needs the owner's approval (the ultrathink plan, question 4). No criterion is claimed that needs a live Supabase call, a live model turn (OD-07), a Railway deploy of the API, a screen reader, Windows, macOS or Android.
-Last activity: 2026-10-29 - hosted real web app, accessibility and quality uplift (Phases 66.2 to 66.4) implemented and verified; the gate ran four times (12670 tests, 0 failed, and the format check on `561a83b5`; the web smoke on the final code `d0d0b879`); a full single pass on the last commit is running; the owner's approval is the next step.
+Phase: 66 (Rebrand to Autonogrammer)
+Plan: 7 of 7 in current phase (66-07, pending; blocked prerequisites)
+Status: blocked
+
+Milestone scope: v0.16.0 (66, 66.1, 66.2, 66.3, 66.4 and 67–77; 16 phases). Canonical is `/root/src/repos/ompos` on the recorded `feat/autonogrammer-integration` line. The merge remains unfinished: recorded HEAD `0db82d590347a904ccf78562eac7caee72766432`, MERGE_HEAD/preservation tip `2fb1a668ad7a559206672e03de0d7f74cd0962cf`. These are supplied checkpoint/inventory identities, not a new git inspection. The earlier 2026-10-30 claims that the 40-commit `feat/autonogrammer-next` line "is merged" and that counts describe "the merged tree" are superseded; no merge commit or completed integration is claimed.
+Execution boundary: retain the existing requirements (AG-66-* to AG-77-*, AG-SC-1 to AG-SC-6, AG-HW-*, AG-AX-*, AG-QU-*), research (`docs/plans/v0.16.0-research/`, ADR-0030 to ADR-0037), phase plans and auth plan. The parent explicitly invoked GSD-autonomous; this records task is edit-only and authorizes no phase execution, git operation or verification. Earliest outstanding phase gate is 66-07; later wave order remains dependency-bound (ROADMAP), not authorization to skip it or 66.1's human deferral.
+Position correction provenance: the parent's canonical `node /root/.agents/gsd-core/bin/gsd-tools.cjs state validate --strict --cwd /root/src/repos/ompos` returned exit 1, `valid: false`, with only S002 (no usable current phase). The supported `current_phase`/`current_plan` frontmatter and Current Position now identify phase 66 / pending 66-07 rather than using the milestone version as the phase. No validator was rerun by this worker; no corrected validation outcome or phase acceptance is claimed.
+Artifacts (summary slots/plans, not verified completion): 66 6/7; 66.1 1/1 (human_needed, deferred); 66.2 1/1; 66.3 1/1; 66.4 1/1; 67 7/7; 68 7/7; 69 5/6; 70 6/6; 71 4/6; 72 8/8; 73 6/6; 74 4/10; 75 5/6; 76 7/8; 77 0/8. Total 69/89: 66 numbered plan-summary pairs plus the three phase-level-only summaries of 66.2–66.4; count 66.1-01-SUMMARY once, not its additional phase summary. `76-06-SUMMARY.md` is present in canonical inventory, not absent/preserve-ref-only as previously stated. Presence proves neither content correctness nor commitment. No VERIFICATION filename exists for 66 or 67–77.
+Counter provenance: the previous frontmatter declared `completed_plans: 68` of 89 and the phase-76 row said 6/8, with 76-06 described as preserve-ref-only. Those stale filename claims are corrected to 69/89 and 7/8 from the supplied inventory; this changes artifact accounting only, not verification or historical test results.
+Historical evidence, not fresh proof: the 2026-10-29 records describe the hosted real web app as complete/not deployed (66.2), accessibility as complete with no screen-reader/device run (66.3), and quality uplift as complete with a two-pass gate caveat (66.4). The web/API/real-omp path used a scripted model on Linux x64; scripted accessibility checks reported no error on built Demo and real bundles. No live Supabase, live model turn (OD-07), hosted API deploy, screen reader, Windows, macOS or Android result is claimed. GSD agent dispatch then returned HTTP 403 `client_attestation_denied`. These records do not verify the current unfinished tree; the previous frontmatter's 3/16 and 18 percent were historical phase declarations, not the current projection or the 69/89 artifact ratio.
+Last activity: 2026-10-31 — sole A15 canonical-record reconciliation (`T62da-add-records`, supporting correlation `62da365f-5552-414e-849b-3674d7cee6f5`); no tests, builds, gates, lint, formatters or metadata validators executed. The 2026-10-30 record reported ompos-units already merged, a snapshot in `~/src/backups/ompos-consolidation-20261030`, and uncommitted autonogrammer work on `refs/heads/preserve/autonogrammer-uncommitted-20261030`; preserve this history without treating it as current lossless-integration or retirement proof. The 66.1 scaffold record (2026-10-29, `66.1-SUMMARY.md:6`) reports 21 source and 19 test projects, contract 1.6.0, replayed on the integration base. Current tree at this commit: 57 `src` and 60 `tests` `.csproj` files (counted 2026-11-01; not verified by build).
+
+## Consolidation record (2026-11-01)
+
+Planning reconciliation only. No gate is passed by these edits. Observations below are cited, not re-verified by this pass.
+
+- Git (read-only): canonical `/root/src/repos/ompos`, branch `feat/autonogrammer-integration`, HEAD `0db82d59`; MERGE_HEAD `2fb1a668`, preserved on `preserve/autonogrammer-uncommitted-20261030`. The merge is NOT committed. `git ls-files -u` lists zero unmerged paths.
+- Build observation (not a pass): `restore --locked-mode`, then `build -c Release -warnaserror` on `Autonogrammer.Linux.slnf` (SDK 10.0.402). Most recent run: 0 warnings, 0 errors. Log: `/root/consolidation-scratch/logs/build-9.log`. That build does not cover the repairs listed below.
+- Format observation (not a pass): `dotnet format --verify-no-changes` FAILED in the most recent run with 78 whitespace and import-ordering findings. Log: `/root/consolidation-scratch/logs/format-9.log`. Not fixed.
+- Tests: NOT run in this consolidation pass. No test gate is claimed.
+- Corrective repairs in progress (not yet verified by build or tests), one line per file: the file-level list was not supplied to the planning worker and is not reconstructed here. The parent must add one line per file before this record is relied on.
+- Preservation: archive `/root/src/backups/ompos-merge-20261101T052103Z/` (bundle `ompos-all-refs-20261101T052103Z.bundle`); checksums file `/root/src/backups/ompos-merge-20261101T052103Z/SHA256SUMS`, recorded as verified in the consolidation facts. Satellite folders `/root/src/repos/ompos-autonogrammer` and `/root/src/repos/ompos-units` still exist and have NOT been removed.
+- Open auth item (not fixed; pre-existing on the satellite side): `apps/Autonogrammer.Web/Services/WebAuthSessionRouter.cs`, OIDC branch. The account-session Expire() is called without the refused token, so a late 401 for an old token can end a newer session. Recorded for review.
+- Owner confirmation needed: `docs/open-questions.md` OQ-172 was reworded to the owner answer "Coding Plans. Not API Keys". The repository cannot verify that answer.
+- Auto-advance (config, NOT changed): `.planning/config.json` has `mode: "yolo"`, `workflow.auto_advance: true` and `workflow._auto_chain_active: true`. These could carry execution into 66-07. The Active hold (above) states that persisted auto-chain configuration does not override the hold. Owner decision: disable auto-advance and auto-chain while the hold stands.
+- Counts: frontmatter `completed_plans: 69` counts summary slots (69 of 89), not verified completion. No phase has a passing VERIFICATION; the verified-completion projection is 0/16.
+- Not run: `gsd-tools state validate --strict` (exit 1, line 40). Not re-run here.
+- 66-07 plan: working tree differs from MERGE_HEAD. Acceptance criteria are unchanged; two dropped gate conditions were restored (Task 3 `up`: legacy-prefix name in final listing; Task 5 route A: existing equivalent title test). A pointer to the untracked `66-07-FINDINGS.md` was added to the authorization section.
+
+## Consolidation status update (2026-11-01, supersedes the observations above)
+
+- Merge committed: `b7aba03b` on `feat/autonogrammer-integration`, parents `0db82d59` (integration HEAD) and `2fb1a668` (preserved satellite work). `git ls-files -u` shows no unmerged paths.
+- Satellites retired after the pre-delete gate: `/root/src/repos/ompos-autonogrammer` (`feat/autonogrammer-next` at `d3ea97bc`) and `/root/src/repos/ompos-units` (12 `unit/*` worktrees). All 13 worktrees were removed with `git worktree remove`; the branches remain as refs, and all 12 `unit/*` branches are ancestors of `b7aba03b`. Pre-delete checks: `SHA256SUMS` verified; bundle verified from inside the repo (rc 0); all 7,700 satellite files matched their archive manifest SHA-256 (0 mismatches); 72 dirty tracked satellite files matched the preserved commit `2fb1a668`; the 55 untracked files are in the archive manifest.
+- Gate on the merged tree, pinned SDK 10.0.402: format verify and `-warnaserror` build green. `Api.IntegrationTests` 1434 total, 0 failed, 2 skipped, at default threads and at `--max-threads 2`. 57 test projects green (Api plus 56); three support projects under `tests/` contain no tests. `Web.Tests` 424/424; UI `AuthGateTests` 10/10; auth-filtered Web runs 31/31. `BrowserUse.Tests` 126 total, 121 passed, 5 skipped, stable over three runs after the harness fix.
+- Owner decisions applied: the DROP SCHEMA guard allow-lists three throwaway-schema fixtures; 160 SUP ledger rows added, 81 of them with no justification comment in source and recorded as such; device authentication answers 401 when dispatch is off and no device store is registered; an OIDC 401 expires only the token last handed out; BrowserUse labels kept; `.planning/config.json` unchanged; tracking in Notion only (Linear free-issue quota exhausted).
+- Fixed during this pass: a `LedgerOutboxPump.Dispose` self-wait behind an intermittent API stall; OIDC stale-token expiry; rate-limit coverage restored by type discovery and, in `4f17deb1`, checked for same-address and same-subject keys; a BrowserUse scripted fetch that followed redirect hops the gate never decided.
+- Test follow-up `4f17deb1` (test files only; product code unchanged). The earlier ledger dispose test could pass without its dispose running. The replacement holds a stop open with a blocked cancellation callback and asserts that `Dispose` returns within 5 s. Against the blocking pump (`2fb1a668`) it fails (E3: the dispose did not return within the bound). Against the spinning release from the stalled dump it passes (E4: 6 of 6), so the dump's path, a `Dispose` that runs after the loop has exited inside a second stop's completion, has no deterministic test. The two-stop repro suggested in review is not built. The committed `Dispose` never blocks: it releases inline or schedules a continuation (`LedgerOutboxPump.cs:133-145`).
+- Dispatch-off refusal, one regression at a time on the committed pump: the pre-fix handler (`2fb1a668`) fails the connect test in 1.55 s with 500 instead of 401, and the class finishes in 4 s (E1). The blocking pump with the committed handler passes the class in 4 s (E3). The two earlier hangs (x3 with the spinning pump, 8 minutes, killed; x4 with the blocking pump, 300 s) each had the pre-fix handler and an experimental pump together. E1 and E3 each run without the other and neither hangs; the spinning pump alone was not run against this class. The mechanism is not established, and the combination is not in HEAD. The committed handler answers 401 and the class passes 3 of 3.
+- Rate-limit classification, one regression at a time on the committed pump: with `AccountsRateLimiterPolicy` keyed by address, the class completes in 7 s with two failures: `EveryDiscoveredPolicy_KeysBySubjectOrAddressAsDocumented` in 680 ms (`True should be False`), and the existing `AccountPolicy_PartitionsBySubject` in 520 ms (a second subject gets 429) (E2). The earlier rate-limit hang was caused by the blocking pump: with only that pump, the class hangs in the existing `PromptPolicy_PartitionsBySubject` until killed at 240 s (E3). The satellite pump is therefore a real hang source; the committed pump finishes the class in 7 s.
+- Experiment method: E1 to E4 each applied one change to the committed tree, rebuilt, ran the classes against services, and reverted with `git checkout`. The product tree was clean after each. Results come from single-change runs, not from the combined binaries used earlier.
+- Advisory evidence `/tmp/T8514-qa-8514d046-auth-proof/` is absent (checked; no copy under `/root/src/backups/ompos-merge-20261101T052103Z/`). It is not cited.
+- Committed-tree checks at `4f17deb1`: `-warnaserror` build 0 errors; `dotnet format --verify-no-changes` 0; `LedgerSinkTests` 6/6; `DispatchDisabledTests` 3/3; `RateLimitPartitionTests` 11/11.
+- Ship: `ultrathink-ship assess` returns `done: false`. Gaps: GSD roadmap 0/16 phases complete (66-07 through 77 pending); latest verification `human_needed` (phase 66.1). No PR was opened and nothing was pushed.
+- Still open: auth correlation `8514d046` remains blocked on the signed FAIL gates, and the controller record still shows zero auth test cases executed. This pass did run the auth tests above but did not update that controller record. The McpGateway test stalled once for 900 s and has not recurred in later direct or `dotnet test` runs. 81 SUP rows need a justification or removal.
+
+## CI and full-suite record (2026-11-01)
+
+Final tree `4ed9bb04`; pre-merge baseline `0db82d59` (a shared clone, restored for the smoke). Exit codes: `/root/consolidation-scratch/logs/ci-final.txt` and `ci-base.txt`. Smoke output: `/root/consolidation-scratch/web-smoke` and `web-smoke-base`.
+
+- Full suite on `c5ace2c3` (verify-only gate, no formatter rewrite): format verify 0; locked restore 0; `-warnaserror` build 0. `Api.IntegrationTests` 1435 total, 0 failed, 2 skipped, at default threads (3m 01s) and at `--max-threads 2` (4m 31s). 56 non-API projects rc 0; `Sessions.Postgres.Probe` reports no tests (rc 1 in both gates). Auth-filtered Web and UI `AuthGateTests` pass; McpGateway 3 of 3 pass.
+
+| Check (ci.yml step) | Final `4ed9bb04` | Pre-merge `0db82d59` | Note |
+| --- | --- | --- | --- |
+| repo-checks | fail | pass | runs `check-skip-markers`; see next row |
+| check-skip-markers | fail | pass | 6 `Assert.Skip` markers without SUP rows (BrowserUse live x5, X11 live x1) |
+| check-licences | pass | pass | stale on `c5ace2c3`; regenerated in `4ed9bb04` |
+| check-sbom | pass | pass | stale on `c5ace2c3`; regenerated in `4ed9bb04` |
+| secret-scan (gitleaks 8.30.1, full history) | fail | pass | 2 `generic-api-key` findings, both false positives on inspection (below) |
+| openapi-breaking vs `origin/main` | fail | not applicable | `/board` path removed; see below |
+| vulnerable packages | pass (`[]`) | pass (`[]`) | baseline assets were present when the step ran: 81 projects, no `problems` entries in the output (assets written 22:28:40, output 22:29:20) |
+| check-docs, check-brand, check-changelog, check-providers-doc | pass | pass | |
+| plugin-node-tests, py unittest, py openapi unit, node tests | pass | pass | |
+| web smoke, API half (`run-smoke.sh`) | fail (exit 1) | pass (exit 0) | reflow at 320 px and 400%: content 416 px wide (`div.autonogrammer-segmented` theme switch, settings dialog, session-not-found) |
+| web smoke, Demo half | fail (exit 1) | pass (exit 0) | `a11yRoutes`: `#autonogrammer-tab-cowork` and `#autonogrammer-tab-code` not found; the tabs are rendered by `src/Autonogrammer.UI/Components/Shell/SurfaceTabs.razor`, and the checks exist only in the merged `scripts/web-smoke/a11y/routes.mjs` |
+| web size budget | pass | pass | |
+| scan-images (trivy) | not run | not run | trivy is not installed; `install-trivy.sh` needs a network download |
+
+Findings for owner decisions (no waiver or suppression was added):
+
+- Skip markers without SUP rows: `tests/Autonogrammer.Harness.BrowserUse.Tests/Corpus/HostileCorpusLiveTests.cs:17`, `Live/HeadfulSmokeLiveTests.cs:18`, `Live/PipeConnectLiveTests.cs:21`, `Live/ScreenshotLadderLiveTests.cs:17`, `Site/SiteLiveTests.cs:17`, and `tests/Autonogrammer.Harness.ComputerUse.X11.Tests/Live/X11BackendLiveTests.cs:204`. Adding rows is a suppression decision.
+- gitleaks, two false positives on inspection: `src/Autonogrammer.Harness.Secrets.Os/LibsecretNativeMethods.cs:12` (`SecretLibrary` is the 16-character library name `libsecret-1.so.0`; commit `58d5e85a57`), and `tests/Autonogrammer.Harness.ComputerUse.X11.Tests/Live/X11BackendLiveTests.cs:173` (a `Run(...)` argument list; commit `01bfa004e0`). The scan covers full history, so only an allowlist entry clears it; that is a suppression decision.
+- openapi: `/board` is absent from `docs/api/openapi.json` at HEAD and present at `origin/main`. It was removed by `e6745a06` (feat(67-05), board cutover); `BoardCutoverTests` asserts that `/board` returns 404 and `/account/board` serves. The check needs an explicit `BREAKING-API:` reason from the owner.
+- Web smoke: a real regression introduced by the merge. A UI fix (reflow at 320 px, and the surface tabs in the Demo bundle) is required; it is not made in this pass.
+- Regenerated in `4ed9bb04`: `THIRD-PARTY-NOTICES.md` and `docs/legal/sbom.spdx.json`, by the repo generators. `c5ace2c3` is the last tree the full suite ran on; `AboutModelTests` checks only the notice file list and a URL, so the regeneration does not change its assertions.
+- Security register split (`66-07-FINDINGS.md`, 129 security rows): D 34, F 78, U 8, A 5 (awaiting a decision on the dependency or its callers), FU 3, DEFECT 1. The register is not a gate verdict. The DEFECT (register severity minor) is `SEC-8e8d7a84` (`plugins/agent-swarm/swarm/taskstore.py:206`): `update(**fields)` puts caller-supplied field names into SQL, and external reachability is unproven. The three FU rows are critical JWT literals of unknown origin: `SEC-9e472f70` (`plugins/claude-ultrathink/src/grok/auth.test.ts:27`), `SEC-d34dcf88` (`plugins/agent-swarm/tests/test_tools_a30.py:1193`) and `SEC-36d088fa` (`tests/Autonogrammer.Harness.AgentLoop.Tests/Hooks/HookRunRecordProjectorTests.cs:60`). Whether any was ever issued or trusted is unknown.
+
+
+## Canonical consolidation and prerequisite ledger (2026-10-31)
+
+- Sources: `local://ExpandedConsolidationPacket.json`, especially `inventories.ConsolidationEvidence#2`–`#4`, `compile_diagnostics`, `baseline` and `handover_metadata_fact`; appended authorization in `/root/src/backups/ompos-consolidation-recovery-20261031T010117Z/OPERATOR-RESUME.txt`; current controller coordination supplied with the verified assignment. Later coordination corrects the resume file's earlier unresolved metadata note and source-case expectations; it clears no gate.
+- Original auth correlation `8514d046-12ff-59da-bb27-7364638313e3` remains **BLOCKED, rework 1**. Four VSTHRD003 test-line corrections were source-only. The last scoped auth proof executed **zero authentication tests**. Current parent-reported source inventory contains **11 expanded auth cases**, a SOURCE count, not tests executed or passed. The resume/prior records' expected 10 and older minimum 11 are historical expectations, not current runtime results. Historical QA/review/security signed FAILs remain in force: QF-000/no detected runner, review's 10 findings against HEAD~1 (1,950 files, +150,304/-5,625), and security's 129 findings (76 critical, 48 major, 5 minor), with no suppressed finding. Source triage is advisory, not waiver or renewed clearance; completed gate tasks mean evaluation finished, not PASS.
+- Supporting correlation `62da365f-5552-414e-849b-3674d7cee6f5` owns the separately authorized Cowork/quality prerequisites and this sole records writer, without replacing or duplicating auth scope. Cowork's corrected scenario split has **7 source cases**, per current parent coordination, superseding the earlier expected 9; neither count is execution proof. Compiler/analyzer and behavior have not been run. The .NET quality adapter remains **not implemented**: the app-rooted Unit B worker stopped after the actual runtime protected-path guard denied creation of `/root/src/repos/agent-swarm/scripts/_dotnet_quality.py`, with zero adapter edits at that checkpoint. Parent recovery of a separate runtime-rooted maintenance session preserves the same guards; it is not a bypass or implementation result. This is a tool/write prerequisite, not missing user authorization; no helper, runner integration or compiler-green claim exists.
+- The controller reconciled blocked handover output metadata through approved claim/start/ingest operations: `shared_artifact_check` reported **4/4** source/handover artifacts valid. `T8514-patch.2` keeps canonical document identity `sha256:6867bb41ec9b73c2891341ac32a09362e9c9f143f90a89c4b9684465aefe4479`; its raw-file artifact checksum is `sha256:263e39ba2909bd6b35ef6aaeb74ad2b58c8b6b27cb7280187929a37499656a6f`. Identity and raw-byte digests have different roles. This corrects metadata only; auth remains blocked and no gate is cleared.
+- Existing toolchain bindings are unchanged: `global.json` pins SDK **10.0.402**, `rollForward: disable` and **Microsoft.Testing.Platform**; `Directory.Build.props` binds xunit.v3 test executables/MTP, warnings-as-errors and CI locked restore; `.github/workflows/ci.yml` sets `CI: true`, installs the pinned SDK, targets `Autonogrammer.Linux.slnf`, and restores/builds with `-p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13`. The Linux CI test command uses `--no-build`, two parallel modules, TRX and cobertura. Configuration presence is not execution or a green CI result.
+- Historical failures remain ground truth: the saved full-solution build had 52 errors (native analyzer/import issues and Cowork MA0051 among them); the scoped auth proof ran zero intended tests. Do not repeat unchanged failing builds merely to reconfirm them, use stale binaries as proof, or treat source correction as compiler clearance. Preserve the historical 66.4 build/smoke failures and differing-tree passes in ROADMAP and their original evidence, plus v0.15.0's CI service-start failures below.
+- Unsummarized plans: 66-07; 69-06; 71-05/06; 74-04/05/06/07/08/09 (74-10's summary does not close them); 75-06; 76-08; 77-01–08. Summary gaps mean unfinished/unrecorded work, not necessarily absent implementation. In particular, Phase 76 still consumes 75-06's launch-contributor seam despite its seven summaries; Phase 73's Dispatch-facing closure still requires 74.
+- Preservation evidence: the expanded baseline records archive `canonical-source-and-git.tar.gz` with SHA256 `d2764c2aa15ba0fc1ca7116c8c054da4b1925fcd12f7680accbe5f96de8cb861`, successful integrity/comparison and Task Store backup integrity. These are historical reports, not rerun here. All 14 registered worktrees share canonical `.git`; commit reachability/clean unit status do not prove current-byte preservation or independent recovery. Preserve staged, unstaged, untracked and needed ignored assets, refs/index/MERGE_HEAD, archives and satellites, plus unrelated runtime changes in `crates/gsd-ipc/src/lib.rs` and `deny-report.txt`. No retirement or satellite/submodule mutation is authorized.
+- Active hold: parent owns stable-union verification and all integration decisions. This worker runs no docs-bundle scanner, tests, builds, gates, lint, formatters, metadata validators, git/staging/commit/tag/branch/worktree operations, cleanup, remote/deploy or credential actions. Persisted auto-chain/commit/tag configuration does not override this boundary. No phase or milestone is passed or closed by these edits.
+
+### Historical direction and coordination
+
+The dated sections below retain earlier branch/replay/isolation decisions and results as provenance. They are not the active checkout description or authority to override the unfinished-merge and verification holds above.
 
 ## Direction Update 2026-10-29 (ultrathink graph ut-mvsrdwhx-64862aaa)
 
@@ -42,6 +137,25 @@ Decisions (the plan's defaults, the owner may override):
 Done on `feat/autonogrammer-integration`: the integration; the owner-token sign-in, access control, hosting hardening, engine isolation and approval policy; the real web bundle with no Demo code; the production-shaped local run (`docs/runbooks/evidence/hosted-web-2026-10-29/`); the accessibility checks, ten defects fixed and the final runs (`docs/runbooks/evidence/web-accessibility-2026-10-29/`); the security and quality review fixes; SBOM, image policy, operations documents, threat model and brand.
 
 Not done, by design: a deployment; a live model turn (no credential, OQ-172); a sandbox provider (OQ-173); a run of CodeQL, Scorecard, trivy or an image build (OQ-175); a screen-reader pass (OQ-178); the other session's phases.
+
+## Coordination 2026-10-29
+
+Two sessions work on this repository by the owner's instruction ("work them together"). The other session built `feat/autonogrammer-integration`: `origin/main` (v0.15.0) plus the cherry-picked planning, research and tool commits of this milestone, its own run of `scripts/rebrand`, and the hosted real web app (phases 66.2 to 66.4, ADR-0021). This session replayed its scaffold (phase 66.1) on top as `feat/autonogrammer-next` and merges `feat/autonogrammer-integration` into it regularly (merge, not rebase, so history stays shared).
+
+- Phase numbers: this line owns 66, 66.1 and 67 to 77; the other line owns 66.2 to 66.4 (decimal phases) and records its own work in `.planning/phases/66.2-*`.
+- Numbering: ADR-0021 and OQ-172 to OQ-183 belong to the other line; this line uses ADR-0030 to ADR-0037 and OQ-300 upward.
+- Overlap areas to keep consistent: `GET /auth/config` (the other line returns `{ mode, authority, audience }`; keep `mode`, ADR-0030 adds the project URL, publishable key and methods), the web sign-in seam (`IApiTokenProvider`, `OwnerTokenSession`, `AuthGate`), `Api:Auth:*`, the engine environment allow-list and isolation options, `Harness:Acp:Approval`, the hosting hardening in `Program.cs`, the web shell routes and top bar. The report is in `docs/plans/v0.16.0-research/10-integration-overlaps.md`.
+- `dotnet format --verify-no-changes` reports one finding that belongs to the other line (`services/Autonogrammer.Api/Hosting/HostingBuilderExtensions.cs` imports order); it is not touched here.
+
+## Deferred Verification
+
+| Phase | State | Resume |
+|-------|-------|--------|
+| 66.1 | verification_deferred_human | /gsd:verify-work 66.1 (Android lock restore in CI; ./bootstrap.sh at the phase 66 gate) |
+| 66.2 | verification_deferred_human | /gsd:verify-work 66.2 (hold 2026-11-01: never execute; per-plan commits feat(66.2-01) and later exist without per-plan summaries, so execute-phase would rebuild the phase) |
+| 66.3 | verification_deferred_human | /gsd:verify-work 66.3 (hold 2026-11-01: never execute; feat(66.3-01) exists without a per-plan summary) |
+| 66.4 | verification_deferred_human | /gsd:verify-work 66.4 (hold 2026-11-01: never execute; feat(66.4-01) exists without a per-plan summary) |
+| 69 | verification_deferred_human | /gsd:verify-work 69 (human-only checks from `69-VERIFICATION.md`: screen-reader pass on the Native and Web Code/Cowork switches and hidden-surface chip; pointer and visual check at 1280x800 on both heads; browser reservation of Ctrl+Shift+1/2, OQ-320). Automated verification is `passed` on all six criteria, commit d8b55289. |
 
 ## Direction Update 2026-10-28 (ultrathink graph ut-mvs8ru79-82536fbd)
 
@@ -310,7 +424,7 @@ Next action (superseded 2026-10-24): see Autonomous Run 2026-10-24, Owner Decisi
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
+- Total plans summarized: 69 of 89 (artifact count; equals frontmatter `completed_plans`; not verified completion; see Current Position)
 - Average duration: - min
 - Total execution time: 0.0 hours
 
@@ -332,6 +446,8 @@ Next action (superseded 2026-10-24): see Autonomous Run 2026-10-24, Owner Decisi
 | Phase 1 P01 | 12 min | 4 tasks | 114 files |
 | Phase 1-foundation P02 | 11 min | 3 tasks | 45 files |
 | Phase 1-foundation P03 | 13 min | 3 tasks | 18 files |
+
+Note (2026-11-01): the `Phase 1` and `Phase 1-foundation` labels in this table and in the `[Phase 1]` decision entries below refer to the archived foundation phase (v0.9.1 per the 2026-11-01 audit). They are not ROADMAP.md's v0.9.2 `Phase 1` (Validation Evidence and Record Fixes, ROADMAP.md:47). Labels are kept as recorded; nothing is renumbered.
 
 ## Accumulated Context
 
@@ -367,7 +483,7 @@ Recent decisions affecting current work:
 - Phase 36 CONTEXT, PLAN and VERIFICATION, when the run resumes (if the owner chooses to skip Phase 22).
 - Native Wayland opt-in decision (accessibility gap) before any Avalonia.Wayland change.
 
-### Blockers/Concerns
+### Historical blockers (v0.9 to v0.12; kept verbatim for the record, not current)
 
 - [Owner decision]: Phase 22 handling (skip or stop), while criteria 3 to 5 remain blocked.
 - [Owner decision]: ADE-21 scope (which VS Code extension APIs come first) is needed before work starts (Phase 30).
@@ -380,6 +496,18 @@ Recent decisions affecting current work:
 - [External, deploy]: Railway deploys paused (2026-10-21; the refusal did not recur on 2026-10-28, see "Final position 2026-10-28") blocked the Phase 26 cloud live run, the Phase 23 Vercel smoke (AUTONOGRAMMER_API_ORIGIN unset) and ADE-22.
 - [External, tracking]: Linear workspace free issue limit reached; the ultrathink Linear rows were not created.
 - [Known limit, Phase 21]: no live omp turn was exercised; OnClosed still has an unobserved MCP disposal (pre-existing).
+
+### Blockers/Concerns (v0.16.0, reconciled 2026-11-01)
+
+- [Owner decision]: verify 66.1 by hand (`/gsd:verify-work 66.1`: Android lock restore in CI; `./bootstrap.sh` at the phase 66 gate).
+- [Owner decision]: `/connect` first-load focus. `RouteFocus.razor` keeps the skip link as the first Tab stop (commit b23a11d1, WCAG 2.4.1); `scripts/web-smoke/a11y/connect.mjs` expects the h1 focused on the same first load (commit efad5b44). Both cannot hold; the owner picks one rule.
+- [Owner decision]: BREAKING-API reason for removing `/board` (commit e6745a06); `BoardCutoverTests` asserts the removal.
+- [Owner decision]: SUP rows for six `Assert.Skip` markers without rows (BrowserUse live x5; X11 live x1).
+- [Owner decision]: gitleaks allowlist for two false positives: `src/Autonogrammer.Harness.Secrets.Os/LibsecretNativeMethods.cs:12` and `tests/Autonogrammer.Harness.ComputerUse.X11.Tests/Live/X11BackendLiveTests.cs:173`.
+- [Owner or upstream]: `SEC-8e8d7a84` (taskstore `update()`) lives in the `plugins/agent-swarm` submodule: fix in swarm.git, push (needs approval), bump the pointer. The FU JWT literals `SEC-9e472f70` (claude-ultrathink submodule) and `SEC-d34dcf88` (agent-swarm submodule) need confirm-or-rotate. `SEC-36d088fa` is in-repo.
+- [External]: controller auth correlation `8514d046` stays BLOCKED on signed FAIL verdicts; zero auth cases executed under it.
+- [External, host]: `scan-images` (trivy) not run: trivy is not installed.
+- [Owner approval, irreversible]: milestone audit and complete; ship (PR, Greptile review, auto-merge).
 
 ## Deferred Items
 
@@ -397,10 +525,10 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-27
+Last session: 2026-11-01 (planning reconciliation; see Consolidation record). The 2026-10-27 entry below is historical.
 Stopped at: the Cursor parity audit and the record corrections of 2026-10-27; the code is committed through `d75fd88`. The earlier text of this section (2026-10-24) is superseded.
 Resume file: None
-Ship: ultrathink-ship is enabled with autoMerge on. It has NOT run for this work; its gate rules block shipping while roadmap phases are incomplete.
+Ship: HELD. ultrathink-ship is enabled with autoMerge on in config. It has NOT run for this work. Do not run it or rely on autoMerge until plan 66-07 has run and the unfinished merge is closed; its gate rules also block shipping while roadmap phases are incomplete.
 
 ## Operator Next Steps
 
@@ -835,3 +963,19 @@ Pending pause (GREY, this packet): (1) uplift scope: audit first, fix phases now
 - OPEN (1): M-4 detached-path test. The test was removed because the harness did not trace the detached decision fault; cause not isolated. Attached path tested.
 - OPEN (2): the desktop composition passes no logger, so service ILogger output is discarded in the desktop app. Owner decision: wire ILoggerFactory into the desktop composition root, or accept silent desktop service faults.
 - Phase 25.5 stays open. Next: Phase 25.6 (F-E) unless the owner decides the open items first.
+
+## Open gates, autonomous run, 2026-11-04
+
+- Gate baseline: the full gate on a3af5dec passed (bootstrap OK; 14,490 tests, 0 failed, 3 skipped; secret scan OK; API, demo and artifact smokes exit 0). Commit a3af5dec fixes six test classes that leaked GUID temp directories.
+- Decision recorded: workflow.auto_advance set to true with GSD config-set (commit 2120d9ff, owner answer to the hold question). _auto_chain_active is left to the workflow.
+- Blocking question answered: quality bar scope is touched files only, plus the 25.1 register residuals.
+- Defaults applied (non-blocking): pattern changes match existing patterns; lint, analyzer, CI and numeric tooling stay as they are; TODO sources are explicit TODO or backlog files and .planning items, with inline markers only inside a phase surface.
+- Not run, by owner rule: ultrathink-kickoff and track complete (they create Notion and Linear rows, which were not requested); ultrathink-ship (owner answer says no PR or merge, and autoMerge is on); milestone complete with --confirm and cleanup (the audit has not passed).
+- Gate G1 (validation request): M-29, M-31, M-34 and H-4 are fixed in commit 523ac44 but have no automated test, and source-text assertions are forbidden. Default: accept the fixes and verify them on the next hosted or CI run.
+- Gate G2 (grey area): M-30 is an accepted residual (explicit Android workload version, 25.4). Default: keep the accepted record.
+- Owner decisions still open from the register: M-23 (OQ-34), M-24 (OQ-39), M-35 (image policy for caller-supplied images). M-20 is deferred as a large refactor.
+- Not started: reconcile the 25.6, 25.7 and 25.8 summaries; 13 Low findings rated fix with no record; 22 repo-buildable open questions; the 16 v0.16.0 phases; the 39 unchecked phases in v0.9.2 to v0.15.0, to classify.
+- Gate answers (owner, 2026-11-04): G1 accepted. The four fixes are verified on the next hosted or CI run, with no automated test. G2 kept as the accepted record.
+- Phase 66 re-anchor decision (2026-11-04): the rename is b3faaa83. 154 first-parent commits and 13 merges (including b7aba03b) follow it, and 3002 paths changed since. Regeneration is not one commit, so 66-03 is not swapped to b3faaa83. Its checks (:117 whole-range diff, and :119, :121, :124 taking head -1 of the range) do not hold on this line. Its results go into 66-07-SUMMARY as a deviation.
+- Named regenerate commits, each checked with the generated-only path rule and the using-only .cs rule: b5f6bc1a (499 paths, all generated, 0 non-using hunk lines); d714acb4 (OpenAPI, 1 path, passes); 47e85328 (Android lock, 1 path, passes). Not yet checked: 881f66ae (relock) and 19812147 (notices). f7a93884 changes AGENTS.md, CHANGELOG.md and CLAUDE.md, which are hand-written, so it is a deviation from the generated-only rule.
+- 66-07:305 and :381 are re-anchored to b3faaa83 as a plain swap. The .gitleaksignore diff since b3faaa83 has 10 changed lines, so the :381 check is non-empty.

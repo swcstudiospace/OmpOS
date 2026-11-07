@@ -1,6 +1,7 @@
 using Autonogrammer.Contracts.Catalog;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Changes;
+using Autonogrammer.Presentation.Cowork;
 using Autonogrammer.Presentation.Kanban;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Terminal;
@@ -29,6 +30,7 @@ internal sealed class WebWorkbench : IAsyncDisposable
     private readonly IUserEventFeed _feed;
     private readonly TimeProvider _time;
     private readonly WebSessionCatalog _catalog = new();
+    private readonly WebCoworkSessionCatalog _coworkSessions;
     private readonly SessionCatalogModel _catalogModel;
     private readonly WebToolApprovalBridge _approvals;
     private readonly Dictionary<string, WebSessionRuntime> _runtimes = new(StringComparer.Ordinal);
@@ -83,6 +85,9 @@ internal sealed class WebWorkbench : IAsyncDisposable
             });
         Board.StartSessionRequested += OnStartSessionRequested;
         Settings = WebSettingsFactory.Create(api, js, options.ApiHost, time, extraPages);
+        _coworkSessions = new WebCoworkSessionCatalog(api);
+        _coworkSessions.Changed += OnCoworkChanged;
+        CoworkShell = new CoworkShellModel(_coworkSessions);
     }
 
     /// <summary>Occurs after something the shell shows changed that no view model announces: <see cref="Source"/>, <see cref="Workspace"/> or the connection.</summary>
@@ -96,6 +101,12 @@ internal sealed class WebWorkbench : IAsyncDisposable
 
     /// <summary>Gets the Kanban board over the same catalogue.</summary>
     public KanbanBoardModel Board { get; }
+
+    /// <summary>Gets the Cowork shell. It is not a Kanban board.</summary>
+    public CoworkShellModel CoworkShell { get; }
+
+    /// <summary>Gets the Cowork session catalog the shell reads.</summary>
+    public WebCoworkSessionCatalog CoworkSessions => _coworkSessions;
 
     /// <summary>Gets the Settings window model.</summary>
     public SettingsWindowModel Settings { get; }
@@ -147,6 +158,7 @@ internal sealed class WebWorkbench : IAsyncDisposable
         }
 
         _catalogModel.StartRefreshing();
+        _ = _coworkSessions.LoadAsync(_lifetime.Token);
         _pump = PumpUserEventsAsync(_lifetime.Token);
         Changed?.Invoke(this, EventArgs.Empty);
     }
@@ -201,10 +213,14 @@ internal sealed class WebWorkbench : IAsyncDisposable
 
         _runtimes.Clear();
         Board.Dispose();
+        _coworkSessions.Changed -= OnCoworkChanged;
+        CoworkShell.Dispose();
         Panel.Dispose();
         _catalogModel.Dispose();
         _lifetime.Dispose();
     }
+
+    private void OnCoworkChanged(object? sender, EventArgs e) => Changed?.Invoke(this, EventArgs.Empty);
 
     private KanbanModelInfo? ModelOf(string sessionId) =>
         _runtimes.TryGetValue(sessionId, out var runtime) ? runtime.Controls.CurrentModel : null;

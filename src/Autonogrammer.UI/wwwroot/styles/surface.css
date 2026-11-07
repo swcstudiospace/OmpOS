@@ -1,0 +1,36 @@
+/* Cowork surface. Colours come from tokens. The dock width twins Autonogrammer.Size.CoworkDockWidth. */
+
+html[data-surface="code"] .autonogrammer-cowork-only,
+html[data-surface="cowork"] .autonogrammer-code-only {
+  display: none;
+}
+
+.autonogrammer-cowork {
+  display: flex;
+  min-block-size: var(--autonogrammer-target-min);
+}
+
+.autonogrammer-cowork-rail,
+.autonogrammer-cowork-conversation,
+.autonogrammer-cowork-dock {
+  min-block-size: var(--autonogrammer-target-min);
+}
+
+.autonogrammer-cowork-dock {
+  inline-size: var(--autonogrammer-cowork-dock-width);
+  transition: inline-size var(--autonogrammer-duration) var(--autonogrammer-ease);
+}
+
+.autonogrammer-surface-chip {
+  min-block-size: var(--autonogrammer-target-min);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .autonogrammer-cowork-dock {
+    transition: none;
+  }
+}
+
+:root[data-motion="reduce"] .autonogrammer-cowork-dock {
+  transition: none;
+}

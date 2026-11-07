@@ -11,6 +11,7 @@ using Autonogrammer.Presentation.Mcp;
 using Autonogrammer.Presentation.Remote;
 using Autonogrammer.Presentation.Safety;
 using Autonogrammer.Presentation.Settings;
+using Autonogrammer.Presentation.Settings.BrowserUse;
 using Autonogrammer.Presentation.Settings.Customize;
 using Autonogrammer.Presentation.Settings.Ignore;
 using Autonogrammer.Presentation.Settings.Privacy;
@@ -81,17 +82,50 @@ internal static class SettingsWindowFactory
             pages.Add(new RemoteEnvironmentsSettingsPage(new RemoteEnvironmentsViewModel(remote), runtimeModel));
         }
 
+        AddTailPages(pages, options);
+        return pages;
+    }
+
+    private static void AddTailPages(List<ISettingsPage> pages, SettingsWindowOptions options)
+    {
         var cloud = options.CloudAgentsModel ??= CreateCloudModel(options);
         pages.Add(new CloudSettingsPage(cloud));
+        var dispatch = options.DispatchRelayModel ??= new Autonogrammer.Presentation.Dispatch.DispatchRelayModel(
+            options.DispatchRelayHost ?? new Autonogrammer.Presentation.Dispatch.NotConfiguredDispatchHost(),
+            options.DispatchRelayThisDevice);
+        pages.Add(new DispatchSettingsPage(dispatch));
         if (options.Automations is { } automations)
         {
             pages.Add(new AutomationsSettingsPage(new HostedAutomationsViewModel(automations)));
         }
 
+        if (options.BrowserUse is { } browserUse)
+        {
+            pages.Add(new BrowserUseSettingsPage(browserUse));
+        }
+
         pages.Add(new PrivacySettingsPage());
         pages.Add(new NetworkSettingsPage(options.NetworkSource ?? new NetworkDiagnosticsSource()));
         pages.Add(new KeyboardSettingsPage(new KeyboardSettingsSource()));
-        return pages;
+        if (options.ComputerUse?.Invoke() is { } computerUse)
+        {
+            pages.Add(computerUse);
+        }
+
+        AddOptional(pages, options.Bundles);
+        AddOptional(pages, options.Connectors);
+        AddOptional(pages, options.CoworkPermissions);
+        AddOptional(pages, options.Isolation);
+        AddOptional(pages, options.Usage);
+        AddOptional(pages, options.Notifications);
+    }
+
+    private static void AddOptional(List<ISettingsPage> pages, ISettingsPage? page)
+    {
+        if (page is not null)
+        {
+            pages.Add(page);
+        }
     }
 
     // Tab, Rules, Skills, Commands, Hooks and MCP: the pages of what the user's files and the hooks service supply.

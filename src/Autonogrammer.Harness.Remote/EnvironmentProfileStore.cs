@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Autonogrammer.Contracts.Environments;
+using Autonogrammer.Harness.Abstractions;
 
 namespace Autonogrammer.Harness.Remote;
 
@@ -43,7 +44,7 @@ public sealed class EnvironmentProfileStore : IDisposable
             throw new InvalidOperationException("The platform has no per-user configuration directory for the environment profile file.");
         }
 
-        return Path.Combine(configuration, "Autonogrammer", "environments.json");
+        return Path.Combine(UserDataDirectory.PathFor(configuration), "environments.json");
     }
 
     /// <summary>Releases the lock that serializes writes.</summary>

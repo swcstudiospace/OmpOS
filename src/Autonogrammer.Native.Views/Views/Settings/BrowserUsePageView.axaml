@@ -1,0 +1,141 @@
+<local:SettingsPageViewBase xmlns="https://github.com/avaloniaui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                            xmlns:bu="clr-namespace:Autonogrammer.Presentation.Settings.BrowserUse;assembly=Autonogrammer.Presentation"
+                            xmlns:local="clr-namespace:Autonogrammer.Native.Views.Settings"
+                            x:Class="Autonogrammer.Native.Views.Settings.BrowserUsePageView"
+                            x:DataType="bu:BrowserUseSettingsPage"
+                            Focusable="False">
+
+  <local:SettingsPageViewBase.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </local:SettingsPageViewBase.Styles>
+
+  <!-- Chromium state, policy and a download that starts only from the confirmation dialog. -->
+  <Panel>
+
+    <local:PageStatusView x:Name="StateView" />
+
+    <ScrollViewer x:Name="ReadyPanel"
+                  Focusable="False"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Classes="settings-column">
+
+        <TextBlock Classes="settings-heading"
+                   Text="{x:Static bu:BrowserUseCopy.Heading}" />
+        <TextBlock Classes="settings-description"
+                   Text="{x:Static bu:BrowserUseCopy.Description}" />
+
+        <TextBlock x:Name="StateSentence"
+                   Classes="settings-body"
+                   Text="{CompiledBinding ChromiumSentence}" />
+        <Button x:Name="FixButton"
+                HorizontalAlignment="Left"
+                Content="{CompiledBinding FixAction}"
+                AutomationProperties.Name="{CompiledBinding FixAction}"
+                Click="OnFixClick" />
+        <Button x:Name="AcquireButton"
+                Classes="primary"
+                HorizontalAlignment="Left"
+                Content="{x:Static bu:BrowserUseCopy.AcquireLabel}"
+                IsVisible="{CompiledBinding IsAcquisitionVisible}"
+                AutomationProperties.Name="{x:Static bu:BrowserUseCopy.AcquireLabel}"
+                Click="OnAcquireClick" />
+
+        <TextBlock Classes="settings-label"
+                   Margin="0,16,0,0"
+                   Text="{x:Static bu:BrowserUseCopy.ExecutablePathLabel}" />
+        <TextBox x:Name="ExecutablePathBox"
+                 Classes="settings-mono"
+                 Text="{CompiledBinding ExecutablePath}"
+                 AutomationProperties.Name="{x:Static bu:BrowserUseCopy.ExecutablePathLabel}" />
+
+        <TextBlock Classes="settings-label"
+                   Margin="0,8,0,0"
+                   Text="{x:Static bu:BrowserUseCopy.PolicyModeLabel}" />
+        <ComboBox x:Name="PolicyModeBox"
+                  ItemsSource="{x:Static bu:BrowserUseCopy.PolicyModeNames}"
+                  SelectedIndex="{CompiledBinding PolicyMode, Mode=TwoWay}"
+                  AutomationProperties.Name="{x:Static bu:BrowserUseCopy.PolicyModeLabel}" />
+        <TextBlock x:Name="PolicyRisk"
+                   Classes="settings-help"
+                   IsVisible="{CompiledBinding PolicyRiskText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Text="{CompiledBinding PolicyRiskText}" />
+
+        <TextBlock Classes="settings-label"
+                   Margin="0,8,0,0"
+                   Text="{x:Static bu:BrowserUseCopy.AllowedHostsLabel}" />
+        <TextBox x:Name="AllowedHostsBox"
+                 AcceptsReturn="True"
+                 Text="{CompiledBinding AllowedHostsText}"
+                 AutomationProperties.Name="{x:Static bu:BrowserUseCopy.AllowedHostsLabel}" />
+
+        <TextBlock Classes="settings-label"
+                   Text="{x:Static bu:BrowserUseCopy.DeniedHostsLabel}" />
+        <TextBox x:Name="DeniedHostsBox"
+                 AcceptsReturn="True"
+                 Text="{CompiledBinding DeniedHostsText}"
+                 AutomationProperties.Name="{x:Static bu:BrowserUseCopy.DeniedHostsLabel}" />
+
+        <TextBlock Classes="settings-label"
+                   Text="{x:Static bu:BrowserUseCopy.DownloadModeLabel}" />
+        <ComboBox x:Name="DownloadModeBox"
+                  ItemsSource="{x:Static bu:BrowserUseCopy.DownloadModeNames}"
+                  SelectedIndex="{CompiledBinding DownloadMode, Mode=TwoWay}"
+                  AutomationProperties.Name="{x:Static bu:BrowserUseCopy.DownloadModeLabel}" />
+
+        <TextBlock Classes="settings-label"
+                   Text="{x:Static bu:BrowserUseCopy.SandboxModeLabel}" />
+        <ComboBox x:Name="SandboxModeBox"
+                  ItemsSource="{x:Static bu:BrowserUseCopy.SandboxModeNames}"
+                  SelectedIndex="{CompiledBinding SandboxMode, Mode=TwoWay}"
+                  AutomationProperties.Name="{x:Static bu:BrowserUseCopy.SandboxModeLabel}" />
+
+        <CheckBox x:Name="PersistentProfileBox"
+                  Content="{x:Static bu:BrowserUseCopy.PersistentProfileLabel}"
+                  IsChecked="{CompiledBinding PersistentProfile}"
+                  AutomationProperties.Name="{x:Static bu:BrowserUseCopy.PersistentProfileLabel}" />
+        <CheckBox x:Name="DispatchBox"
+                  Content="{x:Static bu:BrowserUseCopy.AllowDispatchSessionsLabel}"
+                  IsChecked="{CompiledBinding AllowDispatchSessions}"
+                  AutomationProperties.Name="{x:Static bu:BrowserUseCopy.AllowDispatchSessionsLabel}" />
+        <CheckBox x:Name="LocalOriginsBox"
+                  Content="{x:Static bu:BrowserUseCopy.LocalOriginsTrustedLabel}"
+                  IsChecked="{CompiledBinding LocalOriginsTrusted}"
+                  AutomationProperties.Name="{x:Static bu:BrowserUseCopy.LocalOriginsTrustedLabel}" />
+        <TextBlock x:Name="LocalOriginsRisk"
+                   Classes="settings-help"
+                   IsVisible="{CompiledBinding LocalOriginsRiskText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Text="{CompiledBinding LocalOriginsRiskText}" />
+
+        <Border x:Name="AcquisitionDialog"
+                Margin="0,16,0,0"
+                Padding="12"
+                IsVisible="{CompiledBinding HasAcquisitionDialog}"
+                AutomationProperties.Name="{x:Static bu:BrowserUseCopy.DialogName}">
+          <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+            <TextBlock x:Name="DialogText"
+                       Classes="settings-body"
+                       Text="{CompiledBinding DialogText}" />
+            <StackPanel Orientation="Horizontal"
+                        Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+              <Button x:Name="ConfirmButton"
+                      Classes="primary"
+                      Content="{x:Static bu:BrowserUseCopy.ConfirmLabel}"
+                      AutomationProperties.Name="{x:Static bu:BrowserUseCopy.ConfirmLabel}"
+                      Click="OnConfirmClick" />
+              <Button x:Name="CancelButton"
+                      Content="{x:Static bu:BrowserUseCopy.CancelLabel}"
+                      AutomationProperties.Name="{x:Static bu:BrowserUseCopy.CancelLabel}"
+                      Click="OnCancelClick" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Panel>
+
+</local:SettingsPageViewBase>

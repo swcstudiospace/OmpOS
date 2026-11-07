@@ -6,4 +6,5 @@ namespace Autonogrammer.Harness.Abstractions;
 /// </summary>
 /// <param name="Used">The tokens the conversation uses now.</param>
 /// <param name="Size">The size of the context window in tokens. Zero when the engine did not report it.</param>
-public sealed record ContextUsageEvent(long Used, long Size) : HarnessEvent;
+/// <param name="Cost">The session-cumulative cost the engine reported with this update, or null when it reported none.</param>
+public sealed record ContextUsageEvent(long Used, long Size, UsageCost? Cost = null) : HarnessEvent;

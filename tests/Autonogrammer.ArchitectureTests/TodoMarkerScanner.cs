@@ -28,6 +28,7 @@ internal static class TodoMarkerScanner
     /// markers belong to those repositories, and the first-party plugins/gsd-core-omp stays
     /// scanned), plus the vendored wwwroot/lib subtree only (wwwroot itself stays
     /// scanned: first-party css and html live there).
+    /// .swarm (untracked swarm runtime state; .swarm/.gitignore ignores all of it) is skipped too.
     /// </summary>
     private static readonly string[] TodoScanExtensions =
     [
@@ -45,6 +46,8 @@ internal static class TodoMarkerScanner
         ".git", "bin", "obj", "node_modules", "TestResults", "output",
         ".planning", "docs", "TestData", ".nuget",
         "claude-ultrathink", "agent-swarm", "agent-substrate",
+        // Untracked runtime state: .swarm/.gitignore ignores everything under it.
+        ".swarm",
     ];
 
     private static readonly Regex MarkerPattern = new(@"\b(?:TODO|FIXME|HACK|XXX)\b", RegexOptions.Compiled, TimeSpan.FromSeconds(2));
@@ -119,13 +122,15 @@ internal static class TodoMarkerScanner
     [
         Path.Combine("tests", "Autonogrammer.ArchitectureTests", "RepoHygieneTests.cs"),
         Path.Combine("tests", "Autonogrammer.ArchitectureTests", "TodoMarkerScanner.cs"),
+        // Defines the banned-marker regex that the corpus inventory test asserts its pages do not contain.
+        Path.Combine("tests", "Autonogrammer.Harness.BrowserUse.Tests", "Corpus", "CorpusPagesInventoryTests.cs"),
     ];
 
     private static bool IsExcludedScanPath(string repoRoot, string file)
     {
         var relative = Path.GetRelativePath(repoRoot, file);
-        // These files name the markers on purpose (the MarkerPattern literals and the controls that
-        // plant them), so they are excluded by exact path instead of relying on accidental self-exclusion.
+        // These files name the markers on purpose (the MarkerPattern literals, the controls that plant them, and the
+        // corpus test's banned-marker regex), so they are excluded by exact path instead of relying on accidental self-exclusion.
         if (SelfExcludedPaths.Contains(relative, StringComparer.Ordinal))
         {
             return true;

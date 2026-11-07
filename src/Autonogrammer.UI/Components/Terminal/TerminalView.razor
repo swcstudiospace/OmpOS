@@ -58,7 +58,7 @@
     private IJSObjectReference? _module;
     private int? _token;
     private IRemoteTerminalTransport? _transport;
-    private TimeProvider _time = TimeProvider.System;
+    private TimeProvider _timeProvider = TimeProvider.System;
     private Task _pump = Task.CompletedTask;
     private ICardSteering? _steering;
     private TerminalViewState _state = TerminalViewState.Connecting;
@@ -110,7 +110,7 @@
     protected override void OnInitialized()
     {
         _transport = Services.GetService(typeof(IRemoteTerminalTransport)) as IRemoteTerminalTransport;
-        _time = Services.GetService(typeof(TimeProvider)) as TimeProvider ?? TimeProvider.System;
+        _timeProvider = Services.GetService(typeof(TimeProvider)) as TimeProvider ?? TimeProvider.System;
         if (_transport is null)
         {
             _state = TerminalViewState.Unavailable;
@@ -237,7 +237,7 @@
             await SetStateAsync(TerminalViewState.Reconnecting, null, connectionLost: false).ConfigureAwait(true);
             try
             {
-                await Task.Delay(DelayFor(failures), _time, cancellationToken).ConfigureAwait(true);
+                await Task.Delay(DelayFor(failures), _timeProvider, cancellationToken).ConfigureAwait(true);
             }
             catch (OperationCanceledException)
             {

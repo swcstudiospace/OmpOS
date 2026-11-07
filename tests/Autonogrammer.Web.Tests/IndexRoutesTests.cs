@@ -17,7 +17,7 @@ public sealed class IndexRoutesTests : BunitContext
             .Cast<RouteAttribute>()
             .Select(static route => route.Template);
 
-        templates.ShouldBe(["/", "/kanban", "/about", "/sessions/{SessionId}", "/settings", "/settings/{SettingsPage}"], ignoreOrder: true);
+        templates.ShouldBe(["/", "/kanban", "/about", "/sessions/{SessionId}", "/settings", "/settings/{SettingsPage}", "/cowork"], ignoreOrder: true);
     }
 
     /// <summary>A deep link to the Kanban view or to About renders that view, with its one heading, over the Demo.</summary>
@@ -26,6 +26,7 @@ public sealed class IndexRoutesTests : BunitContext
     [Theory]
     [InlineData("kanban", "Kanban")]
     [InlineData("about", "About Autonogrammer")]
+    [InlineData("cowork", "Cowork")]
     public void ADeepLinkRendersItsView(string path, string heading)
     {
         using var host = new DemoTestHost();

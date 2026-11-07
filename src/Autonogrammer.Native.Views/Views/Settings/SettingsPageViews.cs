@@ -1,12 +1,17 @@
+using Autonogrammer.Native.Views.Computer;
+using Autonogrammer.Presentation.Computer;
 using Autonogrammer.Presentation.Hooks;
 using Autonogrammer.Presentation.Safety;
 using Autonogrammer.Presentation.Settings;
+using Autonogrammer.Presentation.Settings.BrowserUse;
+using Autonogrammer.Presentation.Settings.Cowork;
 using Autonogrammer.Presentation.Settings.Customize;
 using Autonogrammer.Presentation.Settings.Ignore;
 using Autonogrammer.Presentation.Settings.Models;
 using Autonogrammer.Presentation.Settings.Privacy;
 using Autonogrammer.Presentation.Settings.Workspaces;
 using Autonogrammer.Presentation.Settings.Worktrees;
+using Avalonia.Automation;
 using Avalonia.Controls;
 
 namespace Autonogrammer.Native.Views.Settings;
@@ -40,14 +45,37 @@ internal static class SettingsPageViews
             McpSettingsPage => new Autonogrammer.Native.Views.Mcp.McpPageView(),
             RemoteEnvironmentsSettingsPage => new Autonogrammer.Native.Views.Remote.RemoteEnvironmentsPageView(),
             CloudSettingsPage => new Autonogrammer.Native.Views.Cloud.CloudAgentsPageView(),
+            DispatchSettingsPage dispatch => CreateDispatchView(dispatch),
             WorkspacesSettingsPage => new WorkspacesPageView(),
             WorktreesSettingsPage => new WorktreesPageView(),
             IgnoreSettingsPage => new IgnorePageView(),
             PrivacySettingsPage => new PrivacyPageView(),
             AutomationsSettingsPage => new Autonogrammer.Native.Views.Automations.AutomationsPageView(),
+            ComputerUseSettingsPage => new ComputerSettingsPage(),
+            BrowserUseSettingsPage => new BrowserUsePageView(),
+            BundlesSettingsPage => new BundlesPageView(),
+            ConnectorsSettingsPage => new ConnectorsPageView(),
+            CoworkPermissionsSettingsPage permissions => new PermissionsPageView(permissions.Modes, permissions.Grants, permissions.Statements),
+            IsolationSettingsPage => new IsolationPageView(),
+            UsageSettingsPage => new Autonogrammer.Native.Views.Usage.UsageMeterView(),
+            NotificationsSettingsPage notifications => NamedNotice(notifications.Title, Autonogrammer.Presentation.Settings.SettingsCopy.NotificationsLimit),
             _ => throw new ArgumentException("No view draws this kind of settings page.", nameof(page)),
         };
         view.DataContext = ContextOf(page);
+        return view;
+    }
+
+    // The Dispatch view draws the page model the relay holds. The relay raises its change when the load completes; the view takes the new page
+    // and stops listening when it leaves the window.
+    private static Autonogrammer.Native.Views.Dispatch.DispatchPageView CreateDispatchView(DispatchSettingsPage dispatch)
+    {
+        var view = new Autonogrammer.Native.Views.Dispatch.DispatchPageView { DataContext = dispatch.Relay.Page };
+        void OnChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args) => view.DataContext = dispatch.Relay.Page;
+        dispatch.Relay.PropertyChanged += OnChanged;
+        view.DetachedFromVisualTree += (_, _) => dispatch.Relay.PropertyChanged -= OnChanged;
+        view.CancelRequested = commandId => _ = dispatch.Relay.CancelAsync(commandId, CancellationToken.None);
+        view.CapabilityChanged = policy => _ = dispatch.Relay.SetCapabilityAsync(policy.Capability, policy.Enabled, CancellationToken.None);
+        view.PauseChanged = paused => _ = dispatch.Relay.SetPausedAsync(paused, CancellationToken.None);
         return view;
     }
 
@@ -56,7 +84,12 @@ internal static class SettingsPageViews
     {
         McpSettingsPage mcp => mcp.Model,
         CloudSettingsPage cloud => cloud.Agents,
+        DispatchSettingsPage dispatch => dispatch.Relay.Page,
         AutomationsSettingsPage automations => automations.Model,
+        BundlesSettingsPage bundles => bundles.Model,
+        IsolationSettingsPage isolation => isolation.Model,
+        UsageSettingsPage usage => usage.Model,
+        CoworkPermissionsSettingsPage permissions => new PermissionsPageState(permissions.Modes, permissions.Grants, permissions.Statements),
         _ => page,
     };
 
@@ -67,7 +100,7 @@ internal static class SettingsPageViews
     public static bool IsEditable(ISettingsPage page)
     {
         ArgumentNullException.ThrowIfNull(page);
-        return page is RuntimePage or GeneralPage or AgentsPage or ModelsSettingsPage or DisplaySettingsPage or RunModeSettingsPage or IgnoreSettingsPage or WorkspacesSettingsPage;
+        return page is RuntimePage or GeneralPage or AgentsPage or ModelsSettingsPage or DisplaySettingsPage or RunModeSettingsPage or IgnoreSettingsPage or WorkspacesSettingsPage or ComputerUseSettingsPage or BrowserUseSettingsPage;
     }
 
     /// <summary>Returns whether the page has defaults the footer's Reset returns its draft to. The Models page has none: its draft is a form to close.</summary>
@@ -77,7 +110,7 @@ internal static class SettingsPageViews
     public static bool HasDefaults(ISettingsPage page)
     {
         ArgumentNullException.ThrowIfNull(page);
-        return page is RuntimePage or GeneralPage or AgentsPage or DisplaySettingsPage or RunModeSettingsPage or IgnoreSettingsPage or WorkspacesSettingsPage;
+        return page is RuntimePage or GeneralPage or AgentsPage or DisplaySettingsPage or RunModeSettingsPage or IgnoreSettingsPage or WorkspacesSettingsPage or ComputerUseSettingsPage;
     }
 
     /// <summary>Returns whether the page is still loading its values.</summary>
@@ -116,6 +149,12 @@ internal static class SettingsPageViews
                 CustomizePageState.Error => new PageStatus(PageStatusKind.Error, CustomizeCopy.ErrorTitle, catalog.LoadFailure ?? CustomizeCopy.LoadFailed),
                 _ => ReadyStatus,
             },
+            BrowserUseSettingsPage browser => browser.State switch
+            {
+                SettingsPageState.Loading => new PageStatus(PageStatusKind.Loading, string.Empty, SettingsCopy.LoadingText),
+                SettingsPageState.Error => new PageStatus(PageStatusKind.Error, SettingsCopy.LoadFailedHeading, browser.LoadError),
+                _ => ReadyStatus,
+            },
             SettingsPageBase basePage => basePage.State switch
             {
                 SettingsPageState.Loading => new PageStatus(PageStatusKind.Loading, string.Empty, SettingsCopy.LoadingText),
@@ -127,4 +166,12 @@ internal static class SettingsPageViews
     }
 
     private static PageStatus ReadyStatus => new(PageStatusKind.Ready, string.Empty, string.Empty);
+
+    private static TextBlock NamedNotice(string title, string limit)
+    {
+        var block = new TextBlock { Text = limit };
+        AutomationProperties.SetName(block, title);
+        return block;
+    }
+
 }

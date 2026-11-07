@@ -4,8 +4,8 @@ using System.Diagnostics.CodeAnalysis;
 namespace Autonogrammer.Api.Services;
 
 /// <summary>
-/// Index of the hosted runs created through <c>POST /sessions/{id}/runs</c> in this process. Like <see cref="SessionRegistry"/>,
-/// it lives for the life of the process: a run created before a restart is not found afterwards, and the run's output stays
+/// Index of the hosted runs created through <c>POST /sessions/{id}/runs</c> in this process. The session list itself is the
+/// repository; this index lives for the life of the process: a run created before a restart is not found afterwards, and the run's output stays
 /// readable from the session itself.
 /// </summary>
 internal sealed class RunRegistry : IDisposable

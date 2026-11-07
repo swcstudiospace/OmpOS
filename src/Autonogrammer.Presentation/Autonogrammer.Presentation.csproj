@@ -8,6 +8,7 @@
     <ProjectReference Include="../Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
     <ProjectReference Include="../Autonogrammer.GenUi/Autonogrammer.GenUi.csproj" />
     <ProjectReference Include="../Autonogrammer.Parser/Autonogrammer.Parser.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.ComputerUse.Abstractions/Autonogrammer.Harness.ComputerUse.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

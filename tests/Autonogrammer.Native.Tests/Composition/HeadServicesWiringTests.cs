@@ -1,4 +1,7 @@
 using System.Reflection;
+using Autonogrammer.Accounts;
+using Autonogrammer.Contracts.Accounts;
+using Autonogrammer.Harness.Secrets;
 using Autonogrammer.Native.Agents;
 using Autonogrammer.Native.Composition;
 using Autonogrammer.Native.Tests.AgentLoop;
@@ -7,10 +10,7 @@ using Xunit;
 
 namespace Autonogrammer.Native.Tests.Composition;
 
-/// <summary>
-/// The services a head hands to the shell and to the Settings window: after the services are opened over fakes (temporary roots, no network) and the head is built over them, every member
-/// the code reads is present, so a missing wire shows as a failing test rather than as a page that quietly does nothing.
-/// </summary>
+/// <summary>The head's shared workspace context, cloud initialization, account tokens and automation lifecycle over temporary roots with no network.</summary>
 public sealed class HeadServicesWiringTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -35,15 +35,54 @@ public sealed class HeadServicesWiringTests
         await using var servicesScope = services.ConfigureAwait(true);
         services.BestOfN.ShouldBeNull("the engine set creates it when the head is built");
 
-        var head = AgentHead.Create(AgentLoopFixtures.Options(tree, null, services: services));
+        var head = await AgentHead.CreateAsync(AgentLoopFixtures.Options(tree, null, services: services)).ConfigureAwait(true);
         await using var headScope = head.ConfigureAwait(true);
 
         head.Services.ShouldBeSameAs(services);
         services.BestOfN.ShouldNotBeNull();
         services.Cloud.ShouldBeNull("no AUTONOGRAMMER_API_BASE_URL is set");
-        MissingMembers(services, allowedNull: [nameof(HeadServices.Cloud), nameof(HeadServices.TrustTerminalOpener), nameof(HeadServices.PluginsRoot), nameof(HeadServices.LoggerFactory)]).ShouldBeEmpty();
+        MissingMembers(services, allowedNull: [nameof(HeadServices.Cloud), nameof(HeadServices.Account), nameof(HeadServices.TrustTerminalOpener), nameof(HeadServices.PluginsRoot), nameof(HeadServices.LoggerFactory)]).ShouldBeEmpty();
         services.McpContext([tree.Workspace]).WorkspaceRoots.ShouldBe([tree.Workspace]);
         services.CreateModeSkills(tree.Workspace).ShouldNotBeNull();
+    }
+
+    /// <summary>Failed construction leaves supplied services reusable; the successful head starts their automations and keeps the workspace context.</summary>
+    [Fact]
+    public async Task FailedHeadConstructionLeavesBorrowedServicesUsable()
+    {
+        using var tree = new TempTree();
+        var services = await HeadServices.CreateAsync(Options(tree), Token).ConfigureAwait(true);
+        await using var servicesScope = services.ConfigureAwait(true);
+        var failure = await Should.ThrowAsync<InvalidOperationException>(() =>
+            AgentHead.CreateAsync(AgentLoopFixtures.Options(tree, null, clock: new FailingConstructionClock(), services: services))).ConfigureAwait(true);
+        failure.Message.ShouldBe("The construction clock failed.");
+        services.Automations.IsStarted.ShouldBeFalse();
+
+        var head = await AgentHead.CreateAsync(AgentLoopFixtures.Options(tree, null, services: services)).ConfigureAwait(true);
+        await using var headScope = head.ConfigureAwait(true);
+        await head.InitializeAsync(Token).ConfigureAwait(true);
+        services.Automations.IsStarted.ShouldBeTrue("failed construction must not dispose the borrowed services");
+
+        services.McpContext([tree.Workspace]).WorkspaceRoots.ShouldBe([tree.Workspace]);
+    }
+
+    /// <summary>Configuring cloud services does not contact the API during construction.</summary>
+    [Fact]
+    public async Task CreatingCloudServicesDoesNotContactTheApi()
+    {
+        using var tree = new TempTree();
+        using var handler = new ThrowingHandler();
+        var variables = new Func<string, string?>(name => name switch
+        {
+            HeadServices.ApiBaseUrlVariable => "https://api.example.test/",
+            HeadServices.ApiTokenVariable => "fake-token-for-tests",
+            _ => null,
+        });
+        var services = await HeadServices.CreateAsync(Options(tree, variables) with { ApiHandler = handler }, Token).ConfigureAwait(true);
+        await using var servicesScope = services.ConfigureAwait(true);
+
+        services.Cloud.ShouldNotBeNull();
+        handler.Requests.ShouldBe(0);
     }
 
     /// <summary>With an API address the cloud host exists as well; creating it makes no request.</summary>
@@ -61,7 +100,34 @@ public sealed class HeadServicesWiringTests
         await using var servicesScope = services.ConfigureAwait(true);
 
         services.Cloud.ShouldNotBeNull();
-        MissingMembers(services, allowedNull: [nameof(HeadServices.BestOfN), nameof(HeadServices.TrustTerminalOpener), nameof(HeadServices.PluginsRoot), nameof(HeadServices.LoggerFactory)]).ShouldBeEmpty();
+        MissingMembers(services, allowedNull: [nameof(HeadServices.Account), nameof(HeadServices.BestOfN), nameof(HeadServices.UsageHistory), nameof(HeadServices.TrustTerminalOpener), nameof(HeadServices.PluginsRoot), nameof(HeadServices.LoggerFactory)]).ShouldBeEmpty();
+    }
+
+    /// <summary>A signed-in account token is sent; signed out, the environment token is the fallback; without either, the supplier returns null.</summary>
+    [Fact]
+    public async Task TheTokenSupplierPrefersTheAccountTokenAndFallsBackOnlyWhenSignedOut()
+    {
+        using var tree = new TempTree();
+        var signedIn = new ScriptedAccountSession(signedIn: true, "account-token");
+        var variables = new Func<string, string?>(name => name switch
+        {
+            HeadServices.ApiBaseUrlVariable => "https://api.example.test/",
+            HeadServices.ApiTokenVariable => "env-token",
+            _ => null,
+        });
+        var signedInServices = await HeadServices.CreateAsync(Options(tree, variables) with { AccountSession = signedIn }, Token).ConfigureAwait(true);
+        await using var signedInScope = signedInServices.ConfigureAwait(true);
+        (await signedInServices.ReadApiTokenAsync(Token).ConfigureAwait(true)).ShouldBe("account-token");
+
+        var signedOut = new ScriptedAccountSession(signedIn: false, "account-token");
+        var signedOutServices = await HeadServices.CreateAsync(Options(tree, variables) with { AccountSession = signedOut }, Token).ConfigureAwait(true);
+        await using var signedOutScope = signedOutServices.ConfigureAwait(true);
+        (await signedOutServices.ReadApiTokenAsync(Token).ConfigureAwait(true)).ShouldBe("env-token");
+
+        var bare = new Func<string, string?>(name => string.Equals(name, HeadServices.ApiBaseUrlVariable, StringComparison.Ordinal) ? "https://api.example.test/" : null);
+        var bareServices = await HeadServices.CreateAsync(Options(tree, bare) with { AccountSession = signedOut }, Token).ConfigureAwait(true);
+        await using var bareScope = bareServices.ConfigureAwait(true);
+        (await bareServices.ReadApiTokenAsync(Token).ConfigureAwait(true)).ShouldBeNull();
     }
 
     /// <summary>The automations are created with the services, started only when the head opens, and report whether a local automation can run from whether omp is installed.</summary>
@@ -71,7 +137,7 @@ public sealed class HeadServicesWiringTests
         using var tree = new TempTree();
         var services = await HeadServices.CreateAsync(Options(tree) with { OmpAvailable = static () => true }, Token).ConfigureAwait(true);
         await using var servicesScope = services.ConfigureAwait(true);
-        var head = AgentHead.Create(AgentLoopFixtures.Options(tree, null, services: services));
+        var head = await AgentHead.CreateAsync(AgentLoopFixtures.Options(tree, null, services: services)).ConfigureAwait(true);
         await using var headScope = head.ConfigureAwait(true);
 
         services.Automations.IsStarted.ShouldBeFalse("the schedules count only once the head is open");
@@ -122,10 +188,45 @@ public sealed class HeadServicesWiringTests
         return missing;
     }
 
+    private sealed class FailingConstructionClock : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => throw new InvalidOperationException("The construction clock failed.");
+    }
+
     /// <summary>An API handler that fails when used: opening the services must not call the API.</summary>
     private sealed class ThrowingHandler : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+        public int Requests { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Requests++;
             throw new InvalidOperationException("Opening the head services made an API request.");
+        }
+    }
+
+    private sealed class ScriptedAccountSession(bool signedIn, string token) : IAccountSession
+    {
+        public event EventHandler<AccountStateChangedEventArgs>? StateChanged;
+
+        public AccountState State => signedIn
+            ? AccountState.SignedOut with { Phase = AuthPhase.SignedIn, Identity = new AccountIdentity("user", "a@example.test") }
+            : AccountState.SignedOut;
+
+        public ValueTask<AuthResult<SecretString>> GetAccessTokenAsync(CancellationToken cancellationToken)
+        {
+            _ = cancellationToken;
+            return ValueTask.FromResult(signedIn
+                ? AuthResult.Success(new SecretString(token))
+                : AuthResult.Fail<SecretString>(AuthErrorKind.SessionEnded));
+        }
+
+        public Task<AuthResult<AuthUnit>> SignOutAsync(SignOutScope scope, CancellationToken cancellationToken)
+        {
+            _ = scope;
+            _ = cancellationToken;
+            StateChanged?.Invoke(this, new AccountStateChangedEventArgs(AccountState.SignedOut));
+            return Task.FromResult(AuthResult.Success(AuthUnit.Value));
+        }
     }
 }

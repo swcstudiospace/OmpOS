@@ -21,7 +21,7 @@ public sealed class PostgresSessionServiceCompletionTests(PostgresServerFixture 
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            await schema.MigrateAsync(ct).ConfigureAwait(true);
             var repository = schema.CreateRepository();
             var service = new SessionService(repository, TimeProvider.System);
             var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
@@ -51,7 +51,7 @@ public sealed class PostgresSessionServiceCompletionTests(PostgresServerFixture 
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            await schema.MigrateAsync(ct).ConfigureAwait(true);
             var repository = schema.CreateRepository();
             var service = new SessionService(repository, TimeProvider.System);
             var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
@@ -82,7 +82,7 @@ public sealed class PostgresSessionServiceCompletionTests(PostgresServerFixture 
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            await schema.MigrateAsync(ct).ConfigureAwait(true);
             var repository = schema.CreateRepository();
             var service = new SessionService(repository, TimeProvider.System);
             var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);

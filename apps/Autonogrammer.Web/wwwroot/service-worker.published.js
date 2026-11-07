@@ -23,7 +23,8 @@ const SHELL_URL = "index.html";
 
 // The files of the build that make the app start and run offline.
 const CACHED_FILES = [/\.dll$/, /\.wasm$/, /\.html$/, /\.js$/, /\.json$/, /\.css$/, /\.woff2?$/, /\.png$/, /\.jpe?g$/, /\.gif$/, /\.svg$/, /\.ico$/, /\.webmanifest$/, /\.blat$/, /\.dat$/];
-const NOT_CACHED_FILES = [/^service-worker\.js$/, /^service-worker-assets\.js$/, /^appsettings\.demo\.json$/];
+const NOT_CACHED_FILES = [/^service-worker\.js$/, /^service-worker-assets\.js$/, /^appsettings\.demo\.json$/, /(^|\/)lib\/mermaid\//];
+// The Mermaid bundle is loaded only by an artifact frame, which the shell opens on demand; the precache leaves it to the network (D-48).
 
 // index.html carries the build's fingerprint placeholders, which the publish step fills in. It is fetched without the manifest hash, so the install never depends on that step's order.
 const WITHOUT_INTEGRITY = [/\.html$/];
@@ -32,7 +33,7 @@ const WITHOUT_INTEGRITY = [/\.html$/];
 const AUTH_CONFIG_PATH = "/auth/config";
 const AUTH_PATH_PREFIX = "/auth/";
 // The roots of the API routes. A page navigation to one of these is a page of this app and still gets the shell (Settings has pages of its own).
-const API_PATH_PREFIXES = ["/api/", "/auth/", "/sessions", "/providers", "/models", "/cloud", "/settings/", "/workspace", "/events", "/automations", "/board", "/hooks", "/source", "/health", "/metrics"];
+const API_PATH_PREFIXES = ["/api/", "/auth/", "/sessions", "/providers", "/models", "/cloud", "/settings/", "/workspace", "/events", "/automations", "/account", "/cowork/", "/hooks", "/source", "/health", "/metrics", "/status", "/dispatch"];
 
 const scopeUrl = new URL(self.registration.scope);
 const shellFiles = self.assetsManifest.assets.filter(isCachedAsset);

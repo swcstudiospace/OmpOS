@@ -11,6 +11,7 @@ namespace Autonogrammer.Harness.Acp.Tests;
 /// script that writes the environment it received to a file and exits. The parent's variables are set for the duration of each test under names
 /// no other test reads.
 /// </summary>
+[Collection("ProcessEnvironment")]
 public sealed class AcpEnvironmentIsolationTests
 {
     private const string Secret = "SECRET_TEST_VAR";

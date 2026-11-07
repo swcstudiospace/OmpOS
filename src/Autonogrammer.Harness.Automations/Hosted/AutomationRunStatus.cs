@@ -25,4 +25,7 @@ public enum AutomationRunStatus
 
     /// <summary>The scheduler skipped an occurrence because it was more than the misfire window late.</summary>
     Skipped,
+
+    /// <summary>The run is waiting for a person to approve it. Nothing approves it on its own. An unattended wait ends cancelled.</summary>
+    WaitingForApproval,
 }

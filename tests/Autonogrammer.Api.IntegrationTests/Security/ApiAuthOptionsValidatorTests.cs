@@ -133,6 +133,193 @@ public sealed class ApiAuthOptionsValidatorTests
         Failures(oidc).ShouldContain("Api:Auth:AllowDevelopmentPrincipal is allowed only in the Development environment.", StringComparer.Ordinal);
     }
 
+    /// <summary>Verifies a missing or non-https ValidIssuer fails in Production naming the key, and Development needs none.</summary>
+    [Fact]
+    public void Oidc_ValidIssuer_RequiredAndHttpsOutsideDevelopment()
+    {
+        var missing = OidcOptions();
+        missing.AllowAnyAuthenticatedUser = true;
+        missing.ValidIssuer = null;
+        var insecure = OidcOptions();
+        insecure.AllowAnyAuthenticatedUser = true;
+        insecure.ValidIssuer = "http://issuer.test.invalid/";
+
+        Failures(missing).ShouldContain("Api:Auth:ValidIssuer is required outside the Development environment.", StringComparer.Ordinal);
+        Failures(insecure).ShouldContain("Api:Auth:ValidIssuer must be an absolute https URI.", StringComparer.Ordinal);
+        Validate(new ApiAuthOptions(), Environments.Development).Succeeded.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies Algorithms accepts ES256 and RS256 only.</summary>
+    [Fact]
+    public void Oidc_Algorithms_AreLimitedToEs256AndRs256()
+    {
+        var good = ValidOidc();
+        good.Algorithms = ["ES256", "RS256"];
+        var bad = ValidOidc();
+        bad.Algorithms = ["ES256", "HS256"];
+
+        Validate(good, Environments.Production).Succeeded.ShouldBeTrue();
+        Failures(bad).ShouldContain("Api:Auth:Algorithms may list only ES256 and RS256.", StringComparer.Ordinal);
+        new ApiAuthOptions().EffectiveAlgorithms.ShouldBe(["ES256"]);
+    }
+
+    /// <summary>Verifies a valid Client block and an absent Client block pass.</summary>
+    [Fact]
+    public void Client_ValidBlockAndAbsentBlock_Pass()
+    {
+        var valid = ValidOidc();
+        valid.Client = new ApiAuthClientOptions { ProjectUrl = "https://project.supabase.co", PublishableKey = "sb_publishable_abc", MagicLinkEnabled = true };
+
+        Validate(valid, Environments.Production).Succeeded.ShouldBeTrue();
+        Validate(ValidOidc(), Environments.Production).Succeeded.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies a secret key as the publishable key fails naming the key and never echoing the value, however it is padded or cased.</summary>
+    [Theory]
+    [InlineData("sb_secret_do-not-echo")]
+    [InlineData(" sb_secret_do-not-echo")]
+    [InlineData("\tsb_secret_do-not-echo\n")]
+    [InlineData("SB_SECRET_do-not-echo")]
+    public void Client_SecretKey_FailsNamingKeyWithoutEchoingIt(string key)
+    {
+        var options = ValidOidc();
+        options.Client = new ApiAuthClientOptions { ProjectUrl = "https://project.supabase.co", PublishableKey = key };
+
+        var failures = Failures(options);
+
+        failures.ShouldContain(static m => m.Contains("Api:Auth:Client:PublishableKey", StringComparison.Ordinal));
+        failures.ShouldNotContain(static m => m.Contains("do-not-echo", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies a service-role JWT with surrounding whitespace still fails.</summary>
+    [Fact]
+    public void Client_ServiceRoleJwtWithSurroundingWhitespace_Fails()
+    {
+        var options = ValidOidc();
+        options.Client = new ApiAuthClientOptions { ProjectUrl = "https://project.supabase.co", PublishableKey = " " + Jwt("service_role") + "\n" };
+
+        Failures(options).ShouldContain(static m => m.Contains("Api:Auth:Client:PublishableKey", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies a JWT whose role claim is service_role fails, and an anon-role JWT passes.</summary>
+    [Fact]
+    public void Client_ServiceRoleJwt_Fails_AnonRoleJwt_Passes()
+    {
+        var service = ValidOidc();
+        service.Client = new ApiAuthClientOptions { ProjectUrl = "https://project.supabase.co", PublishableKey = Jwt("service_role") };
+        var anon = ValidOidc();
+        anon.Client = new ApiAuthClientOptions { ProjectUrl = "https://project.supabase.co", PublishableKey = Jwt("anon") };
+
+        var failures = Failures(service);
+
+        failures.ShouldContain(static m => m.Contains("Api:Auth:Client:PublishableKey", StringComparison.Ordinal));
+        failures.ShouldNotContain(static m => m.Contains("eyJ", StringComparison.Ordinal));
+        Validate(anon, Environments.Production).Succeeded.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies a non-https or userinfo-bearing project URL fails naming the key.</summary>
+    [Theory]
+    [InlineData("http://project.supabase.co")]
+    [InlineData("https://user:pass@project.supabase.co")]
+    [InlineData("not a url")]
+    public void Client_BadProjectUrl_FailsNamingKeyWithoutEchoingIt(string candidate)
+    {
+        var options = ValidOidc();
+        options.Client = new ApiAuthClientOptions { ProjectUrl = candidate, PublishableKey = "sb_publishable_abc" };
+
+        var failures = Failures(options);
+
+        failures.ShouldContain(static m => m.Contains("Api:Auth:Client:ProjectUrl", StringComparison.Ordinal));
+        failures.ShouldNotContain(static m => m.Contains("pass@", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies the link method without the code method fails naming both keys.</summary>
+    [Fact]
+    public void Client_MagicLinkWithoutEmailCode_Fails()
+    {
+        var options = ValidOidc();
+        options.Client = new ApiAuthClientOptions { MagicLinkEnabled = true, EmailCodeEnabled = false };
+
+        Failures(options).ShouldContain(static m =>
+            m.Contains("Api:Auth:Client:MagicLinkEnabled", StringComparison.Ordinal) && m.Contains("Api:Auth:Client:EmailCodeEnabled", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies any Client member, and Algorithms, fail in owner-token mode while an unset block passes.</summary>
+    [Fact]
+    public void OwnerToken_ClientOrAlgorithms_Fail()
+    {
+        var client = OwnerOptions();
+        client.Client = new ApiAuthClientOptions { ProjectUrl = "https://project.supabase.co" };
+        var flag = OwnerOptions();
+        flag.Client = new ApiAuthClientOptions { MagicLinkEnabled = true };
+        var algorithms = OwnerOptions();
+        algorithms.Algorithms = ["ES256"];
+
+        Failures(client).ShouldContain(static m => m.Contains("Api:Auth:Client", StringComparison.Ordinal));
+        Failures(flag).ShouldContain(static m => m.Contains("Api:Auth:Client", StringComparison.Ordinal));
+        Failures(algorithms).ShouldContain(static m => m.Contains("Api:Auth:Algorithms", StringComparison.Ordinal));
+        Validate(OwnerOptions(), Environments.Production).Succeeded.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies the declared providers and the wallet flag pass with the client block, and need no other settings.</summary>
+    [Fact]
+    public void Client_DeclaredProvidersAndWallet_PassWithTheClientBlock()
+    {
+        var options = ValidOidc();
+        options.Client = new ApiAuthClientOptions
+        {
+            ProjectUrl = "https://project.supabase.co",
+            PublishableKey = "sb_publishable_test",
+            Providers = ["google", "x"],
+            WalletEnabled = true,
+        };
+
+        Validate(options, Environments.Production).Succeeded.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies a declared provider other than google and x, or one listed twice, fails naming the key.</summary>
+    [Fact]
+    public void Client_DeclaredProviders_AreOnlyGoogleAndXOnce()
+    {
+        var unknown = ValidOidc();
+        unknown.Client = new ApiAuthClientOptions { ProjectUrl = "https://project.supabase.co", PublishableKey = "sb_publishable_test", Providers = ["twitter"] };
+        var twice = ValidOidc();
+        twice.Client = new ApiAuthClientOptions { ProjectUrl = "https://project.supabase.co", PublishableKey = "sb_publishable_test", Providers = ["x", "x"] };
+
+        Failures(unknown).ShouldContain(static m => m.Contains("Api:Auth:Client:Providers may list only google and x", StringComparison.Ordinal));
+        Failures(twice).ShouldContain(static m => m.Contains("Api:Auth:Client:Providers must not list a provider twice", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies declared providers or the wallet flag need the client block, and owner-token mode refuses them.</summary>
+    [Fact]
+    public void Client_DeclaredMethods_NeedTheClientBlockAndAreRefusedInOwnerTokenMode()
+    {
+        var providersWithoutBlock = ValidOidc();
+        providersWithoutBlock.Client = new ApiAuthClientOptions { Providers = ["google"] };
+        var walletWithoutBlock = ValidOidc();
+        walletWithoutBlock.Client = new ApiAuthClientOptions { WalletEnabled = true };
+        var owner = OwnerOptions();
+        owner.Client = new ApiAuthClientOptions { Providers = ["google"] };
+
+        Failures(providersWithoutBlock).ShouldContain(static m => m.Contains("Api:Auth:Client:Providers and Api:Auth:Client:WalletEnabled require", StringComparison.Ordinal));
+        Failures(walletWithoutBlock).ShouldContain(static m => m.Contains("Api:Auth:Client:Providers and Api:Auth:Client:WalletEnabled require", StringComparison.Ordinal));
+        Failures(owner).ShouldContain(static m => m.Contains("Api:Auth:Client must not be set", StringComparison.Ordinal));
+    }
+
+    private static ApiAuthOptions ValidOidc()
+    {
+        var options = OidcOptions();
+        options.AllowAnyAuthenticatedUser = true;
+        return options;
+    }
+
+    private static string Jwt(string role)
+    {
+        static string B64(string json) =>
+            Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        return $"{B64("{\"alg\":\"HS256\",\"typ\":\"JWT\"}")}.{B64($"{{\"role\":\"{role}\"}}")}.c2ln";
+    }
+
     private static string[] Failures(ApiAuthOptions options)
     {
         var result = Validate(options, Environments.Production);
@@ -153,6 +340,7 @@ public sealed class ApiAuthOptionsValidatorTests
     {
         Authority = "https://issuer.test.invalid/",
         Audience = "api",
+        ValidIssuer = "https://issuer.test.invalid/",
     };
 
     private sealed class TestEnvironment : IHostEnvironment

@@ -32,7 +32,7 @@ public sealed class ProviderKeyHeadTests
         using var tree = new TempTree();
         using var models = fake.Compose();
         (await models.Source.SaveCustomProviderAsync(ModelsForms.Gateway("gateway"), Token).ConfigureAwait(true)).Succeeded.ShouldBeTrue();
-        var head = AgentHead.Create(HeadOptions(tree, fake, models.Keys));
+        var head = await AgentHead.CreateAsync(HeadOptions(tree, fake, models.Keys)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(Token).ConfigureAwait(true);
         var (_, slot) = await NewSlotAsync(head, Token).ConfigureAwait(true);
@@ -63,7 +63,7 @@ public sealed class ProviderKeyHeadTests
         using var models = fake.Compose();
         (await models.Source.SaveCustomProviderAsync(ModelsForms.Gateway("gateway"), Token).ConfigureAwait(true)).Succeeded.ShouldBeTrue();
         (await models.Source.SaveApiKeyAsync("gateway", ModelsForms.Canary, Token).ConfigureAwait(true)).Succeeded.ShouldBeTrue();
-        var head = AgentHead.Create(HeadOptions(tree, fake, keys: null));
+        var head = await AgentHead.CreateAsync(HeadOptions(tree, fake, keys: null)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(Token).ConfigureAwait(true);
         var (_, slot) = await NewSlotAsync(head, Token).ConfigureAwait(true);
@@ -87,7 +87,7 @@ public sealed class ProviderKeyHeadTests
         using var tree = new TempTree();
         using var models = fake.Compose();
         (await models.Source.SaveCustomProviderAsync(ModelsForms.Gateway("gateway"), Token).ConfigureAwait(true)).Succeeded.ShouldBeTrue();
-        var head = AgentHead.Create(HeadOptions(tree, fake, models.Keys));
+        var head = await AgentHead.CreateAsync(HeadOptions(tree, fake, models.Keys)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(Token).ConfigureAwait(true);
         var (_, slot) = await NewSlotAsync(head, Token).ConfigureAwait(true);

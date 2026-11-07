@@ -1,0 +1,67 @@
+@namespace Autonogrammer.UI.Components.Cowork
+@using Autonogrammer.Contracts.Cowork.Browser
+@using Autonogrammer.Presentation.Cowork.Browser
+@inherits ObservableComponent
+
+<section class="autonogrammer-browser-pane" role="region" aria-label="Browser">
+    <div class="autonogrammer-browser-pane-chrome" role="toolbar" aria-label="Browser controls">
+        @if (!string.IsNullOrEmpty(Model.HeaderSentence))
+        {
+            <p class="autonogrammer-browser-pane-indicator">@Model.HeaderSentence</p>
+        }
+        <button type="button" class="autonogrammer-btn" accesskey="T" @onclick="TakeOverAsync">Take over</button>
+        @if (Model.HeaderOffersStop)
+        {
+            <button type="button" class="autonogrammer-btn autonogrammer-browser-pane-stop" accesskey="S" @onclick="StopAsync">Stop</button>
+        }
+        @if (Model.HeaderOffersClose)
+        {
+            <button type="button" class="autonogrammer-btn" accesskey="C" @onclick="CloseAsync">Close</button>
+        }
+        @if (!string.IsNullOrEmpty(Model.FixAction))
+        {
+            <button type="button" class="autonogrammer-btn" @onclick="ShowFix">@Model.FixAction</button>
+        }
+        @if (Model.State == BrowserPaneState.ModelCannotSeeImages)
+        {
+            <ul aria-label="Vision models">
+                @foreach (var selector in Model.VisionSelectors)
+                {
+                    <li>@selector</li>
+                }
+            </ul>
+        }
+        @if (Model.LastImageByteCount > 0)
+        {
+            <p class="autonogrammer-browser-pane-agent">Agent view @Model.LastImageFormat @Model.LastImageWidth x @Model.LastImageHeight @Model.LastImageByteCount bytes @Model.LastImageTime</p>
+        }
+    </div>
+    <p class="autonogrammer-browser-pane-sentence">@Sentence</p>
+    <div class="autonogrammer-browser-pane-live" role="status" aria-live="polite">@Model.Announcement</div>
+</section>
+
+@code {
+    /// <summary>Gets the pane model. The web head never draws a frame.</summary>
+    [Parameter, EditorRequired]
+    public BrowserPaneViewModel Model { get; set; } = default!;
+
+    private string Sentence => Model.State == BrowserPaneState.RemoteViewUnavailable
+        ? BrowserPaneCopy.RemoteViewSentence
+        : Model.Sentence;
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        Observe(Model);
+    }
+
+    private Task TakeOverAsync() => Model.TakeOverAsync();
+
+    private Task StopAsync() => Model.StopAsync();
+
+    private Task CloseAsync() => Model.CloseBrowserAsync();
+
+    private void ShowFix()
+    {
+    }
+}

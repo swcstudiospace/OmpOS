@@ -40,7 +40,7 @@ public sealed class SlashPaletteEndToEndTests
             var ct = TestContext.Current.CancellationToken;
             using var tree = new TempTree();
             var omp = new CommandsOmp();
-            var head = AgentHead.Create(Options(tree, omp));
+            var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
             await using var headLifetime = head.ConfigureAwait(true);
             await head.InitializeAsync(ct).ConfigureAwait(true);
             var (_, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -73,7 +73,7 @@ public sealed class SlashPaletteEndToEndTests
             var ct = TestContext.Current.CancellationToken;
             using var tree = new TempTree();
             var omp = new CommandsOmp();
-            var head = AgentHead.Create(Options(tree, omp));
+            var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
             await using var headLifetime = head.ConfigureAwait(true);
             await head.InitializeAsync(ct).ConfigureAwait(true);
             var (_, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -101,7 +101,7 @@ public sealed class SlashPaletteEndToEndTests
             var ct = TestContext.Current.CancellationToken;
             using var tree = new TempTree();
             var omp = new CommandsOmp();
-            var head = AgentHead.Create(Options(tree, omp));
+            var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
             await using var headLifetime = head.ConfigureAwait(true);
             await head.InitializeAsync(ct).ConfigureAwait(true);
             var (_, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);

@@ -101,6 +101,9 @@ public sealed class SessionRunReaperTests
     /// <summary>Test-only placeholder that satisfies the Dragonfly connection-string validation. It is never connected to: the Dragonfly registrations are removed.</summary>
     private const string DragonflyPlaceholderConnection = "127.0.0.1:1,abortConnect=false";
 
+    /// <summary>Test-only tenant-hash pepper. The Dragonfly store requires one (DataPlane:TenantHashPepper); the reaper never hashes a tenant, so any non-blank value satisfies the rule.</summary>
+    private const string TestTenantHashPepper = "reaper-test-tenant-pepper";
+
     /// <summary>
     /// Creates a host in Dragonfly mode, the only mode in which the reaper sweeps. The test host has no Dragonfly server, so the Dragonfly
     /// registrations are replaced by in-process coordination; see <see cref="UseInMemoryCoordinationUnderDragonflyMode"/>.
@@ -111,6 +114,7 @@ public sealed class SessionRunReaperTests
         {
             ["Coordination:Store"] = "Dragonfly",
             ["Coordination:Dragonfly:ConnectionString"] = DragonflyPlaceholderConnection,
+            ["DataPlane:TenantHashPepper"] = TestTenantHashPepper,
         },
         configureServices: services =>
         {

@@ -40,6 +40,8 @@ public sealed class ShortcutCatalogueTests
             ShortcutIds.NextRegion or ShortcutIds.PreviousRegion => RunAsync(() => ShellShortcutEffects.RegionFocusMoves(gesture)),
             ShortcutIds.FocusAgentList => RunAsync(() => ShellShortcutEffects.FocusAgentList(gesture)),
             ShortcutIds.FocusPrompt => RunAsync(() => ShellShortcutEffects.FocusPrompt(gesture)),
+            ShortcutIds.ShowCodeSurface => RunAsync(() => SurfaceShortcutEffects.Switches(gesture, Autonogrammer.Contracts.Sessions.SessionSurface.Code)),
+            ShortcutIds.ShowCoworkSurface => RunAsync(() => SurfaceShortcutEffects.Switches(gesture, Autonogrammer.Contracts.Sessions.SessionSurface.Cowork)),
             ShortcutIds.SearchTranscript => RunAsync(() => ShellShortcutEffects.SearchTranscript(gesture)),
             ShortcutIds.SearchConversations => RunAsync(() => ShellShortcutEffects.SearchConversations(gesture)),
             ShortcutIds.Dismiss => RunAsync(() => ShellShortcutEffects.Dismiss(gesture, GestureOf(ShortcutIds.SearchTranscript))),
@@ -63,6 +65,7 @@ public sealed class ShortcutCatalogueTests
             ShortcutIds.CloseSettings or ShortcutIds.CloseSettingsWithControlW => SettingsShortcutEffects.CloseAsync(gesture, token),
             ShortcutIds.FirstSection => SettingsShortcutEffects.SectionEndAsync(gesture, first: true, token),
             ShortcutIds.LastSection => SettingsShortcutEffects.SectionEndAsync(gesture, first: false, token),
+            ShortcutIds.StopBrowserControl => BrowserShortcutEffects.StopAsync(gesture),
             _ => RunAsync(() => Assert.Fail($"The catalogue lists {id}, and no test observes its effect.")),
         };
     }
@@ -101,5 +104,19 @@ public sealed class ShortcutCatalogueTests
         }
 
         ShortcutCatalogue.Entries.Select(static entry => entry.Scope).Distinct(StringComparer.Ordinal).Count().ShouldBe(KeyboardCopy.ScopeOrder.Count);
+    }
+
+    /// <summary>Meta+Shift+1 and Meta+Shift+2 switch the surface even when the catalogue gesture uses Control.</summary>
+    [Fact]
+    public async Task MetaShiftAlsoSwitchesTheSurface()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(() =>
+        {
+            SurfaceShortcutEffects.Switches(new KeyGesture(Key.D1, KeyModifiers.Meta | KeyModifiers.Shift), Autonogrammer.Contracts.Sessions.SessionSurface.Code);
+            SurfaceShortcutEffects.Switches(new KeyGesture(Key.D2, KeyModifiers.Meta | KeyModifiers.Shift), Autonogrammer.Contracts.Sessions.SessionSurface.Cowork);
+            return Task.CompletedTask;
+        }, token).ConfigureAwait(true);
     }
 }

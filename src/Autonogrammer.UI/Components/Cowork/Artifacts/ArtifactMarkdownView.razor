@@ -1,0 +1,9 @@
+@namespace Autonogrammer.UI.Components.Cowork.Artifacts
+@using Autonogrammer.Presentation.Services
+<div class="autonogrammer-block autonogrammer-markdown autonogrammer-artifact-markdown">@((MarkupString)ArtifactMarkdownLinks.Apply(MarkdownRenderer.ToHtml(Markdown)))</div>
+
+@code {
+    /// <summary>Gets the Markdown source of the artifact version.</summary>
+    [Parameter, EditorRequired]
+    public string Markdown { get; set; } = string.Empty;
+}

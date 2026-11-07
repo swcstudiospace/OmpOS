@@ -1,3 +1,5 @@
+using Autonogrammer.Harness.Abstractions;
+
 namespace Autonogrammer.Workspace;
 
 /// <summary>
@@ -18,6 +20,7 @@ public sealed class WorkspaceCatalog : IDisposable
     private readonly FileSystemWatcher _rootWatcher;
     private FileSystemWatcher? _conventionWatcher;
     private WorkspaceSnapshot _current = WorkspaceSnapshot.Empty;
+    private IReadOnlyList<LegacyNotice> _legacyNotices = [];
     private bool _disposed;
 
     /// <summary>
@@ -65,6 +68,18 @@ public sealed class WorkspaceCatalog : IDisposable
         }
     }
 
+    /// <summary>Gets the legacy-directory notices from the most recent reload. The catalog never writes into a legacy directory.</summary>
+    public IReadOnlyList<LegacyNotice> LegacyNotices
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _legacyNotices;
+            }
+        }
+    }
+
     /// <summary>
     /// Reloads every convention file now and publishes the result.
     /// </summary>
@@ -107,6 +122,9 @@ public sealed class WorkspaceCatalog : IDisposable
             // Watch before reading, so that a change made during the read schedules another reload.
             ConfigureConventionWatcher();
             snapshot = WorkspaceLoader.Load(_root);
+            var legacy = ReadLegacy(_root, snapshot);
+            snapshot = legacy.Snapshot;
+            _legacyNotices = legacy.Notices;
             _current = snapshot;
         }
 
@@ -173,4 +191,90 @@ public sealed class WorkspaceCatalog : IDisposable
     }
 
     private void OnDebounceElapsed(object? state) => TryReload();
+
+    private static (WorkspaceSnapshot Snapshot, IReadOnlyList<LegacyNotice> Notices) ReadLegacy(WorkspaceRoot root, WorkspaceSnapshot snapshot)
+    {
+        var legacyDirectory = LegacyConventionDiscovery.LegacyDirectoryName;
+        string legacyPath;
+        try
+        {
+            legacyPath = root.Resolve(legacyDirectory);
+        }
+        catch (WorkspacePathException)
+        {
+            return (snapshot, []);
+        }
+
+        if (!Directory.Exists(legacyPath))
+        {
+            return (snapshot, []);
+        }
+
+        var newerExists = Directory.Exists(root.Resolve(WorkspaceConventions.ConventionFolder));
+        var conflicts = newerExists ? ConflictingFiles(root, legacyDirectory) : [];
+        var notice = LegacyConventionDiscovery.Create("project", root.FullPath, conflicts, newerExists);
+        if (newerExists)
+        {
+            return (snapshot, [notice]);
+        }
+
+        var diagnostics = snapshot.Diagnostics.ToList();
+        var rules = LoadLegacyDocuments(root, legacyDirectory + "/rules", diagnostics);
+        var skills = LoadLegacyDocuments(root, legacyDirectory + "/skills", diagnostics);
+        return (snapshot with { Rules = rules, Skills = skills, Diagnostics = diagnostics }, [notice]);
+    }
+
+    private static List<string> ConflictingFiles(WorkspaceRoot root, string legacyDirectory)
+    {
+        var conflicts = new List<string>();
+        foreach (var folder in new[] { "rules", "skills", "commands", "agents" })
+        {
+            var newer = WorkspaceFiles.EnumerateConventionFiles(root, WorkspaceConventions.ConventionFolder + "/" + folder, ".md", []);
+            var legacy = WorkspaceFiles.EnumerateConventionFiles(root, legacyDirectory + "/" + folder, ".md", []);
+            var newerNames = newer.Select(Path.GetFileName).ToHashSet(StringComparer.Ordinal);
+            foreach (var path in legacy)
+            {
+                if (newerNames.Contains(Path.GetFileName(path)))
+                {
+                    conflicts.Add(path);
+                }
+            }
+        }
+
+        foreach (var fileName in new[] { "hooks.json", "mcp.json", "setup.json", "ignore", "permissions.json", "sandbox.json", "environment.json", "run-mode.json" })
+        {
+            if (File.Exists(root.Resolve(WorkspaceConventions.ConventionFolder + "/" + fileName))
+                && File.Exists(root.Resolve(legacyDirectory + "/" + fileName)))
+            {
+                conflicts.Add(legacyDirectory + "/" + fileName);
+            }
+        }
+
+        return conflicts;
+    }
+
+    private static List<WorkspaceDocument> LoadLegacyDocuments(WorkspaceRoot root, string folder, List<WorkspaceDiagnostic> diagnostics)
+    {
+        var documents = new List<WorkspaceDocument>();
+        foreach (var relativePath in WorkspaceFiles.EnumerateConventionFiles(root, folder, ".md", diagnostics))
+        {
+            var id = Path.GetFileNameWithoutExtension(relativePath);
+            if (!WorkspaceConventions.IsValidId(id))
+            {
+                diagnostics.Add(new WorkspaceDiagnostic(relativePath, "the file name '" + id + "' is not a valid id"));
+                continue;
+            }
+
+            var (text, reason) = WorkspaceFiles.ReadText(root, relativePath);
+            if (text is null)
+            {
+                diagnostics.Add(new WorkspaceDiagnostic(relativePath, reason!));
+                continue;
+            }
+
+            documents.Add(new WorkspaceDocument(id, relativePath, text));
+        }
+
+        return documents;
+    }
 }

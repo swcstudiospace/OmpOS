@@ -1,0 +1,39 @@
+name: Mermaid
+package: mermaid
+version: 12.2.0
+licence: MIT
+licence-file: LICENSE
+homepage: https://github.com/mermaid-js/mermaid
+source-files: node_modules/mermaid/dist/mermaid.min.js (unmodified)
+sha256 mermaid.min.js: a8a6a6f805b074a8261a2825c86f99c8054acb3b35f50bb7e24a4f9f2c3c3b9f
+sha256 LICENSE: ec9fb67dcb25eccc416ed56e1aab819222c805a2a4bfe4cb19e7556bf2ffde80
+
+name: elkjs (Eclipse Layout Kernel, bundled inside mermaid.min.js)
+package: elkjs
+version: 0.9.3
+licence: EPL-2.0
+licence-file: LICENSE.elkjs
+homepage: https://github.com/kieler/elkjs
+source-files: node_modules/elkjs (its layout code is inside mermaid.min.js; not modified)
+sha256 LICENSE.elkjs: 203e9d6be76efa03160b0ff89bd38c9d31f078ecfe8ce292a9c5cc623352ac1e
+
+name: DOMPurify (bundled inside mermaid.min.js)
+package: dompurify
+version: 3.4.12
+licence: Apache-2.0
+licence-file: LICENSE.dompurify
+homepage: https://github.com/cure53/DOMPurify
+note: dual-licensed Apache-2.0 OR MPL-2.0; the Apache-2.0 option is the one recorded here (LICENSE-MPL is not shipped)
+sha256 LICENSE.dompurify: 5aaef09f936e803fcbf34ea62c3aaf0c84cbf2b022a85a7283cb853c7c5e71d7
+
+name: d3 modules (bundled inside mermaid.min.js)
+package: d3
+version: 7.9.0
+licence: ISC
+licence-file: LICENSE.d3
+homepage: https://d3js.org
+sha256 LICENSE.d3: 3e6849627f74ff73c257a3ae1efb574015d94fc1035c05ec3c15805165efcbc4
+
+Bundled libraries enumerated before admission (OQ-400). Verified inside mermaid.min.js by its licence banners: DOMPurify (Apache-2.0 OR MPL-2.0), lodash-es (MIT), cytoscape and its embedded helpers (MIT). Taken from the runtime dependencies of mermaid 12.2.0 (package.json), not from the bundle: the MIT packages roughjs, khroma, dayjs, katex, marked, stylis, es-toolkit, dagre-d3-es, uuid, @braintree/sanitize-url, @iconify/utils, @upsetjs/venn.js, cytoscape-cose-bilkent, cytoscape-fcose; BSD-3-Clause d3-sankey; EPL-2.0 elkjs (above); ISC d3 (above). Libraries whose presence in the bundle was not checked line by line are listed for review, not asserted.
+
+How it was vendored: `npm pack mermaid@12.2.0`, then dist/mermaid.min.js and LICENSE were copied unmodified. The three extra licence files come from the npm packages elkjs@0.9.3, dompurify@3.4.12 and d3@7.9.0 (their LICENSE files; the first line of the elkjs and DOMPurify copies is a copyright line added for the notices generator). No CDN is used; the host script artifact-mermaid.js and the bundle are loaded by relative path.

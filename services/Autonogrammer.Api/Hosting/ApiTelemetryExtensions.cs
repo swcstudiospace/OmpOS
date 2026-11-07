@@ -1,5 +1,6 @@
 using System.Reflection;
 using Autonogrammer.Api.Telemetry;
+using Autonogrammer.Resilience;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -37,7 +38,7 @@ internal static class ApiTelemetryExtensions
                 .AddAttributes([new KeyValuePair<string, object>("deployment.environment", deploymentEnvironment)]))
             .WithTracing(tracing =>
             {
-                tracing.AddAspNetCoreInstrumentation().AddSource(ApiTelemetry.SourceName);
+                tracing.AddAspNetCoreInstrumentation(options => options.EnrichWithHttpRequest = RedactRenderTicket).AddSource(ApiTelemetry.SourceName);
                 if (otelExporter.Equals("console", StringComparison.OrdinalIgnoreCase))
                 {
                     tracing.AddConsoleExporter();
@@ -49,7 +50,7 @@ internal static class ApiTelemetryExtensions
             })
             .WithMetrics(metrics =>
             {
-                metrics.AddAspNetCoreInstrumentation().AddMeter(ApiTelemetry.SourceName);
+                metrics.AddAspNetCoreInstrumentation().AddMeter(ApiTelemetry.SourceName).AddMeter(ResilienceTelemetry.MeterName);
                 if (otelExporter.Equals("console", StringComparison.OrdinalIgnoreCase))
                 {
                     metrics.AddConsoleExporter();
@@ -60,5 +61,28 @@ internal static class ApiTelemetryExtensions
                 }
             });
         return services;
+    }
+
+    private static void RedactRenderTicket(System.Diagnostics.Activity activity, HttpRequest request)
+    {
+        var path = request.Path.Value;
+        if (path is null || !path.StartsWith("/cowork/artifact-render/", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        const string template = "/cowork/artifact-render/{ticket}";
+        activity.DisplayName = template;
+        activity.SetTag("url.path", template);
+        activity.SetTag("http.route", template);
+        activity.SetTag("url.full", template);
+        activity.SetTag("http.target", template);
+        foreach (var tag in activity.Tags)
+        {
+            if (tag.Value is not null && tag.Value.Contains("/cowork/artifact-render/", StringComparison.Ordinal) && tag.Value.Length > template.Length)
+            {
+                activity.SetTag(tag.Key, template);
+            }
+        }
     }
 }

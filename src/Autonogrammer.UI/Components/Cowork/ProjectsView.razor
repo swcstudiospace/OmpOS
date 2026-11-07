@@ -1,0 +1,87 @@
+@namespace Autonogrammer.UI.Components.Cowork
+@using Autonogrammer.Presentation.Cowork.Projects
+@inherits ObservableComponent
+
+<div class="autonogrammer-cowork-projects">
+    <h2>Projects</h2>
+    <div role="status" aria-live="polite" aria-atomic="true" class="autonogrammer-sr-only">@Announcement</div>
+    <ul aria-label="Project list">
+        @foreach (var row in List.Rows)
+        {
+            <li>
+                <button type="button" aria-label="@("Open " + row.Name)" @onclick="() => Open(row.Id)">@row.Name</button>
+            </li>
+        }
+    </ul>
+    <label for="project-name">Project name</label>
+    <input id="project-name" aria-label="Project name" value="@Editor.Name" @onchange="OnName" />
+    <button type="button" aria-label="Rename project" @onclick="Rename">Rename</button>
+    <button type="button" aria-label="Archive project" @onclick="Archive">Archive</button>
+    <button type="button" aria-label="Delete project" @onclick="Prepare">Delete</button>
+    @if (Editor.ConfirmationReady)
+    {
+        <p role="alert" aria-live="assertive">@Editor.DeleteConfirmation</p>
+        <button type="button" aria-label="Confirm delete" @onclick="Confirm">Confirm delete</button>
+    }
+</div>
+
+@code {
+    private string _announcement = string.Empty;
+
+    /// <summary>Gets the list.</summary>
+    [Parameter, EditorRequired]
+    public ProjectListModel List { get; set; } = default!;
+
+    /// <summary>Gets the editor.</summary>
+    [Parameter, EditorRequired]
+    public ProjectEditorModel Editor { get; set; } = default!;
+
+    /// <summary>Gets the live-region text.</summary>
+    public string Announcement => _announcement;
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        Observe(List);
+        Observe(Editor);
+        _announcement = List.Sentence ?? List.State.ToString();
+    }
+
+    private void OnName(ChangeEventArgs args) => Editor.Name = args.Value?.ToString() ?? string.Empty;
+
+    private async Task Open(string id)
+    {
+        await Editor.OpenAsync(id, CancellationToken.None).ConfigureAwait(true);
+        Announce(Editor.Sentence ?? "Project opened.");
+    }
+
+    private async Task Rename()
+    {
+        var saved = await Editor.RenameAsync(CancellationToken.None).ConfigureAwait(true);
+        Announce(saved ? "Project renamed." : Editor.Sentence ?? "Rename failed.");
+    }
+
+    private async Task Archive()
+    {
+        await Editor.ArchiveAsync(CancellationToken.None).ConfigureAwait(true);
+        Announce(Editor.Sentence ?? "Project archived.");
+    }
+
+    private void Prepare()
+    {
+        Editor.PrepareDelete();
+        Announce(Editor.DeleteConfirmation);
+    }
+
+    private async Task Confirm()
+    {
+        var deleted = await Editor.DeleteAsync(CancellationToken.None).ConfigureAwait(true);
+        Announce(deleted ? "Project deleted." : Editor.Sentence ?? "Delete failed.");
+    }
+
+    private void Announce(string text)
+    {
+        _announcement = text;
+        StateHasChanged();
+    }
+}

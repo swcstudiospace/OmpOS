@@ -6,7 +6,9 @@ namespace Autonogrammer.Sessions.Postgres.Tests;
 /// <summary>
 /// A fresh PostgreSQL database for one test, created on the shared server. The registered data source sets its own
 /// search path (<c>autonogrammer,public</c>), so a test that goes through it cannot be isolated by a schema: its tables land in
-/// the shared <c>autonogrammer</c> schema. Disposing drops the database and everything in it.
+/// the shared <c>autonogrammer</c> schema. The database is created from the <c>template_timescaledb</c> template the TimescaleDB image ships when
+/// the server has it, so the extension (which no migration step may create) is already in it; otherwise from the default template, which the
+/// image also prepares. Disposing drops the database and everything in it.
 /// </summary>
 internal sealed class PostgresTestDatabase : IAsyncDisposable
 {
@@ -32,14 +34,38 @@ internal sealed class PostgresTestDatabase : IAsyncDisposable
     internal static async Task<PostgresTestDatabase> CreateAsync(string adminConnectionString, CancellationToken cancellationToken)
     {
         var database = new PostgresTestDatabase(adminConnectionString, "t_" + Guid.NewGuid().ToString("N"));
-        await database.ExecuteAdminAsync($"CREATE DATABASE \"{database.DatabaseName}\"", cancellationToken).ConfigureAwait(false);
+        if (await database.HasTimescaleTemplateAsync(cancellationToken).ConfigureAwait(false))
+        {
+            await database.ExecuteAdminAsync($"CREATE DATABASE \"{database.DatabaseName}\" TEMPLATE template_timescaledb", cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            await database.ExecuteAdminAsync($"CREATE DATABASE \"{database.DatabaseName}\"", cancellationToken).ConfigureAwait(false);
+        }
+
         return database;
     }
+
+    /// <summary>Wraps a database that something else creates (the bootstrap script), so that disposing drops it. Dropping a database that was never created does nothing.</summary>
+    /// <param name="adminConnectionString">An administrative connection string for the server.</param>
+    /// <param name="databaseName">The name of the database, a <c>t_</c> prefix and a GUID's hex digits.</param>
+    /// <returns>The wrapper that owns the cleanup.</returns>
+    internal static PostgresTestDatabase ForExisting(string adminConnectionString, string databaseName) => new(adminConnectionString, databaseName);
 
     /// <summary>Drops the database, including any connection that is still open to it.</summary>
     /// <returns>A task that completes when the database is gone.</returns>
     public async ValueTask DisposeAsync() =>
         await ExecuteAdminAsync($"DROP DATABASE IF EXISTS \"{DatabaseName}\" WITH (FORCE)", CancellationToken.None).ConfigureAwait(false);
+
+    /// <summary>Says whether the server has the <c>template_timescaledb</c> template database the TimescaleDB image ships.</summary>
+    private async Task<bool> HasTimescaleTemplateAsync(CancellationToken cancellationToken)
+    {
+        using var connection = new NpgsqlConnection(_adminConnectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'template_timescaledb' AND datistemplate)";
+        return await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) is true;
+    }
 
     [SuppressMessage(
         "Security",

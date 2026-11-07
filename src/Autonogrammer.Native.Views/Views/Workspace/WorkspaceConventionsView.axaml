@@ -1,11 +1,27 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Autonogrammer.Native.Views.Workspace"
              xmlns:ws="clr-namespace:Autonogrammer.Workspace;assembly=Autonogrammer.Harness.Workspace"
              x:Class="Autonogrammer.Native.Views.Workspace.WorkspaceConventionsView">
 
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="{DynamicResource Autonogrammer.Space.Sm}"
                 Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+      <ListBox x:Name="NoticeRows"
+               x:FieldModifier="internal"
+               AutomationProperties.Name="Legacy convention notices">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="local:LegacyConventionNoticeRow">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+              <TextBlock Text="{CompiledBinding Text}" TextWrapping="Wrap" />
+              <Button Content="{CompiledBinding ButtonText}"
+                      AutomationProperties.Name="{CompiledBinding Name}"
+                      Command="{CompiledBinding Command}" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
 
       <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
         <TextBlock Text="Rules"

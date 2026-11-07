@@ -1,0 +1,84 @@
+# Phase 76 plan check, round 2 (re-planned 2026-10-29)
+
+Checker: general tools acting as gsd-plan-checker. Worktree `/root/src/repos/ompos-autonogrammer`, HEAD `6589db88`. Read-only: no dotnet, no source edit. Every path, symbol and line was verified with `git ls-files`, grep or a read; `[INFERENCE]` marks the rest. This file replaces the round-1 report.
+
+## Verdict: PASS WITH WARNINGS (0 BLOCKERs, 14 WARNINGs)
+
+All six round-1 BLOCKERs are resolved in the plan text, not only in `76-CONTEXT.md`. The wave-1 plans stay file-disjoint, every `<automated>` is an `&&` chain of `/tmp/ag-bin/ag-dotnet` commands followed by a `<fails_when>`, and D-47 is implementable with the existing `LaunchRequest` and reference graph. What is left is wiring detail that an executor can resolve but should not have to guess.
+
+## Round-1 BLOCKERs: status in the plan text
+
+| # | Status | Evidence |
+|---|---|---|
+| B1 wrapper hand-off | Resolved | `76-06-PLAN.md` task 1 action: `EngineCompositionOptions.ProcessWrapper` set by `IsolationComposition`, copied by `EngineComposition.Compose` (`:82-93`); `EngineCompositionOptions.cs`, `EngineComposition.cs`, `AgentHead.cs` are in 76-06 `files_modified`; STOP removed; test "Cowork options carry the wrapper, Code null". Both files exist (`EngineCompositionOptions` is `internal sealed record`, `AgentHead.cs:84,172`). One stale sentence remains (W1). |
+| B2 76-03 paths | Resolved | `76-03-PLAN.md:8-12` now `Cowork/Chat/...` and `Cowork/Sessions/...`; `:88` names `Chat/CoworkSessionProfileTests.cs`; shared_files says it adds cases to phase 70's `Chat/CoworkPathBoundaryTests.cs` and creates no second class (matches `70-03-PLAN.md:15,86`). One path still doubtful (W3). |
+| B3 isolation wiring | Resolved | `76-04` task 3 behaviors 1-3, 5 and action: `IsolationPlanner`, `IsolationDecision`, `IsolationContributor` built per session from the decision, `IsolationGrant`, chip with `ContinueWithoutIsolation`; `76-06` task 1 action: policy built from `CoworkFolderGrant` list, probe through `IIsolationProcessRunner`, waits for the answer, hands the level to the resolver. All new files are in `files_modified`. Test coverage in 76-06 text is thin (W2). |
+| B4 views | Resolved | `76-01` fm and task 3 add `IBundleManagementSource`, `BundlesPageView.axaml(.cs)`, `BundlesPageViewTests`; `76-04` fm and task 3 add `IsolationPageView`, `IsolationPageViewTests`; `76-06` fm adds `BundleManagementSource.cs`. |
+| B5 D-30 | Resolved | `76-02-PLAN.md:108,110`: `BundleEnvironmentMode` (default `Allowlist`) applied by the checker to specs whose `Origin` starts with `plugin:`, with a test. The producing side is not in 76-06 text (W4). |
+| B6 canary | Resolved | `76-02` fm and task 3 action place `ConnectorSecretCanaryTests` in `tests/Autonogrammer.Native.Tests/Settings`; it is in the task 3 `<automated>`. |
+
+## Check results for the four requested points
+
+1. **files_modified vs task actions.** Every new type named in an action has a `files_modified` entry in its plan (`IsolationPlanner`, `IsolationDecision`, `IsolationGrant`, `IIsolationProcessRunner`, `SystemIsolationProcessRunner`, `FakeProcessRunner`, `INotificationProcessRunner`, `SystemNotificationProcessRunner`, `FakeNotificationProcessRunner`, `IUsageHistorySource`, `IFolderGrantSource`, `CoworkFolderGrantStore`, `IBundleManagementSource`, `UsageLedgerFeeder`, `CoworkFolderGrantSource`, `BundleManagementSource`, `BundleMcpExtraSource`, `ActivityTeePromptChannel`). A scan over the eight `files_modified` lists finds one shared file, `apps/Autonogrammer.Native/Composition/HeadServices.cs` (76-02 wave 1, 76-06 wave 2). `docs/reference/builtin-skills.md` is now only in 76-01. Wave-1 files are disjoint, including the ones you listed (76-01 `ConventionSources`/`ConventionCatalog`/`builtin-skills.md`; 76-02 `PermissionsFileEditor`/`McpConnectionResult`/`HeadServices`/`FixtureTools`; 76-03 `RunModeStage`/`CoworkProjectStore`; 76-04 `OmpAcpClient`/`AcpClientOptions`/`AcpStdioTransport`; 76-07 `ContextUsageEvent`/`AcpFrames`/`AcpWireMapping`/`OmpLiveVariantContractTests`).
+2. **`<automated>` chains.** 27 `<automated>` elements across the eight plans, each split on `&&` is a `/tmp/ag-bin/ag-dotnet ...` command, none contains `;` or `then`, each is followed by a `<fails_when>`. The prose "then" remains only inside `<verification>` blocks, which are not run as one command (INFO).
+3. **Facts you listed.**
+   - `tests/Autonogrammer.Harness.Mcp.Fixtures` holds `FixtureTools.cs` (tools `echo`, `add`, `:10-17`), `FixtureStdioServer.cs`, `FixtureHttpServer.cs` (uses `FixtureTools.All()`, `:27`). See W5.
+   - Phase 69 `CoworkProjectStore` is `src/Autonogrammer.Cowork/Sessions/CoworkProjectStore.cs` (`69-01-PLAN.md:18,127`); phase 75 plans it at `src/Autonogrammer.Cowork/Projects/CoworkProjectStore.cs` (`75-01-PLAN.md:10,35,71`). See W3.
+   - `apps/Autonogrammer.Native/Agents/AgentHead.cs` exists (`CreateProduction :84`, `Build :172`); no `CoworkHead` yet (phase 70 adds it).
+   - `apps/Autonogrammer.Native/Settings/SettingsWindowOptions.cs:17` is `internal sealed class` with optional nullable members; the planned pattern fits.
+   - `docs/architecture.md:122-124` hold the three rows; 76-06 now says "update ... adding none twice" (`76-06-PLAN.md` task 3).
+   - `ContextUsageEvent` with an optional trailing `UsageCost? Cost = null`: `new ContextUsageEvent(1200, 200000)` still compiles and equals the mapped value of the cost-less frame at `AcpUsageAndResourcesTests.cs:24` (record equality, `Cost` null on both sides); grep finds no positional-deconstruction of the record; `HarnessEventUnionHasElevenClosedCases` enumerates `HarnessEvent` subclasses only (`UsageCost` is not one); `OmpLiveVariantContractTests.cs:51` is the one expectation that must change (cost 0.0059281 in the fixture) and the plan updates exactly that.
+   - D-47 feasibility: `Harness.Isolation` references `Harness.Abstractions` only (csproj verified) and the planner needs only `IsolationPolicy`, `IsolationProbeOutcome`, `IProcessLaunchWrapper` (all in those two assemblies); grants arrive as `IsolationGrant` built in Native, which references `Cowork`, `Harness.Isolation`, `Harness.Notifications`, `Harness.PluginBundles`; `Isolation` and `Notifications` are in `ProjectGraphTests.ProcessSpawningAssemblies` and `Directory.Build.props:52` allows `Autonogrammer.Harness.*` to spawn; `LaunchRequest` carries `TrustedFolders: IReadOnlyList<string>` and the plan no longer relies on it for modes. Implementable.
+
+## BLOCKERs
+
+None.
+
+## WARNINGs
+
+**W1. `76-06-PLAN.md` still contradicts itself on who copies the wrapper.** The prerequisites bullet (`:110`) opens "75-06 ... generic (including copying `LaunchContribution.ProcessWrapper` into `AcpClientOptions.ProcessWrapper`, D-28)" and then says 76-06 owns the hand-off. Also stale: "Integration amendments D-27 to D-45" (`:115`, now D-49), the shared_files sentence "Added by the integration amendments (D-27 to D-45): ... docs/reference/builtin-skills.md" (`:123`), the artifacts line naming `builtin-skills.md`, and "the six test files above" in `76-03-PLAN.md` files_owned (eleven are listed). Fix: delete the first half of the bullet, bump to D-49, drop `builtin-skills.md` from 76-06 text.
+
+**W2. 76-06 text does not list the D-47 test cases.** `76-06-PLAN.md` task 1 action lists only "Cowork options carry the wrapper, Code null; decorator; bundle servers arrive off". D-47 names: failed probe asks and starts nothing, consent continues and reports level None to the resolver, read-only grant gets no bind, read-write grant gets one. Fix: add those four cases to `IsolationCompositionTests` in the action and `<behavior>`.
+
+**W3. `CoworkProjectStore` path is contested between phases.** 76-03 edits `Sessions/CoworkProjectStore.cs` (`76-03-PLAN.md` fm, D-46) per 69-01, but 75-01 plans `Projects/CoworkProjectStore.cs` and extends the same store (75-CONTEXT D-04). If 75 moves it, the 76-03 path is stale. Fix: say "locate with `git ls-files src/Autonogrammer.Cowork | grep CoworkProjectStore` at the task-1 gate and use that path" in the plan and the fm comment.
+
+**W4. 76-06 never says bundle MCP specs carry `Origin = plugin:<id>`.** 76-02's Allowlist rule (`76-02-PLAN.md:108,110`) depends on it; D-44 states it, `76-06-PLAN.md` task 1 says only "switched-off entries". Fix: add "Origin plugin:<id>, Transport Stdio, Priority, EnabledInFile false" to the action and one `BundleCompositionTests` case that a bundle spec's `Origin` starts with `plugin:`.
+
+**W5. The fixture-tool change in 76-02 can break existing tests.** `76-02-PLAN.md:108` has the stdio fixture advertise `canary_set` or `canary_unset` in tools/list. Existing tests assert exact tool lists from the same fixtures: `McpToolRegistryTests.cs:20,44,78,93,124` (`["fixture/add","fixture/echo"]`, `Count == 2`) and `McpHttpTests.cs:31,56` (HTTP server also uses `FixtureTools.All()`). The plan-level verification would catch it, but only at the end. Fix: advertise the canary tool only when a fixture variable (for example `AUTONOGRAMMER_MCP_FIXTURE_CANARY_NAME`) is set, and say so in the plan.
+
+**W6. 76-06 task 1 is too large for one task.** It registers contributors, builds four composition classes, edits `McpServerCatalog`, four convention sites, the tee decorator, folder-grant source, isolation flow with consent wait, bundle management source, usage feeder, notification bridge, and four test classes, with tests, in one `<action>` (`76-06-PLAN.md` task 1; estimate 60000 tokens for three tasks). Fix: split into two or three tasks (isolation and engine options; bundles, MCP and conventions; activity, usage and notifications) each with its own `<automated>`.
+
+**W7. Mention-provider reader edit is not in the plan text.** D-45 requires `ConventionMentionProvider.cs:88` to pick `sources.Plugin` for `ConventionScope.Plugin` (today `located.Scope == Project ? sources.Project : sources.User`, which fails for a plugin path under `LocalConventionFileSource` roots). `76-06-PLAN.md` shared_files says "PluginRoots only" for that file and no test covers a plugin skill mention. Fix: add the `:88` edit and a mention-read case to the 76-06 action and `BundleCompositionTests`.
+
+**W8. The usage-export assignment point is unnamed.** 76-07 adds "one settable member" on `MainView` (`76-07-PLAN.md:121`) and 76-06 builds the adapter, but `MainView` is created in `apps/Autonogrammer.Native/MainWindow.axaml.cs:24` (`new MainView(panel, workspaceRoot, motion, mcpHost: null, board, ShellServicesOf(services))`) and that file is in no `files_modified`. Fix: add `MainWindow.axaml.cs` (or the services object it reads) to 76-06 `files_modified` and a composition test that the member is set.
+
+**W9. `ProcessContained` (Windows) has no seam.** `JobObjectContainer` is not an `IProcessLaunchWrapper`; the wrapper contract returns a launch description, and a job object is assigned after `Process.Start` (`AcpStdioTransport.cs:268`). D-19 and the plan promise `ProcessContained` on Windows. Fix: state in 76-04 that the Windows level is type-only in this phase and the chip says "not applied" (and the runbook lists it as an owner action), or add a post-start hook to the transport constructor.
+
+**W10. Where `BundleInstaller` gets the built-in names is not stated.** `76-01-PLAN.md` task 3 refuses `BundleNameCollision` against built-in skills and commands, but `Harness.PluginBundles` references `Harness.Abstractions` only, and `BuiltinSkillManifest` lives in `Harness.Workspace`. Fix: the installer takes a `Func<IReadOnlySet<string>>` (or an options record) of reserved names, supplied by `BundleManagementSource` in Native.
+
+**W11. Model-bound views need a `ContextOf` arm.** `SettingsPageViews.ContextOf` returns the page itself except for MCP, Cloud and Automations (`SettingsPageViews.cs:56-62`). `PermissionsPageView`, `BundlesPageView`, `ConnectorsPageView`, `UsageMeterView` bind models; 76-06 task 2 lists "SettingsPageViews cases" only. Fix: say the wrapper pages expose their model and `ContextOf` returns it.
+
+**W12. A POSIX-script transport test has no skip and fails on Windows.** `76-04-PLAN.md` task 3 test 1 is "script-based like `AcpEnvironmentIsolationTests`" but forbids `Assert.Skip` outside `IsolationLiveTests` (task 2 test 4). Fix: mark the class `[SupportedOSPlatform("linux")]` plus a platform guard that does not use `Assert.Skip`, or add a SUP row.
+
+**W13. Smaller carry-overs.** (a) `76-01-PLAN.md` task 1 and 2 verify only the first class (`BundleValidatorTests`, `BundleLaunchContributorTests`); `BundleInstallerTests`, `BundleMcpSourceTests`, `BundlePrecedenceTests`, `BuiltinSkillManifestTests` run only in the plan-level verification. (b) `76-06-PLAN.md` task 3 `<automated>` runs only `ProjectGraphTests`; the phase gate lives in `<verification>`. (c) ROADMAP `Plans:` line for phase 76 still names only `76-01-PLAN.md` (`.planning/ROADMAP.md:1495`, outside the phase dir).
+
+**W14. D-47 consent flow has no owner for the question UI at session start.** `IsolationChipModel` holds the `ContinueWithoutIsolation` state and `IsolationComposition` "waits on the answer", but no plan names the control that submits it (the page view in 76-04 is a settings section, not a start-of-session prompt). Fix: name the surface (a prompt in the Cowork session start, owned by composition) or state that the answer is taken from the Isolation page and the session stays "not started" until then.
+
+## INFO
+
+- `EngineEnvironmentPolicy.BuiltInNames` is `private` (`:18`); the D-29 assertion must stay behavioural (76-04 task 3 test 1 is).
+- 76-04 task 1 action still says "(66.1 wrote it ... nothing else uses them)" next to the behavior that greps and migrates users; the behavior governs.
+- `<verification>` blocks (not `<automated>`) still join steps with "then"; they are prose.
+
+## Verified correct (unchanged from round 1 unless marked)
+
+- AG-76-1..14 each appear in a plan's `requirements`; `76-VALIDATION.md` maps a test class per id (updated for the new classes).
+- Wave graph: 76-01..05, 76-07, 76-08 `depends_on: []`, wave 1; 76-06 wave 2 depends on all seven.
+- Anchors re-verified at HEAD: `AcpStdioTransport.cs` ctors 55/67/85 and `StartProcess` 237-274 (`FileName` 241, `"acp"` 251, extra args 252-255, `Apply` 259, `WorkingDirectory` 261-264, `Process.Start` 268); `OmpAcpClient.cs:80-87`; `AcpClientOptions` members; `EngineComposition.cs:82-93`; `McpServerCatalog` 39/65/126-164/257/266/290; `McpConnectionResult`; `McpStdioServerOptions`; `HeadServices.cs:247`; `ConventionCatalog.cs:48`; four `ConventionSources.Local` sites; `PermissionsFileEditor` (`SetAllowlist` only); `RunModeStage` 0-9; `ShellCommandAnalysis.cs:11`/`KnownSafeCommands.cs:8` internal; `AcpWireMapping.cs:26-29,166-188`; `AcpFrames.cs:428`; `OmpLiveVariantContractTests.cs:51`; fixture with `cost` 0.0059281; `IPromptChannel` two overloads; `SessionEngineSet.cs:271`; `SettingsPageViews.cs:33,48`; `SettingsFixture.cs:59-63`; `NetworkAndKeyboardCopyTests.cs:38-42`; web locks (`WebSettingsPagesTests.cs:17,51,178`, `SettingsPagesRenderTests.cs:29`); `MainView.axaml.cs:1231,1520`; `LayerMap.cs:51-53`; `ProcessSpawningAssemblies`; skip-marker, docs and repo-check scripts; `docs/reference/mcp.md:18`; ten skills in `assets/skills`.
+- Must-NOT-do list holds: no `ContractVersion`, `LayerMap`, slnx, slnf, lock or package edit; `RunModeLaunchMapper` untouched; hooks never run; no network fence; no Windows toast; no new NuGet package.
+- Dependencies: 76-03 gates on phase 69/70 symbols; 76-06 STOPs when `docs/parity/cowork-parity.md` is absent (`76-06-PLAN.md` task 3, absent today) and when a wave-1 SUMMARY is missing; cross-phase files carry "read the then-current file" (`HeadServices.cs`, `SettingsSection`, `SettingsFixture`, `NetworkAndKeyboardCopyTests`, web tests, `AgentHead.cs`).
+- Round-1 W2, W3 (task verify chains), W4, W5 (verification list and STOP), W6, W7, W8 (`IUsageHistorySource`, feeder, ledger), W9 (focus input, scheduled kinds gated), W10 (D-21 sentence in chip and `cowork-safety.md`), W11 (process-runner interfaces and fakes), W12 (note in 76-04), W13 (D-49 bullets in every wave-1 plan), W14 (split), W15 (`DllImport`), W16, W17, W18 (`Transport`, `Priority` in D-44), W19, W22 are fixed in the plan text.
+
+## Post-round-2 disposition (re-planner, 2026-10-29)
+
+Round 2 found 0 BLOCKERs. Warnings W1 to W14 were fixed in the plan text after the report, with these exceptions that need an owner: W13(c) (`.planning/ROADMAP.md:1495` still lists only 76-01; outside this phase directory); W3 (the `CoworkProjectStore` path differs between 69-01 and 75-01, handled by a git ls-files locate step at the 76-03 gate); W9 (Windows `ProcessContained` stays type-only, stated in 76-04 and OQ-457); AG-76-12 wording "per-turn usage" versus D-31 (D-49 records it as an open point for the requirement owner). No third check round was run.

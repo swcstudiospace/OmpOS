@@ -260,6 +260,21 @@
           </StackPanel>
         </Border>
       </StackPanel>
+      <StackPanel x:Name="SessionTargets"
+                  IsVisible="False"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                  AutomationProperties.Name="Session targets">
+        <TextBlock x:Name="SessionSurface" AutomationProperties.Name="Session surface" />
+        <TextBlock x:Name="SessionProject" AutomationProperties.Name="Session project" />
+        <TextBlock x:Name="SessionFolders" AutomationProperties.Name="Trusted folders" />
+        <TextBlock x:Name="SessionApproval" AutomationProperties.Name="Approval mode" />
+        <TextBlock x:Name="SessionPreset" AutomationProperties.Name="Schedule preset" />
+        <TextBlock x:Name="SessionMissed" AutomationProperties.Name="Missed run policy" />
+        <TextBlock x:Name="SessionNextRun" AutomationProperties.Name="Next run" />
+        <TextBlock x:Name="SessionLastRun" AutomationProperties.Name="Last run" />
+        <TextBlock x:Name="SessionMissedRuns" AutomationProperties.Name="Missed runs" />
+      </StackPanel>
+
 
       <TextBlock x:Name="NoticeText"
                  Classes="settings-body"

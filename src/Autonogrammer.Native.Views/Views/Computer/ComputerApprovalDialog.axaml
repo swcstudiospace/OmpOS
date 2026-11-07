@@ -1,0 +1,55 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:comp="clr-namespace:Autonogrammer.Presentation.Computer;assembly=Autonogrammer.Presentation"
+        x:Class="Autonogrammer.Native.Views.Computer.ComputerApprovalDialog"
+        x:DataType="comp:ComputerApprovalViewModel"
+        Title="Allow Computer Use?"
+        Width="480"
+        Height="420"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        AutomationProperties.Name="Allow Computer Use?">
+  <Window.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </Window.Styles>
+  <StackPanel Margin="24" Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+    <TextBlock Classes="settings-heading" Text="{CompiledBinding ApplicationName}" />
+    <TextBlock Classes="settings-body" Text="{CompiledBinding AppIdentity}" AutomationProperties.Name="Application identity" />
+    <TextBlock Classes="settings-body" Text="{CompiledBinding QuotedTitle}" AutomationProperties.Name="Window title" />
+    <TextBlock Classes="settings-body" Text="{CompiledBinding HostActionWords}" AutomationProperties.Name="Action" />
+    <Border IsVisible="{CompiledBinding ShowsCrop}"
+            Width="160"
+            Height="120"
+            AutomationProperties.Name="Target crop">
+      <TextBlock Classes="settings-body" Text="160 by 120 crop" />
+    </Border>
+    <StackPanel IsVisible="{CompiledBinding ShowsText}" Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+      <TextBlock Classes="settings-section" Text="{CompiledBinding AgentTextLabel}" />
+      <TextBlock Classes="settings-body" Text="{CompiledBinding AgentText}" AutomationProperties.Name="agent text" />
+    </StackPanel>
+    <TextBlock Classes="settings-body" Text="{CompiledBinding OriginLabel}" AutomationProperties.Name="Origin" />
+    <TextBlock Classes="settings-body"
+               IsVisible="{CompiledBinding HasSecurityPhrase}"
+               Text="{CompiledBinding SecurityPhrase}"
+               AutomationProperties.Name="Security phrase" />
+    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+      <Button x:Name="DenyButton"
+              Content="Deny"
+              MinWidth="24"
+              MinHeight="24"
+              IsCancel="True"
+              Command="{CompiledBinding Deny}"
+              AutomationProperties.Name="Deny" />
+      <Button Content="Allow once"
+              MinWidth="24"
+              MinHeight="24"
+              Command="{CompiledBinding AllowOnce}"
+              AutomationProperties.Name="Allow once" />
+      <Button Content="Allow for this session"
+              MinWidth="24"
+              MinHeight="24"
+              Command="{CompiledBinding AllowForSession}"
+              AutomationProperties.Name="Allow for this session" />
+    </StackPanel>
+  </StackPanel>
+</Window>

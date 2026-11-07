@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Autonogrammer.Native.Agents;
+using Autonogrammer.Native.Views.Shell;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Cloud;
 using Autonogrammer.Presentation.Settings;
@@ -145,6 +146,8 @@ internal sealed class HeadSettings : IAsyncDisposable
             UrlLauncher = services?.UrlLauncher,
             Dispatch = dispatch,
             OpenCloudAgent = links.RaiseCloudAgentOpen,
+            ComputerUse = options.ComputerUse,
+            BrowserUse = options.BrowserUse,
         };
         var host = new SettingsWindowHost(
             () => SettingsWindowFactory.CreateModel(windowOptions),
@@ -170,7 +173,7 @@ internal sealed class HeadSettings : IAsyncDisposable
     public void Attach(Window owner)
     {
         ArgumentNullException.ThrowIfNull(owner);
-        if (owner.Content is not MainView main)
+        if (MainOf(owner) is not { } main)
         {
             throw new ArgumentException("The window does not show a main view.", nameof(owner));
         }
@@ -189,6 +192,13 @@ internal sealed class HeadSettings : IAsyncDisposable
         owner.Closing += OnOwnerClosing;
         owner.Closed += OnOwnerClosed;
     }
+
+    private static MainView? MainOf(Window owner) => owner.Content switch
+    {
+        MainView view => view,
+        SurfaceHost host => host.Code,
+        _ => null,
+    };
 
     /// <summary>Opens the Settings window over the main window, or brings the open one forward.</summary>
     /// <param name="section">The page to show, or null for the window's own choice. A section the window has no page for is ignored.</param>

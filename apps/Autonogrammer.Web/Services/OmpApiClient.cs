@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using Autonogrammer.Contracts.Accounts;
 using Autonogrammer.Contracts.Catalog;
 using Autonogrammer.Contracts.Controls;
 using Autonogrammer.Contracts.Serialization;
@@ -144,7 +145,15 @@ internal sealed class OmpApiClient : IOmpApiClient
 
     /// <inheritdoc />
     public Task<BoardResponse> GetBoardAsync(CancellationToken cancellationToken) =>
-        GetAsync("board", CatalogJsonContext.Default.BoardResponse, cancellationToken);
+        GetAsync("account/board", CatalogJsonContext.Default.BoardResponse, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<AccountResponse> GetAccountAsync(CancellationToken cancellationToken) =>
+        GetAsync("account", AccountsJsonContext.Default.AccountResponse, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<AccountSessionList> GetAccountSessionsAsync(CancellationToken cancellationToken) =>
+        GetAsync("account/sessions", AccountsJsonContext.Default.AccountSessionList, cancellationToken);
 
     /// <inheritdoc />
     public Task<CardDetailsResponse> GetCardDetailsAsync(string sessionId, CancellationToken cancellationToken) =>

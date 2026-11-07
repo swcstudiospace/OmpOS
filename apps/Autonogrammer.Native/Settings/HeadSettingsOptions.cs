@@ -33,4 +33,13 @@ internal sealed class HeadSettingsOptions
     /// host (null when no API base address is set) and the About launcher. Null builds the window without those pages.
     /// </summary>
     public HeadServices? Services { get; init; }
+
+    /// <summary>
+    /// Gets the Computer Use page, evaluated each time the window model is created, or null for a window without that page.
+    /// A null result shows no page. The order of Cowork and agent construction does not matter.
+    /// </summary>
+    public Func<Autonogrammer.Presentation.Computer.ComputerUseSettingsPage?>? ComputerUse { get; init; }
+
+    /// <summary>Gets the Browser page source, or null for a window without that page.</summary>
+    public Autonogrammer.Presentation.Settings.BrowserUse.IBrowserUseSettingsSource? BrowserUse { get; init; }
 }

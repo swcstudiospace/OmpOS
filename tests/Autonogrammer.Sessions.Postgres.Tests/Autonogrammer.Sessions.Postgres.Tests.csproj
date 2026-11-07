@@ -16,4 +16,8 @@
     <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="../Autonogrammer.Contracts.Tests/Dispatch/Store/DispatchStoreContractTests.cs" Link="Dispatch/Shared/DispatchStoreContractTests.cs" />
+  </ItemGroup>
+
 </Project>

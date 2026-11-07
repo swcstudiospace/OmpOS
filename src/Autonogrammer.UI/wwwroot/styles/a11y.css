@@ -261,12 +261,33 @@ input[type='radio'] {
     display: none;
   }
 
+  /* The view tabs wrap inside the top bar at 320 px, so both tab groups fit the 296 px content width together. */
   .autonogrammer-viewtabs {
     gap: 0;
+    flex-wrap: wrap;
   }
 
   .autonogrammer-viewtabs .autonogrammer-tab {
     padding-inline: var(--autonogrammer-gap-4);
+  }
+
+  /* The surface switch matches the view tabs: no gap, reduced inline padding, and it wraps within the top bar at 320 px. */
+  .autonogrammer-surface-tabs {
+    flex-wrap: wrap;
+    gap: 0;
+    max-width: 100%;
+  }
+
+  .autonogrammer-surface-tabs .autonogrammer-tab {
+    padding-inline: var(--autonogrammer-gap-4);
+  }
+
+  /* The chip shrinks to small type and wraps instead of hiding, so its role=status stays in the tree; the Demo renders no chip. */
+  .autonogrammer-surface-tabs .autonogrammer-surface-chip {
+    max-width: 100%;
+    padding-inline: var(--autonogrammer-gap-4);
+    font-size: var(--autonogrammer-font-size-small);
+    overflow-wrap: anywhere;
   }
 
   .autonogrammer-theme-switch .autonogrammer-segment {

@@ -1,4 +1,63 @@
 @page "/connect"
+@using Autonogrammer.UI.Components.Account
 @using Autonogrammer.UI.Components.Auth
+@using Autonogrammer.UI.Components.Shell
+@using Autonogrammer.Web.Services
+@using Microsoft.JSInterop
+@inject IAuthConfigSource ConfigSource
+@inject WebAccountSession Account
+@inject IJSRuntime JS
 
-<ConnectView />
+@if (!_ready)
+{
+    <p class="autonogrammer-auth-text" role="status">@AuthCopy.Loading</p>
+}
+else if (_oidc)
+{
+    <SignInPanel Host="Account" CallbackSentence="@_callback" />
+}
+else
+{
+    <ViewTitle Text="@ViewTitles.Compose(AuthCopy.OidcTitle)" />
+    <main id="main" class="autonogrammer-auth-state">
+        <h1 class="autonogrammer-auth-heading" tabindex="-1">@AuthCopy.OidcHeading</h1>
+        <p class="autonogrammer-auth-text">@AuthCopy.OidcBody</p>
+    </main>
+}
+
+@code {
+    private bool _ready;
+    private bool _oidc;
+    private string? _callback;
+
+    /// <inheritdoc />
+    protected override async Task OnInitializedAsync()
+    {
+        var loaded = await ConfigSource.LoadAsync(CancellationToken.None).ConfigureAwait(true);
+        _oidc = loaded is { Mode: AuthConfig.OidcMode, HasClientBlock: true };
+        _callback = await ReadCallbackSentenceAsync().ConfigureAwait(true);
+        _ready = true;
+    }
+
+    private async Task<string?> ReadCallbackSentenceAsync()
+    {
+        try
+        {
+            var outcome = await JS.InvokeAsync<string>("autonogrammerAuth.outcome").ConfigureAwait(true);
+            if (string.Equals(outcome, "acknowledged", StringComparison.Ordinal)
+                || string.Equals(outcome, "unacknowledged", StringComparison.Ordinal)
+                || string.Equals(outcome, "error", StringComparison.Ordinal))
+            {
+                return await JS.InvokeAsync<string?>("autonogrammerAuth.message").ConfigureAwait(true);
+            }
+        }
+        catch (JSException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        return null;
+    }
+}

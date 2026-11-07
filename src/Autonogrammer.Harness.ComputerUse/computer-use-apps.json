@@ -1,0 +1,126 @@
+{
+  "categories": [
+    {
+      "name": "browser",
+      "defaultTier": "ViewOnly",
+      "raised": false,
+      "identifiers": [
+        { "platform": "linux", "value": "firefox", "unverified": false },
+        { "platform": "linux", "value": "chromium", "unverified": false },
+        { "platform": "windows", "value": "firefox.exe", "unverified": true },
+        { "platform": "windows", "value": "chrome.exe", "unverified": true },
+        { "platform": "macos", "value": "org.mozilla.firefox", "unverified": true },
+        { "platform": "macos", "value": "com.google.Chrome", "unverified": true }
+      ]
+    },
+    {
+      "name": "ide",
+      "defaultTier": "ClickOnly",
+      "raised": false,
+      "identifiers": [
+        { "platform": "linux", "value": "code", "unverified": false },
+        { "platform": "linux", "value": "gnome-text-editor", "unverified": false },
+        { "platform": "windows", "value": "Code.exe", "unverified": true },
+        { "platform": "windows", "value": "notepad.exe", "unverified": true },
+        { "platform": "macos", "value": "com.microsoft.VSCode", "unverified": true },
+        { "platform": "macos", "value": "com.apple.TextEdit", "unverified": true }
+      ]
+    },
+    {
+      "name": "mail",
+      "defaultTier": "ViewOnly",
+      "raised": true,
+      "identifiers": [
+        { "platform": "linux", "value": "thunderbird", "unverified": false },
+        { "platform": "linux", "value": "org.gnome.Geary", "unverified": false },
+        { "platform": "windows", "value": "thunderbird.exe", "unverified": true },
+        { "platform": "windows", "value": "olk.exe", "unverified": true },
+        { "platform": "macos", "value": "org.mozilla.thunderbird", "unverified": true },
+        { "platform": "macos", "value": "com.apple.mail", "unverified": true }
+      ]
+    }
+  ],
+  "denylistGroups": [
+    {
+      "kind": "terminal",
+      "identifiers": [
+        { "platform": "linux", "value": "xterm", "unverified": false },
+        { "platform": "linux", "value": "gnome-terminal", "unverified": false },
+        { "platform": "linux", "value": "konsole", "unverified": false },
+        { "platform": "linux", "value": "alacritty", "unverified": false },
+        { "platform": "linux", "value": "kitty", "unverified": false },
+        { "platform": "linux", "value": "wezterm", "unverified": false },
+        { "platform": "windows", "value": "cmd.exe", "unverified": true },
+        { "platform": "windows", "value": "powershell.exe", "unverified": true },
+        { "platform": "windows", "value": "pwsh.exe", "unverified": true },
+        { "platform": "windows", "value": "WindowsTerminal.exe", "unverified": true },
+        { "platform": "macos", "value": "com.apple.Terminal", "unverified": true },
+        { "platform": "macos", "value": "com.googlecode.iterm2", "unverified": true }
+      ]
+    },
+    {
+      "kind": "password-manager",
+      "identifiers": [
+        { "platform": "linux", "value": "1password", "unverified": false },
+        { "platform": "linux", "value": "bitwarden", "unverified": false },
+        { "platform": "linux", "value": "keepassxc", "unverified": false },
+        { "platform": "windows", "value": "1Password.exe", "unverified": true },
+        { "platform": "windows", "value": "Bitwarden.exe", "unverified": true },
+        { "platform": "macos", "value": "com.1password.1password", "unverified": true },
+        { "platform": "macos", "value": "com.bitwarden.desktop", "unverified": true }
+      ]
+    },
+    {
+      "kind": "keychain",
+      "identifiers": [
+        { "platform": "linux", "value": "gnome-keyring", "unverified": false },
+        { "platform": "linux", "value": "seahorse", "unverified": false },
+        { "platform": "windows", "value": "CredentialUIBroker.exe", "unverified": true },
+        { "platform": "macos", "value": "com.apple.keychainaccess", "unverified": true }
+      ]
+    },
+    {
+      "kind": "os-settings",
+      "identifiers": [
+        { "platform": "linux", "value": "gnome-control-center", "unverified": false },
+        { "platform": "linux", "value": "systemsettings", "unverified": false },
+        { "platform": "windows", "value": "SystemSettings.exe", "unverified": true },
+        { "platform": "macos", "value": "com.apple.systempreferences", "unverified": true }
+      ]
+    },
+    {
+      "kind": "policy-prompt",
+      "identifiers": [
+        { "platform": "linux", "value": "polkit-gnome-authentication-agent-1", "unverified": false },
+        { "platform": "windows", "value": "consent.exe", "unverified": true },
+        { "platform": "macos", "value": "com.apple.SecurityAgent", "unverified": true }
+      ]
+    },
+    {
+      "kind": "trading",
+      "identifiers": [
+        { "platform": "linux", "value": "tradingview", "unverified": false },
+        { "platform": "windows", "value": "thinkorswim.exe", "unverified": true },
+        { "platform": "macos", "value": "com.tdameritrade.thinkorswim", "unverified": true }
+      ]
+    },
+    {
+      "kind": "wallet",
+      "identifiers": [
+        { "platform": "linux", "value": "electrum", "unverified": false },
+        { "platform": "linux", "value": "bitcoin-qt", "unverified": false },
+        { "platform": "windows", "value": "electrum.exe", "unverified": true },
+        { "platform": "macos", "value": "org.electrum.electrum", "unverified": true }
+      ]
+    },
+    {
+      "kind": "own-process",
+      "identifiers": [
+        { "platform": "linux", "value": "autonogrammer", "unverified": false },
+        { "platform": "linux", "value": "autonogrammer-own-process", "unverified": false },
+        { "platform": "windows", "value": "Autonogrammer.exe", "unverified": true },
+        { "platform": "macos", "value": "com.swcstudio.autonogrammer", "unverified": true }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+@namespace Autonogrammer.UI.Components.Account
+@using Autonogrammer.Contracts.Accounts
+@using Autonogrammer.Presentation.Accounts
+
+@if (Model.ShowSignedOut)
+{
+    <section class="autonogrammer-account-state" aria-label="@AccountCopy.PanelName">
+        <p class="autonogrammer-auth-text">@Model.PhaseSentence</p>
+        @if (Model.NotConfiguredSentence is not null)
+        {
+            <p class="autonogrammer-auth-text">@Model.NotConfiguredSentence</p>
+        }
+        else
+        {
+            <label class="autonogrammer-connect-label" for="autonogrammer-account-email">@AccountCopy.EmailFieldName</label>
+            <input id="autonogrammer-account-email"
+                   class="autonogrammer-input"
+                   type="email"
+                   autocomplete="email"
+                   spellcheck="false"
+                   aria-required="true"
+                   value="@Model.Email"
+                   @oninput="OnEmail" />
+            <button type="submit" class="autonogrammer-btn autonogrammer-btn--primary">@AccountCopy.SendCodeLabel</button>
+        }
+    </section>
+}
+else if (Model.ShowAwaitingLink)
+{
+    <section class="autonogrammer-account-state" aria-label="@AccountCopy.PanelName">
+        <p class="autonogrammer-auth-text">@Model.PhaseSentence</p>
+        @if (Model.LoopbackSentence is not null)
+        {
+            <p class="autonogrammer-auth-text">@Model.LoopbackSentence</p>
+        }
+        <p class="autonogrammer-auth-text" aria-label="@AccountCopy.ExpiryName">@Model.ExpiryText</p>
+        <p class="autonogrammer-auth-text" aria-label="@AccountCopy.CooldownName">@Model.CooldownText</p>
+        <p class="autonogrammer-sr-only" role="status">@Model.LiveAnnouncement</p>
+        @if (Model.MustResendSentence is not null)
+        {
+            <p class="autonogrammer-error" role="alert">@Model.MustResendSentence</p>
+        }
+        <label class="autonogrammer-connect-label" for="autonogrammer-account-code">@AccountCopy.CodeFieldName</label>
+        <input id="autonogrammer-account-code"
+               @ref="CodeField"
+               class="autonogrammer-input"
+               type="text"
+               inputmode="numeric"
+               autocomplete="one-time-code"
+               spellcheck="false"
+               aria-required="true"
+               value="@Model.Code"
+               @oninput="OnCode" />
+        <button type="submit" class="autonogrammer-btn autonogrammer-btn--primary">@AccountCopy.SendCodeLabel</button>
+        <button type="button" class="autonogrammer-btn" disabled="@(!Model.ResendEnabled)" @onclick="ResendAsync">@AccountCopy.ResendLabel</button>
+        <button type="button" class="autonogrammer-btn" @onclick="ChangeEmail">@AccountCopy.ChangeEmailLabel</button>
+    </section>
+}
+else if (Model.ShowSigningIn)
+{
+    <section class="autonogrammer-account-state" aria-label="@AccountCopy.PanelName">
+        <p class="autonogrammer-auth-text" role="status">@Model.PhaseSentence</p>
+        <p class="autonogrammer-auth-text">@AccountCopy.SigningInLabel</p>
+        <button type="button" class="autonogrammer-btn" @onclick="CancelAsync">@AccountCopy.CancelLabel</button>
+    </section>
+}
+else if (Model.ShowSignedIn)
+{
+    <section class="autonogrammer-account-state" aria-label="@AccountCopy.PanelName">
+        <p class="autonogrammer-auth-text">@Model.PhaseSentence</p>
+        @if (Model.OfflineSentence is not null)
+        {
+            <p class="autonogrammer-auth-text" role="status">@Model.OfflineSentence</p>
+        }
+        @if (Model.SessionNotRememberedSentence is not null)
+        {
+            <p class="autonogrammer-auth-text">@Model.SessionNotRememberedSentence</p>
+        }
+        @if (Model.SignOutNotConfirmedSentence is not null)
+        {
+            <p class="autonogrammer-auth-text">@Model.SignOutNotConfirmedSentence</p>
+        }
+        @if (Model.ServiceChangedSentence is not null)
+        {
+            <p class="autonogrammer-auth-text">@Model.ServiceChangedSentence</p>
+        }
+    </section>
+}
+else if (Model.ShowError)
+{
+    <section class="autonogrammer-account-state" aria-label="@AccountCopy.PanelName">
+        <p class="autonogrammer-auth-text">@Model.PhaseSentence</p>
+        <p id="autonogrammer-account-error" class="autonogrammer-error" role="alert" tabindex="-1">@Model.ErrorSentence</p>
+        <button type="submit" class="autonogrammer-btn autonogrammer-btn--primary">@AccountCopy.ErrorDismissLabel</button>
+    </section>
+}
+
+@code {
+    /// <summary>Gets or sets the model this view draws. Exactly one phase is visible.</summary>
+    [Parameter]
+    [EditorRequired]
+    public AccountViewModel Model { get; set; } = null!;
+
+    /// <summary>Gets the code field so the panel can move focus to it.</summary>
+    public ElementReference CodeField { get; private set; }
+
+    private void OnEmail(ChangeEventArgs args) => Model.Email = args.Value as string ?? string.Empty;
+
+    private void OnCode(ChangeEventArgs args) => Model.Code = args.Value as string ?? string.Empty;
+
+    private Task ResendAsync() => Model.ResendCodeAsync(CancellationToken.None);
+
+    private void ChangeEmail() => Model.ChangeEmail();
+
+    private Task CancelAsync() => Model.CancelAsync(CancellationToken.None);
+}

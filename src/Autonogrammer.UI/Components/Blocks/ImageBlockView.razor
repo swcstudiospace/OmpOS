@@ -1,0 +1,25 @@
+@namespace Autonogrammer.UI.Components.Blocks
+@using Autonogrammer.Contracts.Ui
+@using Autonogrammer.GenUi
+<div class="autonogrammer-block autonogrammer-image" role="group" aria-label="@Block.AltText">
+    @if (CanDraw)
+    {
+        <img class="autonogrammer-image-picture" src="@Block.DataUri" alt="@Block.AltText" style="max-width:480px;height:auto" />
+    }
+    else
+    {
+        <span class="autonogrammer-image-fallback">@Block.AltText Image omitted</span>
+    }
+</div>
+
+@code {
+    /// <summary>Gets the image block to render. An omitted or non-allowlisted payload is never an img.</summary>
+    [Parameter, EditorRequired]
+    public ImageBlock Block { get; set; } = null!;
+
+    private bool CanDraw =>
+        !Block.Omitted
+        && Block.DataUri is { Length: > 0 } uri
+        && !ToolUpdateContent.RefusesImage(Block.DataBase64)
+        && A2uiSurfaceCatalog.IsAllowedImageSource(uri);
+}

@@ -44,7 +44,11 @@ public sealed partial class IndexHtmlTests
         var stylesheet = html.IndexOf("_content/Autonogrammer.UI/styles/autonogrammer.css", StringComparison.Ordinal);
         boot.ShouldBeGreaterThan(0);
         boot.ShouldBeLessThan(stylesheet);
+        var surface = html.IndexOf("_content/Autonogrammer.UI/scripts/surface-boot.js", StringComparison.Ordinal);
+        surface.ShouldBeGreaterThan(boot);
+        surface.ShouldBeLessThan(stylesheet);
         File.Exists(Path.Combine(UiWwwroot(), "scripts", "theme-boot.js")).ShouldBeTrue();
+        File.Exists(Path.Combine(UiWwwroot(), "scripts", "surface-boot.js")).ShouldBeTrue();
         File.Exists(Path.Combine(UiWwwroot(), "scripts", "autonogrammer-theme.js")).ShouldBeTrue();
     }
 

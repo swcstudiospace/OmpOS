@@ -38,6 +38,72 @@
               }
             }
           }
+        },
+        "security": [ ]
+      }
+    },
+    "/status/data-plane": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Reports the state of each data-plane component: PostgreSQL, Dragonfly, telemetry and the audit ledger.",
+        "description": "Each row has the component, its state and a closed reason, and no host, port, version or message. While a store is down every other endpoint that needs it answers 503 with the data_plane_unavailable problem (shown here) and a Retry-After header.",
+        "operationId": "GetDataPlaneStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DataPlaneStatus"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataPlaneProblem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -105,6 +171,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -112,7 +184,7 @@
         "tags": [
           "Catalog"
         ],
-        "summary": "Lists the caller's sessions with their catalog fields.",
+        "summary": "Lists the caller's Code sessions with their catalog fields.",
         "responses": {
           "200": {
             "description": "OK",
@@ -126,6 +198,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -165,6 +243,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -275,6 +359,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -365,6 +455,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
           }
         }
       }
@@ -407,6 +500,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -506,6 +605,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -553,6 +658,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -600,6 +711,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -657,26 +774,12 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/board": {
-      "get": {
-        "tags": [
-          "Catalog"
-        ],
-        "summary": "Builds the Kanban board from the caller's sessions.",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BoardResponse"
-                }
-              }
-            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -717,6 +820,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -757,6 +866,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -797,6 +912,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -857,6 +978,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -874,6 +1001,266 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WorkspaceInfo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/account": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Reads the caller's account. Email comes from the token and is never stored.",
+        "operationId": "GetAccount",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/sessions": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Lists the caller's Code and Cowork sessions, each labelled with its surface.",
+        "operationId": "GetAccountSessions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSessionList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/sessions/{id}": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Reads one of the caller's sessions. Another owner's session reads as absent.",
+        "operationId": "GetAccountSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSessionItem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/board": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Builds the Kanban board from the caller's Code sessions.",
+        "operationId": "GetAccountBoard",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -900,6 +1287,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -940,6 +1333,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -980,6 +1379,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1080,6 +1485,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1120,6 +1531,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1160,6 +1577,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1278,6 +1701,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1318,6 +1747,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1358,6 +1793,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1446,6 +1887,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1534,6 +1981,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1555,7 +2008,8 @@
               }
             }
           }
-        }
+        },
+        "security": [ ]
       }
     },
     "/workspace/conventions": {
@@ -1594,6 +2048,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1634,6 +2094,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1674,6 +2140,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1714,6 +2186,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1754,6 +2232,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1794,6 +2278,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -1862,6 +2352,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1931,6 +2427,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2020,8 +2522,645 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
+      }
+    },
+    "/cowork/sessions/{id}": {
+      "put": {
+        "tags": [
+          "Cowork"
+        ],
+        "summary": "Stores a Cowork summary. The owner is the token and the surface is this route.",
+        "operationId": "PutCoworkSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoworkSessionSummary"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoworkSessionSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Cowork"
+        ],
+        "summary": "Removes a Cowork summary. Another owner's row reads as absent.",
+        "operationId": "DeleteCoworkSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/cowork/artifacts": {
+      "get": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Lists the caller's artifacts.",
+        "operationId": "ListCoworkArtifacts",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/cowork/artifacts/{id}": {
+      "get": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Reads one artifact header the caller owns.",
+        "operationId": "GetCoworkArtifact",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Deletes an artifact the caller owns. Another owner's id is the same 404 as an absent id.",
+        "operationId": "DeleteCoworkArtifact",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/cowork/artifacts/{id}/versions/{n}": {
+      "get": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Reads one owned version header.",
+        "operationId": "GetCoworkArtifactVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Stores a version idempotently by hash. Same bytes answer 200; different bytes answer 409.",
+        "operationId": "PutCoworkArtifactVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/cowork/artifacts/{id}/versions/{n}/content": {
+      "get": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Downloads owned version bytes as an attachment. The API origin never renders them.",
+        "operationId": "GetCoworkArtifactContent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/cowork/artifacts/{id}/versions/{n}/render-tickets": {
+      "post": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Issues a 60-second HMAC render ticket for an owned version.",
+        "operationId": "CreateCoworkArtifactRenderTicket",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderTicketDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/cowork/artifacts/{id}/versions/{n}/grants": {
+      "get": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Lists grants bound to an owned version.",
+        "operationId": "GetCoworkArtifactGrants",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ArtifactGrantDocument"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Binds or revokes a grant for an owned version hash.",
+        "operationId": "PutCoworkArtifactGrant",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactGrantDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/cowork/artifact-render/{ticket}": {
+      "get": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Renders a version from a 60-second ticket. Anonymous. Limiter partition artifact-render.",
+        "operationId": "GetCoworkArtifactRender",
+        "parameters": [
+          {
+            "name": "ticket",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [ ]
       }
     },
     "/providers": {
@@ -2083,6 +3222,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2133,6 +3278,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2263,6 +3414,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
           }
         }
       }
@@ -2363,6 +3517,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
           }
         }
       }
@@ -2473,6 +3630,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
           }
         }
       }
@@ -2546,6 +3706,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
           }
         }
       }
@@ -2596,6 +3759,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2686,6 +3855,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -2704,6 +3879,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2744,6 +3925,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -2795,6 +3982,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2895,6 +4088,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2945,6 +4144,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2995,6 +4200,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3065,6 +4276,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3108,6 +4325,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3208,6 +4431,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3228,6 +4457,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3268,6 +4503,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -3346,6 +4587,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -3377,6 +4624,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3397,6 +4650,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3417,6 +4676,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3465,6 +4730,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3505,6 +4776,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -3563,6 +4840,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -3594,6 +4877,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3644,6 +4933,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3694,6 +4989,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3744,6 +5045,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -3782,6 +5089,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3863,12 +5176,729 @@
               }
             }
           }
+        },
+        "security": [ ]
+      }
+    },
+    "/dispatch/devices": {
+      "post": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Pairs a desktop and returns a device credential.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PairingBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Lists the caller's devices with capability snapshots, presence and last-seen time.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchDeviceListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Revokes every device the caller owns.",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/dispatch/devices/{id}/connect": {
+      "get": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Opens the device connection. The hub is not registered yet.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "DispatchDevice": [ ]
+          }
+        ]
+      }
+    },
+    "/dispatch/devices/{id}": {
+      "get": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Reads one device the caller owns.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchDeviceDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Renames a device the caller owns.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameDispatchDeviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Revokes one device; its unfinished commands are cancelled or failed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/dispatch/devices/{id}/commands": {
+      "post": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Queues a command for a device the caller owns.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDispatchCommandRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchCommandAcceptedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/dispatch/commands": {
+      "get": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Lists the caller's commands, newest first.",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchCommandListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/dispatch/commands/{id}": {
+      "get": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Reads one command the caller owns.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchCommandDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/dispatch/commands/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Cancels a command that has not finished.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchCommandDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/dispatch/events": {
+      "get": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Streams the caller's device, command and approval events as server-sent events. Resume with Last-Event-ID, or with ?since= when that header is absent.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
         }
       }
     }
   },
   "components": {
     "schemas": {
+      "AccountResponse": {
+        "required": [
+          "id",
+          "email",
+          "createdAt",
+          "lastSeenAt",
+          "features"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The stable owner identifier: the token `sub` claim, or `owner` for the single operator of owner-token mode."
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The address from the validated token's `email` claim, or null when the token has none. It is never stored."
+          },
+          "createdAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "When the account row was created, or null for callers without an account row (owner-token and development callers).",
+            "format": "date-time"
+          },
+          "lastSeenAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "When the account was last seen, or null for callers without an account row.",
+            "format": "date-time"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The module keys that registered an account feature, such as `cowork` or `dispatch`, so a menu shows only what exists."
+          }
+        },
+        "description": "The caller's own account, answered by `GET /account`."
+      },
+      "AccountSessionItem": {
+        "required": [
+          "session",
+          "surface"
+        ],
+        "type": "object",
+        "properties": {
+          "session": {
+            "description": "The list-row view of the session.",
+            "$ref": "#/components/schemas/SessionSummary"
+          },
+          "surface": {
+            "type": "string",
+            "description": "The label of the surface the session belongs to, `code` or `cowork`. A string because the session surface type arrives with the data plane phase."
+          }
+        },
+        "description": "One row of the account's session list."
+      },
+      "AccountSessionList": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountSessionItem"
+            },
+            "description": "The rows."
+          }
+        },
+        "description": "The caller's own sessions across surfaces, answered by `GET /account/sessions`, newest first."
+      },
+      "ArtifactGrantDocument": {
+        "required": [
+          "artifactId",
+          "number",
+          "contentSha256",
+          "origins",
+          "scope",
+          "device",
+          "grantedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "artifactId": {
+            "type": "string",
+            "description": "The artifact identifier."
+          },
+          "number": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The version number.",
+            "format": "int32"
+          },
+          "contentSha256": {
+            "type": "string",
+            "description": "The version hash."
+          },
+          "origins": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The origins."
+          },
+          "scope": {
+            "type": "string",
+            "description": "The scope."
+          },
+          "device": {
+            "type": "string",
+            "description": "The device."
+          },
+          "grantedAt": {
+            "type": "string",
+            "description": "When the grant was bound.",
+            "format": "date-time"
+          }
+        },
+        "description": "A version-bound grant. No account id."
+      },
       "AuthConfigResponse": {
         "required": [
           "mode",
@@ -3886,17 +5916,120 @@
               "null",
               "string"
             ],
-            "description": "The OIDC authority in `oidc` mode, otherwise null."
+            "description": "The OIDC authority in `oidc` mode, otherwise null (written as JSON null)."
           },
           "audience": {
             "type": [
               "null",
               "string"
             ],
-            "description": "The OIDC audience in `oidc` mode, otherwise null."
+            "description": "The OIDC audience in `oidc` mode, otherwise null (written as JSON null)."
+          },
+          "projectUrl": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The https project URL of the auth host, or null when no client block is configured.",
+            "format": "uri"
+          },
+          "publishableKey": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The publishable key sent as `apikey`, or null when no client block is configured."
+          },
+          "methods": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "The offered sign-in methods, or null when no client block is configured.",
+                "$ref": "#/components/schemas/AuthMethods"
+              }
+            ]
+          },
+          "emailCode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "The email code timing, or null when no client block is configured.",
+                "$ref": "#/components/schemas/AuthEmailCode"
+              }
+            ]
+          },
+          "signupEmailHasCode": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "True when the first-time signup email already shows a code (owner action O4); null when no client block is configured."
           }
         },
-        "description": "Public sign-in configuration answered by `GET /auth/config`. It carries no secret."
+        "description": "Public sign-in configuration answered by `GET /auth/config`. It carries no secret: the publishable key is public by design. The first three\nmembers are the answer the endpoint has always given; the rest are null, and so omitted from the JSON, unless the OIDC client block is configured."
+      },
+      "AuthEmailCode": {
+        "required": [
+          "expirySeconds",
+          "resendCooldownSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "expirySeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "How long a code stays valid.",
+            "format": "int32"
+          },
+          "resendCooldownSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "How long a person waits before asking for a new code.",
+            "format": "int32"
+          }
+        },
+        "description": "Timing of the email code."
+      },
+      "AuthMethods": {
+        "required": [
+          "emailCode",
+          "magicLink",
+          "providers",
+          "wallet"
+        ],
+        "type": "object",
+        "properties": {
+          "emailCode": {
+            "type": "boolean",
+            "description": "True when a one-time code sent by email can be entered."
+          },
+          "magicLink": {
+            "type": "boolean",
+            "description": "True when the PKCE magic link flow is on (needs owner action O1); false means code only."
+          },
+          "providers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The OAuth providers the owner enabled in the identity project, by name: `google` and `x`. Empty when none. The project's settings do not report `x`, so the operator declares them."
+          },
+          "wallet": {
+            "type": "boolean",
+            "description": "True when Ethereum wallet sign-in is enabled in the identity project. The settings do not report it, so the operator declares it."
+          }
+        },
+        "description": "Which sign-in methods the project offers."
       },
       "AutomationCronPreviewResponse": {
         "required": [
@@ -5595,6 +7728,67 @@
         },
         "description": "A subagent definition the workspace holds."
       },
+      "CoworkSessionStatus": {
+        "enum": [
+          "Created",
+          "Running",
+          "WaitingForDecision",
+          "Paused",
+          "Completed",
+          "Failed",
+          "Lost"
+        ],
+        "description": "The lifecycle a Cowork task reports. It is not a Code session lifecycle and is never stored as one."
+      },
+      "CoworkSessionSummary": {
+        "required": [
+          "id",
+          "title",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the session identifier."
+          },
+          "title": {
+            "type": "string",
+            "description": "Gets the title, capped at int CoworkSessionSummary.MaxTitleLength characters."
+          },
+          "status": {
+            "description": "Gets the Cowork lifecycle.",
+            "$ref": "#/components/schemas/CoworkSessionStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Gets when the task was created.",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "Gets when the task was last updated.",
+            "format": "date-time"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the project identifier, or null when the task is not in a project."
+          },
+          "deviceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the device identifier that owns the transcript, or null when it is unknown."
+          }
+        },
+        "description": "The summary a desktop sends with `PUT /cowork/sessions/{id}`. It holds only what a server may store:\ntitle, status, times, project id and device id. It never carries messages, paths or trusted folders."
+      },
       "CreateCloudAgentRequest": {
         "type": "object",
         "properties": {
@@ -5699,6 +7893,36 @@
           }
         },
         "description": "The body of `POST /cloud/agents/{id}/pull-request`."
+      },
+      "CreateDispatchCommandRequest": {
+        "required": [
+          "capability",
+          "op",
+          "payload"
+        ],
+        "type": "object",
+        "properties": {
+          "capability": {
+            "description": "Command capability. Tool-class flags are refused.",
+            "$ref": "#/components/schemas/DispatchCapability"
+          },
+          "op": {
+            "description": "Closed operation.",
+            "$ref": "#/components/schemas/DispatchOp"
+          },
+          "payload": {
+            "type": "string",
+            "description": "Base64url payload."
+          },
+          "queueIfOffline": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "When false, an offline device is refused instead of queued."
+          }
+        },
+        "description": "Body of `POST /dispatch/devices/{id}/commands`."
       },
       "CreateSessionRequest": {
         "type": "object",
@@ -5841,6 +8065,115 @@
         },
         "description": "The body of `POST /providers/custom`: an OpenAI- or Anthropic-compatible endpoint. The base URL must be https, except for a host on\nthis machine; a link-local or metadata address, a name for one and a URL with user information are refused."
       },
+      "DataPlaneComponent": {
+        "enum": [
+          "Postgres",
+          "Dragonfly",
+          "Telemetry",
+          "Ledger"
+        ],
+        "description": "A store or exporter of the data plane that `GET /status/data-plane` reports on."
+      },
+      "DataPlaneProblem": {
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "component",
+          "reason",
+          "retryAfterSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The problem type, `/problems/data_plane_unavailable`."
+          },
+          "title": {
+            "type": "string",
+            "description": "The problem title."
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The HTTP status, 503.",
+            "format": "int32"
+          },
+          "detail": {
+            "type": "string",
+            "description": "A fixed sentence. It never quotes a host, a connection string or a provider message."
+          },
+          "component": {
+            "description": "The component that is not usable.",
+            "$ref": "#/components/schemas/DataPlaneComponent"
+          },
+          "reason": {
+            "description": "The closed reason.",
+            "$ref": "#/components/schemas/DataPlaneReason"
+          },
+          "retryAfterSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The seconds to wait before retrying; the same value is in the `Retry-After` header.",
+            "format": "int32"
+          }
+        },
+        "description": "The only 503 problem a store outage produces: RFC 9457 members plus the component, a closed reason and the seconds after which a client may retry.\nThe `type` is `/problems/data_plane_unavailable`."
+      },
+      "DataPlaneReason": {
+        "enum": [
+          "None",
+          "CircuitOpen",
+          "Timeout",
+          "AuthFailed",
+          "NotConfigured",
+          "SchemaBehind",
+          "SchemaAhead",
+          "RetentionUnsupported",
+          "ExporterFailing",
+          "LedgerBacklog"
+        ],
+        "description": "The closed set of reasons a component is not plainly healthy. A client keys its copy on this value, never on text."
+      },
+      "DataPlaneState": {
+        "enum": [
+          "Healthy",
+          "Degraded",
+          "Unavailable",
+          "Disabled"
+        ],
+        "description": "How a component is doing."
+      },
+      "DataPlaneStatus": {
+        "required": [
+          "component",
+          "state",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "component": {
+            "description": "The component.",
+            "$ref": "#/components/schemas/DataPlaneComponent"
+          },
+          "state": {
+            "description": "The state.",
+            "$ref": "#/components/schemas/DataPlaneState"
+          },
+          "reason": {
+            "description": "The closed reason; DataPlaneReason.None when the state is plainly healthy.",
+            "$ref": "#/components/schemas/DataPlaneReason"
+          }
+        },
+        "description": "One row of `GET /status/data-plane`. It carries the component, its state and a closed reason, and nothing else: no host, port, version or\nmessage, so the body can never quote a connection detail."
+      },
       "DefaultModelResponse": {
         "required": [
           "model"
@@ -5853,6 +8186,328 @@
           }
         },
         "description": "The answer of `PUT /models/default`."
+      },
+      "DevicePublicKey": {
+        "type": "object",
+        "properties": {
+          "kty": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the key type."
+          },
+          "crv": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the curve."
+          },
+          "x": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the X coordinate."
+          },
+          "y": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the Y coordinate."
+          },
+          "canonical": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the canonical JWK stored on the device row."
+          }
+        },
+        "description": "An EC public JWK."
+      },
+      "DispatchCapability": {
+        "enum": [
+          "sessions",
+          "code",
+          "cowork",
+          "browser_use",
+          "computer_use"
+        ],
+        "description": "Closed capability identifiers. DispatchCapability.BrowserUse and DispatchCapability.ComputerUse describe tool classes on a desktop.\nThey are never a valid command capability."
+      },
+      "DispatchCapabilitySnapshot": {
+        "required": [
+          "id",
+          "version",
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The capability.",
+            "$ref": "#/components/schemas/DispatchCapability"
+          },
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The capability version the desktop implements.",
+            "format": "int32"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the desktop currently allows the capability."
+          }
+        },
+        "description": "One capability row the desktop reports at pairing and in every hello."
+      },
+      "DispatchCommandAcceptedResponse": {
+        "required": [
+          "commandId",
+          "seq",
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "description": "Command identifier."
+          },
+          "seq": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Per-device sequence.",
+            "format": "int64"
+          },
+          "state": {
+            "type": "string",
+            "description": "Hub state wire name at accept time."
+          }
+        },
+        "description": "202 body of an accepted or replayed command. The replay returns this same shape and the same command id."
+      },
+      "DispatchCommandDto": {
+        "required": [
+          "commandId",
+          "deviceId",
+          "seq",
+          "state",
+          "capability",
+          "op",
+          "issuedAt",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "description": "Command identifier."
+          },
+          "deviceId": {
+            "type": "string",
+            "description": "Device identifier."
+          },
+          "seq": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Per-device sequence.",
+            "format": "int64"
+          },
+          "state": {
+            "description": "Hub state.",
+            "$ref": "#/components/schemas/DispatchCommandState"
+          },
+          "capability": {
+            "description": "Command capability.",
+            "$ref": "#/components/schemas/DispatchCapability"
+          },
+          "op": {
+            "description": "Operation.",
+            "$ref": "#/components/schemas/DispatchOp"
+          },
+          "issuedAt": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Issued-at Unix seconds.",
+            "format": "int64"
+          },
+          "expiresAt": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Expires-at Unix seconds.",
+            "format": "int64"
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Failure reason, when the state carries one.",
+                "$ref": "#/components/schemas/DispatchFailureReason"
+              }
+            ]
+          }
+        },
+        "description": "One command row returned to its owner."
+      },
+      "DispatchCommandListResponse": {
+        "required": [
+          "commands"
+        ],
+        "type": "object",
+        "properties": {
+          "commands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DispatchCommandDto"
+            },
+            "description": "Commands owned by the caller."
+          }
+        },
+        "description": "Body of `GET /dispatch/commands`."
+      },
+      "DispatchCommandState": {
+        "enum": [
+          "queued",
+          "delivered",
+          "received",
+          "awaiting_approval",
+          "accepted",
+          "running",
+          "completed",
+          "failed",
+          "cancelled",
+          "expired"
+        ],
+        "description": "Hub-side command states. The hub never marks DispatchCommandState.Completed on its own."
+      },
+      "DispatchDeviceDto": {
+        "required": [
+          "deviceId",
+          "name",
+          "capabilities"
+        ],
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "description": "Device identifier."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "revokedAt": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Revocation time, Unix seconds, when revoked.",
+            "format": "int64"
+          },
+          "lastSeenAt": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Last seen time, Unix seconds.",
+            "format": "int64"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DispatchCapabilitySnapshot"
+            },
+            "description": "Newest capability snapshot."
+          },
+          "pairedSessionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Sign-in session recorded at pairing."
+          },
+          "presence": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Presence read through the presence seam: `online`, `offline` or `unknown`. Unknown is never offline."
+          }
+        },
+        "description": "One device row returned to its owner."
+      },
+      "DispatchDeviceListResponse": {
+        "required": [
+          "devices"
+        ],
+        "type": "object",
+        "properties": {
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DispatchDeviceDto"
+            },
+            "description": "Devices owned by the caller."
+          }
+        },
+        "description": "Body of `GET /dispatch/devices`."
+      },
+      "DispatchFailureReason": {
+        "enum": [
+          "expired",
+          "revoked",
+          "signature_invalid",
+          "unsupported_version",
+          "unsupported_operation",
+          "capability_disabled",
+          "approval_denied",
+          "approval_timeout",
+          "policy_denied",
+          "payload_invalid",
+          "payload_too_large",
+          "device_busy",
+          "device_restarted",
+          "execution_error",
+          "timeout",
+          "cancelled_by_user",
+          "internal",
+          null
+        ]
+      },
+      "DispatchOp": {
+        "enum": [
+          "session.list",
+          "session.steer",
+          "session.cancel",
+          "approval.decide",
+          "code.prompt",
+          "cowork.task",
+          "command.cancel"
+        ],
+        "description": "Closed command operations for relay protocol version 1. There is no `computer.*` operation."
       },
       "GsdPhaseInfo": {
         "required": [
@@ -5944,6 +8599,54 @@
         },
         "description": "The answer of `GET /hooks`: the effective hooks, the files they came from, the loading problems and the consent state. The API never starts a hook."
       },
+      "LimitsReply": {
+        "required": [
+          "maxQueuedPerDevice",
+          "devicesPerAccount",
+          "maxPayloadBytes",
+          "queueTtlSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "maxQueuedPerDevice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the queued-command cap.",
+            "format": "int32"
+          },
+          "devicesPerAccount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the device cap.",
+            "format": "int32"
+          },
+          "maxPayloadBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the payload cap.",
+            "format": "int32"
+          },
+          "queueTtlSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the queue time, in seconds.",
+            "format": "int32"
+          }
+        },
+        "description": "Limits returned at pairing."
+      },
       "Message": {
         "required": [
           "role",
@@ -6011,6 +8714,118 @@
           }
         },
         "description": "The answer of `GET /settings/network`: the upstreams the API is configured for. The API makes no outbound call to answer, so every entry is unchecked."
+      },
+      "PairingBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the display name."
+          },
+          "platform": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the desktop platform."
+          },
+          "appVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the desktop application version."
+          },
+          "protocolVersions": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets or sets the relay protocol versions the desktop speaks."
+          },
+          "capabilities": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/DispatchCapabilitySnapshot"
+            },
+            "description": "Gets or sets the capability snapshot."
+          },
+          "publicKey": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets or sets the device public key.",
+                "$ref": "#/components/schemas/DevicePublicKey"
+              }
+            ]
+          }
+        },
+        "description": "Body of `POST /dispatch/devices`."
+      },
+      "PairingReply": {
+        "required": [
+          "deviceId",
+          "credential",
+          "credentialExpiresAt",
+          "hubOrigin",
+          "verificationKeys",
+          "limits",
+          "capabilities"
+        ],
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "description": "Gets or sets the device identifier."
+          },
+          "credential": {
+            "type": "string",
+            "description": "Gets or sets the device credential. Shown once."
+          },
+          "credentialExpiresAt": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the credential expiry, Unix seconds.",
+            "format": "int64"
+          },
+          "hubOrigin": {
+            "type": "string",
+            "description": "Gets or sets the hub origin."
+          },
+          "verificationKeys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VerificationKeyReply"
+            },
+            "description": "Gets or sets the hub verification keys."
+          },
+          "limits": {
+            "description": "Gets or sets the limits the device must honour.",
+            "$ref": "#/components/schemas/LimitsReply"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DispatchCapabilitySnapshot"
+            },
+            "description": "Gets or sets the capability snapshot stored on the device."
+          }
+        },
+        "description": "201 body of a successful pairing."
       },
       "PendingToolApproval": {
         "required": [
@@ -6637,6 +9452,32 @@
         ],
         "description": "How far the research verified a catalogue provider."
       },
+      "RenameDispatchDeviceRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "New display name."
+          }
+        },
+        "description": "Body of `PATCH /dispatch/devices/{id}`."
+      },
+      "RenderTicketDocument": {
+        "required": [
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The host-relative render URL."
+          }
+        },
+        "description": "The render URL returned to the owner."
+      },
       "Run": {
         "required": [
           "id",
@@ -7021,6 +9862,18 @@
             ],
             "description": "Gets the sandbox identifier, or null when the session runs without a sandbox."
           },
+          "surface": {
+            "description": "Gets the product surface the session belongs to. It is fixed when the session is created; SessionSurface.Code is the default.",
+            "$ref": "#/components/schemas/SessionSurface"
+          },
+          "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets when the session was closed, or null while it is open. Only `ISessionRepository.SetClosedAsync` changes it after creation.",
+            "format": "date-time"
+          },
           "messages": {
             "type": "array",
             "items": {
@@ -7336,6 +10189,24 @@
         },
         "description": "The answer of `GET /sessions/{id}/context`: the task context of the session."
       },
+      "SessionKind": {
+        "enum": [
+          "Chat",
+          "Terminal"
+        ],
+        "description": "What a session is: a chat with the engine behind the Agent Panel, or an omp terminal."
+      },
+      "SessionLifecycle": {
+        "enum": [
+          "Created",
+          "Running",
+          "Paused",
+          "Completed",
+          "Failed",
+          "Lost"
+        ],
+        "description": "The persisted lifecycle of an agent session. It is coarser than the live run state: it survives an application restart."
+      },
       "SessionLifecycleResponse": {
         "required": [
           "id",
@@ -7408,6 +10279,73 @@
           "Interrupted"
         ],
         "description": "Lifecycle states of an agent session."
+      },
+      "SessionSummary": {
+        "required": [
+          "id",
+          "title",
+          "lifecycle",
+          "createdAt",
+          "lastActivity"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the session identifier."
+          },
+          "title": {
+            "type": "string",
+            "description": "Gets the session title."
+          },
+          "lifecycle": {
+            "description": "Gets the persisted lifecycle of the session.",
+            "$ref": "#/components/schemas/SessionLifecycle"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Gets the time the session was created.",
+            "format": "date-time"
+          },
+          "lastActivity": {
+            "type": "string",
+            "description": "Gets the time of the last observed activity of the session.",
+            "format": "date-time"
+          },
+          "graphId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the Graph identifier of the session's plan, or null when it has none."
+          },
+          "taskId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the identifier of the task the session works on, or null when it is not bound to a task."
+          },
+          "workspaceRoot": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the absolute path of the workspace the session runs in, or null when it is unknown."
+          },
+          "kind": {
+            "description": "Gets what the session is: a chat behind the Agent Panel or an omp terminal. Defaults to SessionKind.Chat.",
+            "$ref": "#/components/schemas/SessionKind"
+          }
+        },
+        "description": "The list-row view of one agent session: enough to show the session in a list of concurrent, possibly long-running sessions."
+      },
+      "SessionSurface": {
+        "enum": [
+          "Code",
+          "Cowork"
+        ],
+        "description": "The product surface a session belongs to. The surface is chosen when the session is created and is stored with it, so that\n`ISessionRepository.ListByOwnerAsync` can list the sessions of one surface without reading the others."
       },
       "SetAutomationEnabledRequest": {
         "required": [
@@ -7752,6 +10690,47 @@
           }
         },
         "description": "The context of the task a session works on: its Kanban status, the workflow phase, and what the substrate shares with the\nsession. Every part is optional. A part that cannot be read is absent and the reason is listed in IReadOnlyList&lt;string&gt; TaskContext.Warnings."
+      },
+      "VerificationKeyReply": {
+        "required": [
+          "kid",
+          "jwk",
+          "notBefore",
+          "expires"
+        ],
+        "type": "object",
+        "properties": {
+          "kid": {
+            "type": "string",
+            "description": "Gets or sets the key identifier."
+          },
+          "jwk": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Gets or sets the ES256 public JWK."
+          },
+          "notBefore": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the start of the validity window, Unix seconds.",
+            "format": "int64"
+          },
+          "expires": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the end of the validity window, Unix seconds.",
+            "format": "int64"
+          }
+        },
+        "description": "One hub verification key in the pairing reply."
       },
       "WorkspaceAutomationInfo": {
         "required": [
@@ -8141,11 +11120,32 @@
         },
         "description": "The answer of `GET /workspace/tree`: the entries of one folder. Secret files and links that leave the workspace are not listed."
       }
+    },
+    "securitySchemes": {
+      "DispatchDevice": {
+        "type": "http",
+        "description": "The long-lived credential of a paired dispatch device. It is accepted only on the device connect route and never as an access token.",
+        "scheme": "bearer"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "description": "A bearer token issued by the identity provider the deployment trusts (or the owner token on a single-operator deployment).",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
     }
   },
+  "security": [
+    {
+      "bearerAuth": [ ]
+    }
+  ],
   "tags": [
     {
       "name": "Auth"
+    },
+    {
+      "name": "Status"
     },
     {
       "name": "SessionEndpoints"
@@ -8161,6 +11161,9 @@
     },
     {
       "name": "RunEndpoints"
+    },
+    {
+      "name": "Account"
     },
     {
       "name": "Stages"
@@ -8184,10 +11187,19 @@
       "name": "Automations"
     },
     {
+      "name": "Cowork"
+    },
+    {
+      "name": "Cowork artifacts"
+    },
+    {
       "name": "Providers"
     },
     {
       "name": "Cloud"
+    },
+    {
+      "name": "Dispatch"
     }
   ]
 }

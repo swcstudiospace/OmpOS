@@ -1,6 +1,12 @@
+using Autonogrammer.Api.Accounts;
 using Autonogrammer.Api.Automations;
 using Autonogrammer.Api.Cloud;
 using Autonogrammer.Api.Coordination;
+using Autonogrammer.Api.Cowork;
+using Autonogrammer.Api.Cowork.Artifacts;
+using Autonogrammer.Api.DataPlane;
+using Autonogrammer.Api.Dispatch;
+using Autonogrammer.Api.Dispatch.Devices;
 using Autonogrammer.Api.Endpoints;
 using Autonogrammer.Api.Harness;
 using Autonogrammer.Api.Health;
@@ -34,6 +40,12 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
 
+// The migrate verb runs before the web host exists: it builds its own minimal configuration and registers no hosting, authentication or harness option.
+if (MigrateCommand.IsMigrate(args))
+{
+    return await MigrateCommand.RunAsync(args, Console.Out, Console.Error, CancellationToken.None).ConfigureAwait(false);
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Fail-fast options: every section binds with data-annotation validation on start,
@@ -58,6 +70,7 @@ builder.Services.AddOptions<SessionsOptions>()
     .ValidateDataAnnotations()
     .Validate(static options => string.IsNullOrEmpty(options.Store) || SessionsOptions.IsSupportedStore(options.Store), "Sessions:Store must be Postgres or InMemory.")
     .Validate(static options => !SessionsOptions.IsPostgresStore(options.Store) || !string.IsNullOrWhiteSpace(options.Postgres.ConnectionString), "Sessions:Postgres:ConnectionString is required when Sessions:Store is Postgres.")
+    .Validate(options => !(builder.Environment.IsProduction() && options.Postgres.AutoMigrate), "Sessions:Postgres:AutoMigrate must not be true in the Production environment; the migrate service applies the schema.")
     .ValidateOnStart();
 builder.Services.AddOptions<CoordinationOptions>()
     .BindConfiguration(CoordinationOptions.SectionName)
@@ -91,9 +104,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddApiSessionStore(builder.Configuration);
 builder.Services.AddApiCoordination(builder.Configuration);
+builder.Services.AddDataPlane();
 builder.Services.AddSingleton<SessionService>();
 builder.Services.AddOmpParser();
-builder.Services.AddSingleton<SessionRegistry>();
 builder.Services.AddSingleton<RunRegistry>();
 // Harness:Adapter picks the factory. Acp runs omp over stdio through OmpAcpClient, which takes its permission resolver from DI;
 // InMemory is the development echo adapter.
@@ -116,6 +129,11 @@ builder.Services.AddCloudAgentServices();
 builder.Services.AddProviderServices();
 builder.Services.AddWorkspaceSettingsServices();
 builder.Services.AddAutomationServices();
+builder.Services.AddDispatchServices(builder.Environment);
+builder.Services.AddDispatchHub();
+builder.Services.AddAccountsServices();
+builder.Services.AddCoworkServices();
+builder.Services.AddCoworkArtifactServices(builder.Configuration);
 
 // The API is the composition root for session runs. Each prompt runs in this process through DirectSessionRunner, which holds
 // the session's run lease from the coordination store for the whole run. The sandbox is the in-memory fake provider.
@@ -191,6 +209,7 @@ var app = builder.Build();
 ProcessHardening.ApplyIfEnabled(app.Logger, app.Configuration, app.Environment);
 
 app.UseHostingHardening();
+app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(20) });
 
 // Unhandled exceptions become ProblemDetails 500s outside Development. The developer
 // exception page stays Development-only (framework default); Production never leaks internals.
@@ -203,13 +222,17 @@ if (!app.Environment.IsDevelopment())
 app.UseHostingRequestTimeouts();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<DataPlaneProblemMiddleware>();
 app.UseCors(ConfigureCorsOptions.PolicyName);
 app.UseApiAuthentication();
 
 app.UseRateLimiter();
 app.UseAuthorization();
+app.UseMiddleware<AccountEnrollmentMiddleware>();
 app.UseMiddleware<CloudDisabledMiddleware>();
 app.UseMiddleware<AutomationDisabledMiddleware>();
+app.UseMiddleware<DispatchDisabledMiddleware>();
+app.UseMiddleware<ArtifactsDisabledMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -235,11 +258,13 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 }).AllowAnonymous();
 app.MapHostingEndpoints();
 app.MapAuthConfigEndpoints();
+app.MapDataPlaneEndpoints();
 app.MapSessionEndpoints();
 app.MapToolApprovalEndpoints();
 app.MapEventStreamEndpoints();
 app.MapRunEndpoints();
 app.MapCatalogEndpoints();
+app.MapAccountEndpoints();
 app.MapCatalogEventEndpoints();
 app.MapStageEndpoints();
 app.MapSteeringEndpoints();
@@ -250,6 +275,9 @@ app.MapWorkspaceSettingsEndpoints();
 app.MapProviderEndpoints();
 app.MapCloudAgentEndpoints();
 app.MapAutomationEndpoints();
+app.MapDispatchEndpoints();
+app.MapCoworkSessionEndpoints();
+app.MapCoworkArtifactEndpoints();
 
 // Start without RunAsync's dispose-on-failure: RunAsync disposes the host when startup
 // validation throws, which races WebApplicationFactory's in-memory-host observation
@@ -262,7 +290,7 @@ try
 {
     app.Start();
     started = true;
-    app.WaitForShutdown();
+    await app.WaitForShutdownAsync().ConfigureAwait(false);
 }
 finally
 {
@@ -271,6 +299,9 @@ finally
         ((IDisposable)app).Dispose();
     }
 }
+
+// The schema wait asks for exit code 1 through Environment.ExitCode and stops the host; the normal end of the process keeps 0.
+return Environment.ExitCode;
 
 /// <summary>
 /// The API host entry point. Internal with InternalsVisibleTo for

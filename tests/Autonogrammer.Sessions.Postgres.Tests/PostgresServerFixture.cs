@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Npgsql;
 using Xunit;
 
 namespace Autonogrammer.Sessions.Postgres.Tests;
@@ -18,12 +19,21 @@ public sealed class PostgresServerFixture : IAsyncLifetime
     /// <summary>The environment variable that names an existing administrative PostgreSQL connection string.</summary>
     public const string ConnectionEnvironmentVariable = "AUTONOGRAMMER_TEST_POSTGRES_CONNECTION";
 
+    /// <summary>The base name <c>scripts/test-services.sh</c> gives the throwaway PostgreSQL container, plus its services suffix when one is set. It is only the initial <see cref="ContainerName"/>; a configured server names its container through <see cref="ContainerEnvironmentVariable"/>.</summary>
+    public const string TestServicesContainerName = "autonogrammer-test-postgres";
+
+    /// <summary>The environment variable that names the throwaway PostgreSQL container of a named test-services run (scripts/test-services.sh exports it).</summary>
+    public const string ContainerEnvironmentVariable = "AUTONOGRAMMER_TEST_POSTGRES_CONTAINER";
+
     private static readonly TimeSpan StartTimeout = TimeSpan.FromMinutes(5);
 
     private PodmanPostgresContainer? _container;
 
     /// <summary>Gets the administrative connection string. Tests create their own schema on this server.</summary>
     public string AdminConnectionString { get; private set; } = string.Empty;
+
+    /// <summary>Gets the name of the podman container that runs the server, for the tests that run <c>psql</c> inside it.</summary>
+    public string ContainerName { get; private set; } = TestServicesContainerName;
 
     /// <summary>Connects to the server, starting a container when no connection string is configured.</summary>
     /// <returns>A task that completes when the server is ready.</returns>
@@ -33,12 +43,33 @@ public sealed class PostgresServerFixture : IAsyncLifetime
         if (!string.IsNullOrWhiteSpace(configured))
         {
             AdminConnectionString = configured;
-            return;
+            ContainerName = Environment.GetEnvironmentVariable(ContainerEnvironmentVariable) is { Length: > 0 } named
+                ? named
+                : throw new InvalidOperationException($"{ConnectionEnvironmentVariable} is set; set {ContainerEnvironmentVariable} to the container that holds that server.");
+        }
+        else
+        {
+            using var cancellation = new CancellationTokenSource(StartTimeout);
+            _container = await PodmanPostgresContainer.StartAsync(cancellation.Token).ConfigureAwait(false);
+            AdminConnectionString = _container.ConnectionString;
+            ContainerName = _container.Name;
         }
 
-        using var cancellation = new CancellationTokenSource(StartTimeout);
-        _container = await PodmanPostgresContainer.StartAsync(cancellation.Token).ConfigureAwait(false);
-        AdminConnectionString = _container.ConnectionString;
+        await RequireTimescaleAsync().ConfigureAwait(false);
+    }
+
+    private async Task RequireTimescaleAsync()
+    {
+        using var connection = new NpgsqlConnection(AdminConnectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb')";
+        if (await command.ExecuteScalarAsync().ConfigureAwait(false) is not true)
+        {
+            throw new InvalidOperationException(
+                "The test PostgreSQL server has no TimescaleDB extension in its default database. The migrations never create the extension: use the pinned " +
+                "timescale/timescaledb image (scripts/test-services.sh) or install the extension once as an administrator.");
+        }
     }
 
     /// <summary>Removes the container this fixture started, if any.</summary>

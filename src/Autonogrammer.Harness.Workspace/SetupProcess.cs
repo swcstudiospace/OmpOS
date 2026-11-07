@@ -21,12 +21,80 @@ internal static class SetupProcess
     /// <param name="workingDirectory">The existing working directory.</param>
     /// <param name="environment">Variables added to the inherited environment.</param>
     /// <param name="cancellationToken">Cancels the wait. The process tree is killed.</param>
-    public static async Task<StepExecution> RunAsync(
+    public static Task<StepExecution> RunAsync(
         string executable,
         IReadOnlyList<string> arguments,
         string workingDirectory,
         IReadOnlyDictionary<string, string> environment,
+        CancellationToken cancellationToken) =>
+        RunAsync(executable, arguments, workingDirectory, environment, KillEntireTree, cancellationToken);
+
+    /// <summary>
+    /// Runs a step with an explicit tree-kill action. Production code uses the public overload; the seam lets a test
+    /// make the OS refuse the kill.
+    /// </summary>
+    /// <param name="executable">The executable path or name.</param>
+    /// <param name="arguments">The argument list.</param>
+    /// <param name="workingDirectory">The existing working directory.</param>
+    /// <param name="environment">Variables added to the inherited environment.</param>
+    /// <param name="killTree">Stops the process tree. It may throw; a <see cref="Win32Exception"/> is reported as a failed step.</param>
+    /// <param name="cancellationToken">Cancels the wait. The process tree is killed through <paramref name="killTree"/>.</param>
+    internal static async Task<StepExecution> RunAsync(
+        string executable,
+        IReadOnlyList<string> arguments,
+        string workingDirectory,
+        IReadOnlyDictionary<string, string> environment,
+        Action<Process> killTree,
         CancellationToken cancellationToken)
+    {
+        using var process = new Process { StartInfo = BuildStartInfo(executable, arguments, workingDirectory, environment) };
+        try
+        {
+            process.Start();
+        }
+        catch (Win32Exception exception)
+        {
+            return StepExecution.Failed($"could not start '{executable}': {exception.Message}");
+        }
+
+        process.StandardInput.Close();
+        var standardOutput = DrainAsync(process.StandardOutput);
+        var standardError = DrainAsync(process.StandardError);
+
+        try
+        {
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            var killFailure = KillProcessTree(process, killTree);
+            await WaitForPipesAfterStopAsync(standardOutput, standardError).ConfigureAwait(false);
+            if (killFailure is not null)
+            {
+                return StepExecution.Failed($"could not stop '{executable}' after cancellation: {killFailure.Message}");
+            }
+
+            throw;
+        }
+
+        await Task.WhenAll(standardOutput, standardError).ConfigureAwait(false);
+
+        if (process.ExitCode == 0)
+        {
+            return StepExecution.Success;
+        }
+
+        var detail = FirstLine(await standardError.ConfigureAwait(false));
+        return StepExecution.Failed(detail.Length == 0
+            ? $"exited with code {process.ExitCode}"
+            : $"exited with code {process.ExitCode}: {detail}");
+    }
+
+    private static ProcessStartInfo BuildStartInfo(
+        string executable,
+        IReadOnlyList<string> arguments,
+        string workingDirectory,
+        IReadOnlyDictionary<string, string> environment)
     {
         var startInfo = new ProcessStartInfo
         {
@@ -51,41 +119,7 @@ internal static class SetupProcess
             startInfo.Environment[name] = value;
         }
 
-        using var process = new Process { StartInfo = startInfo };
-        try
-        {
-            process.Start();
-        }
-        catch (Win32Exception exception)
-        {
-            return StepExecution.Failed($"could not start '{executable}': {exception.Message}");
-        }
-
-        process.StandardInput.Close();
-        var standardOutput = DrainAsync(process.StandardOutput);
-        var standardError = DrainAsync(process.StandardError);
-
-        try
-        {
-            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            KillProcessTree(process);
-            await Task.WhenAll(standardOutput, standardError).ConfigureAwait(false);
-            throw;
-        }
-
-        await Task.WhenAll(standardOutput, standardError).ConfigureAwait(false);
-        if (process.ExitCode == 0)
-        {
-            return StepExecution.Success;
-        }
-
-        var detail = FirstLine(await standardError.ConfigureAwait(false));
-        return StepExecution.Failed(detail.Length == 0
-            ? $"exited with code {process.ExitCode}"
-            : $"exited with code {process.ExitCode}: {detail}");
+        return startInfo;
     }
 
     private static async Task<string> DrainAsync(StreamReader reader)
@@ -104,6 +138,25 @@ internal static class SetupProcess
         return captured.ToString();
     }
 
+    /// <summary>How long a stopped step waits for its output pipes to close.</summary>
+    private static readonly TimeSpan PipeCloseGrace = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// Waits briefly for the output pipes of a step that was stopped. A process the OS refused to stop, or a child that inherited
+    /// the pipes, keeps them open, so the wait is bounded and the stop is reported, not the text.
+    /// </summary>
+    private static async Task WaitForPipesAfterStopAsync(Task standardOutput, Task standardError)
+    {
+        try
+        {
+            await Task.WhenAll(standardOutput, standardError).WaitAsync(PipeCloseGrace).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is TimeoutException or IOException or ObjectDisposedException)
+        {
+            // The pipes stayed open, or broke while the step was stopped.
+        }
+    }
+
     private static string FirstLine(string text)
     {
         var line = text.Split('\n')
@@ -112,25 +165,43 @@ internal static class SetupProcess
         return line.Length <= MaxDetailCharacters ? line : line[..MaxDetailCharacters];
     }
 
-    private static void KillProcessTree(Process process)
+    private static void KillEntireTree(Process process) => process.Kill(entireProcessTree: true);
+
+    /// <summary>
+    /// Stops a process tree. A process that has already exited is not reported. A kill the OS refuses is returned
+    /// so the caller can report the step as failed.
+    /// </summary>
+    /// <param name="process">The process to stop.</param>
+    /// <param name="killTree">The action that performs the kill.</param>
+    /// <returns>The refusal, or null when the process is gone or was stopped.</returns>
+    internal static Win32Exception? KillProcessTree(Process process, Action<Process> killTree)
     {
         if (process.HasExited)
         {
-            return;
+            return null;
         }
 
         try
         {
-            process.Kill(entireProcessTree: true);
+            killTree(process);
         }
         catch (InvalidOperationException)
         {
-            // The process exited between the check and the kill.
+            // The process exited between the check and the kill; nothing is left to stop.
         }
-        catch (Win32Exception)
+        catch (Win32Exception exception)
         {
-            // The process exited between the check and the kill.
+            // The OS refused the signal, so the process may still be running. The caller reports it.
+            return exception;
         }
+        catch (AggregateException exception)
+        {
+            // Process.Kill(true) throws this when some descendants could not be stopped. Report the first OS refusal.
+            return exception.InnerExceptions.OfType<Win32Exception>().FirstOrDefault()
+                ?? new Win32Exception(exception.Message);
+        }
+
+        return null;
     }
 
     /// <summary>

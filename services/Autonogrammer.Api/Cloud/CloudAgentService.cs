@@ -21,7 +21,6 @@ internal sealed class CloudAgentService
     private readonly ICloudAgentStore _store;
     private readonly ISessionRepository _repository;
     private readonly SessionService _sessions;
-    private readonly SessionRegistry _registry;
     private readonly SessionChangePublisher _publisher;
     private readonly PromptRunner _runner;
     private readonly CloudAgentLifecycle _lifecycle;
@@ -38,7 +37,6 @@ internal sealed class CloudAgentService
     /// <param name="store">The agent store.</param>
     /// <param name="repository">The session store that holds each agent's event log.</param>
     /// <param name="sessions">The session service that admits prompts.</param>
-    /// <param name="registry">The registry of sessions that the catalog lists.</param>
     /// <param name="publisher">Announces session changes to streams.</param>
     /// <param name="runner">Acquires run leases and starts runs.</param>
     /// <param name="lifecycle">The worker lifecycle.</param>
@@ -54,7 +52,6 @@ internal sealed class CloudAgentService
         ICloudAgentStore store,
         ISessionRepository repository,
         SessionService sessions,
-        SessionRegistry registry,
         SessionChangePublisher publisher,
         PromptRunner runner,
         CloudAgentLifecycle lifecycle,
@@ -70,7 +67,6 @@ internal sealed class CloudAgentService
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(sessions);
-        ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(publisher);
         ArgumentNullException.ThrowIfNull(runner);
         ArgumentNullException.ThrowIfNull(lifecycle);
@@ -85,7 +81,6 @@ internal sealed class CloudAgentService
         _store = store;
         _repository = repository;
         _sessions = sessions;
-        _registry = registry;
         _publisher = publisher;
         _runner = runner;
         _lifecycle = lifecycle;
@@ -445,7 +440,6 @@ internal sealed class CloudAgentService
                 Events = [],
             },
             cancellationToken).ConfigureAwait(false);
-        _registry.Add(sessionId);
     }
 
     private static CloudAgentRecord BuildRecord(string agentId, string sessionId, string ownerId, CreateCloudAgentRequest normalized, string? idempotencyKey, string fingerprint, DateTimeOffset now) =>

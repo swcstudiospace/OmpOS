@@ -23,7 +23,10 @@ public sealed class GoldenPolicyTests
     [Fact]
     public void OpenShellProvider_GatewayToml_MatchesGolden()
     {
-        var generated = OpenShellProvider.GenerateGatewayToml();
+        var config = new OpenShellGatewayConfig();
+        config.Drivers.Podman.SandboxRuntimeImage = "example.invalid/openshell-sandbox-runtime:test-1";
+        config.Drivers.Podman.SupervisorImage = "example.invalid/openshell-supervisor:test-1";
+        var generated = OpenShellProvider.GenerateGatewayToml(config);
         var goldenPath = Path.Combine(_goldenDir, "openshell-gateway.toml");
 
         var golden = File.ReadAllText(goldenPath, Encoding.UTF8);

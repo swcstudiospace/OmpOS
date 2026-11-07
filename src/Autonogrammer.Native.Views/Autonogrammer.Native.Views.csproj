@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- Not trimmable (OQ-42): the XAML views bind through ReflectionBinding, which a trimmed publish of the head rejects (IL2026). -->
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>Autonogrammer.Native</RootNamespace>
+    <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,10 +14,13 @@
     <PackageReference Include="Iciclecreek.Avalonia.Terminal" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="TextMateSharp.Grammars" />
+    <PackageReference Include="Avalonia.Controls.WebView" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
+    <ProjectReference Include="../Autonogrammer.Cowork.Artifacts/Autonogrammer.Cowork.Artifacts.csproj" />
     <ProjectReference Include="../Autonogrammer.GenUi/Autonogrammer.GenUi.csproj" />
     <ProjectReference Include="../Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
     <ProjectReference Include="../Autonogrammer.Harness.AgentLoop/Autonogrammer.Harness.AgentLoop.csproj" />
@@ -32,6 +37,11 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Autonogrammer.Native" />
     <InternalsVisibleTo Include="Autonogrammer.Native.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The vendored Mermaid 12.2.0 bundle (D-25, OQ-400): one unmodified file, found by its logical name. Its hash is checked by a test. -->
+    <EmbeddedResource Include="../Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js" LogicalName="mermaid.min.js" />
   </ItemGroup>
 
   <ItemGroup>

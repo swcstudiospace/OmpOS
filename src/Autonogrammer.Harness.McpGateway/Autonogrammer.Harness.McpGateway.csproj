@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Autonogrammer.Harness.Mcp/Autonogrammer.Harness.Mcp.csproj" />
+    <ProjectReference Include="../Autonogrammer.Cowork.Abstractions/Autonogrammer.Cowork.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

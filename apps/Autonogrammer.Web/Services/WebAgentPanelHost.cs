@@ -58,10 +58,11 @@ internal sealed class WebAgentPanelHost : IAgentPanelHost
         Task.FromException<string>(new InvalidOperationException(TerminalAvailability.WebReason));
 
     /// <inheritdoc />
-    public AgentSessionViewModel OpenSession(AgentRow row)
+    public Task<AgentSessionViewModel> OpenSessionAsync(AgentRow row, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(row);
-        return _open(row);
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(_open(row));
     }
 
     /// <inheritdoc />

@@ -38,9 +38,10 @@ public sealed class SettingsKeyboardTests
             SettingsTree.Press(window, Key.Up, PhysicalKey.ArrowUp);
             fixture.Model.SelectedSection.ShouldBe(SettingsSection.General);
 
+            // The fixture supplies every page, and the factory appends the Cowork tail after Keyboard, so the last page is Notifications.
             SettingsTree.Press(window, Key.End, PhysicalKey.End);
-            fixture.Model.SelectedSection.ShouldBe(SettingsSection.Keyboard);
-            window.CurrentView.ShouldBeOfType<KeyboardPageView>();
+            fixture.Model.SelectedSection.ShouldBe(SettingsSection.Notifications);
+            window.CurrentView.ShouldBeOfType<TextBlock>();
 
             SettingsTree.Press(window, Key.Home, PhysicalKey.Home);
             fixture.Model.SelectedSection.ShouldBe(SettingsSection.Runtime);

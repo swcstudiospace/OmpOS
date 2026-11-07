@@ -1,0 +1,47 @@
+@namespace Autonogrammer.UI.Components.Cowork.Artifacts
+@using Autonogrammer.Presentation.Cowork.Artifacts
+<div class="autonogrammer-artifact-access" role="dialog" aria-modal="true" aria-labelledby="artifact-access-title" aria-describedby="artifact-access-warning">
+    <h3 id="artifact-access-title" class="autonogrammer-artifact-access-title">@ArtifactAccessReviewModel.BannerText</h3>
+    <p class="autonogrammer-artifact-access-reason">@ArtifactAccessReviewModel.ReasonLabel</p>
+    @if (Origins.Count == 0)
+    {
+        <p class="autonogrammer-artifact-notice">This artifact does not ask to contact any host.</p>
+    }
+    else
+    {
+        <ul class="autonogrammer-artifact-access-hosts" aria-label="Hosts this artifact asks to contact">
+            @foreach (var origin in Origins)
+            {
+                <li>
+                    <span class="autonogrammer-artifact-access-host">@origin.Decoded</span>
+                    @if (!string.Equals(origin.Ascii, origin.Decoded, StringComparison.Ordinal))
+                    {
+                        <span class="autonogrammer-artifact-access-ascii">(shown as <code>@origin.Ascii</code>)</span>
+                    }
+                    @if (origin.MixedScript)
+                    {
+                        <span class="autonogrammer-artifact-notice">Mixed scripts: check this address before you allow it.</span>
+                    }
+                </li>
+            }
+        </ul>
+    }
+    <p id="artifact-access-warning" class="autonogrammer-artifact-access-warning">@ArtifactAccessReviewModel.WarningText</p>
+    <div class="autonogrammer-artifact-access-choices">
+        <button type="button" class="autonogrammer-btn" autofocus @onclick="() => Choose(ArtifactAccessChoice.Deny)">Deny</button>
+        <button type="button" class="autonogrammer-btn" @onclick="() => Choose(ArtifactAccessChoice.AllowVersion)">Allow for this version</button>
+        <button type="button" class="autonogrammer-btn" @onclick="() => Choose(ArtifactAccessChoice.AllowSession)">Allow for this session</button>
+    </div>
+</div>
+
+@code {
+    /// <summary>Gets the hosts the newest version asks to contact, each with its ASCII and decoded forms.</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ArtifactOriginView> Origins { get; set; } = [];
+
+    /// <summary>Gets the callback told the reader's choice. Deny is the focused choice.</summary>
+    [Parameter]
+    public EventCallback<ArtifactAccessChoice> OnChoose { get; set; }
+
+    private Task Choose(ArtifactAccessChoice choice) => OnChoose.InvokeAsync(choice);
+}

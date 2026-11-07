@@ -9,7 +9,7 @@ namespace Autonogrammer.ArchitectureTests;
 /// </summary>
 public sealed class ProjectGraphTests
 {
-    private static readonly string[] ProcessSpawningAssemblies = ["Autonogrammer.Harness.Acp", "Autonogrammer.Harness.Rpc", "Autonogrammer.Sandbox"];
+    private static readonly string[] ProcessSpawningAssemblies = ["Autonogrammer.Harness.Acp", "Autonogrammer.Harness.Rpc", "Autonogrammer.Sandbox", "Autonogrammer.Harness.BrowserUse", "Autonogrammer.Harness.ComputerUse.MacOS", "Autonogrammer.Harness.Isolation", "Autonogrammer.Harness.Notifications"];
 
     [Fact]
     public void ProjectGraph_RejectsUpwardReference()

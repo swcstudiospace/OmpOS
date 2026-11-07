@@ -1,7 +1,7 @@
 # Autonogrammer CI (Phase 1, decision D-05).
 # Mirrors bootstrap.sh, then adds the audit, scan, and compose gates.
 # Podman is the only container runtime referenced here; Docker is not used.
-# Jobs run on GitHub-hosted runners (ubuntu-24.04, windows-2022, macos-14).
+# Jobs run on GitHub-hosted runners (ubuntu-24.04, windows-2025, macos-26).
 # The Omega pool cannot start rootless podman or Chrome (OQ-168), so it is not used.
 # Pull requests from forks are skipped: fork code never receives this repository's secrets.
 name: ci
@@ -131,7 +131,7 @@ jobs:
       - name: Test (throwaway TimescaleDB and Dragonfly for the API, session-store and coordination tests)
         run: |
           source "$TEST_SERVICES_ENV"
-          dotnet test Autonogrammer.Linux.slnf -c Release --no-build --max-parallel-test-modules 2 --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults
+          dotnet test Autonogrammer.Linux.slnf -c Release --no-build --max-parallel-test-modules 2 --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults -- --filter-not-trait "Category=Live"
       - name: Stop test services
         if: always()
         run: |
@@ -173,7 +173,7 @@ jobs:
             done
           }
           dragonfly_ping() {
-            { exec 3<>/dev/tcp/127.0.0.1/6379; } 2>/dev/null || return 1
+            { exec 3<>/dev/tcp/127.0.0.1/6380; } 2>/dev/null || return 1
             printf 'AUTH %s\r\nPING\r\n' "$AUTONOGRAMMER_DRAGONFLY_PASSWORD" >&3
             local auth="" pong=""
             IFS= read -r -t 5 auth <&3 || true
@@ -276,9 +276,9 @@ jobs:
         include:
           - os: ubuntu-24.04
             name: linux
-          - os: windows-2022
+          - os: windows-2025
             name: windows
-          - os: macos-14
+          - os: macos-26
             name: macos
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

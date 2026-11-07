@@ -100,6 +100,39 @@ There is no Temporal worker: it was removed on 2026-10-21 and session runs execu
 | `Autonogrammer.Sandbox` (extended) | Cloud environment client for Railway, a static pool client, a cloud session host |
 | `Autonogrammer.AgentWorker` | The cloud agent worker: JWT-authenticated WebSocket bridge to `omp acp` |
 
+### Projects added in v0.16.0
+
+| Project | Responsibility |
+| ------- | -------------- |
+| `Autonogrammer.Resilience` | Retry and resilience primitives for the data plane (Phase 68) |
+| `Autonogrammer.Cowork.Abstractions` | Cowork contracts shared by the engine and the stores (Phase 70) |
+| `Autonogrammer.Harness.ComputerUse.Abstractions` | Computer-use contracts shared by the engine and the OS backends (Phase 73) |
+| `Autonogrammer.Harness.Secrets.Os` | OS secret store over the secrets library contract (Phase 67) |
+| `Autonogrammer.Accounts` | Account sessions over Supabase (Phase 67) |
+| `Autonogrammer.Cowork` | Cowork project registry, resolver and tool host (Phases 69, 70) |
+| `Autonogrammer.Cowork.Artifacts` | Pure artifact shapes and diffing (Phase 71) |
+| `Autonogrammer.Cowork.Artifacts.Stores` | Artifact persistence over PostgreSQL (Phase 71) |
+| `Autonogrammer.Harness.BrowserUse` | Desktop Cowork browser over a host-owned Chromium pipe and PuppeteerSharp. The hosted API, Web head and Android never launch it (Phase 72) |
+| `Autonogrammer.Harness.ComputerUse` | Computer-use engine over the L1 abstractions (Phase 73) |
+| `Autonogrammer.Harness.ComputerUse.X11` | X11 backend over libX11 and libXtst (Phase 73) |
+| `Autonogrammer.Harness.ComputerUse.Windows` | Windows backend over user32 and gdi32 (Phase 73) |
+| `Autonogrammer.Harness.ComputerUse.MacOS` | macOS backend over CoreGraphics and screencapture (Phase 73) |
+| `Autonogrammer.Cowork.Memory` | Memory store contracts and policy (Phase 75) |
+| `Autonogrammer.Cowork.Memory.Postgres` | Memory persistence over PostgreSQL (Phase 75) |
+| `Autonogrammer.Harness.PluginBundles` | Plugin bundle install, skill overlays and switched-off MCP descriptors composed by the desktop head (Phase 76) |
+| `Autonogrammer.Harness.Isolation` | Probe, planner and process wrapper for the local ACP omp child. Code is off. Network is not fenced (Phase 76) |
+| `Autonogrammer.Harness.Notifications` | Notification request and sink contract. The in-app bridge sits in Native, not Presentation (Phase 76) |
+| `Autonogrammer.Accounts.Desktop` | Desktop account session selector and loopback reader (Phase 67) |
+| `Autonogrammer.Dispatch.Client` | Dispatch HTTP and SSE client for native and Android heads (Phase 74) |
+| `Autonogrammer.Dispatch.Desktop` | Desktop dispatch connector, verifier and policy store (Phase 74) |
+
+
+Cowork chat core lives in the Native head. `CoworkSessionHost` owns create, open, close and reload over the Cowork registry and composes each task through `CoworkEngineComposer` and `EngineComposition.Compose`, never the Code planner. The Cowork engine runs with `EngineEnvironmentMode.Allowlist` and provider keys as its only explicit variables. The Cowork resolver is installed through `EngineCompositionOptions.PermissionResolverFactory` with all ten ACP kinds. `CoworkHead` is composed in `AgentHead`, not `Program.cs`. `CoworkToolServer` is the one loopback gateway seam; when its health check fails the session still starts and the conversation shows `Cowork tools are unavailable:` followed by the reason. Under Allowlist the Cowork engine's tools and a catalog stdio MCP server no longer inherit variables such as `SSH_AUTH_SOCK`, `GIT_*`, `XDG_*` or `DISPLAY`. A server that needs a variable declares it in its own entry.
+
+The Cowork surface sits beside Code and never joins its list. On Native, `MainWindow.Content` is a `SurfaceHost` in `Autonogrammer.Native.Views` that holds `MainView` (Code) and `CoworkView` and changes only their visibility, so `MainView` gains no third region. `CoworkSurfaceServices` names only the `ICoworkSessionCatalog` contract and Presentation models; the head adapter projects `CoworkSessionRegistry` (`Autonogrammer.Cowork`) to that contract. The registry keeps its own file per account at `<stateRoot>/cowork/<account>/sessions.json`, wraps `AgentSessionRegistry` without implementing `ISessionCatalog`, and runs its own `RecoverAfterRestart` pass. On the API, `CodeBoardSource` is the one caller of `ListByOwnerAsync` with `SessionSurface.Code`, and it feeds the board, `GET /sessions` and the catalog change scan. Cowork summary rows enter only through `PUT /cowork/sessions/{id}` and leave through `DELETE /cowork/sessions/{id}` in `Api.Cowork`, which read the surface from the route and never from a body. The web head reads its Cowork list from `GET /account/sessions` and keeps the labelled Cowork rows. The Kanban rule is held at build time: `CoworkSurfaceIsolationTests` pins the type, reference, construction-site and repository-signature rules, and `CoworkKanbanIsolationTests` pins the board's behaviour and the independence of the two files, caps and recovery passes.
+
+Computer Use is desktop-only. The Native head registers the OS backend for its own session (X11, Windows or macOS) and `NullComputerUseBackend` elsewhere, with message id `computer.unavailable.platform`. `Autonogrammer.Web` does not reference a Computer Use backend or any process-spawning Computer Use assembly. Presentation references `Autonogrammer.Harness.ComputerUse.Abstractions` only. Approvals stay on the local desktop; a Dispatch origin is a label, not a remote approval.
+
 ## Data flow
 
 A prompt typed on any surface becomes an `IntentEnvelope` (parser), runs through a harness session against omp, lands as sequence-numbered `StreamEvent`s in the session log, streams out over SSE with `id:` = `Seq`, and folds into `UiBlock`s rendered by the web head's Razor surface (`Autonogrammer.UI`). The Avalonia native head (`Autonogrammer.Native`, Phase 20) binds the shared presentation layer that ADR-0004 specifies; the other platform heads are not yet in the repo. Unknown JSON kinds never throw: they deserialize to `UnknownBlock`/`UnknownPayload` with the raw payload preserved, so future protocol additions render through the unknown fallback instead of breaking clients.
@@ -109,7 +142,7 @@ A prompt typed on any surface becomes an `IntentEnvelope` (parser), runs through
 
 Session runs execute inside the API process. No separate worker service exists.
 
-- **Admission is synchronous.** The API acquires the run lease `autonogrammer:lease:run:{sessionId}` (TTL 30 s, renewed every 10 s) before it answers. A conflicting lease returns 409 before any 202 is sent.
+- **Admission is synchronous.** The API acquires the run lease `autonogrammer:v1:lease:run:{sessionId}` (TTL 30 s, renewed every 10 s) before it answers. A conflicting lease returns 409 before any 202 is sent.
 - **Execution.** `DirectSessionRunner` provisions a sandbox through `ISandboxProvider`, runs the prompt through the harness, collects artifacts, and tears down the sandbox in `finally`. The hosted API runs the InMemory harness and `FakeSandboxProvider` (see [hosting runbook](runbooks/hosting.md)).
 - **Retry** lives in `DirectSessionRunner` and the run lease only.
 - **Reaper.** Every 15 s, a Running session older than 60 s whose lease is absent is settled as a terminal failure with detail `run owner lost`. A lost lease settles the run with detail `run lease lost`. Terminal failure detail is persisted in the terminal event text.
@@ -174,7 +207,7 @@ A session id must match `^[A-Za-z0-9_.-]{1,120}$` and must not be `.` or `..`. A
 ## Coordination
 
 - **Store**: `Coordination:Store` is `Dragonfly` or `InMemory`. It defaults to `InMemory` in `appsettings.json`; production must set it explicitly, and a warning is logged in Production when it is `InMemory`. The connection string is `Coordination:Dragonfly:ConnectionString` (StackExchange.Redis format; `abortConnect=false` is required).
-- Dragonfly holds three things: run leases (`autonogrammer:lease:run:{sessionId}`), idempotency records (`autonogrammer:idem:*`), and the SSE wake-up pub/sub channel `autonogrammer:signals`.
+- Dragonfly holds reconstructible state under `autonogrammer:v1:`: run leases (`autonogrammer:v1:lease:run:{sessionId}`), idempotency records (`autonogrammer:v1:idem:*`), presence, rate limits, nonces, and the SSE wake-up channels `autonogrammer:v1:sig:session` and `autonogrammer:v1:sig:dispatch`.
 - Signals are published after commit. Publishing is best-effort: failures are logged and swallowed. Because polling is the source of truth, a missed signal delays a stream until the next poll [INFERENCE: from the polling design; not measured].
 - The hosted Dragonfly image is `ghcr.io/dragonflydb/dragonfly:latest`, unpinned (open item Q-HOST-DFLY-PIN).
 

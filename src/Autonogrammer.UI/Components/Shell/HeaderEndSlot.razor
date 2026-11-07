@@ -1,0 +1,36 @@
+@namespace Autonogrammer.UI.Components.Shell
+@using Autonogrammer.Presentation.Accounts
+@using Autonogrammer.Presentation.Cowork
+@using Autonogrammer.UI.Components.Account
+@using Autonogrammer.UI.Components.Auth
+@inject IServiceProvider Services
+@if (Chrome is { Entries.Count: > 0 })
+{
+    foreach (var entry in Chrome.Entries)
+    {
+        <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-header-end" data-entry="@entry.Id" @onclick="() => entry.Invoke()">@entry.Label</button>
+    }
+}
+@if (_host is not null)
+{
+    <AccountMenu Host="_host" />
+}
+else
+{
+    <SignOutButton />
+}
+
+@code {
+    private IAccountHost? _host;
+
+    /// <summary>Gets the entries both surfaces draw, or null when the head has none.</summary>
+    [Parameter]
+    public SurfaceChromeModel? Chrome { get; set; }
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        // The same optional lookup as SignOutButton's session: a head that never registered an account host keeps Sign out.
+        _host = Services.GetService(typeof(IAccountHost)) as IAccountHost;
+    }
+}

@@ -1,0 +1,12 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Cowork.CoworkApprovalCard"
+             Focusable="True"
+             IsTabStop="True"
+             MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+             AutomationProperties.Name="Approval">
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+    <TextBlock x:Name="TargetText" TextWrapping="Wrap" AutomationProperties.Name="Approval target" />
+    <TextBlock x:Name="DetailsText" TextWrapping="Wrap" AutomationProperties.Name="Approval details" />
+  </StackPanel>
+</UserControl>

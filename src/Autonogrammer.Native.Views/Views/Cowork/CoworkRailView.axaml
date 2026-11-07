@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Cowork.CoworkRailView"
+             x:Name="RailRegion"
+             Focusable="True"
+             IsTabStop="True"
+             Width="{DynamicResource Autonogrammer.Size.SessionListWidth}"
+             AutomationProperties.Name="Cowork tasks">
+  <DockPanel Margin="8">
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource Autonogrammer.Gap.Xs}" Margin="0,0,0,8">
+      <TextBox x:Name="CoworkFilter"
+               PlaceholderText="Filter"
+
+               MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+               AutomationProperties.Name="Filter tasks" />
+      <Button x:Name="NewTaskButton"
+              Grid.Column="1"
+              Content="New task"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              AutomationProperties.Name="New task" />
+    </Grid>
+    <Button x:Name="ProjectsButton"
+            DockPanel.Dock="Top"
+            Content="Projects"
+            MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+            MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+            AutomationProperties.Name="Projects"
+            Click="OnProjectsClick" />
+    <ContentControl x:Name="ProjectEditorHost"
+                    DockPanel.Dock="Top"
+                    IsVisible="False"
+                    AutomationProperties.Name="Project editor" />
+    <TextBlock x:Name="LimitText"
+               DockPanel.Dock="Bottom"
+               IsVisible="False"
+               TextWrapping="Wrap"
+               AutomationProperties.LiveSetting="Polite" />
+    <ListBox x:Name="TaskRows"
+             AutomationProperties.Name="Cowork tasks" />
+  </DockPanel>
+</UserControl>

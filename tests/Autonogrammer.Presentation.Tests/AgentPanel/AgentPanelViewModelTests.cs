@@ -199,6 +199,7 @@ public sealed class AgentPanelViewModelTests : IDisposable
 
         panel.SelectSession("a").ShouldBeTrue();
         var first = panel.Selected;
+        panel.SelectionLoad.IsCompletedSuccessfully.ShouldBeTrue();
         first!.Id.ShouldBe("a");
         panel.SelectSession("b").ShouldBeTrue();
         panel.Selected!.Id.ShouldBe("b");
@@ -502,6 +503,514 @@ public sealed class AgentPanelViewModelTests : IDisposable
         AddSessions("b");
 
         panel.SessionCount.ShouldBe(1);
+    }
+
+    /// <summary>Startup stays asynchronous, and SelectionLoad includes the context load after the model is bound.</summary>
+    [Fact]
+    public async Task SelectionLoadAwaitsStartupAndContext()
+    {
+        AddSessions("a");
+        var opened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var contextStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var context = new TaskCompletionSource<TaskContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var source = new ScriptedContextSource((_, token) =>
+        {
+            contextStarted.SetResult();
+            return context.Task.WaitAsync(token);
+        });
+        _host.OpenGate = (_, token) => opened.Task.WaitAsync(token);
+        _host.ContextSources = _ => source;
+        var panel = NewPanel();
+
+        panel.SelectSession("a").ShouldBeTrue();
+        var load = panel.SelectionLoad;
+        panel.Catalog.SelectedId.ShouldBe("a");
+        panel.Selected.ShouldBeNull();
+        load.IsCompleted.ShouldBeFalse();
+        source.Requests.ShouldBeEmpty();
+
+        opened.SetResult();
+        await contextStarted.Task.WaitAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        panel.Selected!.Id.ShouldBe("a");
+        panel.Selected.Context.State.ShouldBe(TaskContextState.Loading);
+        load.IsCompleted.ShouldBeFalse();
+
+        context.SetResult(Context(title: "loaded after startup"));
+        await load.ConfigureAwait(true);
+        panel.Selected.Context.Title.ShouldBe("loaded after startup");
+        load.IsCompletedSuccessfully.ShouldBeTrue();
+    }
+
+    /// <summary>A late successful open cannot replace the latest selection; its live model is cached without being activated.</summary>
+    [Fact]
+    public async Task ALateOpenDoesNotReplaceTheLatestSelection()
+    {
+        AddSessions("a", "b");
+        var opened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var sourceA = ScriptedContextSource.Returning(Context(title: "a context"));
+        _host.OpenGate = (id, _) => string.Equals(id, "a", StringComparison.Ordinal) ? opened.Task : Task.CompletedTask;
+        _host.ContextSources = id => string.Equals(id, "a", StringComparison.Ordinal) ? sourceA : null;
+        var panel = NewPanel();
+        panel.SelectSession("a");
+        var loadA = panel.SelectionLoad;
+
+        panel.SelectSession("b");
+        var loadB = panel.SelectionLoad;
+        panel.Selected!.Id.ShouldBe("b");
+        _host.OpenRequests[0].Token.IsCancellationRequested.ShouldBeTrue();
+        loadB.IsCompleted.ShouldBeFalse();
+
+        opened.SetResult();
+        await loadB.ConfigureAwait(true);
+        await loadA.ConfigureAwait(true);
+        panel.Selected.Id.ShouldBe("b");
+        sourceA.Requests.ShouldBeEmpty();
+        panel.BannerText.ShouldBeNull();
+
+        var cached = _host.ViewModels["a"];
+        panel.SelectSession("a");
+        await panel.SelectionLoad.ConfigureAwait(true);
+        panel.Selected.ShouldBeSameAs(cached);
+        sourceA.Requests.Count.ShouldBe(1);
+        _host.Opened.ShouldBe(["a", "b"]);
+    }
+
+    /// <summary>Rapid A-B-A waits for the first A attempt to settle, reusing only a successful model and retrying cancelled or failed startup.</summary>
+    /// <param name="outcome">Zero succeeds late, one cancels late, and two fails late after cleanup.</param>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task ReturningToAPendingSessionDoesNotReuseAFailedAttempt(int outcome)
+    {
+        AddSessions("a", "b");
+        var firstOpen = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var attempts = 0;
+        _host.OpenGate = (id, _) =>
+            string.Equals(id, "a", StringComparison.Ordinal) && ++attempts == 1 ? firstOpen.Task : Task.CompletedTask;
+        var source = ScriptedContextSource.Returning(Context(title: "latest a"));
+        _host.ContextSources = id => string.Equals(id, "a", StringComparison.Ordinal) ? source : null;
+        var panel = NewPanel();
+        panel.SelectSession("a");
+        var firstLoad = panel.SelectionLoad;
+        panel.SelectSession("b");
+        panel.Selected!.Id.ShouldBe("b");
+
+        panel.SelectSession("a").ShouldBeTrue();
+        var latestLoad = panel.SelectionLoad;
+        panel.Selected.ShouldBeNull();
+        _host.Opened.ShouldBe(["a", "b"]);
+        _host.OpenRequests[0].Token.IsCancellationRequested.ShouldBeTrue();
+        latestLoad.IsCompleted.ShouldBeFalse();
+        if (outcome == 0)
+        {
+            firstOpen.SetResult();
+        }
+        else if (outcome == 1)
+        {
+            firstOpen.SetCanceled(TestContext.Current.CancellationToken);
+        }
+        else
+        {
+            firstOpen.SetException(new IOException("obsolete startup failed after cleanup"));
+        }
+
+        await latestLoad.ConfigureAwait(true);
+        await firstLoad.ConfigureAwait(true);
+        panel.Selected!.Id.ShouldBe("a");
+        panel.Selected.Context.Title.ShouldBe("latest a");
+        source.Requests.Count.ShouldBe(1);
+        panel.BannerText.ShouldBeNull();
+        latestLoad.IsCompletedSuccessfully.ShouldBeTrue();
+        if (outcome == 0)
+        {
+            _host.Opened.ShouldBe(["a", "b"]);
+        }
+        else
+        {
+            _host.Opened.ShouldBe(["a", "b", "a"]);
+        }
+    }
+
+    /// <summary>Switching selection cancels cooperative startup, drains its operation, and does not turn cancellation into an error.</summary>
+    [Fact]
+    public async Task SwitchingSelectionCancelsStartupWithoutAnError()
+    {
+        AddSessions("a", "b");
+        var opened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _host.OpenGate = (id, token) => string.Equals(id, "a", StringComparison.Ordinal)
+            ? opened.Task.WaitAsync(token) : Task.CompletedTask;
+        var panel = NewPanel();
+        panel.SelectSession("a");
+        var firstLoad = panel.SelectionLoad;
+
+        panel.SelectSession("b");
+        await panel.SelectionLoad.ConfigureAwait(true);
+        await firstLoad.ConfigureAwait(true);
+
+        panel.Selected!.Id.ShouldBe("b");
+        _host.ViewModels.ContainsKey("a").ShouldBeFalse();
+        _host.OpenRequests[0].Token.IsCancellationRequested.ShouldBeTrue();
+        firstLoad.IsCompletedSuccessfully.ShouldBeTrue();
+        panel.BannerText.ShouldBeNull();
+        panel.State.ShouldBe(PanelState.Ready);
+    }
+
+    /// <summary>Both synchronous host throws and delayed startup faults settle SelectionLoad, show a load banner and recover by retrying the same row.</summary>
+    /// <param name="delayed">Whether startup fails after an asynchronous boundary.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StartupFailureIsReportedAndTheSameSelectionCanBeRetried(bool delayed)
+    {
+        AddSessions("a");
+        var opened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (delayed)
+        {
+            _host.OpenGate = (_, _) => opened.Task.WaitAsync(TestContext.Current.CancellationToken);
+        }
+        else
+        {
+            _host.OpenFailure = new IOException("startup failed");
+        }
+
+        var panel = NewPanel();
+        panel.SelectSession("a").ShouldBeTrue();
+        if (delayed)
+        {
+            opened.SetException(new IOException("startup failed"));
+        }
+
+        await panel.SelectionLoad.ConfigureAwait(true);
+        panel.SelectionLoad.IsCompletedSuccessfully.ShouldBeTrue();
+        panel.Selected.ShouldBeNull();
+        panel.State.ShouldBe(PanelState.Error);
+        panel.BannerText.ShouldBe("Could not load your agents. startup failed. Your saved agents are not lost.");
+        panel.Catalog.SelectedId.ShouldBe("a");
+
+        _host.OpenFailure = null;
+        _host.OpenGate = null;
+        await panel.RetryLoadingAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        panel.Selected!.Id.ShouldBe("a");
+        panel.State.ShouldBe(PanelState.Ready);
+        panel.BannerText.ShouldBeNull();
+        _host.Opened.ShouldBe(["a", "a"]);
+    }
+
+    /// <summary>Clearing selection also drains obsolete startup without activating its model.</summary>
+    [Fact]
+    public async Task ClearingSelectionTracksTheCancelledOpenUntilItSettles()
+    {
+        AddSessions("a");
+        var opened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var source = ScriptedContextSource.Returning(Context());
+        _host.OpenGate = (_, _) => opened.Task.WaitAsync(TestContext.Current.CancellationToken);
+        _host.ContextSources = _ => source;
+        var panel = NewPanel();
+        panel.SelectSession("a");
+
+        panel.SelectSession(null).ShouldBeTrue();
+        var cleared = panel.SelectionLoad;
+        panel.Selected.ShouldBeNull();
+        _host.OpenRequests.Single().Token.IsCancellationRequested.ShouldBeTrue();
+        cleared.IsCompleted.ShouldBeFalse();
+        opened.SetResult();
+        await cleared.ConfigureAwait(true);
+
+        source.Requests.ShouldBeEmpty();
+        panel.Selected.ShouldBeNull();
+        panel.PipelineAnnouncement.ShouldBeNull();
+        cleared.IsCompletedSuccessfully.ShouldBeTrue();
+    }
+
+    /// <summary>A model returned after disposal is released before SelectionLoad settles, with no activation or publication.</summary>
+    [Fact]
+    public async Task DisposalReleasesALateSuccessfulOpenWithoutActivatingIt()
+    {
+        AddSessions("a");
+        var opened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var source = ScriptedContextSource.Returning(Context());
+        _host.OpenGate = (_, _) => opened.Task.WaitAsync(TestContext.Current.CancellationToken);
+        _host.ContextSources = _ => source;
+        var panel = NewPanel();
+        panel.SelectSession("a");
+        var load = panel.SelectionLoad;
+
+        panel.Dispose();
+        panel.Dispose();
+        _host.OpenRequests.Single().Token.IsCancellationRequested.ShouldBeTrue();
+        load.IsCompleted.ShouldBeFalse();
+        opened.SetResult();
+        await load.ConfigureAwait(true);
+
+        panel.Selected.ShouldBeNull();
+        source.Requests.ShouldBeEmpty();
+        // ActivateAsync is a no-op on a disposed model; this observes release through its public behavior.
+        await _host.ViewModels["a"].ActivateAsync().ConfigureAwait(true);
+        source.Requests.ShouldBeEmpty();
+        load.IsCompletedSuccessfully.ShouldBeTrue();
+    }
+
+    /// <summary>A removed row's late model is disposed; adding the same id later opens a fresh model.</summary>
+    [Fact]
+    public async Task RemovingAPendingSessionDisposesItsLateModel()
+    {
+        AddSessions("a");
+        var opened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var source = ScriptedContextSource.Returning(Context());
+        _host.OpenGate = (_, _) => opened.Task.WaitAsync(TestContext.Current.CancellationToken);
+        _host.ContextSources = _ => source;
+        var panel = NewPanel();
+        panel.SelectSession("a");
+
+        _catalog.Remove("a");
+        var removed = panel.SelectionLoad;
+        _host.OpenRequests.Single().Token.IsCancellationRequested.ShouldBeTrue();
+        panel.Selected.ShouldBeNull();
+        opened.SetResult();
+        await removed.ConfigureAwait(true);
+        var obsolete = _host.ViewModels["a"];
+        await obsolete.ActivateAsync().ConfigureAwait(true);
+        source.Requests.ShouldBeEmpty();
+
+        _host.OpenGate = null;
+        AddSessions("a");
+        panel.SelectSession("a");
+        await panel.SelectionLoad.ConfigureAwait(true);
+        panel.Selected.ShouldNotBeSameAs(obsolete);
+        source.Requests.Count.ShouldBe(1);
+        _host.Opened.ShouldBe(["a", "a"]);
+    }
+
+    /// <summary>Disposal cancels context activation, and the existing SelectionLoad remains the drain for that operation.</summary>
+    [Fact]
+    public async Task DisposalCancelsAndDrainsContextActivation()
+    {
+        AddSessions("a");
+        var context = new TaskCompletionSource<TaskContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var source = new ScriptedContextSource((_, token) => context.Task.WaitAsync(token));
+        _host.ContextSources = _ => source;
+        var panel = NewPanel();
+        panel.SelectSession("a");
+        var load = panel.SelectionLoad;
+        load.IsCompleted.ShouldBeFalse();
+
+        panel.Dispose();
+        await load.ConfigureAwait(true);
+
+        source.Requests.Single().Token.IsCancellationRequested.ShouldBeTrue();
+        load.IsCompletedSuccessfully.ShouldBeTrue();
+    }
+
+    /// <summary>Disposal keeps the captured latest load stable, drains A-B-A startup and releases its late successful model without activation.</summary>
+    [Fact]
+    public async Task DisposalDrainsAPendingReselectionAndReleasesItsLateModel()
+    {
+        AddSessions("a", "b");
+        var opened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var source = ScriptedContextSource.Returning(Context());
+        _host.OpenGate = (id, _) => string.Equals(id, "a", StringComparison.Ordinal) ? opened.Task : Task.CompletedTask;
+        _host.ContextSources = id => string.Equals(id, "a", StringComparison.Ordinal) ? source : null;
+        var panel = NewPanel();
+        panel.SelectSession("a");
+        var first = panel.SelectionLoad;
+        panel.SelectionLoad.ShouldBeSameAs(first);
+        panel.SelectSession("b");
+        var second = panel.SelectionLoad;
+        second.ShouldNotBeSameAs(first);
+        panel.SelectSession("a");
+        var latest = panel.SelectionLoad;
+        latest.ShouldNotBeSameAs(first);
+        latest.ShouldNotBeSameAs(second);
+        panel.SelectionLoad.ShouldBeSameAs(latest);
+
+        panel.Dispose();
+        panel.Dispose();
+        panel.SelectionLoad.ShouldBeSameAs(latest);
+        latest.IsCompleted.ShouldBeFalse();
+        first.IsCompleted.ShouldBeFalse();
+        second.IsCompleted.ShouldBeFalse();
+        // b's startup had already completed before the reselection, so only the still-outstanding a startup can be cancelled here.
+        _host.OpenRequests.Where(request => string.Equals(request.Id, "a", StringComparison.Ordinal))
+            .ShouldAllBe(request => request.Token.IsCancellationRequested);
+        opened.SetResult();
+
+        await latest.ConfigureAwait(true);
+        await first.ConfigureAwait(true);
+        await second.ConfigureAwait(true);
+        panel.SelectionLoad.ShouldBeSameAs(latest);
+        latest.IsCompletedSuccessfully.ShouldBeTrue();
+        first.IsCompletedSuccessfully.ShouldBeTrue();
+        second.IsCompletedSuccessfully.ShouldBeTrue();
+        _host.Opened.ShouldBe(["a", "b"]);
+        panel.Selected.ShouldBeNull();
+        panel.BannerText.ShouldBeNull();
+        source.Requests.ShouldBeEmpty();
+        // ActivateAsync is a no-op after release, proving the late model was disposed.
+        await _host.ViewModels["a"].ActivateAsync().ConfigureAwait(true);
+        source.Requests.ShouldBeEmpty();
+    }
+
+    /// <summary>Disposal drains a failed A-B-A startup without retrying or replacing the captured latest load after its token source is disposed.</summary>
+    [Fact]
+    public async Task DisposalDrainsAFailedPendingReselectionWithoutRetrying()
+    {
+        AddSessions("a", "b");
+        var opened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var source = ScriptedContextSource.Returning(Context());
+        _host.OpenGate = (id, _) => string.Equals(id, "a", StringComparison.Ordinal) ? opened.Task : Task.CompletedTask;
+        _host.ContextSources = id => string.Equals(id, "a", StringComparison.Ordinal) ? source : null;
+        var panel = NewPanel();
+        panel.SelectSession("a");
+        var first = panel.SelectionLoad;
+        panel.SelectionLoad.ShouldBeSameAs(first);
+        panel.SelectSession("b");
+        var second = panel.SelectionLoad;
+        second.ShouldNotBeSameAs(first);
+        panel.SelectSession("a");
+        var latest = panel.SelectionLoad;
+        latest.ShouldNotBeSameAs(first);
+        latest.ShouldNotBeSameAs(second);
+        panel.SelectionLoad.ShouldBeSameAs(latest);
+
+        panel.Dispose();
+        panel.Dispose();
+        panel.SelectionLoad.ShouldBeSameAs(latest);
+        latest.IsCompleted.ShouldBeFalse();
+        first.IsCompleted.ShouldBeFalse();
+        second.IsCompleted.ShouldBeFalse();
+        // b's startup had already completed before the reselection, so only the still-outstanding a startup can be cancelled here.
+        _host.OpenRequests.Where(request => string.Equals(request.Id, "a", StringComparison.Ordinal))
+            .ShouldAllBe(request => request.Token.IsCancellationRequested);
+        opened.SetException(new IOException("startup failed after disposal"));
+
+        await latest.ConfigureAwait(true);
+        await first.ConfigureAwait(true);
+        await second.ConfigureAwait(true);
+        panel.SelectionLoad.ShouldBeSameAs(latest);
+        latest.IsCompletedSuccessfully.ShouldBeTrue();
+        first.IsCompletedSuccessfully.ShouldBeTrue();
+        second.IsCompletedSuccessfully.ShouldBeTrue();
+        _host.Opened.ShouldBe(["a", "b"]);
+        panel.Selected.ShouldBeNull();
+        panel.BannerText.ShouldBeNull();
+        source.Requests.ShouldBeEmpty();
+    }
+
+    /// <summary>Creation does not finish before asynchronous selection startup, for agents and omp terminals alike.</summary>
+    /// <param name="terminal">Whether to create an omp terminal rather than an agent.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CreatingASessionAwaitsItsSelectionStartup(bool terminal)
+    {
+        var opened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _host.OpenGate = (_, token) => opened.Task.WaitAsync(token);
+        var panel = NewPanel();
+
+        var create = terminal ? panel.NewTerminalAsync(TestContext.Current.CancellationToken)
+            : panel.NewSessionAsync(TestContext.Current.CancellationToken);
+        create.IsCompleted.ShouldBeFalse();
+        panel.Selected.ShouldBeNull();
+        opened.SetResult();
+        await create.ConfigureAwait(true);
+
+        panel.Selected!.Id.ShouldBe(terminal ? "terminal-1" : "new-1");
+        panel.SelectionLoad.IsCompletedSuccessfully.ShouldBeTrue();
+    }
+
+    /// <summary>Removing and re-adding an id while its old startup settles never transfers that removed lifetime to the replacement row.</summary>
+    [Fact]
+    public async Task ReaddingARowWhileStartupSettlesOpensAFreshModel()
+    {
+        AddSessions("a");
+        var opened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var source = ScriptedContextSource.Returning(Context());
+        var attempts = 0;
+        AgentSessionViewModel? obsolete = null;
+        _host.OpenGate = (_, _) =>
+        {
+            if (++attempts == 1)
+            {
+                return opened.Task.WaitAsync(TestContext.Current.CancellationToken);
+            }
+
+            obsolete = _host.ViewModels["a"];
+            return Task.CompletedTask;
+        };
+        _host.ContextSources = _ => source;
+        var panel = NewPanel();
+        panel.SelectSession("a");
+        _catalog.Remove("a");
+        AddSessions("a");
+        panel.SelectSession("a");
+        var replacement = panel.SelectionLoad;
+        _host.Opened.ShouldBe(["a"]);
+
+        opened.SetResult();
+        await replacement.ConfigureAwait(true);
+
+        _host.Opened.ShouldBe(["a", "a"]);
+        obsolete.ShouldNotBeNull();
+        panel.Selected.ShouldNotBeSameAs(obsolete);
+        source.Requests.Count.ShouldBe(1);
+        await obsolete.ActivateAsync().ConfigureAwait(true);
+        source.Requests.Count.ShouldBe(1);
+        panel.Selected!.Id.ShouldBe("a");
+    }
+
+    /// <summary>A stale startup failure is observed but cannot replace the newer selection's healthy state with an error.</summary>
+    [Fact]
+    public async Task AnObsoleteStartupFailureDoesNotReportAnErrorForTheLatestSelection()
+    {
+        AddSessions("a", "b");
+        var opened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _host.OpenGate = (id, _) => string.Equals(id, "a", StringComparison.Ordinal) ? opened.Task : Task.CompletedTask;
+        var panel = NewPanel();
+        panel.SelectSession("a");
+        panel.SelectSession("b");
+        var latest = panel.SelectionLoad;
+        panel.Selected!.Id.ShouldBe("b");
+
+        opened.SetException(new IOException("obsolete startup failed"));
+        await latest.ConfigureAwait(true);
+
+        panel.Selected.Id.ShouldBe("b");
+        panel.State.ShouldBe(PanelState.Ready);
+        panel.BannerText.ShouldBeNull();
+        latest.IsCompletedSuccessfully.ShouldBeTrue();
+    }
+
+    /// <summary>Immediate binding publishes a SelectionLoad that observers can safely capture before selecting another row.</summary>
+    [Fact]
+    public async Task SelectionObserversSeeTheCurrentLoadBeforeSelectingAnotherSession()
+    {
+        AddSessions("a", "b");
+        var context = new TaskCompletionSource<TaskContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var source = new ScriptedContextSource((_, token) => context.Task.WaitAsync(token));
+        _host.ContextSources = id => string.Equals(id, "a", StringComparison.Ordinal) ? source : null;
+        var panel = NewPanel();
+        Task? firstLoad = null;
+        panel.PropertyChanged += (_, change) =>
+        {
+            if (string.Equals(change.PropertyName, nameof(AgentPanelViewModel.Selected), StringComparison.Ordinal)
+                && string.Equals(panel.Selected?.Id, "a", StringComparison.Ordinal))
+            {
+                firstLoad = panel.SelectionLoad;
+                firstLoad.IsCompleted.ShouldBeFalse();
+                panel.SelectSession("b");
+            }
+        };
+
+        panel.SelectSession("a");
+        await panel.SelectionLoad.ConfigureAwait(true);
+
+        var observedLoad = firstLoad.ShouldNotBeNull();
+        await observedLoad.ConfigureAwait(true);
+        source.Requests.Single().Token.IsCancellationRequested.ShouldBeTrue();
+        panel.Selected!.Id.ShouldBe("b");
+        _host.Opened.ShouldBe(["a", "b"]);
     }
 
     private AgentPanelViewModel NewPanel()

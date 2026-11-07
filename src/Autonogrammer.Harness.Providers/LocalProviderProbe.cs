@@ -18,7 +18,7 @@ public sealed class LocalProviderProbe
     private const int MaxBodyBytes = 1024 * 1024;
 
     private readonly HttpClient _client;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly TimeSpan _timeout;
 
     /// <summary>Creates a probe that sends its requests through <paramref name="client"/>.</summary>
@@ -35,7 +35,7 @@ public sealed class LocalProviderProbe
         }
 
         _client = client;
-        _time = time;
+        _timeProvider = time;
         _timeout = timeout ?? DefaultTimeout;
     }
 
@@ -63,7 +63,7 @@ public sealed class LocalProviderProbe
         }
 
         var uri = ModelsUri(entry.BaseEndpoint);
-        using var timeout = new CancellationTokenSource(_timeout, _time);
+        using var timeout = new CancellationTokenSource(_timeout, _timeProvider);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
         {

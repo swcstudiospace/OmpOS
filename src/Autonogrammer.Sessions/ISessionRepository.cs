@@ -35,6 +35,8 @@ public interface ISessionRepository
     /// append save its header without losing the append. Events are added only through <see cref="AppendAsync"/>.
     /// When <see cref="Session.Events"/> is at least as long as the stored log, its Seq prefix must match the
     /// stored log; a divergent log is rejected instead of clobbering the stored events.
+    /// <see cref="Session.Surface"/> and <see cref="Session.ClosedAt"/> are written when the session is created and kept as stored on every later
+    /// save: a caller that read a session before a concurrent <see cref="SetClosedAsync"/> cannot reopen it by saving its header.
     /// </remarks>
     /// <param name="session">The session to store.</param>
     /// <param name="cancellationToken">Cancels the operation.</param>
@@ -66,6 +68,37 @@ public interface ISessionRepository
     /// <param name="cancellationToken">Cancels the operation.</param>
     /// <returns>At most 200 session identifiers, in ordinal order. Empty when no session matches.</returns>
     Task<IReadOnlyList<string>> ListSessionIdsByStatusAsync(SessionStatus status, DateTimeOffset updatedBefore, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Lists the sessions of one owner on one surface, newest first, one page at a time.
+    /// </summary>
+    /// <remarks>
+    /// The order is <see cref="Session.UpdatedAt"/> descending, then <see cref="Session.Id"/> descending in ordinal (byte) order. A page is
+    /// continued with the <see cref="SessionCursor"/> of its last session, so it stays stable while sessions are created or updated between
+    /// two calls: a session that moved ahead of the cursor is not repeated. Only sessions of <paramref name="ownerId"/> are ever returned; the
+    /// sessions of another owner are indistinguishable from sessions that do not exist. Each returned session carries its header and messages;
+    /// <see cref="Session.Events"/> is empty, so a caller reads the log with <see cref="GetAsync"/> or <see cref="ListFromSeqAsync"/>.
+    /// </remarks>
+    /// <param name="ownerId">The owner identifier.</param>
+    /// <param name="surface">The surface to list. Required: a listing never mixes surfaces.</param>
+    /// <param name="includeClosed"><see langword="true"/> to include sessions that have a <see cref="Session.ClosedAt"/>.</param>
+    /// <param name="limit">The page size, at least 1. A value above 200 is lowered to 200.</param>
+    /// <param name="cursor">The cursor of the last session of the previous page, or <see langword="null"/> for the first page.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns>At most <paramref name="limit"/> sessions. Empty when no session matches or the cursor is past the last one.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="limit"/> is below 1.</exception>
+    Task<IReadOnlyList<Session>> ListByOwnerAsync(string ownerId, SessionSurface surface, bool includeClosed, int limit, SessionCursor? cursor, CancellationToken cancellationToken);
+
+    /// <summary>Closes or reopens a session. Closing sets <see cref="Session.ClosedAt"/> to the current time; reopening clears it.</summary>
+    /// <remarks>
+    /// The change is one atomic step, so two callers that close the same session cannot both see <see langword="true"/>. It does not change
+    /// <see cref="Session.UpdatedAt"/>, so closing a session does not reorder the listings.
+    /// </remarks>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <param name="closed"><see langword="true"/> to close the session, <see langword="false"/> to reopen it.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns><see langword="true"/> only when the session exists and this call changed its flag; <see langword="false"/> when the session does not exist or already had that state.</returns>
+    Task<bool> SetClosedAsync(string sessionId, bool closed, CancellationToken cancellationToken);
 
     /// <summary>
     /// Acquires the exclusive lock of one session. The lock is held across processes until the returned value is disposed.

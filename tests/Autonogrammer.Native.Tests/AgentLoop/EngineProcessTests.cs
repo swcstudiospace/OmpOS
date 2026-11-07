@@ -45,7 +45,7 @@ public sealed class EngineProcessTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var pidDirectory = Directory.CreateDirectory(Path.Combine(tree.Root, "pids")).FullName;
-        var head = AgentHead.Create(Options(tree, omp: null, ompPath: WriteFakeOmp(tree, pidDirectory)));
+        var head = await AgentHead.CreateAsync(Options(tree, omp: null, ompPath: WriteFakeOmp(tree, pidDirectory))).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
 

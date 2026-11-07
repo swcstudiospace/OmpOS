@@ -72,7 +72,7 @@ Deployment record: project id `prj_5clbARYWIOrfgkMSK2Fvw2p0iXAc`. The first depl
 node scripts/web-demo/capture.mjs                       # serves output/demo, one PNG per screen into /tmp/autonogrammer-shots
 THEME=dark W=1440 H=900 PREFIX=D1440- node scripts/web-demo/capture.mjs
 URL=https://ompos-web.vercel.app node scripts/web-demo/capture.mjs     # the deployed Demo
-scripts/web-smoke/run-smoke.sh                          # SMOKE_TARGETS="api demo": axe on the Demo (68 runs) and the API half
+scripts/web-smoke/run-smoke.sh                          # SMOKE_TARGETS="api demo artifact": axe on the Demo (68 runs), the API half and the artifact sandbox page
 ```
 
 Needs a headless Chrome (`CHROME_BIN`, default `google-chrome`). The smoke of the Demo recorded 0 axe violations in 68 runs (Wave 5 tree, 2026-10-28); the API half was not re-run for it.

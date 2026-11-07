@@ -21,6 +21,13 @@ internal static class ConventionSettingsLoader
         }
 
         var roots = new[] { Path.GetFullPath(workspaceRoot) };
-        return await ConventionCatalog.DiscoverAsync(roots, userHome, ConventionSources.Local(roots, userHome).WithBuiltin(), cancellationToken: cancellationToken).ConfigureAwait(false);
+        var sources = ConventionSources.Local(roots, userHome).WithBuiltin();
+        var pluginRoots = Autonogrammer.Native.Composition.Plugins.BundleComposition.PluginRootsFor?.Invoke(false);
+        if (pluginRoots is { Count: > 0 })
+        {
+            sources = sources.WithPluginRoots(pluginRoots);
+        }
+
+        return await ConventionCatalog.DiscoverAsync(roots, userHome, sources, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 }

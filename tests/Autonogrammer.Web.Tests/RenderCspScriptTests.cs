@@ -174,6 +174,114 @@ public sealed class RenderCspScriptTests
         result.StandardOutput.ShouldBe("connect-src 'self' https://api.autonogrammer.example\n");
     }
 
+    /// <summary>A valid auth origin is a second connect-src origin. The value is printed only on success.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Fact]
+    public async Task AValidAuthOriginIsASecondConnectSrcOrigin()
+    {
+        var result = await RunScriptAsync(
+            "https://api.autonogrammer.example",
+            allowLoopback: null,
+            authOrigin: "https://auth.autonogrammer.example");
+
+        result.ExitCode.ShouldBe(0);
+        result.StandardOutput.ShouldBe("connect-src 'self' https://api.autonogrammer.example https://auth.autonogrammer.example\n");
+    }
+
+    /// <summary>Sign-in enabled (only the literal 1) with a missing auth origin fails closed.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Fact]
+    public async Task SignInEnabledWithoutAnAuthOriginFailsClosed()
+    {
+        var result = await RunScriptAsync("https://api.autonogrammer.example", allowLoopback: null, signIn: "1");
+
+        result.ExitCode.ShouldNotBe(0);
+        result.StandardOutput.ShouldBe(string.Empty);
+        result.StandardError.ShouldContain("AUTONOGRAMMER_AUTH_ORIGIN");
+    }
+
+    /// <summary>An http or wildcard auth origin is rejected and never echoed.</summary>
+    /// <param name="authOrigin">The rejected origin.</param>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Theory]
+    [InlineData("http://auth.autonogrammer.example")]
+    [InlineData("https://*.autonogrammer.example")]
+    public async Task AnInvalidAuthOriginIsRejectedWithoutEchoingIt(string authOrigin)
+    {
+        var result = await RunScriptAsync("https://api.autonogrammer.example", allowLoopback: null, authOrigin: authOrigin);
+
+        AssertRejected(result, authOrigin);
+    }
+
+    /// <summary>The Demo build keeps connect-src self whatever the auth variables say.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Fact]
+    public async Task TheDemoIgnoresTheAuthOrigin()
+    {
+        var result = await RunScriptAsync(
+            "https://api.autonogrammer.example",
+            allowLoopback: null,
+            demo: "1",
+            authOrigin: "https://auth.autonogrammer.example",
+            signIn: "1");
+
+        result.ExitCode.ShouldBe(0);
+        result.StandardOutput.ShouldBe("connect-src 'self'\n");
+    }
+
+
+    /// <summary>The frame-src mode prints the render origin as the only frame source, with the same validation as connect-src.</summary>
+    [Fact]
+    public async Task FrameSrcModePrintsTheRenderOriginOnly()
+    {
+        var result = await RunScriptAsync("https://api.autonogrammer.example", allowLoopback: null, authOrigin: "https://auth.autonogrammer.example", argument: "--frame-src");
+
+        result.ExitCode.ShouldBe(0, $"render-csp.sh --frame-src must accept a valid origin. STDERR:\n{result.StandardError}");
+        result.StandardOutput.ShouldBe("frame-src 'self' https://api.autonogrammer.example\n", "the auth origin is never a frame source");
+    }
+
+    /// <summary>The Demo has no frame request, so the frame-src mode prints nothing for it, whatever the other variables say.</summary>
+    [Fact]
+    public async Task FrameSrcModePrintsNothingForTheDemo()
+    {
+        var result = await RunScriptAsync("https://api.autonogrammer.example", allowLoopback: null, demo: "1", argument: "--frame-src");
+
+        result.ExitCode.ShouldBe(0);
+        result.StandardOutput.ShouldBe(string.Empty);
+    }
+
+    /// <summary>An invalid origin prints no frame source and never echoes the value, as the connect-src mode does.</summary>
+    [Theory]
+    [InlineData("https://*.autonogrammer.example")]
+    [InlineData("https://api.autonogrammer.example/")]
+    [InlineData("http://127.0.0.1:5187")]
+    public async Task FrameSrcModeRejectsAnInvalidOriginWithoutEchoingIt(string origin)
+    {
+        var result = await RunScriptAsync(origin, allowLoopback: null, argument: "--frame-src");
+
+        AssertRejected(result, origin);
+    }
+
+    /// <summary>The loopback origin is a frame source only with the same explicit local-development flag.</summary>
+    [Fact]
+    public async Task FrameSrcModeAcceptsLoopbackWithTheFlag()
+    {
+        var result = await RunScriptAsync("http://127.0.0.1:5187", allowLoopback: "1", argument: "--frame-src");
+
+        result.ExitCode.ShouldBe(0, $"STDERR:\n{result.StandardError}");
+        result.StandardOutput.ShouldBe("frame-src 'self' http://127.0.0.1:5187\n");
+    }
+
+    /// <summary>Any argument other than --frame-src is refused.</summary>
+    [Fact]
+    public async Task AnUnknownArgumentIsRefused()
+    {
+        var result = await RunScriptAsync("https://api.autonogrammer.example", allowLoopback: null, argument: "--connect-src");
+
+        result.ExitCode.ShouldNotBe(0);
+        result.StandardOutput.ShouldBe(string.Empty);
+    }
+
     private static void AssertRejected(ScriptResult result, string origin)
     {
         result.ExitCode.ShouldNotBe(0, "render-csp.sh must reject an origin outside the allowed form.");
@@ -181,7 +289,7 @@ public sealed class RenderCspScriptTests
         result.StandardError.Contains(origin, StringComparison.Ordinal).ShouldBeFalse("The rejection message must not echo the origin value.");
     }
 
-    private static async Task<ScriptResult> RunScriptAsync(string? origin, string? allowLoopback, string? demo = null)
+    private static async Task<ScriptResult> RunScriptAsync(string? origin, string? allowLoopback, string? demo = null, string? authOrigin = null, string? signIn = null, string? argument = null)
     {
         var ct = TestContext.Current.CancellationToken;
         var root = RepoRoot();
@@ -196,11 +304,17 @@ public sealed class RenderCspScriptTests
             UseShellExecute = false,
         };
         startInfo.ArgumentList.Add(script);
+        if (argument is not null)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
 
         // Set or clear both variables so an operator's shell environment cannot change the outcome.
         SetOrRemove(startInfo.Environment, OriginVariable, origin);
         SetOrRemove(startInfo.Environment, LoopbackVariable, allowLoopback);
         SetOrRemove(startInfo.Environment, DemoVariable, demo);
+        SetOrRemove(startInfo.Environment, "AUTONOGRAMMER_AUTH_ORIGIN", authOrigin);
+        SetOrRemove(startInfo.Environment, "AUTONOGRAMMER_SIGNIN", signIn);
 
         using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("bash did not start.");
         var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);

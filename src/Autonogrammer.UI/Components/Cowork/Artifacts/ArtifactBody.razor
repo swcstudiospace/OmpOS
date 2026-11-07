@@ -1,0 +1,161 @@
+@namespace Autonogrammer.UI.Components.Cowork.Artifacts
+@using System.Net
+@using System.Text
+@using Autonogrammer.Contracts.Artifacts
+@using Autonogrammer.Cowork.Artifacts
+@using Autonogrammer.Cowork.Artifacts.Rendering
+@if (SyncOff)
+{
+    <p class="autonogrammer-artifact-notice" role="status">Sync is off on this device, so this version's content is not shown here. Only its metadata is listed.</p>
+}
+else if (Content is null)
+{
+    <p class="autonogrammer-artifact-notice" role="status">The content of this version is not loaded.</p>
+}
+else
+{
+    switch (Kind)
+    {
+        case ArtifactKind.Markdown:
+            <ArtifactMarkdownView Markdown="@_text" />
+            break;
+        case ArtifactKind.Code:
+            <div class="autonogrammer-block autonogrammer-code autonogrammer-artifact-code">
+                <span class="autonogrammer-code-language">@(string.IsNullOrWhiteSpace(Language) ? "Code" : Language)</span>
+                <pre tabindex="0" role="group" aria-label="@(string.IsNullOrWhiteSpace(Language) ? "Code" : Language + " code")"><code>@_text</code></pre>
+            </div>
+            break;
+        case ArtifactKind.Csv:
+            <ArtifactTable Content="@Content" Caption="@Title" />
+            break;
+        case ArtifactKind.Image:
+            if (_imageValid)
+            {
+                <img class="autonogrammer-artifact-image" alt="@Title" src="@_imageUri" />
+            }
+            else
+            {
+                <p class="autonogrammer-artifact-notice" role="status">This image cannot be shown: @_imageError.</p>
+            }
+            break;
+        case ArtifactKind.Html:
+            if (RenderUrl is not null)
+            {
+                <ArtifactFrame Title="@Title" RenderUrl="@RenderUrl" OnClosed="OnFrameClosed" />
+            }
+            else
+            {
+                <p class="autonogrammer-artifact-notice">Interactive HTML is not available here, so the static view is shown.</p>
+                <ArtifactFrame Title="@Title" SrcDoc="@_htmlStaticDocument" StaticView="true" OnClosed="OnFrameClosed" />
+            }
+            break;
+        case ArtifactKind.Svg:
+            if (_svgAccepted)
+            {
+                <ArtifactFrame Title="@Title" SrcDoc="@_svgDocument" StaticView="true" OnClosed="OnFrameClosed" />
+            }
+            else
+            {
+                <p class="autonogrammer-artifact-notice" role="status">This SVG cannot be shown safely, so its source is shown.</p>
+                <pre tabindex="0"><code>@_text</code></pre>
+            }
+            break;
+        case ArtifactKind.Mermaid:
+            <ArtifactFrame Title="@Title" SrcDoc="@_mermaidDocument" OnClosed="OnFrameClosed" />
+            break;
+        default:
+            <p class="autonogrammer-artifact-notice" role="status">This version of Autonogrammer cannot display this kind. The title, kind and media type are shown.</p>
+            <dl class="autonogrammer-artifact-metadata">
+                <dt>Title</dt>
+                <dd>@Title</dd>
+                <dt>Kind</dt>
+                <dd>@Kind</dd>
+                <dt>Media type</dt>
+                <dd>@MediaType</dd>
+            </dl>
+            break;
+    }
+}
+
+@code {
+    private static readonly int MaxImageBytes = new ArtifactOptions().MaxImageBytes;
+
+    private string _text = string.Empty;
+    private bool _imageValid;
+    private string _imageError = string.Empty;
+    private string _imageUri = string.Empty;
+    private bool _svgAccepted;
+    private string _svgDocument = string.Empty;
+    private string _htmlStaticDocument = string.Empty;
+    private string _mermaidDocument = string.Empty;
+
+    /// <summary>Gets the kind, fixed at creation.</summary>
+    [Parameter, EditorRequired]
+    public ArtifactKind Kind { get; set; }
+
+    /// <summary>Gets the title, which names the frame and the table.</summary>
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>Gets the media type of the version.</summary>
+    [Parameter]
+    public string MediaType { get; set; } = string.Empty;
+
+    /// <summary>Gets the language tag of a Code version, or null.</summary>
+    [Parameter]
+    public string? Language { get; set; }
+
+    /// <summary>Gets the version bytes, or null when they are not loaded.</summary>
+    [Parameter]
+    public byte[]? Content { get; set; }
+
+    /// <summary>Gets whether sync is off, in which case no content is shown.</summary>
+    [Parameter]
+    public bool SyncOff { get; set; }
+
+    /// <summary>Gets the ticketed render URL of an interactive Html version, or null for the static view.</summary>
+    [Parameter]
+    public string? RenderUrl { get; set; }
+
+    /// <summary>Gets the callback told when a frame was closed for a blocked navigation.</summary>
+    [Parameter]
+    public EventCallback<string> OnClosed { get; set; }
+
+    /// <summary>Derives the display form of the content once per change of the bytes.</summary>
+    protected override void OnParametersSet()
+    {
+        if (Content is null || SyncOff)
+        {
+            return;
+        }
+
+        _text = Encoding.UTF8.GetString(Content);
+        switch (Kind)
+        {
+            case ArtifactKind.Image:
+                var validation = ImageValidator.Validate(Content, MediaType, MaxImageBytes);
+                _imageValid = validation.IsValid;
+                _imageError = validation.Code ?? string.Empty;
+                _imageUri = _imageValid ? "data:" + MediaType + ";base64," + Convert.ToBase64String(Content) : string.Empty;
+                break;
+            case ArtifactKind.Svg:
+                var sanitized = SvgSanitizer.Sanitize(Content);
+                _svgAccepted = sanitized.Accepted;
+                _svgDocument = _svgAccepted
+                    ? ArtifactDocumentPolicy.MetaElement(ArtifactDocumentPolicy.ForSvgOrImage()) + sanitized.Render()
+                    : string.Empty;
+                break;
+            case ArtifactKind.Html:
+                _htmlStaticDocument = HtmlDocumentWrapper.Wrap(_text, scripts: false);
+                break;
+            case ArtifactKind.Mermaid:
+                // The page's own policy applies to this document (srcdoc inherits it): its scripts are the two files beside the bundle.
+                _mermaidDocument = "<pre class=\"mermaid\">" + WebUtility.HtmlEncode(_text) + "</pre>"
+                    + "<script src=\"lib/mermaid/mermaid.min.js\"></script>"
+                    + "<script src=\"lib/mermaid/artifact-mermaid.js\"></script>";
+                break;
+        }
+    }
+
+    private Task OnFrameClosed(string text) => OnClosed.InvokeAsync(text);
+}

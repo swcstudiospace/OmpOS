@@ -26,7 +26,7 @@ public sealed class SettingsPagesRenderTests : BunitContext
         var cut = RenderDialog();
 
         var titles = cut.FindAll("nav button").Select(static button => button.TextContent.Trim()).ToList();
-        titles.Count.ShouldBe(18);
+        titles.Count.ShouldBe(25);
         foreach (var title in titles)
         {
             cut.FindAll("nav button").Single(button => string.Equals(button.TextContent.Trim(), title, StringComparison.Ordinal)).Click();

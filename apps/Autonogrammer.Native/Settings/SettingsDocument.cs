@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Autonogrammer.Accounts.Desktop;
 
 namespace Autonogrammer.Native.Settings;
 
@@ -28,6 +29,18 @@ internal sealed class SettingsDocument
     /// <summary>Gets or sets the ignore settings: the global patterns and the two switches.</summary>
     public SettingsIgnoreSection? Ignore { get; set; }
 
+
+    /// <summary>Gets or sets whether a signed-in session is stored. The name is <see cref="AccountSettingsKeys.HasStoredSession"/>.</summary>
+    [JsonPropertyName(AccountSettingsKeys.HasStoredSession)]
+    public bool? HasStoredSession { get; set; }
+
+    /// <summary>Gets or sets whether the person consented to the owner-only file store. The name is <see cref="AccountSettingsKeys.AllowFileSecretStore"/>.</summary>
+    [JsonPropertyName(AccountSettingsKeys.AllowFileSecretStore)]
+    public bool? AllowFileSecretStore { get; set; }
+
+    /// <summary>Gets or sets the selected surface. The name is <see cref="SettingsShellSection.SurfaceMember"/>.</summary>
+    [JsonPropertyName(SettingsShellSection.SurfaceMember)]
+    public string? Surface { get; set; }
     /// <summary>Gets or sets the members of a newer schema that this build does not read.</summary>
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? Extra { get; set; }

@@ -37,7 +37,7 @@ OUTPUT_NAME = "THIRD-PARTY-NOTICES.md"
 TEXTS = Path(__file__).resolve().parent / "license-texts"
 
 # SPDX identifiers this script holds a licence text for (scripts/legal/license-texts/<id>.txt).
-KNOWN_SPDX = ("Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "MIT", "PostgreSQL")
+KNOWN_SPDX = ("Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "EPL-2.0", "ISC", "MIT", "PostgreSQL")
 
 # Packages whose nuspec declares <license type="file">. The licence is the vendor-verified one; the
 # marker must appear in the file shipped inside the package, so a changed file in a newer version fails
@@ -68,6 +68,8 @@ BUILD_TIME_IDS = {
 }
 
 SKIP_DIRS = {".git", "bin", "obj", "node_modules", ".planning", ".swarm", ".dotnet", ".nuget"}
+# The root build output (.gitignore's /output/) holds copies of tracked assets; a nested output/ still counts.
+BUILD_OUTPUT_DIR = "output"
 SUBMODULE_LICENCES = {
     "plugins/claude-ultrathink": "AGPL-3.0-or-later (its LICENSE; same family as Autonogrammer)",
     "plugins/agent-swarm": "none published (no LICENSE file; OQ-102)",
@@ -86,7 +88,11 @@ def walk(root: Path):
     """Yield files under root in sorted order, skipping build output, caches and submodule checkouts."""
     for dirpath, dirnames, filenames in os.walk(root):
         rel = Path(dirpath).relative_to(REPO).as_posix()
-        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS and not (rel == "plugins" and d != "gsd-core-omp"))
+        at_root = rel == "."
+        dirnames[:] = sorted(
+            d for d in dirnames
+            if d not in SKIP_DIRS and not (rel == "plugins" and d != "gsd-core-omp") and not (at_root and d == BUILD_OUTPUT_DIR)
+        )
         for name in sorted(filenames):
             yield Path(dirpath) / name
 
@@ -461,7 +467,7 @@ def render(cache: Path) -> str:
     for b in bootstrap:
         w(f"| Bootstrap (`{b['dir']}`) | {b['version']} | MIT | {cell(b['copyright'])}; read from the banner of bootstrap.css; MIT text in section 8 |")
     for v in vendored:
-        w(f"| {cell(v['name'])} (`{v['dir']}`) | {v['version']} | {v['licence']} | npm package {cell(v['package'])}, vendored unmodified, no CDN; {cell(v['copyright'])}; read from its licence file; MIT text in section 8 |")
+        w(f"| {cell(v['name'])} (`{v['dir']}`) | {v['version']} | {v['licence']} | npm package {cell(v['package'])}, vendored unmodified, no CDN; {cell(v['copyright'])}; read from its licence file; {v['licence']} text in section 8 |")
     for axe in axe_rows():
         w(f"| axe-core (`scripts/web-smoke/{axe}`) | from the file name | MPL-2.0 | smoke-test tool downloaded at test time with `npm pack`; never committed or shipped, so its text is not reproduced |")
     w("")

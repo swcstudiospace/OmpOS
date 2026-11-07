@@ -1,6 +1,6 @@
 # Requirements: Autonogrammer
 
-**Milestone:** v0.9.2 Hardening and hosted API
+**Milestone:** v0.16.0 Autonogrammer: accounts, Cowork and Dispatch
 **Defined:** 2026-10-21
 **Core Value:** A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
 
@@ -639,6 +639,8 @@ Source: the user request of 2026-10-28, the ultrathink plan graph ut-mvs8ru79-82
 
 Added 2026-10-29 from the owner request "ultrathink orchestrate workflowz" and the ultrathink plan graph `ut-mvsrdwhx-64862aaa`. Evidence: `.planning/phases/66.2-hosted-real-web-app/66.2-VERIFICATION.md`.
 
+**Reconciliation caveat (2026-11-01):** the boxes in this section record 2026-10-29 declarations. The current tree is unverified (see the Phase 66.2 entry in ROADMAP.md), and a checked box is not a present gate pass.
+
 - [x] **AG-HW-1**: The web head builds as a real application with no Demo code (`scripts/vercel/build-web.sh`), and `scripts/vercel/check-no-demo.sh` asserts it, with a positive control on the Demo bundle (`--expect-demo`).
 - [x] **AG-HW-2**: `Api:Auth:Mode=OwnerToken` accepts a bearer token whose SHA-256 digest is configured (constant-time comparison, rotation by two digests), throttles failures with a 429 and `Retry-After`, and `GET /auth/config` tells a client the mode without a credential.
 - [x] **AG-HW-3**: The web head has a connect screen and an auth gate, holds the token in memory only (no web storage, no cookie), ends the session on a 401 that answers a request that carried it, and has a sign-out.
@@ -656,6 +658,8 @@ Added 2026-10-29 from the owner request "ultrathink orchestrate workflowz" and t
 
 Evidence: `.planning/phases/66.3-web-accessibility-wcag-22-aa/66.3-VERIFICATION.md`, `docs/runbooks/evidence/web-accessibility-2026-10-29/`.
 
+**Reconciliation caveat (2026-11-01):** the boxes in this section record 2026-10-29 declarations. The current tree is unverified (see the Phase 66.3 entry in ROADMAP.md), and a checked box is not a present gate pass.
+
 - [x] **AG-AX-1**: Scripted checks (`scripts/web-smoke/a11y/`) cover titles, headings, landmarks and route announcements, the keyboard walk, focus visibility and obscuring, the Settings dialog, the drawer, axe on every reachable state, forced colours, increased contrast, reduced motion, the dark scheme, reflow, text spacing, target size and the connect screen.
 - [x] **AG-AX-2**: The web smoke runs the checks on both halves as assertions named `a11y<Group>` (the Demo bundle, and the real bundle against the in-memory API), and a report with counts can be written (`--a11y-report DIR`).
 - [x] **AG-AX-3**: The final runs of both halves report zero error findings; warnings are listed in the report and in the known issues.
@@ -668,6 +672,8 @@ Evidence: `.planning/phases/66.3-web-accessibility-wcag-22-aa/66.3-VERIFICATION.
 ### Quality uplift: CI, operations and brand (66.4) (AG-QU)
 
 Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.md`.
+
+**Reconciliation caveat (2026-11-01):** the boxes in this section record 2026-10-29 declarations. The current tree is unverified (see the Phase 66.4 entry in ROADMAP.md), and a checked box is not a present gate pass. AG-QU-2, AG-QU-3 and AG-QU-7 are unchecked.
 
 - [x] **AG-QU-1**: A generated SPDX SBOM (`docs/legal/sbom.spdx.json`) and its check (`scripts/ci/check-sbom.sh`), with the third-party notices fresh.
 - [ ] **AG-QU-2**: Base images are pinned by tag and digest with a `HEALTHCHECK`, the application files are read-only for the engine's user, the runtime opens no diagnostics socket, and `scripts/ci/scan-images.sh` scans a built image. Built and checked in the Containerfile; **no image was built or scanned here**.

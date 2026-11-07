@@ -25,8 +25,8 @@ public sealed class WorkerTokenIssuerTests
 
         var parsed = new JsonWebTokenHandler().ReadJsonWebToken(token);
         parsed.Alg.ShouldBe("ES256");
-        parsed.Issuer.ShouldBe("autonogrammer-api");
-        parsed.Audiences.ShouldHaveSingleItem().ShouldBe("autonogrammer-worker");
+        parsed.Issuer.ShouldBe(Autonogrammer.Api.LegacyBrandNames.WorkerIssuer);
+        parsed.Audiences.ShouldHaveSingleItem().ShouldBe(Autonogrammer.Api.LegacyBrandNames.WorkerAudience);
         parsed.Subject.ShouldBe("cloud-session-1");
         new DateTimeOffset(parsed.IssuedAt).ShouldBe(Start);
         new DateTimeOffset(parsed.ValidTo).ShouldBe(Start + TimeSpan.FromMinutes(5));
@@ -34,8 +34,8 @@ public sealed class WorkerTokenIssuerTests
             token,
             new TokenValidationParameters
             {
-                ValidIssuer = "autonogrammer-api",
-                ValidAudience = "autonogrammer-worker",
+                ValidIssuer = Autonogrammer.Api.LegacyBrandNames.WorkerIssuer,
+                ValidAudience = Autonogrammer.Api.LegacyBrandNames.WorkerAudience,
                 IssuerSigningKey = keys.WorkerVerificationKey,
                 ValidAlgorithms = [SecurityAlgorithms.EcdsaSha256],
                 LifetimeValidator = TestTokenLifetime.Of(clock),

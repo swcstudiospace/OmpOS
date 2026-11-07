@@ -1,3 +1,6 @@
+using Autonogrammer.Accounts;
+using Autonogrammer.Harness.Mcp.Catalog;
+using Autonogrammer.Harness.Secrets;
 using Avalonia.Controls;
 using Microsoft.Extensions.Logging;
 
@@ -47,4 +50,17 @@ internal sealed record HeadServicesOptions
 
     /// <summary>Gets a function that says whether omp is installed, or null to look for it. Tests replace it.</summary>
     public Func<bool>? OmpAvailable { get; init; }
+
+    /// <summary>Gets a session a test injects, or null to build the desktop session manager.</summary>
+    public IAccountSession? AccountSession { get; init; }
+
+    /// <summary>Gets the system secret store a test counts, or null for the operating system store.</summary>
+    public ISecretStore? AccountOsStore { get; init; }
+
+    /// <summary>Gets the file secret store a test counts, or null for the owner-only file under the state root.</summary>
+    public ISecretStore? AccountFileStore { get; init; }
+
+    /// <summary>Gets bundle MCP servers appended to the catalog, or null for file servers only.</summary>
+    public IMcpExtraServerSource? McpExtra { get; init; }
+
 }

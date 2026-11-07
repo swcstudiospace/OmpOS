@@ -42,6 +42,12 @@ internal sealed class ScriptedOmp
     /// <summary>Gets the JSON-RPC error code every <c>_session/steering</c> request is answered with instead of a result, or null to answer with a result.</summary>
     public int? SteerErrorCode { get; init; }
 
+    /// <summary>
+    /// Gets a value indicating whether a <c>promptRequired</c> steering answer also ends the held prompt with <c>end_turn</c>. A real omp
+    /// has already ended that turn when it gives that answer.
+    /// </summary>
+    public bool EndTurnOnSteer { get; init; }
+
     /// <summary>Gets the transport factory to give the head.</summary>
     public Func<AcpClientOptions, IAcpTransport> TransportFactory => Create;
 
@@ -171,7 +177,14 @@ internal sealed class ScriptedOmp
                         ? [Encode(Update(_sessionId, owner.Reply))]
                         : [Encode(Update(_sessionId, owner.Reply)), Encode(EndPrompt("end_turn"))];
                 case "_session/steering":
-                    return [Encode(owner.SteerAnswer(id, node["params"]!.AsObject()))];
+                    var answer = Encode(owner.SteerAnswer(id, node["params"]!.AsObject()));
+                    var promptRequired = string.Equals(owner.SteerOutcome, "promptRequired", StringComparison.Ordinal);
+                    if (owner.EndTurnOnSteer && promptRequired && _pendingPrompt != 0)
+                    {
+                        return [answer, Encode(EndPrompt("end_turn"))];
+                    }
+
+                    return [answer];
                 case "session/cancel":
                     return _pendingPrompt == 0 ? [] : [Encode(EndPrompt("cancelled"))];
                 default:

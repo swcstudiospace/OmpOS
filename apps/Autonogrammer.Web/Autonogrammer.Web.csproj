@@ -42,6 +42,7 @@
     <ProjectReference Include="..\..\src\Autonogrammer.UI\Autonogrammer.UI.csproj" />
     <!-- Only the Demo reads the provider catalogue (the real head asks the API for it). -->
     <ProjectReference Include="..\..\src\Autonogrammer.Harness.Providers\Autonogrammer.Harness.Providers.csproj" />
+    <ProjectReference Include="..\..\src\Autonogrammer.Accounts\Autonogrammer.Accounts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

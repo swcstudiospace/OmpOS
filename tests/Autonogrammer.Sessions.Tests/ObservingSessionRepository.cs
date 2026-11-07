@@ -12,9 +12,13 @@ internal sealed class ObservingSessionRepository : ISessionRepository
 {
     private readonly InMemorySessionRepository _inner = new();
     private readonly List<bool> _settledSaves = [];
+    private readonly List<(string SessionId, bool Closed)> _closeRequests = [];
 
     /// <summary>Gets, per settled save in order, whether the stored log held a completed or error event when the status was saved.</summary>
     public IReadOnlyList<bool> SettledSaveTerminalFlags => _settledSaves;
+
+    /// <summary>Gets, in order, every <see cref="SetClosedAsync"/> request: the session identifier and the requested state.</summary>
+    public IReadOnlyList<(string SessionId, bool Closed)> CloseRequests => _closeRequests;
 
     /// <inheritdoc />
     public Task<Session?> GetAsync(string id, CancellationToken cancellationToken) =>
@@ -64,4 +68,15 @@ internal sealed class ObservingSessionRepository : ISessionRepository
     /// <inheritdoc />
     public Task<IReadOnlyList<string>> ListSessionIdsByStatusAsync(SessionStatus status, DateTimeOffset updatedBefore, CancellationToken cancellationToken) =>
         _inner.ListSessionIdsByStatusAsync(status, updatedBefore, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<Session>> ListByOwnerAsync(string ownerId, SessionSurface surface, bool includeClosed, int limit, SessionCursor? cursor, CancellationToken cancellationToken) =>
+        _inner.ListByOwnerAsync(ownerId, surface, includeClosed, limit, cursor, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> SetClosedAsync(string sessionId, bool closed, CancellationToken cancellationToken)
+    {
+        _closeRequests.Add((sessionId, closed));
+        return _inner.SetClosedAsync(sessionId, closed, cancellationToken);
+    }
 }

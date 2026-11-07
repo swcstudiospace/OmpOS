@@ -53,7 +53,7 @@ internal sealed class ShellFixture : IAsyncDisposable
     public MainWindow? Window { get; private set; }
 
     /// <summary>Gets the main view of the window.</summary>
-    public MainView Main => (MainView)Window!.Content!;
+    public MainView Main => ShellHarness.MainViewOf(Window!);
 
     /// <summary>Gets the Kanban board of <see cref="ShowWithBoard"/>, or null before it.</summary>
     public KanbanBoardModel? Board { get; private set; }

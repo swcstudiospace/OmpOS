@@ -1,0 +1,48 @@
+@namespace Autonogrammer.UI.Components.Account
+@using Autonogrammer.Presentation.Accounts
+@implements IDisposable
+
+<nav class="autonogrammer-account-menu" aria-label="@AccountCopy.PanelName">
+    <p aria-label="@AccountCopy.IdentityName">@(_model.AwaitingEmail ?? AccountCopy.For(Autonogrammer.Contracts.Accounts.AuthPhase.SignedIn))</p>
+    @if (_model.ShowDevices)
+    {
+        <p>@AccountCopy.DevicesLabel</p>
+    }
+    @if (_model.OfflineSentence is not null)
+    {
+        <p role="status">@_model.OfflineSentence</p>
+    }
+    <button type="button" class="autonogrammer-btn" @onclick="SignOutAsync">@AccountCopy.SignOutLabel</button>
+    <button type="button" class="autonogrammer-btn" @onclick="SignOutEverywhereAsync">@AccountCopy.SignOutEverywhereLabel</button>
+</nav>
+
+@code {
+    private readonly CancellationTokenSource _lifetime = new();
+    private AccountViewModel _model = null!;
+
+    /// <summary>Gets or sets the head. Phase 69 places this menu; this plan only builds and tests it.</summary>
+    [Parameter]
+    [EditorRequired]
+    public IAccountHost Host { get; set; } = null!;
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        _model = new AccountViewModel(Host);
+        Host.Changed += OnChanged;
+    }
+
+    private void OnChanged(object? sender, EventArgs e) => _ = InvokeAsync(StateHasChanged);
+
+    private Task SignOutAsync() => _model.SignOutAsync(_lifetime.Token);
+
+    private Task SignOutEverywhereAsync() => _model.SignOutEverywhereAsync(_lifetime.Token);
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        Host.Changed -= OnChanged;
+        _lifetime.Cancel();
+        _lifetime.Dispose();
+    }
+}

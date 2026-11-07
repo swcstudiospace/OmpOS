@@ -1,70 +1,55 @@
-# 77-PLAN-CHECK — Re-verification after planner Revision 1
+# 77-PLAN-CHECK — Round 2, integration re-plan 2026-10-29
 
-**Phase:** 77 (hardening-docs-and-integration), milestone v0.16.0. **Mode:** standard. **Result: ISSUES FOUND.**
-**Plans checked:** 8 (77-01 … 77-08). **Issues:** 0 blocker(s), 2 warning(s), 2 info.
-**Prior report:** B1..B5, W1, W2, W3, W5, W6, W7, I1, I3 all re-checked below; W4 accepted as-is.
+**Phase:** 77 (hardening-docs-and-integration), milestone v0.16.0. **Mode:** re-verification of the planner's revision for round 1 (3 blockers, 11 warnings, 6 info). **Result: PASS (0 blockers, 0 warnings, 7 info).**
+**Checked against:** worktree `/root/src/repos/ompos-autonogrammer`, branch `feat/autonogrammer-next`, HEAD `6589db88`; integration tip `eece6e52`. Read-only: no source edit, no build, no commit. Scratch files only under `/tmp/ag-pc2/`. Items round 1 verified as fine were not re-opened.
 
-## Fix verification (prior findings)
+## Round 1 items
 
-| Prior | Status | Evidence |
-|---|---|---|
-| B1 77-01 T1 pipe masks exit | FIXED | `... dry-run --report-dir ... > /tmp/ag-recon/dry-run-77.log 2>&1 && tail -n 5 ...log`: redirect + `&&` propagates dry-run exit; tail is display-only |
-| B2 `<dry-run-json>` placeholder | FIXED | Concrete path `/tmp/ag-recon/rebrand-report-77/rebrand-report.json` in both tasks; Task 1 `<files>` declares the report dir; action states the JSON landing path |
-| B3 77-01 T2 pipe masks exit | FIXED | `... > /tmp/ag-recon/verify-baseline-77.log 2>&1 && tail -n 5 ...log`: same redirect+`&&` pattern |
-| B4 77-07 T1 gate verdict | FIXED | `bash -c 'PATH=/tmp/ag-recon/dotnet-shim:$PATH ./bootstrap.sh > /tmp/ag-recon/gate-77.log 2>&1' && tail -n 5 ...log && git diff --exit-code -- bootstrap.sh`: gate exit propagates through the `&&` chain |
-| B5 bare dotnet via bootstrap | FIXED | Action creates the shim file `/tmp/ag-recon/dotnet-shim/dotnet` (execs `/tmp/ag-bin/ag-dotnet`, `chmod +x`, outside the repo, never committed); verify uses `PATH=/tmp/ag-recon/dotnet-shim:$PATH` form. Quoting sound: single-quoted `bash -c` string, `$PATH` expands at runtime inside the subshell |
-| W1 wave 2 with empty depends_on | FIXED | 77-02, 77-03, 77-04 now all `depends_on: [77-01]`, `wave: 2` (max-deps + 1 holds) |
-| W2 77-04 vague file ids | FIXED | Concrete names in frontmatter and tasks: `tests/Autonogrammer.UI.Tests/CoworkSurfaceAccessibilityTests.cs`, `tests/Autonogrammer.Native.Tests/CoworkHeadlessAccessibilityTests.cs`, `ThemeContrastTests.cs`, `scripts/web-smoke/smoke.mjs` + `run-smoke.sh`. Residual "view-code presentation files only" is defect-dependent and acceptable |
-| W3 77-06 lockfiles omitted | FIXED | Frontmatter now carries `'**/packages.lock.json'` (quoted glob) |
-| W5 77-08 verify can't see PR/CI | FIXED (observation) | T1/T2 now query `gh pr view --json ... --jq ...` (state, body length, statusCheckRollup failures, unresolved-thread count, tag). jq single-quoted, no `$` interpolation hazards. Residual enforcement gap → N4 (info) |
-| W6 matrix grep missing | FIXED | T2 automated appends `grep -c "\| *\| *\|" docs/quality/v0.16.0-accessibility-pass.md`; pattern double-quoted; separator rows (`\|---\|`) correctly do not match; zero-match `grep -c` exits 1 so "count is 0" propagates via `&&` |
-| W7 bootstrap.sh editable | FIXED in effect | Action: "bootstrap.sh itself is NEVER edited by this plan ... not patched"; verify enforces `git diff --exit-code -- bootstrap.sh`. Residual stale frontmatter entry → N3 (info) |
-| I1 unnamed other-line ref | FIXED | Action: "git fetch the ref named `final` (confirm with git rev-parse final ...)" |
-| I3 manual lock-count eyeball | FIXED | T1 records `git ls-files '*packages.lock.json' \| wc -l > /tmp/ag-recon/lock-count-77.txt` (quoted glob); T2 `test "$POST_77_LOCKS" = "$(cat ...)"` encodes equality with exit status |
-| W4 77-05 ~20-file task | ACCEPTED | Unchanged (now 20 files incl. guides); prose-only completion under one docs gate; no revision demanded |
+| Item | Status | Evidence |
+|------|--------|----------|
+| B1 77-06 relock before version edit | FIXED | Task 1 action order is now: STOP gate and pre-count; (1) edit `Directory.Build.props` and `deploy/api.Containerfile`; (2) delete obj/bin, `env -u CI` restore `--force-evaluate -p:RestoreLockedMode=false`; (3) `--locked-mode` restore before any commit; (4) check-licences and check-sbom, regenerate only the drifted file; (5) ONE `git add -- <paths>` plus `git commit -s -- <paths>`. Task 1 verify is exit-encoded; run on HEAD (pre-bump) the `git log -S'<VersionPrefix>0.16.0'` count is 0 and `-S'<VersionPrefix>0.15.0'` is 1, so the check fails before the bump and can only pass with exactly one introducing commit; the `! git diff --name-only HEAD~1 HEAD \| grep -vE ...` part prints offenders (non-zero) on HEAD, as intended. Task 2 verify has the locked restore, three gates, lock count equal to the recorded one, `test -z "$(git log "$B"..HEAD -- '*packages.lock.json')"` and `git merge-base --is-ancestor <last ContractVersion commit> fccd5f5a`. `fccd5f5a` is "feat(66.1-01): scaffold 21 projects ... contract 1.6.0" and an ancestor of HEAD (`merge-base --is-ancestor` exit 0); `git log -1 -- src/Autonogrammer.Contracts/ContractVersion.cs` is `fccd5f5a`. |
+| B2 77-04 empty-cell grep polarity | FIXED | Task 2 verify is `... && ! grep -nE '\|[[:space:]]*\|' docs/quality/v0.16.0-accessibility-pass.md`. Tested in /tmp on sample tables: fully filled table (with `|---|---|` separator and backticked cells) grep exit 1, so `!` passes; one empty cell exit 0 (detected, chain fails); empty cells in a row with alignment separators `\|:---\|:---:\|---:\|` exit 0 (detected); `\|\|` exit 0 (detected). Separator rows do not match. Residual: see I-N1. |
+| B3 77-02 frontmatter | FIXED | `truths_note` is now a quoted scalar. PyYAML `safe_load` parses all eight plans; `frontmatter.cjs extractFrontmatter` also returns wave, depends_on, requirements and files_modified for all eight (02: wave 2, `["77-01"]`, `["AG-77-8","AG-77-9"]`, 3 files). Waves: 01=1 [], 02=2 [01], 04=2 [01], 03=3 [01,02], 05=4 [02,03,04], 06=5 [05], 07=6 [06], 08=7 [07]; each wave = max(depends_on waves)+1. AG-77-1..17 all covered (01:15; 02:8,9; 03:10,11,12; 04:13; 05:3,5,6,7,17; 06:1,2,3,4; 07:14; 08:16). `files_modified` of 02 / 04 / 03 are pairwise disjoint (empty intersections). |
+| W1 77-01 two input lists | FIXED | Task 2 now has `lock-inputs.txt` (`'*.csproj' Directory.Build.props Directory.Packages.props '*packages.lock.json'`, empty expected) and `api-inputs.txt` (`services/Autonogrammer.Api`). Re-run `git diff --name-only HEAD...feat/autonogrammer-integration -- '*.csproj' ... '*packages.lock.json'` = 0 files; `-- services/Autonogrammer.Api` = the six files the plan names. Notices and SBOM are decided by their own checks. |
+| W2 77-01 controls | FIXED | `mkdir -p /tmp/ag-recon/integration-77` is the FIRST COMMAND; staged-set check is the subset form `git diff --cached --name-only \| grep -vxFf incoming-files.txt` prints nothing plus `git diff --name-only --diff-filter=U` prints nothing (coherent: `-x` whole-line, `-F` fixed, `-f` pattern file; the list is non-empty so `-v` is meaningful; conflict paths `.planning/ROADMAP.md`, `.planning/STATE.md` are themselves in the incoming list); evidence page commit step `git add -- <page>` then `git commit -s -- <page>` present; OQ-484 amendment step present. Counts re-run: `rev-list --count HEAD..tip` = 8, `origin/main..tip` = 68, `tip..origin/main` = 0, merge base `2c0e9731`, 8 commit ids and subjects match the plan's list; `git merge-tree --write-tree HEAD tip`: conflicts only `.planning/ROADMAP.md` and `.planning/STATE.md`, CHANGELOG.md and THIRD-PARTY-NOTICES.md auto-merge; no conflict markers or duplicate `\| OQ-` ids on HEAD. |
+| W3 77-07 gate method | FIXED | Extracted the `<automated>` command to /tmp and ran `bash -n`: syntax OK. Logic reads correctly: `set -e`; container pre-check exits 3; load wait capped by `AG_LOAD_WAIT_SECONDS` (300) with `AG_MAX_LOAD` 40; `MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 AUTONOGRAMMER_TEST_PARALLEL_MODULES=2 flock -o /tmp/ag-dotnet.lock nice -n 15 ionice -c3 ./bootstrap.sh`, rc captured, `$DOTNET_ROOT/dotnet build-server shutdown` (`/root/.dotnet/dotnet` exists) with `\|\| true`, `exit $rc`, then `grep -q '^bootstrap: OK'` and `git diff --exit-code -- bootstrap.sh`. `flock --help` lists `-o, --close`. `bootstrap.sh:94` is `echo "bootstrap: OK (SDK ...)"`, the last line; `:13-14` export `DOTNET_ROOT` and `PATH`. `podman`, `flock`, `nice`, `ionice` are installed. |
+| W4 77-07 containers | FIXED | `podman ps -a --filter name=autonogrammer-test --format "{{.Names}}" \| grep -q .` pre-step (exit 3, "wait or tell Main, never remove"); D-40 item (9) added to the coordination list. |
+| W5 77-06 verify and frontmatter | FIXED | Both tasks exit-encoded (see B1); `files_modified` now lists `docs/legal/sbom.spdx.json`. |
+| W6 workspace guard | FIXED | `<workspace_guard>` is present once in each of the eight plans (`grep -c` = 1 each) with the `rev-parse --show-toplevel` and `branch --show-current` test and the cwd and absolute-path rule. |
+| W7 77-05 project-row rule | PARTIAL | Rule is stated exactly (first table cell is `` `Autonogrammer.X` `` with optional ` (extended)`, for `src/*` and `services/*`, recount at execution). Recount with that rule on HEAD (python over `docs/architecture.md`, 57 `src` + 2 `services` directories): 17 lack a row, not "15 to 16". The plan's list names 16; the 17th is `Autonogrammer.Native.Views` (mentioned only in prose at `docs/architecture.md:22`). The plan says "recount with the rule at execution", so no executor is misled; see I-N2. |
+| W8 77-RESEARCH | FIXED | Banner "SUPERSEDED IN PART by 77-CONTEXT ... merge not replay (D-25), verify without baseline (D-25), the gate under flock ... (D-35)" at line 4; the former lines now read "merge, not replay ... (D-25)" (:50), `rebrand.py verify --report-dir ... (no baseline across a merge: D-25)` (:67) and the AG-77-15 mapping (:85). No `--baseline` instruction remains. |
+| W9 D-37 conflicts | FIXED | D-39 adds AG-77-12 narrowed by D-33, AG-77-15 "replay" and "verify --baseline", ROADMAP criterion 3, and the two baseline checks a baseline-less verify skips; 77-01 task 2 says the evidence page records them. |
+| W10 77-04 stale axe text | FIXED | Task 1 action now says "axe-core already runs in scripts/web-smoke/run-smoke.sh, see the integration amendment"; the artifacts line says "no new axe step"; `HeaderEndSlot` is described as "a name that does not exist in the tree yet" and the real `<SignOutButton />` at `TopBar.razor:24` (confirmed). |
+| W11 02/03 same class | PARTIAL | 77-03 is now wave 3 with `depends_on: [77-01, 77-02]`; 77-02 declares `public sealed partial class CoworkAuditTests` and 77-03 says "partial class CoworkAuditTests (no duplicate declaration)". The "shared Markdown table parser and repo-root helper" that D-38(g) and 77-02's `truths_note` say 77-02 owns appears in no task action or acceptance criterion; see I-N3. |
+| I1 anchor `:14-15` | FIXED | D-38(b), 77-07 and VALIDATION Rev. 2 use `:13-14`. D-35 itself still carries the old text, superseded by D-38 (see I-N4). |
+| I2 77-08 `.conclusion` null | FIXED | Verify filter is `(.conclusion // .state)`; tested with jq on a sample rollup (SUCCESS check run, SUCCESS status context, PENDING status context): exit 1 only because of the PENDING entry, SUCCESS status context passes. `bash -n` OK for both 77-08 `<automated>` commands. `reviewThreads(first:100)` still unpaged (see I-N5). |
+| I3 77-05 settings-parity | FIXED | 77-05 line 165 tells the executor to rewrite status text only, never row ids S01..S50 or the status vocabulary. |
+| I4 77-01 dirty tree | FIXED | STOP gate states that `.planning/phases/*` files are committed by Main first and never stashed. The tree is dirty now (planning files and source files under `src/Autonogrammer.Harness.OmpConfig` from other sessions), so 77-01 must not start until clean; the gate covers it. |
+| I5 changelog section | FIXED | 77-05 line 167: later 77-07/77-08 fixes go into the `[0.16.0]` section. |
 
-Requirement coverage unchanged: all AG-77-1..17 claimed (05: 3,5,6,7,17; 06: 1,2,3,4; union complete). Dependency/wave chain consistent: 01/w1 → {02,03,04}/w2 on 77-01 → 05/w3 → 06/w4 → 07/w5 → 08/w6. No fenced code in actions. No `git add -A`, force-push, merge, or tag. No deferred/live content.
+I6 (RED-by-design wording) was not re-opened.
 
-## New issues (introduced by Revision 1)
+## New content verified
 
-### N1 — 77-06 Task 2 lost its `<files>` element (regression)
-- Plan: 77-06, Task 2. Dimension: task_completeness. Severity: warning.
-- Required property: every `auto` task carries a `<files>` element (assert-only tasks name the asserted path).
-- Evidence: round-0 Task 2 had `<files>Directory.Build.props (assert only, no edit)</files>`; the revision has no `<files>` element at all (`<files>` absent between `<read_first>` and `<action>`), while the task asserts on `ContractVersion.cs`, changelog/licence gates, and the lock inventory.
+- **77-03 amendment (D-32/D-33).** On the tip (`git show`/`git grep`): `OQ-184` child-process environment, `OQ-185` no `securitySchemes`, `OQ-186` live-region repeat, `OQ-187` SSE allocation and early 200, `OQ-188` workspace directories never removed, `OQ-189`, `OQ-190` all exist (`open-questions.md:221-227`); `docs/security/hosted-threat-model.md` row T4.7 is the child-process finding; `ApiAuthBoundaryTests.cs` has `ProtectedEndpoint_WithoutToken_Returns401`, wrong-audience, untrusted-key, valid-token, `HealthEndpoints_ReturnWithoutToken`, `OpenApiDocument_IsAnonymous_InDevelopment` only, so "this one class does not walk every route" is true. The anonymous routes the plan lists (`/auth/config`, `/health/live`, `/health/ready`, `/health/startup`; OpenAPI and Scalar `.AllowAnonymous()` only in Development) match `Program.cs:216-235` and `Hosting/HostingEndpointExtensions.cs`. `MapHostingEndpoints`, `AuthConfigEndpoints`, `RateLimitPartitionKey`, `SecurityHeadersMiddleware`, `HostingPolicies.NoTimeout`, `AllowAnyAuthenticatedUser`, `AnyToolCeiling`, `JwtTestHost.ProductionConfig`, `StartupFailureOf`, `CloudDisabledMiddleware` all exist on the tip. The enumeration test is in Task 2's DefaultConfigTests amendment (RED with an empty expected set, then GREEN) and its file is in `files_modified`.
+- **77-04 K-numbering and gate coupling.** Tip `docs/accessibility/known-issues.md` has K2..K5 and K7..K13 (K1 is "cleared" in prose, K6 has no section), so "K7 to K13 exist and K1 and K6 are gone" is right. `size-budget.json` is `"provisional": true` on HEAD and `false` on the tip; the evidence folder `docs/runbooks/evidence/web-accessibility-2026-10-29/` exists on the tip. `Index.razor` `@page` list is the six routes the plan quotes, on HEAD and the tip; `IndexRoutesTests.ThePageDeclaresEveryWorkbenchAddress` exists.
+- **77-CONTEXT D-38..D-40.** Tip `eece6e52` 8 ahead of `2c0e9731`, 68 ahead of `origin/main`, 5882 files differ from `origin/main` (re-run); requirement ids `AG-HW-1..12`, `AG-AX-1..8`, `AG-QU-1..8` exist in the tip's `.planning/REQUIREMENTS.md`; OQ-172..190 exist on the tip. D-39 and D-40 are consistent with the 77-01 and 77-07 text.
+- **77-VALIDATION Revision 2.** Matches the plans (merge not replay, `flock -o`, capped load wait, container pre-check, `bootstrap: OK` line check, round-1 fixes, waves 1..7).
 
-### N2 — 77-05 frontmatter dropped the 7 guides Task 2 still edits
-- Plan: 77-05. Dimension: task_completeness. Severity: warning.
-- Required property: `files_modified` covers every file the plan's tasks write.
-- Evidence: frontmatter `files_modified` now has 14 items with zero guides, but Task 2 `<files>` still lists all seven (`docs/guides/status-and-roadmap.md`, `desktop-app-guide.md`, `web-app-guide.md`, `settings-guide.md`, `troubleshooting-and-faq.md`, `glossary.md`, `concepts.md`) and the action updates them. AG-77-7 coverage still holds via the task, but ownership/wave tooling consumes frontmatter.
+## BLOCKERS
 
-### N3 — 77-07 frontmatter still lists bootstrap.sh (stale ownership entry)
-- Plan: 77-07. Dimension: task_completeness. Severity: info.
-- Required property: `files_modified` matches what the plan may write.
-- Evidence: frontmatter ends `... | bootstrap.sh`, while the action forbids editing it and the verify fails on any diff. Harmless (verify enforces unmodified) but the entry now over-claims ownership.
+None.
 
-### N4 — gh verdict signals are output-observable but not exit-encoded
-- Plan: 77-08, Tasks 1–2. Dimension: verification_derivation. Severity: info.
-- Required property: every `fails_when` signal drives a non-zero exit (mechanical verdict, not output parsing).
-- Evidence: both automates print JSON (`{state, sections}`, `{state, decision, failed[]}`, thread count) and exit 0 whenever `gh` succeeds — `state != OPEN`, empty body, non-empty `failed[]`, non-zero thread count, or a present tag do not change the exit code. All signals are present in full in the output (nothing truncated), so an executor comparing output to `fails_when` can judge correctly; exit-encoding (e.g. `test "$(... --jq '.state')" = OPEN`) would make it mechanical. Robustness note: prefer `(.statusCheckRollup // [])` since `null[]` errors when no checks exist yet.
+## WARNINGS
 
-## Structured issues
+None.
 
-```yaml
-issues:
-  - { plan: "77-06", task: 2, dimension: task_completeness, severity: warning,
-      required_property: "Every auto task carries a files element, including assert-only tasks",
-      description: "Revision dropped Task 2's files element (round-0 had 'Directory.Build.props (assert only, no edit)'); task asserts on ContractVersion.cs, gates, and lock inventory with no declared scope" }
-  - { plan: "77-05", dimension: task_completeness, severity: warning,
-      required_property: "files_modified covers every file the plan's tasks write",
-      description: "Frontmatter has 14 items with zero guides while Task 2 files still lists all seven guides.md files and the action updates them" }
-  - { plan: "77-07", dimension: task_completeness, severity: info,
-      required_property: "files_modified matches what the plan may write",
-      description: "Frontmatter still lists bootstrap.sh although action forbids editing it and verify enforces git diff --exit-code" }
-  - { plan: "77-08", dimension: verification_derivation, severity: info,
-      required_property: "Every fails_when signal drives a non-zero exit",
-      description: "gh --jq verdicts print state/failed-list/thread-count but exit 0 whenever gh succeeds; signals fully present in output yet not exit-encoded; also suggest (.statusCheckRollup // []) for the no-checks null case" }
-```
+## INFO
 
-## Recommendation
-
-0 blockers; 2 warnings (N1, N2) require a small revision — restore Task 2's assert-only `<files>` in 77-06 and re-add the seven guides to 77-05 frontmatter. N3/N4 are advisory. No re-verification of unrelated dimensions needed; a targeted re-check of the two warning fixes suffices before `/gsd:execute-phase 77`.
+- **I-N1 (77-04 Task 2 verify).** `! grep -nE ... docs/quality/v0.16.0-accessibility-pass.md` also exits 0 when the file does not exist (grep exits 2, `!` turns it into 0). Task 1 creates the file, so only a skipped Task 1 would hide this. Optional: prefix `test -s docs/quality/v0.16.0-accessibility-pass.md &&`. The acceptance text says "7 surfaces by 7 checks" while the action lists six surface names (Devices and Dispatch may be two); the verify compares counts "by eye".
+- **I-N2 (77-05).** The project-row recount gives 17, not "15 to 16": `Autonogrammer.Native.Views` is missing from the plan's list of 16 names. The test is the authority (RED regardless), so the executor will add it; adjust the number and list if convenient.
+- **I-N3 (77-02 / 77-03 / 77-05).** The shared Markdown table parser and repo-root helper that 77-02 "owns" (`truths_note`, D-38(g)) is not an action step of 77-02 Task 1/2 and not in an acceptance criterion; 77-03 writes its own findings-table parser and 77-05 its own docs checks, so a duplicate helper name between `CoworkAuditTests.Security.cs` and `CoworkAuditTests.Docs.cs` is still possible. Fix: one sentence in 77-02 Task 1 action naming the helper (for example `MarkdownTables.Parse`, `RepoRoot`) in `CoworkAuditTests.cs`, or in a small file added to 77-02 `files_modified`.
+- **I-N4 (77-CONTEXT D-35).** D-35 still states `bootstrap.sh:14-15` and `flock /tmp/ag-dotnet.lock` without `-o`; D-38(b) and (c) replace them, but a reader who stops at D-35 sees the old method. D-38 line "known-issues.md lists K2 to K13" has a gap at K6; D-38(a) calls OQ-186 to OQ-190 "a11y and event-stream defaults" (OQ-188 is workspace-directory cleanup). Wording only.
+- **I-N5 (77-08).** `reviewThreads(first:100)` does not page; acceptable for one PR with a few threads.
+- **I-N6 (77-04 Task 2 verify).** Runs only `*ThemeContrast*` plus the table grep; the regression tests named in the matrix cells (`CoworkSurfaceAccessibilityTests`, the lock-list tests) are not in the verify. Task 1 already runs the UI.Tests class and the web-shell/motion classes. Optional: add `--filter-class "*CoworkSurfaceAccessibility*"` to Task 2's verify.
+- **I-N7 (state).** The worktree is dirty with source files from other sessions (`src/Autonogrammer.Harness.OmpConfig/*`) and untracked plan-check files; 77-01's STOP gate (`git status --porcelain` empty) correctly refuses to start until they are committed or reverted by their owners.

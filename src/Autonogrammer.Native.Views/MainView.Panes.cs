@@ -217,13 +217,36 @@ public partial class MainView
     }
 
     // A forked session is in the catalog once the engine set registers it: the rail reads again and selects it.
-    private void OnForked(object? sender, ForkedEventArgs e) =>
-        Dispatcher.UIThread.Post(() =>
+    private void OnForked(object? sender, ForkedEventArgs e)
+    {
+        try
         {
-            _panel.Catalog.Refresh();
-            _ = _panel.SelectSession(e.Result.NewSessionId);
-            FocusThread();
-        });
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (_closed)
+                {
+                    return;
+                }
+
+                try
+                {
+                    _panel.Catalog.Refresh();
+                    if (_panel.SelectSession(e.Result.NewSessionId))
+                    {
+                        _selectionFocusCommand.Execute(null);
+                    }
+                }
+                catch (InvalidOperationException fault)
+                {
+                    ReportSelectionFocusFailure(fault);
+                }
+            });
+        }
+        catch (InvalidOperationException fault)
+        {
+            ReportSelectionFocusFailure(fault);
+        }
+    }
 
     private void AttachHookNotices(SessionPane pane, AgentSessionRuntime runtime)
     {

@@ -70,6 +70,12 @@ internal sealed class SettingsWindowOptions
     /// <summary>Gets the cloud agents host the Cloud page shows. Null is a head without an API base address: the page then shows its not-configured state and no agent control.</summary>
     public ICloudAgentsHost? Cloud { get; init; }
 
+    /// <summary>Gets the devices and commands port the Dispatch page reads. Null is a head without Dispatch: the page then shows its not-configured state.</summary>
+    public Autonogrammer.Presentation.Dispatch.IDispatchHost? DispatchRelayHost { get; init; }
+
+    /// <summary>Gets this desktop's pairing and policy port the Dispatch page reads. Null is a head that cannot pair a desktop: the page then says to pair in the desktop app.</summary>
+    public Autonogrammer.Presentation.Dispatch.IThisDeviceHost? DispatchRelayThisDevice { get; init; }
+
     /// <summary>Gets the host of the Containers and WSL section of the Remote page, or null for a page of ssh environments only.</summary>
     public IContainerEnvironmentsHost? ContainerEnvironments { get; init; }
 
@@ -99,4 +105,35 @@ internal sealed class SettingsWindowOptions
     /// not leave subscriptions on the host behind; the head disposes it.
     /// </summary>
     internal CloudAgentsViewModel? CloudAgentsModel { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Dispatch page's model. It is created on first use and kept for the life of the head, so a closed and reopened window does
+    /// not reload the host's devices. It holds no subscription on the host, so the head has nothing to dispose.
+    /// </summary>
+    internal Autonogrammer.Presentation.Dispatch.DispatchRelayModel? DispatchRelayModel { get; set; }
+
+    /// <summary>Gets the Computer Use page, evaluated each time the window is built, or null for no page.</summary>
+    public Func<Autonogrammer.Presentation.Computer.ComputerUseSettingsPage?>? ComputerUse { get; init; }
+
+    /// <summary>Gets the Browser page source, or null for a window without that page.</summary>
+    public Autonogrammer.Presentation.Settings.BrowserUse.IBrowserUseSettingsSource? BrowserUse { get; init; }
+
+    /// <summary>Gets the Bundles page, or null for a window without one.</summary>
+    public Autonogrammer.Presentation.Settings.Cowork.BundlesSettingsPage? Bundles { get; init; }
+
+    /// <summary>Gets the Connectors page, or null for a window without one.</summary>
+    public Autonogrammer.Presentation.Settings.Cowork.ConnectorsSettingsPage? Connectors { get; init; }
+
+    /// <summary>Gets the Cowork permissions page, or null for a window without one.</summary>
+    public Autonogrammer.Presentation.Settings.Cowork.CoworkPermissionsSettingsPage? CoworkPermissions { get; init; }
+
+    /// <summary>Gets the Isolation page, or null for a window without one.</summary>
+    public Autonogrammer.Presentation.Settings.Cowork.IsolationSettingsPage? Isolation { get; init; }
+
+    /// <summary>Gets the Usage page, or null for a window without one.</summary>
+    public Autonogrammer.Presentation.Settings.Cowork.UsageSettingsPage? Usage { get; init; }
+
+    /// <summary>Gets the Notifications page, or null for a window without one.</summary>
+    public Autonogrammer.Presentation.Settings.Cowork.NotificationsSettingsPage? Notifications { get; init; }
+
 }

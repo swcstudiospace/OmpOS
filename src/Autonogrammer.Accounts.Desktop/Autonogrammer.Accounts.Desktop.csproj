@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../Autonogrammer.Accounts/Autonogrammer.Accounts.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Secrets.Os/Autonogrammer.Harness.Secrets.Os.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Secrets/Autonogrammer.Harness.Secrets.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Autonogrammer.Accounts.Desktop.Tests" />
+  </ItemGroup>
+
+</Project>

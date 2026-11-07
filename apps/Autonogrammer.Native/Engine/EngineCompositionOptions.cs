@@ -46,4 +46,7 @@ internal sealed record EngineCompositionOptions
 
     /// <summary>Gets a wrapper around the ask-the-user resolver, or null. It cannot be combined with <see cref="RunModePolicy"/>.</summary>
     public Func<IPermissionResolver, IPermissionResolver>? PermissionResolverFactory { get; init; }
+
+    /// <summary>Gets the process wrapper for this session, or null for a direct launch. Cowork sets it; Code leaves it null.</summary>
+    public IProcessLaunchWrapper? ProcessWrapper { get; init; }
 }

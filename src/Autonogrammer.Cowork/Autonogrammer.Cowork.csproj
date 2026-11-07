@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
+    <ProjectReference Include="../Autonogrammer.Cowork.Abstractions/Autonogrammer.Cowork.Abstractions.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.AgentLoop/Autonogrammer.Harness.AgentLoop.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Autonogrammer.Cowork.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Chat/cowork-system-prompt.md">
+      <LogicalName>Autonogrammer.Cowork.Chat.cowork-system-prompt.md</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>

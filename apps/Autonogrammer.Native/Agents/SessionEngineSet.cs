@@ -1,6 +1,7 @@
 using System.Globalization;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Contracts.Environments;
+using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.AgentLoop.Connection;
 using Autonogrammer.Harness.AgentLoop.Gsd;
@@ -17,6 +18,7 @@ using Autonogrammer.Harness.Remote;
 using Autonogrammer.Harness.Remote.Containers;
 using Autonogrammer.Harness.Terminal;
 using Autonogrammer.Native.Composition;
+using Autonogrammer.Native.Composition.Activity;
 using Autonogrammer.Native.Composition.Checkpoints;
 using Autonogrammer.Native.Composition.Mentions;
 using Autonogrammer.Native.Engine;
@@ -84,10 +86,12 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     private IReadOnlyList<ResolvedPlugin> _plugins = [];
     private ITimer? _timer;
     private bool _disposed;
+    private readonly Lock _maintenanceGate = new();
     private readonly HeadServices? _services;
     private readonly SessionExtrasStore _extras;
     private readonly OmpSideChatEngine _sideChats;
     private readonly SessionForker _forker;
+    private readonly List<ILaunchContributor> _launchContributors = [];
 
     /// <summary>Creates the set. It opens nothing until <see cref="ReloadAsync"/> or the first <see cref="CreateSessionAsync"/>.</summary>
     /// <param name="options">Where things are, and the seams a test replaces.</param>
@@ -226,13 +230,14 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     }
 
     /// <inheritdoc />
-    public AgentSessionViewModel OpenSession(AgentRow row)
+    public Task<AgentSessionViewModel> OpenSessionAsync(AgentRow row, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(row);
+        cancellationToken.ThrowIfCancellationRequested();
         var slot = CreateSlot(row.Id, row.Summary.WorkspaceRoot, row.GraphId);
         if (slot.Runtime is { } existing)
         {
-            return existing.ViewModel;
+            return Task.FromResult(existing.ViewModel);
         }
 
         var isTerminal = row.Summary.Kind == SessionKind.Terminal;
@@ -260,7 +265,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         }
 
         runtime.StartObserving();
-        return runtime.ViewModel;
+        return Task.FromResult(runtime.ViewModel);
     }
 
     private AgentSessionRuntimeOptions RuntimeOptions(AgentRow row, SessionSlot slot, bool isTerminal) => new()
@@ -268,7 +273,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         Row = row,
 
         // A terminal session has no engine behind a prompt channel: its omp is the terminal, and the composer only steers.
-        Prompts = isTerminal ? new UnconnectedPromptChannel() : slot.Prompts,
+        Prompts = isTerminal ? new UnconnectedPromptChannel() : Activity?.Wrap(slot.Prompts) ?? slot.Prompts,
         Approvals = slot.Approvals,
         Scope = slot.Scope.Current,
         Stages = slot.Stages,
@@ -315,7 +320,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
     /// <summary>
     /// Returns the slot of a session, creating it on first use: its live scope, send path, approval bridge and stage sources. The slot
-    /// starts no process and reads no file until something asks for its plan or its engine. <see cref="OpenSession"/> builds the runtime over it.
+    /// starts no process and reads no file until something asks for its plan or its engine. <see cref="OpenSessionAsync"/> builds the runtime over it.
     /// </summary>
     /// <param name="sessionId">The session, which the registry knows.</param>
     /// <param name="workspaceRoot">The workspace to use when the registry has none for the session, or null for the head's workspace.</param>
@@ -592,13 +597,6 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         }
         else
         {
-            // The provider keys join the environment here, after the planner, so the plan the planner returned never holds a key and its own
-            // Environment stays as planned. The overlay reads the keys when omp is started, so a key saved after this point still reaches it.
-            if (_options.ProviderKeys is { } providerKeys)
-            {
-                launch = launch with { Environment = providerKeys.Overlay(launch.Environment) };
-            }
-
             if (_services is { } services)
             {
                 extraServers = services.Mcp.OfferedServers();
@@ -607,6 +605,12 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
         try
         {
+            launch = ApplyContributors(launch, plan.SessionId);
+            // The overlay must wrap the environment after the contributors have snapshotted it, or a key saved later never reaches omp.
+            if (!plan.Extras.IsRemote && _options.ProviderKeys is { } providerKeys)
+            {
+                launch = launch with { Environment = providerKeys.Overlay(launch.Environment) };
+            }
             var holder = plan.RunModes;
             var composition = new EngineCompositionOptions
             {
@@ -616,6 +620,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
                 RunModeAudit = _services?.RunModeHub.Audit,
                 Remote = remote,
                 Clock = _options.TimeProvider,
+                ProcessWrapper = ProcessWrapper,
             };
             return EngineComposition.Compose(_options.AllowedKinds, launch, _options.TransportFactory, _options.LoggerFactory, _options.OmpPath, resumeSessionId, composition);
         }
@@ -625,6 +630,63 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             throw;
         }
     }
+
+    /// <summary>Gets or sets the activity tee. When set, RuntimeOptions wraps slot.Prompts and leaves AgentSessionRuntime unedited.</summary>
+    internal ActivityComposition? Activity { get; set; }
+
+    /// <summary>Gets or sets the isolation wrapper for the next local engine. Code leaves it null.</summary>
+    internal IProcessLaunchWrapper? ProcessWrapper { get; set; }
+
+    /// <summary>Gets the registered launch contributors. The composer applies their arguments, environment and wrapper generically.</summary>
+    internal IReadOnlyList<ILaunchContributor> LaunchContributors => _launchContributors;
+
+    /// <summary>Registers one contributor. Registration only: no per-contributor branch.</summary>
+    /// <param name="contributor">The contributor.</param>
+    internal void RegisterLaunchContributor(ILaunchContributor contributor)
+    {
+        ArgumentNullException.ThrowIfNull(contributor);
+        _launchContributors.Add(contributor);
+    }
+
+    private OmpLaunchPlan ApplyContributors(OmpLaunchPlan launch, string? sessionId)
+    {
+        if (_launchContributors.Count == 0)
+        {
+            return launch;
+        }
+
+        var request = new LaunchRequest
+        {
+            Surface = "desktop",
+            SessionId = sessionId ?? string.Empty,
+            WorkingDirectory = launch.WorkingDirectory,
+            TrustedFolders = [],
+        };
+        var arguments = launch.ExtraArguments.ToList();
+        var environment = new Dictionary<string, string>(launch.Environment, StringComparer.Ordinal);
+        foreach (var contributor in _launchContributors)
+        {
+            var contribution = contributor.Contribute(request, CancellationToken.None);
+            arguments.AddRange(contribution.Arguments);
+            foreach (var pair in contribution.Environment)
+            {
+                if (pair.Value is null)
+                {
+                    _ = environment.Remove(pair.Key);
+                }
+                else
+                {
+                    environment[pair.Key] = pair.Value;
+                }
+            }
+
+            ProcessWrapper ??= contribution.ProcessWrapper;
+        }
+
+        return launch with { ExtraArguments = arguments, Environment = environment };
+    }
+
+
 
     /// <summary>Gets or sets the rail model over this set's registry. The head sets it once it has built the model; the @-mention of another chat lists the chats through it.</summary>
     internal Autonogrammer.Presentation.AgentPanel.SessionCatalogModel? CatalogModel { get; set; }
@@ -856,7 +918,8 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             ? new RemoteSlashDiscoverySource(slot)
             : new ConventionSlashDiscoverySource(
                 [row.Summary.WorkspaceRoot ?? _options.Loop.WorkspaceRoot],
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                pluginRoots: Autonogrammer.Native.Composition.Plugins.BundleComposition.PluginRootsFor?.Invoke(false));
 
     private Func<IReadOnlyList<IMentionSource>>? MentionSourcesFor(AgentRow row)
     {
@@ -944,33 +1007,41 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     /// </summary>
     internal void RunMaintenance()
     {
-        var registry = Registry;
-        if (registry is null)
-        {
-            return;
-        }
-
-        try
+        lock (_maintenanceGate)
         {
             List<SessionSlot> active;
             lock (_gate)
             {
+                if (_disposed)
+                {
+                    return;
+                }
+
                 active = [.. _slots.Values.Where(static slot => slot.TurnActive)];
             }
 
-            foreach (var slot in active)
+            var registry = Registry;
+            if (registry is null)
             {
-                registry.Touch(slot.Id);
+                return;
             }
 
-            registry.DetectLost();
-        }
-        catch (Exception exception) when (exception is not OutOfMemoryException)
-        {
-            // The maintenance timer must never fault the process; the next tick tries again.
-            if (_logger is not null)
+            try
             {
-                MaintenanceFailed(_logger, exception.GetType().Name, null);
+                foreach (var slot in active)
+                {
+                    registry.Touch(slot.Id);
+                }
+
+                registry.DetectLost();
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+                // The maintenance timer must never fault the process; the next tick tries again.
+                if (_logger is not null)
+                {
+                    MaintenanceFailed(_logger, exception.GetType().Name, null);
+                }
             }
         }
     }
@@ -993,6 +1064,11 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             _slots.Clear();
             timer = _timer;
             _timer = null;
+        }
+
+        // A maintenance tick that is already running holds the maintenance lock and finishes first. A tick that starts later sees the disposed flag and writes nothing.
+        lock (_maintenanceGate)
+        {
         }
 
         if (timer is not null)

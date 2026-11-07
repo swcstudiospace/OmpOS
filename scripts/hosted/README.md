@@ -4,7 +4,7 @@ No live model turn has ever been run (OD-07): there is no provider credential. T
 path anyway, with the real engine and a scripted model, and needs no credential and no network egress.
 
 ```
-e2e-api.mjs / e2e-browser.mjs  ->  Autonogrammer API  ->  omp acp (real)  ->  fake-model-server.mjs (scripted, loopback)
+e2e-api.mjs  ->  Autonogrammer API  ->  omp acp (real)  ->  fake-model-server.mjs (scripted, loopback)
 ```
 
 **What a pass proves:** the API starts the real `omp acp` engine, the engine reaches its model, text streams back as
@@ -25,7 +25,6 @@ Everything is plain Node ESM with `node:` imports only (Node 24, as in the repo)
 | `fake-model-server.mjs` | OpenAI Chat Completions subset: `GET /v1/models`, `POST /v1/chat/completions` (SSE and non-streaming) |
 | `prepare-omp-home.mjs` | Throwaway omp agent directory (`models.yml`, `config.yml`) that points omp at the fake model |
 | `e2e-api.mjs` | Drives the API over HTTP: auth, session, SSE, approvals, resume, 401, 429 |
-| `e2e-browser.mjs` | Drives the web head in headless Chrome over CDP: sign in, prompt, answer, axe, screenshots |
 | `sse.mjs` | The SSE reader the scripts share |
 | `selftest.mjs` | Verifies the SSE reader and the fake model without omp or the API |
 
@@ -51,16 +50,12 @@ node scripts/hosted/selftest.mjs
 
 ## (a) Local run
 
-Prerequisites: Node 24, `omp` on `PATH` (or its path), the .NET SDK in `$HOME/.dotnet`, Chrome or Chromium for the
-browser script. Run everything from the repository root. Use two or three terminals, or put the servers in the
+Prerequisites: Node 24, `omp` on `PATH` (or its path), the .NET SDK in `$HOME/.dotnet`.
+Run everything from the repository root. Use two or three terminals, or put the servers in the
 background as shown.
 
-`scripts/hosted/run-local.sh [--web-bundle <dir>] [--out <dir>] [--no-approvals] [--skip <steps>]` does everything below in one
-command and removes what it created: the scripted model, the isolated agent directory, a token and its digest, the API (a
-Development run with the engine environment on the allow-list, a per-session workspace and the approval policy for `execute`
-and `edit`), `e2e-api.mjs`, and, when a published real web bundle is given with `--web-bundle`, a static server and
-`e2e-browser.mjs`. It needs a Release build of `services/Autonogrammer.Api` and exits with the status of the checks. The commands
-below are the same steps by hand.
+`scripts/hosted/run-local.sh [--out <dir>] [--no-approvals] [--skip <steps>]` does everything below in one command and removes what it created: the scripted model, the isolated agent directory, a token and its digest, and the API (a
+Development run with the engine environment on the allow-list, a per-session workspace and the approval policy for `execute` and `edit`), and `e2e-api.mjs`. It needs a Release build of `services/Autonogrammer.Api` and exits with the status of the checks. The commands below are the same steps by hand.
 
 ```sh
 ROOT=$(pwd)
@@ -104,18 +99,7 @@ Check that the API reached the engine and the engine reached the fake model: the
 line per chat-completions request (`echo`, `say`, `tool`, ...). If the log stays empty, omp did not read the isolated
 agent directory; check that the API passes its environment to `omp acp`.
 
-The browser check needs the published web head pointed at this API (`Api:BaseUrl` is rewritten with the repository
-script) and a static server:
-
-```sh
-dotnet publish apps/Autonogrammer.Web/Autonogrammer.Web.csproj -c Release --no-restore -o /tmp/autonogrammer-web
-AUTONOGRAMMER_API_ORIGIN=http://127.0.0.1:5187 sh scripts/render-web-config.sh /tmp/autonogrammer-web/wwwroot/appsettings.json
-python3 -m http.server 5180 --bind 127.0.0.1 --directory /tmp/autonogrammer-web/wwwroot &
-AUTONOGRAMMER_E2E_TOKEN="$TOKEN" node scripts/hosted/e2e-browser.mjs --url http://127.0.0.1:5180/ --out /tmp/e2e-browser
-```
-
-Stop everything afterwards (`kill %1 %2 ...` or `jobs`) and remove `/tmp/autonogrammer-*`. The token only ever exists
-in your shell variable, the API's digest and the browser's memory.
+The browser check was removed. The web head has no owner-token sign-in: an owner-token deployment shows the sign-in explanation and no field to type a token into, so no script can drive a workbench there. A browser check needs a sign-in path that tests may use (open question OQ-312).
 
 ### What the API script asserts
 
@@ -169,7 +153,6 @@ railway ssh -- sh -c 'cd /tmp/hosted-e2e && (nohup bun fake-model-server.mjs --p
 
 # 3. From your machine: the same checks as locally, against the hosted URLs.
 AUTONOGRAMMER_E2E_TOKEN="$TOKEN" node scripts/hosted/e2e-api.mjs --api https://<api-host> --out /tmp/e2e-api-report.json
-AUTONOGRAMMER_E2E_TOKEN="$TOKEN" node scripts/hosted/e2e-browser.mjs --url https://<web-host>/ --out /tmp/e2e-browser
 
 # 4. Undo. Deleting the variables redeploys the service, which removes /tmp/hosted-e2e and the fake model with it.
 railway variable delete PI_CODING_AGENT_DIR
@@ -185,17 +168,13 @@ The hosted run uses the deployment's real session store and leaves the sessions 
 creates up to `--rate-limit-burst` of them and drains the creation bucket for about a minute. Skip that step
 (`--skip rate-limit`) on a deployment you keep, and do not run it while real users depend on the deployment.
 
-The browser script's exit status and `report.json` (steps, axe results, problems, screenshots) are the evidence. It
-checks that there is no Demo banner, that no console error, uncaught exception or 4xx/5xx request occurred, that axe
-finds no WCAG 2.0/2.1/2.2 A/AA violation on the connect screen, the workbench and the answered thread, that the
-token is in no browser storage, and that sign-out followed by a reload returns to the connect screen.
+The API script's exit status and the report it writes to `--out` are the evidence.
 
 ## Verification status of the harness itself
 
 - `selftest.mjs` passes (SSE reader, scenario DSL, fake model over HTTP).
 - `omp models find fake` and `omp config get modelRoles` accept the files `prepare-omp-home.mjs` writes (no model turn).
-- `e2e-api.mjs` and `e2e-browser.mjs` were dry-run against throwaway mocks of the API routes and of the connect/workbench
-  screens, not against the real API, the real engine or the real web head. The first run against them is the real test.
+- `e2e-api.mjs` was dry-run against throwaway mocks of the API routes, not against the real API, the real engine or the real web head. The first run against it is the real test.
 - Not verified: what omp actually sends to a custom `openai-completions` provider during a turn (the fake accepts the
   documented Chat Completions shapes), whether omp requests permission for the `bash` call in ACP mode, and the
   hosted (`railway`) procedure.
@@ -206,7 +185,5 @@ token is in no browser storage, and that sign-out followed by a reload returns t
   `HOME` is an empty directory.
 - Nothing prints the token; the scripts redact it from every message and refuse to send it over plain http to a
   non-loopback host (`--allow-insecure` overrides).
-- Exit status: `0` all steps passed, `1` a step failed, `2` bad usage or no browser. Progress goes to stderr and a JSON
+- Exit status: `0` all steps passed, `1` a step failed, `2` bad usage. Progress goes to stderr and a JSON
   report to stdout.
-- axe-core is the version pinned in `scripts/web-smoke/axe-core-4.14.0.sha256`; `e2e-browser.mjs` downloads it with
-  `npm pack` into the system temp directory (or uses `--axe-js` / `AXE_JS`) and refuses a file whose digest differs.

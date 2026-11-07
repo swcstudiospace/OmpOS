@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Autonogrammer.Harness.Abstractions;
 
 namespace Autonogrammer.Harness.Mcp.Catalog;
 
@@ -33,7 +34,7 @@ public sealed class FileMcpStateStore : IMcpStateStore
             throw new InvalidOperationException("The platform has no per-user configuration directory for the MCP state file.");
         }
 
-        return Path.Combine(configuration, "Autonogrammer", "mcp-state.json");
+        return Path.Combine(UserDataDirectory.PathFor(configuration), "mcp-state.json");
     }
 
     /// <inheritdoc />

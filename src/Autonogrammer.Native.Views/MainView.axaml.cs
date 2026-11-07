@@ -37,6 +37,7 @@ using Autonogrammer.Presentation.Modes;
 using Autonogrammer.Presentation.Queue;
 using Autonogrammer.Presentation.SideChats;
 using Autonogrammer.Presentation.State;
+using Autonogrammer.Presentation.Usage;
 using Autonogrammer.Workspace;
 using Avalonia;
 using Avalonia.Animation;
@@ -63,9 +64,9 @@ namespace Autonogrammer.Native;
 /// folder the view was given. Its tool models are created when a tool first opens and kept until the view closes, so a view that
 /// opens no tool reads no folder and starts no process.
 /// </para>
-/// <para>The view has no window of its own: the host window shows it and calls <see cref="Close"/> when it closes. The head owns the panel and the runtimes and disposes them.</para>
+/// <para>The view has no window of its own: the host window shows it and calls <see cref="Close"/> when it closes. <see cref="Dispose()"/> performs the same teardown. The head owns the panel and the runtimes and disposes them.</para>
 /// </remarks>
-public partial class MainView : UserControl
+public partial class MainView : UserControl, IDisposable
 {
     /// <summary>The status line text after a send the host refuses (UI-SPEC, Copywriting Contract).</summary>
     public const string RefusedSendStatus = "Message not sent. Sending is unavailable.";
@@ -139,7 +140,15 @@ public partial class MainView : UserControl
     private McpToolRegistry? _mcpRegistry;
     private McpToolsModel? _mcpTools;
     private bool _closed;
+    private readonly CancellationTokenSource _selectionFocusLifetime = new();
+    private readonly AgentPanelCommand _selectionFocusCommand;
     private TopLevel? _keyHost;
+
+    /// <summary>
+    /// The ledger-backed history <see cref="CreateExport"/> lists. Null, or a source that returns no runs, keeps the previous empty history.
+    /// The host assigns it; this view does not construct the ledger.
+    /// </summary>
+    public IUsageHistorySource? UsageHistorySource { get; set; }
 
     /// <summary>
     /// Creates the main view over an <see cref="UnconnectedAgentPanel"/> in the current folder: no engine is connected, and every send and
@@ -175,6 +184,7 @@ public partial class MainView : UserControl
         ArgumentNullException.ThrowIfNull(panel);
 
         _panel = panel;
+        _selectionFocusCommand = new AgentPanelCommand(_ => FocusSelectedThreadAsync(), ReportSelectionFocusFailure);
         _services = services ?? new ShellServices();
         _mcpHost = mcpHost;
         _workspace = new WorkspaceRoot(workspaceRoot ?? Environment.CurrentDirectory);
@@ -684,11 +694,25 @@ public partial class MainView : UserControl
 
     private void OnNewAgentCompleted(object? sender, EventArgs e)
     {
-        ApplyPendingTarget();
-        FocusThread();
+        if (_closed)
+        {
+            return;
+        }
+
+        try
+        {
+            ApplyPendingTarget();
+            // The command observes focus faults and the wait ends when this view closes.
+            _selectionFocusCommand.Execute(null);
+        }
+        catch (InvalidOperationException fault)
+        {
+            ReportSelectionFocusFailure(fault);
+        }
     }
 
-    private void OnRowActivated(object? sender, EventArgs e) => FocusThread();
+    private void OnRowActivated(object? sender, EventArgs e) =>
+        _selectionFocusCommand.Execute(null);
 
     // Delete on a row and the menu's Close agent land here. A running agent asks first; a quiet one closes at once.
     private void OnRailCloseRequested(object? sender, AgentRowEventArgs e)
@@ -909,7 +933,7 @@ public partial class MainView : UserControl
             ApplyPendingTarget();
         }
 
-        FocusThread();
+        await _selectionFocusCommand.ExecuteAsync(null).ConfigureAwait(true);
     }
 
     private async Task StartNewTerminalAsync()
@@ -917,7 +941,7 @@ public partial class MainView : UserControl
         ShowAgentsTab();
         ShowThread();
         await _panel.NewTerminalCommand.ExecuteAsync(null).ConfigureAwait(true);
-        FocusThread();
+        await _selectionFocusCommand.ExecuteAsync(null).ConfigureAwait(true);
     }
 
     // The top-level tabs. Selecting the Kanban tab hides the rail and the thread, which keep their state, and shows the board in their place.
@@ -992,15 +1016,24 @@ public partial class MainView : UserControl
     // A card was activated: the session is selected in the panel, the Agents tab comes back and focus goes to the session's thread.
     private void OnBoardOpenSessionRequested(object? sender, SessionSelectionChangedEventArgs e)
     {
-        if (e.SessionId is not { } sessionId)
+        if (_closed || e.SessionId is not { } sessionId)
         {
             return;
         }
 
-        ShowAgentsTab();
-        ShowThread();
-        _ = _panel.SelectSession(sessionId);
-        FocusThread();
+        try
+        {
+            ShowAgentsTab();
+            ShowThread();
+            if (_panel.SelectSession(sessionId))
+            {
+                _selectionFocusCommand.Execute(null);
+            }
+        }
+        catch (InvalidOperationException fault)
+        {
+            ReportSelectionFocusFailure(fault);
+        }
     }
 
     // The empty board's start button runs the same command as New agent.
@@ -1085,6 +1118,50 @@ public partial class MainView : UserControl
             default:
                 FocusThread();
                 break;
+        }
+    }
+
+    // SelectionLoad includes startup, context activation and superseded cleanup. Only the request that is still current may move focus.
+    // The existing panel command observes failures; Close bounds this view's wait, not the engine's lifetime.
+    private async Task FocusSelectedThreadAsync()
+    {
+        try
+        {
+            if (_closed)
+            {
+                return;
+            }
+
+            var load = _panel.SelectionLoad;
+            await load.WaitAsync(_selectionFocusLifetime.Token).ConfigureAwait(true);
+            if (!_closed
+                && ReferenceEquals(load, _panel.SelectionLoad)
+                && _panel.State == PanelState.Ready
+                && _panel.Selected is { } selected
+                && string.Equals(selected.Id, _panel.Catalog.SelectedId, StringComparison.Ordinal)
+                && !_kanbanShown
+                && _openTool is null
+                && AgentsToggle.IsChecked != true)
+            {
+                FocusThread();
+            }
+        }
+        catch (OperationCanceledException) when (_closed)
+        {
+            // Close cancels only this view's focus wait; the panel still owns and drains its selection load.
+        }
+        catch (OperationCanceledException fault)
+        {
+            ReportSelectionFocusFailure(fault);
+        }
+    }
+
+    private void ReportSelectionFocusFailure(Exception fault)
+    {
+        Trace.TraceError($"Autonogrammer could not focus the selected agent: {fault}");
+        if (!_closed && Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            SetStatus($"{FaultedStatus} {fault.GetBaseException().Message}");
         }
     }
 
@@ -1517,8 +1594,8 @@ public partial class MainView : UserControl
     }
 
     // The export view reads the transcript it was given, so it is built again on each open rather than kept.
-    private TranscriptExportView CreateExport() =>
-        new((_current?.ViewModel.Session ?? new SessionViewModel()).Tree, ExportTitle, new UsageHistory([]));
+    internal TranscriptExportView CreateExport() =>
+        new((_current?.ViewModel.Session ?? new SessionViewModel()).Tree, ExportTitle, UsageHistorySource?.Read() ?? new UsageHistory([]));
 
     private static void FocusFirst(Control? root)
     {
@@ -1528,18 +1605,42 @@ public partial class MainView : UserControl
         _ = target?.Focus();
     }
 
+    /// <summary>Places the surface switch in the top-bar slot. Null clears it.</summary>
+    /// <param name="view">The switch, or null.</param>
+    internal void SetSurfaceSwitch(Control? view) => SurfaceSwitchSlot.Content = view;
+
     /// <summary>
-    /// Releases the view's subscriptions, its transcript searches and the workspace models. The host calls this when its window closes.
-    /// It does not stop the sessions: the head owns the panel and the runtimes, and disposes them.
+    /// Releases the view's subscriptions, its transcript searches and the workspace models, and cancels and disposes pending focus waits. The host calls this when its window closes.
+    /// It does not stop the sessions or their selection loads: the head owns the panel and the runtimes, and disposes them.
     /// </summary>
-    public void Close()
+    public void Close() => Dispose();
+
+    /// <summary>Releases the resources owned by this view, using the same teardown as <see cref="Close"/>.</summary>
+    public void Dispose()
     {
-        if (_closed)
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>Releases the view's owned resources and subscriptions once, without disposing the head's panel or runtimes.</summary>
+    /// <param name="disposing">Whether managed resources can be released.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposing || _closed)
         {
             return;
         }
 
         _closed = true;
+        _selectionFocusLifetime.Cancel();
+        _selectionFocusLifetime.Dispose();
+        _keyHost?.RemoveHandler(KeyDownEvent, OnKeyDownTunnel);
+        _keyHost = null;
+        _rail.NewAgentCompleted -= OnNewAgentCompleted;
+        _rail.NewTerminalCompleted -= OnNewAgentCompleted;
+        _rail.RowActivated -= OnRowActivated;
+        _rail.CloseRequested -= OnRailCloseRequested;
+        _stateView.NewAgentCompleted -= OnNewAgentCompleted;
         CloseShell();
         _panel.PropertyChanged -= OnPanelChanged;
         _panel.Catalog.PropertyChanged -= OnCatalogChanged;

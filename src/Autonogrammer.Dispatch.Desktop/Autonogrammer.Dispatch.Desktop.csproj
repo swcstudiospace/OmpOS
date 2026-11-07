@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
+    <ProjectReference Include="../Autonogrammer.Cowork/Autonogrammer.Cowork.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Acp/Autonogrammer.Harness.Acp.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Secrets/Autonogrammer.Harness.Secrets.csproj" />
+    <ProjectReference Include="../Autonogrammer.Accounts/Autonogrammer.Accounts.csproj" />
+    <ProjectReference Include="../Autonogrammer.Presentation/Autonogrammer.Presentation.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Autonogrammer.Dispatch.Desktop.Tests" />
+  </ItemGroup>
+
+</Project>

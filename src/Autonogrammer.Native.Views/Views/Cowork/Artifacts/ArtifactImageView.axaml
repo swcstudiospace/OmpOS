@@ -1,0 +1,13 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Cowork.Artifacts.ArtifactImageView"
+             Focusable="False">
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+    <TextBlock x:Name="Message"
+               TextWrapping="Wrap"
+               IsVisible="False" />
+    <Image x:Name="Picture"
+           Stretch="Uniform"
+           IsVisible="False" />
+  </StackPanel>
+</UserControl>

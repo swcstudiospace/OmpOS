@@ -74,7 +74,7 @@ public sealed class WorkerAuthenticationTests
         {
             "expired" => tokens.Mint(Session, now, lifetime: TimeSpan.FromMinutes(5), issuedAgo: TimeSpan.FromMinutes(10)),
             "expired-just-beyond-skew" => tokens.Mint(Session, now, lifetime: TimeSpan.FromMinutes(5), issuedAgo: TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(31)),
-            "wrong-audience" => tokens.Mint(Session, now, audience: "autonogrammer-api"),
+            "wrong-audience" => tokens.Mint(Session, now, audience: Autonogrammer.AgentWorker.LegacyBrandNames.WorkerIssuer),
             "missing-audience" => tokens.Mint(Session, now, audience: null),
             "wrong-issuer" => tokens.Mint(Session, now, issuer: "someone-else"),
             "missing-issuer" => tokens.Mint(Session, now, issuer: null),

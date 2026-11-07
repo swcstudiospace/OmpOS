@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Autonogrammer.Contracts.Artifacts;
 using Autonogrammer.Contracts.Errors;
 using Autonogrammer.Contracts.Intents;
 using Autonogrammer.Contracts.Runs;
@@ -35,9 +36,13 @@ namespace Autonogrammer.Contracts.Serialization;
 [JsonSerializable(typeof(DiffPlaceholderBlock))]
 [JsonSerializable(typeof(ToolResultBlock))]
 [JsonSerializable(typeof(FileEditBlock))]
+[JsonSerializable(typeof(ImageBlock))]
 [JsonSerializable(typeof(ErrorBlock))]
 [JsonSerializable(typeof(A2uiSurfaceBlock))]
 [JsonSerializable(typeof(UnknownBlock))]
+[JsonSerializable(typeof(ArtifactBlock))]
+[JsonSerializable(typeof(ArtifactKind))]
+[JsonSerializable(typeof(ArtifactAction))]
 [JsonSerializable(typeof(UserMessageBlock))]
 [JsonSerializable(typeof(UiBlock[]))]
 [JsonSerializable(typeof(StreamEvent))]

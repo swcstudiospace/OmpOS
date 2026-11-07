@@ -1,0 +1,97 @@
+<local:SettingsPageViewBase xmlns="https://github.com/avaloniaui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                            xmlns:comp="clr-namespace:Autonogrammer.Presentation.Computer;assembly=Autonogrammer.Presentation"
+                            xmlns:local="clr-namespace:Autonogrammer.Native.Views.Settings"
+                            x:Class="Autonogrammer.Native.Views.Computer.ComputerSettingsPage"
+                            x:DataType="comp:ComputerUseSettingsPage"
+                            Focusable="False">
+  <local:SettingsPageViewBase.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </local:SettingsPageViewBase.Styles>
+  <Panel>
+    <local:PageStatusView x:Name="StateView" />
+    <ScrollViewer x:Name="ReadyPanel" Focusable="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <StackPanel Classes="settings-column">
+        <TextBlock Classes="settings-heading" Text="{x:Static comp:ComputerUseCopy.Heading}" />
+        <TextBlock Classes="settings-description" Text="{x:Static comp:ComputerUseCopy.Description}" />
+
+        <TextBlock Classes="settings-section" Text="{x:Static comp:ComputerUseCopy.ProviderDisclosureHeading}" />
+        <TextBlock Classes="settings-body" Text="{CompiledBinding Model.ProviderDisclosure}" />
+
+        <TextBlock Classes="settings-section" Text="{x:Static comp:ComputerUseCopy.OptInHeading}" />
+        <TextBlock Classes="settings-body" Text="{x:Static comp:ComputerUseCopy.OptInBody}" />
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+          <Button Content="{x:Static comp:ComputerUseCopy.OptInAccept}" MinWidth="24" MinHeight="24" AutomationProperties.Name="Opt in" Click="OnOptIn" />
+          <Button Content="{x:Static comp:ComputerUseCopy.OptInDecline}" MinWidth="24" MinHeight="24" AutomationProperties.Name="Keep off" Click="OnDecline" />
+        </StackPanel>
+
+        <TextBlock Classes="settings-section" Text="{CompiledBinding AdvisorTitle}" />
+        <TextBlock Classes="settings-body" Text="{CompiledBinding AdvisorBody}" />
+        <TextBlock Classes="settings-body" Text="{CompiledBinding AdvisorWhyBlocked}" />
+        <Button x:Name="OpenSettingsButton"
+                Content="{x:Static comp:ComputerUseCopy.OpenSystemSettings}"
+                MinWidth="24"
+                MinHeight="24"
+                AutomationProperties.Name="Open System Settings" />
+
+        <TextBlock Classes="settings-section" Text="{x:Static comp:ComputerUseCopy.GrantsHeading}" />
+        <TextBlock Classes="muted settings-body" IsVisible="{CompiledBinding Model.GrantsEmpty}" Text="{x:Static comp:ComputerUseCopy.GrantsEmpty}" />
+        <ItemsControl ItemsSource="{CompiledBinding Model.Grants}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="comp:ComputerGrantRow">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+                <TextBlock Classes="settings-body" Text="{CompiledBinding Text}" />
+                <Button Content="{x:Static comp:ComputerUseCopy.Revoke}"
+                        MinWidth="24"
+                        MinHeight="24"
+                        Command="{CompiledBinding Revoke}"
+                        AutomationProperties.Name="Revoke grant" />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <TextBlock Classes="settings-section" Text="{x:Static comp:ComputerUseCopy.DenylistHeading}" />
+        <TextBlock Classes="settings-body" Text="{x:Static comp:ComputerUseCopy.DenylistNote}" />
+        <TextBox x:Name="DenylistBox"
+                 Classes="settings-mono"
+                 MinWidth="24"
+                 MinHeight="24"
+                 Text="{CompiledBinding Model.DenylistIdentity}"
+                 AutomationProperties.Name="Denylist identity" />
+        <Button Content="{x:Static comp:ComputerUseCopy.DenylistAdd}"
+                MinWidth="24"
+                MinHeight="24"
+                Command="{CompiledBinding Model.AddDenylist}"
+                AutomationProperties.Name="Add denylist identity" />
+
+        <TextBlock Classes="settings-section" Text="{x:Static comp:ComputerUseCopy.KillChordHeading}" />
+        <TextBlock Classes="settings-body" Text="{x:Static comp:ComputerUseCopy.KillChordDescription}" />
+        <TextBox Classes="settings-mono"
+                 MinWidth="24"
+                 MinHeight="24"
+                 Text="{CompiledBinding Model.KillChord}"
+                 AutomationProperties.Name="Kill chord" />
+
+        <TextBlock Classes="settings-section" Text="{x:Static comp:ComputerUseCopy.SecurityPhraseHeading}" />
+        <TextBlock Classes="settings-body" Text="{x:Static comp:ComputerUseCopy.SecurityPhraseDescription}" />
+        <TextBox MinWidth="24"
+                 MinHeight="24"
+                 Text="{CompiledBinding Model.SecurityPhrase}"
+                 AutomationProperties.Name="Security phrase" />
+
+        <TextBlock Classes="settings-section" Text="{x:Static comp:ComputerUseCopy.AuditHeading}" />
+        <TextBlock Classes="settings-body" Text="{x:Static comp:ComputerUseCopy.AuditNote}" />
+        <TextBlock Classes="muted settings-body" IsVisible="{CompiledBinding Model.AuditEmpty}" Text="{x:Static comp:ComputerUseCopy.AuditEmpty}" />
+
+        <TextBlock Classes="settings-section" Text="{x:Static comp:ComputerUseCopy.IndicatorTestHeading}" />
+        <Button Content="{x:Static comp:ComputerUseCopy.IndicatorTest}"
+                MinWidth="24"
+                MinHeight="24"
+                Command="{CompiledBinding Model.TestIndicator}"
+                AutomationProperties.Name="Test indicator" />
+        <TextBlock Classes="settings-body" Text="{CompiledBinding Model.IndicatorTestResult}" />
+      </StackPanel>
+    </ScrollViewer>
+  </Panel>
+</local:SettingsPageViewBase>

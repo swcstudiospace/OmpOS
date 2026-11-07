@@ -1,3 +1,4 @@
+using Autonogrammer.Sessions.Postgres.Migrations;
 using Npgsql;
 using Shouldly;
 using Xunit;
@@ -27,7 +28,7 @@ public sealed class PostgresSessionLockTests(PostgresServerFixture server)
             var dataSource = NpgsqlDataSource.Create(connectionString);
             try
             {
-                await PostgresSessionSchema.EnsureCreatedAsync(dataSource, ct).ConfigureAwait(true);
+                await new MigrationRunner(dataSource, schema.SchemaName).MigrateAsync(ct).ConfigureAwait(true);
                 var repository = new PostgresSessionRepository(dataSource, schema.Connection);
                 await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
 

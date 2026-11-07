@@ -69,22 +69,20 @@ export AUTONOGRAMMER_TEST_SERVICES_NAME="${AUTONOGRAMMER_TEST_SERVICES_NAME:-gat
 # Cleanup runs on every exit path. `down` is idempotent; the export file holds test passwords and is removed.
 TEST_SERVICES_ENV=""
 cleanup() {
-  local exit_status=$?
   bash scripts/test-services.sh down
   if [ -n "$TEST_SERVICES_ENV" ]; then rm -f "$TEST_SERVICES_ENV"; fi
   if [ -n "${INSTALLER_DIR:-}" ]; then rm -rf "$INSTALLER_DIR"; fi
-  # The smoke evidence (JSON, log, screenshots) is kept when the gate fails, so the failing assertion can be read.
-  if [ -n "${SMOKE_OUT:-}" ]; then
-    if [ "$exit_status" -eq 0 ]; then rm -rf "$SMOKE_OUT"; else echo "web smoke evidence kept at $SMOKE_OUT" >&2; fi
-  fi
+  # The smoke evidence (JSON, log, screenshots) is kept on every run, pass or fail, so each check's result can be read after the gate.
+  if [ -n "${SMOKE_OUT:-}" ]; then echo "web smoke evidence kept at $SMOKE_OUT" >&2; fi
 }
 trap cleanup EXIT
 TEST_SERVICES_ENV="$(bash scripts/test-services.sh up)"
 source "$TEST_SERVICES_ENV"
-# AUTONOGRAMMER_TEST_PARALLEL_MODULES caps how many test modules run at once (CI uses 2); unset leaves the runner's default. A shared or loaded host
-# sets it so the assemblies that drive a UI thread are not starved by the other modules.
+# AUTONOGRAMMER_TEST_PARALLEL_MODULES caps how many test modules run at once. It defaults to 2, the cap CI uses, because a shared or loaded host
+# needs the cap: assemblies that drive a UI thread are otherwise starved by the other modules. Set it to a number to change the cap.
 test_modules=()
-if [ -n "${AUTONOGRAMMER_TEST_PARALLEL_MODULES:-}" ]; then test_modules=(--max-parallel-test-modules "$AUTONOGRAMMER_TEST_PARALLEL_MODULES"); fi
+AUTONOGRAMMER_TEST_PARALLEL_MODULES="${AUTONOGRAMMER_TEST_PARALLEL_MODULES:-2}"
+test_modules=(--max-parallel-test-modules "$AUTONOGRAMMER_TEST_PARALLEL_MODULES")
 dotnet test Autonogrammer.Linux.slnf -c Release --no-build "${test_modules[@]+"${test_modules[@]}"}" -- --filter-not-trait "Category=Live"
 dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore
 

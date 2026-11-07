@@ -23,8 +23,8 @@ public sealed class DragonflyCoordinationTests
         var ct = TestContext.Current.CancellationToken;
         using var first = await OpenAsync().ConfigureAwait(true);
         using var second = await OpenAsync().ConfigureAwait(true);
-        var leasesA = new DragonflySessionRunLeases(first);
-        var leasesB = new DragonflySessionRunLeases(second);
+        var leasesA = new DragonflySessionRunLeases(first, DragonflyTestEnvironment.LiveResilience());
+        var leasesB = new DragonflySessionRunLeases(second, DragonflyTestEnvironment.LiveResilience());
 
         var sessionIds = Enumerable.Range(0, 20).Select(_ => DragonflyTestEnvironment.NewId()).ToArray();
         var attempts = sessionIds
@@ -58,7 +58,7 @@ public sealed class DragonflyCoordinationTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var multiplexer = await OpenAsync().ConfigureAwait(true);
-        var leases = new DragonflySessionRunLeases(multiplexer);
+        var leases = new DragonflySessionRunLeases(multiplexer, DragonflyTestEnvironment.LiveResilience());
         var sessionId = DragonflyTestEnvironment.NewId();
         var ttl = TimeSpan.FromSeconds(2);
         var lease = (await leases.TryAcquireAsync(sessionId, "owner-a", ttl, ct).ConfigureAwait(true)).ShouldNotBeNull();
@@ -83,7 +83,7 @@ public sealed class DragonflyCoordinationTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var multiplexer = await OpenAsync().ConfigureAwait(true);
-        var leases = new DragonflySessionRunLeases(multiplexer);
+        var leases = new DragonflySessionRunLeases(multiplexer, DragonflyTestEnvironment.LiveResilience());
         var sessionId = DragonflyTestEnvironment.NewId();
         var stale = (await leases.TryAcquireAsync(sessionId, "owner-a", TimeSpan.FromSeconds(1), ct).ConfigureAwait(true)).ShouldNotBeNull();
 
@@ -104,8 +104,8 @@ public sealed class DragonflyCoordinationTests
         var ct = TestContext.Current.CancellationToken;
         using var first = await OpenAsync().ConfigureAwait(true);
         using var second = await OpenAsync().ConfigureAwait(true);
-        var storeA = new DragonflyIdempotencyStore(first);
-        var storeB = new DragonflyIdempotencyStore(second);
+        var storeA = new DragonflyIdempotencyStore(first, DragonflyTestEnvironment.LiveResilience());
+        var storeB = new DragonflyIdempotencyStore(second, DragonflyTestEnvironment.LiveResilience());
         var scope = "session-start";
         var key = DragonflyTestEnvironment.NewId();
         const string fingerprint = "fp-1";
@@ -134,8 +134,8 @@ public sealed class DragonflyCoordinationTests
         var ct = TestContext.Current.CancellationToken;
         using var first = await OpenAsync().ConfigureAwait(true);
         using var second = await OpenAsync().ConfigureAwait(true);
-        var storeA = new DragonflyIdempotencyStore(first);
-        var storeB = new DragonflyIdempotencyStore(second);
+        var storeA = new DragonflyIdempotencyStore(first, DragonflyTestEnvironment.LiveResilience());
+        var storeB = new DragonflyIdempotencyStore(second, DragonflyTestEnvironment.LiveResilience());
         var scope = "session-start";
         var key = DragonflyTestEnvironment.NewId();
 
@@ -152,8 +152,8 @@ public sealed class DragonflyCoordinationTests
         var ct = TestContext.Current.CancellationToken;
         using var subscriberConnection = await OpenAsync().ConfigureAwait(true);
         using var publisherConnection = await OpenAsync().ConfigureAwait(true);
-        var subscriber = new DragonflySessionSignals(subscriberConnection);
-        var publisher = new DragonflySessionSignals(publisherConnection);
+        var subscriber = new DragonflySessionSignals(subscriberConnection, resilience: DragonflyTestEnvironment.LiveResilience());
+        var publisher = new DragonflySessionSignals(publisherConnection, resilience: DragonflyTestEnvironment.LiveResilience());
         var sessionId = DragonflyTestEnvironment.NewId();
         var received = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -186,8 +186,8 @@ public sealed class DragonflyCoordinationTests
         var ct = TestContext.Current.CancellationToken;
         using var first = await OpenAsync().ConfigureAwait(true);
         using var second = await OpenAsync().ConfigureAwait(true);
-        var storeA = new DragonflyIdempotencyStore(first);
-        var storeB = new DragonflyIdempotencyStore(second);
+        var storeA = new DragonflyIdempotencyStore(first, DragonflyTestEnvironment.LiveResilience());
+        var storeB = new DragonflyIdempotencyStore(second, DragonflyTestEnvironment.LiveResilience());
         var scope = "session-start";
         var key = DragonflyTestEnvironment.NewId();
 
@@ -206,17 +206,40 @@ public sealed class DragonflyCoordinationTests
         (await storeA.ClaimAsync(scope, key, "fp-1", ct).ConfigureAwait(true)).Outcome.ShouldBe(IdempotencyOutcome.Conflict);
     }
 
+    /// <summary>A lease and a pending idempotency claim are written under the v1 prefix with a lifetime in the same command.</summary>
+    [Fact]
+    public async Task LeaseAndIdempotencyKeysLiveUnderTheV1PrefixWithALifetime()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var multiplexer = await OpenAsync().ConfigureAwait(true);
+        var database = multiplexer.GetDatabase();
+        var sessionId = DragonflyTestEnvironment.NewId();
+        var key = DragonflyTestEnvironment.NewId();
+        var lease = (await new DragonflySessionRunLeases(multiplexer, DragonflyTestEnvironment.LiveResilience()).TryAcquireAsync(sessionId, "owner-a", Ttl, ct).ConfigureAwait(true)).ShouldNotBeNull();
+        (await new DragonflyIdempotencyStore(multiplexer, DragonflyTestEnvironment.LiveResilience()).ClaimAsync("scope", key, "fp-1", ct).ConfigureAwait(true)).Outcome.ShouldBe(IdempotencyOutcome.Claimed);
+
+        var leaseTtl = await database.KeyTimeToLiveAsync("autonogrammer:v1:lease:run:" + sessionId).ConfigureAwait(true);
+        var idemTtl = await database.KeyTimeToLiveAsync(IdempotencyKey("scope", key)).ConfigureAwait(true);
+
+        leaseTtl.ShouldNotBeNull().ShouldBeLessThanOrEqualTo(Ttl);
+        idemTtl.ShouldNotBeNull().ShouldBeLessThanOrEqualTo(TimeSpan.FromSeconds(60));
+        await lease.DisposeAsync().ConfigureAwait(true);
+        _ = await database.KeyDeleteAsync(IdempotencyKey("scope", key)).ConfigureAwait(true);
+    }
+
     /// <summary>The registration resolves all three services over one shared multiplexer, and it connects to the server.</summary>
     [Fact]
     public void AddDragonflyCoordinationRegistersThreeServicesOverOneMultiplexer()
     {
         var services = new ServiceCollection();
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(DragonflyTestEnvironment.LiveOptions()));
         services.AddDragonflyCoordination(DragonflyTestEnvironment.RequireConnectionString());
         using var provider = services.BuildServiceProvider();
 
         provider.GetRequiredService<ISessionRunLeases>().ShouldBeOfType<DragonflySessionRunLeases>();
         provider.GetRequiredService<ISessionSignals>().ShouldBeOfType<DragonflySessionSignals>();
         provider.GetRequiredService<IIdempotencyStore>().ShouldBeOfType<DragonflyIdempotencyStore>();
+        provider.GetRequiredService<ITenantKeyEraser>().ShouldBeOfType<DragonflyTenantErasure>();
         provider.GetRequiredService<IConnectionMultiplexer>().ShouldBeSameAs(provider.GetRequiredService<IConnectionMultiplexer>());
     }
 
@@ -231,6 +254,6 @@ public sealed class DragonflyCoordinationTests
     private static RedisKey IdempotencyKey(string scope, string key)
     {
         var digest = SHA256.HashData(Encoding.UTF8.GetBytes(scope + "\n" + key));
-        return "autonogrammer:idem:" + Convert.ToHexStringLower(digest);
+        return "autonogrammer:v1:idem:" + Convert.ToHexStringLower(digest);
     }
 }

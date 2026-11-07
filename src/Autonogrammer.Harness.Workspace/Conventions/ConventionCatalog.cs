@@ -5,7 +5,7 @@ namespace Autonogrammer.Workspace.Conventions;
 /// the user's home. Precedence: a project item beats a user item; within a scope the directories are tried in <see cref="ConventionDirectories.Names"/> order; an earlier
 /// workspace root beats a later one; the first item with a name wins and the others are listed in <see cref="ConventionSet.Diagnostics"/>. A malformed, oversize or unreadable file is a diagnostic and never an
 /// exception. The files are read through <see cref="IConventionFileSource"/>, so the same discovery serves a local disk, an SSH host and a cloud file tree. When <see cref="ConventionSources.Builtin"/> is set, the skills that
-/// ship with the application are added last, in the <see cref="ConventionScope.Builtin"/> scope: they never beat a project or user skill of the same name.
+/// ship with the application are added after project and user items, in the <see cref="ConventionScope.Builtin"/> scope. When <see cref="ConventionSources.PluginRoots"/> is set, each bundle is read after that, in the <see cref="ConventionScope.Plugin"/> scope: skills keep their folder names, and commands and agents are named <c>&lt;plugin&gt;:&lt;command&gt;</c> and <c>&lt;plugin&gt;:&lt;agent&gt;</c>. A project, user or built-in item of the same name wins.
 /// </summary>
 public static class ConventionCatalog
 {
@@ -52,6 +52,92 @@ public static class ConventionCatalog
             await new ConventionItemScanner(context).ScanSkillsAsync(string.Empty, string.Empty, cancellationToken).ConfigureAwait(false);
         }
 
+        if (sources.PluginRoots is { Count: > 0 } pluginRoots && sources.Plugin is { } pluginSource)
+        {
+            foreach (var root in pluginRoots)
+            {
+                if (string.IsNullOrWhiteSpace(root))
+                {
+                    continue;
+                }
+
+                var pluginId = Path.GetFileName(root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                var context = new ConventionScanContext(pluginSource, collector, bounds, ConventionScope.Plugin, root, "plugin:" + pluginId + ":");
+                await new ConventionItemScanner(context).ScanSkillsAsync(string.Empty, string.Empty, cancellationToken).ConfigureAwait(false);
+                await ScanPluginMarkdownAsync(pluginSource, collector, bounds, root, pluginId, "commands", ConventionItemKind.Command, cancellationToken).ConfigureAwait(false);
+                await ScanPluginMarkdownAsync(pluginSource, collector, bounds, root, pluginId, "agents", ConventionItemKind.Subagent, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         return collector.Build();
+    }
+
+    private static async Task ScanPluginMarkdownAsync(
+        IConventionFileSource source,
+        ConventionCollector collector,
+        ConventionDiscoveryOptions bounds,
+        string root,
+        string pluginId,
+        string folder,
+        ConventionItemKind kind,
+        CancellationToken cancellationToken)
+    {
+        var directory = ConventionPath.Join(root, folder);
+        var list = await source.ListAsync(directory, bounds.MaxEntriesPerDirectory, cancellationToken).ConfigureAwait(false);
+        if (list.Problem is not null)
+        {
+            collector.AddDiagnostic(kind, "plugin:" + pluginId + ":" + folder, list.ProblemKind, list.Problem);
+            return;
+        }
+
+        foreach (var entry in list.Entries)
+        {
+            if (entry.IsDirectory) continue;
+
+            var stem = ConventionText.Stem(entry.Name, ".md");
+            if (stem is null)
+            {
+                continue;
+            }
+
+            var relative = folder + "/" + entry.Name;
+            var path = ConventionPath.Join(root, relative);
+            var read = await source.ReadTextAsync(path, bounds.MaxFileBytes, cancellationToken).ConfigureAwait(false);
+            if (!read.IsRead || read.Text is null)
+            {
+                collector.AddDiagnostic(kind, "plugin:" + pluginId + ":" + relative, read.ProblemKind, read.Problem ?? "the file could not be read");
+                continue;
+            }
+
+            var markdown = ConventionFrontmatterParser.Parse(read.Text);
+            var qualified = pluginId + ":" + stem;
+            var origin = "plugin:" + pluginId + ":" + relative;
+            if (kind == ConventionItemKind.Command)
+            {
+                collector.Add(new ConventionCommand(
+                    qualified,
+                    ConventionText.Describe(markdown),
+                    markdown.ReadText("argument-hint"),
+                    markdown.Body,
+                    ConventionScope.Plugin,
+                    string.Empty,
+                    path,
+                    origin));
+            }
+            else
+            {
+                collector.Add(new ConventionSubagent(
+                    qualified,
+                    ConventionText.Describe(markdown),
+                    markdown.ReadText("model"),
+                    markdown.ReadFlag("readonly") ?? false,
+                    markdown.ReadFlag("is_background") ?? false,
+                    markdown.Body,
+                    ConventionScope.Plugin,
+                    string.Empty,
+                    path,
+                    origin));
+            }
+        }
     }
 }

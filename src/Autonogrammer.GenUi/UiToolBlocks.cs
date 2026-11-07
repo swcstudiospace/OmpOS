@@ -52,6 +52,11 @@ internal static class UiToolBlocks
             });
         }
 
+        for (var i = 0; i < content.Images.Count; i++)
+        {
+            produced.Add(ImageBlock.FromUpdate(call.CallId, call.ToolName, i, content.Images[i]));
+        }
+
         var current = state;
         foreach (var block in produced)
         {

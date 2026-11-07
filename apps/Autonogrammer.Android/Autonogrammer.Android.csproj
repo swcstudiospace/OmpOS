@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0-android36.0</TargetFramework>
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
-    <ApplicationId>com.swcstudiospace.autonogrammer</ApplicationId>
+    <ApplicationId>com.swcstudiospace.ompos</ApplicationId>
     <ApplicationVersion>1</ApplicationVersion>
     <ApplicationDisplayVersion>0.10.0</ApplicationDisplayVersion>
     <RootNamespace>Autonogrammer.Android</RootNamespace>
@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Autonogrammer.Native.Views/Autonogrammer.Native.Views.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Dispatch.Client/Autonogrammer.Dispatch.Client.csproj" />
   </ItemGroup>
 
 </Project>

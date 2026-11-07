@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Autonogrammer.Api.IntegrationTests;
 
-/// <summary>Collection for tests that mutate the process PATH. Its tests never run in parallel with another collection.</summary>
+/// <summary>Collection for tests that mutate process-wide state: the PATH, and the environment every host reads (the OTLP exporter variables). Its tests never run in parallel with another collection.</summary>
 [CollectionDefinition(ProcessPathSerialization.Name, DisableParallelization = true)]
 [SuppressMessage(
     "Design",

@@ -126,7 +126,7 @@ internal partial class App : Application
     private MainWindow CreateWindow(AgentHead head)
     {
         RequestedThemeVariant = HeadSettings.VariantOf(head.Settings.Theme);
-        var window = new MainWindow(head.Panel, head.Settings.Motion, Environment.CurrentDirectory, head.Board, head.Services);
+        var window = new MainWindow(head.Panel, head.Settings.Motion, Environment.CurrentDirectory, head.Board, head.Services, Autonogrammer.Native.Cowork.CoworkSurfaceServicesFactory.TryBuild(head));
         AppIcon.Apply(window);
         head.Settings.Attach(window);
         return window;

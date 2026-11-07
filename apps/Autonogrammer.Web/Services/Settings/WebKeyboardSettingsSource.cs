@@ -15,6 +15,8 @@ internal sealed class WebKeyboardSettingsSource : IKeyboardSettingsSource
         new("Put the chosen command in the message", "Enter or Tab", "Slash commands"),
         new("Close the slash command list", "Escape", "Slash commands"),
         new("Close the dialog", "Escape", "Dialogs"),
+        new("Show Code", "Ctrl+Shift+1", "Workspace"),
+        new("Show Cowork", "Ctrl+Shift+2", "Workspace"),
     ];
 
     /// <inheritdoc />

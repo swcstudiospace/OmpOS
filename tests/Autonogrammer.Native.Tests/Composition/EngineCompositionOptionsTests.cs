@@ -64,4 +64,23 @@ public sealed class EngineCompositionOptionsTests
         reviewed.ApprovalPolicy.Allows(new AcpPermissionRequest("c", "fetch", "fetch", "{}")).ShouldBeFalse();
         reviewed.ApprovalPolicy.Allows(new AcpPermissionRequest("c", "read", "read", "{}")).ShouldBeTrue();
     }
+
+    [Fact]
+    public async Task DefaultsLeaveEnvironmentModeInheritAndTheAllowListEmpty()
+    {
+        var launch = await LaunchAsync(null, Plan(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        launch.EnvironmentMode.ShouldBe(Autonogrammer.Harness.Acp.EngineEnvironmentMode.Inherit);
+        launch.EnvironmentAllowList.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void PermissionResolverFactoryTogetherWithRunModePolicyThrows()
+    {
+        var options = new EngineCompositionOptions
+        {
+            RunModePolicy = () => new RunModePolicy(RunMode.AutoReview, EffectivePermissions.Empty, EffectiveSandbox.Default, "/work", null),
+            PermissionResolverFactory = pending => pending,
+        };
+        Should.Throw<ArgumentException>(() => EngineComposition.Compose(["read"], Plan(), options: options));
+    }
 }

@@ -87,9 +87,10 @@ public static class UnconnectedAgentPanel
             Task.FromException<string>(new InvalidOperationException(UnconnectedPromptChannel.UnavailableText));
 
         /// <inheritdoc />
-        public AgentSessionViewModel OpenSession(AgentRow row)
+        public Task<AgentSessionViewModel> OpenSessionAsync(AgentRow row, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(row);
+            cancellationToken.ThrowIfCancellationRequested();
 
             _runtime = new AgentSessionRuntime(new AgentSessionRuntimeOptions
             {
@@ -107,7 +108,7 @@ public static class UnconnectedAgentPanel
                 Motion = motion,
             });
             _runtime.StartObserving();
-            return _runtime.ViewModel;
+            return Task.FromResult(_runtime.ViewModel);
         }
 
         /// <inheritdoc />

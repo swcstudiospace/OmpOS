@@ -34,7 +34,7 @@ public sealed class TerminalSessionTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
 
@@ -79,7 +79,7 @@ public sealed class TerminalSessionTests
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
-            var head = AgentHead.Create(Options(tree, omp: null, Substrate("http://127.0.0.1:7410"), substrate, ompPath: fake.Path));
+            var head = await AgentHead.CreateAsync(Options(tree, omp: null, Substrate("http://127.0.0.1:7410"), substrate, ompPath: fake.Path)).ConfigureAwait(true);
             try
             {
                 await head.InitializeAsync(ct).ConfigureAwait(true);
@@ -143,7 +143,7 @@ public sealed class TerminalSessionTests
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
-            var head = AgentHead.Create(Options(tree, omp: null, ompPath: fake.Path));
+            var head = await AgentHead.CreateAsync(Options(tree, omp: null, ompPath: fake.Path)).ConfigureAwait(true);
             try
             {
                 await head.InitializeAsync(ct).ConfigureAwait(true);
@@ -176,7 +176,7 @@ public sealed class TerminalSessionTests
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
-            var head = AgentHead.Create(Options(tree, omp: null, terminalLocator: new OmpLocatorOptions(missing, [], [])));
+            var head = await AgentHead.CreateAsync(Options(tree, omp: null, terminalLocator: new OmpLocatorOptions(missing, [], []))).ConfigureAwait(true);
             try
             {
                 await head.InitializeAsync(ct).ConfigureAwait(true);
@@ -209,7 +209,7 @@ public sealed class TerminalSessionTests
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
-            var head = AgentHead.Create(Options(tree, omp: null, ompPath: fake.Path));
+            var head = await AgentHead.CreateAsync(Options(tree, omp: null, ompPath: fake.Path)).ConfigureAwait(true);
             try
             {
                 await head.InitializeAsync(ct).ConfigureAwait(true);
@@ -256,7 +256,7 @@ public sealed class TerminalSessionTests
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
-            var head = AgentHead.Create(Options(tree, omp: null, ompPath: fake.Path));
+            var head = await AgentHead.CreateAsync(Options(tree, omp: null, ompPath: fake.Path)).ConfigureAwait(true);
             try
             {
                 await head.InitializeAsync(ct).ConfigureAwait(true);
@@ -290,7 +290,7 @@ public sealed class TerminalSessionTests
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
-            var head = AgentHead.Create(Options(tree, omp: null, ompPath: fake.Path));
+            var head = await AgentHead.CreateAsync(Options(tree, omp: null, ompPath: fake.Path)).ConfigureAwait(true);
             try
             {
                 await head.InitializeAsync(ct).ConfigureAwait(true);
@@ -305,6 +305,7 @@ public sealed class TerminalSessionTests
                 await RunControlsHarness.UntilAsync(() => ResumeNotice(timeline) is not null, "the fresh-start notice in the timeline", ct).ConfigureAwait(true);
                 await terminal.StartAsync().ConfigureAwait(true);
                 await RunControlsHarness.UntilAsync(() => File.Exists(fake.PidFile), "the fake omp to record itself", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => head.Host.Registry!.TryGet(id, out var current) && current!.Lifecycle == SessionLifecycle.Running, "the fresh omp session to be running", ct).ConfigureAwait(true);
 
                 var notice = ResumeNotice(timeline).ShouldNotBeNull();
                 notice.Status.ShouldBe(StageStatus.Degraded);

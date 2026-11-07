@@ -22,12 +22,14 @@ public interface IAgentPanelHost
     Task<string> CreateTerminalSessionAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// Returns the view model of a session that is in the catalog. The panel calls it once per session and keeps the result until the
-    /// session leaves the catalog. It must not throw for a session the catalog lists.
+    /// Returns the view model of a session in the catalog, awaiting engine startup before returning it. The panel keeps the result until
+    /// the session leaves the catalog. Overlapping requests for the same session must not create multiple engines.
+    /// Failure or cancellation must await cleanup of any resources acquired before ownership of the view model transfers to the panel.
     /// </summary>
     /// <param name="row">The catalog row of the session.</param>
-    /// <returns>The session view model, wired to the session's engine.</returns>
-    AgentSessionViewModel OpenSession(AgentRow row);
+    /// <param name="cancellationToken">Cancels startup when selection changes or the panel is disposed.</param>
+    /// <returns>The session view model, wired to the session's engine. Immediate hosts may return a completed task.</returns>
+    Task<AgentSessionViewModel> OpenSessionAsync(AgentRow row, CancellationToken cancellationToken);
 
     /// <summary>
     /// Stops the engine of a session and records it as closed. The session stays in the catalog, so the user can reopen it. The panel

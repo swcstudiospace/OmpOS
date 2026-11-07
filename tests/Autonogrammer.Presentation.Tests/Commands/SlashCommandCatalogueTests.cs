@@ -7,13 +7,13 @@ using Xunit;
 
 namespace Autonogrammer.Presentation.Tests.Commands;
 
-/// <summary>The shipped catalogue holds every one of the 92 Cursor tokens and the Autonogrammer addition /update-settings, each with a handler and an honest status, and each cites the research row it was verified against (VX-02, PX-12).</summary>
+/// <summary>The shipped catalogue holds every one of the 92 Cursor tokens and the Autonogrammer additions /create-plugin and /update-settings, each with a handler and an honest status, and each cites the research row it was verified against (VX-02, PX-12).</summary>
 public sealed class SlashCommandCatalogueTests
 {
     private const int DocumentedTokens = 92;
 
-    /// <summary>The commands that only Autonogrammer has (rows E): the built-in skill that explains Autonogrammer settings.</summary>
-    private const int AutonogrammerAdditions = 1;
+    /// <summary>The commands that only Autonogrammer has (rows E): the built-in skills that create plugin bundles and explain Autonogrammer settings.</summary>
+    private const int AutonogrammerAdditions = 2;
 
     /// <summary>
     /// Each shipped command names a research row, and that row exists in the research record that holds it, is a row of the command tables, and
@@ -65,7 +65,7 @@ public sealed class SlashCommandCatalogueTests
         all.Count.ShouldBe(DocumentedTokens + AutonogrammerAdditions);
         all.Select(command => command.Name).Distinct(StringComparer.Ordinal).Count().ShouldBe(DocumentedTokens + AutonogrammerAdditions);
         all.Count(command => command.Group == SlashCommandGroup.Cli).ShouldBe(65, "44 CLI table rows and 21 changelog rows");
-        all.Count(command => command.Group == SlashCommandGroup.BuiltInSkill).ShouldBe(19, "the 18 Cursor built-in skills and /update-settings");
+        all.Count(command => command.Group == SlashCommandGroup.BuiltInSkill).ShouldBe(20, "the 18 Cursor built-in skills, /create-plugin and /update-settings");
         all.Count(command => command.Group == SlashCommandGroup.Chat).ShouldBe(9, "side, btw, in-cloud and the six tokens added since the first record");
         SlashCommandCatalogue.ResearchRows.Values.Count(row => row[0] == 'D').ShouldBe(6);
         SlashCommandCatalogue.ResearchRows.Values.Count(row => row[0] == 'E').ShouldBe(AutonogrammerAdditions);
@@ -80,7 +80,7 @@ public sealed class SlashCommandCatalogueTests
     {
         var all = SlashCommandCatalogue.Shipped.ListAll();
 
-        all.Count(command => command.Status == SlashCommandStatus.Built).ShouldBe(36, "26 before the built-in skills shipped: 7 Partial skill rows, review-security and agent-review (Unavailable) and the new /update-settings are Built now");
+        all.Count(command => command.Status == SlashCommandStatus.Built).ShouldBe(37, "26 before the built-in skills shipped: 7 Partial skill rows, review-security and agent-review (Unavailable), and the new /update-settings and /create-plugin are Built now");
         all.Count(command => command.Status == SlashCommandStatus.Partial).ShouldBe(24);
         all.Count(command => command.Status == SlashCommandStatus.Delegated).ShouldBe(9);
         all.Count(command => command.Status == SlashCommandStatus.Unavailable).ShouldBe(24);

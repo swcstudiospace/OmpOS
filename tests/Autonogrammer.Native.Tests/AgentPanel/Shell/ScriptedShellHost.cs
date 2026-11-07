@@ -107,8 +107,9 @@ internal sealed class ScriptedShellHost(FakeAgentCatalog catalog, ShellClock clo
     }
 
     /// <inheritdoc />
-    public AgentSessionViewModel OpenSession(AgentRow row)
+    public Task<AgentSessionViewModel> OpenSessionAsync(AgentRow row, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var script = ScriptOf(row.Id);
         var runtime = new AgentSessionRuntime(new AgentSessionRuntimeOptions
         {
@@ -141,7 +142,7 @@ internal sealed class ScriptedShellHost(FakeAgentCatalog catalog, ShellClock clo
         });
         Runtimes[row.Id] = runtime;
         runtime.StartObserving();
-        return runtime.ViewModel;
+        return Task.FromResult(runtime.ViewModel);
     }
 
     /// <inheritdoc />

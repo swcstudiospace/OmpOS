@@ -608,7 +608,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// <param name="text">The message.</param>
     /// <param name="cancellationToken">Cancels the hand-over.</param>
     /// <returns>The delivery the steering history records.</returns>
-    private async Task<SteeringDelivery> SubmitAsNewTurnAsync(string text, CancellationToken cancellationToken)
+    internal async Task<SteeringDelivery> SubmitAsNewTurnAsync(string text, CancellationToken cancellationToken)
     {
         if (_stopRequested)
         {

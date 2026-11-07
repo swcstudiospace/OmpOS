@@ -71,7 +71,7 @@ public sealed class WorkerSecretHandlingTests
         {
             foreign.Mint(Session, clock.GetUtcNow()),
             tokens.Mint(Session, clock.GetUtcNow(), issuedAgo: TimeSpan.FromHours(1)),
-            tokens.Mint(Session, clock.GetUtcNow(), audience: "autonogrammer-api"),
+            tokens.Mint(Session, clock.GetUtcNow(), audience: Autonogrammer.AgentWorker.LegacyBrandNames.WorkerIssuer),
             tokens.Mint("../escape", clock.GetUtcNow()),
         };
         using var client = new HttpClient { BaseAddress = host.Address };

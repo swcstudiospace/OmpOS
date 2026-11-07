@@ -185,4 +185,21 @@ public sealed class ToolResultProjectionTests
 
     private static string Serialize(ProjectionState state) =>
         JsonSerializer.Serialize(state.Blocks.ToArray(), AutonogrammerJsonContext.Default.UiBlockArray) + "|" + state.StreamingText;
+
+    /// <summary>D-27: an image update projects to an image block with alt text, replaced in place by a later update.</summary>
+    [Fact]
+    public void ImageUpdateProjectsToAnImageBlock()
+    {
+        const string payload = """
+            {"content":[{"type":"image","mimeType":"image/png","data":"aGVsbG8=","description":"chart"}]}
+            """;
+        var state = Fold(
+            new ToolCallEvent("call-1", "screenshot", "{}"),
+            new ToolCallUpdateEvent("call-1", "completed", payload));
+        var image = state.Blocks.OfType<ImageBlock>().ShouldHaveSingleItem();
+        image.Id.ShouldBe("call-1-image-0");
+        image.ToolName.ShouldBe("screenshot");
+        image.AltText.ShouldBe("chart");
+        image.Omitted.ShouldBeFalse();
+    }
 }

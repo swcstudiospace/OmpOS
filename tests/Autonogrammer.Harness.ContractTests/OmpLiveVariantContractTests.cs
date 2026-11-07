@@ -48,7 +48,7 @@ public sealed class OmpLiveVariantContractTests
     public async Task UsageUpdateBecomesAContextUsageEvent()
     {
         var ct = TestContext.Current.CancellationToken;
-        await AssertVariantAsync("session-update-usage-update.json", "usage_update", [new ContextUsageEvent(28919, 1_000_000), new CompletedEvent(StopReason)], ct).ConfigureAwait(true);
+        await AssertVariantAsync("session-update-usage-update.json", "usage_update", [new ContextUsageEvent(28919, 1_000_000, new UsageCost(0.0059281m, "USD")), new CompletedEvent(StopReason)], ct).ConfigureAwait(true);
     }
 
     private static Task AssertUnmodelledVariantAsync(string fixtureName, string expectedKind, CancellationToken ct) =>

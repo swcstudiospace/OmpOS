@@ -48,6 +48,9 @@
       },
       "autonogrammer.coordination": {
         "type": "Project"
+      },
+      "autonogrammer.resilience": {
+        "type": "Project"
       }
     }
   }

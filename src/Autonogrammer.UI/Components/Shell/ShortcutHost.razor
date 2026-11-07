@@ -20,6 +20,12 @@
     /// <summary>The shortcut identifier of Ctrl+Comma: open Settings.</summary>
     public const string Settings = "settings";
 
+    /// <summary>The shortcut identifier of Ctrl+Shift+1: show Code.</summary>
+    public const string Code = "code";
+
+    /// <summary>The shortcut identifier of Ctrl+Shift+2: show Cowork.</summary>
+    public const string Cowork = "cowork";
+
     /// <summary>Gets the callback invoked with the identifier of the shortcut the user pressed. The same keys work with Command on a Mac.</summary>
     [Parameter]
     public EventCallback<string> OnShortcut { get; set; }

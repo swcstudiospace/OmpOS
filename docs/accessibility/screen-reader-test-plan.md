@@ -28,13 +28,11 @@ Run the Demo bundle for all rows; run flow A on an owner-token deployment for ro
 
 The expected announcements are what the markup supports. The wording will differ between screen readers; check the information, not the words.
 
-### A. Connect (owner-token deployment)
+### A. Sign-in explanation (owner-token deployment)
 
-- On load the page title is announced as "Connect - Autonogrammer" and the heading "Connect to Autonogrammer" (level 1) is read, because focus is placed on it.
-- The field is announced as "Access token", edit, protected or password, required, with the help text as its description.
-- An empty submit announces the error ("Enter the access token."), and the field is announced as invalid when focus is back in it.
-- A rejected token announces the error; the field is empty.
-- A successful connection announces the new page's title.
+- On load the page title is announced as "Sign-in not available - Autonogrammer", and the main heading (level 1) is read, with the sentence that sign-in is not available in this web build.
+- No field is offered: the screen reader lists no edit or password field on the page.
+- The page does not redirect: the address stays where it was.
 
 ### B. Page and region structure
 

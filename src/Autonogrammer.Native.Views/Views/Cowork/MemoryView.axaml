@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Cowork.MemoryView"
+             Focusable="True"
+             IsTabStop="False"
+             AutomationProperties.Name="Memory">
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+    <TextBlock Text="Memory" AutomationProperties.Name="Memory" />
+    <TextBlock x:Name="StatusText"
+               AutomationProperties.LiveSetting="Polite"
+               AutomationProperties.Name="Memory status" />
+    <TextBlock x:Name="RiskText"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="Memory residual risk" />
+    <TextBlock x:Name="LimitationText"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="English-only limitation" />
+    <ListBox x:Name="EntryRows"
+             TabIndex="1"
+             AutomationProperties.Name="Memory entries" />
+    <Button x:Name="DeleteEntryButton"
+            TabIndex="2"
+            Content="Delete entry"
+            MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+            MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+            AutomationProperties.Name="Delete memory entry" />
+    <CheckBox x:Name="EnabledBox"
+              TabIndex="3"
+              Content="Enabled"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              AutomationProperties.Name="Memory enabled" />
+    <CheckBox x:Name="PausedBox"
+              TabIndex="4"
+              Content="Paused"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              AutomationProperties.Name="Memory paused" />
+    <CheckBox x:Name="SensitiveBox"
+              TabIndex="5"
+              Content="Include sensitive"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              AutomationProperties.Name="Include sensitive" />
+  </StackPanel>
+</UserControl>

@@ -85,7 +85,11 @@ internal sealed class ConventionMentionProvider : IMentionConventionProvider
         }
 
         var sources = GetSources();
-        var source = located.Scope == ConventionScope.Project ? sources.Project : sources.User;
+        var source = located.Scope == ConventionScope.Project
+            ? sources.Project
+            : located.Scope == ConventionScope.Plugin
+                ? sources.Plugin ?? sources.User
+                : sources.User;
         var read = await source.ReadTextAsync(located.Path, _options.MaxFileBytes, cancellationToken).ConfigureAwait(false);
         if (read.Text is not { } text)
         {
@@ -127,7 +131,7 @@ internal sealed class ConventionMentionProvider : IMentionConventionProvider
     {
         lock (_gate)
         {
-            return _sources ??= ConventionSources.Local(_roots, _userHome);
+            return _sources ??= WithPlugins(ConventionSources.Local(_roots, _userHome));
         }
     }
 
@@ -138,7 +142,7 @@ internal sealed class ConventionMentionProvider : IMentionConventionProvider
         {
             if (_discovery is null || (_discovery.IsCompleted && _discovery.Status != TaskStatus.RanToCompletion))
             {
-                var sources = _sources ??= ConventionSources.Local(_roots, _userHome);
+                var sources = _sources ??= WithPlugins(ConventionSources.Local(_roots, _userHome));
                 _discovery = Task.Run(() => ConventionCatalog.DiscoverAsync(_roots, _userHome, sources, _options, CancellationToken.None), CancellationToken.None);
             }
 
@@ -147,4 +151,11 @@ internal sealed class ConventionMentionProvider : IMentionConventionProvider
 
         return discovery.WaitAsync(cancellationToken);
     }
+
+    private static ConventionSources WithPlugins(ConventionSources sources)
+    {
+        var roots = Autonogrammer.Native.Composition.Plugins.BundleComposition.PluginRootsFor?.Invoke(false);
+        return roots is { Count: > 0 } ? sources.WithPluginRoots(roots) : sources;
+    }
+
 }

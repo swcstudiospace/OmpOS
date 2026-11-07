@@ -370,4 +370,35 @@ public sealed class McpServerCatalogTests
         catalog.OfferedServers().Select(server => server.GetType()).ShouldBe([typeof(AcpHttpMcpServer), typeof(AcpSseMcpServer)]);
         catalog.OfferedServers().Select(server => server.Name).ShouldBe(["a-http", "z-user"]);
     }
+
+    [Fact]
+    public async Task ExtraServersArriveAfterFileServersAndStayOffUntilEnabled()
+    {
+        var extra = new FixedExtra(new McpServerSpec
+        {
+            Name = "plugin.echo",
+            Transport = McpTransportKind.Stdio,
+            Scope = McpScope.User,
+            Format = McpConfigFormat.ClaudeProject,
+            Origin = "plugin:demo",
+            Priority = 1_000_000,
+            Command = "echo",
+            EnabledInFile = false,
+            ConsentIdentity = "abc",
+        });
+        var catalog = new McpServerCatalog(new MemoryMcpFileStore(), new InMemoryMcpStateStore(), extra: extra);
+        var snapshot = await catalog.RefreshAsync(McpTestContext.Create(), Token).ConfigureAwait(true);
+        var entry = snapshot.Entries.ShouldHaveSingleItem();
+        entry.Server.Origin.ShouldBe("plugin:demo");
+        entry.Server.EnabledInFile.ShouldBeFalse();
+        entry.IsOffered.ShouldBeFalse();
+        await catalog.SetEnabledAsync("plugin.echo", true, Token).ConfigureAwait(true);
+        catalog.Current.Entries.ShouldHaveSingleItem().IsOffered.ShouldBeTrue();
+    }
+
+    private sealed class FixedExtra(McpServerSpec server) : IMcpExtraServerSource
+    {
+        public IReadOnlyList<McpServerSpec> Servers(McpLocatorContext context) => [server];
+    }
+
 }

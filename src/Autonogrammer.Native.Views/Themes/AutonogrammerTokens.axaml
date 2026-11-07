@@ -894,6 +894,7 @@
        its application resources, where a finger is the pointer. Control heights: ControlHeight buttons and inputs, ControlHeightSm toolbar buttons,
        tabs and chips that are buttons; IconButton and IconButtonSm square icon buttons (24 is the WCAG 2.2 AA minimum target, SC 2.5.8). -->
   <x:Double x:Key="Autonogrammer.Size.SessionListWidth">240</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.CoworkDockWidth">420</x:Double>
   <x:Double x:Key="Autonogrammer.Size.TargetMin">32</x:Double>
   <x:Double x:Key="Autonogrammer.Size.ControlHeight">32</x:Double>
   <x:Double x:Key="Autonogrammer.Size.ControlHeightSm">28</x:Double>

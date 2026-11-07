@@ -117,4 +117,17 @@ public sealed class ShellRegionTests : UiTestContext
         cut.Find("header .autonogrammer-topbar-tabs #tabs-probe").TextContent.ShouldBe("tabs");
         cut.Find(".autonogrammer-footer-version").TextContent.ShouldBe("Autonogrammer 9.9.9");
     }
+
+    /// <summary>The surface fragment sits before the tabs in the top bar.</summary>
+    [Fact]
+    public void TheShellHostsASurfaceProbeBeforeTheTabs()
+    {
+        JSInterop.SetupModule("./_content/Autonogrammer.UI/scripts/autonogrammer-shell.js");
+        var cut = Render<AppShell>(parameters => parameters
+            .Add(p => p.TopBarSurface, "<span id=\"surface-probe\">surface</span>")
+            .Add(p => p.TopBarTabs, "<span id=\"tabs-probe\">tabs</span>"));
+
+        var header = cut.Find("header.autonogrammer-topbar").InnerHtml;
+        header.IndexOf("surface-probe", StringComparison.Ordinal).ShouldBeLessThan(header.IndexOf("tabs-probe", StringComparison.Ordinal));
+    }
 }

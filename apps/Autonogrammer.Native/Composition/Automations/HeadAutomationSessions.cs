@@ -26,18 +26,29 @@ internal sealed class HeadAutomationSessions : IAutomationSessions
     /// <inheritdoc/>
     public async Task<IAutomationSession> CreateAsync(string title, string workspaceRoot, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var id = await _engines.CreateAutomationSessionAsync(title, workspaceRoot, cancellationToken).ConfigureAwait(false);
-        var (slot, runtime) = await OnUiAsync(() => Task.FromResult(Open(id))).ConfigureAwait(false);
-        return new HeadAutomationSession(id, slot, runtime, _engines, _dispatch);
+        try
+        {
+            var (slot, runtime) = await OnUiAsync(() => OpenAsync(id, cancellationToken)).ConfigureAwait(false);
+            return new HeadAutomationSession(id, slot, runtime, _engines, _dispatch);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Removes the row this create made, so a cancelled create leaves no session in the registry.
+            _ = _engines.Registry?.Close(id);
+            throw;
+        }
     }
 
-    private (SessionSlot Slot, AgentSessionRuntime Runtime) Open(string id)
+    private async Task<(SessionSlot Slot, AgentSessionRuntime Runtime)> OpenAsync(string id, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var catalog = _engines.CatalogModel ?? throw new InvalidOperationException("The agent panel is not open yet.");
         _ = catalog.Refresh();
         var row = catalog.Sessions.FirstOrDefault(candidate => string.Equals(candidate.Id, id, StringComparison.Ordinal))
             ?? throw new InvalidOperationException("The session of the run is not in the rail.");
-        _ = _engines.OpenSession(row);
+        await _engines.OpenSessionAsync(row, cancellationToken).ConfigureAwait(false);
         var slot = _engines.SlotOf(id) ?? throw new InvalidOperationException("The session of the run has no slot.");
         return (slot, slot.Runtime ?? throw new InvalidOperationException("The session of the run has no runtime."));
     }

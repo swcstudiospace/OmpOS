@@ -24,8 +24,10 @@ public sealed class UiBlockConverter : JsonConverter<UiBlock>
         ["diff"] = typeof(DiffPlaceholderBlock),
         ["tool_result"] = typeof(ToolResultBlock),
         ["file_edit"] = typeof(FileEditBlock),
+        ["image"] = typeof(ImageBlock),
         ["error"] = typeof(ErrorBlock),
         ["a2ui-surface"] = typeof(A2uiSurfaceBlock),
+        ["artifact"] = typeof(ArtifactBlock),
         ["unknown"] = typeof(UnknownBlock),
     };
 

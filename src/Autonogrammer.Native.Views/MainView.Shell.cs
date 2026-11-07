@@ -209,17 +209,26 @@ public partial class MainView
 
     private void OnSearchSessionChosen(object? sender, SessionSelectionChangedEventArgs e)
     {
-        if (e.SessionId is not { } sessionId)
+        if (_closed || e.SessionId is not { } sessionId)
         {
             return;
         }
 
-        _searchModel?.Close();
-        _searchReturnFocus = null;
-        ShowAgentsTab();
-        ShowThread();
-        _ = _panel.SelectSession(sessionId);
-        FocusThread();
+        try
+        {
+            _searchModel?.Close();
+            _searchReturnFocus = null;
+            ShowAgentsTab();
+            ShowThread();
+            if (_panel.SelectSession(sessionId))
+            {
+                _selectionFocusCommand.Execute(null);
+            }
+        }
+        catch (InvalidOperationException fault)
+        {
+            ReportSelectionFocusFailure(fault);
+        }
     }
 
     private void OnSearchDismissed(object? sender, EventArgs e)

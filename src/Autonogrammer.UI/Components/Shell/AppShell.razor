@@ -1,3 +1,4 @@
+@using Autonogrammer.Presentation.Cowork
 @namespace Autonogrammer.UI.Components.Shell
 @using Microsoft.JSInterop
 @implements IAsyncDisposable
@@ -7,14 +8,17 @@
         <a class="autonogrammer-skip-link" href="@SkipLinkHref">@SkipLinkText</a>
         <TopBar @ref="_topBar"
                 WorkspaceLabel="@WorkspaceLabel"
+                Surface="TopBarSurface"
                 Tabs="TopBarTabs"
+                Chrome="Chrome"
+                DrawerLabel="@($"{RailLabel} panel")"
                 DrawerOpen="_drawerOpen"
                 OnDrawerToggle="ToggleDrawerAsync" />
         <div class="autonogrammer-shell-body">
-            <nav id="autonogrammer-rail" class="autonogrammer-rail" aria-label="Agents" tabindex="-1" @ref="_rail">
+            <nav id="autonogrammer-rail" class="autonogrammer-rail" aria-label="@RailLabel" tabindex="-1" @ref="_rail">
                 <div class="autonogrammer-rail-bar">
-                    <span class="autonogrammer-text-heading">Agents</span>
-                    <button type="button" class="autonogrammer-icon-btn" aria-label="Close agents panel" @onclick="CloseDrawerAsync"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
+                    <span class="autonogrammer-text-heading">@RailLabel</span>
+                    <button type="button" class="autonogrammer-icon-btn" aria-label="@CloseLabel" @onclick="CloseDrawerAsync"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
                 </div>
                 @Rail
             </nav>
@@ -54,6 +58,18 @@
     [Parameter]
     public RenderFragment? TopBarTabs { get; set; }
 
+    /// <summary>Gets the surface switch shown before the view tabs.</summary>
+    [Parameter]
+    public RenderFragment? TopBarSurface { get; set; }
+
+    /// <summary>Gets the header-end entries drawn on every surface.</summary>
+    [Parameter]
+    public SurfaceChromeModel? Chrome { get; set; }
+
+    /// <summary>Gets the name of the rail. Code uses Agents. Cowork uses Tasks.</summary>
+    [Parameter]
+    public string RailLabel { get; set; } = "Agents";
+
     /// <summary>Gets the version text of the footer; it defaults to the informational version of the running assembly.</summary>
     [Parameter]
     public string? Version { get; set; }
@@ -74,6 +90,8 @@
     public bool IsDrawerOpen => _drawerOpen;
 
     // Only an open drawer listens for keys: a handler on the root would otherwise re-render the shell on every keystroke.
+
+    private string CloseLabel => "Close " + RailLabel.ToLowerInvariant() + " panel";
     private EventCallback<KeyboardEventArgs> KeyHandler => _drawerOpen ? EventCallback.Factory.Create<KeyboardEventArgs>(this, OnShellKeyDownAsync) : default;
 
     /// <summary>Closes the drawer and returns keyboard focus to the button that opened it; nothing happens when it is closed.</summary>

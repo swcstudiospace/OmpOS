@@ -240,6 +240,20 @@ public sealed partial class CssContractTests
         }
     }
 
+    /// <summary>surface.css is imported before a11y.css and the dock width twins the 420 design size.</summary>
+    [Fact]
+    public void SurfaceCssIsImportedAndTheDockWidthIsAToken()
+    {
+        var entry = CssSources.ReadStyle("autonogrammer.css");
+        var surface = entry.IndexOf("surface.css", StringComparison.Ordinal);
+        var a11y = entry.IndexOf("a11y.css", StringComparison.Ordinal);
+        surface.ShouldBeGreaterThan(0);
+        surface.ShouldBeLessThan(a11y);
+        CssSources.ReadStyle("tokens.css").ShouldContain("--autonogrammer-cowork-dock-width: 420px");
+        CssSources.ReadStyle("surface.css").ShouldContain("data-surface");
+        CssSources.StripComments(CssSources.ReadStyle("surface.css")).ShouldNotContain("#");
+    }
+
     /// <summary>Only tokens.css holds colour literals: every other rule takes its colour from a token, so a theme switch reaches it.</summary>
     [Fact]
     public void ColourLiteralsLiveInTokensCssOnly()

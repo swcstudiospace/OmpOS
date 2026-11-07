@@ -431,6 +431,206 @@ public abstract class SessionRepositoryContractTests<T> : IAsyncLifetime where T
         ids.ToArray().ShouldBe(Enumerable.Range(0, 200).Select(static index => $"s-{index:D3}").ToArray());
     }
 
+    /// <summary>A session saved on the Cowork surface and already closed comes back with both, and a session saved without them is open on the Code surface.</summary>
+    [Fact]
+    public async Task SurfaceAndClosedAtRoundTrip()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = await NewRepositoryAsync(ct).ConfigureAwait(true);
+        var cowork = Owned("cowork-1", "alice", SessionSurface.Cowork, 1) with { ClosedAt = Epoch.AddHours(1) };
+
+        await repository.SaveAsync(cowork, ct).ConfigureAwait(true);
+        await repository.SaveAsync(Sample("code-1"), ct).ConfigureAwait(true);
+
+        ShouldBeSameSession((await repository.GetAsync("cowork-1", ct).ConfigureAwait(true))!, cowork);
+        var code = await repository.GetAsync("code-1", ct).ConfigureAwait(true);
+        code.ShouldNotBeNull();
+        code.Surface.ShouldBe(SessionSurface.Code);
+        code.ClosedAt.ShouldBeNull();
+    }
+
+    /// <summary>A listing holds only the owner's sessions of the requested surface, newest first, with headers and messages but no events.</summary>
+    [Fact]
+    public async Task ListByOwnerReturnsOnlyTheOwnersSessionsOfTheRequestedSurface()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = await NewRepositoryAsync(ct).ConfigureAwait(true);
+        await repository.SaveAsync(Owned("code-1", "alice", SessionSurface.Code, 1), ct).ConfigureAwait(true);
+        await repository.SaveAsync(Owned("code-2", "alice", SessionSurface.Code, 2) with { Events = [Event("code-2", new TextDeltaPayload { Delta = "x" }) with { Seq = 1 }] }, ct).ConfigureAwait(true);
+        await repository.SaveAsync(Owned("cowork-1", "alice", SessionSurface.Cowork, 3), ct).ConfigureAwait(true);
+        await repository.SaveAsync(Owned("bob-code", "bob", SessionSurface.Code, 4), ct).ConfigureAwait(true);
+
+        var code = await repository.ListByOwnerAsync("alice", SessionSurface.Code, false, 10, null, ct).ConfigureAwait(true);
+        var cowork = await repository.ListByOwnerAsync("alice", SessionSurface.Cowork, false, 10, null, ct).ConfigureAwait(true);
+        var bob = await repository.ListByOwnerAsync("bob", SessionSurface.Code, false, 10, null, ct).ConfigureAwait(true);
+        var nobody = await repository.ListByOwnerAsync("carol", SessionSurface.Code, false, 10, null, ct).ConfigureAwait(true);
+
+        code.Select(static session => session.Id).ToArray().ShouldBe(["code-2", "code-1"]);
+        code.ShouldAllBe(static session => session.Surface == SessionSurface.Code && session.Events.Count == 0);
+        cowork.Select(static session => session.Id).ToArray().ShouldBe(["cowork-1"]);
+        cowork[0].Surface.ShouldBe(SessionSurface.Cowork);
+        bob.Select(static session => session.Id).ToArray().ShouldBe(["bob-code"]);
+        nobody.ShouldBeEmpty();
+    }
+
+    /// <summary>Another owner's session reads as absent from a listing: the foreign owner sees none of it, whatever the surface or the closed flag.</summary>
+    [Fact]
+    public async Task ListByOwnerNeverReturnsAnotherOwnersSessions()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = await NewRepositoryAsync(ct).ConfigureAwait(true);
+        await repository.SaveAsync(Owned("alice-code", "alice", SessionSurface.Code, 1), ct).ConfigureAwait(true);
+        await repository.SaveAsync(Owned("alice-cowork", "alice", SessionSurface.Cowork, 2), ct).ConfigureAwait(true);
+        _ = await repository.SetClosedAsync("alice-code", true, ct).ConfigureAwait(true);
+
+        foreach (var surface in new[] { SessionSurface.Code, SessionSurface.Cowork })
+        {
+            (await repository.ListByOwnerAsync("mallory", surface, true, 10, null, ct).ConfigureAwait(true)).ShouldBeEmpty();
+        }
+    }
+
+    /// <summary>Closed sessions are left out unless the caller asks for them, and a reopened session returns to the default listing.</summary>
+    [Fact]
+    public async Task ListByOwnerHidesClosedSessionsUnlessIncluded()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = await NewRepositoryAsync(ct).ConfigureAwait(true);
+        await repository.SaveAsync(Owned("open", "alice", SessionSurface.Code, 1), ct).ConfigureAwait(true);
+        await repository.SaveAsync(Owned("closed", "alice", SessionSurface.Code, 2), ct).ConfigureAwait(true);
+        (await repository.SetClosedAsync("closed", true, ct).ConfigureAwait(true)).ShouldBeTrue();
+
+        var visible = await repository.ListByOwnerAsync("alice", SessionSurface.Code, false, 10, null, ct).ConfigureAwait(true);
+        var all = await repository.ListByOwnerAsync("alice", SessionSurface.Code, true, 10, null, ct).ConfigureAwait(true);
+
+        visible.Select(static session => session.Id).ToArray().ShouldBe(["open"]);
+        all.Select(static session => session.Id).ToArray().ShouldBe(["closed", "open"]);
+        all[0].ClosedAt.ShouldNotBeNull();
+        all[1].ClosedAt.ShouldBeNull();
+
+        (await repository.SetClosedAsync("closed", false, ct).ConfigureAwait(true)).ShouldBeTrue();
+        (await repository.ListByOwnerAsync("alice", SessionSurface.Code, false, 10, null, ct).ConfigureAwait(true))
+            .Select(static session => session.Id).ToArray().ShouldBe(["closed", "open"]);
+    }
+
+    /// <summary>Walking the pages with the last session's cursor returns every session once, newest first, with ties on the update time broken by identifier descending.</summary>
+    [Fact]
+    public async Task ListByOwnerPagesWithAKeysetCursorWithoutRepeatsOrGaps()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = await NewRepositoryAsync(ct).ConfigureAwait(true);
+        foreach (var (id, minute) in new[] { ("a", 1), ("b", 2), ("c", 3), ("tie-1", 5), ("tie-2", 5), ("tie-3", 5), ("z", 4) })
+        {
+            await repository.SaveAsync(Owned(id, "alice", SessionSurface.Code, minute), ct).ConfigureAwait(true);
+        }
+
+        var walked = new List<string>();
+        SessionCursor? cursor = null;
+        while (true)
+        {
+            var page = await repository.ListByOwnerAsync("alice", SessionSurface.Code, false, 2, cursor, ct).ConfigureAwait(true);
+            if (page.Count == 0)
+            {
+                break;
+            }
+
+            walked.AddRange(page.Select(static session => session.Id));
+            cursor = new SessionCursor(page[^1].UpdatedAt, page[^1].Id);
+        }
+
+        walked.ShouldBe(["tie-3", "tie-2", "tie-1", "z", "c", "b", "a"]);
+    }
+
+    /// <summary>A session created or updated between two pages does not repeat or shift the pages that follow the cursor.</summary>
+    [Fact]
+    public async Task ListByOwnerCursorIsStableWhileSessionsAreInserted()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = await NewRepositoryAsync(ct).ConfigureAwait(true);
+        foreach (var (id, minute) in new[] { ("s1", 1), ("s2", 2), ("s3", 3), ("s4", 4) })
+        {
+            await repository.SaveAsync(Owned(id, "alice", SessionSurface.Code, minute), ct).ConfigureAwait(true);
+        }
+
+        var first = await repository.ListByOwnerAsync("alice", SessionSurface.Code, false, 2, null, ct).ConfigureAwait(true);
+        await repository.SaveAsync(Owned("newest", "alice", SessionSurface.Code, 10), ct).ConfigureAwait(true);
+        await repository.SaveAsync(Owned("s1", "alice", SessionSurface.Code, 11), ct).ConfigureAwait(true);
+        var second = await repository.ListByOwnerAsync("alice", SessionSurface.Code, false, 2, new SessionCursor(first[^1].UpdatedAt, first[^1].Id), ct).ConfigureAwait(true);
+
+        first.Select(static session => session.Id).ToArray().ShouldBe(["s4", "s3"]);
+        second.Select(static session => session.Id).ToArray().ShouldBe(["s2"]);
+        (await repository.ListByOwnerAsync("alice", SessionSurface.Code, false, 10, null, ct).ConfigureAwait(true))
+            .Select(static session => session.Id).ToArray().ShouldBe(["s1", "newest", "s4", "s3", "s2"]);
+    }
+
+    /// <summary>A page size below one is refused, and a page size above 200 is lowered to 200.</summary>
+    [Fact]
+    public async Task ListByOwnerBoundsThePageSize()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = await NewRepositoryAsync(ct).ConfigureAwait(true);
+        for (var index = 0; index < 205; index++)
+        {
+            await repository.SaveAsync(Owned($"s-{index:D3}", "alice", SessionSurface.Code, index), ct).ConfigureAwait(true);
+        }
+
+        await Should.ThrowAsync<ArgumentOutOfRangeException>(() => repository.ListByOwnerAsync("alice", SessionSurface.Code, false, 0, null, ct)).ConfigureAwait(true);
+        (await repository.ListByOwnerAsync("alice", SessionSurface.Code, false, 500, null, ct).ConfigureAwait(true)).Count.ShouldBe(200);
+    }
+
+    /// <summary>Closing or reopening answers true only for the call that changed the flag; an unknown session answers false; the update time does not move.</summary>
+    [Fact]
+    public async Task SetClosedAnswersTrueOnlyWhenTheFlagChanged()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = await NewRepositoryAsync(ct).ConfigureAwait(true);
+        await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
+
+        (await repository.SetClosedAsync("absent", true, ct).ConfigureAwait(true)).ShouldBeFalse();
+        (await repository.SetClosedAsync("s-1", false, ct).ConfigureAwait(true)).ShouldBeFalse();
+        (await repository.SetClosedAsync("s-1", true, ct).ConfigureAwait(true)).ShouldBeTrue();
+        (await repository.SetClosedAsync("s-1", true, ct).ConfigureAwait(true)).ShouldBeFalse();
+
+        var closed = await repository.GetAsync("s-1", ct).ConfigureAwait(true);
+        closed.ShouldNotBeNull();
+        closed.ClosedAt.ShouldNotBeNull();
+        closed.UpdatedAt.ShouldBe(Epoch);
+
+        (await repository.SetClosedAsync("s-1", false, ct).ConfigureAwait(true)).ShouldBeTrue();
+        (await repository.SetClosedAsync("s-1", false, ct).ConfigureAwait(true)).ShouldBeFalse();
+        (await repository.GetAsync("s-1", ct).ConfigureAwait(true))!.ClosedAt.ShouldBeNull();
+    }
+
+    /// <summary>Two callers that close the same session at once cannot both be told they closed it.</summary>
+    [Fact]
+    public async Task ConcurrentSetClosedChangesTheFlagExactlyOnce()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = await NewRepositoryAsync(ct).ConfigureAwait(true);
+        await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
+
+        var results = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => repository.SetClosedAsync("s-1", true, ct))).ConfigureAwait(true);
+
+        results.Count(static changed => changed).ShouldBe(1);
+    }
+
+    /// <summary>A later save keeps the surface and the closed flag as stored: a stale header cannot reopen a closed session or move it to another surface.</summary>
+    [Fact]
+    public async Task SaveKeepsTheStoredSurfaceAndClosedFlag()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = await NewRepositoryAsync(ct).ConfigureAwait(true);
+        await repository.SaveAsync(Owned("s-1", "alice", SessionSurface.Cowork, 1), ct).ConfigureAwait(true);
+        (await repository.SetClosedAsync("s-1", true, ct).ConfigureAwait(true)).ShouldBeTrue();
+
+        await repository.SaveAsync(Owned("s-1", "alice", SessionSurface.Code, 2) with { Status = SessionStatus.Running }, ct).ConfigureAwait(true);
+
+        var loaded = await repository.GetAsync("s-1", ct).ConfigureAwait(true);
+        loaded.ShouldNotBeNull();
+        loaded.Status.ShouldBe(SessionStatus.Running);
+        loaded.Surface.ShouldBe(SessionSurface.Cowork);
+        loaded.ClosedAt.ShouldNotBeNull();
+    }
+
     /// <summary>Asserts every field of two sessions is equal, comparing collections element by element.</summary>
     /// <param name="actual">The loaded session.</param>
     /// <param name="expected">The session that was saved.</param>
@@ -442,6 +642,8 @@ public abstract class SessionRepositoryContractTests<T> : IAsyncLifetime where T
         actual.UpdatedAt.ShouldBe(expected.UpdatedAt);
         actual.Status.ShouldBe(expected.Status);
         actual.SandboxId.ShouldBe(expected.SandboxId);
+        actual.Surface.ShouldBe(expected.Surface);
+        actual.ClosedAt.ShouldBe(expected.ClosedAt);
         actual.Messages.ShouldBe(expected.Messages);
         actual.Events.ShouldBe(expected.Events);
     }
@@ -456,6 +658,13 @@ public abstract class SessionRepositoryContractTests<T> : IAsyncLifetime where T
         SandboxId = null,
         Messages = [],
         Events = [],
+    };
+
+    private static Session Owned(string id, string owner, SessionSurface surface, int minute) => Sample(id) with
+    {
+        OwnerId = owner,
+        Surface = surface,
+        UpdatedAt = Epoch.AddMinutes(minute),
     };
 
     private static ToolApprovalRecord Pending(string sessionId, string requestId) => new()

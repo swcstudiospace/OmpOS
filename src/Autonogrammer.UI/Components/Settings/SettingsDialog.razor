@@ -1,4 +1,5 @@
 @namespace Autonogrammer.UI.Components.Settings
+@using Autonogrammer.UI.Components.Dispatch
 @inherits ObservableComponent
 @implements IAsyncDisposable
 @using Microsoft.JSInterop
@@ -76,6 +77,9 @@
                             break;
                         case McpFilesPage mcp:
                             <McpFilesView @key="mcp" Page="mcp" />
+                            break;
+                        case DispatchSettingsPage dispatch:
+                            <DispatchPageView @key="dispatch" Model="dispatch.Relay.Page" OnCancel="@(commandId => dispatch.Relay.CancelAsync(commandId, CancellationToken.None))" />
                             break;
                         case InfoSettingsPage info:
                             <InfoSettingsView @key="info" Page="info" />

@@ -23,9 +23,16 @@ internal static class WebSettingsOrder
         SettingsSection.Workspaces,
         SettingsSection.Remote,
         SettingsSection.Cloud,
+        SettingsSection.Dispatch,
         SettingsSection.Privacy,
         SettingsSection.Network,
         SettingsSection.Keyboard,
+        SettingsSection.Bundles,
+        SettingsSection.Connectors,
+        SettingsSection.CoworkPermissions,
+        SettingsSection.Isolation,
+        SettingsSection.Usage,
+        SettingsSection.Notifications,
     ];
 
     /// <summary>Returns the sort key of a section.</summary>

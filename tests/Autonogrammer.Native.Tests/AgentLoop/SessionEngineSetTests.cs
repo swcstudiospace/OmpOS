@@ -38,7 +38,7 @@ public sealed class SessionEngineSetTests
         using var tree = new TempTree();
         tree.WriteReadyPlugins();
         var omp = new ScriptedOmp();
-        var head = AgentHead.Create(Options(tree, omp));
+        var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
 
@@ -95,7 +95,7 @@ public sealed class SessionEngineSetTests
         using var tree = new TempTree();
         Directory.Exists(tree.Plugins).ShouldBeFalse();
         var omp = new ScriptedOmp();
-        var head = AgentHead.Create(Options(tree, omp));
+        var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (_, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -126,7 +126,7 @@ public sealed class SessionEngineSetTests
         tree.WriteReadyPlugins();
         Directory.Delete(tree.PluginPath("claude-ultrathink"), recursive: true);
         Directory.CreateDirectory(tree.PluginPath("claude-ultrathink"));
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (_, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -154,7 +154,7 @@ public sealed class SessionEngineSetTests
         tree.WriteReadyPlugins();
         using var substrate = new StubSubstrateHandler { HealthStatus = HttpStatusCode.ServiceUnavailable };
         var omp = new ScriptedOmp();
-        var head = AgentHead.Create(Options(tree, omp, Substrate("http://127.0.0.1:7410"), substrate));
+        var head = await AgentHead.CreateAsync(Options(tree, omp, Substrate("http://127.0.0.1:7410"), substrate)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (_, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -184,7 +184,7 @@ public sealed class SessionEngineSetTests
         tree.WriteReadyPlugins();
         using var substrate = new StubSubstrateHandler();
         var omp = new ScriptedOmp();
-        var head = AgentHead.Create(Options(tree, omp, Substrate("http://127.0.0.1:7410"), substrate));
+        var head = await AgentHead.CreateAsync(Options(tree, omp, Substrate("http://127.0.0.1:7410"), substrate)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (_, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -213,7 +213,7 @@ public sealed class SessionEngineSetTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var clock = new ManualTimeProvider(new DateTimeOffset(2026, 10, 26, 12, 0, 0, TimeSpan.Zero));
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp(), clock: clock));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp(), clock: clock)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -245,7 +245,7 @@ public sealed class SessionEngineSetTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         tree.WriteReadyPlugins();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -290,7 +290,7 @@ public sealed class SessionEngineSetTests
         using var tree = new TempTree();
         string id;
         var first = new ScriptedOmp { HoldAfterFirstChunk = true };
-        var firstHead = AgentHead.Create(Options(tree, first));
+        var firstHead = await AgentHead.CreateAsync(Options(tree, first)).ConfigureAwait(true);
         await using (firstHead.ConfigureAwait(true))
         {
             await firstHead.InitializeAsync(ct).ConfigureAwait(true);
@@ -308,7 +308,7 @@ public sealed class SessionEngineSetTests
         }
 
         var second = new ScriptedOmp();
-        var secondHead = AgentHead.Create(Options(tree, second));
+        var secondHead = await AgentHead.CreateAsync(Options(tree, second)).ConfigureAwait(true);
         await using var secondLifetime = secondHead.ConfigureAwait(true);
         await secondHead.InitializeAsync(ct).ConfigureAwait(true);
         secondHead.Host.Registry!.TryGet(id, out var lost).ShouldBeTrue();
@@ -336,7 +336,7 @@ public sealed class SessionEngineSetTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var omp = new ScriptedOmp();
-        var head = AgentHead.Create(Options(tree, omp));
+        var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -374,7 +374,7 @@ public sealed class SessionEngineSetTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var omp = new ScriptedOmp();
-        var head = AgentHead.Create(Options(tree, omp));
+        var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
         await using var headScope = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (_, one) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -395,7 +395,7 @@ public sealed class SessionEngineSetTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var clock = new ManualTimeProvider(new DateTimeOffset(2026, 10, 26, 12, 0, 0, TimeSpan.Zero));
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp(), clock: clock, maintenance: SessionEngineSetOptions.DefaultMaintenanceInterval));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp(), clock: clock, maintenance: SessionEngineSetOptions.DefaultMaintenanceInterval)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (activeId, active) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -422,7 +422,7 @@ public sealed class SessionEngineSetTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, _) = await NewSlotAsync(head, ct).ConfigureAwait(true);

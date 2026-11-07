@@ -63,6 +63,12 @@
       "autonogrammer.contracts": {
         "type": "Project"
       },
+      "autonogrammer.cowork.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )"
+        }
+      },
       "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {

@@ -1,4 +1,5 @@
 using Autonogrammer.Presentation.Commands;
+using Autonogrammer.Presentation.Dispatch;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Customize;
 using Autonogrammer.Presentation.Settings.Models;
@@ -38,11 +39,18 @@ internal static class WebSettingsPages
         services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Workspaces());
         services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Remote());
         services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Cloud());
+        services.AddScoped<ISettingsPage>(static sp => new DispatchSettingsPage(new DispatchRelayModel(sp.GetService<IDispatchHost>() ?? new NotConfiguredDispatchHost(), null)));
         services.AddScoped<ISettingsPage>(static sp =>
         {
             var options = sp.GetRequiredService<WebWorkbenchOptions>();
             return WebInfoPages.Privacy(options.IsDemo, options.ApiHost);
         });
+        services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Bundles());
+        services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Connectors());
+        services.AddScoped<ISettingsPage>(static _ => WebInfoPages.CoworkPermissions());
+        services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Isolation());
+        services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Usage());
+        services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Notifications());
         return services;
     }
 }

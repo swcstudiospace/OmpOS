@@ -24,6 +24,12 @@ public static class HookSourceLocator
         _ => Path.Combine("/etc", "autonogrammer", "hooks.json"),
     };
 
+    /// <summary>Returns the legacy managed hooks path. It is read-only and ranks below <see cref="ManagedPath"/>.</summary>
+    /// <param name="platform">The operating system family.</param>
+    /// <param name="programData">The Windows ProgramData directory.</param>
+    /// <returns>The legacy managed <c>hooks.json</c> path.</returns>
+    public static string LegacyManagedPath(HookPlatform platform, string programData) => LegacyBrandNames.ManagedHooks(platform, programData);
+
     /// <summary>
     /// Finds the hook files that exist.
     /// </summary>
@@ -38,16 +44,21 @@ public static class HookSourceLocator
         var home = context.IsRemote ? null : context.HomeDirectory;
 
         AddManaged(context, files, sources);
+        var legacyManaged = LegacyManagedPath(context.Platform, context.ProgramDataDirectory);
+        var legacyManagedDirectory = Path.GetDirectoryName(legacyManaged) ?? legacyManaged;
+        AddIfExists(files, sources, HookScope.Managed, legacyManaged, HookConfigFormat.HooksJson, legacyManagedDirectory, legacyManagedDirectory, "legacy-managed");
         foreach (var root in context.WorkspaceRoots)
         {
             var hash = RootHash(root);
             AddIfExists(files, sources, HookScope.Project, Path.Combine(root, ".autonogrammer", "hooks.json"), HookConfigFormat.HooksJson, root, root, $"autonogrammer-project:{hash}");
+            AddIfExists(files, sources, HookScope.Project, Path.Combine(root, LegacyBrandNames.DirectoryName, "hooks.json"), HookConfigFormat.HooksJson, root, root, $"legacy-project:{hash}");
             AddIfExists(files, sources, HookScope.Project, Path.Combine(root, ".cursor", "hooks.json"), HookConfigFormat.HooksJson, root, root, $"cursor-project:{hash}");
         }
 
         if (home is not null)
         {
             AddUser(files, sources, Path.Combine(home, ".autonogrammer"), "autonogrammer-user");
+            AddUser(files, sources, Path.Combine(home, LegacyBrandNames.DirectoryName), "legacy-user");
             AddUser(files, sources, Path.Combine(home, ".cursor"), "cursor-user");
         }
 

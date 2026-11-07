@@ -4,7 +4,7 @@ description: "The Autonogrammer HTTP API: sessions, runs, events, changes, steer
 
 # HTTP API
 
-Status: Built (every route group below is registered in `services/Autonogrammer.Api/Program.cs` and appears in `docs/api/openapi.json`, 60 paths, contract version 1.5.0); Partial (cloud agents run against fakes and `Cloud:Enabled` is false by default; automations are off by default and answer 404 `automations_disabled`; the API is not deployed on Railway; a staged private worker was exercised there on 2026-10-28, see the [cloud agents runbook](../runbooks/cloud-agents.md))
+Status: Built (every route group below is registered in `services/Autonogrammer.Api/Program.cs` and appears in `docs/api/openapi.json`, 60 paths, contract version 1.6.0); Partial (cloud agents run against fakes and `Cloud:Enabled` is false by default; automations are off by default and answer 404 `automations_disabled`; the API is not deployed on Railway; a staged private worker was exercised there on 2026-10-28, see the [cloud agents runbook](../runbooks/cloud-agents.md))
 
 Last verified: 2026-10-28
 
@@ -36,7 +36,9 @@ The machine-readable contract is [`docs/api/openapi.json`](https://github.com/sw
 
 | Route | What it does |
 |---|---|
-| `GET /board` | The Kanban board built from the caller's sessions. |
+| `GET /account` | The caller's account: id, email from the token (never stored), timestamps and feature keys. |
+| `GET /account/sessions`, `GET /account/sessions/{id}` | The caller's Code and Cowork sessions, each labelled with its surface. Another owner's session is the same 404 as an absent one. |
+| `GET /account/board` | The Kanban board built from the caller's Code sessions. Replaces `GET /board`; no alias remains. |
 | `GET /sessions/{id}/card-details` | What the Substrate knows about the session behind a card. |
 | `POST /sessions/{id}/close`, `.../reopen`, `.../resume` | Close, reopen, or settle the orphaned run of a lost session. |
 | `GET /workspace` | The workspace name, folder name and plugin check. |

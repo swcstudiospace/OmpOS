@@ -69,7 +69,6 @@ internal static class SessionEndpoints
     private static async Task<Results<Created<Session>, ProblemHttpResult>> CreateSessionAsync(
         HttpContext context,
         SessionService sessions,
-        SessionRegistry registry,
         IUserContext user,
         ApiMetrics metrics,
         IOptions<ApiOptions> options,
@@ -107,7 +106,6 @@ internal static class SessionEndpoints
         }
 
         var session = await sessions.CreateAsync(user.Name, cancellationToken).ConfigureAwait(false);
-        registry.Add(session.Id);
         metrics.SessionCreated();
         return TypedResults.Created($"/sessions/{session.Id}", session);
     }

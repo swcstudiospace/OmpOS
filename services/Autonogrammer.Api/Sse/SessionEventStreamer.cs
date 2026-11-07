@@ -60,6 +60,15 @@ internal sealed class SessionEventStreamer
         return _signals.ContainsKey(sessionId);
     }
 
+    /// <summary>Gets how many subscribers of <paramref name="sessionId"/> are parked on their wait for the next wake-up or poll.</summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <returns>The number of parked subscribers; zero when no stream holds the session.</returns>
+    internal int WaitingSubscribers(string sessionId)
+    {
+        ArgumentNullException.ThrowIfNull(sessionId);
+        return _signals.TryGetValue(sessionId, out var signal) ? signal.Waiting : 0;
+    }
+
     /// <summary>
     /// Streams a session's events starting after <paramref name="afterSeq"/>, replaying the log
     /// first and then tailing live appends until a terminal event or cancellation.
@@ -115,7 +124,15 @@ internal sealed class SessionEventStreamer
                     }
                 }
 
-                await WaitForWakeOrPollAsync(wake, cancellationToken).ConfigureAwait(false);
+                signal.EnterWait();
+                try
+                {
+                    await WaitForWakeOrPollAsync(wake, cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    signal.ExitWait();
+                }
             }
         }
         finally
@@ -195,6 +212,7 @@ internal sealed class SessionEventStreamer
         private readonly Lock _lock = new();
         private CancellationTokenSource _generation = new();
         private bool _disposed;
+        private int _waiting;
 
         /// <summary>Gets the number of streams currently holding this signal. Guarded by the streamer's lock.</summary>
         public int RefCount { get; private set; }
@@ -204,6 +222,15 @@ internal sealed class SessionEventStreamer
 
         /// <summary>Releases one stream's hold on this signal.</summary>
         public void Release() => RefCount--;
+
+        /// <summary>Gets the number of subscribers parked on this signal. Read without the streamer's lock.</summary>
+        public int Waiting => Volatile.Read(ref _waiting);
+
+        /// <summary>Records one subscriber parking on its wait.</summary>
+        public void EnterWait() => Interlocked.Increment(ref _waiting);
+
+        /// <summary>Records one parked subscriber leaving its wait.</summary>
+        public void ExitWait() => Interlocked.Decrement(ref _waiting);
 
         /// <summary>Returns the token that is cancelled by the next <see cref="Notify"/>. Take it before reading the log.</summary>
         /// <returns>The token for the current generation.</returns>

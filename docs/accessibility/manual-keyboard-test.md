@@ -25,14 +25,11 @@ Purpose: confirm by hand what the scripted checks (`scripts/web-smoke/a11y`) can
 4. Every control has a name you could say aloud, and that name contains the text you see on it.
 5. Nothing needs a mouse, a drag or a hover.
 
-## Flow 1: connect (owner-token deployment)
+## Flow 1: sign-in explanation (owner-token deployment)
 
-1. Open the address of the deployment in a new tab with no token stored.
-2. Expected: the address becomes `/connect`; the tab title is "Connect - Autonogrammer"; focus is on the heading "Connect to Autonogrammer".
-3. Press Tab. Expected: focus goes to the "Access token" field (a password field with a visible label and a help sentence), then Tab again to the "Connect" button; Shift+Tab goes back.
-4. Focus the field and press Enter with the field empty. Expected: the message "Enter the access token." appears; the field is marked invalid; focus stays in the field.
-5. Type a wrong token and press Enter. Expected: "Checking the token…" while it waits, then "That token was not accepted. Check it and enter it again."; the field is empty again and has focus.
-6. Type the real token and press Enter. Expected: you arrive at the page you asked for (or the Agents view); the tab title changes; focus is on that page's heading.
+1. Open the address of the deployment in a new tab with no sign-in.
+2. Expected: the address stays where you typed it (no redirect); the tab title is "Sign-in not available - Autonogrammer"; the main text says that sign-in is not available in this web build; no token or password field is offered.
+3. Press Tab through the page. Expected: focus is visible on every stop, and there is no form control to fill in.
 
 ## Flow 2: new conversation
 

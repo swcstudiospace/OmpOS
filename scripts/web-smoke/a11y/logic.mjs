@@ -37,7 +37,7 @@ export function analyzeRoute(entry) {
   out.push(...analyzeLandmarks(snap, entry.layout, at, entry.route));
   if (entry.mode === "inapp") {
     const expected = entry.expectFocus ?? ["h1"];
-    const landed = (snap.activeIsH1 && expected.includes("h1")) || (snap.activeIsConversation && expected.includes("conversation")) || (snap.activeInDialog && expected.includes("dialog")) || (snap.activeIsTrigger === true && expected.includes("trigger"));
+    const landed = (snap.activeIsH1 && expected.includes("h1")) || (snap.activeIsConversation && expected.includes("conversation")) || (snap.activeInDialog && expected.includes("dialog")) || (snap.activeIsTrigger === true && expected.includes("trigger")) || (expected.includes("unmoved") && snap.activeIsH1 !== true);
     if (!landed) {
       out.push(finding("routes", "focus-not-moved", "error", `after navigating to ${entry.route} focus is on ${snap.active ?? "nothing"}, expected ${expected.join(" or ")}`, { ...at, wcag: "2.4.3", detail: snap.active }));
     }

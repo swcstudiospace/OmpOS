@@ -73,7 +73,7 @@ internal sealed class SendShell : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(allowedKinds);
 
         var stateRoot = Directory.CreateTempSubdirectory("autonogrammer-send-state-").FullName;
-        var head = HeadOf(new AgentHeadOptions
+        var head = await HeadOfAsync(new AgentHeadOptions
         {
             PluginsRoot = Path.Combine(stateRoot, "plugins"),
             StateRoot = Path.Combine(stateRoot, "state"),
@@ -85,7 +85,7 @@ internal sealed class SendShell : IAsyncDisposable
 
             // These tests assert the engine's own queue: a steer or follow-up waits for the end of the turn and is sent as the next prompt.
             LiveSteering = false,
-        });
+        }).ConfigureAwait(true);
         try
         {
             await head.InitializeAsync(cancellationToken).ConfigureAwait(true);
@@ -114,7 +114,7 @@ internal sealed class SendShell : IAsyncDisposable
         }
     }
 
-    private static AgentHead HeadOf(AgentHeadOptions options) => AgentHead.Create(options);
+    private static Task<AgentHead> HeadOfAsync(AgentHeadOptions options) => AgentHead.CreateAsync(options);
 
     /// <summary>Gets the engine of the session, composing it when no send has yet. Composing starts no process.</summary>
     /// <param name="cancellationToken">Cancels the wait.</param>

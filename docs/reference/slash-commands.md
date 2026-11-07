@@ -1,6 +1,6 @@
 # Slash commands
 
-Autonogrammer lists every slash command and alias that Cursor 3.27 documents (92 tokens) and one Autonogrammer addition, `/update-settings` (93 rows), plus the open-ended forms Cursor allows: a skill name, a custom command file and a subagent name. Each token has a handler kind and an honest status; a token Autonogrammer cannot run is still listed, disabled, with the reason, so typing it never silently does nothing.
+Autonogrammer lists every slash command and alias that Cursor 3.27 documents (92 tokens) and two Autonogrammer additions, `/create-plugin` and `/update-settings` (94 rows), plus the open-ended forms Cursor allows: a skill name, a custom command file and a subagent name. Each token has a handler kind and an honest status; a token Autonogrammer cannot run is still listed, disabled, with the reason, so typing it never silently does nothing.
 
 The table below is the same data as the shipped catalogue (`SlashCommandCatalogue.Shipped` in `Autonogrammer.Presentation`). A test parses this file and fails when the two disagree.
 
@@ -112,6 +112,7 @@ A native command whose action the window cannot run is listed disabled. The web 
 | `/autopilot` | Built-in skill | Built-in skill: monitors a PR and addresses feedback, conflicts and failing checks. | Unavailable | - | Unavailable | Cursor's autopilot skill watches a pull request from Cursor's cloud backend; Autonogrammer hands a one-off task to a cloud agent with /in-cloud and has no pull request watcher. |
 | `/canvas` | Built-in skill | Built-in skill: creates interactive React artifacts beside the conversation. | Unavailable | - | Unavailable | Cursor renders canvas artifacts in its own pane. |
 | `/create-hook` | Built-in skill | Built-in skill: creates hooks and updates hooks.json. | Skill | `SKILL.md named create-hook` | Built | Ships with Autonogrammer as a built-in skill; a project or user skill of the same name takes over. |
+| `/create-plugin` | Built-in skill | Built-in skill: writes plugin bundles with skills, commands, agents and optional MCP and hooks files. | Skill | `SKILL.md named create-plugin` | Built | Ships with Autonogrammer as a built-in skill; a project or user skill of the same name takes over. |
 | `/create-rule` | Built-in skill | Built-in skill: creates rules with scope and instructions. | Skill | `SKILL.md named create-rule` | Built | Ships with Autonogrammer as a built-in skill; a project or user skill of the same name takes over. |
 | `/create-skill` | Built-in skill | Built-in skill: creates Agent Skills and SKILL.md. | Skill | `SKILL.md named create-skill` | Built | Ships with Autonogrammer as a built-in skill; a project or user skill of the same name takes over. |
 | `/create-subagent` | Built-in skill | Built-in skill: creates custom subagents. | Skill | `SKILL.md named create-subagent` | Built | Ships with Autonogrammer as a built-in skill; a project or user skill of the same name takes over. |

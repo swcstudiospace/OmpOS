@@ -34,7 +34,7 @@ public sealed class CardSteeringTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, directory) = await NewSessionAsync(head, ct).ConfigureAwait(true);
@@ -65,7 +65,7 @@ public sealed class CardSteeringTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, directory) = await NewSessionAsync(head, ct).ConfigureAwait(true);
@@ -87,7 +87,7 @@ public sealed class CardSteeringTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, directory) = await NewSessionAsync(head, ct).ConfigureAwait(true);
@@ -113,7 +113,7 @@ public sealed class CardSteeringTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, directory) = await NewSessionAsync(head, ct).ConfigureAwait(true);
@@ -136,7 +136,7 @@ public sealed class CardSteeringTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var clock = new ManualTimeProvider(new DateTimeOffset(2026, 10, 26, 12, 0, 0, TimeSpan.Zero));
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp(), clock: clock));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp(), clock: clock)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, directory) = await NewSessionAsync(head, ct).ConfigureAwait(true);
@@ -172,7 +172,7 @@ public sealed class CardSteeringTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, directory) = await NewSessionAsync(head, ct).ConfigureAwait(true);
@@ -200,7 +200,7 @@ public sealed class CardSteeringTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, directory) = await NewSessionAsync(head, ct).ConfigureAwait(true);
@@ -219,7 +219,7 @@ public sealed class CardSteeringTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (closedId, closedDirectory) = await NewSessionAsync(head, ct).ConfigureAwait(true);
@@ -256,7 +256,7 @@ public sealed class CardSteeringTests
         using var tree = new TempTree();
         tree.WriteReadyPlugins();
         using var substrate = new StubSubstrateHandler();
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp(), Substrate("http://127.0.0.1:7410"), substrate));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp(), Substrate("http://127.0.0.1:7410"), substrate)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, directory) = await NewSessionAsync(head, ct).ConfigureAwait(true);
@@ -284,7 +284,7 @@ public sealed class CardSteeringTests
         using var tree = new TempTree();
         tree.WriteReadyPlugins();
         using var substrate = new StubSubstrateHandler { HealthStatus = HttpStatusCode.ServiceUnavailable };
-        var head = AgentHead.Create(Options(tree, new ScriptedOmp(), Substrate("http://127.0.0.1:7410"), substrate));
+        var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp(), Substrate("http://127.0.0.1:7410"), substrate)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, directory) = await NewSessionAsync(head, ct).ConfigureAwait(true);

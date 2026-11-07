@@ -26,7 +26,7 @@ public sealed class SlashCommandRegistryTests
     [Fact]
     public void ShippedCatalogueResolvesEveryDocumentedTokenAndNothingElse()
     {
-        SlashCommandCatalogue.Shipped.ListAll().Count.ShouldBe(93, "the 92 Cursor tokens and the Autonogrammer addition /update-settings");
+        SlashCommandCatalogue.Shipped.ListAll().Count.ShouldBe(94, "the 92 Cursor tokens and the Autonogrammer additions /create-plugin and /update-settings");
         SlashCommandCatalogue.Shipped.MatchByPrefix("si").Select(command => command.Name).ShouldBe(["side"]);
         SlashCommandCatalogue.Shipped.MatchByPrefix("si").Select(command => command.HandlerId).ShouldBe(["chats.side.open"]);
         SlashCommandCatalogue.Shipped.Resolve("resume").ShouldBeOfType<SlashCommandDisabled>().Reason.ShouldContain("agent rail", Case.Sensitive);

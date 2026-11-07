@@ -5,4 +5,8 @@
     <Content Include="../../assets/skills/**/*" Link="skills/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="../Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
+  </ItemGroup>
+
 </Project>

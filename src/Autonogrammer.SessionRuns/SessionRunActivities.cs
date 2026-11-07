@@ -57,7 +57,7 @@ public sealed class SessionRunActivities : ISessionRunActivities
     private readonly IHarnessSessionFactory _factory;
     private readonly ISessionRepository _repository;
     private readonly SessionService _sessions;
-    private readonly TimeProvider _time;
+    private readonly TimeProvider _timeProvider;
     private readonly ISessionRunObserver _observer;
     private readonly TimeSpan _toolApprovalTimeout;
     private readonly IReadOnlySet<string>? _grantableTools;
@@ -125,7 +125,7 @@ public sealed class SessionRunActivities : ISessionRunActivities
         _factory = factory;
         _repository = repository;
         _sessions = sessions;
-        _time = timeProvider;
+        _timeProvider = timeProvider;
         _observer = observer;
         _toolApprovalTimeout = toolApprovalTimeout;
         _grantableTools = toolApprovalSettings?.GrantableTools;
@@ -278,7 +278,7 @@ public sealed class SessionRunActivities : ISessionRunActivities
             Seq = 0,
             SessionId = sessionId,
             CorrelationId = correlationId,
-            Timestamp = _time.GetUtcNow(),
+            Timestamp = _timeProvider.GetUtcNow(),
             Payload = payload,
         };
         await _repository.AppendAsync(sessionId, evt, cancellationToken).ConfigureAwait(false);

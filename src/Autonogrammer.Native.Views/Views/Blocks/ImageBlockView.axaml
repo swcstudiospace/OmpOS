@@ -1,0 +1,9 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Blocks.ImageBlockView">
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+    <TextBlock x:Name="AltText"
+               TextWrapping="Wrap" />
+    <ContentControl x:Name="Picture" />
+  </StackPanel>
+</UserControl>

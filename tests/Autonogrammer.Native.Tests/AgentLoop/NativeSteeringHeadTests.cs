@@ -23,7 +23,7 @@ public sealed class NativeSteeringHeadTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var omp = new ScriptedOmp { AdvertiseAuthentication = true, SteeringSupported = true };
-        var head = AgentHead.Create(Options(tree, omp));
+        var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (_, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -45,7 +45,7 @@ public sealed class NativeSteeringHeadTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true };
-        var head = AgentHead.Create(Options(tree, omp));
+        var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -78,7 +78,7 @@ public sealed class NativeSteeringHeadTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var omp = new ScriptedOmp { AdvertiseAuthentication = true, SteeringSupported = true };
-        var head = AgentHead.Create(Options(tree, omp));
+        var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -106,7 +106,7 @@ public sealed class NativeSteeringHeadTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true, SteerOutcome = outcome, SteerReason = reason, SteerErrorCode = errorCode };
-        var head = AgentHead.Create(Options(tree, omp));
+        var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
@@ -134,7 +134,7 @@ public sealed class NativeSteeringHeadTests
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
         var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true };
-        var head = AgentHead.Create(Options(tree, omp));
+        var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(ct).ConfigureAwait(true);
         var (id, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);

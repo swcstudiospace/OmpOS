@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using Autonogrammer.Native.Tests.AgentPanel.Shell;
 using Autonogrammer.Native.Views;
 using Autonogrammer.Native.Views.Sessions;
+using Autonogrammer.Native.Views.Shell;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Composer;
 using Autonogrammer.Presentation.State;
@@ -94,7 +95,12 @@ internal static class ShellHarness
     /// <summary>Gets the main view the window shows. The shell's named controls live in that view, not in the window.</summary>
     /// <param name="window">The shown window.</param>
     /// <returns>The main view.</returns>
-    public static MainView MainViewOf(MainWindow window) => (MainView)window.Content!;
+    public static MainView MainViewOf(MainWindow window) => window.Content switch
+    {
+        MainView view => view,
+        SurfaceHost host => host.Code,
+        _ => throw new InvalidOperationException("The window does not show a main view."),
+    };
 
     /// <summary>Runs pending dispatcher work and one layout pass, so item containers and state copy exist.</summary>
     /// <param name="window">The window to settle.</param>

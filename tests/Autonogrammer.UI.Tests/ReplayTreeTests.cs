@@ -5,6 +5,7 @@ using Autonogrammer.Contracts.Serialization;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.GenUi;
+using Autonogrammer.Parity.Support;
 using Autonogrammer.Presentation.State;
 using Autonogrammer.UI.Components;
 using Bunit;
@@ -159,5 +160,22 @@ public sealed class ReplayTreeTests : UiTestContext
     {
         var blocks = JsonSerializer.Serialize(tree.Blocks.ToArray(), AutonogrammerJsonContext.Default.UiBlockArray);
         return $"{blocks}|{tree.StreamingText}|{tree.CompletionReason ?? "<null>"}";
+    }
+
+    /// <summary>D-27: an image update folds to an image block and renders its alt text without throwing.</summary>
+    [Fact]
+    public void AnImageUpdateRendersAltText()
+    {
+        var log = new List<StreamEvent>
+        {
+            Stream(1, Unknown("tool_call", ("callId", "call-1"), ("name", "screenshot"), ("payloadJson", "{}"))),
+            Stream(2, Unknown("tool_call_update", ("callId", "call-1"), ("status", "completed"), ("payloadJson", "{\"content\":[{\"type\":\"image\",\"mimeType\":\"image/png\",\"data\":\"aGVsbG8=\",\"description\":\"chart\"}]}"))),
+        };
+
+        var tree = log.Aggregate(UiTree.Empty, UiFolder.Fold);
+        var image = tree.Blocks.OfType<ImageBlock>().ShouldHaveSingleItem();
+        image.AltText.ShouldBe("chart");
+        ParityNormalization.KindOf(image).ShouldBe(ParityKinds.Image);
+        RenderToMarkup(tree).ShouldContain("chart");
     }
 }

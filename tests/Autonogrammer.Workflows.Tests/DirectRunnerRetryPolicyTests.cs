@@ -256,8 +256,6 @@ public sealed class DirectRunnerRetryPolicyTests
     {
         public List<TimeSpan> Delays { get; } = [];
 
-        public DateTimeOffset UtcNow => DateTimeOffset.UnixEpoch;
-
         public Random Random => Random.Shared;
 
         public Guid NewGuid() => Guid.Empty;

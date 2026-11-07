@@ -84,6 +84,17 @@
   align-self: stretch;
 }
 
+.autonogrammer-connect-alternatives {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-12);
+  min-width: 0;
+}
+
+.autonogrammer-connect-alternatives .autonogrammer-btn {
+  align-self: stretch;
+}
+
 /* The sign-out control of the top bar keeps its label on one line and never shrinks below a comfortable target. */
 .autonogrammer-topbar-signout {
   flex: none;

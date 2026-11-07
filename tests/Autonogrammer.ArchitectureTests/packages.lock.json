@@ -351,6 +351,11 @@
           "Microsoft.IdentityModel.Logging": "8.19.2"
         }
       },
+      "Microsoft.IO.RecyclableMemoryStream": {
+        "type": "Transitive",
+        "resolved": "3.0.1",
+        "contentHash": "s/s20YTVY9r9TPfTrN5g8zPF1YhwxyqO6PxUkrYTGI2B+OGPe9AdajWZrLhFqXIvqIW23fnUE4+ztrUWNU1+9g=="
+      },
       "Microsoft.JSInterop": {
         "type": "Transitive",
         "resolved": "10.0.13",
@@ -431,6 +436,11 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.0",
           "OpenTelemetry.Api": "1.20.0"
         }
+      },
+      "ReactiveExtensionsSharp": {
+        "type": "Transitive",
+        "resolved": "0.3.0",
+        "contentHash": "7rF0x9AnfwuDl20ojNmGBK53Cqqr9aaxiCQ5MMnZHlhAiXZr8STN1IjTZJoA75GZVxv1ugz++UNphEy/bcSMMg=="
       },
       "RESPite": {
         "type": "Transitive",
@@ -520,6 +530,11 @@
           "System.ValueTuple": "4.6.2"
         }
       },
+      "WebDriverBiDi": {
+        "type": "Transitive",
+        "resolved": "0.0.61",
+        "contentHash": "UJGHt0DqU2nNHf8l12QvJZvj47dFb0VUcKsY6KTn+Cm6tlwXfcmkftfsED9ce+KJCmx4ZgvcaBZjWlae3GKunw=="
+      },
       "xunit.analyzers": {
         "type": "Transitive",
         "resolved": "2.2.0",
@@ -588,6 +603,23 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
+      "autonogrammer.accounts": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
+        }
+      },
+      "autonogrammer.accounts.desktop": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Accounts": "[0.15.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
+          "Autonogrammer.Harness.Secrets.Os": "[0.15.0, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
+        }
+      },
       "autonogrammer.agentworker": {
         "type": "Project",
         "dependencies": {
@@ -604,8 +636,13 @@
           "Autonogrammer.Contracts": "[0.15.0, )",
           "Autonogrammer.Coordination": "[0.15.0, )",
           "Autonogrammer.Coordination.Dragonfly": "[0.15.0, )",
+          "Autonogrammer.Cowork.Artifacts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Artifacts.Stores": "[0.15.0, )",
+          "Autonogrammer.Cowork.Memory": "[0.15.0, )",
+          "Autonogrammer.Cowork.Memory.Postgres": "[0.15.0, )",
           "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
           "Autonogrammer.Harness.Acp": "[0.15.0, )",
+          "Autonogrammer.Harness.AgentLoop": "[0.15.0, )",
           "Autonogrammer.Harness.Automations": "[0.15.0, )",
           "Autonogrammer.Harness.InMemory": "[0.15.0, )",
           "Autonogrammer.Harness.OmpConfig": "[0.15.0, )",
@@ -616,6 +653,7 @@
           "Autonogrammer.Harness.Workspace": "[0.15.0, )",
           "Autonogrammer.Harness.Worktrees": "[0.15.0, )",
           "Autonogrammer.Parser": "[0.15.0, )",
+          "Autonogrammer.Resilience": "[0.15.0, )",
           "Autonogrammer.Sandbox": "[0.15.0, )",
           "Autonogrammer.Sandbox.Abstractions": "[0.15.0, )",
           "Autonogrammer.SessionRuns": "[0.15.0, )",
@@ -647,7 +685,73 @@
         "type": "Project",
         "dependencies": {
           "Autonogrammer.Coordination": "[0.15.0, )",
+          "Autonogrammer.Resilience": "[0.15.0, )",
           "StackExchange.Redis": "[3.4.5, )"
+        }
+      },
+      "autonogrammer.cowork": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Harness.AgentLoop": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.cowork.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.cowork.artifacts": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
+          "DiffPlex": "[1.9.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
+          "Microsoft.Extensions.Options.ConfigurationExtensions": "[10.0.13, )"
+        }
+      },
+      "autonogrammer.cowork.artifacts.stores": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Artifacts": "[0.15.0, )",
+          "Npgsql": "[10.0.3, )"
+        }
+      },
+      "autonogrammer.cowork.memory": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.cowork.memory.postgres": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Cowork.Memory": "[0.15.0, )",
+          "Npgsql": "[10.0.3, )"
+        }
+      },
+      "autonogrammer.dispatch.client": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Presentation": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.dispatch.desktop": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Accounts": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork": "[0.15.0, )",
+          "Autonogrammer.Harness.Acp": "[0.15.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
+          "Autonogrammer.Presentation": "[0.15.0, )"
         }
       },
       "autonogrammer.enginehost": {
@@ -701,8 +805,44 @@
           "Autonogrammer.Harness.Plugins": "[0.15.0, )"
         }
       },
+      "autonogrammer.harness.browseruse": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
+          "PuppeteerSharp": "[25.15.0, )"
+        }
+      },
       "autonogrammer.harness.completion": {
         "type": "Project"
+      },
+      "autonogrammer.harness.computeruse": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.harness.computeruse.abstractions": {
+        "type": "Project"
+      },
+      "autonogrammer.harness.computeruse.macos": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.harness.computeruse.windows": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.harness.computeruse.x11": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.15.0, )"
+        }
       },
       "autonogrammer.harness.herdr": {
         "type": "Project",
@@ -717,6 +857,12 @@
           "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
         }
       },
+      "autonogrammer.harness.isolation": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+        }
+      },
       "autonogrammer.harness.mcp": {
         "type": "Project",
         "dependencies": {
@@ -728,7 +874,14 @@
       "autonogrammer.harness.mcpgateway": {
         "type": "Project",
         "dependencies": {
+          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
           "Autonogrammer.Harness.Mcp": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.harness.notifications": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "autonogrammer.harness.ompconfig": {
@@ -743,6 +896,12 @@
         "type": "Project",
         "dependencies": {
           "Autonogrammer.Harness.Terminal": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.harness.pluginbundles": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "autonogrammer.harness.plugins": {
@@ -776,6 +935,14 @@
       "autonogrammer.harness.secrets": {
         "type": "Project"
       },
+      "autonogrammer.harness.secrets.os": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
+          "System.Security.Cryptography.ProtectedData": "[10.0.13, )"
+        }
+      },
       "autonogrammer.harness.terminal": {
         "type": "Project",
         "dependencies": {
@@ -783,7 +950,10 @@
         }
       },
       "autonogrammer.harness.workspace": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+        }
       },
       "autonogrammer.harness.worktrees": {
         "type": "Project"
@@ -791,16 +961,33 @@
       "autonogrammer.native": {
         "type": "Project",
         "dependencies": {
+          "Autonogrammer.Accounts": "[0.15.0, )",
+          "Autonogrammer.Accounts.Desktop": "[0.15.0, )",
+          "Autonogrammer.Cowork": "[0.15.0, )",
+          "Autonogrammer.Cowork.Artifacts.Stores": "[0.15.0, )",
+          "Autonogrammer.Dispatch.Client": "[0.15.0, )",
+          "Autonogrammer.Dispatch.Desktop": "[0.15.0, )",
           "Autonogrammer.EngineHost": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
           "Autonogrammer.Harness.Acp": "[0.15.0, )",
           "Autonogrammer.Harness.AgentLoop": "[0.15.0, )",
           "Autonogrammer.Harness.Automations": "[0.15.0, )",
+          "Autonogrammer.Harness.BrowserUse": "[0.15.0, )",
+          "Autonogrammer.Harness.ComputerUse": "[0.15.0, )",
+          "Autonogrammer.Harness.ComputerUse.MacOS": "[0.15.0, )",
+          "Autonogrammer.Harness.ComputerUse.Windows": "[0.15.0, )",
+          "Autonogrammer.Harness.ComputerUse.X11": "[0.15.0, )",
+          "Autonogrammer.Harness.Isolation": "[0.15.0, )",
           "Autonogrammer.Harness.Mcp": "[0.15.0, )",
+          "Autonogrammer.Harness.McpGateway": "[0.15.0, )",
+          "Autonogrammer.Harness.Notifications": "[0.15.0, )",
           "Autonogrammer.Harness.OmpConfig": "[0.15.0, )",
+          "Autonogrammer.Harness.PluginBundles": "[0.15.0, )",
           "Autonogrammer.Harness.Plugins": "[0.15.0, )",
           "Autonogrammer.Harness.Providers": "[0.15.0, )",
           "Autonogrammer.Harness.Remote": "[0.15.0, )",
           "Autonogrammer.Harness.Secrets": "[0.15.0, )",
+          "Autonogrammer.Harness.Secrets.Os": "[0.15.0, )",
           "Autonogrammer.Harness.Terminal": "[0.15.0, )",
           "Autonogrammer.Harness.Workspace": "[0.15.0, )",
           "Autonogrammer.Harness.Worktrees": "[0.15.0, )",
@@ -816,6 +1003,7 @@
         "type": "Project",
         "dependencies": {
           "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Artifacts": "[0.15.0, )",
           "Autonogrammer.GenUi": "[0.15.0, )",
           "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
           "Autonogrammer.Harness.AgentLoop": "[0.15.0, )",
@@ -829,6 +1017,8 @@
           "Autonogrammer.Sessions": "[0.15.0, )",
           "Avalonia": "[12.1.4, )",
           "Avalonia.AvaloniaEdit": "[12.0.0, )",
+          "Avalonia.Controls.DataGrid": "[12.1.2, )",
+          "Avalonia.Controls.WebView": "[12.1.1, )",
           "AvaloniaEdit.TextMate": "[12.0.0, )",
           "Iciclecreek.Avalonia.Terminal": "[4.1.0, )",
           "Markdig": "[1.4.2, )",
@@ -847,8 +1037,15 @@
         "dependencies": {
           "Autonogrammer.Contracts": "[0.15.0, )",
           "Autonogrammer.GenUi": "[0.15.0, )",
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.15.0, )",
           "Autonogrammer.Parser": "[0.15.0, )",
           "Markdig": "[1.4.2, )"
+        }
+      },
+      "autonogrammer.resilience": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.sandbox": {
@@ -890,6 +1087,7 @@
         "dependencies": {
           "Autonogrammer.Contracts": "[0.15.0, )",
           "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Resilience": "[0.15.0, )",
           "Autonogrammer.Sessions": "[0.15.0, )",
           "Microsoft.Extensions.Configuration.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
@@ -900,6 +1098,7 @@
         "type": "Project",
         "dependencies": {
           "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Artifacts": "[0.15.0, )",
           "Autonogrammer.GenUi": "[0.15.0, )",
           "Autonogrammer.Presentation": "[0.15.0, )",
           "Microsoft.AspNetCore.Components.Web": "[10.0.13, )"
@@ -908,6 +1107,7 @@
       "autonogrammer.web": {
         "type": "Project",
         "dependencies": {
+          "Autonogrammer.Accounts": "[0.15.0, )",
           "Autonogrammer.Contracts": "[0.15.0, )",
           "Autonogrammer.Harness.Providers": "[0.15.0, )",
           "Autonogrammer.UI": "[0.15.0, )",
@@ -936,6 +1136,24 @@
         "requested": "[12.0.0, )",
         "resolved": "12.0.0",
         "contentHash": "VNfaYdTbiQ2DlSkSMoLg4DhTbQmQR0cFT6nqEqLkaYGLjBWmUdv5BNIuoObK4c9cgzFqnEJXBaOp4R/bxgFKfQ==",
+        "dependencies": {
+          "Avalonia": "12.0.0"
+        }
+      },
+      "Avalonia.Controls.DataGrid": {
+        "type": "CentralTransitive",
+        "requested": "[12.1.2, )",
+        "resolved": "12.1.2",
+        "contentHash": "Tw02SZd/B42Gq6/l9IBPfuM+VsHPq7c6LXb9mT0xVjZB2UPeynfKlBgQDcrhu/SOfYUGk7tQSRmLFM2kaAjdrw==",
+        "dependencies": {
+          "Avalonia": "12.1.0"
+        }
+      },
+      "Avalonia.Controls.WebView": {
+        "type": "CentralTransitive",
+        "requested": "[12.1.1, )",
+        "resolved": "12.1.1",
+        "contentHash": "QrzIoII70cs+dudUWCstZSYuY2Y6y5fh9aI943bEfre28TTJxPSypunlsekr/0xa5YHm9SDaywmn+Mj0lPOspg==",
         "dependencies": {
           "Avalonia": "12.0.0"
         }
@@ -989,6 +1207,12 @@
           "TextMateSharp": "2.0.3",
           "TextMateSharp.Grammars": "2.0.3"
         }
+      },
+      "DiffPlex": {
+        "type": "CentralTransitive",
+        "requested": "[1.9.0, )",
+        "resolved": "1.9.0",
+        "contentHash": "Z4IDEH6iOb6d+Y2QUjsbq1Fp5I/kwZzNdr/evBTbCGq+ShAjE4baLm7lX1tfjV2p34QI3V9kctCQziFuuKqeCA=="
       },
       "Iciclecreek.Avalonia.Terminal": {
         "type": "CentralTransitive",
@@ -1332,6 +1556,18 @@
           "Microsoft.Windows.Console.ConPTY": "1.24.260710001"
         }
       },
+      "PuppeteerSharp": {
+        "type": "CentralTransitive",
+        "requested": "[25.15.0, )",
+        "resolved": "25.15.0",
+        "contentHash": "iTM/9GBCzgAjRA18zIH5g4yoy4nDlT4LEfKDIm2YyciDywC9HvVCQj97RAmMefPSoaKkA5PfmRrO0Z2+LfzmQg==",
+        "dependencies": {
+          "Microsoft.Extensions.Logging": "8.0.0",
+          "Microsoft.IO.RecyclableMemoryStream": "3.0.1",
+          "ReactiveExtensionsSharp": "0.3.0",
+          "WebDriverBiDi": "0.0.61"
+        }
+      },
       "Scalar.AspNetCore": {
         "type": "CentralTransitive",
         "requested": "[2.18.0, )",
@@ -1358,6 +1594,12 @@
           "RESPite": "3.4.5",
           "System.IO.Hashing": "10.0.12"
         }
+      },
+      "System.Security.Cryptography.ProtectedData": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.13, )",
+        "resolved": "10.0.13",
+        "contentHash": "aUSmC6cPjFLSE0rDTsmkR3wvUOnscqewebOaaELEToh12sNmoltZqT3f0C81mJ1zhxKjWco25soHTvYwsXCsUw=="
       },
       "TextMateSharp": {
         "type": "CentralTransitive",

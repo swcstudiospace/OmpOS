@@ -1,0 +1,40 @@
+@namespace Autonogrammer.UI.Components.Dispatch
+@using Autonogrammer.Presentation.Dispatch
+
+<section class="autonogrammer-dispatch-approval" aria-labelledby="autonogrammer-dispatch-approval-title">
+    <h3 id="autonogrammer-dispatch-approval-title">@DispatchCopy.ApprovalHeading</h3>
+    <dl class="autonogrammer-dispatch-facts">
+        <dt>@DispatchCopy.ApprovalFromLabel</dt>
+        <dd>@Model.DeviceName</dd>
+        <dt>@DispatchCopy.ApprovalOperationLabel</dt>
+        <dd>@Model.Operation</dd>
+        <dt>@DispatchCopy.ApprovalCapabilityLabel</dt>
+        <dd>@Model.Capability</dd>
+        <dt>@DispatchCopy.ApprovalToolsLabel</dt>
+        <dd>@string.Join(", ", Model.ToolClasses)</dd>
+    </dl>
+    <p class="autonogrammer-dispatch-task">@Model.TaskText</p>
+    <div class="autonogrammer-settings-actions">
+        <button type="button" class="autonogrammer-btn" @onclick="OnApprove">@DispatchCopy.ApproveOnceLabel</button>
+        <button type="button" class="autonogrammer-btn autonogrammer-btn--ghost" @onclick="OnDeny">@DispatchCopy.DenyLabel</button>
+        <button type="button" class="autonogrammer-btn autonogrammer-btn--ghost" @onclick="OnDenyAndPause">@DispatchCopy.DenyAndPauseLabel</button>
+    </div>
+</section>
+
+@code {
+    /// <summary>Gets the approval to show.</summary>
+    [Parameter, EditorRequired]
+    public DispatchApprovalModel Model { get; set; } = default!;
+
+    /// <summary>Gets the callback for Approve once.</summary>
+    [Parameter]
+    public EventCallback OnApprove { get; set; }
+
+    /// <summary>Gets the callback for Deny.</summary>
+    [Parameter]
+    public EventCallback OnDeny { get; set; }
+
+    /// <summary>Gets the callback for Deny and pause Dispatch.</summary>
+    [Parameter]
+    public EventCallback OnDenyAndPause { get; set; }
+}

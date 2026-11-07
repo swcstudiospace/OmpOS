@@ -1,0 +1,83 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:dispatch="clr-namespace:Autonogrammer.Presentation.Dispatch;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Dispatch.DispatchApprovalView"
+             x:DataType="dispatch:DispatchApprovalModel"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The approval prompt. It raises the decision the user made and decides nothing itself. -->
+  <Border Classes="settings-card">
+    <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+      <TextBlock x:Name="ApprovalHeading"
+                 Classes="settings-section" />
+
+      <Grid ColumnDefinitions="Auto,*"
+            RowDefinitions="Auto,Auto,Auto,Auto">
+        <TextBlock x:Name="FromLabel"
+                   Grid.Row="0"
+                   Grid.Column="0"
+                   Classes="settings-label"
+                   Margin="0,0,8,4" />
+        <TextBlock Grid.Row="0"
+                   Grid.Column="1"
+                   Classes="settings-body"
+                   Text="{CompiledBinding DeviceName}" />
+        <TextBlock x:Name="OperationLabel"
+                   Grid.Row="1"
+                   Grid.Column="0"
+                   Classes="settings-label"
+                   Margin="0,0,8,4" />
+        <TextBlock Grid.Row="1"
+                   Grid.Column="1"
+                   Classes="settings-body"
+                   Text="{CompiledBinding Operation}" />
+        <TextBlock x:Name="CapabilityLabel"
+                   Grid.Row="2"
+                   Grid.Column="0"
+                   Classes="settings-label"
+                   Margin="0,0,8,4" />
+        <TextBlock Grid.Row="2"
+                   Grid.Column="1"
+                   Classes="settings-body"
+                   Text="{CompiledBinding Capability}" />
+        <TextBlock x:Name="ToolsLabel"
+                   Grid.Row="3"
+                   Grid.Column="0"
+                   Classes="settings-label"
+                   Margin="0,0,8,4" />
+        <TextBlock x:Name="ToolsText"
+                   Grid.Row="3"
+                   Grid.Column="1"
+                   Classes="settings-body" />
+      </Grid>
+
+      <TextBlock x:Name="TaskText"
+                 Classes="settings-body"
+                 Text="{CompiledBinding TaskText}"
+                 TextWrapping="Wrap" />
+
+      <StackPanel Orientation="Horizontal"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+        <Button x:Name="ApproveOnceButton"
+                Classes="primary"
+                AutomationProperties.Name="{x:Static dispatch:DispatchCopy.ApproveOnceLabel}"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}" />
+        <Button x:Name="DenyButton"
+                AutomationProperties.Name="{x:Static dispatch:DispatchCopy.DenyLabel}"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}" />
+        <Button x:Name="DenyAndPauseButton"
+                AutomationProperties.Name="{x:Static dispatch:DispatchCopy.DenyAndPauseLabel}"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}" />
+      </StackPanel>
+
+    </StackPanel>
+  </Border>
+</UserControl>

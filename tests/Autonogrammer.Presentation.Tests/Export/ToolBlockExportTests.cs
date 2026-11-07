@@ -80,4 +80,26 @@ public sealed class ToolBlockExportTests
         exported.ShouldContain("## File edit: src/a.cs\n\nCall ID: call-1\n\nBefore:\n\n```\nold\n```\n\nAfter:\n\n```\nnew\n```\n");
         exported.ShouldContain("## File edit: src/b.cs\n\nCall ID: call-2\n\nCreated file:\n\n```\ncreated\n```\n");
     }
+
+    /// <summary>D-27: export keeps the alt text and the data reference, and a placeholder keeps the alt without a payload.</summary>
+    [Fact]
+    public void ExportIncludesImageAltText()
+    {
+        var transcript = new UiTree
+        {
+            Blocks =
+            [
+                new ImageBlock { Id = "i1", CallId = "call-1", ToolName = "screenshot", MimeType = "image/png", DataBase64 = "aGVsbG8=", Description = "chart", ByteLength = 5, Omitted = false },
+                new ImageBlock { Id = "i2", CallId = "call-1", ToolName = "screenshot", MimeType = "image/png", DataBase64 = "", Description = "huge", ByteLength = 0, Omitted = true },
+            ],
+        };
+
+        var exported = TranscriptMarkdownExporter.Export(transcript, "Run");
+
+        exported.ShouldContain("## Image: chart\n\nAlt: chart\n");
+        exported.ShouldContain("data:image/png;base64,aGVsbG8=");
+        exported.ShouldContain("## Image: huge\n\nAlt: huge\n");
+        exported.ShouldContain("Omitted: yes\n");
+        exported.ShouldNotContain("data:image/png;base64,\n");
+    }
 }

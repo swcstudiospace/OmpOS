@@ -1,0 +1,89 @@
+@namespace Autonogrammer.UI.Components.Shell
+@using Autonogrammer.Presentation.Cowork
+<div class="autonogrammer-tabs autonogrammer-surface-tabs" role="tablist" aria-label="Workspace" @onkeydown="OnKeyDownAsync">
+    <button type="button"
+            role="tab"
+            id="@CodeTabId"
+            class="autonogrammer-tab"
+            aria-selected="@(IsCowork ? "false" : "true")"
+            aria-controls="@ViewTabs.PanelId"
+            aria-keyshortcuts="Control+Shift+1"
+            tabindex="@(IsCowork ? -1 : 0)"
+            @ref="_code"
+            @onclick="() => SelectAsync(CodeView)">Code</button>
+    <button type="button"
+            role="tab"
+            id="@CoworkTabId"
+            class="autonogrammer-tab"
+            aria-selected="@(IsCowork ? "true" : "false")"
+            aria-controls="@ViewTabs.PanelId"
+            aria-keyshortcuts="Control+Shift+2"
+            tabindex="@(IsCowork ? 0 : -1)"
+            @ref="_cowork"
+            @onclick="() => SelectAsync(CoworkView)">Cowork</button>
+    @if (!string.IsNullOrEmpty(ChipText))
+    {
+        <span class="autonogrammer-surface-chip" role="status">@ChipText</span>
+    }
+</div>
+
+@code {
+    /// <summary>The value of <see cref="Selected"/> for Code.</summary>
+    public const string CodeView = "code";
+
+    /// <summary>The value of <see cref="Selected"/> for Cowork.</summary>
+    public const string CoworkView = "cowork";
+
+    /// <summary>The identifier of the Code tab.</summary>
+    public const string CodeTabId = "autonogrammer-tab-code";
+
+    /// <summary>The identifier of the Cowork tab.</summary>
+    public const string CoworkTabId = "autonogrammer-tab-cowork";
+
+    private ElementReference _code;
+    private ElementReference _cowork;
+
+    /// <summary>Gets the selected surface: <see cref="CodeView"/> or <see cref="CoworkView"/>.</summary>
+    [Parameter]
+    public string Selected { get; set; } = CodeView;
+
+    /// <summary>Gets the callback invoked with the surface the user chose.</summary>
+    [Parameter]
+    public EventCallback<string> SelectedChanged { get; set; }
+
+    /// <summary>Gets the hidden-surface chip, or empty when there is nothing to report.</summary>
+    [Parameter]
+    public string? ChipText { get; set; }
+
+    private bool IsCowork => string.Equals(Selected, CoworkView, StringComparison.Ordinal);
+
+    /// <summary>Moves keyboard focus to the selected tab.</summary>
+    /// <returns>A task that completes when the focus request has been sent.</returns>
+    public ValueTask FocusSelectedAsync() => (IsCowork ? _cowork : _code).FocusAsync();
+
+    private async Task SelectAsync(string view)
+    {
+        if (!string.Equals(view, Selected, StringComparison.Ordinal))
+        {
+            await SelectedChanged.InvokeAsync(view).ConfigureAwait(true);
+        }
+    }
+
+    private async Task OnKeyDownAsync(KeyboardEventArgs args)
+    {
+        string? target = args.Key switch
+        {
+            "ArrowRight" or "ArrowLeft" => IsCowork ? CodeView : CoworkView,
+            "Home" => CodeView,
+            "End" => CoworkView,
+            _ => null,
+        };
+        if (target is null)
+        {
+            return;
+        }
+
+        await SelectAsync(target).ConfigureAwait(true);
+        await (string.Equals(target, CodeView, StringComparison.Ordinal) ? _code : _cowork).FocusAsync().ConfigureAwait(true);
+    }
+}

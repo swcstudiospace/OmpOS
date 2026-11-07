@@ -5,9 +5,17 @@ import path from "node:path";
 // in the browser from scripted fixtures, so connect-src is 'self' and no API origin is needed. vercel.ts executes at build time,
 // so connect-src is generated from one validated API origin. scripts/vercel/render-csp.sh fails closed
 // on a missing or invalid AUTONOGRAMMER_API_ORIGIN; that aborts config evaluation, so the deploy fails rather
-// than shipping a wildcard or a stale origin.
+// than shipping a wildcard or a stale origin. Optional AUTONOGRAMMER_AUTH_ORIGIN (https://host[:port], no loopback) is a second
+// connect-src origin when set. AUTONOGRAMMER_SIGNIN=1 (only the literal 1) fails closed when that origin is missing. The Demo ignores both.
 const demo = process.env.AUTONOGRAMMER_DEMO === "1";
 const connectSrc = execFileSync("bash", [path.join(process.cwd(), "scripts/vercel/render-csp.sh")], {
+  encoding: "utf8",
+  stdio: ["ignore", "pipe", "inherit"],
+  env: process.env,
+}).trim();
+
+// frame-src for the ticketed render document of an interactive artifact, framed from the API origin. Empty for the Demo, which makes no frame request.
+const frameSrc = execFileSync("bash", [path.join(process.cwd(), "scripts/vercel/render-csp.sh"), "--frame-src"], {
   encoding: "utf8",
   stdio: ["ignore", "pipe", "inherit"],
   env: process.env,
@@ -18,11 +26,12 @@ const contentSecurityPolicy = [
   "script-src 'self' 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   connectSrc,
+  frameSrc,
   "img-src 'self' data:",
   "object-src 'none'",
   "base-uri 'self'",
   "frame-ancestors 'none'",
-].join("; ");
+].filter((directive) => directive !== "").join("; ");
 
 export const config = {
   framework: null,
