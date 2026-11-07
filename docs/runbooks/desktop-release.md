@@ -1,12 +1,12 @@
 # Runbook: desktop release packages (Autonogrammer.Native)
 
-Status: Workflow and packaging script written. The workflow has not run, no tag has been pushed, and its locked restore for a runtime identifier fails (section 8, item 3, verified 2026-11-03). Section 8 lists what is still unverified.
+Status: The tag job attaches the three desktop archives to the GitHub Release. The RID restore is unlocked on purpose (section 8, item 3). A tag has not yet been pushed from this revision.
 
 This runbook covers the desktop app `apps/Autonogrammer.Native` (Avalonia) packaged for Linux x64, Windows x64 and macOS arm64, so that people can test it on each OS. It does not cover the API or worker containers.
 
 ## 1. Who this is for
 
-- Maintainers who start a desktop packaging run or cut a draft pre-release.
+- Maintainers who start a desktop packaging run or cut a release.
 - Testers who download a package and run the app on one of the three platforms.
 
 ## 2. Which workflow to run
@@ -16,16 +16,16 @@ The workflow is `.github/workflows/desktop-release.yml` (name `desktop-release`)
 | How it starts | What it does | Touches a release? |
 | --- | --- | --- |
 | Actions, `desktop-release`, Run workflow, pick a branch | Builds the three packages and uploads them as workflow artifacts. The release job is skipped, so no `SHA256SUMS` is written. | No |
-| Push a tag `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-prerelease` | Builds the three packages, writes `SHA256SUMS`, and creates or updates a **draft** pre-release named after the tag. | Draft only |
+| Push a tag `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-prerelease` | Builds the three packages, writes `SHA256SUMS`, and attaches them to the GitHub Release for that tag. If `release.yml` already published the release, this job uploads the archives and leaves the notes alone. If no release exists yet, this job creates a published release. | Yes. Published. |
 
 The tag rule is the one `release.yml` uses:
 
-- The tag must match the `<VersionPrefix>` in `Directory.Build.props` once the leading `v` and any `-prerelease` suffix are removed. At the time of writing that prefix is `0.15.0`.
+- The tag must match the `<VersionPrefix>` in `Directory.Build.props` once the leading `v` and any `-prerelease` suffix are removed. At the time of writing that prefix is `0.16.0`.
 - The tagged commit must be reachable from `origin/main`.
 
 A tag that fails either rule fails the build before anything is packaged.
 
-**Known conflict (owner decision).** `release.yml` runs on every `v*` tag and creates a **published** (non-draft) release with the same name. If that release exists when the desktop release job runs, the desktop job refuses to modify it and fails, so the packages are not attached. Which run creates the release first is not verified. This workflow does not change `release.yml`.
+`release.yml` also runs on every `v*` tag and creates the published release with the changelog notes. The desktop job uploads the three archives onto that release whether or not it is still a draft. It does not turn a published release back into a draft, and it does not replace changelog notes that are already published.
 
 ## 3. The artifacts
 
@@ -34,8 +34,8 @@ Each build job uploads one archive as a workflow artifact. The archive name carr
 | Artifact file | Platform | Contents | Runner |
 | --- | --- | --- | --- |
 | `Autonogrammer-<version>-linux-x64.tar.gz` | Linux x64 | One folder `Autonogrammer-<version>-linux-x64/` with the self-contained publish output. The executable is `Autonogrammer.Native`. | `ubuntu-24.04` |
-| `Autonogrammer-<version>-win-x64.zip` | Windows x64 | One folder with the self-contained publish output. The executable is `Autonogrammer.Native.exe`. | `windows-2022` |
-| `Autonogrammer-<version>-osx-arm64.zip` | macOS arm64 | `Autonogrammer.app`, made with `ditto -c -k --keepParent`. The app is unsigned and not notarized (section 5). | `macos-15` |
+| `Autonogrammer-<version>-win-x64.zip` | Windows x64 | One folder with the self-contained publish output. The executable is `Autonogrammer.Native.exe`. | `windows-2025` |
+| `Autonogrammer-<version>-osx-arm64.zip` | macOS arm64 | `Autonogrammer.app`, made with `ditto -c -k --keepParent`. The app is unsigned and not notarized (section 5). | `macos-26` |
 | `SHA256SUMS` | all three | SHA-256 of the three archives. Tag runs only. | `ubuntu-24.04` |
 
 The packages are self-contained. The workflow asks for runtime `10.0.13` (`-p:RuntimeFrameworkVersion=10.0.13`, the same value `release.yml` uses). The published output has not been inspected, so the exact runtime version in the archive is not verified.
@@ -94,20 +94,20 @@ Dispatch runs produce no `SHA256SUMS`. To check those archives, compute each has
 
 ## 7. Publishing
 
-A tag run creates or updates a **draft** pre-release. The workflow never publishes it. A maintainer reviews the draft, then publishes it by hand in the GitHub UI.
+A tag run attaches the archives to the GitHub Release for that tag. The release is published, either by `release.yml` or by this workflow if it creates the release. Download the three archives and `SHA256SUMS` from the release page.
 
-If a published release named after the tag already exists, the desktop job fails and leaves that release unchanged. See the known conflict in section 2.
+If the release was still a draft when this job ran, the job publishes it so the installers can be downloaded. It does not modify the notes of a release that is already published.
 
 ## 8. Open questions
 
 1. **WebKitGTK on Linux.** `Avalonia.Controls.WebView.dll` (package 12.1.1) references `libwebkit2gtk` and `libsoup-3.0.so.0` in its GTK backend. The Artifacts panel creates a `NativeWebView` when it opens a document. Not verified: the WebKitGTK version the app needs (4.1 is the value the owner named), and what the app does when the library is missing.
 2. **WebView2 on Windows.** The package README names WebView2 as the Windows engine. Not verified: whether the runtime must be installed separately.
-3. **Locked restore for a runtime identifier fails (verified 2026-11-03).** The workflow restores with `--locked-mode`, as `release.yml` does. `dotnet restore -r` for `linux-x64`, `win-x64` and `osx-arm64` each fails with NU1004 for 43 projects of the desktop graph (`apps/Autonogrammer.Native` and the `src` projects it references), because their `packages.lock.json` files have no runtime-identifier targets. The fix is to declare the runtime identifiers in those projects and regenerate about 43 lock files, or to accept an unlocked release restore. That is an owner decision; until it is made the workflow cannot produce packages.
+3. **Locked restore for a runtime identifier cannot match one lock file (verified 2026-11-07).** `dotnet restore -r linux-x64 --locked-mode` sets the project's runtime identifiers to `linux-x64` only. A lock file generated with `linux-x64;win-x64;osx-arm64` then fails NU1004 because NuGet compares the sets for equality, and a lock file written by one `-r` restore drops the other two. The desktop workflow therefore restores with `-p:RestoreLockedMode=false --force-evaluate`. Package versions still come from the committed lock file. A normal `dotnet restore --locked-mode` without `-r` is unchanged.
 4. **Publish has not run.** `Directory.Build.props` sets `TreatWarningsAsErrors` to `true` and `AnalysisLevel` to `latest-all`. A warning in the desktop projects would fail the build. Not verified.
 <!-- rebrand:keep-start -->
 5. **Bundle identifier.** `com.swcstudiospace.autonogrammer` is the identifier the CHANGELOG names for the Android app. The Android project still uses `com.swcstudiospace.ompos`. The owner should confirm the macOS identifier.
 <!-- rebrand:keep-end -->
-6. **`release.yml` conflict.** Section 2. Owner decision.
+6. **`release.yml` conflict.** Resolved: the desktop job uploads onto the published release instead of refusing it. `release.yml` is unchanged.
 7. **Docs index.** `scripts/docs/check_gitbook.py` reports any page under `docs/` that `docs/SUMMARY.md` does not list. This page needs a line in `docs/SUMMARY.md`, for example `* [Desktop release packages](runbooks/desktop-release.md)`. That file was out of scope for this change.
 8. **7-Zip on Windows.** The runner-images Windows image tests run `7z` by name, so `7z` is expected on `PATH` on `windows-2022`. The script falls back to `zip` if `7z` is missing. Not verified: `7z` on the runner's `PATH` in a run, and how `7z` handles the Git Bash paths the script passes it.
 9. **Artifact action versions.** The workflow uses `download-artifact` v8.0.2 to download artifacts from `upload-artifact` v7.0.2. The v8 release notes describe the change as transparent to callers. Not verified by a run.

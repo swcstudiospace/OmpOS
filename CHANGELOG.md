@@ -8,7 +8,10 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-11-07
+
 ### Added
+- Desktop packages for Linux x64, Windows x64 and macOS arm64. A `v*` tag builds them in `desktop-release` and attaches `Autonogrammer-<version>-linux-x64.tar.gz`, `Autonogrammer-<version>-win-x64.zip` and `Autonogrammer-<version>-osx-arm64.zip` to the GitHub Release. The packages are self-contained, unsigned and not notarized. omp and Bun are not inside the archive.
 - Cowork artifacts on the web head (Phase 71, plan 06): an artifact card opens a panel and never renders content inline. Interactive HTML loads from a 60-second ticketed render document in a sandbox with exactly `allow-scripts`, `referrerpolicy="no-referrer"` and an empty `allow`; the frame is destroyed on a second load (the navigation is reported as blocked) and when the sign-in ends. Static HTML, sanitized SVG and Mermaid render through `srcdoc` under the page policy and are labelled static view. Mermaid 12.2.0 is vendored unmodified (SHA-256 `a8a6a6f8…c3b9`) with EPL-2.0, Apache-2.0 and ISC libraries enumerated in its notice (OQ-400 admitted by default). The CSP gains `frame-src` for the API origin only through `scripts/vercel/render-csp.sh --frame-src`, and the offline shell never precaches `lib/mermaid/`. The smoke run gains an `artifact` half that frames the hostile fixtures and fails on any outbound request, frame navigation or parent access. Not run on a browser or a device in this lane (see the phase summary).
 - Surface switch and Cowork task list (Phase 69): the native title bar and the web top bar switch between Code and Cowork by pointer or keyboard (Ctrl+Shift+1 and Ctrl+Shift+2, Meta on macOS), and the web head opens Cowork directly at its `/cowork` address. The choice is remembered on the device. A switch hides a surface without stopping its sessions, and a hidden surface shows a chip when it has running, waiting or failed sessions. Cowork has its own rail for tasks and projects, a conversation and a collapsible dock. Its task list holds 200 tasks per account; a full list disables "New task" and says why. Signed out, Cowork shows "Sign in to use Cowork", and a head without Cowork services shows no switch.
 - Cowork plugins, isolation, usage and notifications composition (Phase 76): bundle skills feed convention plugin roots, bundle MCP servers enter the catalog switched off until confirmed, Cowork sessions can carry an isolation wrapper and Code sessions do not, and the desktop settings and web information pages name the limits. Parity rows that depend on omp consuming a flag stay partial. `docs/parity/cowork-parity.md` was not in the tree, so those rows were not graded here.
@@ -338,7 +341,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.12.0...v0.13.0

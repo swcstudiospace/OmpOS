@@ -3,16 +3,16 @@
 # Triggers
 #   workflow_dispatch  builds the three packages and uploads them as workflow artifacts. No release is touched. The release
 #                      job is skipped, so a dispatch run writes no SHA256SUMS.
-#   push of v*         builds the same packages, writes SHA256SUMS, and creates or updates a DRAFT pre-release named after
-#                      the tag. This workflow never publishes a release; a person publishes the draft in the GitHub UI.
-#   Known blocker (verified 2026-11-03): the locked restore for a runtime identifier fails with NU1004 for 43 desktop-graph projects.
-#                      See docs/runbooks/desktop-release.md, section 8, item 3. Until that is resolved a dispatch run cannot produce packages.
+#   push of v*         builds the same packages, writes SHA256SUMS, and attaches them to the GitHub Release for that tag.
+#                      If release.yml already published the release, this job uploads the archives and does not rewrite its
+#                      notes or turn it back into a draft. If no release exists yet, this job creates a published release
+#                      so the installers are downloadable. A prerelease suffix on the tag still marks the release as a prerelease.
 #
 # Version rule (copied from release.yml): the tag is vMAJOR.MINOR.PATCH[-prerelease], it equals the <VersionPrefix> of
 # Directory.Build.props without the prerelease suffix, and the tagged commit is reachable from origin/main.
 #
-# Known conflict: release.yml creates a published (non-draft) release for every v* tag. When that release already exists,
-# the release job here refuses to modify it and fails. Resolving this is an owner decision; this file does not change release.yml.
+# release.yml also runs on v* and creates the published release with changelog notes. This job must not fail when that
+# release already exists, or the desktop archives never get attached.
 #
 # Runners: ubuntu-24.04, windows-2025 and macos-26. macos-14 is not used: GitHub retired all macOS 14 images on 2026-11-02
 # (actions/runner-images issue 15226). macos-26 is the arm64 image that ADE plan Tier 1 (macOS 26) targets.
@@ -20,7 +20,11 @@
 # The packages do not contain omp or Bun. The app needs both installed separately on the machine that runs it.
 #
 # Action pins were resolved with gh api on 2026-11-03; the tag is written next to each pin.
-# NOT EXECUTED: this workflow has not run yet.
+#
+# The RID restore does not use locked mode. NuGet compares the lock file's runtime-identifier set for equality, so one
+# packages.lock.json cannot satisfy restore -r linux-x64, restore -r win-x64 and restore -r osx-arm64 at once (NU1004).
+# CI=true would turn locked mode back on through Directory.Build.props, so this job sets RestoreLockedMode=false.
+# Package versions still come from the committed lock file; only the per-RID asset graph is evaluated on the runner.
 name: desktop-release
 
 on:
@@ -99,7 +103,8 @@ jobs:
           RID: ${{ matrix.rid }}
         run: |
           set -euo pipefail
-          dotnet restore apps/Autonogrammer.Native/Autonogrammer.Native.csproj -r "$RID" --locked-mode -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13
+          # Locked mode cannot accept one lock file for three different -r values (NU1004, exact RID-set compare).
+          dotnet restore apps/Autonogrammer.Native/Autonogrammer.Native.csproj -r "$RID" -p:RestoreLockedMode=false --force-evaluate -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13
       - name: Publish self-contained
         shell: bash
         env:
@@ -139,7 +144,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    name: draft pre-release
+    name: attach desktop packages
     needs: package
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
@@ -180,30 +185,30 @@ jobs:
           done
           sha256sum -- "${files[@]}" > SHA256SUMS
           sha256sum -c SHA256SUMS
-      - name: Create the draft pre-release, or update an existing draft (never publish)
+      - name: Attach the packages to the GitHub Release
         shell: bash
         run: |
           set -euo pipefail
           notes="$RUNNER_TEMP/notes.md"
           {
-            echo "Desktop test packages for $TAG. Not signed with a publisher certificate and not notarized."
+            echo "Desktop packages for $TAG. Not signed with a publisher certificate and not notarized."
             echo ""
             echo "Verify SHA256SUMS before running a package. Steps: docs/runbooks/desktop-release.md in the tagged commit."
           } > "$notes"
           assets=( dist/* )
+          pre=()
+          case "$TAG" in *-*) pre=(--prerelease) ;; esac
           if gh release view "$TAG" >/dev/null 2>&1; then
-            draft="$(gh release view "$TAG" --json isDraft --jq .isDraft)"
-            if [ "$draft" != "true" ]; then
-              echo "::error::release $TAG already exists and is not a draft; this workflow does not modify published releases" >&2
-              exit 1
-            fi
             gh release upload "$TAG" "${assets[@]}" --clobber
-            gh release edit "$TAG" --draft --prerelease --title "Autonogrammer $TAG" --notes-file "$notes"
+            draft="$(gh release view "$TAG" --json isDraft --jq .isDraft)"
+            if [ "$draft" = "true" ]; then
+              gh release edit "$TAG" --draft=false ${pre[@]+"${pre[@]}"} --title "Autonogrammer $TAG" --notes-file "$notes"
+            fi
           else
-            gh release create "$TAG" "${assets[@]}" --draft --prerelease --verify-tag --title "Autonogrammer $TAG" --notes-file "$notes"
+            gh release create "$TAG" "${assets[@]}" --verify-tag ${pre[@]+"${pre[@]}"} --title "Autonogrammer $TAG" --notes-file "$notes"
           fi
           {
-            echo "### Draft pre-release $TAG"
+            echo "### Desktop packages on $TAG"
             echo ""
-            echo "The release is a draft. Publish it by hand in the GitHub UI after review."
+            echo "The three archives and SHA256SUMS are attached to the GitHub Release."
           } >> "$GITHUB_STEP_SUMMARY"
