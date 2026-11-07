@@ -449,8 +449,8 @@ internal static partial class DeviceEndpoints
     }
 
     private static async Task<JsonHttpResult<DispatchDeviceListResponse>> ListDevicesAsync(
-        IDispatchStore store,
-        IDispatchPresence presence,
+        [FromServices] IDispatchStore store,
+        [FromServices] IDispatchPresence presence,
         IUserContext user,
         CancellationToken cancellationToken)
     {
@@ -466,8 +466,8 @@ internal static partial class DeviceEndpoints
 
     private static async Task<Results<JsonHttpResult<DispatchDeviceDto>, ProblemHttpResult>> GetDeviceAsync(
         string id,
-        IDispatchStore store,
-        IDispatchPresence presence,
+        [FromServices] IDispatchStore store,
+        [FromServices] IDispatchPresence presence,
         IUserContext user,
         CancellationToken cancellationToken)
     {
@@ -483,7 +483,7 @@ internal static partial class DeviceEndpoints
     private static async Task<Results<NoContent, ProblemHttpResult>> RenameDeviceAsync(
         string id,
         HttpContext http,
-        IDispatchStore store,
+        [FromServices] IDispatchStore store,
         IUserContext user,
         CancellationToken cancellationToken)
     {
@@ -504,9 +504,9 @@ internal static partial class DeviceEndpoints
 
     private static async Task<Results<NoContent, ProblemHttpResult>> RevokeDeviceAsync(
         string id,
-        IDispatchStore store,
-        IDispatchPresence presence,
-        IDispatchSignals signals,
+        [FromServices] IDispatchStore store,
+        [FromServices] IDispatchPresence presence,
+        [FromServices] IDispatchSignals signals,
         IUserContext user,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -520,9 +520,9 @@ internal static partial class DeviceEndpoints
     }
 
     private static async Task<NoContent> RevokeAllDevicesAsync(
-        IDispatchStore store,
-        IDispatchPresence presence,
-        IDispatchSignals signals,
+        [FromServices] IDispatchStore store,
+        [FromServices] IDispatchPresence presence,
+        [FromServices] IDispatchSignals signals,
         IUserContext user,
         TimeProvider time,
         CancellationToken cancellationToken)

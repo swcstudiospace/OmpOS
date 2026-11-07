@@ -8,6 +8,7 @@ using Autonogrammer.Api.Services;
 using Autonogrammer.Contracts.Dispatch;
 using Autonogrammer.Coordination;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Dispatch.Commands;
@@ -94,9 +95,9 @@ internal static class CommandEndpoints
     private static async Task<Results<JsonHttpResult<DispatchCommandAcceptedResponse>, ProblemHttpResult>> EnqueueAsync(
         string id,
         HttpContext http,
-        IDispatchStore store,
-        IDispatchPresence presence,
-        IDispatchSignals signals,
+        [FromServices] IDispatchStore store,
+        [FromServices] IDispatchPresence presence,
+        [FromServices] IDispatchSignals signals,
         IUserContext user,
         IOptions<DispatchOptions> options,
         TimeProvider time,
@@ -255,7 +256,7 @@ internal static class CommandEndpoints
     private static async Task<Results<JsonHttpResult<DispatchCommandListResponse>, ProblemHttpResult>> ListAsync(
         string? deviceId,
         int? limit,
-        IDispatchStore store,
+        [FromServices] IDispatchStore store,
         IUserContext user,
         CancellationToken cancellationToken)
     {
@@ -272,7 +273,7 @@ internal static class CommandEndpoints
 
     private static async Task<Results<JsonHttpResult<DispatchCommandDto>, ProblemHttpResult>> GetAsync(
         string id,
-        IDispatchStore store,
+        [FromServices] IDispatchStore store,
         IUserContext user,
         CancellationToken cancellationToken)
     {
@@ -287,8 +288,8 @@ internal static class CommandEndpoints
 
     private static async Task<Results<JsonHttpResult<DispatchCommandDto>, ProblemHttpResult>> CancelAsync(
         string id,
-        IDispatchStore store,
-        IDispatchSignals signals,
+        [FromServices] IDispatchStore store,
+        [FromServices] IDispatchSignals signals,
         IUserContext user,
         CancellationToken cancellationToken)
     {

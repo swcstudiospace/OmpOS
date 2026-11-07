@@ -5,6 +5,7 @@ using Autonogrammer.Api.Services;
 using Autonogrammer.Api.Sse;
 using Autonogrammer.Contracts.Dispatch;
 using Autonogrammer.Coordination;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Autonogrammer.Api.Dispatch.Events;
 
@@ -24,7 +25,7 @@ internal static class DispatchEventEndpoints
             .WithRequestTimeout(HostingPolicies.NoTimeout);
     }
 
-    private static IResult Feed(HttpContext http, IDispatchStore store, IDispatchSignals signals, IUserContext user, TimeProvider time)
+    private static IResult Feed(HttpContext http, [FromServices] IDispatchStore store, [FromServices] IDispatchSignals signals, IUserContext user, TimeProvider time)
     {
         var resume = http.Request.Headers["Last-Event-ID"].ToString();
         if (resume.Length == 0)
