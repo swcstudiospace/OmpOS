@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.RegularExpressions;
 using Autonogrammer.Contracts.Sandboxes;
 using Autonogrammer.Sandbox.Abstractions;
 using Autonogrammer.Sandbox.Abstractions.Exceptions;
@@ -123,24 +124,29 @@ grpc_endpoint = "{config.Drivers.Podman.GrpcEndpoint}"
 """;
     }
 
+    /// <summary>
+    /// An OCI image reference: an optional registry with port, a lowercase repository path, an optional tag and an optional sha256 digest.
+    /// Anything else, including a quote or a line break, is refused before it can reach the rendered TOML.
+    /// </summary>
+    private static readonly Regex ImageReference = new(
+        @"\A(?:[A-Za-z0-9.-]+(?::[0-9]+)?/)?[a-z0-9]+(?:[._-]+[a-z0-9]+)*(?:/[a-z0-9]+(?:[._-]+[a-z0-9]+)*)*(?::[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?(?:@sha256:[a-f0-9]{64})?\z",
+        RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
+
     private static void RequirePinnedImage(string image, string key)
     {
-        if (string.IsNullOrWhiteSpace(image))
+        if (string.IsNullOrEmpty(image) || !ImageReference.IsMatch(image))
         {
-            throw new ArgumentException($"drivers.podman.{key} is not set: name a tag other than latest, or a digest.", key);
+            throw new ArgumentException($"drivers.podman.{key} is not a valid image reference: name a repository with a tag other than latest, or a sha256 digest.", key);
         }
 
-        var reference = image.Trim();
-        if (reference.Contains("@sha256:", StringComparison.Ordinal))
+        var digest = image.IndexOf("@sha256:", StringComparison.Ordinal);
+        var named = digest < 0 ? image : image[..digest];
+        var colon = named.LastIndexOf(':');
+        var hasTag = colon > named.LastIndexOf('/');
+        var floating = hasTag && string.Equals(named[(colon + 1)..], "latest", StringComparison.Ordinal);
+        if (floating || (!hasTag && digest < 0))
         {
-            return;
-        }
-
-        var colon = reference.LastIndexOf(':');
-        var hasTag = colon > reference.LastIndexOf('/') && colon < reference.Length - 1;
-        if (!hasTag || string.Equals(reference[(colon + 1)..], "latest", StringComparison.Ordinal))
-        {
-            throw new ArgumentException($"drivers.podman.{key} is '{image}': name a tag other than latest, or a digest.", key);
+            throw new ArgumentException($"drivers.podman.{key} is '{image}': it uses the latest tag, or names neither a tag nor a digest; name a tag other than latest, or a sha256 digest.", key);
         }
     }
 
