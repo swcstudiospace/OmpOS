@@ -15,13 +15,13 @@ public sealed class PodmanDriverSection
     [JsonPropertyName("network_name")]
     public string NetworkName { get; set; } = "openshell";
 
-    /// <summary>Gets or sets the sandbox runtime image.</summary>
+    /// <summary>Gets or sets the sandbox runtime image. It has no default: set a tag other than latest, or a digest.</summary>
     [JsonPropertyName("sandbox_runtime_image")]
-    public string SandboxRuntimeImage { get; set; } = "ghcr.io/nvidia/openshell-sandbox-runtime:latest";
+    public string SandboxRuntimeImage { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the supervisor image.</summary>
+    /// <summary>Gets or sets the supervisor image. It has no default: set a tag other than latest, or a digest.</summary>
     [JsonPropertyName("supervisor_image")]
-    public string SupervisorImage { get; set; } = "ghcr.io/nvidia/openshell-supervisor:latest";
+    public string SupervisorImage { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the image pull policy.</summary>
     [JsonPropertyName("image_pull_policy")]

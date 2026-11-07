@@ -91,11 +91,17 @@ public sealed class OpenShellProvider : ISandboxProvider
     }
 
     /// <summary>
-    /// Generates the OpenShell gateway TOML configuration.
+    /// Generates the OpenShell gateway TOML configuration from an explicit configuration. Each Podman image must name a tag
+    /// other than <c>latest</c>, or a digest: a floating tag can change sandbox behaviour without a code change.
     /// </summary>
-    public static string GenerateGatewayToml()
+    /// <param name="config">The gateway configuration to render.</param>
+    /// <returns>The TOML text.</returns>
+    /// <exception cref="ArgumentException">A Podman image is unset, uses the <c>latest</c> tag, or names neither a tag nor a digest.</exception>
+    public static string GenerateGatewayToml(OpenShellGatewayConfig config)
     {
-        var config = new OpenShellGatewayConfig();
+        ArgumentNullException.ThrowIfNull(config);
+        RequirePinnedImage(config.Drivers.Podman.SandboxRuntimeImage, "sandbox_runtime_image");
+        RequirePinnedImage(config.Drivers.Podman.SupervisorImage, "supervisor_image");
         // TOML serialization would use a proper TOML library
         // This is a simplified representation for golden testing
         return $"""
@@ -115,6 +121,27 @@ image_pull_policy = "{config.Drivers.Podman.ImagePullPolicy}"
 stop_timeout_secs = {config.Drivers.Podman.StopTimeoutSecs}
 grpc_endpoint = "{config.Drivers.Podman.GrpcEndpoint}"
 """;
+    }
+
+    private static void RequirePinnedImage(string image, string key)
+    {
+        if (string.IsNullOrWhiteSpace(image))
+        {
+            throw new ArgumentException($"drivers.podman.{key} is not set: name a tag other than latest, or a digest.", key);
+        }
+
+        var reference = image.Trim();
+        if (reference.Contains("@sha256:", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var colon = reference.LastIndexOf(':');
+        var hasTag = colon > reference.LastIndexOf('/') && colon < reference.Length - 1;
+        if (!hasTag || string.Equals(reference[(colon + 1)..], "latest", StringComparison.Ordinal))
+        {
+            throw new ArgumentException($"drivers.podman.{key} is '{image}': name a tag other than latest, or a digest.", key);
+        }
     }
 
     /// <summary>
