@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Autonogrammer.Api.Dispatch.Commands;
+using Autonogrammer.Api.Dispatch.Events;
 using Autonogrammer.Api.Hosting;
 using Autonogrammer.Api.Security;
 using Autonogrammer.Api.Services;
@@ -78,6 +79,7 @@ internal static partial class DeviceEndpoints
             .Produces(StatusCodes.Status204NoContent)
             .RequireRateLimiting(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName);
         CommandEndpoints.Map(routes);
+        DispatchEventEndpoints.Map(routes);
         return endpoints;
     }
 
