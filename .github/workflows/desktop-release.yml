@@ -104,14 +104,14 @@ jobs:
         run: |
           set -euo pipefail
           # Locked mode cannot accept one lock file for three different -r values (NU1004, exact RID-set compare).
-          dotnet restore apps/Autonogrammer.Native/Autonogrammer.Native.csproj -r "$RID" -p:RestoreLockedMode=false --force-evaluate -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13
+          dotnet restore apps/Autonogrammer.Native/Autonogrammer.Native.csproj -r "$RID" -p:RestoreLockedMode=false --force-evaluate -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.14
       - name: Publish self-contained
         shell: bash
         env:
           RID: ${{ matrix.rid }}
         run: |
           set -euo pipefail
-          dotnet publish apps/Autonogrammer.Native/Autonogrammer.Native.csproj -c Release -r "$RID" --self-contained true --no-restore -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13 -o "publish/$RID"
+          dotnet publish apps/Autonogrammer.Native/Autonogrammer.Native.csproj -c Release -r "$RID" --self-contained true --no-restore -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.14 -o "publish/$RID"
       - name: Package
         id: package
         shell: bash

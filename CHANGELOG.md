@@ -8,6 +8,12 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-11-07
+
+### Security
+
+- Desktop packages are built with runtime `10.0.14` instead of `10.0.13`, so they do not bundle GHSA-p3jp-9v83-76w9 (CVE-2026-111497, HIGH, out-of-bounds write in the .NET Brotli decoder). `v0.16.0` has no desktop installers attached for that reason. The packages stay unsigned and not notarized.
+
 ## [0.16.0] - 2026-11-07
 
 ### Added
@@ -341,7 +347,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.1...HEAD
+[0.16.1]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.13.0...v0.14.0

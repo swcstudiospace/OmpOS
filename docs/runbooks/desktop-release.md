@@ -38,7 +38,7 @@ Each build job uploads one archive as a workflow artifact. The archive name carr
 | `Autonogrammer-<version>-osx-arm64.zip` | macOS arm64 | `Autonogrammer.app`, made with `ditto -c -k --keepParent`. The app is unsigned and not notarized (section 5). | `macos-26` |
 | `SHA256SUMS` | all three | SHA-256 of the three archives. Tag runs only. | `ubuntu-24.04` |
 
-The packages are self-contained. The workflow asks for runtime `10.0.13` (`-p:RuntimeFrameworkVersion=10.0.13`, the same value `release.yml` uses). The published output has not been inspected, so the exact runtime version in the archive is not verified.
+The packages are self-contained. The workflow asks for runtime `10.0.14` (`-p:RuntimeFrameworkVersion=10.0.14`) so the installers do not bundle `Microsoft.NETCore.App.Runtime` 10.0.13, which has GHSA-p3jp-9v83-76w9 (CVE-2026-111497, HIGH, Brotli decoder out-of-bounds write). `release.yml` still pins 10.0.13 for the API and worker images.
 
 The macOS job uses `macos-15`, not `macos-14`. GitHub retired all macOS 14 images on 2026-11-02 (actions/runner-images issue 15226). `macos-15` is the arm64 image that replaces it. Section 8 asks the owner to confirm this.
 
