@@ -11,6 +11,12 @@ public static class DispatchCopy
     /// <summary>Shown when the head has no Dispatch service configured.</summary>
     public const string NotConfigured = "Dispatch is not set up in this app.";
 
+    /// <summary>Shown beside this desktop when it is paired to the account.</summary>
+    public const string ThisDevicePaired = "This desktop is paired to your account.";
+
+    /// <summary>Shown beside this desktop when it is not paired.</summary>
+    public const string ThisDeviceNotPaired = "This desktop is not paired. Pair it to send and receive commands.";
+
     /// <summary>Gets the text for a phase.</summary>
     /// <param name="phase">The phase.</param>
     /// <returns>The text.</returns>
