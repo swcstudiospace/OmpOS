@@ -45,6 +45,7 @@ internal static class SettingsPageViews
             McpSettingsPage => new Autonogrammer.Native.Views.Mcp.McpPageView(),
             RemoteEnvironmentsSettingsPage => new Autonogrammer.Native.Views.Remote.RemoteEnvironmentsPageView(),
             CloudSettingsPage => new Autonogrammer.Native.Views.Cloud.CloudAgentsPageView(),
+            DispatchSettingsPage dispatch => CreateDispatchView(dispatch),
             WorkspacesSettingsPage => new WorkspacesPageView(),
             WorktreesSettingsPage => new WorktreesPageView(),
             IgnoreSettingsPage => new IgnorePageView(),
@@ -64,11 +65,23 @@ internal static class SettingsPageViews
         return view;
     }
 
+    // The Dispatch view draws the page model the relay holds. The relay raises its change when the load completes; the view takes the new page
+    // and stops listening when it leaves the window.
+    private static Autonogrammer.Native.Views.Dispatch.DispatchPageView CreateDispatchView(DispatchSettingsPage dispatch)
+    {
+        var view = new Autonogrammer.Native.Views.Dispatch.DispatchPageView { DataContext = dispatch.Relay.Page };
+        void OnChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args) => view.DataContext = dispatch.Relay.Page;
+        dispatch.Relay.PropertyChanged += OnChanged;
+        view.DetachedFromVisualTree += (_, _) => dispatch.Relay.PropertyChanged -= OnChanged;
+        return view;
+    }
+
     // The MCP and Cloud views draw a model the page holds; every other view draws the page.
     private static object ContextOf(ISettingsPage page) => page switch
     {
         McpSettingsPage mcp => mcp.Model,
         CloudSettingsPage cloud => cloud.Agents,
+        DispatchSettingsPage dispatch => dispatch.Relay.Page,
         AutomationsSettingsPage automations => automations.Model,
         BundlesSettingsPage bundles => bundles.Model,
         IsolationSettingsPage isolation => isolation.Model,

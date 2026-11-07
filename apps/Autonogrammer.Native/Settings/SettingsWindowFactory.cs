@@ -90,6 +90,10 @@ internal static class SettingsWindowFactory
     {
         var cloud = options.CloudAgentsModel ??= CreateCloudModel(options);
         pages.Add(new CloudSettingsPage(cloud));
+        var dispatch = options.DispatchRelayModel ??= new Autonogrammer.Presentation.Dispatch.DispatchRelayModel(
+            options.DispatchRelayHost ?? new Autonogrammer.Presentation.Dispatch.NotConfiguredDispatchHost(),
+            options.DispatchRelayThisDevice);
+        pages.Add(new DispatchSettingsPage(dispatch));
         if (options.Automations is { } automations)
         {
             pages.Add(new AutomationsSettingsPage(new HostedAutomationsViewModel(automations)));

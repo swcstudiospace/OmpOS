@@ -1,4 +1,5 @@
 using Autonogrammer.Presentation.Commands;
+using Autonogrammer.Presentation.Dispatch;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Customize;
 using Autonogrammer.Presentation.Settings.Models;
@@ -38,6 +39,7 @@ internal static class WebSettingsPages
         services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Workspaces());
         services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Remote());
         services.AddScoped<ISettingsPage>(static _ => WebInfoPages.Cloud());
+        services.AddScoped<ISettingsPage>(static sp => new DispatchSettingsPage(new DispatchRelayModel(sp.GetService<IDispatchHost>() ?? new NotConfiguredDispatchHost(), null)));
         services.AddScoped<ISettingsPage>(static sp =>
         {
             var options = sp.GetRequiredService<WebWorkbenchOptions>();

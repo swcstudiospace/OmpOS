@@ -55,6 +55,7 @@ internal sealed class SettingsFixture : IDisposable
         CloudHost = new FakeCloudAgentsHost(Clock);
         CloudModel = new CloudAgentsViewModel(CloudHost, Clock);
         Cloud = new CloudSettingsPage(CloudModel);
+        var dispatch = new Autonogrammer.Presentation.Settings.DispatchSettingsPage(new Autonogrammer.Presentation.Dispatch.DispatchRelayModel(new Autonogrammer.Presentation.Dispatch.NotConfiguredDispatchHost(), null));
         Automations = new AutomationsSettingsPage(new HostedAutomationsViewModel(AutomationsManager));
         Browser = new BrowserUseSettingsPage(new FixtureBrowserUseSource());
         Privacy = new PrivacySettingsPage();
@@ -70,7 +71,7 @@ internal sealed class SettingsFixture : IDisposable
         Model = new SettingsWindowModel(
         [
             Runtime, General, Display, Agents, RunMode, Models, Tab, Rules, Skills, Commands, Hooks, Mcp, Plugins,
-            Workspaces, Worktrees, Ignore, Remote, Cloud, Automations, Browser, Privacy, Network, Keyboard, Computer,
+            Workspaces, Worktrees, Ignore, Remote, Cloud, dispatch, Automations, Browser, Privacy, Network, Keyboard, Computer,
             Bundles, Connectors, Permissions, Isolation, Usage, Notifications,
         ]);
         Window = new SettingsWindow(Model);

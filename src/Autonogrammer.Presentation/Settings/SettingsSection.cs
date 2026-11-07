@@ -93,4 +93,7 @@ public enum SettingsSection
     /// <summary>Notification policy. OS text is title-only by default.</summary>
     Notifications = 29,
 
+    /// <summary>Devices and Dispatch: the paired desktops, the command queue, and this desktop's pairing and capability policy.</summary>
+    Dispatch = 30,
+
 }

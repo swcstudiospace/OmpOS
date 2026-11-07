@@ -53,6 +53,7 @@ public sealed class SettingsWindowTests
         (SettingsSection.Ignore, IgnoreCopy.Title, typeof(IgnorePageView)),
         (SettingsSection.Remote, RemoteCopy.Title, typeof(RemoteEnvironmentsPageView)),
         (SettingsSection.Cloud, CloudCopy.Title, typeof(CloudAgentsPageView)),
+        (SettingsSection.Dispatch, Autonogrammer.Presentation.Dispatch.DispatchCopy.PageHeading, typeof(Autonogrammer.Native.Views.Dispatch.DispatchPageView)),
         (SettingsSection.Automations, AutomationsCopy.Title, typeof(AutomationsPageView)),
         (SettingsSection.BrowserUse, BrowserUseCopy.Title, typeof(BrowserUsePageView)),
         (SettingsSection.Privacy, PrivacyCopy.Title, typeof(PrivacyPageView)),
@@ -109,6 +110,11 @@ public sealed class SettingsWindowTests
                     var state = window.CurrentView.DataContext.ShouldBeOfType<PermissionsPageState>(title);
                     state.SelectedMode.ShouldBe(permissions.Modes.SelectedLabel, title);
                     state.Statements.ShouldBe(permissions.Statements.Statements, title);
+                }
+                else if (fixture.Model.SelectedPage is DispatchSettingsPage dispatch)
+                {
+                    // The Dispatch view draws the page model the relay holds, not the page itself.
+                    window.CurrentView.DataContext.ShouldBeSameAs(dispatch.Relay.Page, title);
                 }
                 else
                 {

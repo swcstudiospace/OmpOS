@@ -31,6 +31,7 @@ public sealed class WebSettingsPagesTests : BunitContext
         "Workspaces",
         "Remote environments",
         "Cloud agents",
+        "Devices and Dispatch",
         "Privacy",
         "Network",
         "Keyboard",
@@ -84,6 +85,7 @@ public sealed class WebSettingsPagesTests : BunitContext
         kinds[SettingsSection.Plugins].ShouldBe(typeof(PluginsPage));
         kinds[SettingsSection.Network].ShouldBe(typeof(NetworkSettingsPage));
         kinds[SettingsSection.Keyboard].ShouldBe(typeof(KeyboardSettingsPage));
+        kinds[SettingsSection.Dispatch].ShouldBe(typeof(DispatchSettingsPage));
         foreach (var section in new[] { SettingsSection.Workspaces, SettingsSection.Remote, SettingsSection.Cloud, SettingsSection.Privacy, SettingsSection.Bundles, SettingsSection.Connectors, SettingsSection.CoworkPermissions, SettingsSection.Isolation, SettingsSection.Usage, SettingsSection.Notifications })
         {
             kinds[section].ShouldBe(typeof(InfoSettingsPage));

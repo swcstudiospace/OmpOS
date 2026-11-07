@@ -19,12 +19,14 @@
                Classes="settings-body"
                Text="{CompiledBinding Devices.StatusText}"
                TextWrapping="Wrap"
-               AutomationProperties.LiveSetting="Polite" />
+               AutomationProperties.LiveSetting="Polite"
+               AutomationProperties.Name="{x:Static dispatch:DispatchCopy.DevicesLabel}" />
 
     <TextBlock x:Name="FailureText"
                Classes="settings-body"
                TextWrapping="Wrap"
-               AutomationProperties.LiveSetting="Assertive" />
+               AutomationProperties.LiveSetting="Assertive"
+               AutomationProperties.Name="{x:Static dispatch:DispatchCopy.ProblemsLabel}" />
 
     <ItemsControl x:Name="DeviceList"
                   ItemsSource="{CompiledBinding Devices.Rows}">

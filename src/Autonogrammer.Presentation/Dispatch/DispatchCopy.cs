@@ -29,6 +29,9 @@ public static class DispatchCopy
     /// <summary>The label of the commands list.</summary>
     public const string CommandsLabel = "Commands";
 
+    /// <summary>The label of the failure region that announces an unreachable service or a failed command.</summary>
+    public const string ProblemsLabel = "Problems";
+
     /// <summary>The heading of the approval prompt.</summary>
     public const string ApprovalHeading = "Command waiting for approval";
 

@@ -23,6 +23,7 @@ internal static class WebSettingsOrder
         SettingsSection.Workspaces,
         SettingsSection.Remote,
         SettingsSection.Cloud,
+        SettingsSection.Dispatch,
         SettingsSection.Privacy,
         SettingsSection.Network,
         SettingsSection.Keyboard,
