@@ -138,7 +138,7 @@ internal static class DispatchRateLimits
         public RateLimitPartition<string> GetPartition(HttpContext httpContext)
         {
             ArgumentNullException.ThrowIfNull(httpContext);
-            return DispatchRateLimits.Bucket("dispatch-commands:" + RateLimitPartitionKey.For(httpContext), 10, 30, TimeSpan.FromMinutes(1));
+            return DispatchRateLimits.Bucket("dispatch-commands:" + RateLimitPartitionKey.For(httpContext), 10, 1, TimeSpan.FromSeconds(2));
         }
     }
 

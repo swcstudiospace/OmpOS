@@ -122,13 +122,21 @@ internal static class CommandEndpoints
         }
 
         var owner = user.Name;
+        var enqueue = BuildEnqueue(id, owner, idempotencyKey, command, DispatchCommandIds.New(time), time.GetUtcNow(), options.Value.QueueTtl);
+        var replay = await store.ReplayAsync(enqueue, cancellationToken).ConfigureAwait(false);
+        if (replay is not null)
+        {
+            return await RespondAsync(replay, id, signals, cancellationToken).ConfigureAwait(false);
+        }
+
         var target = await CheckTargetAsync(http, store, presence, owner, id, command.Request, cancellationToken).ConfigureAwait(false);
         if (target is not null)
         {
             return target;
         }
 
-        return await QueueAsync(id, owner, idempotencyKey, command, store, signals, options.Value.QueueTtl, time, cancellationToken).ConfigureAwait(false);
+        var result = await store.EnqueueAsync(enqueue, cancellationToken).ConfigureAwait(false);
+        return await RespondAsync(result, id, signals, cancellationToken).ConfigureAwait(false);
     }
 
     private static ProblemHttpResult? ParseCommand(byte[] raw, int maxPayload, out ParsedCommand command)
@@ -170,8 +178,67 @@ internal static class CommandEndpoints
             return Problem(StatusCodes.Status400BadRequest, "invalid_payload", "Invalid payload.", "The decoded payload must be JSON.");
         }
 
+        var refusal = PayloadRefusal(request.Op, decoded);
+        if (refusal is not null)
+        {
+            return refusal;
+        }
+
         command = new ParsedCommand(request, decoded);
         return null;
+    }
+
+    private static ProblemHttpResult? PayloadRefusal(DispatchOp op, byte[] decoded)
+    {
+        using var document = JsonDocument.Parse(decoded);
+        var root = document.RootElement;
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        if (root.TryGetProperty("toolClasses", out var toolClasses))
+        {
+            if (op != DispatchOp.CoworkTask)
+            {
+                return Problem(StatusCodes.Status400BadRequest, "invalid_payload", "Invalid payload.", "Tool classes may be named only by cowork.task.");
+            }
+
+            if (!IsToolClassList(toolClasses))
+            {
+                return Problem(StatusCodes.Status400BadRequest, "invalid_payload", "Invalid payload.", "toolClasses must list browser_use or computer_use, each at most once.");
+            }
+        }
+
+        if (op == DispatchOp.ApprovalDecide
+            && root.TryGetProperty("kind", out var kind)
+            && kind.ValueKind == JsonValueKind.String
+            && string.Equals(kind.GetString(), "computer", StringComparison.Ordinal))
+        {
+            return Problem(StatusCodes.Status400BadRequest, "computer_approval_refused", "Computer approval refused.", "A computer decision is made on the desktop, never through Dispatch.");
+        }
+
+        return null;
+    }
+
+    private static bool IsToolClassList(JsonElement toolClasses)
+    {
+        if (toolClasses.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var entry in toolClasses.EnumerateArray())
+        {
+            var name = entry.ValueKind == JsonValueKind.String ? entry.GetString() : null;
+            if (name is not ("browser_use" or "computer_use") || !seen.Add(name))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static async Task<ProblemHttpResult?> CheckTargetAsync(
@@ -210,22 +277,18 @@ internal static class CommandEndpoints
         return null;
     }
 
-    private static async Task<Results<JsonHttpResult<DispatchCommandAcceptedResponse>, ProblemHttpResult>> QueueAsync(
+    private static EnqueueDispatchCommand BuildEnqueue(
         string id,
         string owner,
         string? idempotencyKey,
         ParsedCommand command,
-        IDispatchStore store,
-        IDispatchSignals signals,
-        TimeSpan queueTtl,
-        TimeProvider time,
-        CancellationToken cancellationToken)
+        string commandId,
+        DateTimeOffset now,
+        TimeSpan queueTtl)
     {
-        var now = time.GetUtcNow();
-        var commandId = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(13));
         var payloadSha256 = Convert.ToHexStringLower(SHA256.HashData(command.Decoded));
         var fingerprint = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes($"{command.Request.Capability}\n{command.Request.Op}\n{payloadSha256}")));
-        var enqueue = new EnqueueDispatchCommand(
+        return new EnqueueDispatchCommand(
             owner,
             id,
             commandId,
@@ -236,7 +299,14 @@ internal static class CommandEndpoints
             Encoding.UTF8.GetString(command.Decoded),
             now,
             now + queueTtl);
-        var result = await store.EnqueueAsync(enqueue, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Results<JsonHttpResult<DispatchCommandAcceptedResponse>, ProblemHttpResult>> RespondAsync(
+        DispatchEnqueueResult result,
+        string id,
+        IDispatchSignals signals,
+        CancellationToken cancellationToken)
+    {
         switch (result.Status)
         {
             case DispatchEnqueueStatus.Accepted when result.Accepted is { } accepted:

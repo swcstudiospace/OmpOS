@@ -143,6 +143,13 @@ public sealed class PostgresDispatchStore : IDispatchStore
     }
 
     /// <inheritdoc />
+    public ValueTask<DispatchEnqueueResult?> ReplayAsync(EnqueueDispatchCommand request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return new ValueTask<DispatchEnqueueResult?>(_pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: true, token => ReplayCoreAsync(request, token), cancellationToken));
+    }
+
+    /// <inheritdoc />
     public ValueTask<DispatchCommandRecord?> GetCommandAsync(string accountId, string commandId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(accountId);
@@ -395,6 +402,19 @@ public sealed class PostgresDispatchStore : IDispatchStore
                 await AuditAsync(connection, transaction, request.AccountId, request.DeviceId, request.CommandId, "command.enqueue", "accepted", cancellationToken).ConfigureAwait(false);
                 await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
                 return new DispatchEnqueueResult(DispatchEnqueueStatus.Accepted, Accepted(request.CommandId, seq));
+            }
+        }
+    }
+
+    private async Task<DispatchEnqueueResult?> ReplayCoreAsync(EnqueueDispatchCommand request, CancellationToken cancellationToken)
+    {
+        var connection = await OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await using (transaction.ConfigureAwait(false))
+            {
+                return await ReadIdempotentAsync(connection, transaction, request, cancellationToken).ConfigureAwait(false);
             }
         }
     }
@@ -791,7 +811,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
     private static async Task<long> CountOwnedAsync(NpgsqlConnection connection, string accountId, string deviceId, CancellationToken cancellationToken)
     {
         using var command = PostgresSql.Create(connection, null);
-        command.CommandText = "SELECT count(*) FROM dispatch_devices WHERE id = @id AND account_id = @account_id";
+        command.CommandText = "SELECT count(*) FROM dispatch_devices WHERE id = @id AND account_id = @account_id AND revoked_at IS NULL";
         command.Parameters.AddWithValue("id", deviceId);
         command.Parameters.AddWithValue("account_id", accountId);
         return (long)(await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) ?? 0L);

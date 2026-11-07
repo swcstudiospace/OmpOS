@@ -84,6 +84,16 @@ public interface IDispatchStore
     /// <returns>Accepted, replayed, reused, full, or not found.</returns>
     ValueTask<DispatchEnqueueResult> EnqueueAsync(EnqueueDispatchCommand request, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Answers a repeated idempotency key from the stored command, without writing. The same fingerprint returns the original 202 body; a
+    /// different one is <see cref="DispatchEnqueueStatus.IdempotencyKeyReused"/>. Returns null when the key is absent or unknown, so the caller
+    /// goes on to the device and presence checks. The lookup runs before those checks, so a replay is never refused by them.
+    /// </summary>
+    /// <param name="request">The command the caller asked for, with its key and fingerprint.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The replay result, or null when the key is not stored.</returns>
+    ValueTask<DispatchEnqueueResult?> ReplayAsync(EnqueueDispatchCommand request, CancellationToken cancellationToken);
+
     /// <summary>Reads one command the account owns.</summary>
     /// <param name="accountId">The account.</param>
     /// <param name="commandId">The command.</param>

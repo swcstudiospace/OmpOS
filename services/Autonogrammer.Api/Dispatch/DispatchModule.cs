@@ -1,9 +1,7 @@
 using Autonogrammer.Api.Accounts;
 using Autonogrammer.Api.Dispatch.Devices;
 using Autonogrammer.Api.Dispatch.Store;
-using Autonogrammer.Api.Security;
 using Autonogrammer.Contracts.Dispatch;
-using Autonogrammer.Coordination;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -31,7 +29,6 @@ internal static class DispatchModule
         services.AddSingleton<IValidateOptions<DispatchOptions>, DispatchOptionsValidator>();
         AddDispatchJson(services);
         services.TryAddSingleton(TimeProvider.System);
-        AddCallerIdentity(services);
         services.AddSingleton<DeviceEndpoints.DispatchEndpointsMapped>();
         services.AddSingleton<IAccountFeature, DispatchFeature>();
         services.AddSingleton<DispatchMetrics>();
@@ -45,7 +42,6 @@ internal static class DispatchModule
             services.TryAddSingleton<IDispatchStore>(static provider => new InMemoryDispatchStore(
                 provider.GetRequiredService<DispatchStoreLimits>(),
                 provider.GetRequiredService<TimeProvider>()));
-            AddInMemoryCoordination(services);
         }
 
         services.AddSingleton<DeviceCredentialIssuer>();
@@ -78,22 +74,6 @@ internal static class DispatchModule
                 provider.GetRequiredKeyedService<IRateLimiterPolicy<string>>(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName));
         });
         return services;
-    }
-
-    /// <summary>Registers the caller identity that owner-scoped dispatch routes read, the same registration the API uses for its own routes.</summary>
-    /// <param name="services">The service collection.</param>
-    private static void AddCallerIdentity(IServiceCollection services)
-    {
-        services.AddHttpContextAccessor();
-        services.TryAddScoped<IUserContext, AuthenticatedUserContext>();
-    }
-
-    /// <summary>Registers the in-memory presence and signal seams for Development, beside the in-memory store.</summary>
-    /// <param name="services">The service collection.</param>
-    private static void AddInMemoryCoordination(IServiceCollection services)
-    {
-        services.TryAddSingleton<IDispatchPresence>(static provider => new InMemoryDispatchPresence(provider.GetRequiredService<TimeProvider>()));
-        services.TryAddSingleton<IDispatchSignals, InMemoryDispatchSignals>();
     }
 
     /// <summary>Puts the dispatch JSON contexts first in the HTTP JSON chain, so the controller and device bodies serialise and the OpenAPI document can describe them.</summary>

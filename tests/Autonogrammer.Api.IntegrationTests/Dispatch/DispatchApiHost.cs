@@ -5,6 +5,7 @@ using Autonogrammer.Api.Hosting;
 using Autonogrammer.Api.OpenApi;
 using Autonogrammer.Api.Options;
 using Autonogrammer.Api.Security;
+using Autonogrammer.Coordination;
 using Autonogrammer.Sessions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -12,6 +13,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -85,6 +87,9 @@ internal sealed class DispatchApiHost : IAsyncDisposable
         builder.Services.AddAuthentication(DispatchTestAuthHandler.SchemeName)
             .AddScheme<AuthenticationSchemeOptions, DispatchTestAuthHandler>(DispatchTestAuthHandler.SchemeName, static _ => { });
         builder.Services.AddAuthorizationBuilder().SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().AddRequirements(new AllowedSubjectRequirement()).Build());
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.TryAddScoped<IUserContext, AuthenticatedUserContext>();
+        builder.Services.AddInMemoryCoordination();
         builder.Services.AddDispatchServices(builder.Environment);
         registerServices?.Invoke(builder.Services);
         builder.Services.AddAutonogrammerOpenApi();

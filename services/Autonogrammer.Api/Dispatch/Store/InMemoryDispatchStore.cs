@@ -266,6 +266,17 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
     }
 
     /// <inheritdoc />
+    public ValueTask<DispatchEnqueueResult?> ReplayAsync(EnqueueDispatchCommand request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            return ValueTask.FromResult(TryReplay(request, out var result) ? result : (DispatchEnqueueResult?)null);
+        }
+    }
+
+    /// <inheritdoc />
     public ValueTask<IReadOnlyList<DispatchCommandRecord>> ListQueuedAfterAsync(string accountId, string deviceId, long afterSeq, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(accountId);
@@ -273,7 +284,7 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
         cancellationToken.ThrowIfCancellationRequested();
         lock (_gate)
         {
-            if (!_devices.ContainsKey((accountId, deviceId)))
+            if (!_devices.TryGetValue((accountId, deviceId), out var device) || device.RevokedAt is not null)
             {
                 return ValueTask.FromResult<IReadOnlyList<DispatchCommandRecord>>([]);
             }
