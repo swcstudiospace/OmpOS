@@ -18,7 +18,9 @@ fi
 
 if ! command -v podman >/dev/null 2>&1; then
   sudo apt-get update
-  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y podman pipx
+  # podman is pinned to the noble-updates build read from the archive (25.4 D4). Re-read it when the archive withdraws that version.
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends podman=4.9.3+ds1-1ubuntu0.2
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y pipx
 fi
 
 wrap_dir="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/autonogrammer-bin"
