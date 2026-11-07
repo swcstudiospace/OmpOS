@@ -35,7 +35,7 @@ public sealed class EnginePermissionOrderTests
 
     /// <summary>A hook that denies stops a call the approval policy admits: omp is told no, the user is never asked and the run mode never looks at it.</summary>
     [Fact]
-    public async Task AHookDenyStopsACallTheApprovalPolicyWouldAdmit()
+    public Task AHookDenyStopsACallTheApprovalPolicyWouldAdmit() => OnOwnDispatcherAsync(async () =>
     {
         using var tree = new TempTree();
         var gate = new DenyingHookGate();
@@ -49,11 +49,11 @@ public sealed class EnginePermissionOrderTests
         gate.Requests.ShouldHaveSingleItem().Kind.ShouldBe("read");
         rig.Engine.Resolver.TrySettle(RequestId.ToString(System.Globalization.CultureInfo.InvariantCulture), PermissionDecision.Allow).ShouldBeFalse("the user was never asked");
         audit.Entries.ShouldBeEmpty("the run mode never saw the request");
-    }
+    });
 
     /// <summary>The same request with a hook that allows is not stopped: it reaches the user, who admits it. The deny above is the hook's doing.</summary>
     [Fact]
-    public async Task AHookThatAllowsLeavesTheRequestToTheRunModeAndTheUser()
+    public Task AHookThatAllowsLeavesTheRequestToTheRunModeAndTheUser() => OnOwnDispatcherAsync(async () =>
     {
         using var tree = new TempTree();
         var gate = new DenyingHookGate { Deny = false };
@@ -66,11 +66,11 @@ public sealed class EnginePermissionOrderTests
         answer.ShouldBe("allow");
         gate.Requests.Count.ShouldBe(1);
         audit.Entries.ShouldHaveSingleItem().Decision.Outcome.ShouldBe(RunModeOutcome.Ask);
-    }
+    });
 
     /// <summary>A hook's deny holds in Run Everything too: the mode that admits every kind of call does not override a hook.</summary>
     [Fact]
-    public async Task AHookDenyHoldsInRunEverything()
+    public Task AHookDenyHoldsInRunEverything() => OnOwnDispatcherAsync(async () =>
     {
         using var tree = new TempTree();
         var gate = new DenyingHookGate();
@@ -78,11 +78,11 @@ public sealed class EnginePermissionOrderTests
         await using var rigScope = rig.ConfigureAwait(true);
 
         (await rig.AskAsync("execute", "make deploy").ConfigureAwait(true)).ShouldBe("reject");
-    }
+    });
 
     /// <summary>A shell deny rule of the permission files stops a command before the user is asked, in the default mode, and the audit records the rule as the reason.</summary>
     [Fact]
-    public async Task ARunModeDenyRuleStopsACommandBeforeTheUserIsAsked()
+    public Task ARunModeDenyRuleStopsACommandBeforeTheUserIsAsked() => OnOwnDispatcherAsync(async () =>
     {
         using var tree = new TempTree();
         WritePermissions(tree, "{\"permissions\":{\"deny\":[\"Shell(rm)\"]}}");
@@ -98,11 +98,11 @@ public sealed class EnginePermissionOrderTests
         entry.Decision.Outcome.ShouldBe(RunModeOutcome.Deny);
         entry.Decision.Stage.ShouldBe(RunModeStage.DenyRule);
         entry.Subject.ShouldBe("rm -rf build");
-    }
+    });
 
     /// <summary>A command no rule decides is left to the user: the request waits for the user's answer, which is what goes back to omp.</summary>
     [Fact]
-    public async Task ACommandNoRuleDecidesIsAskedOfTheUser()
+    public Task ACommandNoRuleDecidesIsAskedOfTheUser() => OnOwnDispatcherAsync(async () =>
     {
         using var tree = new TempTree();
         WritePermissions(tree, "{\"permissions\":{\"deny\":[\"Shell(rm)\"]}}");
@@ -113,11 +113,11 @@ public sealed class EnginePermissionOrderTests
         (await rig.AskAsync("execute", "make build", allowAsUser: true).ConfigureAwait(true)).ShouldBe("allow");
 
         audit.Entries.ShouldHaveSingleItem().Decision.Outcome.ShouldBe(RunModeOutcome.Ask);
-    }
+    });
 
     /// <summary>A kind the approval policy does not admit is refused by the policy itself, outside Run Everything: neither the user nor the run mode is consulted.</summary>
     [Fact]
-    public async Task TheApprovalPolicyCeilingRefusesAKindItDoesNotAdmit()
+    public Task TheApprovalPolicyCeilingRefusesAKindItDoesNotAdmit() => OnOwnDispatcherAsync(async () =>
     {
         using var tree = new TempTree();
         var audit = new RecordingAudit();
@@ -128,7 +128,7 @@ public sealed class EnginePermissionOrderTests
 
         rig.Engine.Resolver.TrySettle(RequestId.ToString(System.Globalization.CultureInfo.InvariantCulture), PermissionDecision.Allow).ShouldBeFalse("the user was never asked");
         audit.Entries.ShouldBeEmpty("the approval policy refused the kind before the run mode was consulted");
-    }
+    });
 
     /// <summary>Run Everything admits every kind of call omp can ask about, whatever kinds the approval policy was composed with, and never asks the user.</summary>
     [Theory]
@@ -142,7 +142,7 @@ public sealed class EnginePermissionOrderTests
     [InlineData("fetch")]
     [InlineData("switch_mode")]
     [InlineData("other")]
-    public async Task RunEverythingAdmitsEveryKind(string kind)
+    public Task RunEverythingAdmitsEveryKind(string kind) => OnOwnDispatcherAsync(async () =>
     {
         RunModeLaunchMapper.AcpToolKinds.ShouldContain(kind, StringComparer.Ordinal);
         using var tree = new TempTree();
@@ -153,11 +153,11 @@ public sealed class EnginePermissionOrderTests
         (await rig.AskAsync(kind, string.Equals(kind, "execute", StringComparison.Ordinal) ? "make deploy" : null).ConfigureAwait(true)).ShouldBe("allow");
 
         audit.Entries.ShouldHaveSingleItem().Decision.Outcome.ShouldBe(RunModeOutcome.Allow);
-    }
+    });
 
     /// <summary>A deny rule still applies in Run Everything: the mode runs every call except the ones the user's own files forbid.</summary>
     [Fact]
-    public async Task ADenyRuleStillStopsACommandInRunEverything()
+    public Task ADenyRuleStillStopsACommandInRunEverything() => OnOwnDispatcherAsync(async () =>
     {
         using var tree = new TempTree();
         WritePermissions(tree, "{\"permissions\":{\"deny\":[\"Shell(rm)\"]}}");
@@ -165,6 +165,14 @@ public sealed class EnginePermissionOrderTests
         await using var rigScope = rig.ConfigureAwait(true);
 
         (await rig.AskAsync("execute", "rm -rf build").ConfigureAwait(true)).ShouldBe("reject");
+    });
+
+    /// <summary>Runs one test body on its own headless dispatcher. The approval path posts to the UI thread, and the process-wide dispatcher is shared with other tests.</summary>
+    private static async Task OnOwnDispatcherAsync(Func<Task> body)
+    {
+        var session = TestAppBuilder.StartSession();
+        await using var sessionScope = session.ConfigureAwait(true);
+        await session.RunAsync(body, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
     private static void WritePermissions(TempTree tree, string json)
