@@ -67,8 +67,8 @@ The Dispatch section in the Native settings window (and the Android head that sh
 - The plan's files list has no `DispatchRelayModel.cs`. It is the page's model and is needed by both heads.
 - No RED step is claimed. Tests and implementation were written together; the first Native build failed on CA1859 and was fixed.
 
-## Must-haves not met
-- "The page shows the per-capability toggles and Pause Dispatch on a desktop": not done. `DispatchPageModel` carries devices, commands and this desktop's pairing text, but no capability policy or pause state, and the view has no toggles. The policy view belongs with the desktop host wiring in 74-09 and needs its own page model. The web head shows devices, commands and the pairing text only, as the plan requires for the web.
+## Must-haves met in the correction
+- "The page shows the per-capability toggles and Pause Dispatch on a desktop": done on the Native page (`DispatchPageView` switches; `DispatchRelayModel.SetCapabilityAsync` and `SetPausedAsync`; `IThisDeviceHost.SetPausedAsync`). The web head has no desktop section, as the plan says. The earlier deferral to 74-09 was wrong: the state was already on the page model.
 
 ## Not verified here
 - Live update on the web head: the dialog draws the relay's page after the window's load, because the window raises its change once every page has loaded. The tests check the render without a host, not a load that changes the page.
@@ -77,4 +77,4 @@ The Dispatch section in the Native settings window (and the Android head that sh
 
 ## Notes for 74-09
 - The host properties (`DispatchRelayHost`, `DispatchRelayThisDevice`) are set on `SettingsWindowOptions` and read by the factory; 74-09 supplies them through `HeadSettings` and `HeadServices`.
-- The desktop policy view (toggles and Pause Dispatch) is still open; it needs the this-device policy state on the page model.
+- The desktop toggles and Pause Dispatch are built (see the correction above). The heartbeat that reports `paused` belongs to the hub client in 74-05 (OQ-504).

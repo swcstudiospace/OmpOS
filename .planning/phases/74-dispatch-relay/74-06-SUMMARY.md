@@ -10,7 +10,7 @@ provides:
   - DispatchCopy with distinct text per phase, degradation and failure
   - IDispatchHost, IThisDeviceHost, FakeDispatchHost, NotConfiguredDispatchHost, DispatchHostException
   - Web components DispatchPageView, DispatchApprovalPanel, RemoteTaskStrip; Avalonia views DispatchPageView, DispatchApprovalView, RemoteTaskStripView; three ViewMapping cases
-  - wwwroot/styles/dispatch.css (token colours, 44 px Cancel, reduced-motion override)
+  - wwwroot/styles/dispatch.css (token colours, reduced-motion override)
 affects: [74-08]
 actuals:
   tokens: not measured
@@ -44,7 +44,7 @@ key-decisions:
   - "DispatchViewModel, listed in the plan's artifacts, is not a separate type. DispatchPageModel is the page container; no consumer needed a second type."
   - "Failures (an unreachable service, a failed command) announce through an assertive region in both heads. The web page keeps one polite region, for its transient announcement; the native status line is polite."
   - "Device and command lists render only when they have rows (web)."
-requirements-completed: [AG-74-3, AG-74-15, AG-74-17]
+requirements-completed: [AG-74-3, AG-74-17]
 ---
 
 # Phase 74 plan 06 summary
@@ -64,6 +64,9 @@ Dispatch presentation for the web head and the Avalonia heads: the Devices and D
 - The plan's acceptance says Presentation/Dispatch holds "the 8 files". The layout is one public type per file (MA0048), so the folder holds more files. The types are the listed ones, minus `DispatchViewModel`.
 - No RED step is claimed. The first Presentation test build failed on analyzer errors in production code (CA1032, VSTHRD200, CA1062), not on the new tests. The Native and UI suites passed on their first run once analyzer errors were fixed.
 - The first gate attempt on `e0d9e0bd` was cancelled at start. Its log is incomplete and no gate result is claimed for that commit. The cancel was to add the assertive failure region and the fake-host view tests (commit `b42dda7a`) before one gate on the final head.
+- Review correction: "focus returns afterwards" is not built. Focus moves to the page heading after a cancel (OQ-503). AG-74-15 is withdrawn from this plan until that is decided.
+- Review correction: Cancel and the approval controls use `Autonogrammer.Size.TargetMin`: 32 px on the desktop and the web, 44 px where the Android head overrides the token (OQ-505). No desktop 44 px target is claimed.
+- Rename, revoke and send have ports and routes but no page controls (OQ-506).
 - The native page has no transient-announcement source, because the Presentation model carries none. The web page takes an `Announcement` parameter. This is a parity gap; the native status line covers status changes.
 
 ## Not verified here
