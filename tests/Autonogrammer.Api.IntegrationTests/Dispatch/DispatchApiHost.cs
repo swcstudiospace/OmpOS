@@ -9,6 +9,7 @@ using Autonogrammer.Coordination;
 using Autonogrammer.Sessions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
@@ -31,6 +32,7 @@ internal sealed class DispatchApiHost : IAsyncDisposable
     public static readonly string[] PipelineOrder =
     [
         "UseHostingHardening",
+        "UseWebSockets",
         "UseAuthentication",
         "UseRateLimiter",
         "UseAuthorization",
@@ -91,6 +93,7 @@ internal sealed class DispatchApiHost : IAsyncDisposable
         builder.Services.TryAddScoped<IUserContext, AuthenticatedUserContext>();
         builder.Services.AddInMemoryCoordination();
         builder.Services.AddDispatchServices(builder.Environment);
+        builder.Services.AddDispatchHub();
         registerServices?.Invoke(builder.Services);
         builder.Services.AddAutonogrammerOpenApi();
         builder.Services.AddRateLimiter(_ => { });
@@ -98,6 +101,7 @@ internal sealed class DispatchApiHost : IAsyncDisposable
         var app = builder.Build();
         app.UseDeveloperExceptionPage();
         app.UseHostingHardening();
+        app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(20) });
         app.UseAuthentication();
         app.UseRateLimiter();
         app.UseAuthorization();
@@ -111,6 +115,10 @@ internal sealed class DispatchApiHost : IAsyncDisposable
     /// <summary>Gets a client that talks to the test server.</summary>
     /// <returns>The client.</returns>
     public HttpClient GetTestClient() => _app.GetTestClient();
+
+    /// <summary>Creates a WebSocket client that talks to the test server.</summary>
+    /// <returns>The client.</returns>
+    public WebSocketClient CreateWebSocketClient() => ((TestServer)_app.Services.GetRequiredService<IServer>()).CreateWebSocketClient();
 
     /// <summary>Posts a JSON body and returns the response. The caller disposes it.</summary>
     /// <param name="client">The client.</param>

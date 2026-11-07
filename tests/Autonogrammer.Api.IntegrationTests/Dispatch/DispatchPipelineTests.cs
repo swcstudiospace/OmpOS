@@ -30,6 +30,7 @@ public sealed class DispatchPipelineTests
         var expected = new[]
         {
             "UseHostingHardening",
+            "UseWebSockets",
             "UseAuthentication",
             "UseRateLimiter",
             "UseAuthorization",
@@ -44,8 +45,8 @@ public sealed class DispatchPipelineTests
         services.ShouldBeGreaterThan(automation);
         program.IndexOf("DispatchDisabledMiddleware", StringComparison.Ordinal).ShouldBeGreaterThan(program.IndexOf("AutomationDisabledMiddleware", StringComparison.Ordinal));
         program.IndexOf("MapDispatchEndpoints", StringComparison.Ordinal).ShouldBeGreaterThan(program.IndexOf("MapAutomationEndpoints", StringComparison.Ordinal));
-        program.ShouldNotContain("UseWebSockets", Case.Sensitive);
-        program.ShouldNotContain("AddDispatchHub", Case.Sensitive);
+        program.ShouldContain("app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(20) });", Case.Sensitive);
+        program.ShouldContain("builder.Services.AddDispatchHub();", Case.Sensitive);
     }
 
     private static string FindRepo()

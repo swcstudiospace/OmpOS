@@ -130,6 +130,7 @@ builder.Services.AddProviderServices();
 builder.Services.AddWorkspaceSettingsServices();
 builder.Services.AddAutomationServices();
 builder.Services.AddDispatchServices(builder.Environment);
+builder.Services.AddDispatchHub();
 builder.Services.AddAccountsServices();
 builder.Services.AddCoworkServices();
 builder.Services.AddCoworkArtifactServices(builder.Configuration);
@@ -208,6 +209,7 @@ var app = builder.Build();
 ProcessHardening.ApplyIfEnabled(app.Logger, app.Configuration, app.Environment);
 
 app.UseHostingHardening();
+app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(20) });
 
 // Unhandled exceptions become ProblemDetails 500s outside Development. The developer
 // exception page stays Development-only (framework default); Production never leaks internals.
