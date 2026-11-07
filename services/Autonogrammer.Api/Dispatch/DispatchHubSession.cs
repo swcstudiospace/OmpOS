@@ -1,15 +1,17 @@
 using System.Net.WebSockets;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading.Channels;
 using Autonogrammer.Contracts.Dispatch;
 
 namespace Autonogrammer.Api.Dispatch;
 
-/// <summary>One device socket the hub holds: the account and device it belongs to, the holder written to presence, and the serialised sends, bounded receives and closes.</summary>
+/// <summary>One device socket the hub holds: the account and device it belongs to, the holder written to presence, the wake channel its delivery loop waits on, and the serialised sends, bounded receives and closes.</summary>
 internal sealed class DispatchHubSession : IDisposable
 {
     private readonly WebSocket _socket;
     private readonly SemaphoreSlim _sendGate = new(1, 1);
+    private readonly Channel<bool> _wake = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite });
 
     /// <summary>Initializes a new instance of the <see cref="DispatchHubSession"/> class.</summary>
     /// <param name="owner">The account.</param>
@@ -35,6 +37,27 @@ internal sealed class DispatchHubSession : IDisposable
 
     /// <summary>Gets a value indicating whether the socket can still carry frames.</summary>
     public bool IsOpen => _socket.State == WebSocketState.Open;
+
+    /// <summary>Wakes the delivery loop. A wake while one is already pending is a no-op.</summary>
+    public void Wake() => _ = _wake.Writer.TryWrite(true);
+
+    /// <summary>Waits for a wake or for the poll interval, whichever comes first.</summary>
+    /// <param name="poll">The poll interval.</param>
+    /// <param name="cancellationToken">Ends the wait.</param>
+    /// <returns>A task that completes when the loop should look for work.</returns>
+    public async Task WaitForWorkAsync(TimeSpan poll, CancellationToken cancellationToken)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(poll);
+        try
+        {
+            _ = await _wake.Reader.ReadAsync(timeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            // The poll interval passed without a wake.
+        }
+    }
 
     /// <summary>Serialises one frame and sends it as a text frame. Sends are serialised, because a socket takes one send at a time.</summary>
     /// <typeparam name="T">The frame type.</typeparam>
@@ -114,7 +137,11 @@ internal sealed class DispatchHubSession : IDisposable
     }
 
     /// <inheritdoc />
-    public void Dispose() => _sendGate.Dispose();
+    public void Dispose()
+    {
+        _wake.Writer.TryComplete();
+        _sendGate.Dispose();
+    }
 
     /// <summary>The kind of one received message.</summary>
     internal enum InboundKind

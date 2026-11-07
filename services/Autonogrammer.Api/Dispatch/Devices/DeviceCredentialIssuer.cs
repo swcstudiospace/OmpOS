@@ -109,6 +109,11 @@ internal sealed class DeviceCredentialIssuer : IDisposable
         return new HubVerificationKey("dispatch-command", jwk, now, now + _options.Credentials.Lifetime);
     }
 
+    /// <summary>Signs the canonical bytes of one command with the command signing key.</summary>
+    /// <param name="canonical">The canonical bytes.</param>
+    /// <returns>The raw P-1363 ES256 signature.</returns>
+    public byte[] SignCommand(ReadOnlySpan<byte> canonical) => _commandKey.SignData(canonical, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+
     /// <summary>Computes the RFC 7638 thumbprint of an EC P-256 public JWK.</summary>
     /// <param name="x">The base64url X coordinate.</param>
     /// <param name="y">The base64url Y coordinate.</param>

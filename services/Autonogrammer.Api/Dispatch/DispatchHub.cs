@@ -10,9 +10,10 @@ namespace Autonogrammer.Api.Dispatch;
 
 /// <summary>
 /// The relay hub behind the connect route. It refuses a plain request and any request that carries an Origin, upgrades to a WebSocket,
-/// challenges the device with a single-use nonce, verifies the device's hello against the key it registered, answers with the welcome, and
-/// keeps the newest socket for each device (D-14, D-16). While the host stops it refuses new connections and closes every open socket with 1001
-/// (D-45). Delivery, signing and the sweeper are separate units.
+/// challenges the device with a single-use nonce, verifies the device's hello against the key it registered, answers with the welcome, delivers
+/// its queued commands, and keeps the newest socket for each device (D-14, D-16). A signal wakes the device's delivery loop, or, after a
+/// revocation, sends the revoke frame and closes with 4001 (D-30). While the host stops it refuses new connections and closes every open socket
+/// with 1001 (D-45). Acknowledgements, the sweeper and the audit writer are separate units.
 /// </summary>
 internal sealed class DispatchHub : IDispatchConnectHandler
 {
@@ -34,6 +35,7 @@ internal sealed class DispatchHub : IDispatchConnectHandler
     private readonly IOptions<DispatchOptions> _options;
     private readonly TimeProvider _time;
     private readonly DispatchSessionRegistry _sessions;
+    private readonly DispatchDeliveryLoop _delivery;
     private readonly DispatchMetrics _metrics;
     private readonly ILogger<DispatchHub> _logger;
     private volatile bool _draining;
@@ -46,6 +48,7 @@ internal sealed class DispatchHub : IDispatchConnectHandler
     /// <param name="options">The Dispatch options.</param>
     /// <param name="time">The clock.</param>
     /// <param name="sessions">The sockets this process holds.</param>
+    /// <param name="delivery">The delivery loop each socket runs after the welcome.</param>
     /// <param name="metrics">The Dispatch metrics.</param>
     /// <param name="lifetime">The host lifetime, whose stop starts the drain.</param>
     /// <param name="logger">The logger. It never receives a body, a token or a key.</param>
@@ -57,6 +60,7 @@ internal sealed class DispatchHub : IDispatchConnectHandler
         IOptions<DispatchOptions> options,
         TimeProvider time,
         DispatchSessionRegistry sessions,
+        DispatchDeliveryLoop delivery,
         DispatchMetrics metrics,
         IHostApplicationLifetime lifetime,
         ILogger<DispatchHub> logger)
@@ -68,6 +72,7 @@ internal sealed class DispatchHub : IDispatchConnectHandler
         _options = options;
         _time = time;
         _sessions = sessions;
+        _delivery = delivery;
         _metrics = metrics;
         _logger = logger;
         ArgumentNullException.ThrowIfNull(lifetime);
@@ -109,6 +114,26 @@ internal sealed class DispatchHub : IDispatchConnectHandler
         return Results.Empty;
     }
 
+    /// <summary>Handles one signal for a device: wakes each of its sockets' delivery loops, or revokes the sockets when the device was revoked (D-30).</summary>
+    /// <param name="deviceId">The device the signal names. A signal is a hint, never a command.</param>
+    /// <param name="cancellationToken">Cancels the work.</param>
+    /// <returns>A task that completes when every socket for the device has been handled.</returns>
+    public async Task OnSignalAsync(string deviceId, CancellationToken cancellationToken)
+    {
+        foreach (var session in _sessions.ForDevice(deviceId))
+        {
+            var device = await _store.GetDeviceAsync(session.Owner, session.DeviceId, cancellationToken).ConfigureAwait(false);
+            if (device is null || device.RevokedAt is not null)
+            {
+                await session.SendAsync(new DispatchRevokeFrame { V = 1, T = DispatchFrameTypes.Revoke, Reason = "revoked" }, DispatchJsonContext.Default.DispatchRevokeFrame, cancellationToken).ConfigureAwait(false);
+                await session.CloseAsync(DispatchCloseCodes.DeviceRevoked, "revoked", cancellationToken).ConfigureAwait(false);
+                continue;
+            }
+
+            session.Wake();
+        }
+    }
+
     private async Task RunAsync(WebSocket socket, HttpContext context, DispatchDeviceRecord device, CancellationToken cancellationToken)
     {
         var session = new DispatchHubSession(device.AccountId, device.DeviceId, Guid.NewGuid().ToString("N"), socket);
@@ -140,7 +165,7 @@ internal sealed class DispatchHub : IDispatchConnectHandler
             }
 
             await AdmitAsync(session, hello, cancellationToken).ConfigureAwait(false);
-            await PumpAsync(session, cancellationToken).ConfigureAwait(false);
+            await DeliverAndPumpAsync(session, hello.LastAppliedSeq, cancellationToken).ConfigureAwait(false);
         }
         catch (WebSocketException)
         {
@@ -158,6 +183,21 @@ internal sealed class DispatchHub : IDispatchConnectHandler
             }
 
             session.Dispose();
+        }
+    }
+
+    private async Task DeliverAndPumpAsync(DispatchHubSession session, long resumeFromSeq, CancellationToken cancellationToken)
+    {
+        using var delivering = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var deliveries = _delivery.RunAsync(session, resumeFromSeq, delivering.Token);
+        try
+        {
+            await PumpAsync(session, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            await delivering.CancelAsync().ConfigureAwait(false);
+            await deliveries.ConfigureAwait(false);
         }
     }
 

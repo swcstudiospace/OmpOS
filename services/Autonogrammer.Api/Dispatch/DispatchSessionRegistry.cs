@@ -48,4 +48,16 @@ internal sealed class DispatchSessionRegistry
             return _sessions.Values.ToArray();
         }
     }
+
+    /// <summary>Copies the current sessions of one device, whatever account owns it, so a signal for the device reaches each of its sockets.</summary>
+    /// <param name="deviceId">The device.</param>
+    /// <returns>The sessions this process holds for the device.</returns>
+    public IReadOnlyList<DispatchHubSession> ForDevice(string deviceId)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(deviceId);
+        lock (_gate)
+        {
+            return _sessions.Values.Where(session => string.Equals(session.DeviceId, deviceId, StringComparison.Ordinal)).ToArray();
+        }
+    }
 }
