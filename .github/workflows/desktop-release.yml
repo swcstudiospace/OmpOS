@@ -2,8 +2,8 @@
 #
 # Triggers
 #   workflow_dispatch  builds the three packages and uploads them as workflow artifacts. No release is touched. The release
-#                      job is skipped, so a dispatch run writes no SHA256SUMS.
-#   push of v*         builds the same packages, writes SHA256SUMS, and attaches them to the GitHub Release for that tag.
+#                      job is skipped, so a dispatch run writes no SHA256SUMS-desktop.
+#   push of v*         builds the same packages, writes SHA256SUMS-desktop, and attaches them to the GitHub Release for that tag.
 #                      If release.yml already published the release, this job uploads the archives and does not rewrite its
 #                      notes or turn it back into a draft. If no release exists yet, this job creates a published release
 #                      so the installers are downloadable. A prerelease suffix on the tag still marks the release as a prerelease.
@@ -162,7 +162,7 @@ jobs:
           pattern: autonogrammer-desktop-*
           path: dist
           merge-multiple: true
-      - name: Write SHA256SUMS for exactly the three packages
+      - name: Write SHA256SUMS-desktop for exactly the three packages
         shell: bash
         run: |
           set -euo pipefail
@@ -183,8 +183,8 @@ jobs:
                 ;;
             esac
           done
-          sha256sum -- "${files[@]}" > SHA256SUMS
-          sha256sum -c SHA256SUMS
+          sha256sum -- "${files[@]}" > SHA256SUMS-desktop
+          sha256sum -c SHA256SUMS-desktop
       - name: Attach the packages to the GitHub Release
         shell: bash
         run: |
@@ -193,7 +193,7 @@ jobs:
           {
             echo "Desktop packages for $TAG. Not signed with a publisher certificate and not notarized."
             echo ""
-            echo "Verify SHA256SUMS before running a package. Steps: docs/runbooks/desktop-release.md in the tagged commit."
+            echo "Verify SHA256SUMS-desktop before running a package. Steps: docs/runbooks/desktop-release.md in the tagged commit."
           } > "$notes"
           assets=( dist/* )
           pre=()
@@ -210,5 +210,5 @@ jobs:
           {
             echo "### Desktop packages on $TAG"
             echo ""
-            echo "The three archives and SHA256SUMS are attached to the GitHub Release."
+            echo "The three archives and SHA256SUMS-desktop are attached to the GitHub Release."
           } >> "$GITHUB_STEP_SUMMARY"

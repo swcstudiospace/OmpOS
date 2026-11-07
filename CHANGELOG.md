@@ -8,6 +8,10 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+### Fixed
+
+- Desktop checksums are published as `SHA256SUMS-desktop`. `release.yml` publishes image and SBOM checksums as `SHA256SUMS-images`, so a tag push cannot replace one file with the other.
+
 ## [0.16.1] - 2026-11-07
 
 ### Security
