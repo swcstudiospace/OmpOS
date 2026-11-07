@@ -1,0 +1,54 @@
+/* Dispatch: the Devices and Dispatch page, the approval prompt and the Remote task running strip (ADR-0036, D-38 to D-41). Colour comes from
+   the tokens only, so the prompt and the strip keep their contrast in dark and forced-colour modes. Cancel is at least 44 by 44 CSS pixels,
+   the Android target size. */
+
+.autonogrammer-dispatch {
+  display: grid;
+  gap: var(--autonogrammer-gap-12);
+  color: var(--autonogrammer-text);
+}
+
+.autonogrammer-dispatch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+  min-height: 44px;
+}
+
+.autonogrammer-dispatch-status {
+  font-size: var(--autonogrammer-font-size-body);
+}
+
+.autonogrammer-dispatch-approval {
+  background: var(--autonogrammer-surface-raised);
+  border-left: 4px solid var(--autonogrammer-focus);
+  color: var(--autonogrammer-text);
+  padding: var(--autonogrammer-gap-12);
+}
+
+.autonogrammer-dispatch-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+  background: var(--autonogrammer-surface-sunken);
+  color: var(--autonogrammer-text);
+  padding: var(--autonogrammer-gap-8) var(--autonogrammer-gap-12);
+  transition: background-color var(--autonogrammer-duration) ease;
+}
+
+.autonogrammer-dispatch-cancel {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.autonogrammer-dispatch-cancel:focus-visible {
+  outline: 2px solid var(--autonogrammer-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .autonogrammer-dispatch-strip {
+    transition: none;
+  }
+}
