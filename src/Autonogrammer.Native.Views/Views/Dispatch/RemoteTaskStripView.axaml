@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:dispatch="clr-namespace:Autonogrammer.Presentation.Dispatch;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Dispatch.RemoteTaskStripView"
+             x:DataType="dispatch:RemoteTaskStripModel"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The Remote task running strip. It names the controller that started the task and offers Stop while the task runs. -->
+  <Border Classes="settings-card"
+          AutomationProperties.Name="{x:Static dispatch:DispatchCopy.RemoteTaskRegionLabel}">
+    <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+      <TextBlock x:Name="FromText"
+                 Grid.Column="0"
+                 Classes="settings-label"
+                 VerticalAlignment="Center"
+                 Margin="0,0,8,0" />
+      <TextBlock Grid.Column="1"
+                 Classes="settings-section"
+                 VerticalAlignment="Center"
+                 Text="{CompiledBinding ControllerName}" />
+      <TextBlock Grid.Column="2"
+                 Classes="settings-body"
+                 VerticalAlignment="Center"
+                 Margin="8,0"
+                 Text="{CompiledBinding TaskText}"
+                 TextWrapping="Wrap" />
+      <Button x:Name="StopButton"
+              Grid.Column="3"
+              Classes="sm"
+              VerticalAlignment="Center"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              IsVisible="{CompiledBinding CanStop}" />
+    </Grid>
+  </Border>
+</UserControl>

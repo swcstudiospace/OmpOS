@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:dispatch="clr-namespace:Autonogrammer.Presentation.Dispatch;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Dispatch.DispatchPageView"
+             x:DataType="dispatch:DispatchPageModel"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The Dispatch page. The status line is the one phase or the device count; the rows follow in XAML order. -->
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+    <TextBlock x:Name="PageHeading"
+               Classes="settings-heading" />
+
+    <TextBlock x:Name="StatusText"
+               Classes="settings-body"
+               Text="{CompiledBinding Devices.StatusText}"
+               TextWrapping="Wrap"
+               AutomationProperties.LiveSetting="Polite" />
+
+    <ItemsControl x:Name="DeviceList"
+                  ItemsSource="{CompiledBinding Devices.Rows}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="dispatch:DeviceRowModel">
+          <StackPanel Orientation="Horizontal"
+                      Spacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                      Margin="0,0,0,4">
+            <TextBlock Classes="settings-body"
+                       Text="{CompiledBinding Name}" />
+            <TextBlock Classes="settings-help"
+                       Text="{CompiledBinding StatusText}"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <ItemsControl x:Name="CommandList"
+                  ItemsSource="{CompiledBinding Commands}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="dispatch:DispatchCommandRowModel">
+          <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                      Margin="0,0,0,4">
+            <TextBlock Classes="settings-body"
+                       Text="{CompiledBinding TaskText}"
+                       TextWrapping="Wrap" />
+            <TextBlock Classes="settings-help"
+                       Text="{CompiledBinding StatusText}"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <TextBlock x:Name="PairText"
+               Classes="settings-body"
+               TextWrapping="Wrap"
+               AutomationProperties.LiveSetting="Polite" />
+
+  </StackPanel>
+</UserControl>

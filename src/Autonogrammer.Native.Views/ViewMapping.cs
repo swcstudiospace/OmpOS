@@ -8,6 +8,7 @@ using Autonogrammer.Native.Views.Changes;
 using Autonogrammer.Native.Views.Chats;
 using Autonogrammer.Native.Views.Cowork;
 using Autonogrammer.Native.Views.Cowork.Artifacts;
+using Autonogrammer.Native.Views.Dispatch;
 using Autonogrammer.Native.Views.Editor;
 using Autonogrammer.Native.Views.Explorer;
 using Autonogrammer.Native.Views.Kanban;
@@ -22,6 +23,7 @@ using Autonogrammer.Presentation.Chats;
 using Autonogrammer.Presentation.Composer;
 using Autonogrammer.Presentation.Cowork;
 using Autonogrammer.Presentation.Cowork.Artifacts;
+using Autonogrammer.Presentation.Dispatch;
 using Autonogrammer.Presentation.Editor;
 using Autonogrammer.Presentation.Kanban;
 using Autonogrammer.Presentation.State;
@@ -69,6 +71,9 @@ internal static class ViewMapping
             CoworkComposerModel composerSurface => new CoworkComposerView { DataContext = composerSurface },
             CoworkApprovalCardModel approval => new CoworkApprovalCard { DataContext = approval },
             OmpTerminalViewModel terminal => new OmpTerminalView { DataContext = terminal },
+            DispatchPageModel dispatchPage => new DispatchPageView { DataContext = dispatchPage },
+            DispatchApprovalModel dispatchApproval => new DispatchApprovalView { DataContext = dispatchApproval },
+            RemoteTaskStripModel remoteStrip => new RemoteTaskStripView { DataContext = remoteStrip },
             Autonogrammer.Presentation.Subagents.SubagentPanelModel subagents => new Autonogrammer.Native.Views.Subagents.SubagentsPanelView { DataContext = subagents },
             _ => throw new ArgumentOutOfRangeException(
                 nameof(viewModel),
