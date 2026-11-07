@@ -120,13 +120,13 @@ async function checkInAppNavigation(page, report, { baseUrl, kind }) {
     if (params.type === "error") pageErrors.push(`console.error: ${(params.args ?? []).map((a) => a.value ?? a.description ?? "").join(" ")}`.slice(0, 240));
   });
   if (!(await loadApp(page, baseUrl, report, { group: "routes", viewport: "inapp" }))) return;
-  let entries = await runSequence(page, report, kind);
+  let entries = await runSequence(page, report, kind, 1);
   if (entries === null) {
     // A step landed on the boot shell. Retrying that one step would lose the history the later steps depend on (Back and Forward
     // would have nothing to go to, and a wordmark retry would start and end at the same address). The whole sequence restarts once.
     report.add({ check: "routes", id: "sequence-retried", severity: "warning", message: "a step landed on the boot shell; the whole in-app sequence restarted once after a reload", state: "in-app", viewport: "inapp" });
     if (!(await loadApp(page, baseUrl, report, { group: "routes", viewport: "inapp" }))) return;
-    entries = await runSequence(page, report, kind);
+    entries = await runSequence(page, report, kind, 2);
     const outcome = bootShellOutcome(entries);
     if (outcome) report.add(outcome);
   }
@@ -139,12 +139,12 @@ async function checkInAppNavigation(page, report, { baseUrl, kind }) {
  * Runs every in-app step in order, building the history the Back and Forward steps read. Returns the entries, or null when a step
  * landed on the boot shell (the address moved but the render had not finished), so the caller can restart the whole sequence.
  */
-async function runSequence(page, report, kind) {
+async function runSequence(page, report, kind, attempt) {
   const entries = [];
   const history = [await page.evalValue("location.pathname")];
   let position = 0;
   for (const step of inAppSteps(kind)) {
-    const snap = await runStep(page, report, step, history, position);
+    const snap = await runStep(page, report, step, history, position, attempt);
     if (snap === NOT_READY) {
       return null;
     }
@@ -174,7 +174,7 @@ async function notReadyDetail(page, expected, errorMark) {
 }
 
 /** Runs one in-app step. Returns the page snapshot with the history position, NOT_READY when the route did not render, or null when the step could not be acted on. */
-async function runStep(page, report, step, history, position) {
+async function runStep(page, report, step, history, position, attempt) {
   const before = await page.lib("probeRouteState");
   const errorMark = pageErrors.length;
   const stateBefore = JSON.parse(await page.evalValue(PAGE_STATE));
@@ -207,7 +207,7 @@ async function runStep(page, report, step, history, position) {
   // on the boot shell, within the budget a direct load gets. A route with no ready state (session pages) keeps the waits below.
   const ready = readyFor(expected);
   if (ready && !(await page.waitFor(ready, LOAD_TIMEOUT_MS))) {
-    report.add(finding("routes", "route-not-ready", "warning", `${step.name}: the route did not render its ready state within ${Math.round(LOAD_TIMEOUT_MS / 1000)} s; the in-app sequence restarts`, { state: `in-app ${step.name}`, viewport: "inapp", detail: await notReadyDetail(page, expected, errorMark) }));
+    report.add(finding("routes", "route-not-ready", "warning", `${step.name}: the route did not render its ready state within ${Math.round(LOAD_TIMEOUT_MS / 1000)} s; the in-app sequence restarts`, { state: `in-app ${step.name}`, viewport: "inapp", target: `attempt-${attempt}`, detail: await notReadyDetail(page, expected, errorMark) }));
     return NOT_READY;
   }
   if (!step.history) {
