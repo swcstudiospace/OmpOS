@@ -73,6 +73,9 @@ internal static class SettingsPageViews
         void OnChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args) => view.DataContext = dispatch.Relay.Page;
         dispatch.Relay.PropertyChanged += OnChanged;
         view.DetachedFromVisualTree += (_, _) => dispatch.Relay.PropertyChanged -= OnChanged;
+        view.CancelRequested = commandId => _ = dispatch.Relay.CancelAsync(commandId, CancellationToken.None);
+        view.CapabilityChanged = policy => _ = dispatch.Relay.SetCapabilityAsync(policy.Capability, policy.Enabled, CancellationToken.None);
+        view.PauseChanged = paused => _ = dispatch.Relay.SetPausedAsync(paused, CancellationToken.None);
         return view;
     }
 

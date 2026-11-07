@@ -20,6 +20,13 @@ public interface IThisDeviceHost
     /// <exception cref="DispatchHostException">The call failed.</exception>
     Task SetCapabilityAsync(string capability, bool enabled, CancellationToken cancellationToken);
 
+    /// <summary>Pauses or resumes Dispatch on this desktop. A paused desktop sends no commands and reports itself paused (D-29).</summary>
+    /// <param name="paused">Whether Dispatch is paused.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>A task that completes when the pause is stored.</returns>
+    /// <exception cref="DispatchHostException">The call failed.</exception>
+    Task SetPausedAsync(bool paused, CancellationToken cancellationToken);
+
     /// <summary>Approves or denies a command waiting for the local user.</summary>
     /// <param name="approvalId">The approval.</param>
     /// <param name="approved">Whether the user approved it.</param>

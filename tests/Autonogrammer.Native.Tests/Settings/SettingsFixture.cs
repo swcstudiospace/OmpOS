@@ -55,7 +55,10 @@ internal sealed class SettingsFixture : IDisposable
         CloudHost = new FakeCloudAgentsHost(Clock);
         CloudModel = new CloudAgentsViewModel(CloudHost, Clock);
         Cloud = new CloudSettingsPage(CloudModel);
-        var dispatch = new Autonogrammer.Presentation.Settings.DispatchSettingsPage(new Autonogrammer.Presentation.Dispatch.DispatchRelayModel(new Autonogrammer.Presentation.Dispatch.NotConfiguredDispatchHost(), null));
+        var dispatchHost = new Autonogrammer.Presentation.Dispatch.FakeDispatchHost(
+            [new Autonogrammer.Presentation.Dispatch.DispatchDevice("device-1", "Office Mac", true, true)],
+            [new Autonogrammer.Presentation.Dispatch.DispatchCommand("command-1", "run", Autonogrammer.Presentation.Dispatch.DispatchPhase.Running, "Fix the build", null)]);
+        var dispatch = new Autonogrammer.Presentation.Settings.DispatchSettingsPage(new Autonogrammer.Presentation.Dispatch.DispatchRelayModel(dispatchHost, dispatchHost));
         Automations = new AutomationsSettingsPage(new HostedAutomationsViewModel(AutomationsManager));
         Browser = new BrowserUseSettingsPage(new FixtureBrowserUseSource());
         Privacy = new PrivacySettingsPage();

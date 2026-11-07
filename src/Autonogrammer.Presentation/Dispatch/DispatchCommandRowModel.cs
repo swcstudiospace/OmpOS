@@ -10,6 +10,9 @@ namespace Autonogrammer.Presentation.Dispatch;
 /// <param name="TaskText">The task text, plain and capped.</param>
 public sealed record DispatchCommandRowModel(string CommandId, string Operation, DispatchPhase Phase, string StatusText, string TaskText)
 {
+    /// <summary>Gets a value indicating whether the page offers Cancel for this command. Only a running command offers it.</summary>
+    public bool CanCancel => Phase == DispatchPhase.Running;
+
     /// <summary>Builds the row for a command.</summary>
     /// <param name="commandId">The command.</param>
     /// <param name="operation">The operation.</param>

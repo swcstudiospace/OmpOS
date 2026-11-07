@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Autonogrammer.UI.Tests.Dispatch;
 
-/// <summary>The Dispatch components: each state has its text, failures are announced assertively, the approval prompt has its three named actions, Stop is a named button, and the page announces politely through one region.</summary>
+/// <summary>The Dispatch components: each state has its text, failures are announced assertively once, the approval prompt has its three named actions, Stop is a named button, a running command offers a named Cancel, and the page announces politely through one region.</summary>
 public sealed class DispatchComponentTests : UiTestContext
 {
     private static DispatchPageModel EmptyPage() => new(DevicesViewModel.Loaded([]), [], PairThisDevice: null);
@@ -57,6 +57,67 @@ public sealed class DispatchComponentTests : UiTestContext
         var cut = Render<DispatchPageView>(parameters => parameters.Add(p => p.Model, page));
 
         cut.Find("[aria-live='assertive']").TextContent.ShouldContain(DispatchCopy.ForPhase(DispatchPhase.Unreachable));
+    }
+
+    /// <summary>An unreachable service is announced once in the failure region, and the status line does not repeat it.</summary>
+    [Fact]
+    public void AnUnreachableServiceIsNotRepeatedInTheStatusLine()
+    {
+        var devices = DevicesViewModel.Failed(new DispatchHostException(DispatchHostFailureKind.Unavailable, "The service is down."));
+        var page = new DispatchPageModel(devices, [], PairThisDevice: null);
+
+        var cut = Render<DispatchPageView>(parameters => parameters.Add(p => p.Model, page));
+
+        cut.Find(".dispatch-status").TextContent.ShouldBeEmpty();
+        cut.FindAll(".dispatch-failures p").Select(line => line.TextContent).ToArray().ShouldBe([DispatchCopy.ForPhase(DispatchPhase.Unreachable)]);
+    }
+
+    /// <summary>A running command offers a named Cancel, and pressing it raises the command's identifier.</summary>
+    [Fact]
+    public void ARunningCommandOffersANamedCancelThatRaisesItsIdentifier()
+    {
+        string? cancelled = null;
+        var page = new DispatchPageModel(
+            DevicesViewModel.Loaded([]),
+            [DispatchCommandRowModel.From("command-1", "run", DispatchPhase.Running, "Fix the build")],
+            PairThisDevice: null);
+
+        var cut = Render<DispatchPageView>(parameters => parameters
+            .Add(p => p.Model, page)
+            .Add(p => p.OnCancel, EventCallback.Factory.Create<string>(this, commandId => cancelled = commandId)));
+
+        var cancel = cut.Find("button.dispatch-cancel");
+        cancel.TextContent.Trim().ShouldBe(DispatchCopy.CancelLabel);
+        cancel.GetAttribute("aria-label").ShouldBe($"{DispatchCopy.CancelLabel}: Fix the build");
+
+        cancel.Click();
+        cancelled.ShouldBe("command-1");
+    }
+
+    /// <summary>Only a running command offers Cancel; a queued or finished command does not.</summary>
+    [Fact]
+    public void OnlyARunningCommandOffersCancel()
+    {
+        var page = new DispatchPageModel(
+            DevicesViewModel.Loaded([]),
+            [
+                DispatchCommandRowModel.From("command-1", "run", DispatchPhase.Queued, "Queued task"),
+                DispatchCommandRowModel.From("command-2", "run", DispatchPhase.Completed, "Done task"),
+            ],
+            PairThisDevice: null);
+
+        var cut = Render<DispatchPageView>(parameters => parameters.Add(p => p.Model, page));
+
+        cut.FindAll("button.dispatch-cancel").ShouldBeEmpty();
+    }
+
+    /// <summary>The page heading takes focus programmatically, so a cancel can move focus to it.</summary>
+    [Fact]
+    public void ThePageHeadingCanTakeFocus()
+    {
+        var cut = Render<DispatchPageView>(parameters => parameters.Add(p => p.Model, EmptyPage()));
+
+        cut.Find("#dispatch-page-heading").GetAttribute("tabindex").ShouldBe("-1");
     }
 
     /// <summary>The approval prompt names its three actions in order, and Approve once raises its callback.</summary>

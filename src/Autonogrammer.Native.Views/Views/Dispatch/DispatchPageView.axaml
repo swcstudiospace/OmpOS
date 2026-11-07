@@ -9,15 +9,18 @@
     <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
   </UserControl.Styles>
 
-  <!-- The Dispatch page. The status line is polite, the failure line is assertive; the rows and the pairing text follow in XAML order. -->
+  <!-- The Dispatch page. The status line is polite, the problems line is assertive; the rows, the switches and the pairing text follow in XAML order. -->
   <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
 
     <TextBlock x:Name="PageHeading"
-               Classes="settings-heading" />
+               Classes="settings-heading"
+               Focusable="True"
+               IsTabStop="False"
+               AutomationProperties.Name="{x:Static dispatch:DispatchCopy.PageHeading}" />
 
     <TextBlock x:Name="StatusText"
                Classes="settings-body"
-               Text="{CompiledBinding Devices.StatusText}"
+               Text="{CompiledBinding Devices.StatusLine}"
                TextWrapping="Wrap"
                AutomationProperties.LiveSetting="Polite"
                AutomationProperties.Name="{x:Static dispatch:DispatchCopy.DevicesLabel}" />
@@ -57,10 +60,30 @@
             <TextBlock Classes="settings-help"
                        Text="{CompiledBinding StatusText}"
                        TextWrapping="Wrap" />
+            <Button Classes="sm"
+                    HorizontalAlignment="Left"
+                    Content="{x:Static dispatch:DispatchCopy.CancelLabel}"
+                    AutomationProperties.Name="{x:Static dispatch:DispatchCopy.CancelLabel}"
+                    Tag="{CompiledBinding CommandId}"
+                    IsVisible="{CompiledBinding CanCancel}"
+                    MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                    MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                    Click="OnCancelClicked" />
           </StackPanel>
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>
+
+    <StackPanel x:Name="PairControls"
+                Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+      <ToggleSwitch x:Name="PauseToggle"
+                    Content="{x:Static dispatch:DispatchCopy.PauseLabel}"
+                    AutomationProperties.Name="{x:Static dispatch:DispatchCopy.PauseLabel}"
+                    MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                    IsVisible="False" />
+      <StackPanel x:Name="CapabilityList"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}" />
+    </StackPanel>
 
     <TextBlock x:Name="PairText"
                Classes="settings-body"

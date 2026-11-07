@@ -79,7 +79,7 @@
                             <McpFilesView @key="mcp" Page="mcp" />
                             break;
                         case DispatchSettingsPage dispatch:
-                            <DispatchPageView @key="dispatch" Model="dispatch.Relay.Page" />
+                            <DispatchPageView @key="dispatch" Model="dispatch.Relay.Page" OnCancel="@(commandId => dispatch.Relay.CancelAsync(commandId, CancellationToken.None))" />
                             break;
                         case InfoSettingsPage info:
                             <InfoSettingsView @key="info" Page="info" />

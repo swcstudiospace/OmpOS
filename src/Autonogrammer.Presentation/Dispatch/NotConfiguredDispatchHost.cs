@@ -11,6 +11,10 @@ public sealed class NotConfiguredDispatchHost : IDispatchHost, IThisDeviceHost
         RefuseAsync<IReadOnlyList<DispatchDevice>>();
 
     /// <inheritdoc/>
+    public Task<IReadOnlyList<DispatchCommand>> ListCommandsAsync(CancellationToken cancellationToken) =>
+        RefuseAsync<IReadOnlyList<DispatchCommand>>();
+
+    /// <inheritdoc/>
     public Task RenameDeviceAsync(string deviceId, string name, CancellationToken cancellationToken) => RefuseAsync<object>();
 
     /// <inheritdoc/>
@@ -33,6 +37,9 @@ public sealed class NotConfiguredDispatchHost : IDispatchHost, IThisDeviceHost
 
     /// <inheritdoc/>
     public Task SetCapabilityAsync(string capability, bool enabled, CancellationToken cancellationToken) => RefuseAsync<object>();
+
+    /// <inheritdoc/>
+    public Task SetPausedAsync(bool paused, CancellationToken cancellationToken) => RefuseAsync<object>();
 
     /// <inheritdoc/>
     public Task ResolveApprovalAsync(string approvalId, bool approved, CancellationToken cancellationToken) => RefuseAsync<object>();

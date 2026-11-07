@@ -65,6 +65,12 @@ public static class DispatchCopy
     /// <summary>Stops the remote task.</summary>
     public const string StopLabel = "Stop";
 
+    /// <summary>Cancels a command that has not finished.</summary>
+    public const string CancelLabel = "Cancel";
+
+    /// <summary>Pauses Dispatch on this desktop, so it sends no commands until it is resumed.</summary>
+    public const string PauseLabel = "Pause Dispatch";
+
     /// <summary>Gets the text for a phase.</summary>
     /// <param name="phase">The phase.</param>
     /// <returns>The text.</returns>
@@ -130,5 +136,16 @@ public static class DispatchCopy
         DispatchFailureReason.CancelledByUser => "You cancelled the command.",
         DispatchFailureReason.Internal => "The command failed for an unexpected reason.",
         _ => throw new ArgumentOutOfRangeException(nameof(reason), reason, null),
+    };
+
+    /// <summary>Gets the name a person reads for a capability, used as the accessible name of its toggle.</summary>
+    /// <param name="capability">The capability's wire name.</param>
+    /// <returns>The name, or the wire name when the capability is not known.</returns>
+    public static string CapabilityLabel(string capability) => capability switch
+    {
+        "sessions" => "Sessions",
+        "code" => "Code",
+        "cowork" => "Cowork",
+        _ => capability,
     };
 }

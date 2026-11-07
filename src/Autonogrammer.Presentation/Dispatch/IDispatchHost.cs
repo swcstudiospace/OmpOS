@@ -13,6 +13,12 @@ public interface IDispatchHost
     /// <exception cref="DispatchHostException">The call failed.</exception>
     Task<IReadOnlyList<DispatchDevice>> ListDevicesAsync(CancellationToken cancellationToken);
 
+    /// <summary>Lists the account's commands, newest first, so the page can show the ones still running and offer to cancel them.</summary>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The commands, newest first.</returns>
+    /// <exception cref="DispatchHostException">The call failed.</exception>
+    Task<IReadOnlyList<DispatchCommand>> ListCommandsAsync(CancellationToken cancellationToken);
+
     /// <summary>Renames a device.</summary>
     /// <param name="deviceId">The device.</param>
     /// <param name="name">The new name.</param>

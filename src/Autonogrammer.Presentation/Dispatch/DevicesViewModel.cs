@@ -33,5 +33,8 @@ public sealed record DevicesViewModel(DispatchPhase? Phase, string StatusText, I
         return Of(DispatchPhaseMap.ForHostFailure(failure.Kind));
     }
 
+    /// <summary>Gets the status line to show. It is empty when the phase is unreachable, because the problems line already says so.</summary>
+    public string StatusLine => Phase == DispatchPhase.Unreachable ? string.Empty : StatusText;
+
     private static DevicesViewModel Of(DispatchPhase phase) => new(phase, DispatchCopy.ForPhase(phase), []);
 }

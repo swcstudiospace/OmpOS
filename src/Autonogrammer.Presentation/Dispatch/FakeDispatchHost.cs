@@ -4,24 +4,42 @@ using System.Threading.Channels;
 namespace Autonogrammer.Presentation.Dispatch;
 
 /// <summary>
-/// An in-memory host for tests and for heads that have no hub yet. It keeps the devices it was given, records every rename, revocation,
-/// send, cancel and capability change, and carries the feed changes a test publishes. It makes no network call.
+/// An in-memory host for tests and for heads that have no hub yet. It keeps the devices, commands and capability policy it was given, records
+/// every rename, revocation, send, cancel, capability change and pause, and carries the feed changes a test publishes. It makes no network call.
 /// </summary>
 public sealed class FakeDispatchHost : IDispatchHost, IThisDeviceHost
 {
     private readonly List<DispatchDevice> _devices;
+    private readonly List<DispatchCommand> _commands = [];
+    private readonly Dictionary<string, bool> _policy = new(StringComparer.Ordinal);
     private readonly List<(string DeviceId, string Name)> _renames = [];
     private readonly List<string> _revoked = [];
     private readonly List<(string DeviceId, string Operation, string Text)> _sent = [];
     private readonly List<string> _cancelled = [];
-    private readonly Dictionary<string, bool> _policy = new(StringComparer.Ordinal);
+    private readonly List<(string Capability, bool Enabled)> _capabilityChanges = [];
+    private readonly List<bool> _pauseChanges = [];
     private readonly Channel<DispatchFeedChange> _feed = Channel.CreateUnbounded<DispatchFeedChange>();
+    private bool _paused;
 
-    /// <summary>Creates a fake that lists the given devices.</summary>
+    /// <summary>Creates a fake that lists the given devices, commands and capability policy.</summary>
     /// <param name="devices">The devices the fake lists.</param>
-    public FakeDispatchHost(IReadOnlyList<DispatchDevice> devices)
+    /// <param name="commands">The commands the fake lists, newest first; none when not given.</param>
+    /// <param name="capabilities">The per-capability policy; when not given, sessions is allowed and code and cowork are not.</param>
+    public FakeDispatchHost(
+        IReadOnlyList<DispatchDevice> devices,
+        IReadOnlyList<DispatchCommand>? commands = null,
+        IReadOnlyList<DispatchCapabilityPolicy>? capabilities = null)
     {
         _devices = [.. devices];
+        if (commands is not null)
+        {
+            _commands.AddRange(commands);
+        }
+
+        foreach (var policy in capabilities ?? DefaultCapabilities())
+        {
+            _policy[policy.Capability] = policy.Enabled;
+        }
     }
 
     /// <summary>Gets the renames received, in order.</summary>
@@ -36,9 +54,19 @@ public sealed class FakeDispatchHost : IDispatchHost, IThisDeviceHost
     /// <summary>Gets the commands cancelled, in order.</summary>
     public IReadOnlyList<string> Cancelled => _cancelled;
 
+    /// <summary>Gets the capability changes received, in order.</summary>
+    public IReadOnlyList<(string Capability, bool Enabled)> CapabilityChanges => _capabilityChanges;
+
+    /// <summary>Gets the pause changes received, in order: true pauses Dispatch and false resumes it.</summary>
+    public IReadOnlyList<bool> PauseChanges => _pauseChanges;
+
     /// <inheritdoc/>
     public Task<IReadOnlyList<DispatchDevice>> ListDevicesAsync(CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<DispatchDevice>>(_devices.ToArray());
+
+    /// <inheritdoc/>
+    public Task<IReadOnlyList<DispatchCommand>> ListCommandsAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<DispatchCommand>>(_commands.ToArray());
 
     /// <inheritdoc/>
     public Task RenameDeviceAsync(string deviceId, string name, CancellationToken cancellationToken)
@@ -72,6 +100,12 @@ public sealed class FakeDispatchHost : IDispatchHost, IThisDeviceHost
     public Task CancelAsync(string commandId, CancellationToken cancellationToken)
     {
         _cancelled.Add(commandId);
+        var index = _commands.FindIndex(command => string.Equals(command.CommandId, commandId, StringComparison.Ordinal));
+        if (index >= 0)
+        {
+            _commands[index] = _commands[index] with { Phase = DispatchPhase.Cancelled };
+        }
+
         return Task.CompletedTask;
     }
 
@@ -87,6 +121,7 @@ public sealed class FakeDispatchHost : IDispatchHost, IThisDeviceHost
     public Task<DispatchThisDevice> GetThisDeviceAsync(CancellationToken cancellationToken) =>
         Task.FromResult(new DispatchThisDevice(
             Paired: true,
+            Paused: _paused,
             Capabilities: _policy.Select(entry => new DispatchCapabilityPolicy(entry.Key, entry.Value)).ToArray(),
             PendingApprovals: []));
 
@@ -94,9 +129,21 @@ public sealed class FakeDispatchHost : IDispatchHost, IThisDeviceHost
     public Task SetCapabilityAsync(string capability, bool enabled, CancellationToken cancellationToken)
     {
         _policy[capability] = enabled;
+        _capabilityChanges.Add((capability, enabled));
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc/>
+    public Task SetPausedAsync(bool paused, CancellationToken cancellationToken)
+    {
+        _paused = paused;
+        _pauseChanges.Add(paused);
         return Task.CompletedTask;
     }
 
     /// <inheritdoc/>
     public Task ResolveApprovalAsync(string approvalId, bool approved, CancellationToken cancellationToken) => Task.CompletedTask;
+
+    private static IReadOnlyList<DispatchCapabilityPolicy> DefaultCapabilities() =>
+        [new DispatchCapabilityPolicy("sessions", true), new DispatchCapabilityPolicy("code", false), new DispatchCapabilityPolicy("cowork", false)];
 }

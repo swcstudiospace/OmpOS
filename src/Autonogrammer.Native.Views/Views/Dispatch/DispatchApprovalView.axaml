@@ -65,12 +65,15 @@
                   Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
         <Button x:Name="ApproveOnceButton"
                 Classes="primary"
+                AutomationProperties.Name="{x:Static dispatch:DispatchCopy.ApproveOnceLabel}"
                 MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
                 MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}" />
         <Button x:Name="DenyButton"
+                AutomationProperties.Name="{x:Static dispatch:DispatchCopy.DenyLabel}"
                 MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
                 MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}" />
         <Button x:Name="DenyAndPauseButton"
+                AutomationProperties.Name="{x:Static dispatch:DispatchCopy.DenyAndPauseLabel}"
                 MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
                 MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}" />
       </StackPanel>
