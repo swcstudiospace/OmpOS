@@ -11,6 +11,7 @@
 
 import { analyzeRoute, analyzeTitleSet } from "./logic.mjs";
 import { DEMO_SESSION, LOAD_TIMEOUT_MS, loadApp } from "./states.mjs";
+import { finding } from "./report.mjs";
 
 // A loaded host can leave the page on the boot shell after an in-app navigation: the address changes but the render has not caught up, so the title is still
 // the boot title and the shell controls are absent (gate run 6 at load 68, and two re-runs). When any step lands there, the whole sequence restarts once after
@@ -145,7 +146,6 @@ async function runSequence(page, report, kind) {
   for (const step of inAppSteps(kind)) {
     const snap = await runStep(page, report, step, history, position);
     if (snap === NOT_READY) {
-      report.add({ check: "routes", id: "route-not-ready", severity: "warning", message: `${step.name}: the route did not render its ready state within ${Math.round(LOAD_TIMEOUT_MS / 1000)} s; the in-app sequence restarts`, state: `in-app ${step.name}`, viewport: "inapp" });
       return null;
     }
     if (snap && snap.title.trim() === BOOT_TITLE) {
@@ -159,6 +159,18 @@ async function runSequence(page, report, kind) {
     report.count("routes:inapp");
   }
   return entries;
+}
+
+/** What the page shows when a route did not render: the route state, the page errors since the step began, and the Kanban and error-boundary probes. */
+async function notReadyDetail(page, expected, errorMark) {
+  return {
+    expected,
+    state: JSON.parse(await page.evalValue(PAGE_STATE)),
+    pageErrors: pageErrors.slice(errorMark),
+    kanbanRendered: await page.evalValue("!!document.querySelector('.autonogrammer-kanban')"),
+    errorBoundary: await page.evalValue("!!document.querySelector('.blazor-error-boundary, #blazor-error-ui')"),
+    bodyStart: await page.evalValue("(document.body?.innerText ?? '').slice(0, 300)"),
+  };
 }
 
 /** Runs one in-app step. Returns the page snapshot with the history position, NOT_READY when the route did not render, or null when the step could not be acted on. */
@@ -194,7 +206,10 @@ async function runStep(page, report, step, history, position) {
   // The address moves before the render does. Wait for the target route's own ready state, so no entry is recorded from a page still
   // on the boot shell, within the budget a direct load gets. A route with no ready state (session pages) keeps the waits below.
   const ready = readyFor(expected);
-  if (ready && !(await page.waitFor(ready, LOAD_TIMEOUT_MS))) return NOT_READY;
+  if (ready && !(await page.waitFor(ready, LOAD_TIMEOUT_MS))) {
+    report.add(finding("routes", "route-not-ready", "warning", `${step.name}: the route did not render its ready state within ${Math.round(LOAD_TIMEOUT_MS / 1000)} s; the in-app sequence restarts`, { state: `in-app ${step.name}`, viewport: "inapp", detail: await notReadyDetail(page, expected, errorMark) }));
+    return NOT_READY;
+  }
   if (!step.history) {
     history.length = position + 1;
     history.push(await page.evalValue("location.pathname"));
