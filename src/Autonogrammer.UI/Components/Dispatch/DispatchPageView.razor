@@ -1,0 +1,52 @@
+@namespace Autonogrammer.UI.Components.Dispatch
+@using Autonogrammer.Presentation.Dispatch
+
+<section class="autonogrammer-dispatch" aria-labelledby="autonogrammer-dispatch-title">
+    <h2 class="autonogrammer-settings-page-title" id="autonogrammer-dispatch-title">@DispatchCopy.PageHeading</h2>
+    @if (Model.Devices.Phase is { } phase)
+    {
+        <p class="autonogrammer-dispatch-status" data-phase="@phase">@Model.Devices.StatusText</p>
+    }
+    else
+    {
+        <ul class="autonogrammer-dispatch-list" aria-label="@DispatchCopy.DevicesLabel">
+            @foreach (var row in Model.Devices.Rows)
+            {
+                <li class="autonogrammer-dispatch-row">
+                    <span>@row.Name</span>
+                    <span class="autonogrammer-dispatch-status">@row.StatusText</span>
+                </li>
+            }
+        </ul>
+    }
+    <ul class="autonogrammer-dispatch-list" aria-label="@DispatchCopy.CommandsLabel">
+        @foreach (var command in Model.Commands)
+        {
+            <li class="autonogrammer-dispatch-row" data-phase="@command.Phase">
+                <span class="autonogrammer-dispatch-task">@command.TaskText</span>
+                <span class="autonogrammer-dispatch-status">@command.StatusText</span>
+            </li>
+        }
+    </ul>
+    @if (Model.PairThisDevice is { } pair)
+    {
+        <section class="autonogrammer-dispatch-pair" aria-label="@DispatchCopy.PageHeading">
+            <p class="autonogrammer-dispatch-status">@pair.StatusText</p>
+        </section>
+    }
+    else
+    {
+        <p class="autonogrammer-dispatch-status">@DispatchCopy.PairInDesktopApp</p>
+    }
+    <span class="autonogrammer-live-region" role="status" aria-live="polite" aria-atomic="true">@Announcement</span>
+</section>
+
+@code {
+    /// <summary>Gets the page to draw.</summary>
+    [Parameter, EditorRequired]
+    public DispatchPageModel Model { get; set; } = default!;
+
+    /// <summary>Gets the text announced politely when the page changes.</summary>
+    [Parameter]
+    public string? Announcement { get; set; }
+}

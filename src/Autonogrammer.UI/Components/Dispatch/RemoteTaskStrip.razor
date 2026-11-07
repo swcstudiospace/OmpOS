@@ -1,0 +1,22 @@
+@namespace Autonogrammer.UI.Components.Dispatch
+@using Autonogrammer.Presentation.Dispatch
+
+<div class="autonogrammer-dispatch-strip" role="region" aria-label="@DispatchCopy.RemoteTaskRegionLabel">
+    <span class="autonogrammer-dispatch-status">@DispatchCopy.RemoteTaskFromLabel</span>
+    <strong>@Model.ControllerName</strong>
+    <span class="autonogrammer-dispatch-task">@Model.TaskText</span>
+    @if (Model.CanStop)
+    {
+        <button type="button" class="autonogrammer-btn autonogrammer-dispatch-cancel" @onclick="OnStop">@DispatchCopy.StopLabel</button>
+    }
+</div>
+
+@code {
+    /// <summary>Gets the strip to show.</summary>
+    [Parameter, EditorRequired]
+    public RemoteTaskStripModel Model { get; set; } = default!;
+
+    /// <summary>Gets the callback for Stop.</summary>
+    [Parameter]
+    public EventCallback OnStop { get; set; }
+}

@@ -17,6 +17,51 @@ public static class DispatchCopy
     /// <summary>Shown beside this desktop when it is not paired.</summary>
     public const string ThisDeviceNotPaired = "This desktop is not paired. Pair it to send and receive commands.";
 
+    /// <summary>The page heading.</summary>
+    public const string PageHeading = "Devices and Dispatch";
+
+    /// <summary>Shown where the pairing section is absent, because pairing happens in the desktop app.</summary>
+    public const string PairInDesktopApp = "Pair this device in the desktop app to send and receive commands.";
+
+    /// <summary>The label of the devices list.</summary>
+    public const string DevicesLabel = "Devices";
+
+    /// <summary>The label of the commands list.</summary>
+    public const string CommandsLabel = "Commands";
+
+    /// <summary>The heading of the approval prompt.</summary>
+    public const string ApprovalHeading = "Command waiting for approval";
+
+    /// <summary>The label of the controller in the approval prompt.</summary>
+    public const string ApprovalFromLabel = "From";
+
+    /// <summary>The label of the operation in the approval prompt.</summary>
+    public const string ApprovalOperationLabel = "Operation";
+
+    /// <summary>The label of the capability in the approval prompt.</summary>
+    public const string ApprovalCapabilityLabel = "Capability";
+
+    /// <summary>The label of the tool classes in the approval prompt.</summary>
+    public const string ApprovalToolsLabel = "Tools";
+
+    /// <summary>Approves the command for this one run.</summary>
+    public const string ApproveOnceLabel = "Approve once";
+
+    /// <summary>Refuses the command.</summary>
+    public const string DenyLabel = "Deny";
+
+    /// <summary>Refuses the command and pauses Dispatch on this device.</summary>
+    public const string DenyAndPauseLabel = "Deny and pause Dispatch";
+
+    /// <summary>The name of the region that holds the remote task strip.</summary>
+    public const string RemoteTaskRegionLabel = "Remote task";
+
+    /// <summary>The words before the controller's name in the remote task strip.</summary>
+    public const string RemoteTaskFromLabel = "Remote task from";
+
+    /// <summary>Stops the remote task.</summary>
+    public const string StopLabel = "Stop";
+
     /// <summary>Gets the text for a phase.</summary>
     /// <param name="phase">The phase.</param>
     /// <returns>The text.</returns>
