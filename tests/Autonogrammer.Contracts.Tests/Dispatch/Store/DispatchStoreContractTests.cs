@@ -184,6 +184,63 @@ public abstract class DispatchStoreContractTests<TStore> where TStore : IDispatc
         pruned.Events.ShouldBeEmpty();
     }
 
+    /// <summary>Revoking a device cancels its queued and delivered commands and fails its running ones with reason revoked, in the same call that hides its queue (D-30).</summary>
+    [Fact]
+    public async Task RevokeCancelsOpenCommandsInTheSameStep()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var store = await CreateStoreAsync(DispatchStoreLimits.Default, TimeProvider.System, ct).ConfigureAwait(true);
+        await CreateDeviceAsync(store, "acct", "dev", ct).ConfigureAwait(true);
+        await EnqueueAsync(store, "acct", "dev", "queued", "k1", "fp", ct).ConfigureAwait(true);
+        await EnqueueAsync(store, "acct", "dev", "running", "k2", "fp", ct).ConfigureAwait(true);
+        await MoveToRunningAsync(store, "acct", "running", ct).ConfigureAwait(true);
+
+        (await store.RevokeDeviceAsync("acct", "dev", "revoked", DateTimeOffset.UnixEpoch, ct).ConfigureAwait(true)).ShouldBeTrue();
+
+        var rows = await store.ListCommandsAsync("acct", "dev", 10, ct).ConfigureAwait(true);
+        var queued = rows.Single(row => string.Equals(row.CommandId, "queued", StringComparison.Ordinal));
+        queued.State.ShouldBe(DispatchCommandState.Cancelled);
+        queued.Reason.ShouldBe(DispatchFailureReason.Revoked);
+        var running = rows.Single(row => string.Equals(row.CommandId, "running", StringComparison.Ordinal));
+        running.State.ShouldBe(DispatchCommandState.Failed);
+        running.Reason.ShouldBe(DispatchFailureReason.Revoked);
+        (await store.ListQueuedAfterAsync("acct", "dev", 0, ct).ConfigureAwait(true)).ShouldBeEmpty();
+    }
+
+    /// <summary>ReplayAsync answers a stored key with the original body for the same fingerprint, refuses another fingerprint, and answers an unknown key with null (D-21).</summary>
+    [Fact]
+    public async Task ReplayAnswersStoredKeysAndNothingElse()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var store = await CreateStoreAsync(DispatchStoreLimits.Default, TimeProvider.System, ct).ConfigureAwait(true);
+        await CreateDeviceAsync(store, "acct", "dev", ct).ConfigureAwait(true);
+        await EnqueueAsync(store, "acct", "dev", "c1", "same", "fp-a", ct).ConfigureAwait(true);
+
+        var replayed = await store.ReplayAsync(Command("acct", "dev", "c2", "same", "fp-a"), ct).ConfigureAwait(true);
+        replayed!.Status.ShouldBe(DispatchEnqueueStatus.Replayed);
+        var reused = await store.ReplayAsync(Command("acct", "dev", "c3", "same", "fp-b"), ct).ConfigureAwait(true);
+        reused!.Status.ShouldBe(DispatchEnqueueStatus.IdempotencyKeyReused);
+        (await store.ReplayAsync(Command("acct", "dev", "c4", "unknown", "fp-a"), ct).ConfigureAwait(true)).ShouldBeNull();
+    }
+
+    private static async Task MoveToRunningAsync(TStore store, string accountId, string commandId, CancellationToken cancellationToken)
+    {
+        (DispatchCommandState From, DispatchCommandState To)[] path =
+        [
+            (DispatchCommandState.Queued, DispatchCommandState.Delivered),
+            (DispatchCommandState.Delivered, DispatchCommandState.Received),
+            (DispatchCommandState.Received, DispatchCommandState.Accepted),
+            (DispatchCommandState.Accepted, DispatchCommandState.Running),
+        ];
+        foreach (var (from, to) in path)
+        {
+            (await store.TryTransitionAsync(accountId, commandId, from, to, null, cancellationToken).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+        }
+    }
+
+    private static EnqueueDispatchCommand Command(string accountId, string deviceId, string commandId, string key, string fingerprint) =>
+        new(accountId, deviceId, commandId, key, fingerprint, DispatchCapability.Sessions, DispatchOp.SessionList, "{}", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(5));
+
     private static async Task<DispatchDeviceCreateResult> CreateDeviceAsync(TStore store, string accountId, string deviceId, CancellationToken cancellationToken)
     {
         return await store.CreateDeviceAsync(

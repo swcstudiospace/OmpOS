@@ -139,11 +139,34 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
                 return ValueTask.FromResult(false);
             }
 
-            row.RevokedAt = revokedAt;
+            row.RevokedAt ??= revokedAt;
             row.RevokeReason = reason;
+            row.CredentialJti = null;
+            foreach (var command in _commands.Values)
+            {
+                if (!string.Equals(command.AccountId, accountId, StringComparison.Ordinal)
+                    || !string.Equals(command.DeviceId, deviceId, StringComparison.Ordinal)
+                    || RevokeTarget(command.State) is not { } target)
+                {
+                    continue;
+                }
+
+                command.State = target;
+                command.Reason = DispatchFailureReason.Revoked;
+                command.TerminalAt = revokedAt;
+            }
+
             return ValueTask.FromResult(true);
         }
     }
+
+    /// <summary>The state a device revoke moves a command to, or null when the command is already finished (D-30).</summary>
+    private static DispatchCommandState? RevokeTarget(DispatchCommandState state) => state switch
+    {
+        DispatchCommandState.Queued or DispatchCommandState.Delivered => DispatchCommandState.Cancelled,
+        DispatchCommandState.Received or DispatchCommandState.AwaitingApproval or DispatchCommandState.Accepted or DispatchCommandState.Running => DispatchCommandState.Failed,
+        _ => null,
+    };
 
     /// <inheritdoc />
     public ValueTask<bool> UpdateCredentialJtiAsync(string accountId, string deviceId, string credentialJti, DateTimeOffset credentialExpiresAt, CancellationToken cancellationToken)

@@ -12,7 +12,7 @@ namespace Autonogrammer.Api.IntegrationTests.Dispatch;
 public sealed class ConnectRouteTests
 {
     [Fact]
-    public async Task Connect_without_a_websocket_upgrade_answers_426_upgrade_required()
+    public async Task Connect_without_a_websocket_upgrade_answers_400_not_websocket()
     {
         var ct = TestContext.Current.CancellationToken;
         var host = await DispatchApiHost.StartAsync(ct).ConfigureAwait(true);
@@ -25,8 +25,8 @@ public sealed class ConnectRouteTests
 
         using var response = await client.SendAsync(connect, ct).ConfigureAwait(true);
 
-        response.StatusCode.ShouldBe(HttpStatusCode.UpgradeRequired);
-        (await response.Content.ReadAsStringAsync(ct).ConfigureAwait(true)).ShouldContain("upgrade_required", Case.Sensitive);
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync(ct).ConfigureAwait(true)).ShouldContain("not_websocket", Case.Sensitive);
     }
 
     [Fact]

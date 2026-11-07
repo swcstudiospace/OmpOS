@@ -4,6 +4,7 @@ using Autonogrammer.Api.Dispatch.Devices;
 using Autonogrammer.Api.Services;
 using Autonogrammer.Contracts.Dispatch;
 using Autonogrammer.Coordination;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Dispatch;
@@ -83,10 +84,10 @@ internal sealed class DispatchHub : IDispatchConnectHandler
     public async Task<IResult> HandleAsync(HttpContext context, string deviceId, string accountId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
-        if (!context.WebSockets.IsWebSocketRequest)
+        var refusal = RefuseUpgrade(context);
+        if (refusal is not null)
         {
-            _metrics.Connect("refused", "not_websocket");
-            return WebProblems.Of(StatusCodes.Status426UpgradeRequired, "upgrade_required", "WebSocket required.", "The connect route upgrades the request to a WebSocket.");
+            return refusal;
         }
 
         if (context.Request.Headers.ContainsKey("Origin"))
@@ -132,6 +133,26 @@ internal sealed class DispatchHub : IDispatchConnectHandler
 
             session.Wake();
         }
+    }
+
+    /// <summary>Answers a request that is not a WebSocket upgrade with 400, and a version other than 13 with 426 that names version 13 (RFC 6455, section 4.4). Null when the upgrade may proceed.</summary>
+    private ProblemHttpResult? RefuseUpgrade(HttpContext context)
+    {
+        var version = context.Request.Headers["Sec-WebSocket-Version"].ToString();
+        if (!context.WebSockets.IsWebSocketRequest || version.Length == 0)
+        {
+            _metrics.Connect("refused", "not_websocket");
+            return WebProblems.Of(StatusCodes.Status400BadRequest, "not_websocket", "WebSocket required.", "The connect route accepts a WebSocket upgrade request.");
+        }
+
+        if (string.Equals(version, "13", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        _metrics.Connect("refused", "unsupported_version");
+        context.Response.Headers["Sec-WebSocket-Version"] = "13";
+        return WebProblems.Of(StatusCodes.Status426UpgradeRequired, "upgrade_required", "WebSocket version refused.", "The hub speaks WebSocket version 13.");
     }
 
     private async Task RunAsync(WebSocket socket, HttpContext context, DispatchDeviceRecord device, CancellationToken cancellationToken)
@@ -294,6 +315,8 @@ internal sealed class DispatchHub : IDispatchConnectHandler
             _ = await _store.UpdateCapabilitySnapshotAsync(session.Owner, session.DeviceId, capabilities, cancellationToken).ConfigureAwait(false);
         }
 
+        await FailRestartedAsync(session, hello.Running, cancellationToken).ConfigureAwait(false);
+
         var welcome = new DispatchWelcomeFrame
         {
             V = 1,
@@ -306,6 +329,25 @@ internal sealed class DispatchHub : IDispatchConnectHandler
         await session.SendAsync(welcome, DispatchJsonContext.Default.DispatchWelcomeFrame, cancellationToken).ConfigureAwait(false);
         _metrics.Connect("accepted", "welcome");
     }
+
+    /// <summary>Fails the device's in-flight commands that its hello does not list as still running (D-27, device_restarted). Queued and delivered commands stay for the delivery loop.</summary>
+    private async Task FailRestartedAsync(DispatchHubSession session, IReadOnlyList<string>? running, CancellationToken cancellationToken)
+    {
+        var stillRunning = new HashSet<string>(running ?? Array.Empty<string>(), StringComparer.Ordinal);
+        var rows = await _store.ListCommandsAsync(session.Owner, session.DeviceId, 100, cancellationToken).ConfigureAwait(false);
+        foreach (var row in rows)
+        {
+            if (stillRunning.Contains(row.CommandId) || !IsInFlight(row.State))
+            {
+                continue;
+            }
+
+            _ = await _store.TryTransitionAsync(session.Owner, row.CommandId, row.State, DispatchCommandState.Failed, DispatchFailureReason.DeviceRestarted, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static bool IsInFlight(DispatchCommandState state) =>
+        state is DispatchCommandState.Received or DispatchCommandState.AwaitingApproval or DispatchCommandState.Accepted or DispatchCommandState.Running;
 
     private async Task PumpAsync(DispatchHubSession session, CancellationToken cancellationToken)
     {

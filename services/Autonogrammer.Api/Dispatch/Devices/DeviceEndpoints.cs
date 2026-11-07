@@ -536,16 +536,9 @@ internal static partial class DeviceEndpoints
         return TypedResults.NoContent();
     }
 
-    /// <summary>Cancels or fails the device's unfinished commands, revokes the device, drops its presence key and wakes its feed.</summary>
+    /// <summary>Revokes the device in one store transaction: the store cancels its queued and delivered commands and fails its running ones with reason revoked (D-30). Then drops its presence key and wakes its feed.</summary>
     private static async Task<bool> RevokeOwnedAsync(IDispatchStore store, IDispatchPresence presence, IDispatchSignals signals, string owner, string deviceId, TimeProvider time, CancellationToken cancellationToken)
     {
-        if (await store.GetDeviceAsync(owner, deviceId, cancellationToken).ConfigureAwait(false) is null)
-        {
-            return false;
-        }
-
-        // The cascade reads the queue while the device is still live. Once the store marks the device revoked, its queue read returns nothing.
-        await CommandEndpoints.CancelForRevokeAsync(store, owner, deviceId, cancellationToken).ConfigureAwait(false);
         if (!await store.RevokeDeviceAsync(owner, deviceId, "revoked", time.GetUtcNow(), cancellationToken).ConfigureAwait(false))
         {
             return false;

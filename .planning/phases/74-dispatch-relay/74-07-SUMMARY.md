@@ -27,7 +27,7 @@ tech-stack:
   added: []
   patterns:
     - Owner from IUserContext on every controller route; a foreign or absent device or command is the same 404
-    - Dispatch store, presence and signal seams are [FromServices] in every route handler (they are registered in Development only)
+    - Dispatch store, presence and signal seams are [FromServices] in every route handler (the device store is registered in Development only; presence and signals in every environment, OQ-500)
     - Feed streams account rows only; wake on IDispatchSignals with a 200 ms re-read
 key-files:
   created:
@@ -41,7 +41,7 @@ key-files:
     - tests/Autonogrammer.Api.IntegrationTests/Dispatch/DispatchTestClient.cs, TestReply.cs, UnknownDispatchPresence.cs
   modified:
     - services/Autonogrammer.Api/Dispatch/Devices/DeviceEndpoints.cs (device routes; maps the command and feed routes)
-    - services/Autonogrammer.Api/Dispatch/DispatchModule.cs (caller identity, Development-only presence and signals, policies, JSON chain)
+    - services/Autonogrammer.Api/Dispatch/DispatchModule.cs (caller identity, policies, JSON chain)
     - services/Autonogrammer.Api/Dispatch/DispatchRateLimits.cs (command and read policies; four-argument bucket)
     - services/Autonogrammer.Api/Dispatch/Store/InMemoryDispatchStore.cs (ListCommandsAsync)
     - src/Autonogrammer.Sessions.Postgres/PostgresDispatchStore.cs (ListCommandsAsync)
@@ -52,7 +52,7 @@ key-files:
     - docs/open-questions.md (OQ-496 to OQ-502)
 key-decisions:
   - "IDispatchStore had no account-wide command list. ListCommandsAsync is added to the contract and to both stores (OQ-496)."
-  - "Revoke runs the cascade through store calls before the store sets the revoke flag, so the queue read still sees the queued rows; the flag then makes the queue read return nothing for the device. It is not one store transaction (OQ-497)."
+  - "Revoke runs the cascade inside the store's revoke transaction in both stores, so no command is accepted between the cascade and the revoke flag. The earlier API-level cascade is removed (OQ-497)."
   - "An idempotent replay is answered from the store before the presence and capability checks (`IDispatchStore.ReplayAsync`, OQ-498). A changed fingerprint is 409."
   - "A resync skips the retained history and resumes live from the newest retained identifier (OQ-499)."
   - "Presence and signal seams are registered in every environment by `AddApiCoordination`. The device store is registered in Development only; durable-store wiring stays open (OQ-500)."
@@ -79,15 +79,15 @@ The signed-in controller surface: owner-scoped device and command routes with id
 - Review correction: the command limiter is a burst of 10 and one token every two seconds, which sustains 30 per minute (D-35). The plan said this; the code did not match it until this correction.
 - Review correction: `ParseCommand` refuses `toolClasses` on any operation but `cowork.task`, and refuses `approval.decide` whose kind is `computer`. `cowork.task` may name `browser_use` and `computer_use`.
 - Review correction: command identifiers are ULIDs (D-17), not lowercase hexadecimal (OQ-502).
-- Review correction: the revoked-device filter in the queue read is in both stores. The Postgres replay query and the owned-count change compile but have not run against a database (OQ-507).
-- The API builds its `IDispatchStore`, `IDispatchPresence` and `IDispatchSignals` in Development only. The production wiring is open (OQ-500).
-- The revoke cascade runs before the revoke flag is set, not in one transaction (OQ-497).
+- Review correction: the revoked-device filter in the queue read is in both stores. The Postgres replay query, the owned-count change and the revoke transaction ran against PostgreSQL in the 74-05 revision (OQ-507).
+- The API builds IDispatchPresence and IDispatchSignals in every environment (AddApiCoordination). IDispatchStore is built in Development only; the production wiring is open (OQ-500).
+- The revoke cascade runs inside the store's revoke transaction, not from the API (OQ-497).
 - A replayed key is answered from the store before the presence and capability checks, so a presence outage does not change its original 202 (OQ-498).
 - The pairing limiter is 5 per hour, so the 21st-pairing test seeds 20 devices through the store and pairs once through the route.
 - The test host now registers the production authorization result handler, so an unlisted subject's 403 carries the `subject_not_allowed` problem as in production.
 
 ## Not verified here
-- `PostgresDispatchStore.ListCommandsAsync` and the Postgres revoke path run only against a PostgreSQL service. They compile (format pass), and their behaviour is covered by the shared contract only once a service runs.
+- The Postgres paths were run against a PostgreSQL service in the 74-05 revision: 15 of 15 dispatch Postgres tests pass (OQ-507).
 - Production presence and signal registration (OQ-500).
 - The live hub that appends feed events for presence and command changes is 74-05; until it lands the feed carries only what the store is given (the tests append directly).
 

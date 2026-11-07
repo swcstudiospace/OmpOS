@@ -17,7 +17,7 @@ public sealed class HandshakeTests
 {
     /// <summary>A plain request to the connect route is refused, because the route upgrades only a WebSocket request.</summary>
     [Fact]
-    public async Task A_plain_request_to_the_connect_route_is_426()
+    public async Task A_plain_request_to_the_connect_route_is_400_not_websocket()
     {
         var ct = TestContext.Current.CancellationToken;
         var host = await DispatchApiHost.StartAsync(ct).ConfigureAwait(true);
@@ -30,7 +30,24 @@ public sealed class HandshakeTests
 
         using var response = await client.SendAsync(request, ct).ConfigureAwait(true);
 
-        response.StatusCode.ShouldBe(HttpStatusCode.UpgradeRequired);
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    /// <summary>A hello that signs an origin other than the one the hub sent is closed 4002, so the origin is bound into the signed bytes (D-14).</summary>
+    [Fact]
+    public async Task A_hello_signed_for_another_origin_is_closed_4002()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var host = await DispatchApiHost.StartAsync(ct).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
+        var (deviceId, credential, key) = await PairWithKeyAsync(host, ct).ConfigureAwait(true);
+        using var key0 = key;
+        using var socket = await ConnectAsync(host, deviceId, credential, ct).ConfigureAwait(true);
+        var challenge = await ReceiveJsonAsync(socket, ct).ConfigureAwait(true);
+
+        await SendHelloAsync(socket, key, deviceId, challenge.GetProperty("nonce").GetString()!, "https://other.example", 0, ct).ConfigureAwait(true);
+
+        (await ReceiveCloseAsync(socket, ct).ConfigureAwait(true)).ShouldBe((WebSocketCloseStatus)4002);
     }
 
     /// <summary>A hello signed by the registered key, with the nonce the hub sent, is answered with the welcome that resumes from the device's sequence.</summary>

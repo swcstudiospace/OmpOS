@@ -78,6 +78,16 @@ internal sealed class DispatchOptionsValidator : IValidateOptions<DispatchOption
             failures.Add("Dispatch:Enabled refuses the in-memory IDispatchStore outside Development.");
         }
 
+        if (!_environment.IsDevelopment() && string.IsNullOrWhiteSpace(options.HubOrigin))
+        {
+            failures.Add("Dispatch:HubOrigin is required outside Development. The origin comes from configuration, never from a request header.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.HubOrigin) && !IsHubOrigin(options.HubOrigin, !_environment.IsDevelopment()))
+        {
+            failures.Add("Dispatch:HubOrigin must be an absolute origin with a scheme and host and no path; https outside Development.");
+        }
+
         RequirePrivateKey(options.Credentials.SigningKeyPem, "Dispatch:Credentials:SigningKeyPem", failures);
         RequirePrivateKey(options.CommandSigning.KeyPem, "Dispatch:CommandSigning:KeyPem", failures);
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
@@ -132,6 +142,21 @@ internal sealed class DispatchOptionsValidator : IValidateOptions<DispatchOption
             && !string.IsNullOrWhiteSpace(dragonfly)
             && string.Equals(sessions, "Postgres", StringComparison.OrdinalIgnoreCase)
             && !string.IsNullOrWhiteSpace(postgres);
+    }
+
+    private static bool IsHubOrigin(string value, bool requireHttps)
+    {
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri)
+            || !string.Equals(uri.AbsolutePath, "/", StringComparison.Ordinal)
+            || uri.Query.Length > 0
+            || uri.Fragment.Length > 0)
+        {
+            return false;
+        }
+
+        return requireHttps
+            ? string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal)
+            : string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal) || string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal);
     }
 
     private bool IsInMemoryCoordination()

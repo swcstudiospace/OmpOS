@@ -78,7 +78,7 @@ public sealed class PairingTests
             using var current = new HttpRequestMessage(HttpMethod.Get, $"/dispatch/devices/{deviceId}/connect");
             current.Headers.Authorization = new AuthenticationHeaderValue("Bearer", rotated.Token);
             using var accepted = await client.SendAsync(current, ct).ConfigureAwait(true);
-            accepted.StatusCode.ShouldBe(HttpStatusCode.UpgradeRequired);
+            accepted.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         }
     }
 

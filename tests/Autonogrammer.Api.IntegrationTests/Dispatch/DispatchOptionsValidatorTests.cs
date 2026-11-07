@@ -91,6 +91,47 @@ public sealed class DispatchOptionsValidatorTests
     }
 
     [Fact]
+    public void Outside_Development_a_missing_hub_origin_is_refused()
+    {
+        var result = Validator(Environments.Production).Validate(null, Enabled());
+
+        result.Failures!.ShouldContain(item => item.Contains("Dispatch:HubOrigin is required outside Development", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Outside_Development_a_plain_http_hub_origin_is_refused()
+    {
+        var options = Enabled();
+        options.HubOrigin = "http://hub.example";
+
+        var result = Validator(Environments.Production).Validate(null, options);
+
+        result.Failures!.ShouldContain(item => item.Contains("https outside Development", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_hub_origin_with_a_path_is_refused_in_Development()
+    {
+        var options = Enabled();
+        options.HubOrigin = "http://localhost:5000/hub";
+
+        var result = Validator(Environments.Development).Validate(null, options);
+
+        result.Failures!.ShouldContain(item => item.Contains("Dispatch:HubOrigin must be an absolute origin", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void An_http_origin_with_no_path_is_accepted_in_Development()
+    {
+        var options = Enabled();
+        options.HubOrigin = "http://localhost:5000";
+
+        var result = Validator(Environments.Development).Validate(null, options);
+
+        (result.Failures ?? Array.Empty<string>()).Any(item => item.Contains("HubOrigin", StringComparison.Ordinal)).ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task Disabled_middleware_answers_404_dispatch_disabled()
     {
         var called = false;

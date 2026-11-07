@@ -289,14 +289,61 @@ public sealed class PostgresDispatchStore : IDispatchStore
             var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
             await using (transaction.ConfigureAwait(false))
             {
+                // The device row lock is the one an enqueue takes too, so no command is accepted between this cascade and the flag (D-30).
+                if (!await LockOwnedDeviceAsync(connection, transaction, accountId, deviceId, cancellationToken).ConfigureAwait(false))
+                {
+                    return false;
+                }
+
+                await CancelOpenCommandsAsync(connection, transaction, accountId, deviceId, cancellationToken).ConfigureAwait(false);
                 using var command = PostgresSql.Create(connection, transaction);
-                command.CommandText = "UPDATE dispatch_devices SET revoked_at = @revoked_at, revoke_reason = @reason WHERE id = @id AND account_id = @account_id";
+                command.CommandText = "UPDATE dispatch_devices SET revoked_at = COALESCE(revoked_at, @revoked_at), revoke_reason = @reason, credential_jti = NULL WHERE id = @id AND account_id = @account_id";
                 command.Parameters.AddWithValue("id", deviceId);
                 command.Parameters.AddWithValue("account_id", accountId);
                 command.Parameters.AddWithValue("revoked_at", revokedAt);
                 command.Parameters.AddWithValue("reason", (object?)reason ?? DBNull.Value);
                 return await FinishUpdateAsync(connection, transaction, command, accountId, deviceId, "device.revoke", cancellationToken).ConfigureAwait(false);
             }
+        }
+    }
+
+    private static async Task<bool> LockOwnedDeviceAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, string accountId, string deviceId, CancellationToken cancellationToken)
+    {
+        using var command = PostgresSql.Create(connection, transaction);
+        command.CommandText = "SELECT 1 FROM dispatch_devices WHERE id = @id AND account_id = @account_id FOR UPDATE";
+        command.Parameters.AddWithValue("id", deviceId);
+        command.Parameters.AddWithValue("account_id", accountId);
+        return await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) is not null;
+    }
+
+    private async Task CancelOpenCommandsAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, string accountId, string deviceId, CancellationToken cancellationToken)
+    {
+        var open = new List<string>();
+        using (var select = PostgresSql.Create(connection, transaction))
+        {
+            select.CommandText = "SELECT id FROM dispatch_commands WHERE account_id = @account_id AND device_id = @device_id AND state NOT IN ('completed', 'failed', 'cancelled', 'expired') FOR UPDATE";
+            select.Parameters.AddWithValue("account_id", accountId);
+            select.Parameters.AddWithValue("device_id", deviceId);
+            var reader = await select.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using (reader.ConfigureAwait(false))
+            {
+                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    open.Add(reader.GetString(0));
+                }
+            }
+        }
+
+        foreach (var commandId in open)
+        {
+            var loaded = await ReadCommandAsync(connection, transaction, accountId, commandId, cancellationToken).ConfigureAwait(false);
+            if (loaded is null)
+            {
+                continue;
+            }
+
+            var desired = loaded.State is "queued" or "delivered" ? DispatchCommandState.Cancelled : DispatchCommandState.Failed;
+            await ApplyTransitionAsync(connection, transaction, accountId, commandId, desired, DispatchFailureReason.Revoked, loaded, cancellationToken).ConfigureAwait(false);
         }
     }
 

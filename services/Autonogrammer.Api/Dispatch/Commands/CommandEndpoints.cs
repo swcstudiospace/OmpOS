@@ -23,7 +23,7 @@ internal static class CommandEndpoints
     /// <summary>The page size of <c>GET /dispatch/commands</c> when none is given.</summary>
     public const int DefaultPageSize = 50;
 
-    /// <summary>The largest page the list returns, and the bound on the revoke cascade's read of recent commands.</summary>
+    /// <summary>The largest page the list returns.</summary>
     public const int MaxPageSize = 100;
 
     /// <summary>Maps the command routes onto the dispatch route group.</summary>
@@ -61,35 +61,6 @@ internal static class CommandEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .RequireRateLimiting(DispatchRateLimits.DispatchCommandRateLimiterPolicy.PolicyName);
-    }
-
-    /// <summary>
-    /// Cancels the queued and delivered commands of a revoked device and fails its other unfinished commands, each with reason <c>revoked</c>.
-    /// The store's compare-and-set makes a race a no-op. The read is bounded: queued commands come from the queue read, the rest from the newest page.
-    /// </summary>
-    /// <param name="store">The store.</param>
-    /// <param name="accountId">The owner.</param>
-    /// <param name="deviceId">The revoked device.</param>
-    /// <param name="cancellationToken">Cancels the work.</param>
-    /// <returns>A task that completes when every unfinished command has been visited.</returns>
-    public static async Task CancelForRevokeAsync(IDispatchStore store, string accountId, string deviceId, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(store);
-        var queued = await store.ListQueuedAfterAsync(accountId, deviceId, 0, cancellationToken).ConfigureAwait(false);
-        var recent = await store.ListCommandsAsync(accountId, deviceId, MaxPageSize, cancellationToken).ConfigureAwait(false);
-        var visited = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var row in queued.Concat(recent))
-        {
-            if (!visited.Add(row.CommandId) || IsFinished(row.State))
-            {
-                continue;
-            }
-
-            var target = row.State is DispatchCommandState.Queued or DispatchCommandState.Delivered
-                ? DispatchCommandState.Cancelled
-                : DispatchCommandState.Failed;
-            _ = await store.TryTransitionAsync(accountId, row.CommandId, row.State, target, DispatchFailureReason.Revoked, cancellationToken).ConfigureAwait(false);
-        }
     }
 
     private static async Task<Results<JsonHttpResult<DispatchCommandAcceptedResponse>, ProblemHttpResult>> EnqueueAsync(
@@ -411,9 +382,6 @@ internal static class CommandEndpoints
         ExpiresAt = row.ExpiresAt.ToUnixTimeSeconds(),
         Reason = row.Reason,
     };
-
-    private static bool IsFinished(DispatchCommandState state) =>
-        state is DispatchCommandState.Completed or DispatchCommandState.Failed or DispatchCommandState.Cancelled or DispatchCommandState.Expired;
 
     private static bool IsJson(byte[] decoded)
     {
