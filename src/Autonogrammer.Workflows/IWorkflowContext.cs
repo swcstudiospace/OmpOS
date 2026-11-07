@@ -9,9 +9,6 @@ namespace Autonogrammer.Workflows;
 /// </remarks>
 public interface IWorkflowContext
 {
-    /// <summary>Gets the current UTC time (deterministic in replay).</summary>
-    DateTimeOffset UtcNow { get; }
-
     /// <summary>Generates a new deterministic GUID.</summary>
     Guid NewGuid();
 

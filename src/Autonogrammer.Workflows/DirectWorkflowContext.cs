@@ -4,7 +4,7 @@ namespace Autonogrammer.Workflows;
 /// Direct (real-time) implementation of <see cref="IWorkflowContext"/>.
 /// </summary>
 /// <remarks>
-/// Uses <see cref="DateTimeOffset.UtcNow"/>, <see cref="Guid.NewGuid()"/>, and
+/// Uses <see cref="Guid.NewGuid()"/> and
 /// <see cref="Random.Shared"/> for non-deterministic execution. Suitable for
 /// the direct runner where replay determinism is not required. <see cref="DelayAsync"/>
 /// carries the direct runner's retry backoff (ADR-0003, Q-WF-RETRY).
@@ -12,9 +12,6 @@ namespace Autonogrammer.Workflows;
 public sealed class DirectWorkflowContext : IWorkflowContext
 {
     private readonly Random _random = Random.Shared;
-
-    /// <inheritdoc />
-    public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
 
     /// <inheritdoc />
     public Guid NewGuid() => Guid.NewGuid();
