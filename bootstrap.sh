@@ -78,10 +78,11 @@ cleanup() {
 trap cleanup EXIT
 TEST_SERVICES_ENV="$(bash scripts/test-services.sh up)"
 source "$TEST_SERVICES_ENV"
-# AUTONOGRAMMER_TEST_PARALLEL_MODULES caps how many test modules run at once (CI uses 2); unset leaves the runner's default. A shared or loaded host
-# sets it so the assemblies that drive a UI thread are not starved by the other modules.
+# AUTONOGRAMMER_TEST_PARALLEL_MODULES caps how many test modules run at once. It defaults to 2, the cap CI uses, because a shared or loaded host
+# needs the cap: assemblies that drive a UI thread are otherwise starved by the other modules. Set it to a number to change the cap.
 test_modules=()
-if [ -n "${AUTONOGRAMMER_TEST_PARALLEL_MODULES:-}" ]; then test_modules=(--max-parallel-test-modules "$AUTONOGRAMMER_TEST_PARALLEL_MODULES"); fi
+AUTONOGRAMMER_TEST_PARALLEL_MODULES="${AUTONOGRAMMER_TEST_PARALLEL_MODULES:-2}"
+test_modules=(--max-parallel-test-modules "$AUTONOGRAMMER_TEST_PARALLEL_MODULES")
 dotnet test Autonogrammer.Linux.slnf -c Release --no-build "${test_modules[@]+"${test_modules[@]}"}" -- --filter-not-trait "Category=Live"
 dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore
 

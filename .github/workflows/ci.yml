@@ -131,7 +131,7 @@ jobs:
       - name: Test (throwaway TimescaleDB and Dragonfly for the API, session-store and coordination tests)
         run: |
           source "$TEST_SERVICES_ENV"
-          dotnet test Autonogrammer.Linux.slnf -c Release --no-build --max-parallel-test-modules 2 --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults
+          dotnet test Autonogrammer.Linux.slnf -c Release --no-build --max-parallel-test-modules 2 --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults -- --filter-not-trait "Category=Live"
       - name: Stop test services
         if: always()
         run: |
