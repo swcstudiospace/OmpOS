@@ -82,7 +82,6 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
     private int _started;
     private string? _knownStored;
     private Task<AuthResult<AuthUnit>>? _flight;
-    private Task? _retryLoop;
 
     /// <summary>Creates a manager. Call <see cref="StartAsync"/> once to restore a stored session.</summary>
     /// <param name="store">Where the refresh token is kept between runs.</param>
@@ -133,6 +132,9 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
     /// <returns>The outcome of the startup refresh.</returns>
     internal Task<AuthResult<AuthUnit>> StartupRefreshAsync() =>
         StartupRefresh ?? Task.FromResult(AuthResult.Fail<AuthUnit>(AuthErrorKind.SessionEnded));
+
+    /// <summary>Gets the offline retry loop that the last failed refresh started, or null. It completes when the retry window ends, so tests await it rather than infer that the retries stopped.</summary>
+    internal Task? OfflineRetryLoop { get; private set; }
 
     /// <summary>Gets the access token callers would be handed right now, or null. Tests read it to prove the order of store write and publication.</summary>
     internal SecretString? CurrentAccessToken => Volatile.Read(ref _live)?.AccessToken;
@@ -643,12 +645,12 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
     {
         lock (_flightGate)
         {
-            if (_retryLoop is { IsCompleted: false })
+            if (OfflineRetryLoop is { IsCompleted: false })
             {
                 return;
             }
 
-            _retryLoop = OfflineRetryLoopAsync(_lifetime.Token);
+            OfflineRetryLoop = OfflineRetryLoopAsync(_lifetime.Token);
         }
 
         if (_logger is not null)

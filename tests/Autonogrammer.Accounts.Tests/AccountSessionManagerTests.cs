@@ -232,18 +232,13 @@ public sealed class AccountSessionManagerTests
         Task<AuthResult<SecretString>> first = harness.Manager.GetAccessTokenAsync(Token).AsTask();
         await harness.Time.AdvanceUntilAsync(() => first.IsCompleted, TimeSpan.FromSeconds(1)).ConfigureAwait(true);
         harness.Manager.State.Connectivity.ShouldBe(AccountConnectivity.Offline);
-        for (int i = 0; i < 40; i++)
-        {
-            harness.Time.Advance(TimeSpan.FromMinutes(1));
-            await Task.Delay(5, Token).ConfigureAwait(true);
-        }
+
+        Task retries = harness.Manager.OfflineRetryLoop.ShouldNotBeNull("the failed refresh starts the offline retries");
+        await harness.Time.AdvanceUntilAsync(() => retries.IsCompleted, TimeSpan.FromMinutes(1)).ConfigureAwait(true);
+        await retries.WaitAsync(TimeSpan.FromSeconds(30), Token).ConfigureAwait(true);
 
         int settled = harness.Handler.Count("token:refresh");
-        for (int i = 0; i < 20; i++)
-        {
-            harness.Time.Advance(TimeSpan.FromMinutes(1));
-            await Task.Delay(5, Token).ConfigureAwait(true);
-        }
+        harness.Time.Advance(TimeSpan.FromMinutes(20));
 
         settled.ShouldBeGreaterThan(2);
         settled.ShouldBeLessThan(14);
