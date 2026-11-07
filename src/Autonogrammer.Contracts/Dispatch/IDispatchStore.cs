@@ -99,6 +99,14 @@ public interface IDispatchStore
     /// <returns>Queued commands. Empty when the account does not own the device.</returns>
     ValueTask<IReadOnlyList<DispatchCommandRecord>> ListQueuedAfterAsync(string accountId, string deviceId, long afterSeq, CancellationToken cancellationToken);
 
+    /// <summary>Lists the account's commands in every state, newest first, optionally for one device. Never another account's.</summary>
+    /// <param name="accountId">The account.</param>
+    /// <param name="deviceId">The device, or null for every device the account owns.</param>
+    /// <param name="limit">The row cap, from 1 to 100.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The account's commands. Never another account's.</returns>
+    ValueTask<IReadOnlyList<DispatchCommandRecord>> ListCommandsAsync(string accountId, string? deviceId, int limit, CancellationToken cancellationToken);
+
     /// <summary>Compare-and-set against <see cref="DispatchTransitions"/>. An illegal edge leaves the row unchanged.</summary>
     /// <param name="accountId">The account.</param>
     /// <param name="commandId">The command.</param>

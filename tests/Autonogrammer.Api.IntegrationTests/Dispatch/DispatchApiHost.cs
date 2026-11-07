@@ -54,8 +54,9 @@ internal sealed class DispatchApiHost : IAsyncDisposable
     /// <param name="cancellationToken">Cancels startup.</param>
     /// <param name="enabled">Whether <c>Dispatch:Enabled</c> is true.</param>
     /// <param name="configure">Extra configuration.</param>
+    /// <param name="registerServices">Extra service registrations, applied after the dispatch services; a test replaces a seam here.</param>
     /// <returns>The host.</returns>
-    public static async Task<DispatchApiHost> StartAsync(CancellationToken cancellationToken, bool enabled = true, Action<Dictionary<string, string?>>? configure = null)
+    public static async Task<DispatchApiHost> StartAsync(CancellationToken cancellationToken, bool enabled = true, Action<Dictionary<string, string?>>? configure = null, Action<IServiceCollection>? registerServices = null)
     {
         using var credential = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         using var command = ECDsa.Create(ECCurve.NamedCurves.nistP256);
@@ -80,10 +81,12 @@ internal sealed class DispatchApiHost : IAsyncDisposable
         builder.AddHostingHardening();
         builder.Services.AddSingleton<IOptions<ApiAuthOptions>>(Microsoft.Extensions.Options.Options.Create(auth));
         builder.Services.AddSingleton<IAuthorizationHandler, AllowedSubjectAuthorizationHandler>();
+        builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, ApiAuthorizationResultHandler>();
         builder.Services.AddAuthentication(DispatchTestAuthHandler.SchemeName)
             .AddScheme<AuthenticationSchemeOptions, DispatchTestAuthHandler>(DispatchTestAuthHandler.SchemeName, static _ => { });
         builder.Services.AddAuthorizationBuilder().SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().AddRequirements(new AllowedSubjectRequirement()).Build());
         builder.Services.AddDispatchServices(builder.Environment);
+        registerServices?.Invoke(builder.Services);
         builder.Services.AddAutonogrammerOpenApi();
         builder.Services.AddRateLimiter(_ => { });
 

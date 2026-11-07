@@ -5241,6 +5241,47 @@
             "description": "The request carries no valid bearer token."
           }
         }
+      },
+      "get": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Lists the caller's devices with capability snapshots, presence and last-seen time.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchDeviceListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Revokes every device the caller owns.",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
       }
     },
     "/dispatch/devices/{id}/connect": {
@@ -5296,6 +5337,401 @@
             "DispatchDevice": [ ]
           }
         ]
+      }
+    },
+    "/dispatch/devices/{id}": {
+      "get": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Reads one device the caller owns.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchDeviceDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Renames a device the caller owns.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameDispatchDeviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Revokes one device; its unfinished commands are cancelled or failed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/dispatch/devices/{id}/commands": {
+      "post": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Queues a command for a device the caller owns.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDispatchCommandRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchCommandAcceptedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/dispatch/commands": {
+      "get": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Lists the caller's commands, newest first.",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchCommandListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/dispatch/commands/{id}": {
+      "get": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Reads one command the caller owns.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchCommandDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/dispatch/commands/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Cancels a command that has not finished.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchCommandDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
       }
     }
   },
@@ -7429,6 +7865,36 @@
         },
         "description": "The body of `POST /cloud/agents/{id}/pull-request`."
       },
+      "CreateDispatchCommandRequest": {
+        "required": [
+          "capability",
+          "op",
+          "payload"
+        ],
+        "type": "object",
+        "properties": {
+          "capability": {
+            "description": "Command capability. Tool-class flags are refused.",
+            "$ref": "#/components/schemas/DispatchCapability"
+          },
+          "op": {
+            "description": "Closed operation.",
+            "$ref": "#/components/schemas/DispatchOp"
+          },
+          "payload": {
+            "type": "string",
+            "description": "Base64url payload."
+          },
+          "queueIfOffline": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "When false, an offline device is refused instead of queued."
+          }
+        },
+        "description": "Body of `POST /dispatch/devices/{id}/commands`."
+      },
       "CreateSessionRequest": {
         "type": "object",
         "properties": {
@@ -7770,6 +8236,249 @@
           }
         },
         "description": "One capability row the desktop reports at pairing and in every hello."
+      },
+      "DispatchCommandAcceptedResponse": {
+        "required": [
+          "commandId",
+          "seq",
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "description": "Command identifier."
+          },
+          "seq": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Per-device sequence.",
+            "format": "int64"
+          },
+          "state": {
+            "type": "string",
+            "description": "Hub state wire name at accept time."
+          }
+        },
+        "description": "202 body of an accepted or replayed command. The replay returns this same shape and the same command id."
+      },
+      "DispatchCommandDto": {
+        "required": [
+          "commandId",
+          "deviceId",
+          "seq",
+          "state",
+          "capability",
+          "op",
+          "issuedAt",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "description": "Command identifier."
+          },
+          "deviceId": {
+            "type": "string",
+            "description": "Device identifier."
+          },
+          "seq": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Per-device sequence.",
+            "format": "int64"
+          },
+          "state": {
+            "description": "Hub state.",
+            "$ref": "#/components/schemas/DispatchCommandState"
+          },
+          "capability": {
+            "description": "Command capability.",
+            "$ref": "#/components/schemas/DispatchCapability"
+          },
+          "op": {
+            "description": "Operation.",
+            "$ref": "#/components/schemas/DispatchOp"
+          },
+          "issuedAt": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Issued-at Unix seconds.",
+            "format": "int64"
+          },
+          "expiresAt": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Expires-at Unix seconds.",
+            "format": "int64"
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Failure reason, when the state carries one.",
+                "$ref": "#/components/schemas/DispatchFailureReason"
+              }
+            ]
+          }
+        },
+        "description": "One command row returned to its owner."
+      },
+      "DispatchCommandListResponse": {
+        "required": [
+          "commands"
+        ],
+        "type": "object",
+        "properties": {
+          "commands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DispatchCommandDto"
+            },
+            "description": "Commands owned by the caller."
+          }
+        },
+        "description": "Body of `GET /dispatch/commands`."
+      },
+      "DispatchCommandState": {
+        "enum": [
+          "queued",
+          "delivered",
+          "received",
+          "awaiting_approval",
+          "accepted",
+          "running",
+          "completed",
+          "failed",
+          "cancelled",
+          "expired"
+        ],
+        "description": "Hub-side command states. The hub never marks DispatchCommandState.Completed on its own."
+      },
+      "DispatchDeviceDto": {
+        "required": [
+          "deviceId",
+          "name",
+          "capabilities"
+        ],
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "description": "Device identifier."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "revokedAt": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Revocation time, Unix seconds, when revoked.",
+            "format": "int64"
+          },
+          "lastSeenAt": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Last seen time, Unix seconds.",
+            "format": "int64"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DispatchCapabilitySnapshot"
+            },
+            "description": "Newest capability snapshot."
+          },
+          "pairedSessionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Sign-in session recorded at pairing."
+          },
+          "presence": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Presence read through the presence seam: `online`, `offline` or `unknown`. Unknown is never offline."
+          }
+        },
+        "description": "One device row returned to its owner."
+      },
+      "DispatchDeviceListResponse": {
+        "required": [
+          "devices"
+        ],
+        "type": "object",
+        "properties": {
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DispatchDeviceDto"
+            },
+            "description": "Devices owned by the caller."
+          }
+        },
+        "description": "Body of `GET /dispatch/devices`."
+      },
+      "DispatchFailureReason": {
+        "enum": [
+          "expired",
+          "revoked",
+          "signature_invalid",
+          "unsupported_version",
+          "unsupported_operation",
+          "capability_disabled",
+          "approval_denied",
+          "approval_timeout",
+          "policy_denied",
+          "payload_invalid",
+          "payload_too_large",
+          "device_busy",
+          "device_restarted",
+          "execution_error",
+          "timeout",
+          "cancelled_by_user",
+          "internal",
+          null
+        ]
+      },
+      "DispatchOp": {
+        "enum": [
+          "session.list",
+          "session.steer",
+          "session.cancel",
+          "approval.decide",
+          "code.prompt",
+          "cowork.task",
+          "command.cancel"
+        ],
+        "description": "Closed command operations for relay protocol version 1. There is no `computer.*` operation."
       },
       "GsdPhaseInfo": {
         "required": [
@@ -8713,6 +9422,19 @@
           "unverified"
         ],
         "description": "How far the research verified a catalogue provider."
+      },
+      "RenameDispatchDeviceRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "New display name."
+          }
+        },
+        "description": "Body of `PATCH /dispatch/devices/{id}`."
       },
       "RenderTicketDocument": {
         "required": [

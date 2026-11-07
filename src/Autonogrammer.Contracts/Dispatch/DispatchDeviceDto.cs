@@ -20,4 +20,7 @@ public sealed record DispatchDeviceDto
 
     /// <summary>Sign-in session recorded at pairing.</summary>
     public string? PairedSessionId { get; init; }
+
+    /// <summary>Presence read through the presence seam: <c>online</c>, <c>offline</c> or <c>unknown</c>. Unknown is never offline.</summary>
+    public string? Presence { get; init; }
 }

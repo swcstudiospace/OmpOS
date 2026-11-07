@@ -1,10 +1,12 @@
 using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Autonogrammer.Api.Dispatch.Commands;
 using Autonogrammer.Api.Hosting;
 using Autonogrammer.Api.Security;
 using Autonogrammer.Api.Services;
 using Autonogrammer.Contracts.Dispatch;
+using Autonogrammer.Coordination;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -45,6 +47,37 @@ internal static partial class DeviceEndpoints
             .RequireAuthorization(DispatchDeviceScheme.PolicyName)
             .RequireRateLimiting(DispatchRateLimits.DispatchConnectRateLimiterPolicy.PolicyName)
             .WithRequestTimeout(HostingPolicies.NoTimeout);
+        routes.MapGet("/dispatch/devices", ListDevicesAsync)
+            .WithTags("Dispatch")
+            .WithSummary("Lists the caller's devices with capability snapshots, presence and last-seen time.")
+            .Produces<DispatchDeviceListResponse>(StatusCodes.Status200OK)
+            .RequireRateLimiting(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName);
+        routes.MapGet("/dispatch/devices/{id}", GetDeviceAsync)
+            .WithTags("Dispatch")
+            .WithSummary("Reads one device the caller owns.")
+            .Produces<DispatchDeviceDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireRateLimiting(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName);
+        routes.MapPatch("/dispatch/devices/{id}", RenameDeviceAsync)
+            .WithTags("Dispatch")
+            .WithSummary("Renames a device the caller owns.")
+            .Accepts<RenameDispatchDeviceRequest>("application/json")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireRateLimiting(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName);
+        routes.MapDelete("/dispatch/devices/{id}", RevokeDeviceAsync)
+            .WithTags("Dispatch")
+            .WithSummary("Revokes one device; its unfinished commands are cancelled or failed.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireRateLimiting(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName);
+        routes.MapDelete("/dispatch/devices", RevokeAllDevicesAsync)
+            .WithTags("Dispatch")
+            .WithSummary("Revokes every device the caller owns.")
+            .Produces(StatusCodes.Status204NoContent)
+            .RequireRateLimiting(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName);
+        CommandEndpoints.Map(routes);
         return endpoints;
     }
 
@@ -412,4 +445,131 @@ internal static partial class DeviceEndpoints
     internal sealed partial class DispatchApiJsonContext : JsonSerializerContext
     {
     }
+
+    private static async Task<JsonHttpResult<DispatchDeviceListResponse>> ListDevicesAsync(
+        IDispatchStore store,
+        IDispatchPresence presence,
+        IUserContext user,
+        CancellationToken cancellationToken)
+    {
+        var rows = await store.ListDevicesAsync(user.Name, cancellationToken).ConfigureAwait(false);
+        var devices = new List<DispatchDeviceDto>(rows.Count);
+        foreach (var row in rows)
+        {
+            devices.Add(await ToDtoAsync(presence, row, cancellationToken).ConfigureAwait(false));
+        }
+
+        return TypedResults.Json(new DispatchDeviceListResponse { Devices = devices }, DispatchJsonContext.Default.DispatchDeviceListResponse);
+    }
+
+    private static async Task<Results<JsonHttpResult<DispatchDeviceDto>, ProblemHttpResult>> GetDeviceAsync(
+        string id,
+        IDispatchStore store,
+        IDispatchPresence presence,
+        IUserContext user,
+        CancellationToken cancellationToken)
+    {
+        var row = await store.GetDeviceAsync(user.Name, id, cancellationToken).ConfigureAwait(false);
+        if (row is null)
+        {
+            return DeviceNotFound();
+        }
+
+        return TypedResults.Json(await ToDtoAsync(presence, row, cancellationToken).ConfigureAwait(false), DispatchJsonContext.Default.DispatchDeviceDto);
+    }
+
+    private static async Task<Results<NoContent, ProblemHttpResult>> RenameDeviceAsync(
+        string id,
+        HttpContext http,
+        IDispatchStore store,
+        IUserContext user,
+        CancellationToken cancellationToken)
+    {
+        var body = await http.Request.ReadFromJsonAsync(DispatchJsonContext.Default.RenameDispatchDeviceRequest, cancellationToken).ConfigureAwait(false);
+        var name = (body?.Name ?? string.Empty).Trim();
+        if (name.Length is < 1 or > 64)
+        {
+            return Problem(StatusCodes.Status400BadRequest, "invalid_name", "Invalid device name.", "name must be 1 to 64 characters.");
+        }
+
+        if (!await store.RenameDeviceAsync(user.Name, id, name, cancellationToken).ConfigureAwait(false))
+        {
+            return DeviceNotFound();
+        }
+
+        return TypedResults.NoContent();
+    }
+
+    private static async Task<Results<NoContent, ProblemHttpResult>> RevokeDeviceAsync(
+        string id,
+        IDispatchStore store,
+        IDispatchPresence presence,
+        IDispatchSignals signals,
+        IUserContext user,
+        TimeProvider time,
+        CancellationToken cancellationToken)
+    {
+        if (!await RevokeOwnedAsync(store, presence, signals, user.Name, id, time, cancellationToken).ConfigureAwait(false))
+        {
+            return DeviceNotFound();
+        }
+
+        return TypedResults.NoContent();
+    }
+
+    private static async Task<NoContent> RevokeAllDevicesAsync(
+        IDispatchStore store,
+        IDispatchPresence presence,
+        IDispatchSignals signals,
+        IUserContext user,
+        TimeProvider time,
+        CancellationToken cancellationToken)
+    {
+        var rows = await store.ListDevicesAsync(user.Name, cancellationToken).ConfigureAwait(false);
+        foreach (var row in rows.Where(static row => row.RevokedAt is null))
+        {
+            _ = await RevokeOwnedAsync(store, presence, signals, user.Name, row.DeviceId, time, cancellationToken).ConfigureAwait(false);
+        }
+
+        return TypedResults.NoContent();
+    }
+
+    /// <summary>Revokes one device the owner holds, then cancels or fails its unfinished commands, drops its presence key and wakes its feed.</summary>
+    private static async Task<bool> RevokeOwnedAsync(IDispatchStore store, IDispatchPresence presence, IDispatchSignals signals, string owner, string deviceId, TimeProvider time, CancellationToken cancellationToken)
+    {
+        if (!await store.RevokeDeviceAsync(owner, deviceId, "revoked", time.GetUtcNow(), cancellationToken).ConfigureAwait(false))
+        {
+            return false;
+        }
+
+        await CommandEndpoints.CancelForRevokeAsync(store, owner, deviceId, cancellationToken).ConfigureAwait(false);
+        await presence.RemoveAsync(owner, deviceId, cancellationToken).ConfigureAwait(false);
+        await signals.PublishAsync(deviceId, cancellationToken).ConfigureAwait(false);
+        return true;
+    }
+
+    private static async Task<DispatchDeviceDto> ToDtoAsync(IDispatchPresence presence, DispatchDeviceRecord row, CancellationToken cancellationToken)
+    {
+        var state = await presence.GetAsync(row.AccountId, row.DeviceId, cancellationToken).ConfigureAwait(false);
+        return new DispatchDeviceDto
+        {
+            DeviceId = row.DeviceId,
+            Name = row.Name,
+            RevokedAt = row.RevokedAt?.ToUnixTimeSeconds(),
+            LastSeenAt = row.LastSeenAt?.ToUnixTimeSeconds(),
+            Capabilities = row.Capabilities,
+            PairedSessionId = row.PairedSessionId,
+            Presence = PresenceWire(state.State),
+        };
+    }
+
+    private static string PresenceWire(DispatchPresence.Status status) => status switch
+    {
+        DispatchPresence.Status.Online => "online",
+        DispatchPresence.Status.Offline => "offline",
+        _ => "unknown",
+    };
+
+    private static ProblemHttpResult DeviceNotFound() =>
+        Problem(StatusCodes.Status404NotFound, "device_not_found", "Device not found.", "No device with that identifier is paired to this account.");
 }

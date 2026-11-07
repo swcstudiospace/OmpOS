@@ -1,7 +1,9 @@
 using Autonogrammer.Api.Accounts;
 using Autonogrammer.Api.Dispatch.Devices;
 using Autonogrammer.Api.Dispatch.Store;
+using Autonogrammer.Api.Security;
 using Autonogrammer.Contracts.Dispatch;
+using Autonogrammer.Coordination;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -27,8 +29,9 @@ internal static class DispatchModule
 
         _ = services.AddOptions<DispatchOptions>().BindConfiguration(DispatchOptions.SectionName).ValidateOnStart();
         services.AddSingleton<IValidateOptions<DispatchOptions>, DispatchOptionsValidator>();
-        _ = services.ConfigureHttpJsonOptions(static options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, DeviceEndpoints.DispatchApiJsonContext.Default));
+        AddDispatchJson(services);
         services.TryAddSingleton(TimeProvider.System);
+        AddCallerIdentity(services);
         services.AddSingleton<DeviceEndpoints.DispatchEndpointsMapped>();
         services.AddSingleton<IAccountFeature, DispatchFeature>();
         services.AddSingleton<DispatchMetrics>();
@@ -42,6 +45,7 @@ internal static class DispatchModule
             services.TryAddSingleton<IDispatchStore>(static provider => new InMemoryDispatchStore(
                 provider.GetRequiredService<DispatchStoreLimits>(),
                 provider.GetRequiredService<TimeProvider>()));
+            AddInMemoryCoordination(services);
         }
 
         services.AddSingleton<DeviceCredentialIssuer>();
@@ -56,6 +60,8 @@ internal static class DispatchModule
 
         services.TryAddKeyedSingleton<IRateLimiterPolicy<string>, DispatchRateLimits.DispatchPairingRateLimiterPolicy>(DispatchRateLimits.DispatchPairingRateLimiterPolicy.PolicyName);
         services.TryAddKeyedSingleton<IRateLimiterPolicy<string>, DispatchRateLimits.DispatchConnectRateLimiterPolicy>(DispatchRateLimits.DispatchConnectRateLimiterPolicy.PolicyName);
+        services.TryAddKeyedSingleton<IRateLimiterPolicy<string>, DispatchRateLimits.DispatchCommandRateLimiterPolicy>(DispatchRateLimits.DispatchCommandRateLimiterPolicy.PolicyName);
+        services.TryAddKeyedSingleton<IRateLimiterPolicy<string>, DispatchRateLimits.DispatchReadRateLimiterPolicy>(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName);
         _ = services.AddOptions<RateLimiterOptions>().Configure<IServiceProvider>(static (options, provider) =>
         {
             options.AddPolicy(
@@ -64,8 +70,41 @@ internal static class DispatchModule
             options.AddPolicy(
                 DispatchRateLimits.DispatchConnectRateLimiterPolicy.PolicyName,
                 provider.GetRequiredKeyedService<IRateLimiterPolicy<string>>(DispatchRateLimits.DispatchConnectRateLimiterPolicy.PolicyName));
+            options.AddPolicy(
+                DispatchRateLimits.DispatchCommandRateLimiterPolicy.PolicyName,
+                provider.GetRequiredKeyedService<IRateLimiterPolicy<string>>(DispatchRateLimits.DispatchCommandRateLimiterPolicy.PolicyName));
+            options.AddPolicy(
+                DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName,
+                provider.GetRequiredKeyedService<IRateLimiterPolicy<string>>(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName));
         });
         return services;
+    }
+
+    /// <summary>Registers the caller identity that owner-scoped dispatch routes read, the same registration the API uses for its own routes.</summary>
+    /// <param name="services">The service collection.</param>
+    private static void AddCallerIdentity(IServiceCollection services)
+    {
+        services.AddHttpContextAccessor();
+        services.TryAddScoped<IUserContext, AuthenticatedUserContext>();
+    }
+
+    /// <summary>Registers the in-memory presence and signal seams for Development, beside the in-memory store.</summary>
+    /// <param name="services">The service collection.</param>
+    private static void AddInMemoryCoordination(IServiceCollection services)
+    {
+        services.TryAddSingleton<IDispatchPresence>(static provider => new InMemoryDispatchPresence(provider.GetRequiredService<TimeProvider>()));
+        services.TryAddSingleton<IDispatchSignals, InMemoryDispatchSignals>();
+    }
+
+    /// <summary>Puts the dispatch JSON contexts first in the HTTP JSON chain, so the controller and device bodies serialise and the OpenAPI document can describe them.</summary>
+    /// <param name="services">The service collection.</param>
+    private static void AddDispatchJson(IServiceCollection services)
+    {
+        _ = services.ConfigureHttpJsonOptions(static options =>
+        {
+            options.SerializerOptions.TypeInfoResolverChain.Insert(0, DispatchJsonContext.Default);
+            options.SerializerOptions.TypeInfoResolverChain.Insert(0, DeviceEndpoints.DispatchApiJsonContext.Default);
+        });
     }
 
     /// <summary>The account-menu feature key <c>dispatch</c>. It is listed only while <c>Dispatch:Enabled</c> is true.</summary>

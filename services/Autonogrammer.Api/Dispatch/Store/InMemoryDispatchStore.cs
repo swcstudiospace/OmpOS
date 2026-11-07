@@ -296,6 +296,32 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
     }
 
     /// <inheritdoc />
+    public ValueTask<IReadOnlyList<DispatchCommandRecord>> ListCommandsAsync(string accountId, string? deviceId, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, 100);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            var list = new List<DispatchCommandRecord>();
+            foreach (var row in _commands.Values)
+            {
+                if (string.Equals(row.AccountId, accountId, StringComparison.Ordinal)
+                    && (deviceId is null || string.Equals(row.DeviceId, deviceId, StringComparison.Ordinal)))
+                {
+                    list.Add(row.ToRecord());
+                }
+            }
+
+            list.Sort(static (left, right) => right.IssuedAt != left.IssuedAt
+                ? right.IssuedAt.CompareTo(left.IssuedAt)
+                : string.CompareOrdinal(right.CommandId, left.CommandId));
+            return ValueTask.FromResult<IReadOnlyList<DispatchCommandRecord>>(list.Take(limit).ToList());
+        }
+    }
+
+    /// <inheritdoc />
     public ValueTask<DispatchTransitionResult> TryTransitionAsync(
         string accountId,
         string commandId,

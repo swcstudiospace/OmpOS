@@ -159,6 +159,15 @@ public sealed class PostgresDispatchStore : IDispatchStore
     }
 
     /// <inheritdoc />
+    public ValueTask<IReadOnlyList<DispatchCommandRecord>> ListCommandsAsync(string accountId, string? deviceId, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, 100);
+        return new ValueTask<IReadOnlyList<DispatchCommandRecord>>(_pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: true, token => ListCommandsCoreAsync(accountId, deviceId, limit, token), cancellationToken));
+    }
+
+    /// <inheritdoc />
     public ValueTask<DispatchTransitionResult> TryTransitionAsync(string accountId, string commandId, DispatchCommandState expected, DispatchCommandState desired, DispatchFailureReason? reason, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(accountId);
@@ -432,6 +441,30 @@ public sealed class PostgresDispatchStore : IDispatchStore
             command.Parameters.AddWithValue("state", Queued);
             command.Parameters.AddWithValue("after", afterSeq);
             command.Parameters.AddWithValue("now", _timeProvider.GetUtcNow());
+            var list = new List<DispatchCommandRecord>();
+            var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using (reader.ConfigureAwait(false))
+            {
+                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    list.Add(ReadCommand(reader, accountId).ToRecord());
+                }
+            }
+
+            return list;
+        }
+    }
+
+    private async Task<IReadOnlyList<DispatchCommandRecord>> ListCommandsCoreAsync(string accountId, string? deviceId, int limit, CancellationToken cancellationToken)
+    {
+        var connection = await OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            using var command = PostgresSql.Create(connection, null);
+            command.CommandText = CommandSelect + " WHERE account_id = @account_id AND (@device_id::text IS NULL OR device_id = @device_id) ORDER BY created_at DESC, id DESC LIMIT @limit";
+            command.Parameters.AddWithValue("account_id", accountId);
+            command.Parameters.AddWithValue("device_id", (object?)deviceId ?? DBNull.Value);
+            command.Parameters.AddWithValue("limit", limit);
             var list = new List<DispatchCommandRecord>();
             var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
             await using (reader.ConfigureAwait(false))
