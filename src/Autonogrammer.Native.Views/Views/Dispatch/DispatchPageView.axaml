@@ -7,6 +7,10 @@
 
   <UserControl.Styles>
     <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+    <Style Selector="ToggleSwitch.dispatch-switch">
+      <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.TargetMin}" />
+      <Setter Property="MinWidth" Value="{DynamicResource Autonogrammer.Size.TargetMin}" />
+    </Style>
   </UserControl.Styles>
 
   <!-- The Dispatch page. The status line is polite, the problems line is assertive; the rows, the switches and the pairing text follow in XAML order. -->
@@ -77,9 +81,9 @@
     <StackPanel x:Name="PairControls"
                 Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
       <ToggleSwitch x:Name="PauseToggle"
+                    Classes="dispatch-switch"
                     Content="{x:Static dispatch:DispatchCopy.PauseLabel}"
                     AutomationProperties.Name="{x:Static dispatch:DispatchCopy.PauseLabel}"
-                    MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
                     IsVisible="False" />
       <StackPanel x:Name="CapabilityList"
                   Spacing="{DynamicResource Autonogrammer.Gap.Sm}" />

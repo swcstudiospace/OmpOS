@@ -78,6 +78,7 @@ internal partial class DispatchPageView : UserControl
     {
         var label = DispatchCopy.CapabilityLabel(policy.Capability);
         var toggle = new ToggleSwitch { Content = label, IsChecked = policy.Enabled };
+        toggle.Classes.Add("dispatch-switch");
         AutomationProperties.SetName(toggle, label);
         toggle.PropertyChanged += (_, args) =>
         {
