@@ -9,8 +9,9 @@ namespace Autonogrammer.Native.Tests.Theme;
 
 /// <summary>
 /// No view holds a colour literal. A colour belongs in <c>Themes/AutonogrammerTokens.axaml</c>, where the theme variant can
-/// change it; a view refers to it with <c>{DynamicResource ...}</c>. The scan reads <c>src/Autonogrammer.Native.Views/Views</c> as
-/// text, so no Avalonia runtime is started.
+/// change it; a view refers to it with <c>{DynamicResource ...}</c>. The scan reads the markup of every head as text, so no
+/// Avalonia runtime is started: the <c>.axaml</c> files under <c>src/Autonogrammer.Native.Views</c> outside <c>Themes/</c>,
+/// plus the desktop and Android head markup.
 /// </summary>
 /// <remarks>
 /// The rule. An attribute is colour-typed when its local name ends in <c>Brush</c> or is one of <c>Background</c>,
@@ -29,7 +30,14 @@ public sealed class ColourLiteralTests
     /// <summary>The most allowlist rows the repository may carry. It may only shrink; it is zero because no view holds a literal.</summary>
     private const int AllowlistBaseline = 0;
 
-    private const string ViewsDirectory = "src/Autonogrammer.Native.Views/Views";
+    private const string NativeViewsRoot = "src/Autonogrammer.Native.Views";
+    private const string ThemesDirectory = "src/Autonogrammer.Native.Views/Themes";
+    private static readonly string[] HeadMarkupFiles =
+    {
+        "apps/Autonogrammer.Native/App.axaml",
+        "apps/Autonogrammer.Native/MainWindow.axaml",
+        "apps/Autonogrammer.Android/AutonogrammerAndroidApp.axaml",
+    };
     private const string AllowlistPath = "tests/Autonogrammer.Native.Tests/Theme/ColourLiteralAllowlist.txt";
 
     private static readonly HashSet<string> ColourAttributes = new(StringComparer.Ordinal)
@@ -108,11 +116,18 @@ public sealed class ColourLiteralTests
             .ShouldBe(ExpectedSetterLiterals);
     }
 
-    /// <summary>The scan reads real view files, so a pass cannot come from an empty directory.</summary>
+    /// <summary>The scan reads real view files, so a pass cannot come from an empty directory. It reaches each head's markup and skips the theme dictionaries.</summary>
     [Fact]
     public void TheScanReadsTheViewFiles()
     {
-        ViewFiles().Count().ShouldBeGreaterThan(0, $"{ViewsDirectory} must contain .axaml views to scan");
+        var root = ShellHarness.RepoRoot();
+        var scanned = ViewFiles().Select(file => Path.GetRelativePath(root, file).Replace('\\', '/')).ToHashSet(StringComparer.Ordinal);
+
+        scanned.Contains("src/Autonogrammer.Native.Views/MainView.axaml").ShouldBeTrue("the desktop view must be scanned");
+        scanned.Contains("apps/Autonogrammer.Native/App.axaml").ShouldBeTrue("the desktop app markup must be scanned");
+        scanned.Contains("apps/Autonogrammer.Native/MainWindow.axaml").ShouldBeTrue("the desktop window markup must be scanned");
+        scanned.Contains("apps/Autonogrammer.Android/AutonogrammerAndroidApp.axaml").ShouldBeTrue("the Android head markup must be scanned");
+        scanned.Contains("src/Autonogrammer.Native.Views/Themes/AutonogrammerTokens.axaml").ShouldBeFalse("the theme dictionaries hold the colours");
     }
 
     /// <summary>A view file with a colour literal must be allowlisted; none is, because no view holds one.</summary>
@@ -179,7 +194,12 @@ public sealed class ColourLiteralTests
 
     private static IEnumerable<string> ViewFiles()
     {
-        return Directory.EnumerateFiles(Path.Combine(ShellHarness.RepoRoot(), ViewsDirectory), "*.axaml", SearchOption.AllDirectories);
+        var root = ShellHarness.RepoRoot();
+        var themes = Path.Combine(root, ThemesDirectory) + Path.DirectorySeparatorChar;
+        var views = Directory.EnumerateFiles(Path.Combine(root, NativeViewsRoot), "*.axaml", SearchOption.AllDirectories)
+            .Where(file => !file.StartsWith(themes, StringComparison.Ordinal));
+
+        return views.Concat(HeadMarkupFiles.Select(relative => Path.Combine(root, relative)));
     }
 
     /// <summary>Reads the allowlist: one row per file, <c>path | reason | phase</c>; blank lines and <c>#</c> comments are skipped.</summary>
