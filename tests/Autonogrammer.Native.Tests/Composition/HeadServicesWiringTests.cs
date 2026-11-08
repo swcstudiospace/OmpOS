@@ -15,7 +15,7 @@ public sealed class HeadServicesWiringTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static HeadServicesOptions Options(TempTree tree, Func<string, string?>? variables = null) => new()
+    private static HeadServicesOptions Options(TempTree tree, Func<string, string?>? variables = null, string? ompManagedRoot = null) => new()
     {
         StateRoot = tree.State,
         PluginsRoot = tree.Plugins,
@@ -24,6 +24,7 @@ public sealed class HeadServicesWiringTests
         ConfigDirectory = Path.Combine(tree.Root, "config"),
         GetVariable = variables ?? (static _ => null),
         ApiHandler = new ThrowingHandler(),
+        OmpManagedRoot = ompManagedRoot,
     };
 
     /// <summary>Opened over fakes with no cloud address, every service exists except the cloud host, which is absent on purpose; the best-of-N host appears once the head is built.</summary>
@@ -44,6 +45,19 @@ public sealed class HeadServicesWiringTests
         MissingMembers(services, allowedNull: [nameof(HeadServices.Cloud), nameof(HeadServices.Account), nameof(HeadServices.TrustTerminalOpener), nameof(HeadServices.PluginsRoot), nameof(HeadServices.LoggerFactory), nameof(HeadServices.CheckLocalOmpUpdate), nameof(HeadServices.InstallLocalOmp), nameof(HeadServices.RemoteOmp)]).ShouldBeEmpty();
         services.McpContext([tree.Workspace]).WorkspaceRoots.ShouldBe([tree.Workspace]);
         services.CreateModeSkills(tree.Workspace).ShouldNotBeNull();
+    }
+
+    /// <summary>With a managed omp root, the Omp checks and the install are wired: the Remote page gets Check Omp and Install Omp, and the Code landing gets its install and its update check.</summary>
+    [Fact]
+    public async Task AConfiguredManagedRootWiresTheOmpChecksInstallsAndUpdateCheck()
+    {
+        using var tree = new TempTree();
+        var services = await HeadServices.CreateAsync(Options(tree, ompManagedRoot: Path.Combine(tree.Root, "managed")), Token).ConfigureAwait(true);
+        await using var servicesScope = services.ConfigureAwait(true);
+
+        services.RemoteOmp.ShouldNotBeNull("the Remote page offers Check Omp and Install Omp");
+        services.InstallLocalOmp.ShouldNotBeNull("the Code landing offers Install Omp");
+        services.CheckLocalOmpUpdate.ShouldNotBeNull("the Code landing checks for a newer omp once the window shows");
     }
 
     /// <summary>Failed construction leaves supplied services reusable; the successful head starts their automations and keeps the workspace context.</summary>
