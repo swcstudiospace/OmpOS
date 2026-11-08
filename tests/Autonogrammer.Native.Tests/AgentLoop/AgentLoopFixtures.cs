@@ -10,6 +10,19 @@ internal static class AgentLoopFixtures
 {
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(30);
 
+    /// <summary>Writes an executable that prints a version, so a launch resolves an omp without one installed on the machine. Unix only: callers skip on Windows.</summary>
+    public static string WriteFakeOmp(string directory, string version)
+    {
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, "omp");
+        File.WriteAllText(path, "#!/bin/sh\necho " + version + "\n");
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+        return path;
+    }
+
     /// <summary>Builds head options over a tree and a scripted omp fleet. The maintenance timer is off unless a test asks for it.</summary>
     public static AgentHeadOptions Options(
         TempTree tree,
