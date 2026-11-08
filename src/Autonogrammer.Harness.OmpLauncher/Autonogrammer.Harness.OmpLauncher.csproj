@@ -4,4 +4,8 @@
     <ProjectReference Include="../Autonogrammer.Harness.Terminal/Autonogrammer.Harness.Terminal.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Autonogrammer.Harness.OmpLauncher.Tests" />
+  </ItemGroup>
+
 </Project>
