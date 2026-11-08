@@ -186,7 +186,7 @@ internal sealed class AgentHead : IAsyncDisposable
                     StateRoot = loop.StateRoot,
                     PluginsRoot = loop.PluginsRoot,
                     WorkspaceRoot = loop.WorkspaceRoot,
-                    OmpManagedRoot = Autonogrammer.Native.Composition.HeadServices.ResolveManagedOmpRoot(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify), loop.StateRoot),
+                    OmpManagedRoot = Autonogrammer.Native.Composition.HeadServices.ResolveManagedOmpRoot(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify), loop.StateRoot),
                     TopLevel = topLevel,
                     LoggerFactory = DesktopLogging.Factory,
                 },

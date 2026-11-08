@@ -563,12 +563,12 @@ internal sealed class HeadServices : IAsyncDisposable
                 options.LoggerFactory)
             : options.ConfigDirectory;
 
-    /// <summary>Resolves the directory the managed omp install owns: the per-user data directory beside the configuration. With no application data folder, it is the config directory under the state root.</summary>
-    /// <param name="applicationData">The per-user application data folder. Empty when the platform has none.</param>
+    /// <summary>Resolves the directory the managed omp install owns: an omp folder in the per-user local data directory, which a roaming profile does not copy. With no local data folder, it is an omp folder under the state root.</summary>
+    /// <param name="localApplicationData">The per-user local application data folder. Empty when the platform has none.</param>
     /// <param name="stateRoot">The state root the directory falls back under.</param>
     /// <returns>The managed root.</returns>
-    internal static string ResolveManagedOmpRoot(string applicationData, string stateRoot) =>
-        string.IsNullOrEmpty(applicationData) ? Path.Combine(stateRoot, "config") : Autonogrammer.Harness.Abstractions.UserDataDirectory.PathFor(applicationData);
+    internal static string ResolveManagedOmpRoot(string localApplicationData, string stateRoot) =>
+        Path.Combine(string.IsNullOrEmpty(localApplicationData) ? stateRoot : Autonogrammer.Harness.Abstractions.UserDataDirectory.PathFor(localApplicationData), "omp");
 
     /// <summary>
     /// Resolves the directory the head keeps its configuration in when none was configured, and moves a legacy per-user data directory into it once.

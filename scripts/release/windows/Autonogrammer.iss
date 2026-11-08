@@ -47,16 +47,12 @@ Name: "{userprograms}\Autonogrammer\Autonogrammer"; Filename: "{app}\Autonogramm
 Name: "{userdesktop}\Autonogrammer"; Filename: "{app}\Autonogrammer.Native.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Code]
-const
-  // Win32 message box flags. Inno Setup's Pascal does not define every MB_ name, so the value is written out:
-  // MB_YESNO (4) or MB_ICONQUESTION (32) or MB_DEFBUTTON2 (256) = 292. IDYES and IDNO are built in.
-  MbYesNoQuestionDefaultNo = 292;
-
-// The per-user data folder that the app keeps its settings (config\settings.json) and sessions (sessions\) in. It is the state root
-// that AgentLoopEnvironment.ResolveStateRoot computes when AUTONOGRAMMER_STATE_DIR is not set:
-// UserDataDirectory.PathFor(ResolveDataHome), where ResolveDataHome is XDG_DATA_HOME when that is an absolute path, else
-// %USERPROFILE%\.local\share, and PathFor appends "Autonogrammer".
-function UserDataFolder(): String;
+// The folders the app writes, as the app computes them:
+//   {userappdata}\Autonogrammer   settings (HeadServices.ResolveConfigDirectory: UserDataDirectory.PathFor(ApplicationData))
+//   {localappdata}\Autonogrammer  the DPAPI secrets, and the managed Omp runtime in its omp folder (HeadServices.ResolveManagedOmpRoot)
+//   the state root                sessions and loop state: XDG_DATA_HOME when it is an absolute path, else %USERPROFILE%\.local\share,
+//                                 then Autonogrammer (AgentLoopEnvironment.ResolveStateRoot)
+function StateFolder(): String;
 var
   DataHome: String;
 begin
@@ -66,18 +62,23 @@ begin
   Result := DataHome + '\Autonogrammer';
 end;
 
+procedure DeleteDataFolder(const Folder: String);
+begin
+  if DirExists(Folder) then
+    DelTree(Folder, True, True, True);
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
-var
-  DataFolder: String;
 begin
   if CurUninstallStep = usPostUninstall then
   begin
-    if SuppressibleMsgBox('Also remove your Autonogrammer data (settings and sessions)?', 'Autonogrammer',
-       MbYesNoQuestionDefaultNo, IDNO) = IDYES then
+    // The default answer is No: the data stays unless the user chooses Yes.
+    if SuppressibleMsgBox('Also remove your Autonogrammer settings, sessions and managed Omp runtime?', mbConfirmation,
+       MB_YESNO or MB_DEFBUTTON2, IDNO) = IDYES then
     begin
-      DataFolder := UserDataFolder();
-      if DirExists(DataFolder) then
-        DelTree(DataFolder, True, True, True);
+      DeleteDataFolder(ExpandConstant('{userappdata}\Autonogrammer'));
+      DeleteDataFolder(ExpandConstant('{localappdata}\Autonogrammer'));
+      DeleteDataFolder(StateFolder());
     end;
   end;
 end;
