@@ -23,6 +23,7 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 - Pull requests into main must raise `VersionPrefix` above the base and add its CHANGELOG section. `scripts/ci/check-version-bump.sh` runs in the CI job and fails the pull request otherwise.
 - CoWork sessions are stored per account at the host. Each account's session files live in its own folder, and a host refuses to create or open a session that another account's registry does not own. The head keeps the signed-out gate, so no CoWork task is created in this release, and the session list does not yet follow sign-in or sign-out.
+- The CI browser smoke continues on error, so the native tests and the other steps still run and report when it fails. A final gate step fails the job when the smoke failed, so the smoke still gates the job.
 
 ### Fixed
 

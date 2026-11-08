@@ -103,6 +103,8 @@ jobs:
       - name: Node tests of the web scripts (service-worker manifest refresh, the route check's boot-shell decision)
         run: node --test scripts/vercel/refresh-web-manifest.test.mjs scripts/web-smoke/a11y/routes.test.mjs
       - name: Browser smoke with axe-core, the accessibility checks and the web payload budget (needs Node and Chrome on the runner; mirrors the bootstrap step)
+        id: smoke
+        continue-on-error: true
         env:
           # A shared runner loads the bundle more slowly than the 150 s default. The route check's boot-shell retry then ends on the boot
           # shell on both attempts. scripts/web-smoke/a11y/states.mjs documents this variable for loaded hosts; no assertion changes.
@@ -112,7 +114,7 @@ jobs:
           mkdir -p "$out_dir/shots" "$out_dir/a11y"
           OUT_DIR="$out_dir" SHOT_DIR="$out_dir/shots" A11Y_REPORT_DIR="$out_dir/a11y" bash scripts/web-smoke/run-smoke.sh
       - name: Keep the web smoke evidence when the smoke fails (logs, JSON and screenshots of the failing half)
-        if: failure()
+        if: steps.smoke.outcome == 'failure'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: web-smoke-evidence-${{ github.run_attempt }}
@@ -190,6 +192,15 @@ jobs:
       - name: Tear down backend profile
         if: always()
         run: command -v podman-compose >/dev/null && podman-compose --profile backend -f deploy/compose.yaml down -v || true
+      # The browser smoke continues on error, so every step above runs and records its result. This gate fails the job when the smoke
+      # failed, so the smoke still gates the job.
+      - name: Browser smoke gate (fails the job when the smoke above failed)
+        if: always()
+        run: |
+          if [ "${{ steps.smoke.outcome }}" = "failure" ]; then
+            echo "::error::the browser smoke failed; its evidence is in the upload above" >&2
+            exit 1
+          fi
 
   # Image scan on a push. The job installs rootful podman and the pinned trivy, builds both images
   # (--format docker keeps HEALTHCHECK; the builder is still podman), saves them as archives the
