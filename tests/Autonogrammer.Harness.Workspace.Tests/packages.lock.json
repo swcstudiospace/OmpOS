@@ -207,13 +207,13 @@
       "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.2, )"
         }
       },
       "autonogrammer.harness.workspace": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Harness.Abstractions": "[0.16.2, )"
         }
       },
       "Microsoft.Extensions.Configuration": {

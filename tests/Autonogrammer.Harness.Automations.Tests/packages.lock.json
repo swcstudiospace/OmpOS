@@ -204,7 +204,7 @@
       "autonogrammer.harness.automations": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Plugins": "[0.15.0, )"
+          "Autonogrammer.Harness.Plugins": "[0.16.2, )"
         }
       },
       "autonogrammer.harness.plugins": {

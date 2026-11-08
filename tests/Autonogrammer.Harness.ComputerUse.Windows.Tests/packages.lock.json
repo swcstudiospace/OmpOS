@@ -207,7 +207,7 @@
       "autonogrammer.harness.computeruse.windows": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.16.2, )"
         }
       },
       "Microsoft.Extensions.Configuration": {

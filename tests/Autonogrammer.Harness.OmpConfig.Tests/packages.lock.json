@@ -204,15 +204,15 @@
       "autonogrammer.harness.ompconfig": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.OmpLauncher": "[0.15.0, )",
-          "Autonogrammer.Harness.Providers": "[0.15.0, )",
-          "Autonogrammer.Harness.Secrets": "[0.15.0, )"
+          "Autonogrammer.Harness.OmpLauncher": "[0.16.2, )",
+          "Autonogrammer.Harness.Providers": "[0.16.2, )",
+          "Autonogrammer.Harness.Secrets": "[0.16.2, )"
         }
       },
       "autonogrammer.harness.omplauncher": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Terminal": "[0.15.0, )"
+          "Autonogrammer.Harness.Terminal": "[0.16.2, )"
         }
       },
       "autonogrammer.harness.providers": {

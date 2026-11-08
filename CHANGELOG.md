@@ -8,6 +8,8 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.16.2] - 2026-11-08
+
 ### Added
 
 - Desktop installers. Windows: an Inno Setup installer that installs per user, adds a Start Menu entry and an optional desktop shortcut, and whose uninstaller asks before removing settings, sessions and the managed Omp runtime (the default is to keep them). Linux: a `.deb` that adds a menu entry and an `autonogrammer` command. macOS: a `.dmg` with a link to Applications. All three are unsigned and not notarized. Each is verified only when the workflow runs on its own OS.
@@ -365,7 +367,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.1...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.2...HEAD
+[0.16.2]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.14.0...v0.15.0

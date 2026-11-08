@@ -41,26 +41,26 @@
       "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.2, )"
         }
       },
       "autonogrammer.sandbox.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.2, )"
         }
       },
       "autonogrammer.sessions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.2, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.2, )"
         }
       },
       "autonogrammer.workflows": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.2, )"
         }
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {

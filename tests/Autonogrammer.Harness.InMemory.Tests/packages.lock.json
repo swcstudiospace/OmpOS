@@ -207,21 +207,21 @@
       "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.2, )"
         }
       },
       "autonogrammer.harness.acp": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.2, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.harness.contracttests": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Harness.Acp": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.2, )",
+          "Autonogrammer.Harness.Acp": "[0.16.2, )",
           "Microsoft.Testing.Extensions.TrxReport": "[2.5.1, )",
           "Shouldly": "[4.3.0, )",
           "coverlet.MTP": "[10.1.0, )",
@@ -231,8 +231,8 @@
       "autonogrammer.harness.inmemory": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.2, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.2, )"
         }
       },
       "Microsoft.Extensions.Configuration": {

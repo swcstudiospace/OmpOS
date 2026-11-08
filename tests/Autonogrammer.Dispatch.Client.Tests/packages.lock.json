@@ -207,14 +207,14 @@
       "autonogrammer.dispatch.client": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Presentation": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.2, )",
+          "Autonogrammer.Presentation": "[0.16.2, )"
         }
       },
       "autonogrammer.genui": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.2, )"
         }
       },
       "autonogrammer.harness.computeruse.abstractions": {
@@ -223,17 +223,17 @@
       "autonogrammer.parser": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.16.2, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.presentation": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.GenUi": "[0.15.0, )",
-          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Parser": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.16.2, )",
+          "Autonogrammer.GenUi": "[0.16.2, )",
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.16.2, )",
+          "Autonogrammer.Parser": "[0.16.2, )",
           "Markdig": "[1.4.2, )"
         }
       },

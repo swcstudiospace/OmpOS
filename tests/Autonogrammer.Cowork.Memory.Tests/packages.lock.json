@@ -207,27 +207,27 @@
       "autonogrammer.cowork.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.2, )"
         }
       },
       "autonogrammer.cowork.memory": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.2, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.16.2, )"
         }
       },
       "autonogrammer.cowork.memory.postgres": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Cowork.Memory": "[0.15.0, )",
+          "Autonogrammer.Cowork.Memory": "[0.16.2, )",
           "Npgsql": "[10.0.3, )"
         }
       },
       "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.2, )"
         }
       },
       "autonogrammer.resilience": {
@@ -239,17 +239,17 @@
       "autonogrammer.sessions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.2, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.2, )"
         }
       },
       "autonogrammer.sessions.postgres": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Resilience": "[0.15.0, )",
-          "Autonogrammer.Sessions": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.16.2, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.2, )",
+          "Autonogrammer.Resilience": "[0.16.2, )",
+          "Autonogrammer.Sessions": "[0.16.2, )",
           "Microsoft.Extensions.Configuration.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
           "Npgsql": "[10.0.3, )"
