@@ -546,7 +546,7 @@ internal sealed class AgentHead : IAsyncDisposable
         CoworkHead.CreateAsync(
             options.Loop.StateRoot,
             options.Loop.WorkspaceRoot,
-            services is null ? new SignedOutCoworkGate() : new NativeCoworkAccountGate(services.AccountHost.Session),
+            new SignedOutCoworkGate(),
             options.TransportFactory,
             options.LoggerFactory,
             options.OmpPath,
