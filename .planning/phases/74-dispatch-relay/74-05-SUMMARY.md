@@ -18,7 +18,7 @@ requirements-completed: []
 
 The Dispatch relay connects paired desktops to the API over outbound WebSockets. The desktop signs the hub challenge with its enrolled device key, reports state transitions and heartbeats, and deduplicates commands before execution. A real desktop connector and loopback Kestrel hub completed running and queued commands after a forced reconnect.
 
-**Status:** transient-disconnect queue loss is fixed and exercised. Plan 74-05 remains partial pending OQ-510, OQ-504, OQ-516 and OQ-517. The clean-commit gate below predates the review fixes in `12b1b60`; PR #9 remains draft.
+**Status:** transient-disconnect queue loss and timeout cancellation are implemented and exercised. Plan 74-05 remains partial pending OQ-510, OQ-504, OQ-516 and OQ-517. PR #9 remains draft; the latest full clean gate did not pass, as recorded below.
 
 ## Implementation
 
@@ -31,8 +31,9 @@ The Dispatch relay connects paired desktops to the API over outbound WebSockets.
 - The connector verifies, deduplicates and acknowledges command admission on its receive loop, then executes commands serially through a bounded queue while continuing to receive control frames. Up to 32 admitted commands and their in-memory state survive a transient link loss; their IDs are listed in the next hello and outbound state/results wait for a welcomed link. Revocation cancels the active handler, which must honour its cancellation token. Handler exceptions, including unrelated cancellations, produce `execution_error` without stopping later commands.
 - Pairing completion transfers the enrolled secret from its temporary enrollment ID to the server-issued device ID before committing the pairing record. Command/result transitions use the closed transition table; invalid transitions leave the row unchanged. Rejected inputs with valid command identifiers are sent to the configured closed-field audit sink.
 - Review fixes normalize the hub origin for comparison while signing the exact validated challenge, reject null device-frame fields safely, retain `approval_timeout`, and use the host's configured Postgres resilience pipeline.
-- Progress events are capped at 50 per command in the store transaction. Terminal result text is redacted, capped, stored atomically with the result transition, exposed to the owner, and withheld after body retention.
+- Progress events are capped at 50 per command in the store transaction. Terminal result text is capped, redacted for the configured Dispatch signing keys, stored with the result transition and withheld from command reads after body retention; feed copies follow feed retention.
 - A full 32-command inbox keeps the link open for revocation and defers later commands without advancing the high-water mark. Link shutdown aborts a heartbeat write that does not finish after cancellation.
+- A run timeout atomically fails the target and enqueues a same-device `command.cancel` beyond the ordinary queue cap. The desktop verifies and handles cancellation controls even when ordinary delivery is deferred, without advancing the high-water mark past skipped commands. Active and queued targets receive their own cancellation tokens; timed-out cancellation commands do not recursively enqueue more cancellations.
 
 ## Verification
 
@@ -44,6 +45,8 @@ The Dispatch relay connects paired desktops to the API over outbound WebSockets.
 - After clean gate `fbb8d93`, handler cancellation mapping was corrected in `a719127`. The focused test passed all three cases: an I/O failure, an unrelated handler cancellation, and actual revocation cancellation. The full clean gate above predates this correction.
 - Review-fix verification: 35 desktop reconnect tests passed; the saturated-inbox test exercised revocation and verified the high-water mark stayed at 32. A real loopback socket test stalled a write and exercised the bounded heartbeat shutdown; two transport close/abort tests passed.
 - Review-fix verification: the hub integration exercised the owner GET of a redacted, 4,096-character result; null fields, approval timeout and actual Kestrel origin handling passed. Shared in-memory and live Postgres tests passed for result persistence, retention and 64 concurrent progress writes capped at 50. A configured open Postgres circuit refused a Dispatch store read as `circuit_open`.
+- Timeout-fix verification: **121 Dispatch API integration tests passed** with real test services; **77 desktop Dispatch tests passed**. A real Kestrel/desktop test swept a running command, observed the handler token cancel, and completed later work. A saturated-inbox loopback test rejected a forged control, cancelled running and queued work, then redelivered the skipped command. Shared in-memory and live Postgres tests passed for concurrent timeout transactions, full-queue bypass and stale-state rejection.
+- Clean checkout of `39dde9d`: the full gate ran **14,902 tests: 14,898 passed, 1 failed, 3 skipped**. The failure was `AccountSessionManagerTests.OfflineRetriesStopAfterFifteenMinutesAndTheSessionStaysSignedIn` (14 refresh calls versus an assertion of fewer than 14); the same test passed when run alone. This gate stopped before format and browser smoke, and predates `e98ecf7`.
 - Architecture suite: **83 passed**. Repo checks and SBOM check passed. The documentation check initially reported one GitBook-outside-root link; it was changed to a GitHub URL and the subsequent check reported **0 errors and 0 warnings**.
 - The first clean-checkout bootstrap stopped at the history secret scan on the fixed RFC 6455 example WebSocket nonce in `06787cc`. It is not a credential. `4cd7404` replaces the current test value with a generated nonce and allowlists only that historical fingerprint. The history scan and clean bootstrap subsequently passed.
 - The generated OpenAPI file matched the committed file after the build.
@@ -55,7 +58,7 @@ The Dispatch relay connects paired desktops to the API over outbound WebSockets.
 - The real connector-to-hub test added a project reference from the API integration tests to `Autonogrammer.Dispatch.Desktop`. Its test lockfile and the generated SBOM were refreshed for that dependency graph; no NuGet package was introduced.
 - OQ-500 is updated to record the durable and in-memory store-selection rules.
 - OQ-515 is resolved by paged in-flight reconciliation. OQ-516 records the remaining crash-time durability and result-receipt gap: the inbox is in memory, and a successful socket write does not prove the hub committed the result.
-- OQ-517 records the missing cancellation path: the sweeper fails an overdue command in the hub but does not yet stop the device task. No cancellation guarantee is claimed.
+- OQ-517 remains open for the native 74-04 handlers: cancellation is cooperative and those handlers are not yet wired. A cancellation expires at the normal queue TTL, so it cannot stop a disconnected task once it has expired.
 - The receipt-time backfill described above is an approximation for pre-existing in-flight rows. `Dispatch:RunLimits` is measured from `Received` for newly transitioned rows; approval waits have their separate approval timeout.
 - The loopback integration uses test authentication and in-memory coordination; it does not establish live Supabase, Railway, or multi-replica availability. Railway long-WebSocket draining remains OQ-420. Native Windows, macOS, Android and physical-device packaging were not exercised here.
 - Phase 74 remains open: plan 74-09 has no summary, and a plan summary is not phase-level verification.
@@ -69,3 +72,4 @@ The Dispatch relay connects paired desktops to the API over outbound WebSockets.
 - `4cd7404` — `test(dispatch): avoid static websocket nonce scan false positive`
 - `a719127` — `fix(dispatch): isolate unrelated handler cancellations`
 - `12b1b60` — `fix(dispatch): harden device protocol and bounded progress`
+- `e98ecf7` — `fix(dispatch): cancel timed-out device commands`
