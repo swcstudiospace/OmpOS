@@ -18,7 +18,7 @@ requirements-completed: []
 
 The Dispatch relay connects paired desktops to the API over outbound WebSockets. The desktop signs the hub challenge with its enrolled device key, reports state transitions and heartbeats, and deduplicates commands before execution. A real desktop connector and loopback Kestrel hub completed running and queued commands after a forced reconnect.
 
-**Status:** the transient-disconnect queue loss recorded in the earlier revision is fixed and exercised. Plan 74-05 remains partial pending the clean-commit gate and the remaining scope in OQ-510, OQ-504 and OQ-516. PR #9 remains draft.
+**Status:** the transient-disconnect queue loss recorded in the earlier revision is fixed and exercised, and the clean-commit gate passed. Plan 74-05 remains partial pending the remaining scope in OQ-510, OQ-504 and OQ-516. PR #9 remains draft.
 
 ## Implementation
 
@@ -34,11 +34,12 @@ The Dispatch relay connects paired desktops to the API over outbound WebSockets.
 ## Verification
 
 - `./bootstrap.sh` with isolated `AUTONOGRAMMER_TEST_SERVICES_NAME=g7405`: **passed**, SDK 10.0.402, locked restore, Release warnings-as-errors build, **14,883 tests: 14,880 passed, 0 failed, 3 skipped**, format verification, secret scan, and API/demo/artifact browser smoke with axe. Smoke evidence: `/tmp/tmp.RHfCVFfRj1` (the gate ran against the worktree before the implementation commit; its output labelled the then-current HEAD `16696724`).
+- Clean checkout of committed head `fbb8d93`, `./bootstrap.sh` with isolated `g7405-clean`: **passed**, with **14,891 tests: 14,888 passed, 0 failed, 3 skipped**, locked restore, warnings-as-errors build, format, secret scan, and API/demo/artifact browser smokes with axe. Smoke evidence: `/tmp/tmp.iFc3j5PnQn`. Build-time Development logs warned that process inspection was unrestricted and that the signup email lacked a code; those are runtime-configuration warnings, not compiler warnings.
 - `DesktopHubIntegrationTests.DesktopPairsReconnectsAndCompletesRunningAndQueuedCommands`: **passed** over an actual loopback WebSocket, covering pairing, challenge signature, a forced disconnect, reconnect and completed rows for both commands.
 - Earlier service-backed Dispatch integration filter: **111 passed**; Postgres dispatch-store filter: **19 passed**. After the reconnect and paged-settlement changes, focused tests passed against both in-memory and Postgres stores, including settlement past 100 rows.
 - Desktop Dispatch suite: **72 passed**, including manual-clock heartbeat, signed challenge, immediate acknowledgement behind an executing command, offline result retention, handler fault isolation, and cancellation of an executing handler after a revoke frame.
 - Architecture suite: **83 passed**. Repo checks and SBOM check passed. The documentation check initially reported one GitBook-outside-root link; it was changed to a GitHub URL and the subsequent check reported **0 errors and 0 warnings**.
-- The first clean-checkout bootstrap stopped at the history secret scan on the fixed RFC 6455 example WebSocket nonce in `06787cc`. It is not a credential. `4cd7404` replaces the current test value with a generated nonce and allowlists only that historical fingerprint; the subsequent history scan passed. The full clean-checkout gate must be rerun.
+- The first clean-checkout bootstrap stopped at the history secret scan on the fixed RFC 6455 example WebSocket nonce in `06787cc`. It is not a credential. `4cd7404` replaces the current test value with a generated nonce and allowlists only that historical fingerprint. The history scan and clean bootstrap subsequently passed.
 - The generated OpenAPI file matched the committed file after the build.
 
 ## Deviations and limits
