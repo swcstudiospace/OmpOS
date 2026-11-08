@@ -52,7 +52,7 @@ public sealed class ShutdownTests
         request.Headers.TryAddWithoutValidation("Connection", "Upgrade");
         request.Headers.TryAddWithoutValidation("Upgrade", "websocket");
         request.Headers.TryAddWithoutValidation("Sec-WebSocket-Version", "13");
-        request.Headers.TryAddWithoutValidation("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==");
+        request.Headers.TryAddWithoutValidation("Sec-WebSocket-Key", Convert.ToBase64String(RandomNumberGenerator.GetBytes(16)));
         using var response = await client.SendAsync(request, ct).ConfigureAwait(true);
         response.StatusCode.ShouldBe(HttpStatusCode.ServiceUnavailable);
     }
