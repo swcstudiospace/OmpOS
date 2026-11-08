@@ -55,6 +55,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     private const string RegistryFileName = "sessions.json";
     private const string CancelledReason = "cancelled";
     private const UnixFileMode OwnerOnly = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+    private string? _lastLaunchOmp;
 
     private static readonly string[] SteerSubdirectories = ["inbox", "acks", "done"];
 
@@ -312,11 +313,26 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             ?? throw new InvalidOperationException("This session has no remote host."),
     };
 
-    private PlannedOmpTerminalStarter CreateTerminalStarter(SessionSlot slot) => new(
-        slot,
-        () => Registry is { } registry && registry.TryGet(slot.Id, out var record) ? record.ResumeReference : null,
-        new OmpTerminalLauncher(_options.TerminalBackend ?? new LinuxLocalPtyBackend(), _options.TerminalLocator ?? OmpLocatorOptions.FromEnvironment(_options.OmpPath)),
-        _options.ProviderKeys);
+    private PlannedOmpTerminalStarter CreateTerminalStarter(SessionSlot slot)
+    {
+        var backend = _options.TerminalBackend ?? new LinuxLocalPtyBackend();
+        var launcher = _options.TerminalLocator is { } locator
+            ? new OmpTerminalLauncher(backend, locator)
+            : new OmpTerminalLauncher(backend, ResolveTerminalOmpAsync);
+        return new PlannedOmpTerminalStarter(
+            slot,
+            () => Registry is { } registry && registry.TryGet(slot.Id, out var record) ? record.ResumeReference : null,
+            launcher,
+            _options.ProviderKeys);
+    }
+
+    /// <summary>Resolves the omp a terminal session runs at its launch: the head's resolution, or the PATH search when the head has no services. Null when none is runnable.</summary>
+    /// <param name="cancellationToken">Cancels the resolution.</param>
+    /// <returns>The executable, or null.</returns>
+    private Task<string?> ResolveTerminalOmpAsync(CancellationToken cancellationToken) =>
+        _services is { } services
+            ? services.ResolveOmpForLaunchAsync(cancellationToken)
+            : Task.FromResult(OmpLocator.Locate(OmpLocatorOptions.FromEnvironment(_options.OmpPath)) is OmpFound found ? found.ExecutablePath : null);
 
     /// <summary>
     /// Returns the slot of a session, creating it on first use: its live scope, send path, approval bridge and stage sources. The slot
@@ -611,6 +627,8 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             {
                 launch = launch with { Environment = providerKeys.Overlay(launch.Environment) };
             }
+            // A remote plan runs omp on its own host, so the local launcher is not consulted; it gets the configured path, as before the launcher wiring.
+            var ompPath = plan.Extras.IsRemote ? _options.OmpPath : await ResolveOmpPathAsync(cancellationToken).ConfigureAwait(false);
             var holder = plan.RunModes;
             var composition = new EngineCompositionOptions
             {
@@ -622,7 +640,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
                 Clock = _options.TimeProvider,
                 ProcessWrapper = ProcessWrapper,
             };
-            return EngineComposition.Compose(_options.AllowedKinds, launch, _options.TransportFactory, _options.LoggerFactory, _options.OmpPath, resumeSessionId, composition);
+            return EngineComposition.Compose(_options.AllowedKinds, launch, _options.TransportFactory, _options.LoggerFactory, ompPath, resumeSessionId, composition);
         }
         catch
         {
@@ -710,13 +728,39 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     /// <param name="workspaceRoot">The workspace of the parent session.</param>
     /// <returns>The engine. It starts no process until a prompt is submitted.</returns>
     internal EngineComposition ComposeSideChatEngine(string workspaceRoot) =>
-        EngineComposition.Compose([], ChildPlan(workspaceRoot, RunMode.Allowlist), _options.TransportFactory, _options.LoggerFactory, _options.OmpPath);
+        EngineComposition.Compose([], ChildPlan(workspaceRoot, RunMode.Allowlist), _options.TransportFactory, _options.LoggerFactory, CurrentOmpPath);
 
     /// <summary>Composes the engine of an unattended candidate (best of n): omp's <c>yolo</c> approval mode in the candidate's worktree. The caller makes sure the user chose Run Everything.</summary>
     /// <param name="workspaceRoot">The candidate's worktree.</param>
+    /// <param name="cancellationToken">Cancels the resolution of the omp.</param>
     /// <returns>The engine. It starts no process until a prompt is submitted.</returns>
-    internal EngineComposition ComposeUnattendedEngine(string workspaceRoot) =>
-        EngineComposition.Compose(RunModeLaunchMapper.AcpToolKinds, ChildPlan(workspaceRoot, RunMode.RunEverything), _options.TransportFactory, _options.LoggerFactory, _options.OmpPath);
+    internal async Task<EngineComposition> ComposeUnattendedEngineAsync(string workspaceRoot, CancellationToken cancellationToken)
+    {
+        var ompPath = await ResolveOmpPathAsync(cancellationToken).ConfigureAwait(false);
+        return EngineComposition.Compose(RunModeLaunchMapper.AcpToolKinds, ChildPlan(workspaceRoot, RunMode.RunEverything), _options.TransportFactory, _options.LoggerFactory, ompPath);
+    }
+
+    /// <summary>The omp a synchronous launch runs: the one the last launch resolved, or the configured path before any launch has resolved one.</summary>
+    private string? CurrentOmpPath => _lastLaunchOmp ?? _options.OmpPath;
+
+    /// <summary>
+    /// Resolves the omp a launch runs. With the head's services the launcher's resolution decides, and nothing runnable is an error that carries the install guidance;
+    /// without them the configured path is used as given.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the resolution.</param>
+    /// <returns>The executable the launch runs.</returns>
+    /// <exception cref="InvalidOperationException">The launcher found no runnable omp.</exception>
+    private async Task<string?> ResolveOmpPathAsync(CancellationToken cancellationToken)
+    {
+        if (_services is not { } services)
+        {
+            return _options.OmpPath;
+        }
+
+        var resolved = await services.ResolveOmpForLaunchAsync(cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException(OmpLocator.InstallGuidance);
+        _lastLaunchOmp = resolved;
+        return resolved;
+    }
 
     /// <summary>Adds the registry session of a fork: it resumes the session the engine created and keeps the workspace and the environment of its parent.</summary>
     /// <param name="parentSessionId">The session that was forked.</param>

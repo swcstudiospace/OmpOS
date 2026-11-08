@@ -114,6 +114,17 @@ public sealed class UserDataDirectoryMigrationTests : IDisposable
         HeadServices.ResolveDefaultConfigDirectory(string.Empty, state, loggerFactory: null).ShouldBe(Path.Combine(state, "config"));
     }
 
+    /// <summary>The managed Omp runtime is one omp folder under the local data folder: the installer adds its own omp folder, and no second one.</summary>
+    [Fact]
+    public void TheManagedOmpRuntimeIsOneOmpFolderUnderTheLocalDataFolder()
+    {
+        var local = Path.Combine(_root, "local");
+
+        var root = HeadServices.ResolveManagedOmpRoot(local, Path.Combine(_root, "state"));
+
+        Path.Combine(root, "omp").ShouldBe(Path.Combine(local, "Autonogrammer", "omp"));
+    }
+
     /// <summary>A both-present warning reaches the logger of the head services, names directories only, and the legacy directory stays untouched.</summary>
     [Fact]
     public void ABothPresentWarningReachesTheHeadServicesLogger()

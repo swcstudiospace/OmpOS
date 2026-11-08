@@ -1,0 +1,48 @@
+{
+  "plugins": [
+    {
+      "dir": "claude-ultrathink",
+      "source": "https://github.com/swcstudiospace/ultrathink.git",
+      "private": false,
+      "requiredForRelease": true,
+      "expectedLicenseFile": true,
+      "licenceAcceptedWithoutFile": false
+    },
+    {
+      "dir": "agent-swarm",
+      "source": "https://github.com/swcstudiospace/swarm.git",
+      "private": false,
+      "requiredForRelease": true,
+      "expectedLicenseFile": false,
+      "licenceAcceptedWithoutFile": false,
+      "licenseNote": "No LICENSE file upstream (OQ-102). The tag gate fails until the owner adds one upstream, or sets licenceAcceptedWithoutFile to true with a decision record."
+    },
+    {
+      "dir": "agent-substrate",
+      "source": "https://github.com/swcstudiospace/substrate.git",
+      "private": true,
+      "requiredForRelease": true,
+      "expectedLicenseFile": false,
+      "licenceAcceptedWithoutFile": false,
+      "licenseNote": "No LICENSE file upstream (OQ-102). The repository is private and needs the SUBMODULE_TOKEN secret (OQ-63). The tag gate fails until the owner adds a licence upstream, or sets licenceAcceptedWithoutFile to true with a decision record."
+    },
+    {
+      "dir": "gsd-core-omp",
+      "source": "in-repo",
+      "private": false,
+      "requiredForRelease": true,
+      "expectedLicenseFile": true,
+      "licenceAcceptedWithoutFile": false,
+      "licenseNote": "Tracked in this repository. package.json declares AGPL-3.0-or-later, but this directory has no LICENSE file. The tag gate fails until one is added here."
+    },
+    {
+      "dir": "autonogrammer-hooks-omp",
+      "source": "in-repo",
+      "private": false,
+      "requiredForRelease": true,
+      "expectedLicenseFile": true,
+      "licenceAcceptedWithoutFile": false,
+      "licenseNote": "Tracked in this repository. package.json declares AGPL-3.0-or-later, but this directory has no LICENSE file. The tag gate fails until one is added here."
+    }
+  ]
+}

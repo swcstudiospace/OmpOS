@@ -9,8 +9,8 @@
     <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
   </UserControl.Styles>
 
-  <!-- The thread block of the panel states Empty, Loading and Error (46-UI-SPEC, States; spec 4.8). Ready draws nothing. Each state is one
-       centred column of at most 420 px with 12 px gaps. -->
+  <!-- The thread block of the panel states Loading and Error (46-UI-SPEC, States; spec 4.8). Empty and Ready draw nothing: with no session
+       selected the Code landing takes the place of the empty state. Each state is one centred column of at most 420 px with 12 px gaps. -->
   <StackPanel Margin="16"
               MaxWidth="420"
               HorizontalAlignment="Center"
@@ -69,33 +69,6 @@
                    Text="{x:Static copy:AgentPanelCopy.PanelLoadingBody}"
                    TextAlignment="Center"
                    TextWrapping="Wrap" />
-      </StackPanel>
-    </Border>
-
-    <!-- Empty: no sessions. The heading is the one display line of the screen; the primary button is the only accent fill. -->
-    <Border x:Name="EmptyBlock"
-            IsVisible="False"
-            HorizontalAlignment="Center">
-      <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Cozy}">
-        <TextBlock x:Name="EmptyHeading"
-                   Classes="display"
-                   Text="{x:Static copy:AgentPanelCopy.EmptyThreadHeading}"
-                   TextAlignment="Center"
-                   TextWrapping="Wrap" />
-        <TextBlock x:Name="EmptyBody"
-                   Classes="muted"
-                   Text="{x:Static copy:AgentPanelCopy.EmptyThreadBody}"
-                   FontSize="{DynamicResource Autonogrammer.Font.Size.Body}"
-                   TextAlignment="Center"
-                   TextWrapping="Wrap"
-                   MaxWidth="380" />
-        <Button x:Name="StartFirstAgentButton"
-                Classes="primary"
-                Content="{x:Static copy:AgentPanelCopy.NewAgent}"
-                HorizontalAlignment="Center"
-                Margin="0,4,0,0"
-                MinHeight="{DynamicResource Autonogrammer.Size.ControlHeight}"
-                AutomationProperties.Name="{x:Static copy:AgentPanelCopy.StartFirstAgent}" />
       </StackPanel>
     </Border>
 

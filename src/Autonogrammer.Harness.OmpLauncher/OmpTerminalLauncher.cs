@@ -3,16 +3,16 @@ using Autonogrammer.Harness.Terminal;
 namespace Autonogrammer.Harness.OmpLauncher;
 
 /// <summary>
-/// Opens omp in an interactive terminal. It locates omp with <see cref="OmpLocator"/>, reads the version with
-/// <see cref="OmpVersionProbe"/>, then starts the located executable through an <see cref="ITerminalBackend"/> with the
-/// argument array, the project directory and the environment variables of the request. A missing omp is returned as <see cref="OmpTerminalNotFound"/>; it never throws.
+/// Opens omp in an interactive terminal. It locates omp, reads the version with <see cref="OmpVersionProbe"/>, then starts the located
+/// executable through an <see cref="ITerminalBackend"/> with the argument array, the project directory and the environment variables of the
+/// request. A missing omp is returned as <see cref="OmpTerminalNotFound"/>; it never throws.
 /// </summary>
 public sealed class OmpTerminalLauncher
 {
     private readonly ITerminalBackend _backend;
-    private readonly OmpLocatorOptions _locatorOptions;
+    private readonly Func<CancellationToken, Task<OmpLocation>> _locate;
 
-    /// <summary>Creates a launcher.</summary>
+    /// <summary>Creates a launcher that locates omp with <see cref="OmpLocator"/> on each launch.</summary>
     /// <param name="backend">Starts the terminal session.</param>
     /// <param name="locatorOptions">The configured path, the search directories and the known install locations.</param>
     /// <exception cref="ArgumentNullException">An argument is null.</exception>
@@ -21,7 +21,22 @@ public sealed class OmpTerminalLauncher
         ArgumentNullException.ThrowIfNull(backend);
         ArgumentNullException.ThrowIfNull(locatorOptions);
         _backend = backend;
-        _locatorOptions = locatorOptions;
+        _locate = _ => Task.FromResult(OmpLocator.Locate(locatorOptions));
+    }
+
+    /// <summary>
+    /// Creates a launcher that asks <paramref name="resolveExecutable"/> for the omp each launch runs, so a launch runs what the caller resolves at
+    /// that moment. A null answer is a missing omp.
+    /// </summary>
+    /// <param name="backend">Starts the terminal session.</param>
+    /// <param name="resolveExecutable">Returns the absolute executable for a launch, or null when none is runnable.</param>
+    /// <exception cref="ArgumentNullException">An argument is null.</exception>
+    public OmpTerminalLauncher(ITerminalBackend backend, Func<CancellationToken, Task<string?>> resolveExecutable)
+    {
+        ArgumentNullException.ThrowIfNull(backend);
+        ArgumentNullException.ThrowIfNull(resolveExecutable);
+        _backend = backend;
+        _locate = async cancellationToken => Located(await resolveExecutable(cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>
@@ -42,7 +57,7 @@ public sealed class OmpTerminalLauncher
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var location = OmpLocator.Locate(_locatorOptions);
+        var location = await _locate(cancellationToken).ConfigureAwait(false);
         if (location is OmpNotFound notFound)
         {
             return new OmpTerminalNotFound(notFound.TriedPaths, version: null, notFound.InstallGuidance);
@@ -90,4 +105,7 @@ public sealed class OmpTerminalLauncher
             return new OmpTerminalLaunchFailed($"The omp terminal could not be started: {exception.Message}");
         }
     }
+
+    private static OmpLocation Located(string? executablePath) =>
+        executablePath is null ? new OmpNotFound([], OmpLocator.InstallGuidance) : new OmpFound(executablePath);
 }

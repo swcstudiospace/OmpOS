@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Autonogrammer
+Comment=Desktop app for Autonogrammer
+Exec=autonogrammer
+Icon=autonogrammer
+Terminal=false
+Categories=Development;

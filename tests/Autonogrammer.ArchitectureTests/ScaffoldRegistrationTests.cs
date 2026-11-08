@@ -32,9 +32,9 @@ public sealed class ScaffoldRegistrationTests
     ];
 
     [Fact]
-    public void LayerMapHas62LayersAndSixNewTuples()
+    public void LayerMapHas63LayersAndSixNewTuples()
     {
-        LayerMap.Layers.Count.ShouldBe(62);
+        LayerMap.Layers.Count.ShouldBe(63);
         LayerMap.SameLayerAllowed.Count.ShouldBe(29);
 
         foreach (var tuple in NewTuples)

@@ -8,9 +8,23 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+### Added
+
+- Desktop installers. Windows: an Inno Setup installer that installs per user, adds a Start Menu entry and an optional desktop shortcut, and whose uninstaller asks before removing settings, sessions and the managed Omp runtime (the default is to keep them). Linux: a `.deb` that adds a menu entry and an `autonogrammer` command. macOS: a `.dmg` with a link to Applications. All three are unsigned and not notarized. Each is verified only when the workflow runs on its own OS.
+- Plugin bundling. Release packages carry the pinned plugin trees under `plugins/` beside the executable. Release builds fail closed until every required plugin has a licence file and the private substrate plugin's token is provisioned.
+- Omp install and update. The Code landing's Local machine card offers Install Omp, with progress, cancel and retry, and checks for a newer `@oh-my-pi/pi-coding-agent` after the window shows, on each launch. Installs verify the tarball's sha512 and the pinned Bun's SHA-256, health-check the new copy, and roll back to the last good version when a check fails. An offline start shows the installed version with a stale notice. Local sessions, CoWork sessions and the terminal resolve Omp at each launch; a remote session (ssh, container or WSL) runs the omp on its own host and does not need a local one. Side chats use the path from the last launch.
+- CoWork sign-in entry. A signed-out Code/CoWork switch now appears. CoWork shows the sign-in message and a sign-in button, or the not-configured message when no sign-in service is configured.
+- Code landing. With no session selected, the Code surface shows four environment cards: Local machine (with the Omp status it found), another machine linked to this account, Cloud, and Remote (the saved remote environments). Linked machines have no device source yet, and the remote Omp status reads "not checked yet" until the remote check is wired to the UI.
+- Remote provisioning service. It checks an SSH environment for Omp, Bun and the bundled plugins, reports drift, and installs only what has drifted, after a per-environment confirmation. It is not yet reachable from the UI.
+
 ### Fixed
 
 - Desktop checksums are published as `SHA256SUMS-desktop`. `release.yml` publishes image and SBOM checksums as `SHA256SUMS-images`, so a tag push cannot replace one file with the other.
+- The API and worker images move to runtime 10.0.14 and upgrade apt, to address GHSA-p3jp-9v83-76w9 and CVE-2026-109518 reported by the image scan.
+- The Android project's lock file restores in locked mode again.
+- Packaged apps find `plugins/` beside the executable.
+- The web head sends prompts and the event stream only to `Api:BaseUrl`, or to a `?apiBaseUrl=` origin listed in the build-time `Api:OverrideOrigins` (empty by default). Any other override, including a loopback origin that is not listed, is refused.
+- The ACP transport stops `omp acp` when a stdout line passes its cap (1 MiB by default, a constructor parameter) and fails the session with a malformed-frame error, instead of leaving the child running.
 
 ## [0.16.1] - 2026-11-07
 

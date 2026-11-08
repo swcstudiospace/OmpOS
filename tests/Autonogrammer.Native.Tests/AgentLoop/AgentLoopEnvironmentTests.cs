@@ -88,6 +88,61 @@ public sealed class AgentLoopEnvironmentTests
         Directory.Exists(environment.PluginsRoot).ShouldBeFalse();
     }
 
+    /// <summary>A packaged install ships the plugins beside the executable: with no repository above the application, that <c>plugins</c> directory is the root.</summary>
+    [Fact]
+    public void APluginsDirectoryBesideTheApplicationIsTheRootWithNoRepository()
+    {
+        using var tree = new TempTree();
+        var application = Directory.CreateDirectory(Path.Combine(tree.Root, "installed", "bin")).FullName;
+        var beside = Directory.CreateDirectory(Path.Combine(application, "plugins")).FullName;
+
+        var environment = Resolve(Variables(), application, tree.Workspace);
+
+        environment.PluginsRoot.ShouldBe(beside);
+    }
+
+    /// <summary>The application's own plugins directory is taken before the repository search, so a packaged install inside a checkout uses its own plugins.</summary>
+    [Fact]
+    public void TheApplicationsPluginsDirectoryIsTakenBeforeTheRepositorySearch()
+    {
+        using var tree = new TempTree();
+        tree.Write("repo/.gitmodules", string.Empty);
+        var application = Directory.CreateDirectory(Path.Combine(tree.Root, "repo", "bin")).FullName;
+        var beside = Directory.CreateDirectory(Path.Combine(application, "plugins")).FullName;
+
+        var environment = Resolve(Variables(), application, tree.Workspace);
+
+        environment.PluginsRoot.ShouldBe(beside);
+    }
+
+    /// <summary>A directory without a plugins directory is not a plugins root, and a file named <c>plugins</c> is not one either: the search continues.</summary>
+    [Fact]
+    public void AnApplicationDirectoryWithoutAPluginsDirectoryFallsThroughToTheSearch()
+    {
+        using var tree = new TempTree();
+        tree.Write("repo/.gitmodules", string.Empty);
+        var empty = Directory.CreateDirectory(Path.Combine(tree.Root, "repo", "empty")).FullName;
+        var application = Directory.CreateDirectory(Path.Combine(tree.Root, "repo", "bin")).FullName;
+        tree.Write("repo/bin/plugins", "a file, not a directory");
+
+        Resolve(Variables(), empty, tree.Workspace).PluginsRoot.ShouldBe(Path.Combine(tree.Root, "repo", "plugins"));
+        Resolve(Variables(), application, tree.Workspace).PluginsRoot.ShouldBe(Path.Combine(tree.Root, "repo", "plugins"));
+    }
+
+    /// <summary>The plugins-root variable still wins over a plugins directory beside the application.</summary>
+    [Fact]
+    public void ThePluginsRootVariableStillWinsOverThePluginsDirectoryBesideTheApplication()
+    {
+        using var tree = new TempTree();
+        var application = Directory.CreateDirectory(Path.Combine(tree.Root, "installed", "bin")).FullName;
+        Directory.CreateDirectory(Path.Combine(application, "plugins"));
+        var configured = Path.Combine(tree.Root, "elsewhere", "plugins");
+
+        var environment = Resolve(Variables((AgentLoopEnvironment.PluginsRootVariable, configured)), application, tree.Workspace);
+
+        environment.PluginsRoot.ShouldBe(configured);
+    }
+
     /// <summary>The workspace root is the current directory.</summary>
     [Fact]
     public void TheWorkspaceRootIsTheCurrentDirectory()

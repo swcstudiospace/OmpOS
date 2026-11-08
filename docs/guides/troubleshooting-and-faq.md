@@ -63,7 +63,7 @@ More in the [Agent loop runbook](../runbooks/agent-loop.md).
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | The API refuses to start | The development principal and in-memory harness are only allowed in Development | Use the command in [Getting started](getting-started.md). |
-| The web page cannot reach the API | CORS origin or API origin mismatch | `Api__Cors__Origins__0` must be the page origin; the page reads `Api:BaseUrl` (or `?apiBaseUrl=` on loopback). |
+| The web page cannot reach the API | CORS origin or API origin mismatch | `Api__Cors__Origins__0` must be the page origin; the page reads `Api:BaseUrl`. A `?apiBaseUrl=` override is refused unless its origin is listed in `Api:OverrideOrigins` in `wwwroot/appsettings.json`. |
 | Replies are echoes | The in-memory harness is a scripted echo, not a model | Expected. |
 | A Demo page shows no real data | The Demo is simulated | Expected: see the banner. |
 

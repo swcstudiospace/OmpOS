@@ -48,6 +48,9 @@ internal sealed record HeadServicesOptions
     /// <summary>Gets the configured path of omp, or null to search the environment, <c>PATH</c> and the known install places. It decides whether local automations can run.</summary>
     public string? OmpPath { get; init; }
 
+    /// <summary>Gets the absolute directory the managed omp install owns, or null when the managed install is not consulted for the Code landing's omp status.</summary>
+    public string? OmpManagedRoot { get; init; }
+
     /// <summary>Gets a function that says whether omp is installed, or null to look for it. Tests replace it.</summary>
     public Func<bool>? OmpAvailable { get; init; }
 

@@ -186,6 +186,7 @@ internal sealed class AgentHead : IAsyncDisposable
                     StateRoot = loop.StateRoot,
                     PluginsRoot = loop.PluginsRoot,
                     WorkspaceRoot = loop.WorkspaceRoot,
+                    OmpManagedRoot = Autonogrammer.Native.Composition.HeadServices.ResolveManagedOmpRoot(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify), loop.StateRoot),
                     TopLevel = topLevel,
                     LoggerFactory = DesktopLogging.Factory,
                 },
@@ -552,7 +553,8 @@ internal sealed class AgentHead : IAsyncDisposable
             options.TimeProvider,
             options.ProviderKeys,
             services?.Mcp,
-            coworkTools);
+            coworkTools,
+            services is null ? null : ct => services.ResolveOmpForLaunchAsync(ct));
 
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
     private static async Task<AgentHead> BuildModelsAsync(SessionEngineSet host, HeadSettings settings, CoworkHead cowork, SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, Autonogrammer.Native.Composition.HeadServices? services, BrowserUseCompositionResult browser)

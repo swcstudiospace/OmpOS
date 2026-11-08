@@ -39,6 +39,9 @@ internal sealed class CoworkSessionHostOptions
     /// <summary>Gets the omp path.</summary>
     public string? OmpPath { get; init; }
 
+    /// <summary>Gets the resolver of the omp each session open runs, or null to run <see cref="OmpPath"/> as given.</summary>
+    public Func<CancellationToken, Task<string?>>? ResolveOmpPath { get; init; }
+
     /// <summary>Gets whether the session is remote.</summary>
     public bool Remote { get; init; }
 

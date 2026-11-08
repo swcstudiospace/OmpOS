@@ -8,14 +8,18 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// The API origin comes from wwwroot/appsettings.json (Api:BaseUrl). A ?apiBaseUrl= query override is accepted only for loopback hosts (local
-// development). No host is hardcoded. The browser stores no credential: an owner token and an account token are held in memory only. Auth:Origin
-// is the built auth-host origin; a client block whose project URL differs is refused.
+// The API origin comes from wwwroot/appsettings.json (Api:BaseUrl). A ?apiBaseUrl= query override is honoured only when its origin is
+// listed in Api:OverrideOrigins in the same file (a build-time allowlist, empty by default); any other override is refused. No host is
+// hardcoded. The browser stores no credential: an owner token and an account token are held in memory only. Auth:Origin is the built
+// auth-host origin; a client block whose project URL differs is refused.
 static Uri ResolveApiBase(IServiceProvider sp)
 {
     var navigation = sp.GetRequiredService<NavigationManager>();
     var configuration = sp.GetRequiredService<IConfiguration>();
-    return new Uri(ApiBaseUrlResolver.Resolve(configuration[ApiBaseUrlResolver.ConfigKey], navigation.Uri), UriKind.Absolute);
+    var overrideOrigins = configuration.GetSection(ApiBaseUrlResolver.OverrideOriginsKey).GetChildren().Select(static child => child.Value);
+    return new Uri(
+        ApiBaseUrlResolver.Resolve(configuration[ApiBaseUrlResolver.ConfigKey], navigation.Uri, overrideOrigins),
+        UriKind.Absolute);
 }
 
 static void AddApiServices(IServiceCollection services) =>

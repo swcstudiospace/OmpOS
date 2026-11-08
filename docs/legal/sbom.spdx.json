@@ -1,23 +1,23 @@
 {
   "SPDXID": "SPDXRef-DOCUMENT",
   "creationInfo": {
-    "created": "2026-11-05T20:09:50Z",
+    "created": "2026-11-07T16:15:07Z",
     "creators": [
       "Tool: generate-sbom.py"
     ]
   },
   "dataLicense": "CC0-1.0",
-  "documentNamespace": "https://github.com/swcstudiospace/OmpOS/sbom/b3b067085db72d9352106d820b34aa8c44e7e332034d59fefe83d05bbb2ae595",
+  "documentNamespace": "https://github.com/swcstudiospace/OmpOS/sbom/c981aaddb891a1aabec1076595fdf8d162ed2fdaace94904ac2c72c72dfea32e",
   "name": "Autonogrammer",
   "packages": [
     {
-      "SPDXID": "SPDXRef-Package--oh-my-pi-pi-coding-agent-18.12.5",
+      "SPDXID": "SPDXRef-Package--oh-my-pi-pi-coding-agent-18.18.1",
       "copyrightText": "NOASSERTION",
-      "downloadLocation": "https://registry.npmjs.org/@oh-my-pi/pi-coding-agent/-/pi-coding-agent-18.12.5.tgz",
+      "downloadLocation": "https://registry.npmjs.org/@oh-my-pi/pi-coding-agent/-/pi-coding-agent-18.18.1.tgz",
       "externalRefs": [
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:npm/%40oh-my-pi/pi-coding-agent@18.12.5",
+          "referenceLocator": "pkg:npm/%40oh-my-pi/pi-coding-agent@18.18.1",
           "referenceType": "purl"
         }
       ],
@@ -25,7 +25,7 @@
       "licenseConcluded": "NOASSERTION",
       "licenseDeclared": "NOASSERTION",
       "name": "@oh-my-pi/pi-coding-agent",
-      "versionInfo": "18.12.5"
+      "versionInfo": "18.18.1"
     },
     {
       "SPDXID": "SPDXRef-Package-AngleSharp-1.8.5",
@@ -3853,13 +3853,13 @@
       "versionInfo": "16.3.0"
     },
     {
-      "SPDXID": "SPDXRef-Package-bun-1.4.3",
+      "SPDXID": "SPDXRef-Package-bun-1.4.4",
       "copyrightText": "NOASSERTION",
-      "downloadLocation": "https://github.com/oven-sh/bun/releases/download/bun-v1.4.3/bun-linux-x64.zip",
+      "downloadLocation": "https://github.com/oven-sh/bun/releases/download/bun-v1.4.4/bun-linux-x64.zip",
       "externalRefs": [
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:github/oven-sh/bun@bun-v1.4.3",
+          "referenceLocator": "pkg:github/oven-sh/bun@bun-v1.4.4",
           "referenceType": "purl"
         }
       ],
@@ -3867,7 +3867,7 @@
       "licenseConcluded": "NOASSERTION",
       "licenseDeclared": "MIT",
       "name": "bun",
-      "versionInfo": "1.4.3"
+      "versionInfo": "1.4.4"
     },
     {
       "SPDXID": "SPDXRef-Package-bunit-2.12.5",
@@ -4471,6 +4471,15 @@
       "name": "src/Autonogrammer.Harness.Remote"
     },
     {
+      "SPDXID": "SPDXRef-Project-src-Autonogrammer.Harness.RemoteProvision",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "AGPL-3.0-or-later",
+      "name": "src/Autonogrammer.Harness.RemoteProvision"
+    },
+    {
       "SPDXID": "SPDXRef-Project-src-Autonogrammer.Harness.Rpc",
       "copyrightText": "NOASSERTION",
       "downloadLocation": "NOASSERTION",
@@ -4993,6 +5002,15 @@
       "name": "tests/Autonogrammer.Harness.Remote.Tests"
     },
     {
+      "SPDXID": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "AGPL-3.0-or-later",
+      "name": "tests/Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
       "SPDXID": "SPDXRef-Project-tests-Autonogrammer.Harness.Rpc.Tests",
       "copyrightText": "NOASSERTION",
       "downloadLocation": "NOASSERTION",
@@ -5423,6 +5441,11 @@
       "spdxElementId": "SPDXRef-DOCUMENT"
     },
     {
+      "relatedSpdxElement": "SPDXRef-Project-src-Autonogrammer.Harness.RemoteProvision",
+      "relationshipType": "DESCRIBES",
+      "spdxElementId": "SPDXRef-DOCUMENT"
+    },
+    {
       "relatedSpdxElement": "SPDXRef-Project-src-Autonogrammer.Harness.Rpc",
       "relationshipType": "DESCRIBES",
       "spdxElementId": "SPDXRef-DOCUMENT"
@@ -5709,6 +5732,11 @@
     },
     {
       "relatedSpdxElement": "SPDXRef-Project-tests-Autonogrammer.Harness.Remote.Tests",
+      "relationshipType": "DESCRIBES",
+      "spdxElementId": "SPDXRef-DOCUMENT"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests",
       "relationshipType": "DESCRIBES",
       "spdxElementId": "SPDXRef-DOCUMENT"
     },
@@ -6018,6 +6046,11 @@
       "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Android"
     },
     {
+      "relatedSpdxElement": "SPDXRef-Package-DiffPlex-1.9.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Android"
+    },
+    {
       "relatedSpdxElement": "SPDXRef-Package-HarfBuzzSharp-8.3.1.5",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Android"
@@ -6073,7 +6106,17 @@
       "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Android"
     },
     {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Android"
+    },
+    {
       "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration.Abstractions-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Android"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration.Binder-10.0.13",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Android"
     },
@@ -6104,6 +6147,11 @@
     },
     {
       "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Options-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Android"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Options.ConfigurationExtensions-10.0.13",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Android"
     },
@@ -7013,7 +7061,7 @@
       "spdxElementId": "SPDXRef-Project-apps-Autonogrammer.Web"
     },
     {
-      "relatedSpdxElement": "SPDXRef-Package--oh-my-pi-pi-coding-agent-18.12.5",
+      "relatedSpdxElement": "SPDXRef-Package--oh-my-pi-pi-coding-agent-18.18.1",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-services-Autonogrammer.AgentWorker"
     },
@@ -7078,12 +7126,12 @@
       "spdxElementId": "SPDXRef-Project-services-Autonogrammer.AgentWorker"
     },
     {
-      "relatedSpdxElement": "SPDXRef-Package-bun-1.4.3",
+      "relatedSpdxElement": "SPDXRef-Package-bun-1.4.4",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-services-Autonogrammer.AgentWorker"
     },
     {
-      "relatedSpdxElement": "SPDXRef-Package--oh-my-pi-pi-coding-agent-18.12.5",
+      "relatedSpdxElement": "SPDXRef-Package--oh-my-pi-pi-coding-agent-18.18.1",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-services-Autonogrammer.Api"
     },
@@ -7243,7 +7291,7 @@
       "spdxElementId": "SPDXRef-Project-services-Autonogrammer.Api"
     },
     {
-      "relatedSpdxElement": "SPDXRef-Package-bun-1.4.3",
+      "relatedSpdxElement": "SPDXRef-Package-bun-1.4.4",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-services-Autonogrammer.Api"
     },
@@ -8486,6 +8534,51 @@
       "relatedSpdxElement": "SPDXRef-Package-Porta.Pty-2.2.3",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.Remote"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Markdig-1.4.2",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.RemoteProvision"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Meziantou.Analyzer-3.0.315",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.RemoteProvision"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.CodeAnalysis.BannedApiAnalyzers-5.6.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.RemoteProvision"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.DependencyInjection.Abstractions-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.RemoteProvision"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Logging.Abstractions-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.RemoteProvision"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.NET.ILLink.Tasks-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.RemoteProvision"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.VisualStudio.Threading.Analyzers-18.12.1",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.RemoteProvision"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Windows.Console.ConPTY-1.24.260710001",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.RemoteProvision"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Porta.Pty-2.2.3",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.RemoteProvision"
     },
     {
       "relatedSpdxElement": "SPDXRef-Package-Meziantou.Analyzer-3.0.315",
@@ -17826,6 +17919,211 @@
       "relatedSpdxElement": "SPDXRef-Package-xunit.v3.runner.inproc.console-4.0.2",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Remote.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-DiffEngine-11.3.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-EmptyFiles-4.4.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Markdig-1.4.2",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Meziantou.Analyzer-3.0.315",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.ApplicationInsights-2.23.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Bcl.AsyncInterfaces-6.0.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.CodeAnalysis.BannedApiAnalyzers-5.6.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration.Abstractions-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration.FileExtensions-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration.Json-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.DependencyInjection-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.DependencyInjection.Abstractions-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.FileProviders.Abstractions-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.FileProviders.Physical-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.FileSystemGlobbing-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Logging.Abstractions-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Primitives-10.0.13",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Testing.Extensions.Telemetry-2.5.1",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Testing.Extensions.TrxReport-2.5.1",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Testing.Extensions.TrxReport.Abstractions-2.5.1",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Testing.Platform-2.5.1",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Testing.Platform.MSBuild-2.5.1",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.VisualStudio.Threading.Analyzers-18.12.1",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Win32.Registry-5.0.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Windows.Console.ConPTY-1.24.260710001",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Porta.Pty-2.2.3",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Shouldly-4.3.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-System.CodeDom-6.0.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-System.Management-6.0.1",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-System.Security.AccessControl-6.0.1",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-coverlet.MTP-10.1.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-xunit.analyzers-2.2.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-xunit.v3-4.0.2",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-xunit.v3.assert-4.0.2",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-xunit.v3.common-4.0.2",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-xunit.v3.core.mtp-v2-4.0.2",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-xunit.v3.extensibility.core-4.0.2",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-xunit.v3.mtp-v2-4.0.2",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-xunit.v3.runner.common-4.0.2",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-xunit.v3.runner.inproc.console-4.0.2",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.RemoteProvision.Tests"
     },
     {
       "relatedSpdxElement": "SPDXRef-Package-DiffEngine-11.3.0",
