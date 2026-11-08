@@ -31,6 +31,7 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 - Packaged apps find `plugins/` beside the executable.
 - The web head sends prompts and the event stream only to `Api:BaseUrl`, or to a `?apiBaseUrl=` origin listed in the build-time `Api:OverrideOrigins` (empty by default). Any other override, including a loopback origin that is not listed, is refused.
 - The ACP transport stops `omp acp` when a stdout line passes its cap (1 MiB by default, a constructor parameter) and fails the session with a malformed-frame error, instead of leaving the child running.
+- Native CoWork reads the signed-in account. The head used a fixed signed-out gate, so a signed-in Native head could not start a CoWork task, although Artifacts already read the account. A head without account services stays signed out.
 
 ## [0.16.1] - 2026-11-07
 
