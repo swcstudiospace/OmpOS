@@ -1,8 +1,10 @@
 using Autonogrammer.Harness.AgentLoop.Hooks;
+using Autonogrammer.Presentation.Accounts;
 using Autonogrammer.Presentation.Checkpoints;
 using Autonogrammer.Presentation.Cloud;
 using Autonogrammer.Presentation.Commands.Handlers;
 using Autonogrammer.Presentation.Editor;
+using Autonogrammer.Presentation.Landing;
 using Autonogrammer.Presentation.Modes;
 using Autonogrammer.Presentation.Remote;
 using Autonogrammer.Presentation.Worktrees;
@@ -54,4 +56,13 @@ public sealed record ShellServices
 
     /// <summary>Gets the cloud agents host, or null when the API address is not configured (the cloud hand-off then says what is missing).</summary>
     public ICloudAgentsHost? Cloud { get; init; }
+
+    /// <summary>Gets the account host the Code landing reads the sign-in, offline and configured state from, or null when the window has no account.</summary>
+    public IAccountHost? Account { get; init; }
+
+    /// <summary>Gets the reader of the omp status on this computer that the Code landing shows, or null when the window does not check omp.</summary>
+    public Func<CancellationToken, Task<LocalOmpStatus>>? LocalOmp { get; init; }
+
+    /// <summary>Gets the opener of the sign-in window for an account host, or null when the window cannot sign in.</summary>
+    public Action<IAccountHost>? SignIn { get; init; }
 }

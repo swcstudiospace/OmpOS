@@ -24,6 +24,7 @@ using Autonogrammer.Presentation.Accounts;
 using Autonogrammer.Presentation.Checkpoints;
 using Autonogrammer.Presentation.Cloud;
 using Autonogrammer.Presentation.Commands.Handlers;
+using Autonogrammer.Presentation.Landing;
 using Autonogrammer.Presentation.Modes;
 using Autonogrammer.Presentation.Remote;
 using Autonogrammer.Presentation.Safety;
@@ -67,6 +68,7 @@ internal sealed class HeadServices : IAsyncDisposable
     private readonly DesktopAccountHost _account;
     private readonly Func<CancellationToken, ValueTask<string?>> _readToken;
     private readonly ArtifactsComposition _artifacts;
+    private readonly LocalOmpStatusProbe _localOmp;
     private readonly ILogger? _logger;
     private int _disposed;
 
@@ -94,7 +96,8 @@ internal sealed class HeadServices : IAsyncDisposable
         SshClientOptions sshOptions,
         ContainerHosts containers,
         DesktopAccountHost account,
-        Func<CancellationToken, ValueTask<string?>> readToken)
+        Func<CancellationToken, ValueTask<string?>> readToken,
+        LocalOmpStatusProbe localOmp)
     {
         SshOptions = sshOptions;
         PodmanOptions = containers.Podman;
@@ -132,6 +135,7 @@ internal sealed class HeadServices : IAsyncDisposable
         Account = account;
         _account = account;
         _readToken = readToken;
+        _localOmp = localOmp;
         // Created last: nothing after it can throw, so the automations never outlive a failed constructor.
         Automations = CreateAutomations(options, configDirectory, cloud, TimeProvider);
     }
@@ -226,6 +230,9 @@ internal sealed class HeadServices : IAsyncDisposable
     /// <summary>Gets the cloud agents host, or null when no API address is configured.</summary>
     public ICloudAgentsHost? Cloud { get; }
 
+    /// <summary>Reads the status of omp on this computer for the Code landing: its source and version, or why it is missing.</summary>
+    public Func<CancellationToken, Task<LocalOmpStatus>> ReadLocalOmp => _localOmp.ReadAsync;
+
     /// <summary>Gets the account panel host. Null only when construction was skipped; the head always builds one.</summary>
     public IAccountHost? Account { get; }
 
@@ -274,6 +281,7 @@ internal sealed class HeadServices : IAsyncDisposable
         // The stores and the API client are owned here until the services take them over; a failure part way disposes the ones that exist.
         Stores? stores = null;
         HttpClient? apiClient = null;
+        LocalOmpStatusProbe? localOmp = null;
         var created = false;
         try
         {
@@ -291,21 +299,24 @@ internal sealed class HeadServices : IAsyncDisposable
             var opened = await OpenAccountAsync(options, clock, urlLauncher, cancellationToken).ConfigureAwait(false);
             apiClient = opened.Client;
             var containers = CreateContainerHosts(options, clock);
+            localOmp = new LocalOmpStatusProbe(options.OmpPath, options.OmpManagedRoot, clock);
 
             var services = new HeadServices(
                 options, runModeHub.HomeDirectory, config, hooks, hookApproval, stores.RemoteProfiles, remoteEnvironments, mcp, stores.Checkpoints, setupConsent, stores.ConsentStore,
-                worktrees, new AboutLauncher(), urlLauncher, display, runModeHub, runModes, stores.WorkspaceSets, opened.Cloud, apiClient, sshOptions, containers, opened.Account, opened.Token);
+                worktrees, new AboutLauncher(), urlLauncher, display, runModeHub, runModes, stores.WorkspaceSets, opened.Cloud, apiClient, sshOptions, containers, opened.Account, opened.Token, localOmp);
             holder.Owner = services;
             created = true;
 
-            // The services own the stores and the client from here on.
+            // The services own the stores, the client and the omp probe from here on.
             stores = null;
             apiClient = null;
+            localOmp = null;
             return services;
         }
         finally
         {
             apiClient?.Dispose();
+            localOmp?.Dispose();
             stores?.Dispose();
             if (!created)
             {
@@ -506,6 +517,7 @@ internal sealed class HeadServices : IAsyncDisposable
         await _account.DisposeAsync().ConfigureAwait(false);
         _cloudDisposable?.Dispose();
         _apiClient?.Dispose();
+        _localOmp.Dispose();
         Checkpoints.Dispose();
         _consentStore.Dispose();
         WorkspaceSets.Dispose();

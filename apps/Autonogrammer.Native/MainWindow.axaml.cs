@@ -1,8 +1,10 @@
 using Autonogrammer.Native.Composition;
+using Autonogrammer.Native.Cowork;
 using Autonogrammer.Native.Settings;
 using Autonogrammer.Native.Views.Branding;
 using Autonogrammer.Native.Views.Shell;
 using Autonogrammer.Presentation;
+using Autonogrammer.Presentation.Accounts;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Kanban;
 using Avalonia.Controls;
@@ -53,6 +55,9 @@ internal partial class MainWindow : Window
             WorkspaceSets = services.WorkspaceSets,
             WorkspacePicker = new WorkspaceSetPickerBackend(),
             Cloud = services.Cloud,
+            Account = services.Account,
+            LocalOmp = services.ReadLocalOmp,
+            SignIn = static host => CoworkSurfaceServicesFactory.ShowSignInWindow(new AccountViewModel(host)),
         };
 
     private static bool IsReducedMotion(MotionPreference motion) => motion == MotionPreference.Reduced;
