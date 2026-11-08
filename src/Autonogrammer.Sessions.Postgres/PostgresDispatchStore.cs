@@ -21,10 +21,12 @@ public sealed class PostgresDispatchStore : IDispatchStore
     private const string Platform = "unspecified";
     private const string Queued = "queued";
     private const string DeviceSelect =
-        "SELECT id, account_id, name, public_key, coalesce(credential_jti, ''), coalesce(credential_expires_at::text, ''), coalesce(capabilities::text, '[]'), coalesce(paired_session_id, ''), coalesce(last_seen_at::text, ''), coalesce(revoked_at::text, ''), coalesce(revoke_reason, '') FROM dispatch_devices";
+        "SELECT id, account_id, name, public_key, coalesce(credential_jti, ''), coalesce(credential_expires_at::text, ''), coalesce(capabilities::text, '[]'), coalesce(paired_session_id, ''), coalesce(last_seen_at::text, ''), coalesce(revoked_at::text, ''), coalesce(revoke_reason, ''), coalesce(last_source_prefix, '') FROM dispatch_devices";
 
     private const string CommandSelect =
         "SELECT device_id, seq, op, state, idempotency_key, expires_at::text, (body IS NULL)::int, coalesce(body::text, ''), coalesce(result::text, ''), created_at::text, id FROM dispatch_commands";
+
+    private static readonly string[] SessionOpWires = DispatchRunClass.SessionScopedOps.Select(DispatchOpWire.ToWire).ToArray();
 
     private readonly NpgsqlDataSource _dataSource;
     private readonly DispatchStoreLimits _limits;
@@ -175,11 +177,11 @@ public sealed class PostgresDispatchStore : IDispatchStore
     }
 
     /// <inheritdoc />
-    public ValueTask<DispatchTransitionResult> TryTransitionAsync(string accountId, string commandId, DispatchCommandState expected, DispatchCommandState desired, DispatchFailureReason? reason, CancellationToken cancellationToken)
+    public ValueTask<DispatchTransitionResult> TryTransitionAsync(string accountId, string commandId, DispatchCommandState expected, DispatchCommandState desired, DispatchFailureReason? reason, DispatchFeedDraft? feed, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(accountId);
         ArgumentNullException.ThrowIfNull(commandId);
-        return new ValueTask<DispatchTransitionResult>(_pipeline.ExecuteTransactionAsync(OperationClass.Interactive, token => TransitionCoreAsync(accountId, commandId, expected, desired, reason, token), cancellationToken));
+        return new ValueTask<DispatchTransitionResult>(_pipeline.ExecuteTransactionAsync(OperationClass.Interactive, token => TransitionCoreAsync(accountId, commandId, expected, desired, reason, feed, token), cancellationToken));
     }
 
     /// <inheritdoc />
@@ -195,6 +197,80 @@ public sealed class PostgresDispatchStore : IDispatchStore
     {
         ArgumentNullException.ThrowIfNull(accountId);
         return new ValueTask<DispatchFeedPage>(_pipeline.ExecuteTransactionAsync(OperationClass.Interactive, token => ReadFeedCoreAsync(accountId, afterId, token), cancellationToken));
+    }
+
+    /// <inheritdoc />
+    public ValueTask<bool> RecordSourcePrefixAsync(string accountId, string deviceId, string? sourcePrefix, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(deviceId);
+        return new ValueTask<bool>(_pipeline.ExecuteTransactionAsync(OperationClass.Interactive, token => SourcePrefixCoreAsync(accountId, deviceId, sourcePrefix, token), cancellationToken));
+    }
+
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<DispatchSweepCandidate>> ListOverdueAsync(DispatchSweepCutoffs cutoffs, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(cutoffs);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
+        return new ValueTask<IReadOnlyList<DispatchSweepCandidate>>(_pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: true, token => OverdueCoreAsync(cutoffs, limit, token), cancellationToken));
+    }
+
+    private async Task<bool> SourcePrefixCoreAsync(string accountId, string deviceId, string? sourcePrefix, CancellationToken cancellationToken)
+    {
+        var connection = await OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await using (transaction.ConfigureAwait(false))
+            {
+                using var command = PostgresSql.Create(connection, transaction);
+                command.CommandText = "UPDATE dispatch_devices SET last_source_prefix = @prefix WHERE id = @id AND account_id = @account_id";
+                command.Parameters.AddWithValue("id", deviceId);
+                command.Parameters.AddWithValue("account_id", accountId);
+                command.Parameters.AddWithValue("prefix", sourcePrefix ?? (object)DBNull.Value);
+                return await FinishUpdateAsync(connection, transaction, command, accountId, deviceId, "device.source_prefix", cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private async Task<IReadOnlyList<DispatchSweepCandidate>> OverdueCoreAsync(DispatchSweepCutoffs cutoffs, int limit, CancellationToken cancellationToken)
+    {
+        var connection = await OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            using var command = PostgresSql.Create(connection, null);
+            command.CommandText = """
+                SELECT account_id, id, state, op, expires_at::text, updated_at::text
+                FROM dispatch_commands
+                WHERE (state IN ('queued', 'delivered') AND expires_at <= @now)
+                   OR (state = 'awaiting_approval' AND updated_at <= @approval)
+                   OR (state IN ('received', 'accepted', 'running') AND coalesce(received_at, updated_at) <= CASE WHEN op = ANY(@session_ops) THEN @session ELSE @task END)
+                ORDER BY updated_at
+                LIMIT @limit
+                """;
+            command.Parameters.AddWithValue("now", cutoffs.Now);
+            command.Parameters.AddWithValue("approval", cutoffs.ApprovalBefore);
+            command.Parameters.AddWithValue("session", cutoffs.SessionBefore);
+            command.Parameters.AddWithValue("task", cutoffs.TaskBefore);
+            command.Parameters.AddWithValue("session_ops", SessionOpWires);
+            command.Parameters.AddWithValue("limit", limit);
+            var overdue = new List<DispatchSweepCandidate>();
+            var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using (reader.ConfigureAwait(false))
+            {
+                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    if (!DispatchCommandStateWire.TryParse(reader.GetString(2), out var state) || !DispatchOpWire.TryParse(reader.GetString(3), out var op))
+                    {
+                        throw new InvalidOperationException("Stored dispatch command has an unknown closed value.");
+                    }
+
+                    overdue.Add(new DispatchSweepCandidate(reader.GetString(0), reader.GetString(1), state, op, ParseTime(reader.GetString(4)), ParseTime(reader.GetString(5))));
+                }
+            }
+
+            return overdue;
+        }
     }
 
     private async Task<DispatchDeviceCreateResult> CreateDeviceCoreAsync(CreateDispatchDevice request, CancellationToken cancellationToken)
@@ -502,10 +578,9 @@ public sealed class PostgresDispatchStore : IDispatchStore
             }
 
             using var command = PostgresSql.Create(connection, null);
-            command.CommandText = CommandSelect + " WHERE account_id = @account_id AND device_id = @device_id AND state = @state AND seq > @after AND expires_at > @now ORDER BY seq";
+            command.CommandText = CommandSelect + " WHERE account_id = @account_id AND device_id = @device_id AND state IN ('queued', 'delivered') AND seq > @after AND expires_at > @now ORDER BY seq";
             command.Parameters.AddWithValue("account_id", accountId);
             command.Parameters.AddWithValue("device_id", deviceId);
-            command.Parameters.AddWithValue("state", Queued);
             command.Parameters.AddWithValue("after", afterSeq);
             command.Parameters.AddWithValue("now", _timeProvider.GetUtcNow());
             var list = new List<DispatchCommandRecord>();
@@ -546,7 +621,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
         }
     }
 
-    private async Task<DispatchTransitionResult> TransitionCoreAsync(string accountId, string commandId, DispatchCommandState expected, DispatchCommandState desired, DispatchFailureReason? reason, CancellationToken cancellationToken)
+    private async Task<DispatchTransitionResult> TransitionCoreAsync(string accountId, string commandId, DispatchCommandState expected, DispatchCommandState desired, DispatchFailureReason? reason, DispatchFeedDraft? feed, CancellationToken cancellationToken)
     {
         var connection = await OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -568,6 +643,11 @@ public sealed class PostgresDispatchStore : IDispatchStore
                 }
 
                 await ApplyTransitionAsync(connection, transaction, accountId, commandId, desired, reason, loaded, cancellationToken).ConfigureAwait(false);
+                if (feed is not null)
+                {
+                    _ = await InsertFeedInTransactionAsync(connection, transaction, accountId, feed.Kind, feed.Payload, cancellationToken).ConfigureAwait(false);
+                }
+
                 await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
                 return new DispatchTransitionResult(DispatchTransitionStatus.Applied, desired);
             }
@@ -576,22 +656,28 @@ public sealed class PostgresDispatchStore : IDispatchStore
 
     private async Task<DispatchFeedEventRecord> AppendFeedCoreAsync(string accountId, string kind, string? payload, CancellationToken cancellationToken)
     {
-        var now = _timeProvider.GetUtcNow();
         var connection = await OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
             var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
             await using (transaction.ConfigureAwait(false))
             {
-                await LockAccountAsync(connection, transaction, accountId, now, cancellationToken).ConfigureAwait(false);
-                await PruneFeedAsync(connection, transaction, accountId, now, cancellationToken).ConfigureAwait(false);
-                var id = await IncrementFeedAsync(connection, transaction, accountId, cancellationToken).ConfigureAwait(false);
-                await InsertFeedAsync(connection, transaction, accountId, id, now, kind, payload, cancellationToken).ConfigureAwait(false);
-                await AuditAsync(connection, transaction, accountId, null, null, "feed.append", "applied", cancellationToken).ConfigureAwait(false);
+                var stored = await InsertFeedInTransactionAsync(connection, transaction, accountId, kind, payload, cancellationToken).ConfigureAwait(false);
                 await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-                return new DispatchFeedEventRecord(id, accountId, kind, payload, now);
+                return stored;
             }
         }
+    }
+
+    private async Task<DispatchFeedEventRecord> InsertFeedInTransactionAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, string accountId, string kind, string? payload, CancellationToken cancellationToken)
+    {
+        var now = _timeProvider.GetUtcNow();
+        await LockAccountAsync(connection, transaction, accountId, now, cancellationToken).ConfigureAwait(false);
+        await PruneFeedAsync(connection, transaction, accountId, now, cancellationToken).ConfigureAwait(false);
+        var id = await IncrementFeedAsync(connection, transaction, accountId, cancellationToken).ConfigureAwait(false);
+        await InsertFeedAsync(connection, transaction, accountId, id, now, kind, payload, cancellationToken).ConfigureAwait(false);
+        await AuditAsync(connection, transaction, accountId, null, null, "feed.append", "applied", cancellationToken).ConfigureAwait(false);
+        return new DispatchFeedEventRecord(id, accountId, kind, payload, now);
     }
 
     private async Task<DispatchFeedPage> ReadFeedCoreAsync(string accountId, long afterId, CancellationToken cancellationToken)
@@ -783,7 +869,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
             TerminalAt = terminal ? _timeProvider.GetUtcNow().ToString("o", CultureInfo.InvariantCulture) : loaded.Meta.TerminalAt,
         };
         using var update = PostgresSql.Create(connection, transaction);
-        update.CommandText = "UPDATE dispatch_commands SET state = @state, updated_at = @updated, result = CAST(@result AS jsonb) WHERE id = @id AND account_id = @account_id";
+        update.CommandText = "UPDATE dispatch_commands SET state = @state, updated_at = @updated, received_at = CASE WHEN @state = 'received' THEN @updated ELSE received_at END, result = CAST(@result AS jsonb) WHERE id = @id AND account_id = @account_id";
         update.Parameters.AddWithValue("state", DispatchCommandStateWire.ToWire(desired));
         update.Parameters.AddWithValue("updated", _timeProvider.GetUtcNow());
         update.Parameters.AddWithValue("result", meta.Write());
@@ -968,7 +1054,8 @@ public sealed class PostgresDispatchStore : IDispatchStore
         EmptyToNull(reader.GetString(7)),
         ParseOptional(reader.GetString(8)),
         ParseOptional(reader.GetString(9)),
-        EmptyToNull(reader.GetString(10)));
+        EmptyToNull(reader.GetString(10)),
+        EmptyToNull(reader.GetString(11)));
 
     private static DispatchDeviceRecord ToDevice(CreateDispatchDevice request) => new(
         request.AccountId,

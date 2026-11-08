@@ -317,7 +317,7 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
             {
                 if (string.Equals(row.AccountId, accountId, StringComparison.Ordinal)
                     && string.Equals(row.DeviceId, deviceId, StringComparison.Ordinal)
-                    && row.State == DispatchCommandState.Queued
+                    && row.State is (DispatchCommandState.Queued or DispatchCommandState.Delivered)
                     && row.Seq > afterSeq)
                 {
                     list.Add(row.ToRecord());
@@ -362,6 +362,7 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
         DispatchCommandState expected,
         DispatchCommandState desired,
         DispatchFailureReason? reason,
+        DispatchFeedDraft? feed,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(accountId);
@@ -379,16 +380,75 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
                 return ValueTask.FromResult(new DispatchTransitionResult(DispatchTransitionStatus.Rejected, row.State));
             }
 
+            var now = _time.GetUtcNow();
             row.State = desired;
+            if (desired == DispatchCommandState.Received)
+            {
+                row.ReceivedAt = now;
+            }
+
+            row.StateEnteredAt = now;
             row.Reason = reason;
             if (desired is DispatchCommandState.Completed or DispatchCommandState.Failed or DispatchCommandState.Cancelled or DispatchCommandState.Expired)
             {
-                row.TerminalAt = _time.GetUtcNow();
+                row.TerminalAt = now;
+            }
+
+            if (feed is not null)
+            {
+                _ = AppendFeedLocked(accountId, feed.Kind, feed.Payload);
             }
 
             return ValueTask.FromResult(new DispatchTransitionResult(DispatchTransitionStatus.Applied, row.State));
         }
     }
+
+    /// <inheritdoc />
+    public ValueTask<bool> RecordSourcePrefixAsync(string accountId, string deviceId, string? sourcePrefix, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(deviceId);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            if (!_devices.TryGetValue((accountId, deviceId), out var device))
+            {
+                return ValueTask.FromResult(false);
+            }
+
+            device.LastSourcePrefix = sourcePrefix;
+            return ValueTask.FromResult(true);
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<DispatchSweepCandidate>> ListOverdueAsync(DispatchSweepCutoffs cutoffs, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(cutoffs);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            IReadOnlyList<DispatchSweepCandidate> overdue =
+            [
+                .. _commands.Values
+                    .Where(row => IsOverdue(row, cutoffs))
+                    .OrderBy(static row => row.StateEnteredAt)
+                    .Take(limit)
+                    .Select(static row => new DispatchSweepCandidate(row.AccountId, row.CommandId, row.State, row.Op, row.ExpiresAt, row.StateEnteredAt)),
+            ];
+            return ValueTask.FromResult(overdue);
+        }
+    }
+
+    private static bool IsOverdue(CommandRow row, DispatchSweepCutoffs cutoffs) => row.State switch
+    {
+        DispatchCommandState.Queued or DispatchCommandState.Delivered => row.ExpiresAt <= cutoffs.Now,
+        DispatchCommandState.AwaitingApproval => row.StateEnteredAt <= cutoffs.ApprovalBefore,
+        DispatchCommandState.Received or DispatchCommandState.Accepted or DispatchCommandState.Running =>
+            (row.ReceivedAt ?? row.StateEnteredAt) <= (DispatchRunClass.IsSessionScoped(row.Op) ? cutoffs.SessionBefore : cutoffs.TaskBefore),
+        _ => false,
+    };
 
     /// <inheritdoc />
     public ValueTask<DispatchFeedEventRecord> AppendFeedEventAsync(string accountId, string kind, string? payload, CancellationToken cancellationToken)
@@ -398,13 +458,18 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
         cancellationToken.ThrowIfCancellationRequested();
         lock (_gate)
         {
-            var feed = FeedFor(accountId);
-            Prune(feed);
-            feed.Seq++;
-            var stored = new DispatchFeedEventRecord(feed.Seq, accountId, kind, payload, _time.GetUtcNow());
-            feed.Events.Add(stored);
-            return ValueTask.FromResult(stored);
+            return ValueTask.FromResult(AppendFeedLocked(accountId, kind, payload));
         }
+    }
+
+    private DispatchFeedEventRecord AppendFeedLocked(string accountId, string kind, string? payload)
+    {
+        var feed = FeedFor(accountId);
+        Prune(feed);
+        feed.Seq++;
+        var stored = new DispatchFeedEventRecord(feed.Seq, accountId, kind, payload, _time.GetUtcNow());
+        feed.Events.Add(stored);
+        return stored;
     }
 
     /// <inheritdoc />
@@ -522,6 +587,7 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
             BodyJson = request.BodyJson,
             IssuedAt = request.IssuedAt,
             ExpiresAt = request.ExpiresAt,
+            StateEnteredAt = request.IssuedAt,
             Accepted = accepted,
         });
         if (request.IdempotencyKey is { Length: > 0 } storedKey)
@@ -556,6 +622,8 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
 
         public string? RevokeReason { get; set; }
 
+        public string? LastSourcePrefix { get; set; }
+
         public long CommandSeq { get; set; }
 
         public DispatchDeviceRecord ToRecord() => new(
@@ -569,7 +637,8 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
             PairedSessionId,
             LastSeenAt,
             RevokedAt,
-            RevokeReason);
+            RevokeReason,
+            LastSourcePrefix);
     }
 
     private sealed class CommandRow
@@ -597,6 +666,10 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
         public required DateTimeOffset IssuedAt { get; init; }
 
         public required DateTimeOffset ExpiresAt { get; init; }
+
+        public required DateTimeOffset StateEnteredAt { get; set; }
+
+        public DateTimeOffset? ReceivedAt { get; set; }
 
         public DispatchFailureReason? Reason { get; set; }
 

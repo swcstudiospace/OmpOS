@@ -232,16 +232,25 @@ public sealed class ReconnectTests : IDisposable
         var serverSide = Task.Run(async () =>
         {
             using var session = await server.AcceptAsync(cts.Token).ConfigureAwait(false);
+            await ChallengeAsync(session, server.Endpoint, fixture.DevicePublicKey, cts.Token).ConfigureAwait(false);
             await session.SendTextAsync(welcome, cts.Token).ConfigureAwait(false);
             await session.SendTextAsync(Encoding.UTF8.GetString(DispatchTestSigner.Wire(forged)), cts.Token).ConfigureAwait(false);
             await session.SendTextAsync(Encoding.UTF8.GetString(DispatchTestSigner.Wire(valid)), cts.Token).ConfigureAwait(false);
 
-            // The forged frame gets no acknowledgement; the valid one gets "received" and then its result.
-            var ack = await session.ReceiveAsync(cts.Token).ConfigureAwait(false);
+            // The forged command is ignored. The valid command reports each state before its terminal result.
+            var received = await session.ReceiveAsync(cts.Token).ConfigureAwait(false);
+            var accepted = await session.ReceiveAsync(cts.Token).ConfigureAwait(false);
+            var running = await session.ReceiveAsync(cts.Token).ConfigureAwait(false);
             var result = await session.ReceiveAsync(cts.Token).ConfigureAwait(false);
-            ack.Text.ShouldContain("received");
-            ack.Text.ShouldContain("cmd-valid");
-            result.Text.ShouldContain("completed");
+            using var receivedJson = JsonDocument.Parse(received.Text);
+            using var acceptedJson = JsonDocument.Parse(accepted.Text);
+            using var runningJson = JsonDocument.Parse(running.Text);
+            using var resultJson = JsonDocument.Parse(result.Text);
+            receivedJson.RootElement.GetProperty("commandId").GetString().ShouldBe("cmd-valid");
+            receivedJson.RootElement.GetProperty("state").GetString().ShouldBe("received");
+            acceptedJson.RootElement.GetProperty("state").GetString().ShouldBe("accepted");
+            runningJson.RootElement.GetProperty("state").GetString().ShouldBe("running");
+            resultJson.RootElement.GetProperty("state").GetString().ShouldBe("completed");
 
             await session.CloseOutputAsync((WebSocketCloseStatus)DispatchCloseCodes.DeviceRevoked, "revoked", cts.Token).ConfigureAwait(false);
             _ = await session.ReceiveAsync(cts.Token).ConfigureAwait(false);
@@ -252,6 +261,46 @@ public sealed class ReconnectTests : IDisposable
 
         counting.Calls.ShouldBe(1);
         connector.State.ShouldBe(DispatchConnectionState.DeviceRevoked);
+    }
+
+    [Fact]
+    public async Task AConnectedDesktopSendsHeartbeatsAtTheWelcomeInterval()
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        using var server = new TestWebSocketServer();
+        var fixture = await Fixture.CreateAsync(_directory, server.Endpoint, Start.AddHours(1), new FixedJitterSource(0.5), cts.Token);
+        _disposables.Add(fixture);
+        var serverSide = Task.Run(async () =>
+        {
+            using var session = await server.AcceptAsync(cts.Token).ConfigureAwait(false);
+            await ChallengeAsync(session, server.Endpoint, fixture.DevicePublicKey, cts.Token).ConfigureAwait(false);
+            var welcome = new DispatchWelcomeFrame { V = 1, T = DispatchFrameTypes.Welcome, ServerTime = Start.ToUnixTimeSeconds(), HeartbeatSeconds = 1, Kids = [DispatchTestSigner.Kid], ResumeFromSeq = 0 };
+            await session.SendTextAsync(JsonSerializer.Serialize(welcome, DispatchJsonContext.Default.DispatchWelcomeFrame), cts.Token).ConfigureAwait(false);
+            var frame = await session.ReceiveAsync(cts.Token).ConfigureAwait(false);
+            using var heartbeat = JsonDocument.Parse(frame.Text);
+            heartbeat.RootElement.GetProperty("t").GetString().ShouldBe("hb");
+            heartbeat.RootElement.GetProperty("status").GetString().ShouldBe("idle");
+            heartbeat.RootElement.GetProperty("runningCount").GetInt32().ShouldBe(0);
+            await session.CloseOutputAsync((WebSocketCloseStatus)DispatchCloseCodes.DeviceRevoked, "revoked", cts.Token).ConfigureAwait(false);
+            _ = await session.ReceiveAsync(cts.Token).ConfigureAwait(false);
+        }, cts.Token);
+        await fixture.Connector.RunAsync(cts.Token);
+        await serverSide.ConfigureAwait(true);
+    }
+
+    private static async Task ChallengeAsync(TestWebSocketSession session, Uri endpoint, string devicePublicKey, CancellationToken cancellationToken)
+    {
+        var origin = new UriBuilder(endpoint) { Scheme = "http" }.Uri.GetLeftPart(UriPartial.Authority);
+        var challenge = new DispatchChallengeFrame { V = 1, T = DispatchFrameTypes.Challenge, Nonce = "challenge123", Origin = origin, ServerTime = Start.ToUnixTimeSeconds(), Protocols = ["1"] };
+        await session.SendTextAsync(JsonSerializer.Serialize(challenge, DispatchJsonContext.Default.DispatchChallengeFrame), cancellationToken).ConfigureAwait(false);
+        var message = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+        using var hello = JsonDocument.Parse(message.Text);
+        hello.RootElement.GetProperty("deviceId").GetString().ShouldBe(DispatchTestSigner.DeviceId);
+        var encoded = hello.RootElement.GetProperty("signature").GetString()!;
+        var signature = Convert.FromBase64String(encoded.Replace('-', '+').Replace('_', '/') + "==");
+        using var publicKey = System.Security.Cryptography.ECDsa.Create();
+        publicKey.ImportSubjectPublicKeyInfo(Convert.FromBase64String(devicePublicKey), out _);
+        publicKey.VerifyData(DispatchHelloCanonical.Build("challenge123", DispatchTestSigner.DeviceId, origin, 0), signature, System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.DSASignatureFormat.IeeeP1363FixedFieldConcatenation).ShouldBeTrue();
     }
 
     /// <summary>A paired desktop on disk, with its secrets in memory and a connector built over them.</summary>
@@ -282,6 +331,8 @@ public sealed class ReconnectTests : IDisposable
 
         public DispatchPairing Pairing { get; }
 
+        public string DevicePublicKey { get; private set; } = string.Empty;
+
         public string PairingPath { get; }
 
         public RecordingRevocation Revocation { get; }
@@ -295,12 +346,13 @@ public sealed class ReconnectTests : IDisposable
             var signer = new DispatchTestSigner();
             var clock = new ManualTimeProvider(Start);
             var pairing = new DispatchPairing(secrets, Path.Combine(directory, "pairing.json"));
-            _ = await pairing.EnrollDeviceKeyAsync(DispatchTestSigner.DeviceId, cancellationToken).ConfigureAwait(false);
+            var devicePublicKey = await pairing.EnrollDeviceKeyAsync(DispatchTestSigner.DeviceId, cancellationToken).ConfigureAwait(false);
             await pairing.CompleteAsync(
+                DispatchTestSigner.DeviceId,
                 new DispatchPairedDevice(DispatchTestSigner.DeviceId, DispatchTestSigner.AccountId, [signer.PublicKey]),
                 new SecretString(DispatchTestSigner.Jwt(credentialExpiry)),
                 cancellationToken).ConfigureAwait(false);
-            return new Fixture(directory, endpoint, secrets, signer, jitter, clock);
+            return new Fixture(directory, endpoint, secrets, signer, jitter, clock) { DevicePublicKey = devicePublicKey };
         }
 
         public DispatchTestSigner Signer => _signer;

@@ -101,12 +101,12 @@ public interface IDispatchStore
     /// <returns>The row, or null when the account does not own it.</returns>
     ValueTask<DispatchCommandRecord?> GetCommandAsync(string accountId, string commandId, CancellationToken cancellationToken);
 
-    /// <summary>Lists queued commands with a sequence greater than <paramref name="afterSeq"/>, in order.</summary>
+    /// <summary>Lists queued or delivered commands with a sequence greater than <paramref name="afterSeq"/>, in order, for delivery or redelivery.</summary>
     /// <param name="accountId">The account.</param>
     /// <param name="deviceId">The device.</param>
-    /// <param name="afterSeq">The last sequence already delivered.</param>
+    /// <param name="afterSeq">The last sequence the device has applied.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>Queued commands. Empty when the account does not own the device.</returns>
+    /// <returns>Deliverable commands. Empty when the account does not own the device.</returns>
     ValueTask<IReadOnlyList<DispatchCommandRecord>> ListQueuedAfterAsync(string accountId, string deviceId, long afterSeq, CancellationToken cancellationToken);
 
     /// <summary>Lists the account's commands in every state, newest first, optionally for one device. Never another account's.</summary>
@@ -117,15 +117,16 @@ public interface IDispatchStore
     /// <returns>The account's commands. Never another account's.</returns>
     ValueTask<IReadOnlyList<DispatchCommandRecord>> ListCommandsAsync(string accountId, string? deviceId, int limit, CancellationToken cancellationToken);
 
-    /// <summary>Compare-and-set against <see cref="DispatchTransitions"/>. An illegal edge leaves the row unchanged.</summary>
+    /// <summary>Compare-and-set against <see cref="DispatchTransitions"/>. An illegal edge leaves the row unchanged. A feed event given with an applied transition is appended in the same transaction.</summary>
     /// <param name="accountId">The account.</param>
     /// <param name="commandId">The command.</param>
     /// <param name="expected">The state the row must currently have.</param>
     /// <param name="desired">The state to write.</param>
     /// <param name="reason">Failure reason when the next state carries one.</param>
+    /// <param name="feed">The feed event appended with the transition when it applies, or null.</param>
     /// <param name="cancellationToken">Cancels the transition.</param>
     /// <returns>Applied, rejected, or not found.</returns>
-    ValueTask<DispatchTransitionResult> TryTransitionAsync(string accountId, string commandId, DispatchCommandState expected, DispatchCommandState desired, DispatchFailureReason? reason, CancellationToken cancellationToken);
+    ValueTask<DispatchTransitionResult> TryTransitionAsync(string accountId, string commandId, DispatchCommandState expected, DispatchCommandState desired, DispatchFailureReason? reason, DispatchFeedDraft? feed, CancellationToken cancellationToken);
 
     /// <summary>Appends a feed event. Identifiers increase strictly per account.</summary>
     /// <param name="accountId">The account.</param>
@@ -141,4 +142,19 @@ public interface IDispatchStore
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The page. Another account's events are never included.</returns>
     ValueTask<DispatchFeedPage> ReadFeedAsync(string accountId, long afterId, CancellationToken cancellationToken);
+
+    /// <summary>Lists the commands that are overdue at the given cutoffs, across every account, oldest state entry first. A command that is not overdue is never returned.</summary>
+    /// <param name="cutoffs">The instants to compare against.</param>
+    /// <param name="limit">The most commands to return.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The overdue commands.</returns>
+    ValueTask<IReadOnlyList<DispatchSweepCandidate>> ListOverdueAsync(DispatchSweepCutoffs cutoffs, int limit, CancellationToken cancellationToken);
+
+    /// <summary>Records the source prefix of a verified connection on the device row. The address itself is never stored.</summary>
+    /// <param name="accountId">The owning account.</param>
+    /// <param name="deviceId">The device.</param>
+    /// <param name="sourcePrefix">The prefix, or null when the address is unknown.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>True when the device exists for the account.</returns>
+    ValueTask<bool> RecordSourcePrefixAsync(string accountId, string deviceId, string? sourcePrefix, CancellationToken cancellationToken);
 }

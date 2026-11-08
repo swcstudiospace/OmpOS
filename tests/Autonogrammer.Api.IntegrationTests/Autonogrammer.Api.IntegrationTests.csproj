@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="../../services/Autonogrammer.Api/Autonogrammer.Api.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Dispatch.Desktop/Autonogrammer.Dispatch.Desktop.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.InMemory/Autonogrammer.Harness.InMemory.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Sessions/Autonogrammer.Sessions.csproj" />

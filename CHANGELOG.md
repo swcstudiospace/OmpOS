@@ -8,6 +8,24 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.16.4] - 2026-11-08
+
+### Added
+
+- Dispatch sweeper. A background pass every 15 seconds moves overdue commands on: a queued or delivered command past its expiry becomes `expired`; an awaiting-approval command past the approval timeout becomes `failed` with `approval_timeout`; a received, accepted or running command past its run limit becomes `failed` with `timeout` (60 seconds for session and command-cancel operations, 4 hours otherwise). The store returns only overdue commands, so commands still inside their limits never delay an overdue one. Each move and its `command.state` feed event commit in one transaction. `Dispatch:Sweeper:Enabled=false` turns the pass off.
+- Device frames. The hub applies a device's `ack` (received, awaiting approval, accepted or running), `res` (completed, failed or cancelled, with a reason and a text capped at 4096 characters) and `evt` (progress, with a text capped at 1024 characters) frames to its own commands. Each state change is a compare-and-set against the command table, and its feed event commits with it. Invalid transitions leave the command unchanged; rejected inputs with valid command identifiers are sent to the configured audit sink. The hub never completes a command on its own.
+- Device source prefix. A verified device connection records the connecting address on its device row as a prefix: IPv4 as /24, IPv6 as /48. The prefix is not written to the audit log or to logs.
+- Dispatch audit writer. Rejected device input goes to the audit ledger as a closed event: the command identifier, a fixed outcome and summary, and the tenant hash. With the ledger off, which is the default, nothing is written.
+- Migration M0011 records receipt time and adds partial indexes for the sweep. For commands already in flight when the migration runs, the prior state-entry time is used as an approximation because the original receipt time was not stored.
+- The desktop answers the hub challenge with a device-key-signed hello, reports approval and execution states, and sends heartbeats at the negotiated interval. Reconnect redelivers unexpired delivered commands. The hub validates heartbeat status, keeps established sockets open when presence refresh times out, acknowledges peer closes, returns 1013 when the nonce store times out, and refuses new connections while draining.
+- Pairing completion binds the key enrolled before the pairing request to the device ID returned by the hub, then removes the temporary key.
+
+### Changed
+
+- The device store is selected when it is first resolved: Postgres when `Sessions:Store` is `Postgres`, and the in-memory store only in Development. `Dispatch:Enabled=true` outside Development now requires `Sessions:Store=Postgres`. The validator previously refused every enabled dispatch outside Development.
+- When dispatch is off and credential verification is not configured, the device credential check refuses the connection without resolving a device store. An otherwise valid credential can reach the disabled route and receive 404.
+- `IDispatchStore.TryTransitionAsync` takes an optional feed event that commits with the transition. `IDispatchStore.ListSweepCandidatesAsync` is replaced by `ListOverdueAsync(cutoffs, limit)`.
+
 ## [0.16.2] - 2026-11-08
 
 ### Added
@@ -373,7 +391,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.2...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.4...HEAD
+[0.16.4]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.2...v0.16.4
 [0.16.2]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.15.0...v0.16.0

@@ -51,7 +51,7 @@ public abstract class DispatchStoreContractTests<TStore> where TStore : IDispatc
         var full = await EnqueueAsync(store, "acct", "dev", "overflow", "k-over", "fp", ct).ConfigureAwait(true);
         full.Status.ShouldBe(DispatchEnqueueStatus.QueueFull);
 
-        var moved = await store.TryTransitionAsync("acct", "c0", DispatchCommandState.Queued, DispatchCommandState.Delivered, null, ct).ConfigureAwait(true);
+        var moved = await store.TryTransitionAsync("acct", "c0", DispatchCommandState.Queued, DispatchCommandState.Delivered, null, null, ct).ConfigureAwait(true);
         moved.Status.ShouldBe(DispatchTransitionStatus.Applied);
         var after = await EnqueueAsync(store, "acct", "dev", "overflow", "k-over", "fp", ct).ConfigureAwait(true);
         after.Status.ShouldBe(DispatchEnqueueStatus.Accepted);
@@ -85,21 +85,105 @@ public abstract class DispatchStoreContractTests<TStore> where TStore : IDispatc
         await CreateDeviceAsync(store, "acct", "dev", ct).ConfigureAwait(true);
         await EnqueueAsync(store, "acct", "dev", "c1", "k", "fp", ct).ConfigureAwait(true);
 
-        var applied = await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Queued, DispatchCommandState.Delivered, null, ct).ConfigureAwait(true);
+        var applied = await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Queued, DispatchCommandState.Delivered, null, null, ct).ConfigureAwait(true);
         applied.Status.ShouldBe(DispatchTransitionStatus.Applied);
-        var illegal = await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Delivered, DispatchCommandState.Completed, null, ct).ConfigureAwait(true);
+        var illegal = await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Delivered, DispatchCommandState.Completed, null, null, ct).ConfigureAwait(true);
         illegal.Status.ShouldBe(DispatchTransitionStatus.Rejected);
         (await store.GetCommandAsync("acct", "c1", ct).ConfigureAwait(true))!.State.ShouldBe(DispatchCommandState.Delivered);
 
-        await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Delivered, DispatchCommandState.Received, null, ct).ConfigureAwait(true);
-        await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Received, DispatchCommandState.Accepted, null, ct).ConfigureAwait(true);
-        await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Accepted, DispatchCommandState.Running, null, ct).ConfigureAwait(true);
-        var done = await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Running, DispatchCommandState.Completed, null, ct).ConfigureAwait(true);
+        await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Delivered, DispatchCommandState.Received, null, null, ct).ConfigureAwait(true);
+        await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Received, DispatchCommandState.Accepted, null, null, ct).ConfigureAwait(true);
+        await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Accepted, DispatchCommandState.Running, null, null, ct).ConfigureAwait(true);
+        var done = await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Running, DispatchCommandState.Completed, null, null, ct).ConfigureAwait(true);
         done.Status.ShouldBe(DispatchTransitionStatus.Applied);
-        var replay = await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Completed, DispatchCommandState.Failed, DispatchFailureReason.Internal, ct).ConfigureAwait(true);
+        var replay = await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Completed, DispatchCommandState.Failed, DispatchFailureReason.Internal, null, ct).ConfigureAwait(true);
         replay.Status.ShouldBe(DispatchTransitionStatus.Rejected);
         (await store.GetCommandAsync("acct", "c1", ct).ConfigureAwait(true))!.State.ShouldBe(DispatchCommandState.Completed);
     }
+
+    /// <summary>A source prefix is recorded for a known device only, and reads back on that device.</summary>
+    [Fact]
+    public async Task SourcePrefixIsRecordedForKnownDevicesOnly()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var store = await CreateStoreAsync(DispatchStoreLimits.Default, TimeProvider.System, ct).ConfigureAwait(true);
+        await CreateDeviceAsync(store, "acct", "dev", ct).ConfigureAwait(true);
+
+        (await store.RecordSourcePrefixAsync("acct", "dev", "203.0.113.0/24", ct).ConfigureAwait(true)).ShouldBeTrue();
+        (await store.GetDeviceAsync("acct", "dev", ct).ConfigureAwait(true))!.LastSourcePrefix.ShouldBe("203.0.113.0/24");
+        (await store.RecordSourcePrefixAsync("acct", "missing", "198.51.100.0/24", ct).ConfigureAwait(true)).ShouldBeFalse();
+        (await store.RecordSourcePrefixAsync("other", "dev", "198.51.100.0/24", ct).ConfigureAwait(true)).ShouldBeFalse();
+        (await store.GetDeviceAsync("acct", "dev", ct).ConfigureAwait(true))!.LastSourcePrefix.ShouldBe("203.0.113.0/24");
+    }
+
+    /// <summary>Only overdue commands come back, oldest state entry first, capped by the limit. A command still inside its run limit never appears.</summary>
+    [Fact]
+    public async Task SweepListsOnlyOverdueCommandsOldestStateEntryFirstAndCapped()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var clock = new MutableTime();
+        var store = await CreateStoreAsync(DispatchStoreLimits.Default, clock, ct).ConfigureAwait(true);
+        await CreateDeviceAsync(store, "acct", "dev", ct).ConfigureAwait(true);
+        await EnqueueAsync(store, "acct", "dev", "c1", "k1", "fp", ct).ConfigureAwait(true);
+        await EnqueueAsync(store, "acct", "dev", "c2", "k2", "fp", ct).ConfigureAwait(true);
+        await EnqueueAsync(store, "acct", "dev", "c3", "k3", "fp", ct).ConfigureAwait(true);
+
+        clock.UtcNow = clock.UtcNow.AddMinutes(1);
+        await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Queued, DispatchCommandState.Delivered, null, null, ct).ConfigureAwait(true);
+        clock.UtcNow = clock.UtcNow.AddMinutes(1);
+        await MoveToRunningAsync(store, "acct", "c2", ct).ConfigureAwait(true);
+
+        clock.UtcNow = clock.UtcNow.AddSeconds(30);
+        var cutoffs = new DispatchSweepCutoffs(clock.UtcNow, clock.UtcNow.AddMinutes(-5), clock.UtcNow.AddSeconds(-60), clock.UtcNow.AddHours(-4));
+        var overdue = await store.ListOverdueAsync(cutoffs, 10, ct).ConfigureAwait(true);
+        overdue.Select(candidate => candidate.CommandId).ShouldBe(["c3", "c1"]);
+        overdue[0].State.ShouldBe(DispatchCommandState.Queued);
+        overdue[1].State.ShouldBe(DispatchCommandState.Delivered);
+        (await store.ListOverdueAsync(cutoffs, 1, ct).ConfigureAwait(true)).Select(candidate => candidate.CommandId).ShouldBe(["c3"]);
+    }
+
+    /// <summary>Later run-phase transitions do not restart the deadline measured from receipt.</summary>
+    [Fact]
+    public async Task RunDeadlineStartsAtReceiptNotMostRecentTransition()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var clock = new MutableTime();
+        var store = await CreateStoreAsync(DispatchStoreLimits.Default, clock, ct).ConfigureAwait(true);
+        await CreateDeviceAsync(store, "acct", "dev", ct).ConfigureAwait(true);
+        await EnqueueAsync(store, "acct", "dev", "deadline", "deadline-key", "fp", ct).ConfigureAwait(true);
+        (await store.TryTransitionAsync("acct", "deadline", DispatchCommandState.Queued, DispatchCommandState.Delivered, null, null, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+        (await store.TryTransitionAsync("acct", "deadline", DispatchCommandState.Delivered, DispatchCommandState.Received, null, null, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+        clock.UtcNow = clock.UtcNow.AddSeconds(59);
+        (await store.TryTransitionAsync("acct", "deadline", DispatchCommandState.Received, DispatchCommandState.Accepted, null, null, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+        (await store.TryTransitionAsync("acct", "deadline", DispatchCommandState.Accepted, DispatchCommandState.Running, null, null, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+        var before = new DispatchSweepCutoffs(clock.UtcNow, clock.UtcNow.AddMinutes(-5), clock.UtcNow.AddSeconds(-60), clock.UtcNow.AddHours(-4));
+        (await store.ListOverdueAsync(before, 10, ct).ConfigureAwait(true)).ShouldBeEmpty();
+        clock.UtcNow = clock.UtcNow.AddSeconds(2);
+        var after = new DispatchSweepCutoffs(clock.UtcNow, clock.UtcNow.AddMinutes(-5), clock.UtcNow.AddSeconds(-60), clock.UtcNow.AddHours(-4));
+        (await store.ListOverdueAsync(after, 10, ct).ConfigureAwait(true)).Select(candidate => candidate.CommandId).ShouldBe(["deadline"]);
+    }
+
+    /// <summary>A transition and its feed event commit together: an applied transition appends its event, and a rejected one appends nothing.</summary>
+    [Fact]
+    public async Task TransitionAppendsItsFeedEventOnlyWhenItApplies()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var store = await CreateStoreAsync(DispatchStoreLimits.Default, TimeProvider.System, ct).ConfigureAwait(true);
+        await CreateDeviceAsync(store, "acct", "dev", ct).ConfigureAwait(true);
+        await EnqueueAsync(store, "acct", "dev", "c1", "k1", "fp", ct).ConfigureAwait(true);
+
+        var rejected = await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Delivered, DispatchCommandState.Received, null, new DispatchFeedDraft("command.state", "{\"state\":\"received\"}"), ct).ConfigureAwait(true);
+        rejected.Status.ShouldBe(DispatchTransitionStatus.Rejected);
+        (await store.ReadFeedAsync("acct", 0, ct).ConfigureAwait(true)).Events.ShouldBeEmpty();
+
+        var applied = await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Queued, DispatchCommandState.Delivered, null, new DispatchFeedDraft("command.state", "{\"state\":\"delivered\"}"), ct).ConfigureAwait(true);
+        applied.Status.ShouldBe(DispatchTransitionStatus.Applied);
+        var events = (await store.ReadFeedAsync("acct", 0, ct).ConfigureAwait(true)).Events;
+        events.Select(item => item.Kind).ShouldBe(["command.state"]);
+        using var payload = System.Text.Json.JsonDocument.Parse(events[0].Payload!);
+        payload.RootElement.GetProperty("state").GetString().ShouldBe("delivered");
+    }
+
 
     /// <summary>The 21st non-revoked device is refused. A revoked device stops counting.</summary>
     [Fact]
@@ -234,7 +318,7 @@ public abstract class DispatchStoreContractTests<TStore> where TStore : IDispatc
         ];
         foreach (var (from, to) in path)
         {
-            (await store.TryTransitionAsync(accountId, commandId, from, to, null, cancellationToken).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+            (await store.TryTransitionAsync(accountId, commandId, from, to, null, null, cancellationToken).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
         }
     }
 

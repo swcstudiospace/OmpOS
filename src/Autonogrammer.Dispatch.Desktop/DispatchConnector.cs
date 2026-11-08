@@ -28,6 +28,10 @@ public sealed class DispatchConnector
     private DispatchVerifier? _verifier;
     private TimeSpan _clockOffset;
     private bool _welcomed;
+    private bool _helloSent;
+    private int _heartbeatSeconds;
+    private int _runningCount;
+    private string _deviceStatus = "idle";
 
     /// <summary>Creates the connector.</summary>
     /// <param name="options">The endpoint and the dialog and configuration values.</param>
@@ -159,6 +163,8 @@ public sealed class DispatchConnector
 
     private async Task<DispatchLinkDecision> ServeLinkAsync(AcpWebSocketTransport transport, DateTimeOffset? expiry, CancellationToken cancellationToken)
     {
+        _helloSent = false;
+        _welcomed = false;
         try
         {
             await transport.ConnectAsync(cancellationToken).ConfigureAwait(false);
@@ -170,11 +176,17 @@ public sealed class DispatchConnector
 
         _reconnect.MarkConnected();
         SetState(DispatchConnectionState.Connected);
+        using var link = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        Task? heartbeat = null;
         try
         {
-            await foreach (var frame in transport.ReceiveAsync(cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
+            await foreach (var frame in transport.ReceiveAsync(link.Token).WithCancellation(link.Token).ConfigureAwait(false))
             {
-                var stop = await HandleFrameAsync(transport, frame, cancellationToken).ConfigureAwait(false);
+                var stop = await HandleFrameAsync(transport, frame, link.Token).ConfigureAwait(false);
+                if (_welcomed && heartbeat is null)
+                {
+                    heartbeat = SendHeartbeatsAsync(transport, link.Cancel, link.Token);
+                }
                 if (stop is { } decision)
                 {
                     return decision;
@@ -188,8 +200,25 @@ public sealed class DispatchConnector
         {
             return DispatchCloseStatus.ClassifyClose(ex.Message);
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && link.IsCancellationRequested)
+        {
+            return DispatchCloseStatus.ClassifyClose(null);
+        }
         finally
         {
+            await link.CancelAsync().ConfigureAwait(false);
+            if (heartbeat is not null)
+            {
+                try
+                {
+                    await heartbeat.ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (link.IsCancellationRequested)
+                {
+                    // The connection is ending.
+                }
+            }
+
             _reconnect.MarkDisconnected();
         }
     }
@@ -203,8 +232,13 @@ public sealed class DispatchConnector
 
         switch (admission.Type)
         {
+            case DispatchFrameTypes.Challenge:
+                return await RespondToChallengeAsync(transport, frame, cancellationToken).ConfigureAwait(false);
             case DispatchFrameTypes.Welcome:
-                AdoptWelcome(frame);
+                if (_helloSent)
+                {
+                    AdoptWelcome(frame);
+                }
                 return null;
             case DispatchFrameTypes.Cmd:
                 await HandleCommandAsync(transport, frame, cancellationToken).ConfigureAwait(false);
@@ -213,6 +247,61 @@ public sealed class DispatchConnector
                 return Stop(DispatchConnectionState.DeviceRevoked);
             default:
                 return null;
+        }
+    }
+
+    private async Task<DispatchLinkDecision?> RespondToChallengeAsync(AcpWebSocketTransport transport, ReadOnlyMemory<byte> frame, CancellationToken cancellationToken)
+    {
+        if (_helloSent || _welcomed)
+        {
+            return Stop(DispatchConnectionState.AccountUnavailable);
+        }
+
+        DispatchChallengeFrame? challenge;
+        try
+        {
+            challenge = JsonSerializer.Deserialize(frame.Span, DispatchJsonContext.Default.DispatchChallengeFrame);
+        }
+        catch (JsonException)
+        {
+            return Stop(DispatchConnectionState.AccountUnavailable);
+        }
+
+        var paired = _pairing.LoadPairing();
+        var endpoint = _options.Endpoint;
+        var origin = new UriBuilder(endpoint) { Scheme = string.Equals(endpoint.Scheme, "wss", StringComparison.OrdinalIgnoreCase) ? "https" : "http" }.Uri.GetLeftPart(UriPartial.Authority);
+        if (paired is null || challenge is null || !string.Equals(challenge.Origin, origin, StringComparison.OrdinalIgnoreCase)
+            || challenge.Protocols is null || !challenge.Protocols.Contains("1", StringComparer.Ordinal))
+        {
+            return Stop(DispatchConnectionState.AccountUnavailable);
+        }
+
+        try
+        {
+            var sequence = _dedupe.HighWater;
+            var canonical = DispatchHelloCanonical.Build(challenge.Nonce, paired.DeviceId, origin, sequence);
+            var signature = await _pairing.SignHelloAsync(paired.DeviceId, canonical, cancellationToken).ConfigureAwait(false);
+            var hello = new DispatchHelloFrame
+            {
+                V = 1,
+                T = DispatchFrameTypes.Hello,
+                DeviceId = paired.DeviceId,
+                Nonce = challenge.Nonce,
+                Origin = origin,
+                LastAppliedSeq = sequence,
+                Signature = Convert.ToBase64String(signature).TrimEnd('=').Replace('+', '-').Replace('/', '_'),
+            };
+            await transport.SendAsync(JsonSerializer.SerializeToUtf8Bytes(hello, DispatchJsonContext.Default.DispatchHelloFrame), cancellationToken).ConfigureAwait(false);
+            _helloSent = true;
+            return null;
+        }
+        catch (DispatchKeyStoreUnavailableException)
+        {
+            return Stop(DispatchConnectionState.KeyStoreUnavailable);
+        }
+        catch (Exception ex) when (ex is ArgumentException or FormatException or System.Security.Cryptography.CryptographicException)
+        {
+            return Stop(DispatchConnectionState.AccountUnavailable);
         }
     }
 
@@ -228,12 +317,13 @@ public sealed class DispatchConnector
             return;
         }
 
-        if (welcome is null)
+        if (welcome is null || welcome.HeartbeatSeconds <= 0 || _welcomed)
         {
             return;
         }
 
         _clockOffset = TimeSpan.FromSeconds(welcome.ServerTime - _clock.GetUtcNow().ToUnixTimeSeconds());
+        _heartbeatSeconds = welcome.HeartbeatSeconds;
         _welcomed = true;
     }
 
@@ -279,8 +369,50 @@ public sealed class DispatchConnector
 
         // The command is persisted as applied; only now is it acknowledged and executed.
         await SendAckAsync(transport, cmd.CommandId, DispatchCommandStateWire.ToWire(DispatchCommandState.Received), cancellationToken).ConfigureAwait(false);
-        var outcome = await _router.RouteAsync(new DispatchCommand(cmd.CommandId, capability, op, payload), cancellationToken).ConfigureAwait(false);
-        await SendResultAsync(transport, cmd.CommandId, outcome, cancellationToken).ConfigureAwait(false);
+        Volatile.Write(ref _runningCount, 1);
+        try
+        {
+            var outcome = await _router.RouteAsync(
+                new DispatchCommand(cmd.CommandId, capability, op, payload),
+                (state, token) => ReportStateAsync(transport, cmd.CommandId, state, token),
+                cancellationToken).ConfigureAwait(false);
+            await SendResultAsync(transport, cmd.CommandId, outcome, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            Volatile.Write(ref _runningCount, 0);
+            Volatile.Write(ref _deviceStatus, "idle");
+        }
+    }
+
+    private async ValueTask ReportStateAsync(AcpWebSocketTransport transport, string commandId, DispatchCommandState state, CancellationToken cancellationToken)
+    {
+        await SendAckAsync(transport, commandId, DispatchCommandStateWire.ToWire(state), cancellationToken).ConfigureAwait(false);
+        Volatile.Write(ref _deviceStatus, state == DispatchCommandState.AwaitingApproval ? "approval_pending" : "busy");
+    }
+
+    private async Task SendHeartbeatsAsync(AcpWebSocketTransport transport, Action cancelLink, CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(_heartbeatSeconds), _clock);
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
+            {
+                var heartbeat = new DispatchHbFrame
+                {
+                    V = 1,
+                    T = DispatchFrameTypes.Hb,
+                    LastAppliedSeq = _dedupe.HighWater,
+                    RunningCount = Volatile.Read(ref _runningCount),
+                    Status = Volatile.Read(ref _deviceStatus),
+                };
+                await transport.SendAsync(JsonSerializer.SerializeToUtf8Bytes(heartbeat, DispatchJsonContext.Default.DispatchHbFrame), cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (DisconnectedHarnessException)
+        {
+            cancelLink();
+        }
     }
 
     private static async Task SendAckAsync(AcpWebSocketTransport transport, string commandId, string state, CancellationToken cancellationToken)

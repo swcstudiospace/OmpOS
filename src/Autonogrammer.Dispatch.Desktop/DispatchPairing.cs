@@ -57,17 +57,30 @@ public sealed class DispatchPairing
         return Convert.ToBase64String(key.ExportSubjectPublicKeyInfo());
     }
 
-    /// <summary>Stores the credential the hub issued and writes the pairing record. The credential is stored first.</summary>
+    /// <summary>Moves the enrolled key to the server-issued device identifier, stores the credential and writes the pairing record.</summary>
+    /// <param name="enrollmentId">The identifier used to enroll the device key before the server issued a device identifier.</param>
     /// <param name="paired">The pairing the hub confirmed.</param>
     /// <param name="credential">The device credential, a compact JWT.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
-    /// <returns>A task that completes when both are stored.</returns>
-    public async Task CompleteAsync(DispatchPairedDevice paired, SecretString credential, CancellationToken cancellationToken)
+    /// <returns>A task that completes when the pairing is stored.</returns>
+    public async Task CompleteAsync(string enrollmentId, DispatchPairedDevice paired, SecretString credential, CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(enrollmentId);
         ArgumentNullException.ThrowIfNull(paired);
         ArgumentNullException.ThrowIfNull(credential);
+        var key = await ReadAsync(DeviceKeyName(enrollmentId), cancellationToken).ConfigureAwait(false)
+            ?? throw new DispatchKeyStoreUnavailableException(new InvalidOperationException("The enrolled device key is missing."));
+        if (!string.Equals(enrollmentId, paired.DeviceId, StringComparison.Ordinal))
+        {
+            await StoreAsync(DeviceKeyName(paired.DeviceId), key, cancellationToken).ConfigureAwait(false);
+        }
+
         await StoreAsync(CredentialName(paired.DeviceId), credential, cancellationToken).ConfigureAwait(false);
         DispatchStateFile.WriteAtomic(_pairingPath, JsonSerializer.Serialize(paired, DispatchDesktopJson.Default.DispatchPairedDevice));
+        if (!string.Equals(enrollmentId, paired.DeviceId, StringComparison.Ordinal))
+        {
+            await _secrets.RemoveAsync(DeviceKeyName(enrollmentId), cancellationToken).ConfigureAwait(false);
+        }
     }
 
     /// <summary>Reads the pairing record.</summary>
@@ -109,6 +122,28 @@ public sealed class DispatchPairing
     /// <exception cref="DispatchKeyStoreUnavailableException">The secret store cannot be read.</exception>
     public Task<SecretString?> ReadCredentialAsync(string deviceId, CancellationToken cancellationToken) =>
         ReadAsync(CredentialName(deviceId), cancellationToken);
+
+    internal async Task<byte[]> SignHelloAsync(string deviceId, byte[] canonical, CancellationToken cancellationToken)
+    {
+        var secret = await ReadAsync(DeviceKeyName(deviceId), cancellationToken).ConfigureAwait(false)
+            ?? throw new DispatchKeyStoreUnavailableException(new InvalidOperationException("The device key is missing."));
+        var privateKey = Convert.FromBase64String(secret.Reveal());
+        try
+        {
+            using var key = ECDsa.Create();
+            key.ImportPkcs8PrivateKey(privateKey, out var consumed);
+            if (consumed != privateKey.Length)
+            {
+                throw new CryptographicException("Invalid device key.");
+            }
+
+            return key.SignData(canonical, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(privateKey);
+        }
+    }
 
     /// <summary>Reads the expiry of a compact JWT credential from its <c>exp</c> claim. The signature is not checked here; the hub checks it.</summary>
     /// <param name="jwt">The credential.</param>

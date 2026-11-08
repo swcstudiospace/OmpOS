@@ -42,7 +42,7 @@ public sealed class RestartTests
         ];
         foreach (var (from, to) in path)
         {
-            (await store.TryTransitionAsync(accountId, commandId, from, to, null, cancellationToken).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+            (await store.TryTransitionAsync(accountId, commandId, from, to, null, null, cancellationToken).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
         }
     }
 }

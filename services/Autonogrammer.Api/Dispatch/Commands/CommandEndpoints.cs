@@ -346,7 +346,7 @@ internal static class CommandEndpoints
             return Problem(StatusCodes.Status409Conflict, "command_not_cancellable", "Command not cancellable.", "The command has moved past the point where it can be cancelled.");
         }
 
-        var transition = await store.TryTransitionAsync(owner, id, row.State, DispatchCommandState.Cancelled, null, cancellationToken).ConfigureAwait(false);
+        var transition = await store.TryTransitionAsync(owner, id, row.State, DispatchCommandState.Cancelled, null, null, cancellationToken).ConfigureAwait(false);
         if (transition.Status == DispatchTransitionStatus.NotFound)
         {
             return CommandNotFound();
