@@ -18,6 +18,11 @@ public sealed class RemoteProfileRow : ObservableModel
     private int _reconnectAttempt;
     private string _environmentText = string.Empty;
     private readonly string _lastUsedText;
+    private RemoteOmpReport? _omp;
+    private string _ompResultText = string.Empty;
+    private IReadOnlyList<string> _ompDriftLines = Array.Empty<string>();
+    private bool _ompOffered;
+    private bool _ompBusy;
 
     internal RemoteProfileRow(RemoteStoredProfile stored)
     {
@@ -99,6 +104,36 @@ public sealed class RemoteProfileRow : ObservableModel
     /// <summary>Gets the text a screen reader announces for the row: name, destination and status.</summary>
     public string AccessibleName => DisplayName + ", " + DestinationText + ", " + StatusLabel;
 
+    /// <summary>Gets whether the page offers Check Omp and Install Omp for this environment: the head provides an Omp provisioner.</summary>
+    public bool OmpOffered => _ompOffered;
+
+    /// <summary>Gets whether an Omp check or install of this environment is running.</summary>
+    public bool IsOmpBusy => _ompBusy;
+
+    /// <summary>Gets whether the Check Omp button can be pressed.</summary>
+    public bool CanCheckOmp => _ompOffered && !_ompBusy && !_isTesting;
+
+    /// <summary>Gets whether the Install Omp button can be pressed: the last check planned lines and nothing has run since.</summary>
+    public bool CanInstallOmp => CanCheckOmp && _omp?.Outcome == RemoteOmpOutcome.Planned;
+
+    /// <summary>Gets whether an Omp check or install result is shown.</summary>
+    public bool HasOmpResult => _omp is not null;
+
+    /// <summary>Gets the result of the last Omp check or install in words, or an empty string before one.</summary>
+    public string OmpResultText => _ompResultText;
+
+    /// <summary>Gets what the last Omp check found, one line per item. Empty before a check.</summary>
+    public IReadOnlyList<string> OmpDriftLines => _ompDriftLines;
+
+    /// <summary>Gets the lines the last Omp check planned: exactly the lines Install Omp applies. Empty before a check and when it planned none.</summary>
+    public IReadOnlyList<string> OmpActionLines => _omp?.PlannedActions ?? Array.Empty<string>();
+
+    /// <summary>Gets whether the last Omp check found any item that differs.</summary>
+    public bool HasOmpDrift => _ompDriftLines.Count > 0;
+
+    /// <summary>Gets whether the last Omp check planned any line an install applies.</summary>
+    public bool HasOmpActions => OmpActionLines.Count > 0;
+
     internal void BeginTest()
     {
         _isTesting = true;
@@ -161,6 +196,48 @@ public sealed class RemoteProfileRow : ObservableModel
         Refresh();
     }
 
+    internal void OfferOmp(bool offered)
+    {
+        _ompOffered = offered;
+        RefreshOmp();
+    }
+
+    internal void BeginOmp()
+    {
+        _ompBusy = true;
+        RefreshOmp();
+    }
+
+    internal void EndOmp()
+    {
+        _ompBusy = false;
+        RefreshOmp();
+    }
+
+    internal void ApplyOmp(RemoteOmpReport report)
+    {
+        ArgumentNullException.ThrowIfNull(report);
+        _omp = report;
+        _ompResultText = RemoteOmpDescriber.ResultText(report);
+        _ompDriftLines = [.. report.Drift.Select(line => RemoteOmpDescriber.DriftText(line))];
+        _ompBusy = false;
+        RefreshOmp();
+    }
+
+    private void RefreshOmp()
+    {
+        NotifyPropertyChanged(nameof(OmpOffered));
+        NotifyPropertyChanged(nameof(IsOmpBusy));
+        NotifyPropertyChanged(nameof(CanCheckOmp));
+        NotifyPropertyChanged(nameof(CanInstallOmp));
+        NotifyPropertyChanged(nameof(HasOmpResult));
+        NotifyPropertyChanged(nameof(OmpResultText));
+        NotifyPropertyChanged(nameof(OmpDriftLines));
+        NotifyPropertyChanged(nameof(OmpActionLines));
+        NotifyPropertyChanged(nameof(HasOmpDrift));
+        NotifyPropertyChanged(nameof(HasOmpActions));
+    }
+
     // After a reload the row keeps what it knew: the live session state always, the test outcome only while the host settings it was made with are unchanged.
     internal void CarryOver(RemoteProfileRow earlier)
     {
@@ -181,6 +258,14 @@ public sealed class RemoteProfileRow : ObservableModel
             {
                 _diagnoses.Add(diagnosis);
             }
+        }
+
+        // A reload while an install runs keeps no planned lines: the install may still be writing, so Install Omp must not be offered for them.
+        if (sameHost && !earlier._ompBusy)
+        {
+            _omp = earlier._omp;
+            _ompResultText = earlier._ompResultText;
+            _ompDriftLines = earlier._ompDriftLines;
         }
     }
 
@@ -220,5 +305,7 @@ public sealed class RemoteProfileRow : ObservableModel
         NotifyPropertyChanged(nameof(AccessibleName));
         NotifyPropertyChanged(nameof(HasDiagnoses));
         NotifyPropertyChanged(nameof(EnvironmentText));
+        NotifyPropertyChanged(nameof(CanCheckOmp));
+        NotifyPropertyChanged(nameof(CanInstallOmp));
     }
 }

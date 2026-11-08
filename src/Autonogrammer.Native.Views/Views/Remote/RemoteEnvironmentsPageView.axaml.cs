@@ -195,6 +195,22 @@ internal partial class RemoteEnvironmentsPageView : UserControl
         }
     }
 
+    private void OnCheckOmpClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: RemoteProfileRow row } && _model is not null)
+        {
+            _ = _model.CheckOmpAsync(row, CancellationToken.None);
+        }
+    }
+
+    private void OnInstallOmpClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: RemoteProfileRow row } && _model is not null)
+        {
+            _ = _model.InstallOmpAsync(row, CancellationToken.None);
+        }
+    }
+
     private void OnSaveClick(object? sender, RoutedEventArgs e)
     {
         if (_model is not null)

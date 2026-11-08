@@ -201,4 +201,52 @@ public static class RemoteCopy
 
     /// <summary>The label of an Ssh option in the picker, in front of the host.</summary>
     public const string SshPrefix = "ssh: ";
+
+    /// <summary>The label of the button that checks Omp on an environment. A check reads the machine and writes nothing.</summary>
+    public const string CheckOmpLabel = "Check Omp";
+
+    /// <summary>The label of the button that applies the lines of the last Omp check, and only those.</summary>
+    public const string InstallOmpLabel = "Install Omp";
+
+    /// <summary>The heading of the list of what differs on the machine.</summary>
+    public const string OmpDriftHeading = "What differs on the machine";
+
+    /// <summary>The heading of the list of lines an install applies.</summary>
+    public const string OmpActionsHeading = "Lines Install Omp applies";
+
+    /// <summary>The result of a check that found nothing to install.</summary>
+    public const string OmpUpToDate = "Omp is up to date. No install is offered.";
+
+    /// <summary>The result of a check that found lines to apply.</summary>
+    public const string OmpPlanned = "The check found the lines below. Install Omp applies exactly these lines and nothing else.";
+
+    /// <summary>The result of an install that did not run because the machine was not checked, or changed since the check.</summary>
+    public const string OmpNeedsCheck = "Nothing was installed, because the machine was not checked or changed since the last check. Check Omp again first.";
+
+    /// <summary>The result of an install whose lines were all applied.</summary>
+    public const string OmpInstalled = "The lines were applied. Check Omp again to see the new state.";
+
+    /// <summary>The start of the result of an install that failed.</summary>
+    public const string OmpFailedPrefix = "The install failed. ";
+
+    /// <summary>What a failed install says when lines may already have been applied.</summary>
+    public const string OmpFailedChanged = "Some lines may have been applied before it stopped.";
+
+    /// <summary>What a failed install says when nothing was applied.</summary>
+    public const string OmpFailedUnchanged = "Nothing was applied.";
+
+    /// <summary>The end of the result of a failed install.</summary>
+    public const string OmpFailedEnding = " Check Omp again before installing.";
+
+    /// <summary>The start of the result of a refused Omp install.</summary>
+    public const string OmpRefusedPrefix = "Omp cannot be installed here. ";
+
+    /// <summary>The start of the result of an Omp check that could not reach the machine.</summary>
+    public const string OmpUnavailablePrefix = "Omp could not be checked. ";
+
+    /// <summary>The reason shown when a report carries none.</summary>
+    public const string OmpNoReason = "No reason was given.";
+
+    /// <summary>The label in front of why an install cannot fix a drift item.</summary>
+    public const string OmpDriftBlockedPrefix = "Cannot install it: ";
 }

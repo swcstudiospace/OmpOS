@@ -67,6 +67,9 @@ internal sealed class SettingsWindowOptions
     /// <summary>Gets the remote environments host the Remote page shows, or null for a window without a Remote page.</summary>
     public IRemoteEnvironmentsHost? RemoteEnvironments { get; init; }
 
+    /// <summary>Gets the Omp checks and installs the Remote page offers on its ssh environments, or null for a window whose page offers none.</summary>
+    public IRemoteOmpProvisioner? RemoteOmp { get; init; }
+
     /// <summary>Gets the cloud agents host the Cloud page shows. Null is a head without an API base address: the page then shows its not-configured state and no agent control.</summary>
     public ICloudAgentsHost? Cloud { get; init; }
 

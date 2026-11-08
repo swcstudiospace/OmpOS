@@ -79,7 +79,7 @@ internal static class SettingsWindowFactory
             var runtimeModel = options.ContainerEnvironments is { } containers && options.ContainerLister is { } lister
                 ? new RuntimeEnvironmentsViewModel(remote, containers, lister)
                 : null;
-            pages.Add(new RemoteEnvironmentsSettingsPage(new RemoteEnvironmentsViewModel(remote), runtimeModel));
+            pages.Add(new RemoteEnvironmentsSettingsPage(new RemoteEnvironmentsViewModel(remote, options.RemoteOmp), runtimeModel));
         }
 
         AddTailPages(pages, options);

@@ -170,6 +170,58 @@
                           AutomationProperties.Name="{x:Static rem:RemoteCopy.DeleteLabel}"
                           Click="OnDeleteClick" />
                 </StackPanel>
+                <!-- Omp: a check reads the machine and writes nothing. Install Omp applies exactly the lines that check named, and only when the page holds them. -->
+                <StackPanel IsVisible="{CompiledBinding OmpOffered}"
+                            Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+                  <StackPanel Orientation="Horizontal"
+                              Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+                    <Button MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            Content="{x:Static rem:RemoteCopy.CheckOmpLabel}"
+                            IsEnabled="{CompiledBinding CanCheckOmp}"
+                            AutomationProperties.Name="{x:Static rem:RemoteCopy.CheckOmpLabel}"
+                            Click="OnCheckOmpClick" />
+                    <Button Classes="primary"
+                            MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            Content="{x:Static rem:RemoteCopy.InstallOmpLabel}"
+                            IsEnabled="{CompiledBinding CanInstallOmp}"
+                            AutomationProperties.Name="{x:Static rem:RemoteCopy.InstallOmpLabel}"
+                            Click="OnInstallOmpClick" />
+                  </StackPanel>
+
+                  <TextBlock Classes="settings-body"
+                             IsVisible="{CompiledBinding HasOmpResult}"
+                             Text="{CompiledBinding OmpResultText}" />
+
+                  <TextBlock Classes="settings-section"
+                             IsVisible="{CompiledBinding HasOmpDrift}"
+                             Text="{x:Static rem:RemoteCopy.OmpDriftHeading}" />
+                  <ItemsControl ItemsSource="{CompiledBinding OmpDriftLines}"
+                                IsVisible="{CompiledBinding HasOmpDrift}"
+                                AutomationProperties.Name="{x:Static rem:RemoteCopy.OmpDriftHeading}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="x:String">
+                        <TextBlock Classes="settings-help"
+                                   Text="{CompiledBinding .}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+
+                  <TextBlock Classes="settings-section"
+                             IsVisible="{CompiledBinding HasOmpActions}"
+                             Text="{x:Static rem:RemoteCopy.OmpActionsHeading}" />
+                  <ItemsControl ItemsSource="{CompiledBinding OmpActionLines}"
+                                IsVisible="{CompiledBinding HasOmpActions}"
+                                AutomationProperties.Name="{x:Static rem:RemoteCopy.OmpActionsHeading}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="x:String">
+                        <TextBlock Classes="settings-mono"
+                                   Text="{CompiledBinding .}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
 
               </StackPanel>
             </Border>

@@ -13,6 +13,7 @@ namespace Autonogrammer.Presentation.Remote;
 public sealed class RemoteEnvironmentsViewModel : ObservableModel
 {
     private readonly IRemoteEnvironmentsHost _host;
+    private readonly IRemoteOmpProvisioner? _omp;
     private readonly ObservableCollection<RemoteProfileRow> _rows = [];
     private List<string> _candidates = [];
     private IReadOnlyList<string> _candidateWarnings = [];
@@ -26,11 +27,13 @@ public sealed class RemoteEnvironmentsViewModel : ObservableModel
 
     /// <summary>Initializes a new instance of the <see cref="RemoteEnvironmentsViewModel"/> class.</summary>
     /// <param name="host">What the page needs from the head.</param>
+    /// <param name="omp">The Omp checks and installs of the environments, or <see langword="null"/> for a head that offers none: the page then hides the Omp buttons.</param>
     /// <exception cref="ArgumentNullException"><paramref name="host"/> is null.</exception>
-    public RemoteEnvironmentsViewModel(IRemoteEnvironmentsHost host)
+    public RemoteEnvironmentsViewModel(IRemoteEnvironmentsHost host, IRemoteOmpProvisioner? omp = null)
     {
         ArgumentNullException.ThrowIfNull(host);
         _host = host;
+        _omp = omp;
         Rows = new ReadOnlyObservableCollection<RemoteProfileRow>(_rows);
     }
 
@@ -267,6 +270,84 @@ public sealed class RemoteEnvironmentsViewModel : ObservableModel
     /// <summary>Cancels the connection test that is running. It does nothing when none is.</summary>
     public void CancelTest() => _testRun?.Cancel();
 
+    /// <summary>
+    /// Checks Omp on an environment: reads the machine and shows what an install would apply. It writes nothing. Install Omp is enabled only when the check
+    /// planned lines. It does nothing without an Omp provisioner or while the row is busy. It does not throw.
+    /// </summary>
+    /// <param name="row">The environment.</param>
+    /// <param name="cancellationToken">Cancels the check.</param>
+    /// <returns>A task that completes when the result is shown.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="row"/> is null.</exception>
+    public async Task CheckOmpAsync(RemoteProfileRow row, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        var omp = _omp;
+        if (omp is null || !row.CanCheckOmp)
+        {
+            return;
+        }
+
+        row.BeginOmp();
+        Announcement = "Checking Omp on " + row.DisplayName + ".";
+        try
+        {
+            var report = await omp.CheckAsync(row.Id, cancellationToken).ConfigureAwait(true);
+            ShowOmpReport(row, report);
+        }
+        catch (OperationCanceledException)
+        {
+            row.EndOmp();
+            Announcement = "The Omp check of " + row.DisplayName + " was cancelled.";
+        }
+        catch (Exception fault) when (fault is not OutOfMemoryException)
+        {
+            ShowOmpReport(row, new RemoteOmpReport(RemoteOmpOutcome.Unavailable, [], [], "The check could not run. " + fault.Message, false));
+        }
+    }
+
+    /// <summary>
+    /// Applies the lines the last Omp check of an environment planned, and only those. Nothing is written when the machine no longer needs exactly those
+    /// lines. The row shows the result, and the check must run again before another install. It does nothing without an Omp provisioner, when the last
+    /// check planned no lines, or while the row is busy. It does not throw.
+    /// </summary>
+    /// <param name="row">The environment.</param>
+    /// <param name="cancellationToken">Cancels the install.</param>
+    /// <returns>A task that completes when the result is shown.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="row"/> is null.</exception>
+    public async Task InstallOmpAsync(RemoteProfileRow row, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        var omp = _omp;
+        if (omp is null || !row.CanInstallOmp)
+        {
+            return;
+        }
+
+        var checkedLines = row.OmpActionLines;
+        row.BeginOmp();
+        Announcement = "Installing Omp on " + row.DisplayName + ".";
+        try
+        {
+            var report = await omp.InstallAsync(row.Id, checkedLines, cancellationToken).ConfigureAwait(true);
+            ShowOmpReport(row, report);
+        }
+        catch (OperationCanceledException)
+        {
+            // A cancelled install may have written some lines, so the row offers no install until the machine is checked again.
+            ShowOmpReport(row, new RemoteOmpReport(RemoteOmpOutcome.Failed, [], [], "The install was cancelled.", true));
+        }
+        catch (Exception fault) when (fault is not OutOfMemoryException)
+        {
+            ShowOmpReport(row, new RemoteOmpReport(RemoteOmpOutcome.Failed, [], [], "The install could not run. " + fault.Message, true));
+        }
+    }
+
+    private void ShowOmpReport(RemoteProfileRow row, RemoteOmpReport report)
+    {
+        row.ApplyOmp(report);
+        Announcement = row.DisplayName + ": " + RemoteOmpDescriber.ResultText(report);
+    }
+
     /// <summary>Opens the interactive terminal in which the user confirms the host key. It does not throw.</summary>
     /// <param name="row">The environment.</param>
     /// <param name="cancellationToken">Cancels the opening.</param>
@@ -352,6 +433,7 @@ public sealed class RemoteEnvironmentsViewModel : ObservableModel
             }
 
             var row = new RemoteProfileRow(stored);
+            row.OfferOmp(_omp is not null);
             if (previous.TryGetValue(row.Id, out var earlier))
             {
                 row.CarryOver(earlier);

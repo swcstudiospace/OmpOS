@@ -190,7 +190,7 @@ public static class RemoteDiagnosisCatalog
                 "omp needs Bun and the remote machine has none on its PATH.",
                 "Install Bun on the remote machine (https://bun.sh) as the same user, or make sure ~/.bun/bin exists. omp starts through '#!/usr/bin/env bun'."),
             RemoteDiagnosisKind.UnsupportedPlatform => (
-                $"Autonogrammer has only verified omp on Linux x86_64; this machine reports {name}.",
+                $"Autonogrammer has only verified omp on Linux x86_64 and Darwin arm64; this machine reports {name}.",
                 "The connection may work. Report anything that does not. A Windows machine cannot be used as a remote environment."),
             RemoteDiagnosisKind.RequiredToolMissing => (
                 $"The remote machine has no '{name}' command, which Autonogrammer needs.",

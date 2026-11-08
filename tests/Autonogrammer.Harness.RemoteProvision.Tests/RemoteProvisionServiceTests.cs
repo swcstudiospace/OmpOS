@@ -250,6 +250,30 @@ public sealed class RemoteProvisionServiceTests
         exec.WriteCount.ShouldBe(0);
     }
 
+    /// <summary>A Darwin arm64 machine is planned like a Linux x86_64 one: the check plans Bun and omp, and a confirmed provision downloads the Darwin Bun archive.</summary>
+    [Fact]
+    public async Task DarwinArm64MachineIsPlannedAndGetsTheDarwinBun()
+    {
+        using var exec = new FakeRemoteExec();
+        exec.EnqueueRead(FakeRemoteExec.Ok(Fixtures.Probe(kernel: "Darwin", machine: "arm64", ompVersion: null, bunVersion: "1.3.0")));
+        var store = new InMemoryProvisionConfirmationStore();
+        var service = Service(new FakeReleaseSource(Fixtures.Latest()), store);
+        var request = Fixtures.Request(bundle: Array.Empty<PluginBundleRecord>());
+
+        var check = (ProvisionCheck)await service.CheckAsync(request, exec, Token).ConfigureAwait(true);
+
+        check.Actions.Count.ShouldBe(2);
+        exec.WriteCount.ShouldBe(0);
+        await store.RecordAsync(new ProvisionConfirmation("env-1", check.Actions, Observed), Token).ConfigureAwait(true);
+        exec.EnqueueRead(FakeRemoteExec.Ok(Fixtures.Probe(kernel: "Darwin", machine: "arm64", ompVersion: null, bunVersion: "1.3.0")));
+
+        var result = await service.ProvisionAsync(request, exec, Token).ConfigureAwait(true);
+
+        result.ShouldBeOfType<ProvisionCompleted>().Succeeded.ShouldBeTrue();
+        exec.WrittenScripts[0].ShouldContain("bun-darwin-aarch64.zip");
+        exec.WrittenScripts[0].ShouldNotContain("bun-linux-x64.zip");
+    }
+
     /// <summary>An unreachable registry means the desired omp is unknown, so nothing is installed.</summary>
     [Fact]
     public async Task UnreachableRegistryMakesNoWrite()

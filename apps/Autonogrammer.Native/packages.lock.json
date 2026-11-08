@@ -481,6 +481,14 @@
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
+      "autonogrammer.harness.remoteprovision": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Harness.OmpLauncher": "[0.15.0, )",
+          "Autonogrammer.Harness.Remote": "[0.15.0, )"
+        }
+      },
       "autonogrammer.harness.secrets": {
         "type": "Project"
       },

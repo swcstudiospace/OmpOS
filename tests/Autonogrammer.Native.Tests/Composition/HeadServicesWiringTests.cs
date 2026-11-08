@@ -41,7 +41,7 @@ public sealed class HeadServicesWiringTests
         head.Services.ShouldBeSameAs(services);
         services.BestOfN.ShouldNotBeNull();
         services.Cloud.ShouldBeNull("no AUTONOGRAMMER_API_BASE_URL is set");
-        MissingMembers(services, allowedNull: [nameof(HeadServices.Cloud), nameof(HeadServices.Account), nameof(HeadServices.TrustTerminalOpener), nameof(HeadServices.PluginsRoot), nameof(HeadServices.LoggerFactory), nameof(HeadServices.CheckLocalOmpUpdate), nameof(HeadServices.InstallLocalOmp)]).ShouldBeEmpty();
+        MissingMembers(services, allowedNull: [nameof(HeadServices.Cloud), nameof(HeadServices.Account), nameof(HeadServices.TrustTerminalOpener), nameof(HeadServices.PluginsRoot), nameof(HeadServices.LoggerFactory), nameof(HeadServices.CheckLocalOmpUpdate), nameof(HeadServices.InstallLocalOmp), nameof(HeadServices.RemoteOmp)]).ShouldBeEmpty();
         services.McpContext([tree.Workspace]).WorkspaceRoots.ShouldBe([tree.Workspace]);
         services.CreateModeSkills(tree.Workspace).ShouldNotBeNull();
     }
@@ -100,7 +100,7 @@ public sealed class HeadServicesWiringTests
         await using var servicesScope = services.ConfigureAwait(true);
 
         services.Cloud.ShouldNotBeNull();
-        MissingMembers(services, allowedNull: [nameof(HeadServices.Account), nameof(HeadServices.BestOfN), nameof(HeadServices.UsageHistory), nameof(HeadServices.TrustTerminalOpener), nameof(HeadServices.PluginsRoot), nameof(HeadServices.LoggerFactory), nameof(HeadServices.CheckLocalOmpUpdate), nameof(HeadServices.InstallLocalOmp)]).ShouldBeEmpty();
+        MissingMembers(services, allowedNull: [nameof(HeadServices.Account), nameof(HeadServices.BestOfN), nameof(HeadServices.UsageHistory), nameof(HeadServices.TrustTerminalOpener), nameof(HeadServices.PluginsRoot), nameof(HeadServices.LoggerFactory), nameof(HeadServices.CheckLocalOmpUpdate), nameof(HeadServices.InstallLocalOmp), nameof(HeadServices.RemoteOmp)]).ShouldBeEmpty();
     }
 
     /// <summary>A signed-in account token is sent; signed out, the environment token is the fallback; without either, the supplier returns null.</summary>

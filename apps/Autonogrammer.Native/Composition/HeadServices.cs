@@ -139,11 +139,17 @@ internal sealed class HeadServices : IAsyncDisposable
         _account = account;
         _readToken = readToken;
         _localOmp = localOmp;
-        _localOmpInstaller = ompManaged is null ? null : new LocalOmpInstaller(ompManaged);
+        (_localOmpInstaller, RemoteOmp) = CreateOmpWiring(ompManaged, remoteEnvironments, sshOptions, TimeProvider);
         _ompManaged = ompManaged;
         // Created last: nothing after it can throw, so the automations never outlive a failed constructor.
         Automations = CreateAutomations(options, configDirectory, cloud, TimeProvider);
     }
+
+    /// <summary>Builds the local omp installer and the remote omp provisioner of a managed install, or nulls for both when there is none.</summary>
+    private static (LocalOmpInstaller? Installer, IRemoteOmpProvisioner? Remote) CreateOmpWiring(OmpManagedInstall? ompManaged, IRemoteEnvironmentsHost remoteEnvironments, SshClientOptions sshOptions, TimeProvider clock) =>
+        ompManaged is null
+            ? (null, null)
+            : (new LocalOmpInstaller(ompManaged), RemoteOmpProvisioner.ForManagedInstall(remoteEnvironments, ompManaged.Options, sshOptions, clock));
 
     /// <summary>Gets the root of all session state.</summary>
     public string StateRoot { get; }
@@ -234,6 +240,9 @@ internal sealed class HeadServices : IAsyncDisposable
 
     /// <summary>Gets the cloud agents host, or null when no API address is configured.</summary>
     public ICloudAgentsHost? Cloud { get; }
+
+    /// <summary>Gets the Omp checks and installs of the saved ssh environments, or null when the managed omp is not configured: the Remote page then hides its Omp buttons.</summary>
+    public IRemoteOmpProvisioner? RemoteOmp { get; }
 
     /// <summary>Reads the status of omp on this computer for the Code landing: its source and version, or why it is missing.</summary>
     public Func<CancellationToken, Task<LocalOmpStatus>> ReadLocalOmp => _localOmp.ReadAsync;

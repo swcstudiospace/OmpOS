@@ -152,12 +152,12 @@ public sealed class RemotePreflightTests
         }
     }
 
-    /// <summary>A platform other than Linux x86_64 is a warning: the connection test still succeeds.</summary>
+    /// <summary>A platform the provisioner cannot build omp on is a warning: the connection test still succeeds.</summary>
     [Fact]
     public async Task AnUnverifiedPlatformIsAWarning()
     {
         var ct = TestContext.Current.CancellationToken;
-        using var host = FakeRemoteHost.Create(new FakeRemoteHostOptions { UnameOutput = "Darwin arm64" });
+        using var host = FakeRemoteHost.Create(new FakeRemoteHostOptions { UnameOutput = "FreeBSD amd64" });
 
         var report = await RunAsync(host, cancellationToken: ct).ConfigureAwait(true);
 
@@ -165,7 +165,21 @@ public sealed class RemotePreflightTests
         var diagnosis = report.Diagnoses.ShouldHaveSingleItem();
         diagnosis.Kind.ShouldBe(RemoteDiagnosisKind.UnsupportedPlatform);
         diagnosis.Severity.ShouldBe(DiagnosisSeverity.Warning);
-        diagnosis.Summary.ShouldContain("Darwin arm64", Case.Sensitive);
+        diagnosis.Summary.ShouldContain("FreeBSD amd64", Case.Sensitive);
+    }
+
+    /// <summary>A macOS machine on Apple silicon is a verified platform: the connection test reports no platform warning, because the provisioner installs omp there.</summary>
+    [Fact]
+    public async Task ADarwinArm64MachineHasNoPlatformWarning()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var host = FakeRemoteHost.Create(new FakeRemoteHostOptions { UnameOutput = "Darwin arm64" });
+
+        var report = await RunAsync(host, cancellationToken: ct).ConfigureAwait(true);
+
+        report.Succeeded.ShouldBeTrue();
+        report.Diagnoses.ShouldBeEmpty();
+        report.Platform.ShouldBe("Darwin arm64");
     }
 
     /// <summary>A login shell that does not understand POSIX syntax is named as the cause.</summary>

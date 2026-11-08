@@ -137,6 +137,7 @@ internal sealed class HeadSettings : IAsyncDisposable
             Display = services?.Display,
             WorkspaceSets = services?.WorkspaceSets,
             RemoteEnvironments = services?.RemoteEnvironments,
+            RemoteOmp = services?.RemoteOmp,
             Cloud = services?.Cloud,
             ContainerEnvironments = services?.ContainerEnvironments,
             ContainerLister = services?.ContainerLister,

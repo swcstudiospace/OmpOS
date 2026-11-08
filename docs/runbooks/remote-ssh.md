@@ -35,7 +35,7 @@ This differs from Cursor's Remote SSH, where the agent loop stays on your machin
 
 This machine: OpenSSH client (`ssh` on PATH), Linux or macOS desktop (a Windows desktop cannot start a remote session yet, see Limits).
 
-The remote machine: Linux x86_64 (other platforms give a warning; only Linux x86_64 is verified), a POSIX `sh` and a login shell that can run `sh -c` (bash, zsh or sh; fish or csh as login shell is diagnosed and should be changed for non-interactive use), `mktemp`, omp 18.12.0 or newer with Bun (omp starts through `#!/usr/bin/env bun`), and a directory the user can write to. Install omp and Bun yourself; Autonogrammer never installs anything.
+The remote machine: Linux x86_64 or macOS on Apple silicon (`Darwin arm64`); other platforms give a warning, and only these two are verified. A POSIX `sh` and a login shell that can run `sh -c` (bash, zsh or sh; fish or csh as login shell is diagnosed and should be changed for non-interactive use), `mktemp`, omp 18.12.0 or newer with Bun (omp starts through `#!/usr/bin/env bun`), and a directory the user can write to. Install omp and Bun yourself, or let Autonogrammer install them with Check Omp and Install Omp (see "Check and install Omp"); it never writes to the remote machine without your confirmation.
 
 Authentication: keys in ssh-agent or an `IdentityFile` (certificates and `ProxyJump` work as in your ssh configuration). Passwords and passphrase prompts are not supported because every connection runs with `BatchMode=yes`.
 
@@ -75,6 +75,16 @@ A custom profile can also set host name, port, user, identity file, jump hosts a
 ```
 
 A profile holds references only: there is no field for a password, a passphrase, a key or a token.
+
+## Check and install Omp
+
+Each saved ssh environment has a Check Omp button. A check reads the remote machine with one read-only command and lists what an install would apply: the pinned Bun when it differs from the pin, and the latest omp when the installed one is missing or differs from it, each with its reason. It writes nothing.
+
+Install Omp is enabled only after a check that listed lines. It applies exactly those lines, once. If the machine or the latest release changed since the check, nothing is written and the page asks for a new check. After any install, check again to see the new state.
+
+- Omp is installed only at its default place, `~/.local/bin/omp`. An environment with a custom remote omp path is refused, because Autonogrammer does not manage that omp.
+- A `~/.local/bin/omp` that Autonogrammer did not make is never replaced: the install stops and says so.
+- Plugins are not installed by this step. Container and WSL environments are not covered, and a Windows remote machine is refused.
 
 ## Part 2 status
 
@@ -143,7 +153,7 @@ If the connection drops while a turn runs, the turn is shown as interrupted (not
 | OmpTooOld | The version is below 18.12.0 (configurable). | Update omp the way you installed it. |
 | BunMissing | `omp --version` failed because Bun is not on the remote PATH. | Install Bun as the same user (`~/.bun/bin` is searched). |
 | RequiredToolMissing | `mktemp` is missing. | Install coreutils. |
-| UnsupportedPlatform (warning) | Not Linux x86_64. | May work; report problems. |
+| UnsupportedPlatform (warning) | Not Linux x86_64 or macOS arm64. | May work; report problems. |
 | Unknown | Anything else; the first lines of the tool's output are shown. | Run `ssh <alias> true` and read the message. |
 
 A banner printed by `~/.bashrc` on every non-interactive login is tolerated until the first protocol frame; more than 200 lines or 64 KiB of text before it ends the connection with a message naming the remote rc files.

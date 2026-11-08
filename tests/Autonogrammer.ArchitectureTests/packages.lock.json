@@ -994,6 +994,7 @@
           "Autonogrammer.Harness.Plugins": "[0.16.1, )",
           "Autonogrammer.Harness.Providers": "[0.16.1, )",
           "Autonogrammer.Harness.Remote": "[0.16.1, )",
+          "Autonogrammer.Harness.RemoteProvision": "[0.16.1, )",
           "Autonogrammer.Harness.Secrets": "[0.16.1, )",
           "Autonogrammer.Harness.Secrets.Os": "[0.16.1, )",
           "Autonogrammer.Harness.Terminal": "[0.16.1, )",

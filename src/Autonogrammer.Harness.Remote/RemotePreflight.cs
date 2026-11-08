@@ -14,7 +14,7 @@ public sealed partial class RemotePreflight
 {
     private const string ProbePrefix = "AUTONOGRAMMER_PROBE ";
     private const string ExpectedShellAnswer = "2";
-    private const string SupportedPlatform = "Linux x86_64";
+    private static readonly HashSet<string> VerifiedPlatforms = new HashSet<string>(["Linux x86_64", "Darwin arm64"], StringComparer.Ordinal);
 
     private readonly SshClientOptions _clientOptions;
     private readonly RemotePreflightOptions _options;
@@ -146,7 +146,7 @@ public sealed partial class RemotePreflight
 
         var ompVersion = DiagnoseOmp(ompPath, versionLine, diagnoses);
 
-        if (!string.IsNullOrEmpty(platform) && !string.Equals(platform, SupportedPlatform, StringComparison.Ordinal))
+        if (!string.IsNullOrEmpty(platform) && !VerifiedPlatforms.Contains(platform))
         {
             diagnoses.Add(RemoteDiagnosisCatalog.Create(RemoteDiagnosisKind.UnsupportedPlatform, severity: DiagnosisSeverity.Warning, subject: platform));
         }
