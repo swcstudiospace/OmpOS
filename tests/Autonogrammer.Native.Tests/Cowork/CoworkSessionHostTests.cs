@@ -283,7 +283,7 @@ public sealed class CoworkSessionHostTests
         AgentSessionRuntime.For(view).ShouldNotBeNull();
         host.ConversationOf(id).ShouldBe(host.Broker.Cards);
         host.Notices.ShouldBeEmpty();
-        File.Exists(SessionStateLayout.ConfigOverlayFile(Path.Combine(root.Path, "cowork-sessions", id))).ShouldBeTrue();
+        File.Exists(SessionStateLayout.ConfigOverlayFile(SessionDirectory(root.Path, id))).ShouldBeTrue();
         (await GatewayStatusAsync(tools, id, ct).ConfigureAwait(true)).ShouldBe(HttpStatusCode.OK);
 
         await host.CloseSessionAsync(id, ct).ConfigureAwait(true);
@@ -393,7 +393,7 @@ public sealed class CoworkSessionHostTests
         await using var tools = new CoworkToolServer();
         await using var host = Host(root.Path, new ScriptedOmp(), tools);
         var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
-        var overlay = SessionStateLayout.ConfigOverlayFile(Path.Combine(root.Path, "cowork-sessions", id));
+        var overlay = SessionStateLayout.ConfigOverlayFile(SessionDirectory(root.Path, id));
         // A directory at the overlay path forces a real compose I/O failure after gateway acquisition.
         Directory.CreateDirectory(overlay);
 
@@ -530,6 +530,10 @@ public sealed class CoworkSessionHostTests
         IsLost = false,
         AccessibleName = "task",
     };
+
+    // The session files of the Gate's account ("acct") live in its folder, under cowork-sessions.
+    private static string SessionDirectory(string root, string id) =>
+        Path.Combine(CoworkAccountFolder.AccountDirectory(root, "acct"), "cowork-sessions", id);
 
     private sealed class Gate : ICoworkAccountGate
     {

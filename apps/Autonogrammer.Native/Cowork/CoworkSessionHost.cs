@@ -88,7 +88,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
     /// <inheritdoc />
     public async Task<string> CreateSessionAsync(CancellationToken cancellationToken)
     {
-        var id = EnsureRegistry(cancellationToken).Create(null).Id;
+        var id = EnsureRegistry(cancellationToken).Registry.Create(null).Id;
         await Task.CompletedTask.ConfigureAwait(false);
         return id;
     }
@@ -109,6 +109,11 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         {
             await previous.ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
+            var (registry, accountDirectory) = EnsureRegistry(cancellationToken);
+            if (!registry.List().Any(listed => string.Equals(listed.Id, row.Id, StringComparison.Ordinal)))
+            {
+                throw new InvalidOperationException("That Cowork session does not belong to the signed-in account.");
+            }
             lock (_gate)
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
@@ -119,7 +124,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
                 }
             }
 
-            slot = await OpenCoreAsync(row, cancellationToken).ConfigureAwait(false);
+            slot = await OpenCoreAsync(row, accountDirectory, cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             var viewModel = slot.Runtime.ViewModel;
             lock (_gate)
@@ -495,10 +500,11 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
     }
 
     // Requires a signed-in account. A registry belongs to the account it opened for: a signed-out or switched account gets none from this host.
-    private CoworkSessionRegistry EnsureRegistry(CancellationToken cancellationToken)
+    private (CoworkSessionRegistry Registry, string AccountDirectory) EnsureRegistry(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var key = CurrentAccountKey() ?? throw new InvalidOperationException("Cowork storage requires a signed-in account.");
+        var accountDirectory = CoworkAccountFolder.AccountDirectory(_options.StateRoot, key);
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -509,7 +515,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
                     throw new InvalidOperationException("The signed-in account changed. Cowork is stopping the previous account's sessions; try again.");
                 }
 
-                return _registry;
+                return (_registry, accountDirectory);
             }
 
             var registry = CoworkSessionRegistry.Open(
@@ -521,7 +527,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             Recoveries++;
             _registry = registry;
             _registryKey = key;
-            return registry;
+            return (registry, accountDirectory);
         }
     }
 
@@ -535,9 +541,9 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
 
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
     [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: each owner is nulled once transferred to its composed holder; the finally disposes any owner still held directly.")]
-    private async Task<Slot> OpenCoreAsync(AgentRow row, CancellationToken cancellationToken)
+    private async Task<Slot> OpenCoreAsync(AgentRow row, string accountDirectory, CancellationToken cancellationToken)
     {
-        var directory = Path.Combine(_options.StateRoot, "cowork-sessions", row.Id);
+        var directory = Path.Combine(accountDirectory, "cowork-sessions", row.Id);
         HostLease? lease = null;
         EngineComposition? engine = null;
         AgentSessionRuntime? runtime = null;
