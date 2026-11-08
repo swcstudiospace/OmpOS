@@ -1,12 +1,18 @@
-# Desktop packages for apps/Autonogrammer.Native (Avalonia): Linux x64, Windows x64 and macOS arm64.
+# Desktop packages and installers for apps/Autonogrammer.Native (Avalonia): Linux x64, Windows x64 and macOS arm64.
 #
 # Triggers
-#   workflow_dispatch  builds the three packages and uploads them as workflow artifacts. No release is touched. The release
+#   workflow_dispatch  builds the six release files and uploads them as workflow artifacts. No release is touched. The release
 #                      job is skipped, so a dispatch run writes no SHA256SUMS-desktop.
-#   push of v*         builds the same packages, writes SHA256SUMS-desktop, and attaches them to the GitHub Release for that tag.
+#   push of v*         builds the same six files, writes SHA256SUMS-desktop, and attaches them to the GitHub Release for that tag.
 #                      If release.yml already published the release, this job uploads the archives and does not rewrite its
 #                      notes or turn it back into a draft. If no release exists yet, this job creates a published release
 #                      so the installers are downloadable. A prerelease suffix on the tag still marks the release as a prerelease.
+#
+# Release files (six): the linux-x64 leg makes Autonogrammer-<version>-linux-x64.tar.gz and -linux-x64.deb, the win-x64 leg makes
+# -win-x64.zip and -win-x64-Setup.exe, and the osx-arm64 leg makes -osx-arm64.zip and -osx-arm64.dmg. The .deb comes from
+# scripts/release/package-deb.sh, the installer from scripts/release/windows/Autonogrammer.iss (Inno Setup 6, installed with choco),
+# and the .dmg from scripts/release/package-dmg.sh. The installer is smoke-tested on windows-2025 only: a silent install, a 15-second
+# launch and an uninstall. No job installs the .deb or opens the .dmg.
 #
 # Version rule (copied from release.yml): the tag is vMAJOR.MINOR.PATCH[-prerelease], it equals the <VersionPrefix> of
 # Directory.Build.props without the prerelease suffix, and the tagged commit is reachable from origin/main.
@@ -63,6 +69,33 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
+      # The public plugin submodules come first. The private agent-substrate has its own step, so the SUBMODULE_TOKEN secret reaches git
+      # for that one command only. persist-credentials is off above, so the checkout's GITHUB_TOKEN header is not stored for later fetches.
+      - name: Plugin submodules for ultrathink and swarm (public)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git submodule update --init --recursive plugins/claude-ultrathink plugins/agent-swarm
+      - name: Plugin submodule agent-substrate (private; needs the SUBMODULE_TOKEN secret)
+        shell: bash
+        env:
+          SUBMODULE_TOKEN: ${{ secrets.SUBMODULE_TOKEN }}
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUBMODULE_TOKEN:-}" ]; then
+            if [[ "$REF" == refs/tags/v* ]]; then
+              echo "::error::the SUBMODULE_TOKEN repository secret is not set. A tag build needs it to check out the private plugins/agent-substrate. Add a read-only token for swcstudiospace/substrate as that secret."
+              exit 1
+            fi
+            echo "::warning::SUBMODULE_TOKEN is not set, so plugins/agent-substrate is not checked out and this dispatch build's packages will not contain the substrate plugin. A tag build fails here instead."
+            exit 0
+          fi
+          header="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$SUBMODULE_TOKEN" | base64 | tr -d '\n')"
+          echo "::add-mask::$header"
+          GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" GIT_CONFIG_VALUE_0="$header" \
+            git submodule update --init --recursive plugins/agent-substrate
       - name: Resolve the version (tag rule as in release.yml)
         shell: bash
         run: |
@@ -112,6 +145,18 @@ jobs:
         run: |
           set -euo pipefail
           dotnet publish apps/Autonogrammer.Native/Autonogrammer.Native.csproj -c Release -r "$RID" --self-contained true --no-restore -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.14 -o "publish/$RID"
+      - name: Bundle the plugins at their pinned commits (tag gate; see scripts/release/bundle-plugins.sh)
+        shell: bash
+        env:
+          REF: ${{ github.ref }}
+          RID: ${{ matrix.rid }}
+        run: |
+          set -euo pipefail
+          tag=""
+          if [[ "$REF" == refs/tags/v* ]]; then
+            tag="$GITHUB_REF_NAME"
+          fi
+          bash scripts/release/bundle-plugins.sh "publish/$RID" . "$tag"
       - name: Package
         id: package
         shell: bash
@@ -121,22 +166,85 @@ jobs:
           set -euo pipefail
           archive="$(bash scripts/release/package-desktop.sh "$RID" "publish/$RID" "$VERSION" dist)"
           echo "archive=$archive" >> "$GITHUB_OUTPUT"
+      - name: Build the .deb (linux-x64)
+        if: matrix.rid == 'linux-x64'
+        shell: bash
+        env:
+          RID: ${{ matrix.rid }}
+        run: |
+          set -euo pipefail
+          bash scripts/release/package-deb.sh "$VERSION" "publish/$RID" dist
+      - name: Build the .dmg (osx-arm64)
+        if: matrix.rid == 'osx-arm64'
+        shell: bash
+        env:
+          ARCHIVE: ${{ steps.package.outputs.archive }}
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/dmg-input"
+          rm -rf -- "$stage"
+          mkdir -p "$stage"
+          ditto -x -k "$ARCHIVE" "$stage"
+          bash scripts/release/package-dmg.sh "$VERSION" "$stage/Autonogrammer.app" dist
+      - name: Build the Windows installer (Inno Setup 6)
+        if: matrix.rid == 'win-x64'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          choco install innosetup -y --no-progress
+          if ($LASTEXITCODE -ne 0) { throw "choco install innosetup failed with exit code $LASTEXITCODE" }
+          $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path -LiteralPath $iscc -PathType Leaf)) { throw "ISCC.exe not found at $iscc" }
+          $dist = Join-Path $PWD 'dist'
+          $source = Join-Path $PWD 'publish\win-x64'
+          $base = "Autonogrammer-$env:VERSION-win-x64-Setup"
+          & $iscc "/DAppVersion=$env:VERSION" "/DSourceDir=$source" "/DOutputDir=$dist" "/DOutputBaseFilename=$base" 'scripts\release\windows\Autonogrammer.iss'
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE" }
+          if (-not (Test-Path -LiteralPath (Join-Path $dist "${base}.exe") -PathType Leaf)) { throw "the installer was not produced: ${base}.exe" }
+      - name: Smoke-test the Windows installer (silent install, launch, uninstall)
+        if: matrix.rid == 'win-x64'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = Join-Path $PWD "dist\Autonogrammer-$env:VERSION-win-x64-Setup.exe"
+          if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw "installer not found: $setup" }
+          $installDir = Join-Path $env:LOCALAPPDATA 'Programs\Autonogrammer'
+          $exe = Join-Path $installDir 'Autonogrammer.Native.exe'
+          $uninstaller = Join-Path $installDir 'unins000.exe'
+          $desktopLink = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Autonogrammer.lnk'
+          $startLink = Join-Path ([Environment]::GetFolderPath('Programs')) 'Autonogrammer\Autonogrammer.lnk'
+          $install = Start-Process -FilePath $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/TASKS=desktopicon' -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "installer exited with code $($install.ExitCode)" }
+          if (-not (Test-Path -LiteralPath $desktopLink -PathType Leaf)) { throw "desktop shortcut missing: $desktopLink" }
+          if (-not (Test-Path -LiteralPath $startLink -PathType Leaf)) { throw "Start Menu shortcut missing: $startLink" }
+          if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw "installed executable missing: $exe" }
+          $app = Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 15
+          if ($app.HasExited) { throw "Autonogrammer.Native.exe exited within 15 seconds with code $($app.ExitCode)" }
+          Stop-Process -Id $app.Id -Force
+          $app.WaitForExit(30000) | Out-Null
+          $uninstall = Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait -PassThru
+          if ($uninstall.ExitCode -ne 0) { throw "uninstaller exited with code $($uninstall.ExitCode)" }
+          $deadline = (Get-Date).AddSeconds(120)
+          while ((Test-Path -LiteralPath $installDir) -and ((Get-Date) -lt $deadline)) { Start-Sleep -Seconds 2 }
+          if (Test-Path -LiteralPath $installDir) { throw "install folder still exists after uninstall: $installDir" }
       - name: Job summary
         shell: bash
         env:
           RID: ${{ matrix.rid }}
-          ARCHIVE: ${{ steps.package.outputs.archive }}
         run: |
           set -euo pipefail
           {
             echo "### Autonogrammer desktop $VERSION ($RID)"
             echo ""
-            echo "- Package: $(basename "$ARCHIVE")"
+            for file in dist/*; do
+              echo "- Package: $(basename "$file")"
+            done
             echo "- Not signed with a publisher certificate and not notarized."
             echo "- Requires omp and Bun, installed separately on the machine that runs the app. The package does not contain them."
             echo "- Steps for testers: docs/runbooks/desktop-release.md"
           } >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload the package as a workflow artifact
+      - name: Upload the packages as workflow artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: autonogrammer-desktop-${{ matrix.rid }}
@@ -156,34 +264,48 @@ jobs:
       GH_REPO: ${{ github.repository }}
       TAG: ${{ github.ref_name }}
     steps:
-      - name: Download the three packages
+      - name: Download the packages
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: autonogrammer-desktop-*
           path: dist
           merge-multiple: true
-      - name: Write SHA256SUMS-desktop for exactly the three packages
+      - name: Write SHA256SUMS-desktop for exactly the six expected files
         shell: bash
         run: |
           set -euo pipefail
+          version="${TAG#v}"
+          expected=(
+            "Autonogrammer-${version}-linux-x64.tar.gz"
+            "Autonogrammer-${version}-linux-x64.deb"
+            "Autonogrammer-${version}-win-x64.zip"
+            "Autonogrammer-${version}-win-x64-Setup.exe"
+            "Autonogrammer-${version}-osx-arm64.zip"
+            "Autonogrammer-${version}-osx-arm64.dmg"
+          )
           cd dist
           shopt -s nullglob
-          files=( * )
-          if [ "${#files[@]}" -ne 3 ]; then
-            echo "::error::expected 3 packages in dist, found ${#files[@]}" >&2
-            exit 1
-          fi
-          version="${TAG#v}"
-          for file in "${files[@]}"; do
-            case "$file" in
-              "Autonogrammer-${version}-"*) ;;
+          found=( * )
+          failed=0
+          for file in "${expected[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "::error::missing $file in dist" >&2
+              failed=1
+            fi
+          done
+          for file in "${found[@]}"; do
+            case " ${expected[*]} " in
+              *" $file "*) ;;
               *)
-                echo "::error::$file does not start with Autonogrammer-${version}-" >&2
-                exit 1
+                echo "::error::unexpected file $file in dist" >&2
+                failed=1
                 ;;
             esac
           done
-          sha256sum -- "${files[@]}" > SHA256SUMS-desktop
+          if [ "$failed" -ne 0 ]; then
+            exit 1
+          fi
+          sha256sum -- "${expected[@]}" > SHA256SUMS-desktop
           sha256sum -c SHA256SUMS-desktop
       - name: Attach the packages to the GitHub Release
         shell: bash
@@ -210,5 +332,5 @@ jobs:
           {
             echo "### Desktop packages on $TAG"
             echo ""
-            echo "The three archives and SHA256SUMS-desktop are attached to the GitHub Release."
+            echo "The six packages and SHA256SUMS-desktop are attached to the GitHub Release."
           } >> "$GITHUB_STEP_SUMMARY"
