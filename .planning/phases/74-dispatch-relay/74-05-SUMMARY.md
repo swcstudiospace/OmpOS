@@ -2,8 +2,8 @@
 phase: 74-dispatch-relay
 plan: 74-05
 subsystem: api
-status: complete
-completed: 2026-11-08
+status: partial
+updated: 2026-11-08
 tags: [dispatch, websocket, postgres, presence, audit]
 requires: [74-01, 74-02, 74-03, 74-07, 74-10]
 provides:
@@ -11,12 +11,14 @@ provides:
   - Durable Postgres dispatch-store selection, coarse source-prefix persistence, and overdue-command sweeping
   - Desktop pairing key binding and connector-to-hub state reporting
   - Atomic command-state feed events and closed-field rejection auditing
-requirements-completed: [AG-74-4, AG-74-5, AG-74-7, AG-74-8, AG-74-10, AG-74-13, AG-74-14]
+requirements-completed: []
 ---
 
 # Phase 74 plan 05 summary
 
 The Dispatch relay connects paired desktops to the API over outbound WebSockets. The desktop signs the hub challenge with its enrolled device key, reports state transitions and heartbeats, and executes a verified command once. A real desktop connector, a loopback Kestrel API host and a session handler completed a command end to end in `DesktopHubIntegrationTests`.
+
+**Open blocker:** an acknowledged command can remain in a link-local queue when the link disconnects. The persisted deduplication record survives the link but the queue does not; reconnect also omits the outstanding IDs from the hello. The transient-disconnect lifecycle must be corrected and tested before this plan is considered complete. PR #9 is draft.
 
 ## Implementation
 
