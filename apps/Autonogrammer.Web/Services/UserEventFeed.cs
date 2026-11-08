@@ -87,14 +87,16 @@ internal sealed class UserEventFeed : IUserEventFeed
 
         if (result is { Kind: CatalogEventKinds.Resync })
         {
-            // Zero forces replay or a fresh resync if the new connection drops before it supplies an id.
-            position.Last = 0;
+            // A disconnect before the next id must force another snapshot, not an unprotected live tail.
+            position.Last = null;
+            position.NeedsResync = true;
             return result;
         }
 
         if (parsedId is long accepted)
         {
             position.Last = accepted;
+            position.NeedsResync = false;
         }
 
         return IsPopulated(result) ? result : null;
@@ -118,7 +120,7 @@ internal sealed class UserEventFeed : IUserEventFeed
 
     private async IAsyncEnumerable<UserStreamEvent> ReadConnectionAsync(Position position, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        using var request = BuildRequest(position.Last);
+        using var request = BuildRequest(position.NeedsResync ? IUserEventFeed.ResyncPosition : position.Last);
         HttpResponseMessage? response = null;
         try
         {
@@ -203,5 +205,7 @@ internal sealed class UserEventFeed : IUserEventFeed
     private sealed class Position(long? last)
     {
         public long? Last { get; set; } = last;
+
+        public bool NeedsResync { get; set; }
     }
 }

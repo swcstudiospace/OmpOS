@@ -1,7 +1,9 @@
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using Autonogrammer.Contracts.Agents;
+using Autonogrammer.Contracts.Catalog;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Presentation.AgentPanel;
@@ -100,9 +102,9 @@ public sealed class WebWorkbenchTests : IDisposable
         await _host.PumpUntilAsync(() => workbench.Panel.Catalog.Sessions.Single(row => string.Equals(row.Id, session.Id, StringComparison.Ordinal)).Status == AgentRowStatus.Completed).ConfigureAwait(true);
     }
 
-    /// <summary>A status emitted after the initial snapshot but before the live feed connects is replayed.</summary>
+    /// <summary>A status emitted after the initial snapshot but before the feed connects is recovered by the connected resync.</summary>
     [Fact]
-    public async Task AStatusBeforeTheFeedConnectsIsReplayed()
+    public async Task AStatusBeforeTheFeedConnectsIsRecoveredByResync()
     {
         var ct = TestContext.Current.CancellationToken;
         var delayed = new DelayedFeed(_host.Feed);
@@ -126,6 +128,37 @@ public sealed class WebWorkbenchTests : IDisposable
         {
             delayed.Release.TrySetResult();
         }
+    }
+
+    /// <summary>A fresh snapshot skips old history rather than reloading once per stale event.</summary>
+    [Fact]
+    public async Task InitialResyncSkipsStaleHistoryWithoutRepeatedCatalogueReads()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        for (var index = 0; index < 20; index++)
+        {
+            var change = new CatalogChangedEvent { SessionId = "gone-" + index.ToString(System.Globalization.CultureInfo.InvariantCulture), Change = CatalogChangeKind.Updated, RowStatus = CatalogRowStatus.Ready, Group = CatalogRowGroup.Idle };
+            _host.World.Bus.Publish(CatalogEventKinds.CatalogChanged, JsonSerializer.Serialize(change, CatalogJsonContext.Default.CatalogChangedEvent));
+        }
+
+        var reads = 0;
+        _host.Interceptor.Intercept = request =>
+        {
+            if (request.Method == HttpMethod.Get && string.Equals(request.RequestUri!.AbsolutePath, "/sessions", StringComparison.Ordinal))
+            {
+                Interlocked.Increment(ref reads);
+            }
+
+            return null;
+        };
+        var workbench = NewWorkbench();
+        await using var scope = workbench.ConfigureAwait(true);
+        await workbench.StartAsync(ct).ConfigureAwait(true);
+        await _host.PumpUntilAsync(() => Volatile.Read(ref reads) >= 2).ConfigureAwait(true);
+        var status = new SessionStatusEvent { SessionId = DemoFixtures.CompletedId, Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running, LastActivityAt = _host.Time.GetUtcNow() };
+        _host.World.Bus.Publish(CatalogEventKinds.SessionStatus, JsonSerializer.Serialize(status, CatalogJsonContext.Default.SessionStatusEvent));
+        await _host.PumpUntilAsync(() => workbench.Panel.Catalog.Sessions.Single(row => string.Equals(row.Id, DemoFixtures.CompletedId, StringComparison.Ordinal)).Status == AgentRowStatus.Running).ConfigureAwait(true);
+        Volatile.Read(ref reads).ShouldBe(2);
     }
 
     /// <summary>A steering message while a turn runs is delivered into the turn, shown in the steering history, and acknowledged in the transcript.</summary>
