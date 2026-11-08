@@ -8,6 +8,8 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.16.2] - 2026-11-08
+
 ### Added
 
 - Desktop installers. Windows: an Inno Setup installer that installs per user, adds a Start Menu entry and an optional desktop shortcut, and whose uninstaller asks before removing settings, sessions and the managed Omp runtime (the default is to keep them). Linux: a `.deb` that adds a menu entry and an `autonogrammer` command. macOS: a `.dmg` with a link to Applications. All three are unsigned and not notarized. Each is verified only when the workflow runs on its own OS.
@@ -16,6 +18,12 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 - CoWork sign-in entry. A signed-out Code/CoWork switch now appears. CoWork shows the sign-in message and a sign-in button, or the not-configured message when no sign-in service is configured.
 - Code landing. With no session selected, the Code surface shows four environment cards: Local machine (with the Omp status it found), another machine linked to this account, Cloud, and Remote (the saved remote environments). Linked machines have no device source yet, and the remote Omp status reads "not checked yet" until the remote check is wired to the UI.
 - Remote provisioning service. It checks an SSH environment for Omp, Bun and the bundled plugins, reports drift, and installs only what has drifted, after a per-environment confirmation. It is not yet reachable from the UI.
+
+### Changed
+
+- Pull requests into main must raise `VersionPrefix` above the base and add its CHANGELOG section. `scripts/ci/check-version-bump.sh` runs in the CI job and fails the pull request otherwise.
+- CoWork sessions are stored per account at the host. Each account's session files live in its own folder, and a host refuses to create or open a session that another account's registry does not own. The head keeps the signed-out gate, so no CoWork task is created in this release, and the session list does not yet follow sign-in or sign-out.
+- The CI browser smoke continues on error, so the native tests and the other steps still run and report when it fails. A final gate step fails the job when the smoke failed, so the smoke still gates the job.
 
 ### Fixed
 
@@ -365,7 +373,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.1...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.2...HEAD
+[0.16.2]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.14.0...v0.15.0

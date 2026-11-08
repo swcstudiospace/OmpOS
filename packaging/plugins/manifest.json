@@ -33,7 +33,7 @@
       "requiredForRelease": true,
       "expectedLicenseFile": true,
       "licenceAcceptedWithoutFile": false,
-      "licenseNote": "Tracked in this repository. package.json declares AGPL-3.0-or-later, but this directory has no LICENSE file. The tag gate fails until one is added here."
+      "licenseNote": "Tracked in this repository. package.json declares AGPL-3.0-or-later, and this directory carries its AGPL-3.0 LICENSE file."
     },
     {
       "dir": "autonogrammer-hooks-omp",
@@ -42,7 +42,7 @@
       "requiredForRelease": true,
       "expectedLicenseFile": true,
       "licenceAcceptedWithoutFile": false,
-      "licenseNote": "Tracked in this repository. package.json declares AGPL-3.0-or-later, but this directory has no LICENSE file. The tag gate fails until one is added here."
+      "licenseNote": "Tracked in this repository. package.json declares AGPL-3.0-or-later, and this directory carries its AGPL-3.0 LICENSE file."
     }
   ]
 }
