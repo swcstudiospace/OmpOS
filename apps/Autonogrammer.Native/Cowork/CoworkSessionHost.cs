@@ -527,7 +527,8 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             notice = opened.Notice;
         }
 
-        var ompPath = _options.ResolveOmpPath is { } resolve
+        // A remote session runs omp on its own host, so the local launcher is not consulted, as for a remote plan in the session engine.
+        var ompPath = !_options.Remote && _options.ResolveOmpPath is { } resolve
             ? await resolve(cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException(OmpLocator.InstallGuidance)
             : _options.OmpPath;
 

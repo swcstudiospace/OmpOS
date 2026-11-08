@@ -29,7 +29,6 @@ public sealed class ContainerSessionSelectionTests
                 HomeDirectory = Path.Combine(tree.Root, "home"),
                 ConfigDirectory = Path.Combine(tree.Root, "config"),
                 GetVariable = static _ => null,
-                OmpPath = AgentLoopFixtures.WriteFakeOmp(Path.Combine(tree.Root, "omp"), "18.18.1"),
                 Podman = container?.ClientOptions,
                 OmpAvailable = static () => false,
             },

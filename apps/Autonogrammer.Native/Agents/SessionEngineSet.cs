@@ -627,7 +627,8 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             {
                 launch = launch with { Environment = providerKeys.Overlay(launch.Environment) };
             }
-            var ompPath = await ResolveOmpPathAsync(cancellationToken).ConfigureAwait(false);
+            // A remote plan runs omp on its own host, so the local launcher is not consulted; it gets the configured path, as before the launcher wiring.
+            var ompPath = plan.Extras.IsRemote ? _options.OmpPath : await ResolveOmpPathAsync(cancellationToken).ConfigureAwait(false);
             var holder = plan.RunModes;
             var composition = new EngineCompositionOptions
             {
