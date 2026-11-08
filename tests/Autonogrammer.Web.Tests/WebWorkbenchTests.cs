@@ -1,4 +1,5 @@
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Contracts.Sessions;
@@ -97,6 +98,34 @@ public sealed class WebWorkbenchTests : IDisposable
         blocks.OfType<CodeBlock>().ShouldNotBeEmpty();
         _host.World.Find(session.Id).Status.ShouldBe(SessionStatus.Completed);
         await _host.PumpUntilAsync(() => workbench.Panel.Catalog.Sessions.Single(row => string.Equals(row.Id, session.Id, StringComparison.Ordinal)).Status == AgentRowStatus.Completed).ConfigureAwait(true);
+    }
+
+    /// <summary>A status emitted after the initial snapshot but before the live feed connects is replayed.</summary>
+    [Fact]
+    public async Task AStatusBeforeTheFeedConnectsIsReplayed()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var delayed = new DelayedFeed(_host.Feed);
+        var workbench = NewWorkbench(delayed);
+        await using var scope = workbench.ConfigureAwait(true);
+        try
+        {
+            await workbench.StartAsync(ct).ConfigureAwait(true);
+            await delayed.Entered.Task.WaitAsync(ct).ConfigureAwait(true);
+            await workbench.Panel.NewSessionAsync(ct).ConfigureAwait(true);
+            var session = workbench.Panel.Selected.ShouldNotBeNull();
+            await _host.PumpUntilAsync(() => session.Session.State != SessionViewState.LoadingHistory).ConfigureAwait(true);
+            session.Composer.Draft = "hello there";
+            await session.Composer.SendAsync().ConfigureAwait(true);
+            await _host.PumpUntilAsync(() => session.Session.State == SessionViewState.Success && !session.Composer.IsStreaming).ConfigureAwait(true);
+            _host.World.Find(session.Id).Status.ShouldBe(SessionStatus.Completed);
+            delayed.Release.TrySetResult();
+            await _host.PumpUntilAsync(() => workbench.Panel.Catalog.Sessions.Single(row => string.Equals(row.Id, session.Id, StringComparison.Ordinal)).Status == AgentRowStatus.Completed).ConfigureAwait(true);
+        }
+        finally
+        {
+            delayed.Release.TrySetResult();
+        }
     }
 
     /// <summary>A steering message while a turn runs is delivered into the turn, shown in the steering history, and acknowledged in the transcript.</summary>
@@ -355,5 +384,22 @@ public sealed class WebWorkbenchTests : IDisposable
     /// <inheritdoc />
     public void Dispose() => _host.Dispose();
 
-    private WebWorkbench NewWorkbench() => new(_host.Api, _host.Feed, new NoJsRuntime(), _host.Time, new WebWorkbenchOptions(IsDemo: true, ApiHost: "demo"), []);
+    private WebWorkbench NewWorkbench(IUserEventFeed? feed = null) => new(_host.Api, feed ?? _host.Feed, new NoJsRuntime(), _host.Time, new WebWorkbenchOptions(IsDemo: true, ApiHost: "demo"), []);
+
+    private sealed class DelayedFeed(IUserEventFeed inner) : IUserEventFeed
+    {
+        public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async IAsyncEnumerable<UserStreamEvent> StreamAsync(long? afterId, [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            Entered.TrySetResult();
+            await Release.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await foreach (var item in inner.StreamAsync(afterId, cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
+            {
+                yield return item;
+            }
+        }
+    }
 }

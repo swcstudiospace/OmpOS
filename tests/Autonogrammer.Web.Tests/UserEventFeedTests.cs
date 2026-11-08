@@ -113,6 +113,26 @@ public sealed class UserEventFeedTests
         events[2].Catalog!.SessionId.ShouldBe("new");
     }
 
+    /// <summary>If a resync connection closes before a new event, reconnecting asks for replay rather than an unprotected live tail.</summary>
+    [Fact]
+    public async Task DisconnectImmediatelyAfterResyncReplaysFromZero()
+    {
+        using var handler = new RoutedHandler();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        handler.On(HttpMethod.Get, "/events?since=5", _ => Stream("event: resync\ndata: {\"reason\":\"history gap\"}\n\n"));
+        handler.On(HttpMethod.Get, "/events?since=0", _ => Stream(Frame(1, "catalog_changed", Changed("new", CatalogChangeKind.Created))));
+        handler.On(HttpMethod.Get, "/events?since=1", _ =>
+        {
+            cancellation.Cancel();
+            return Stream(string.Empty);
+        });
+        using var http = new HttpClient(handler) { BaseAddress = new Uri("http://api.invalid/", UriKind.Absolute) };
+        var events = await ReadAsync(new UserEventFeed(http, NoDelay), 5, cancellation.Token).ConfigureAwait(true);
+        events.Select(static item => item.Kind).ShouldBe(["resync", "catalog_changed"]);
+        events[1].Catalog!.SessionId.ShouldBe("new");
+        handler.Headers[1]["Last-Event-ID"].ShouldBe("0");
+    }
+
     /// <summary>A frame that is not valid for its kind, and a kind the client does not know, are skipped; their ids still advance the position.</summary>
     /// <returns>A task that completes when the assertions ran.</returns>
     [Fact]

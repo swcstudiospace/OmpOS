@@ -87,8 +87,8 @@ internal sealed class UserEventFeed : IUserEventFeed
 
         if (result is { Kind: CatalogEventKinds.Resync })
         {
-            // The identifiers after a resync may come from another API process, so the old high-water mark must not drop them.
-            position.Last = null;
+            // Zero forces replay or a fresh resync if the new connection drops before it supplies an id.
+            position.Last = 0;
             return result;
         }
 

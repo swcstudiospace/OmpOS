@@ -309,7 +309,8 @@ internal sealed class WebWorkbench : IAsyncDisposable
 
     private async Task PumpUserEventsAsync(CancellationToken cancellationToken)
     {
-        long? last = null;
+        // Replay or resync from the beginning so changes between the snapshot and stream connection are not lost.
+        long? last = 0;
         var failures = 0;
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -318,7 +319,7 @@ internal sealed class WebWorkbench : IAsyncDisposable
                 await foreach (var evt in _feed.StreamAsync(last, cancellationToken).ConfigureAwait(true))
                 {
                     failures = 0;
-                    last = string.Equals(evt.Kind, CatalogEventKinds.Resync, StringComparison.Ordinal) ? null : evt.Id ?? last;
+                    last = string.Equals(evt.Kind, CatalogEventKinds.Resync, StringComparison.Ordinal) ? 0 : evt.Id ?? last;
                     await ApplyAsync(evt, cancellationToken).ConfigureAwait(true);
                 }
             }

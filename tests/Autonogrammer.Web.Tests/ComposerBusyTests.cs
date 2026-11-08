@@ -135,7 +135,7 @@ public sealed class ComposerBusyTests
         handler.On(HttpMethod.Get, "/sessions", _ => Json(++listed == 1 ? "[]" : JsonSerializer.Serialize(new[] { entry }, CatalogJsonContext.Default.SessionCatalogEntryArray)));
         handler.OnProblem(HttpMethod.Get, "/workspace", HttpStatusCode.NotFound, null, "Not found.", "No workspace.");
         handler.OnProblem(HttpMethod.Get, "/source", HttpStatusCode.NotFound, null, "Not found.", "No source.");
-        handler.On(HttpMethod.Get, "/events", _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ChunkedSseContent([string.Empty]) });
+        handler.On(HttpMethod.Get, "/events?since=0", _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ChunkedSseContent([string.Empty]) });
         handler.On(HttpMethod.Post, "/sessions", _ => Json(
             $$"""{"id":"{{Id}}","ownerId":"local-dev","createdAt":"2026-10-21T00:00:00+00:00","updatedAt":"2026-10-21T00:00:00+00:00","status":"Idle","messages":[],"events":[]}""",
             HttpStatusCode.Created));
