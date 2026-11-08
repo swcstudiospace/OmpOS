@@ -178,7 +178,7 @@ public sealed class DispatchConnector
         _reconnect.MarkConnected();
         SetState(DispatchConnectionState.Connected);
         using var link = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var commands = Channel.CreateBounded<ReadOnlyMemory<byte>>(new BoundedChannelOptions(256) { SingleReader = true, SingleWriter = true });
+        var commands = Channel.CreateBounded<DispatchCommand>(new BoundedChannelOptions(256) { SingleReader = true, SingleWriter = true });
         var worker = ProcessCommandsAsync(transport, commands.Reader, link.Cancel, link.Token);
         try
         {
@@ -211,7 +211,7 @@ public sealed class DispatchConnector
         }
     }
 
-    private async Task<DispatchLinkDecision> ReadFramesAsync(AcpWebSocketTransport transport, ChannelWriter<ReadOnlyMemory<byte>> commands, CancellationTokenSource link)
+    private async Task<DispatchLinkDecision> ReadFramesAsync(AcpWebSocketTransport transport, ChannelWriter<DispatchCommand> commands, CancellationTokenSource link)
     {
         Task? heartbeat = null;
         try
@@ -249,7 +249,7 @@ public sealed class DispatchConnector
         }
     }
 
-    private async Task<DispatchLinkDecision?> HandleFrameAsync(AcpWebSocketTransport transport, ReadOnlyMemory<byte> frame, ChannelWriter<ReadOnlyMemory<byte>> commands, CancellationToken cancellationToken)
+    private async Task<DispatchLinkDecision?> HandleFrameAsync(AcpWebSocketTransport transport, ReadOnlyMemory<byte> frame, ChannelWriter<DispatchCommand> commands, CancellationToken cancellationToken)
     {
         if (!DispatchFrameGuard.TryAdmit(frame.Span, out var admission) || !admission.Accepted)
         {
@@ -267,7 +267,7 @@ public sealed class DispatchConnector
                 }
                 return null;
             case DispatchFrameTypes.Cmd:
-                return !_welcomed || commands.TryWrite(frame) ? null : DispatchCloseStatus.ClassifyClose(null);
+                return await AdmitFrameAsync(transport, frame, commands, cancellationToken).ConfigureAwait(false);
             case DispatchFrameTypes.Revoke:
                 return Stop(DispatchConnectionState.DeviceRevoked);
             default:
@@ -275,13 +275,13 @@ public sealed class DispatchConnector
         }
     }
 
-    private async Task ProcessCommandsAsync(AcpWebSocketTransport transport, ChannelReader<ReadOnlyMemory<byte>> commands, Action cancelLink, CancellationToken cancellationToken)
+    private async Task ProcessCommandsAsync(AcpWebSocketTransport transport, ChannelReader<DispatchCommand> commands, Action cancelLink, CancellationToken cancellationToken)
     {
         try
         {
-            await foreach (var frame in commands.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+            await foreach (var command in commands.ReadAllAsync(cancellationToken).ConfigureAwait(false))
             {
-                await HandleCommandAsync(transport, frame, cancellationToken).ConfigureAwait(false);
+                await ExecuteCommandAsync(transport, command, cancellationToken).ConfigureAwait(false);
             }
         }
         catch (DisconnectedHarnessException)
@@ -377,12 +377,18 @@ public sealed class DispatchConnector
         _welcomed = true;
     }
 
-    private async Task HandleCommandAsync(AcpWebSocketTransport transport, ReadOnlyMemory<byte> frame, CancellationToken cancellationToken)
+    private async Task<DispatchLinkDecision?> AdmitFrameAsync(AcpWebSocketTransport transport, ReadOnlyMemory<byte> frame, ChannelWriter<DispatchCommand> commands, CancellationToken cancellationToken)
     {
-        // Commands before the hub's welcome carry no clock offset. The device refuses them rather than guess.
         if (!_welcomed || _verifier is null)
         {
-            return;
+            return null;
+        }
+
+        // There is one writer. Once a slot is available it cannot be taken by another producer.
+        var writable = commands.WaitToWriteAsync(cancellationToken);
+        if (!writable.IsCompletedSuccessfully || !writable.Result)
+        {
+            return DispatchCloseStatus.ClassifyClose(null);
         }
 
         DispatchCmdFrame? cmd;
@@ -392,41 +398,51 @@ public sealed class DispatchConnector
         }
         catch (JsonException)
         {
-            return;
+            return null;
         }
 
         if (cmd is null || !_verifier.Verify(cmd, _clockOffset).Accepted)
         {
-            return;
+            return null;
         }
 
         if (!DispatchOpWire.TryParse(cmd.Op, out var op) || !DispatchCapabilityWire.TryParse(cmd.Capability, out var capability)
             || !DispatchBase64Url.TryDecode(cmd.Payload, out var payload))
         {
-            return;
+            return null;
         }
 
         switch (_dedupe.Admit(cmd.CommandId, cmd.Nonce, cmd.Seq))
         {
             case DispatchAdmission.Duplicate:
                 await SendAckAsync(transport, cmd.CommandId, "duplicate", cancellationToken).ConfigureAwait(false);
-                return;
+                return null;
             case DispatchAdmission.Replayed:
-                return;
+                return null;
             default:
                 break;
         }
 
-        // The command is persisted as applied; only now is it acknowledged and executed.
+        // Persist and acknowledge admission before execution, including when another command is running.
         await SendAckAsync(transport, cmd.CommandId, DispatchCommandStateWire.ToWire(DispatchCommandState.Received), cancellationToken).ConfigureAwait(false);
+        if (!commands.TryWrite(new DispatchCommand(cmd.CommandId, capability, op, payload)))
+        {
+            throw new InvalidOperationException("The reserved dispatch command slot became unavailable.");
+        }
+
+        return null;
+    }
+
+    private async Task ExecuteCommandAsync(AcpWebSocketTransport transport, DispatchCommand command, CancellationToken cancellationToken)
+    {
         Volatile.Write(ref _runningCount, 1);
         try
         {
             var outcome = await _router.RouteAsync(
-                new DispatchCommand(cmd.CommandId, capability, op, payload),
-                (state, token) => ReportStateAsync(transport, cmd.CommandId, state, token),
+                command,
+                (state, token) => ReportStateAsync(transport, command.CommandId, state, token),
                 cancellationToken).ConfigureAwait(false);
-            await SendResultAsync(transport, cmd.CommandId, outcome, cancellationToken).ConfigureAwait(false);
+            await SendResultAsync(transport, command.CommandId, outcome, cancellationToken).ConfigureAwait(false);
         }
         finally
         {

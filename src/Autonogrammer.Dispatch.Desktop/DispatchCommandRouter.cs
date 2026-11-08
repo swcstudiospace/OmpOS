@@ -87,6 +87,13 @@ public sealed class DispatchCommandRouter
             await reportState(DispatchCommandState.Running, cancellationToken).ConfigureAwait(false);
         }
 
-        return await handler.HandleAsync(command, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await handler.HandleAsync(command, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+        {
+            return DispatchOutcome.Failed(DispatchFailureReason.ExecutionError);
+        }
     }
 }

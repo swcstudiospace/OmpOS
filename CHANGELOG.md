@@ -19,7 +19,7 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 - Migration M0011 records receipt time and adds partial indexes for the sweep. For commands already in flight when the migration runs, the prior state-entry time is used as an approximation because the original receipt time was not stored.
 - The desktop answers the hub challenge with a device-key-signed hello, reports approval and execution states, and sends heartbeats at the negotiated interval. Reconnect redelivers unexpired delivered commands. The hub validates heartbeat status, keeps established sockets open when presence refresh times out, acknowledges peer closes, returns 1013 when the nonce store times out, and refuses new connections while draining.
 - Pairing completion binds the key enrolled before the pairing request to the device ID returned by the hub, then removes the temporary key.
-- The desktop processes commands serially on a bounded queue while continuing to receive control frames. Revocation cancels an executing handler; queue saturation ends the connection and triggers the reconnect path.
+- The desktop verifies and acknowledges admitted commands before placing them on a bounded serial execution queue, while continuing to receive control frames. Revocation cancels an executing handler; queue saturation ends the connection and triggers the reconnect path. A handler exception becomes a failed `execution_error` result without stopping later commands.
 
 ### Changed
 
