@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Threading.Channels;
 using Autonogrammer.Contracts.Dispatch;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
@@ -177,24 +178,11 @@ public sealed class DispatchConnector
         _reconnect.MarkConnected();
         SetState(DispatchConnectionState.Connected);
         using var link = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        Task? heartbeat = null;
+        var commands = Channel.CreateBounded<ReadOnlyMemory<byte>>(new BoundedChannelOptions(256) { SingleReader = true, SingleWriter = true });
+        var worker = ProcessCommandsAsync(transport, commands.Reader, link.Cancel, link.Token);
         try
         {
-            await foreach (var frame in transport.ReceiveAsync(link.Token).WithCancellation(link.Token).ConfigureAwait(false))
-            {
-                var stop = await HandleFrameAsync(transport, frame, link.Token).ConfigureAwait(false);
-                if (_welcomed && heartbeat is null)
-                {
-                    heartbeat = SendHeartbeatsAsync(transport, link.Cancel, link.Token);
-                }
-                if (stop is { } decision)
-                {
-                    return decision;
-                }
-            }
-
-            // The stream ended without a close status: a network error.
-            return DispatchCloseStatus.ClassifyClose(null);
+            return await ReadFramesAsync(transport, commands.Writer, link).ConfigureAwait(false);
         }
         catch (DisconnectedHarnessException ex)
         {
@@ -202,6 +190,46 @@ public sealed class DispatchConnector
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && link.IsCancellationRequested)
         {
+            return DispatchCloseStatus.ClassifyClose(null);
+        }
+        finally
+        {
+            commands.Writer.TryComplete();
+            await link.CancelAsync().ConfigureAwait(false);
+            try
+            {
+                await worker.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (link.IsCancellationRequested)
+            {
+                // The connection is ending.
+            }
+            finally
+            {
+                _reconnect.MarkDisconnected();
+            }
+        }
+    }
+
+    private async Task<DispatchLinkDecision> ReadFramesAsync(AcpWebSocketTransport transport, ChannelWriter<ReadOnlyMemory<byte>> commands, CancellationTokenSource link)
+    {
+        Task? heartbeat = null;
+        try
+        {
+            await foreach (var frame in transport.ReceiveAsync(link.Token).WithCancellation(link.Token).ConfigureAwait(false))
+            {
+                var stop = await HandleFrameAsync(transport, frame, commands, link.Token).ConfigureAwait(false);
+                if (_welcomed && heartbeat is null)
+                {
+                    heartbeat = SendHeartbeatsAsync(transport, link.Cancel, link.Token);
+                }
+
+                if (stop is { } decision)
+                {
+                    return decision;
+                }
+            }
+
             return DispatchCloseStatus.ClassifyClose(null);
         }
         finally
@@ -218,12 +246,10 @@ public sealed class DispatchConnector
                     // The connection is ending.
                 }
             }
-
-            _reconnect.MarkDisconnected();
         }
     }
 
-    private async Task<DispatchLinkDecision?> HandleFrameAsync(AcpWebSocketTransport transport, ReadOnlyMemory<byte> frame, CancellationToken cancellationToken)
+    private async Task<DispatchLinkDecision?> HandleFrameAsync(AcpWebSocketTransport transport, ReadOnlyMemory<byte> frame, ChannelWriter<ReadOnlyMemory<byte>> commands, CancellationToken cancellationToken)
     {
         if (!DispatchFrameGuard.TryAdmit(frame.Span, out var admission) || !admission.Accepted)
         {
@@ -241,12 +267,36 @@ public sealed class DispatchConnector
                 }
                 return null;
             case DispatchFrameTypes.Cmd:
-                await HandleCommandAsync(transport, frame, cancellationToken).ConfigureAwait(false);
-                return null;
+                return !_welcomed || commands.TryWrite(frame) ? null : DispatchCloseStatus.ClassifyClose(null);
             case DispatchFrameTypes.Revoke:
                 return Stop(DispatchConnectionState.DeviceRevoked);
             default:
                 return null;
+        }
+    }
+
+    private async Task ProcessCommandsAsync(AcpWebSocketTransport transport, ChannelReader<ReadOnlyMemory<byte>> commands, Action cancelLink, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await foreach (var frame in commands.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+            {
+                await HandleCommandAsync(transport, frame, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (DisconnectedHarnessException)
+        {
+            cancelLink();
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            cancelLink();
+            throw;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+        {
+            cancelLink();
+            throw;
         }
     }
 

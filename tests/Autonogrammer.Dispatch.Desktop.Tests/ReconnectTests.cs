@@ -268,7 +268,8 @@ public sealed class ReconnectTests : IDisposable
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         using var server = new TestWebSocketServer();
-        var fixture = await Fixture.CreateAsync(_directory, server.Endpoint, Start.AddHours(1), new FixedJitterSource(0.5), cts.Token);
+        var clock = new HeartbeatClock(Start);
+        var fixture = await Fixture.CreateWithClockAsync(_directory, server.Endpoint, Start.AddHours(1), new FixedJitterSource(0.5), clock, cts.Token);
         _disposables.Add(fixture);
         var serverSide = Task.Run(async () =>
         {
@@ -276,6 +277,8 @@ public sealed class ReconnectTests : IDisposable
             await ChallengeAsync(session, server.Endpoint, fixture.DevicePublicKey, cts.Token).ConfigureAwait(false);
             var welcome = new DispatchWelcomeFrame { V = 1, T = DispatchFrameTypes.Welcome, ServerTime = Start.ToUnixTimeSeconds(), HeartbeatSeconds = 1, Kids = [DispatchTestSigner.Kid], ResumeFromSeq = 0 };
             await session.SendTextAsync(JsonSerializer.Serialize(welcome, DispatchJsonContext.Default.DispatchWelcomeFrame), cts.Token).ConfigureAwait(false);
+            await clock.TimerCreated.Task.WaitAsync(cts.Token).ConfigureAwait(false);
+            clock.Advance(TimeSpan.FromSeconds(1));
             var frame = await session.ReceiveAsync(cts.Token).ConfigureAwait(false);
             using var heartbeat = JsonDocument.Parse(frame.Text);
             heartbeat.RootElement.GetProperty("t").GetString().ShouldBe("hb");
@@ -286,6 +289,33 @@ public sealed class ReconnectTests : IDisposable
         }, cts.Token);
         await fixture.Connector.RunAsync(cts.Token);
         await serverSide.ConfigureAwait(true);
+    }
+
+    [Fact]
+    public async Task RevocationCancelsAnExecutingCommandWithoutWaitingForItToFinish()
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        using var server = new TestWebSocketServer();
+        var fixture = await Fixture.CreateAsync(_directory, server.Endpoint, Start.AddHours(1), new FixedJitterSource(0.5), cts.Token);
+        _disposables.Add(fixture);
+        var handler = new BlockingHandler();
+        var connector = fixture.BuildConnector(fixture.Pairing, [handler]);
+        var serverSide = Task.Run(async () =>
+        {
+            using var session = await server.AcceptAsync(cts.Token).ConfigureAwait(false);
+            await ChallengeAsync(session, server.Endpoint, fixture.DevicePublicKey, cts.Token).ConfigureAwait(false);
+            var welcome = new DispatchWelcomeFrame { V = 1, T = DispatchFrameTypes.Welcome, ServerTime = Start.ToUnixTimeSeconds(), HeartbeatSeconds = 20, Kids = [DispatchTestSigner.Kid], ResumeFromSeq = 0 };
+            await session.SendTextAsync(JsonSerializer.Serialize(welcome, DispatchJsonContext.Default.DispatchWelcomeFrame), cts.Token).ConfigureAwait(false);
+            var command = fixture.Signer.Sign(1, Start.ToUnixTimeSeconds(), Start.ToUnixTimeSeconds() + 300, commandId: "cmd-running", nonce: "n-running");
+            await session.SendTextAsync(Encoding.UTF8.GetString(DispatchTestSigner.Wire(command)), cts.Token).ConfigureAwait(false);
+            await handler.Started.Task.WaitAsync(cts.Token).ConfigureAwait(false);
+            await session.SendTextAsync("{\"v\":1,\"t\":\"revoke\",\"reason\":\"revoked\"}", cts.Token).ConfigureAwait(false);
+            await handler.Cancelled.Task.WaitAsync(TimeSpan.FromSeconds(2), cts.Token).ConfigureAwait(false);
+        }, cts.Token);
+        await connector.RunAsync(cts.Token);
+        await serverSide.ConfigureAwait(true);
+        connector.State.ShouldBe(DispatchConnectionState.DeviceRevoked);
+        fixture.Revocation.Calls.ShouldBe(1);
     }
 
     private static async Task ChallengeAsync(TestWebSocketSession session, Uri endpoint, string devicePublicKey, CancellationToken cancellationToken)
@@ -339,12 +369,14 @@ public sealed class ReconnectTests : IDisposable
 
         public DispatchConnector Connector { get; }
 
-        public static async Task<Fixture> CreateAsync(string directory, Uri endpoint, DateTimeOffset credentialExpiry, IJitterSource jitter, CancellationToken cancellationToken)
+        public static Task<Fixture> CreateAsync(string directory, Uri endpoint, DateTimeOffset credentialExpiry, IJitterSource jitter, CancellationToken cancellationToken) =>
+            CreateWithClockAsync(directory, endpoint, credentialExpiry, jitter, new ManualTimeProvider(Start), cancellationToken);
+
+        public static async Task<Fixture> CreateWithClockAsync(string directory, Uri endpoint, DateTimeOffset credentialExpiry, IJitterSource jitter, TimeProvider clock, CancellationToken cancellationToken)
         {
             _ = Directory.CreateDirectory(directory);
             var secrets = new InMemorySessionSecretStore();
             var signer = new DispatchTestSigner();
-            var clock = new ManualTimeProvider(Start);
             var pairing = new DispatchPairing(secrets, Path.Combine(directory, "pairing.json"));
             var devicePublicKey = await pairing.EnrollDeviceKeyAsync(DispatchTestSigner.DeviceId, cancellationToken).ConfigureAwait(false);
             await pairing.CompleteAsync(
@@ -395,6 +427,53 @@ public sealed class ReconnectTests : IDisposable
         {
             Calls++;
             return ValueTask.FromResult(DispatchOutcome.Completed("listed"));
+        }
+    }
+
+    private sealed class HeartbeatClock(DateTimeOffset start) : TimeProvider
+    {
+        private readonly Autonogrammer.Accounts.Desktop.Tests.ManualTimeProvider _inner = new(start);
+
+        public TaskCompletionSource TimerCreated { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public override DateTimeOffset GetUtcNow() => _inner.GetUtcNow();
+
+        public override long GetTimestamp() => _inner.GetTimestamp();
+
+        public override long TimestampFrequency => _inner.TimestampFrequency;
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            var timer = _inner.CreateTimer(callback, state, dueTime, period);
+            TimerCreated.TrySetResult();
+            return timer;
+        }
+
+        public void Advance(TimeSpan by) => _inner.Advance(by);
+    }
+
+    private sealed class BlockingHandler : IDispatchCommandHandler
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Cancelled { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool CanHandle(DispatchOp op) => op == DispatchOp.SessionList;
+
+        public async ValueTask<DispatchOutcome> HandleAsync(DispatchCommand command, CancellationToken cancellationToken)
+        {
+            Started.TrySetResult();
+            try
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                Cancelled.TrySetResult();
+                throw;
+            }
+
+            return DispatchOutcome.Completed("unexpected");
         }
     }
 
