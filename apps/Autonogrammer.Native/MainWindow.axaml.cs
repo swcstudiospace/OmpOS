@@ -57,6 +57,8 @@ internal partial class MainWindow : Window
             Cloud = services.Cloud,
             Account = services.Account,
             LocalOmp = services.ReadLocalOmp,
+            LocalOmpUpdateCheck = services.CheckLocalOmpUpdate,
+            LocalOmpInstall = services.InstallLocalOmp,
             SignIn = static host => CoworkSurfaceServicesFactory.ShowSignInWindow(new AccountViewModel(host)),
         };
 

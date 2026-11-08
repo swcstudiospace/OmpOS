@@ -6,7 +6,7 @@ public enum CodeLandingCardState
     /// <summary>The status of the environment is still being read.</summary>
     Checking = 0,
 
-    /// <summary>Reading the status threw. The card offers a retry.</summary>
+    /// <summary>Reading the status threw, or an install did not complete. The card offers a retry.</summary>
     Failed = 1,
 
     /// <summary>The environment is ready to start an agent on.</summary>
@@ -26,4 +26,7 @@ public enum CodeLandingCardState
 
     /// <summary>The environment cannot be used here (omp is missing, or the source is not wired in this window).</summary>
     Unavailable = 7,
+
+    /// <summary>A managed install of omp is running. The card shows its progress and offers Cancel.</summary>
+    Installing = 8,
 }

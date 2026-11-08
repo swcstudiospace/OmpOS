@@ -60,6 +60,10 @@ public sealed class CodeLandingModel : ObservableModel
     /// <param name="names">The names of the machines.</param>
     public void SetLinkedMachines(IReadOnlyList<string>? names) => Update(_inputs with { LinkedMachines = names });
 
+    /// <summary>Sets the outcome of the check for a newer managed omp, or null when no check is wired or none has finished.</summary>
+    /// <param name="update">The outcome.</param>
+    public void SetLocalUpdate(LocalOmpUpdate? update) => Update(_inputs with { LocalUpdate = update });
+
     /// <summary>Raises <see cref="ActionRequested"/>.</summary>
     /// <param name="action">What to do.</param>
     /// <param name="optionId">The environment the action starts on, or null.</param>
@@ -78,29 +82,51 @@ public sealed class CodeLandingModel : ObservableModel
         var environments = options.Where(static option => option.Kind is SessionTargetKind.Ssh or SessionTargetKind.Container or SessionTargetKind.Wsl).ToList();
         return
         [
-            BuildLocal(inputs.Local),
+            BuildLocal(inputs.Local, inputs.LocalUpdate),
             BuildLinked(inputs.Account, inputs.LinkedMachines),
             BuildCloud(inputs.Account),
             BuildRemote(inputs.Remote, environments),
         ];
     }
 
-    private static CodeLandingCard BuildLocal(LocalOmpStatus local)
+    private static CodeLandingCard BuildLocal(LocalOmpStatus local, LocalOmpUpdate? update)
     {
-        var (state, message, omp, actions) = LocalState(local);
+        var (state, message, omp, actions) = LocalState(local, update);
         var card = Card(CodeLandingCardKind.LocalMachine, state, CodeLandingCopy.LocalTitle, message, omp, actions, rows: []);
-        return WithPrimary(card, enabled: true, CodeLandingAction.StartOnEnvironment, NewSessionTargetModel.LocalId);
+        return WithPrimary(card, enabled: local.State != LocalOmpState.Installing, CodeLandingAction.StartOnEnvironment, NewSessionTargetModel.LocalId);
     }
 
-    private static (CodeLandingCardState State, string Message, string Omp, List<CodeLandingButton> Actions) LocalState(LocalOmpStatus local)
+    private static (CodeLandingCardState State, string Message, string Omp, List<CodeLandingButton> Actions) LocalState(LocalOmpStatus local, LocalOmpUpdate? update)
     {
         const string title = CodeLandingCopy.LocalTitle;
         switch (local.State)
         {
             case LocalOmpState.Installed:
-                return (CodeLandingCardState.Ready, CodeLandingCopy.LocalReady, OmpInstalled(local.Version, local.Source ?? LocalOmpSource.Path), []);
+                return (CodeLandingCardState.Ready, CodeLandingCopy.LocalReady, WithNotice(OmpInstalled(local.Version, local.Source ?? LocalOmpSource.Path), update), []);
+            case LocalOmpState.Missing:
+                return (
+                    CodeLandingCardState.Ready,
+                    CodeLandingCopy.LocalMissing,
+                    WithNotice(OmpInstalled(local.Version, local.Source ?? LocalOmpSource.Path), update),
+                    [NextAction(CodeLandingAction.InstallOmp, CodeLandingCopy.InstallOmp, title)]);
             case LocalOmpState.NotInstalled:
-                return (CodeLandingCardState.Unavailable, CodeLandingCopy.LocalNeedsOmp, Format(CodeLandingCopy.OmpNotInstalledFormat, local.Detail ?? string.Empty), []);
+                return (
+                    CodeLandingCardState.Unavailable,
+                    CodeLandingCopy.LocalNeedsOmp,
+                    Format(CodeLandingCopy.OmpNotInstalledFormat, local.Detail ?? string.Empty),
+                    [NextAction(CodeLandingAction.InstallOmp, CodeLandingCopy.InstallOmp, title)]);
+            case LocalOmpState.Installing:
+                return (
+                    CodeLandingCardState.Installing,
+                    CodeLandingCopy.LocalInstalling,
+                    InstallProgress(local),
+                    [NextAction(CodeLandingAction.CancelOmpInstall, CodeLandingCopy.CancelInstall, title)]);
+            case LocalOmpState.InstallFailed:
+                return (
+                    CodeLandingCardState.Failed,
+                    CodeLandingCopy.LocalInstallFailed,
+                    Format(CodeLandingCopy.OmpInstallFailedFormat, local.Detail ?? string.Empty),
+                    [NextAction(CodeLandingAction.InstallOmp, CodeLandingCopy.Retry, title)]);
             case LocalOmpState.Failed:
                 return (
                     CodeLandingCardState.Failed,
@@ -113,6 +139,30 @@ public sealed class CodeLandingModel : ObservableModel
                 return (CodeLandingCardState.Checking, CodeLandingCopy.LocalChecking, CodeLandingCopy.OmpChecking, []);
         }
     }
+
+    private static string InstallProgress(LocalOmpStatus local) => local.Stage switch
+    {
+        LocalOmpInstallStage.Installing when local.Version is { } version => Format(CodeLandingCopy.ProgressInstallingFormat, version),
+        LocalOmpInstallStage.Installing => CodeLandingCopy.ProgressInstallingUnknown,
+        _ => CodeLandingCopy.ProgressReadingRelease,
+    };
+
+    private static string WithNotice(string omp, LocalOmpUpdate? update)
+    {
+        var notice = UpdateNotice(update);
+        return notice.Length == 0 ? omp : omp + " " + notice;
+    }
+
+    private static string UpdateNotice(LocalOmpUpdate? update) => update switch
+    {
+        { State: LocalOmpUpdateState.Updated } updated => Format(CodeLandingCopy.UpdatedFormat, updated.Version ?? string.Empty),
+        { State: LocalOmpUpdateState.Offline, CheckedAt: { } checkedAt } => Format(CodeLandingCopy.OfflineFormat, checkedAt.ToUniversalTime().ToString(CodeLandingCopy.LastCheckedFormat, CultureInfo.InvariantCulture)),
+        { State: LocalOmpUpdateState.Offline } => CodeLandingCopy.OfflineNeverChecked,
+        { State: LocalOmpUpdateState.Deferred } => CodeLandingCopy.UpdateDeferred,
+        { State: LocalOmpUpdateState.RolledBack } rolledBack => Format(CodeLandingCopy.RolledBackFormat, rolledBack.Reason ?? string.Empty),
+        { State: LocalOmpUpdateState.Failed } failed => Format(CodeLandingCopy.UpdateFailedFormat, failed.Reason ?? string.Empty),
+        _ => string.Empty,
+    };
 
     private static CodeLandingCard BuildLinked(AccountHostState? account, IReadOnlyList<string>? names)
     {

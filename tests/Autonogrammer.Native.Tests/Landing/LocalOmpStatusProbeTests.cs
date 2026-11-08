@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Autonogrammer.Native.Tests.Landing;
 
-/// <summary>The omp status the Code landing shows: which source supplied the executable, and what the probe reported. The directories and paths are the test's own.</summary>
+/// <summary>The omp status the Code landing shows, and the omp a launch resolves: which source supplied the executable, and what the probe reported. The directories and paths are the test's own.</summary>
 public sealed class LocalOmpStatusProbeTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "landing-omp-" + Guid.NewGuid().ToString("N"));
@@ -33,7 +33,7 @@ public sealed class LocalOmpStatusProbeTests : IDisposable
         }
 
         var omp = WriteOmp(Path.Combine(_root, "configured", "omp"), "1.2.3");
-        using var probe = new LocalOmpStatusProbe(omp, managedRoot: null, TimeProvider.System, Empty());
+        var probe = new LocalOmpStatusProbe(omp, managed: null, Empty());
 
         var status = await probe.ReadAsync(Token);
 
@@ -50,7 +50,7 @@ public sealed class LocalOmpStatusProbeTests : IDisposable
         }
 
         WriteOmp(Path.Combine(_root, "bin", "omp"), "2.0.0");
-        using var probe = new LocalOmpStatusProbe(configuredPath: null, managedRoot: null, TimeProvider.System, new OmpLocatorOptions(null, [Path.Combine(_root, "bin")], []));
+        var probe = new LocalOmpStatusProbe(configuredPath: null, managed: null, new OmpLocatorOptions(null, [Path.Combine(_root, "bin")], []));
 
         var status = await probe.ReadAsync(Token);
 
@@ -67,10 +67,9 @@ public sealed class LocalOmpStatusProbeTests : IDisposable
         }
 
         WriteOmp(Path.Combine(_root, "bin", "omp"), "3.0.0");
-        using var probe = new LocalOmpStatusProbe(
+        var probe = new LocalOmpStatusProbe(
             Path.Combine(_root, "missing", "omp"),
-            managedRoot: null,
-            TimeProvider.System,
+            managed: null,
             new OmpLocatorOptions(null, [Path.Combine(_root, "bin")], []));
 
         var status = await probe.ReadAsync(Token);
@@ -82,12 +81,40 @@ public sealed class LocalOmpStatusProbeTests : IDisposable
     [Fact]
     public async Task NothingRunnableIsNotInstalledWithTheGuidance()
     {
-        using var probe = new LocalOmpStatusProbe(configuredPath: null, managedRoot: null, TimeProvider.System, Empty());
+        var probe = new LocalOmpStatusProbe(configuredPath: null, managed: null, Empty());
 
         var status = await probe.ReadAsync(Token);
 
         status.State.ShouldBe(LocalOmpState.NotInstalled);
         status.Detail.ShouldBe(OmpLocator.InstallGuidance);
+    }
+
+    /// <summary>A launch runs the configured path when it is runnable: the resolution names that executable.</summary>
+    [Fact]
+    public async Task ALaunchResolvesTheConfiguredExecutable()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var omp = WriteOmp(Path.Combine(_root, "configured", "omp"), "1.2.3");
+        var probe = new LocalOmpStatusProbe(omp, managed: null, Empty());
+
+        var executable = await probe.ResolveExecutableAsync(Token);
+
+        executable.ShouldBe(omp);
+    }
+
+    /// <summary>A launch with nothing runnable resolves to null, so the session shows the install guidance instead of starting.</summary>
+    [Fact]
+    public async Task ALaunchWithNothingRunnableResolvesToNull()
+    {
+        var probe = new LocalOmpStatusProbe(configuredPath: null, managed: null, Empty());
+
+        var executable = await probe.ResolveExecutableAsync(Token);
+
+        executable.ShouldBeNull();
     }
 
     private static OmpLocatorOptions Empty() => new(null, [], []);

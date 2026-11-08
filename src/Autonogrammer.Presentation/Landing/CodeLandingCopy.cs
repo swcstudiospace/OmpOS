@@ -51,6 +51,54 @@ public static class CodeLandingCopy
     /// <summary>The state message of this computer when no check was made in this window.</summary>
     public const string LocalNotChecked = "Omp is not checked in this window.";
 
+    /// <summary>The state message of this computer when omp runs but the managed install is missing.</summary>
+    public const string LocalMissing = "Ready on this computer. The managed Omp is not installed.";
+
+    /// <summary>The state message of this computer while the managed install runs.</summary>
+    public const string LocalInstalling = "Installing Omp on this computer.";
+
+    /// <summary>The state message of this computer when the managed install did not complete.</summary>
+    public const string LocalInstallFailed = "Omp could not be installed on this computer.";
+
+    /// <summary>The label of the button that installs the managed omp.</summary>
+    public const string InstallOmp = "Install Omp";
+
+    /// <summary>The label of the button that cancels a running install.</summary>
+    public const string CancelInstall = "Cancel";
+
+    /// <summary>The progress while the release to install is read. It is announced as the install runs.</summary>
+    public const string ProgressReadingRelease = "Reading the latest Omp version.";
+
+    /// <summary>The progress while an install runs and its version is not yet known.</summary>
+    public const string ProgressInstallingUnknown = "Installing Omp.";
+
+    /// <summary>The progress while an install runs for a known version. Argument: version.</summary>
+    public const string ProgressInstallingFormat = "Installing Omp {0}.";
+
+    /// <summary>The Omp status when the managed install did not complete. Argument: the reason.</summary>
+    public const string OmpInstallFailedFormat = "Omp could not be installed: {0}";
+
+    /// <summary>The notice after an install or update made a newer omp the managed install. Argument: version.</summary>
+    public const string UpdatedFormat = "Omp {0} is now the managed install.";
+
+    /// <summary>The stale notice when the registry was reached before and the last check time is known. Argument: the time of the last check.</summary>
+    public const string OfflineFormat = "Could not reach the registry to check for a newer Omp. Last checked {0}.";
+
+    /// <summary>The stale notice when the registry has never been reached.</summary>
+    public const string OfflineNeverChecked = "Could not reach the registry to check for a newer Omp.";
+
+    /// <summary>The notice when a newer omp waits for the next launch because the omp in use cannot be replaced now.</summary>
+    public const string UpdateDeferred = "A newer Omp will install on the next launch, because the current Omp is in use.";
+
+    /// <summary>The notice when a newer omp failed its check and the previous one was restored. Argument: the reason.</summary>
+    public const string RolledBackFormat = "A newer Omp failed its check and was rolled back. {0}";
+
+    /// <summary>The notice when the update failed. Argument: the reason.</summary>
+    public const string UpdateFailedFormat = "Omp could not be updated: {0}";
+
+    /// <summary>The format of the time of the last successful check. Argument: the time in UTC.</summary>
+    public const string LastCheckedFormat = "yyyy-MM-dd HH:mm 'UTC'";
+
     /// <summary>The Omp status of a runnable install with a version: the version, then the source. Arguments: version, source.</summary>
     public const string OmpInstalledFormat = "Omp {0} from {1}.";
 

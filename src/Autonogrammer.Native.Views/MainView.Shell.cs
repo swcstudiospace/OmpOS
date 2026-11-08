@@ -40,6 +40,7 @@ public partial class MainView
     private EnvironmentPickerView? _targetView;
     private CodeLandingModel? _landing;
     private CodeLandingView? _landingView;
+    private Action? _cancelInstall;
     private IAccountHost? _accountHost;
     private EventHandler? _accountChanged;
     private HooksServiceSource? _hooksSource;
@@ -295,6 +296,8 @@ public partial class MainView
 
         RefreshAccount();
         _ = RefreshLocalOmpAsync();
+        // The update check starts once the window is painted, so it never delays the first frame.
+        Dispatcher.UIThread.Post(() => _ = RefreshLocalOmpUpdateAsync(), DispatcherPriority.ApplicationIdle);
     }
 
     private void RefreshAccount() => _landing?.SetAccount(_accountHost?.State);
@@ -325,6 +328,75 @@ public partial class MainView
         }
     }
 
+    // The managed omp is checked for a newer release after the first paint. A newer one is installed, and the status is read again so the card names it.
+    private async Task RefreshLocalOmpUpdateAsync()
+    {
+        var landing = _landing;
+        if (landing is null || _services.LocalOmpUpdateCheck is not { } check)
+        {
+            return;
+        }
+
+        try
+        {
+            var update = await check(CancellationToken.None).ConfigureAwait(true);
+            landing.SetLocalUpdate(update);
+            if (update.State == LocalOmpUpdateState.Updated)
+            {
+                await RefreshLocalOmpAsync().ConfigureAwait(true);
+            }
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+        {
+            landing.SetLocalUpdate(new LocalOmpUpdate(LocalOmpUpdateState.Failed, null, null, exception.GetBaseException().Message));
+        }
+    }
+
+    // The Local machine card's install. Its progress and its outcome are posted to the UI queue in the order they happen, so an outcome is never
+    // overtaken by a progress stage that was queued before it. A cancel, or an install that did not complete, leaves the card as the install found it or says why it failed.
+    private async Task InstallLocalOmpAsync()
+    {
+        var landing = _landing;
+        if (landing is null || _services.LocalOmpInstall is not { } install || _cancelInstall is not null)
+        {
+            return;
+        }
+
+        var cancellation = new CancellationTokenSource();
+        _cancelInstall = cancellation.Cancel;
+        try
+        {
+            var update = await install(status => Dispatcher.UIThread.Post(() => landing.SetLocal(status)), cancellation.Token).ConfigureAwait(true);
+            Dispatcher.UIThread.Post(() => FinishInstall(landing, update));
+        }
+        catch (OperationCanceledException)
+        {
+            Dispatcher.UIThread.Post(() => _ = RefreshLocalOmpAsync());
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            var reason = exception.GetBaseException().Message;
+            Dispatcher.UIThread.Post(() => landing.SetLocal(LocalOmpStatus.InstallFailed(reason)));
+        }
+        finally
+        {
+            _cancelInstall = null;
+            cancellation.Dispose();
+        }
+    }
+
+    private void FinishInstall(CodeLandingModel landing, LocalOmpUpdate update)
+    {
+        if (update.State == LocalOmpUpdateState.Updated)
+        {
+            landing.SetLocalUpdate(update);
+            _ = RefreshLocalOmpAsync();
+            return;
+        }
+
+        landing.SetLocal(LocalOmpStatus.InstallFailed(update.Reason ?? string.Empty));
+    }
+
     // The landing shows while no session is selected and the panel has no loading or error to show. Its tool and Agents views cover it through the transcript host.
     private void RefreshLanding()
     {
@@ -350,6 +422,12 @@ public partial class MainView
                 break;
             case CodeLandingAction.RetryOmpCheck:
                 _ = RefreshLocalOmpAsync();
+                break;
+            case CodeLandingAction.InstallOmp:
+                _ = InstallLocalOmpAsync();
+                break;
+            case CodeLandingAction.CancelOmpInstall:
+                _cancelInstall?.Invoke();
                 break;
             case CodeLandingAction.RetryRemoteLoad:
                 _landing?.SetRemote(RemoteLoadState.Loading);

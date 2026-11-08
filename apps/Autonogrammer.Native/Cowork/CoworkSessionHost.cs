@@ -9,6 +9,7 @@ using Autonogrammer.Cowork.Sessions;
 using Autonogrammer.EngineHost;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
+using Autonogrammer.Harness.OmpLauncher;
 using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Logging;
 using Autonogrammer.Native.Views.Sessions;
@@ -526,6 +527,10 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             notice = opened.Notice;
         }
 
+        var ompPath = _options.ResolveOmpPath is { } resolve
+            ? await resolve(cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException(OmpLocator.InstallGuidance)
+            : _options.OmpPath;
+
         EngineComposition? engine = null;
         try
         {
@@ -539,7 +544,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
                 Remote = _options.Remote,
                 TransportFactory = _options.TransportFactory,
                 LoggerFactory = _options.LoggerFactory,
-                OmpPath = _options.OmpPath,
+                OmpPath = ompPath,
                 ResumeSessionId = row.Summary.GraphId,
             });
             engine = composed.Engine;

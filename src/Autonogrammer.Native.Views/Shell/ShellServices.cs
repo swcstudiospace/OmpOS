@@ -63,6 +63,12 @@ public sealed record ShellServices
     /// <summary>Gets the reader of the omp status on this computer that the Code landing shows, or null when the window does not check omp.</summary>
     public Func<CancellationToken, Task<LocalOmpStatus>>? LocalOmp { get; init; }
 
+    /// <summary>Gets the check for a newer managed omp, which the window starts after it is shown, or null when the window does not check for updates.</summary>
+    public Func<CancellationToken, Task<LocalOmpUpdate>>? LocalOmpUpdateCheck { get; init; }
+
+    /// <summary>Gets the install of the managed omp the Local machine card starts. It reports each stage through its callback. Null when the window cannot install.</summary>
+    public Func<Action<LocalOmpStatus>, CancellationToken, Task<LocalOmpUpdate>>? LocalOmpInstall { get; init; }
+
     /// <summary>Gets the opener of the sign-in window for an account host, or null when the window cannot sign in.</summary>
     public Action<IAccountHost>? SignIn { get; init; }
 }

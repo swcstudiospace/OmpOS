@@ -156,7 +156,14 @@ internal partial class CodeLandingView : UserControl
         var header = new StackPanel { Spacing = 2 };
         header.Children.Add(CreateText(card.Title, "strong"));
         header.Children.Add(CreateText(card.Message, "muted"));
-        header.Children.Add(CreateText(card.OmpText, "muted"));
+        var omp = CreateText(card.OmpText, "muted");
+        if (card.State is CodeLandingCardState.Installing)
+        {
+            // The install's progress is the one text of the landing that changes while a user waits, so a screen reader hears each stage.
+            AutomationProperties.SetLiveSetting(omp, AutomationLiveSetting.Polite);
+        }
+
+        header.Children.Add(omp);
         return header;
     }
 

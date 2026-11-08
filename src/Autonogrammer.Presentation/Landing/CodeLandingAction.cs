@@ -20,4 +20,10 @@ public enum CodeLandingAction
 
     /// <summary>Open the sign-in window.</summary>
     SignIn = 5,
+
+    /// <summary>Install the managed omp on this computer. Also the retry after an install that did not complete.</summary>
+    InstallOmp = 6,
+
+    /// <summary>Cancel the managed install that is running.</summary>
+    CancelOmpInstall = 7,
 }
