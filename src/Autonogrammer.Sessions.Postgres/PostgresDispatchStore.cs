@@ -187,11 +187,11 @@ public sealed class PostgresDispatchStore : IDispatchStore
     }
 
     /// <inheritdoc />
-    public ValueTask<DispatchTransitionResult> TryTransitionAsync(string accountId, string commandId, DispatchCommandState expected, DispatchCommandState desired, DispatchFailureReason? reason, DispatchFeedDraft? feed, CancellationToken cancellationToken)
+    public ValueTask<DispatchTransitionResult> TryTransitionAsync(string accountId, string commandId, DispatchCommandState expected, DispatchCommandState desired, DispatchFailureReason? reason, DispatchFeedDraft? feed, CancellationToken cancellationToken, string? resultText = null)
     {
         ArgumentNullException.ThrowIfNull(accountId);
         ArgumentNullException.ThrowIfNull(commandId);
-        return new ValueTask<DispatchTransitionResult>(_pipeline.ExecuteTransactionAsync(OperationClass.Interactive, token => TransitionCoreAsync(accountId, commandId, expected, desired, reason, feed, token), cancellationToken));
+        return new ValueTask<DispatchTransitionResult>(_pipeline.ExecuteTransactionAsync(OperationClass.Interactive, token => TransitionCoreAsync(accountId, commandId, expected, desired, reason, feed, resultText, token), cancellationToken));
     }
 
     /// <inheritdoc />
@@ -200,6 +200,16 @@ public sealed class PostgresDispatchStore : IDispatchStore
         ArgumentNullException.ThrowIfNull(accountId);
         ArgumentNullException.ThrowIfNull(kind);
         return new ValueTask<DispatchFeedEventRecord>(_pipeline.ExecuteTransactionAsync(OperationClass.Interactive, token => AppendFeedCoreAsync(accountId, kind, payload, token), cancellationToken));
+    }
+
+    /// <inheritdoc />
+    public ValueTask<bool> TryAppendProgressAsync(string accountId, string deviceId, string commandId, string payload, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(deviceId);
+        ArgumentNullException.ThrowIfNull(commandId);
+        ArgumentNullException.ThrowIfNull(payload);
+        return new ValueTask<bool>(_pipeline.ExecuteTransactionAsync(OperationClass.Interactive, token => AppendProgressCoreAsync(accountId, deviceId, commandId, payload, token), cancellationToken));
     }
 
     /// <inheritdoc />
@@ -623,7 +633,9 @@ public sealed class PostgresDispatchStore : IDispatchStore
             {
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
-                    list.Add(ReadCommand(reader, accountId).ToRecord());
+                    var row = ReadCommand(reader, accountId);
+                    var result = row.ToRecord();
+                    list.Add(ShouldPurge(row.State, row.Meta) ? result with { BodyJson = null, ResultText = null } : result);
                 }
             }
 
@@ -656,7 +668,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
         }
     }
 
-    private async Task<DispatchTransitionResult> TransitionCoreAsync(string accountId, string commandId, DispatchCommandState expected, DispatchCommandState desired, DispatchFailureReason? reason, DispatchFeedDraft? feed, CancellationToken cancellationToken)
+    private async Task<DispatchTransitionResult> TransitionCoreAsync(string accountId, string commandId, DispatchCommandState expected, DispatchCommandState desired, DispatchFailureReason? reason, DispatchFeedDraft? feed, string? resultText, CancellationToken cancellationToken)
     {
         var connection = await OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -677,7 +689,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
                     return new DispatchTransitionResult(DispatchTransitionStatus.Rejected, current);
                 }
 
-                await ApplyTransitionAsync(connection, transaction, accountId, commandId, desired, reason, loaded, cancellationToken).ConfigureAwait(false);
+                await ApplyTransitionAsync(connection, transaction, accountId, commandId, desired, reason, loaded, cancellationToken, resultText).ConfigureAwait(false);
                 if (feed is not null)
                 {
                     _ = await InsertFeedInTransactionAsync(connection, transaction, accountId, feed.Kind, feed.Payload, cancellationToken).ConfigureAwait(false);
@@ -700,6 +712,35 @@ public sealed class PostgresDispatchStore : IDispatchStore
                 var stored = await InsertFeedInTransactionAsync(connection, transaction, accountId, kind, payload, cancellationToken).ConfigureAwait(false);
                 await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
                 return stored;
+            }
+        }
+    }
+
+    private async Task<bool> AppendProgressCoreAsync(string accountId, string deviceId, string commandId, string payload, CancellationToken cancellationToken)
+    {
+        var connection = await OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await using (transaction.ConfigureAwait(false))
+            {
+                var row = await ReadCommandAsync(connection, transaction, accountId, commandId, cancellationToken).ConfigureAwait(false);
+                if (row is null || !string.Equals(row.DeviceId, deviceId, StringComparison.Ordinal)
+                    || row.State is not ("received" or "awaiting_approval" or "accepted" or "running")
+                    || row.Meta.ProgressCount >= 50)
+                {
+                    return false;
+                }
+
+                using var update = PostgresSql.Create(connection, transaction);
+                update.CommandText = "UPDATE dispatch_commands SET result = CAST(@result AS jsonb) WHERE id = @id AND account_id = @account_id";
+                update.Parameters.AddWithValue("result", (row.Meta with { ProgressCount = row.Meta.ProgressCount + 1 }).Write());
+                update.Parameters.AddWithValue("id", commandId);
+                update.Parameters.AddWithValue("account_id", accountId);
+                await update.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                _ = await InsertFeedInTransactionAsync(connection, transaction, accountId, "command.evt", payload, cancellationToken).ConfigureAwait(false);
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                return true;
             }
         }
     }
@@ -895,12 +936,13 @@ public sealed class PostgresDispatchStore : IDispatchStore
         return loaded with { Body = null, Meta = meta };
     }
 
-    private async Task ApplyTransitionAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, string accountId, string commandId, DispatchCommandState desired, DispatchFailureReason? reason, LoadedCommand loaded, CancellationToken cancellationToken)
+    private async Task ApplyTransitionAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, string accountId, string commandId, DispatchCommandState desired, DispatchFailureReason? reason, LoadedCommand loaded, CancellationToken cancellationToken, string? resultText = null)
     {
         var terminal = desired is DispatchCommandState.Completed or DispatchCommandState.Failed or DispatchCommandState.Cancelled or DispatchCommandState.Expired;
         var meta = loaded.Meta with
         {
             Reason = reason is { } failure ? DispatchFailureReasonWire.ToWire(failure) : loaded.Meta.Reason,
+            Text = resultText ?? loaded.Meta.Text,
             TerminalAt = terminal ? _timeProvider.GetUtcNow().ToString("o", CultureInfo.InvariantCulture) : loaded.Meta.TerminalAt,
         };
         using var update = PostgresSql.Create(connection, transaction);
@@ -1240,11 +1282,11 @@ public sealed class PostgresDispatchStore : IDispatchStore
                 reason = parsed;
             }
 
-            return new DispatchCommandRecord(AccountId, DeviceId, CommandId, Seq, state, capability, op, Meta.Fingerprint, Key, Body, IssuedAt, ExpiresAt, reason);
+            return new DispatchCommandRecord(AccountId, DeviceId, CommandId, Seq, state, capability, op, Meta.Fingerprint, Key, Body, IssuedAt, ExpiresAt, reason, Meta.Text.Length == 0 ? null : Meta.Text);
         }
     }
 
-    private sealed record CommandMeta(string Fingerprint, string Capability, string IssuedAt, string Reason, string Text, string TerminalAt)
+    private sealed record CommandMeta(string Fingerprint, string Capability, string IssuedAt, string Reason, string Text, string TerminalAt, int ProgressCount = 0)
     {
         public string Write()
         {
@@ -1261,6 +1303,8 @@ public sealed class PostgresDispatchStore : IDispatchStore
             builder.Append(Text.Length == 0 ? "null" : JsonQuote(Text));
             builder.Append(",\"terminalAt\":");
             builder.Append(TerminalAt.Length == 0 ? "null" : JsonQuote(TerminalAt));
+            builder.Append(",\"progressCount\":");
+            builder.Append(ProgressCount.ToString(CultureInfo.InvariantCulture));
             builder.Append('}');
             return builder.ToString();
         }
@@ -1280,7 +1324,8 @@ public sealed class PostgresDispatchStore : IDispatchStore
                 root.GetProperty("issued").GetString() ?? string.Empty,
                 root.GetProperty("reason").ValueKind == JsonValueKind.Null ? string.Empty : root.GetProperty("reason").GetString() ?? string.Empty,
                 root.GetProperty("text").ValueKind == JsonValueKind.Null ? string.Empty : root.GetProperty("text").GetString() ?? string.Empty,
-                root.GetProperty("terminalAt").ValueKind == JsonValueKind.Null ? string.Empty : root.GetProperty("terminalAt").GetString() ?? string.Empty);
+                root.GetProperty("terminalAt").ValueKind == JsonValueKind.Null ? string.Empty : root.GetProperty("terminalAt").GetString() ?? string.Empty,
+                root.TryGetProperty("progressCount", out var count) ? count.GetInt32() : 0);
         }
     }
 }

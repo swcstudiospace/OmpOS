@@ -267,15 +267,28 @@ public sealed class DispatchConnector
             await link.CancelAsync().ConfigureAwait(false);
             if (heartbeat is not null)
             {
-                try
-                {
-                    await heartbeat.ConfigureAwait(false);
-                }
-                catch (OperationCanceledException) when (link.IsCancellationRequested)
-                {
-                    // The connection is ending.
-                }
+                await StopHeartbeatAsync(transport, heartbeat, link.Token).ConfigureAwait(false);
             }
+        }
+    }
+
+    internal static async Task StopHeartbeatAsync(AcpWebSocketTransport transport, Task heartbeat, CancellationToken cancellationToken)
+    {
+        try
+        {
+            try
+            {
+                await heartbeat.WaitAsync(TimeSpan.FromSeconds(1), CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+                transport.Abort();
+                await heartbeat.WaitAsync(Timeout.InfiniteTimeSpan, CancellationToken.None).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // The connection is ending.
         }
     }
 
@@ -324,6 +337,7 @@ public sealed class DispatchConnector
                 {
                     _pending.Remove(pending.Command.CommandId);
                 }
+                links.ReconnectIfDeferred();
             }
         }
         catch (DisconnectedHarnessException)
@@ -361,8 +375,7 @@ public sealed class DispatchConnector
 
         var paired = _pairing.LoadPairing();
         var endpoint = _options.Endpoint;
-        var origin = new UriBuilder(endpoint) { Scheme = string.Equals(endpoint.Scheme, "wss", StringComparison.OrdinalIgnoreCase) ? "https" : "http" }.Uri.GetLeftPart(UriPartial.Authority);
-        if (paired is null || challenge is null || !string.Equals(challenge.Origin, origin, StringComparison.OrdinalIgnoreCase)
+        if (paired is null || challenge is null || !MatchesHubOrigin(endpoint, challenge.Origin)
             || challenge.Protocols is null || !challenge.Protocols.Contains("1", StringComparer.Ordinal))
         {
             return Stop(DispatchConnectionState.AccountUnavailable);
@@ -371,7 +384,7 @@ public sealed class DispatchConnector
         try
         {
             var sequence = _dedupe.HighWater;
-            var canonical = DispatchHelloCanonical.Build(challenge.Nonce, paired.DeviceId, origin, sequence);
+            var canonical = DispatchHelloCanonical.Build(challenge.Nonce, paired.DeviceId, challenge.Origin, sequence);
             var signature = await _pairing.SignHelloAsync(paired.DeviceId, canonical, cancellationToken).ConfigureAwait(false);
             var hello = new DispatchHelloFrame
             {
@@ -379,7 +392,7 @@ public sealed class DispatchConnector
                 T = DispatchFrameTypes.Hello,
                 DeviceId = paired.DeviceId,
                 Nonce = challenge.Nonce,
-                Origin = origin,
+                Origin = challenge.Origin,
                 LastAppliedSeq = sequence,
                 Running = OutstandingCommands(),
                 Signature = Convert.ToBase64String(signature).TrimEnd('=').Replace('+', '-').Replace('/', '_'),
@@ -396,6 +409,23 @@ public sealed class DispatchConnector
         {
             return Stop(DispatchConnectionState.AccountUnavailable);
         }
+    }
+
+    private static bool MatchesHubOrigin(Uri endpoint, string? origin)
+    {
+        if (!Uri.TryCreate(origin, UriKind.Absolute, out var actual)
+            || !string.IsNullOrEmpty(actual.UserInfo)
+            || !string.Equals(actual.AbsolutePath, "/", StringComparison.Ordinal)
+            || !string.IsNullOrEmpty(actual.Query)
+            || !string.IsNullOrEmpty(actual.Fragment))
+        {
+            return false;
+        }
+
+        var scheme = string.Equals(endpoint.Scheme, "wss", StringComparison.OrdinalIgnoreCase) ? "https" : "http";
+        return string.Equals(actual.Scheme, scheme, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(actual.IdnHost, endpoint.IdnHost, StringComparison.OrdinalIgnoreCase)
+            && actual.Port == endpoint.Port;
     }
 
     private void AdoptWelcome(ReadOnlyMemory<byte> frame)
@@ -422,7 +452,7 @@ public sealed class DispatchConnector
 
     private async Task<DispatchLinkDecision?> AdmitFrameAsync(AcpWebSocketTransport transport, ReadOnlyMemory<byte> frame, ChannelWriter<DispatchPendingCommand> commands, DispatchLinkSlot links, CancellationToken cancellationToken)
     {
-        if (!_welcomed || _verifier is null)
+        if (!_welcomed || _verifier is null || links.ShouldDefer(transport))
         {
             return null;
         }
@@ -431,7 +461,8 @@ public sealed class DispatchConnector
         var writable = commands.WaitToWriteAsync(cancellationToken);
         if (!writable.IsCompletedSuccessfully || !writable.Result)
         {
-            return DispatchCloseStatus.ClassifyClose(null);
+            DeferUntilCapacity(transport, links);
+            return null;
         }
 
         DispatchCmdFrame? cmd;
@@ -454,14 +485,12 @@ public sealed class DispatchConnector
         {
             return null;
         }
-        lock (_pendingGate)
-        {
-            if (_pending.Count >= 32)
-            {
-                return DispatchCloseStatus.ClassifyClose(null);
-            }
-        }
 
+        if (!HasCapacity())
+        {
+            DeferUntilCapacity(transport, links);
+            return null;
+        }
 
         switch (_dedupe.Admit(cmd.CommandId, cmd.Nonce, cmd.Seq))
         {
@@ -477,6 +506,23 @@ public sealed class DispatchConnector
         await QueuePendingAsync(transport, new DispatchCommand(cmd.CommandId, capability, op, payload), commands, links, cancellationToken).ConfigureAwait(false);
 
         return null;
+    }
+
+    private void DeferUntilCapacity(AcpWebSocketTransport transport, DispatchLinkSlot links)
+    {
+        links.Defer(transport);
+        if (HasCapacity())
+        {
+            links.ReconnectIfDeferred();
+        }
+    }
+
+    private bool HasCapacity()
+    {
+        lock (_pendingGate)
+        {
+            return _pending.Count < 32;
+        }
     }
 
     private async Task QueuePendingAsync(AcpWebSocketTransport transport, DispatchCommand command, ChannelWriter<DispatchPendingCommand> commands, DispatchLinkSlot links, CancellationToken cancellationToken)

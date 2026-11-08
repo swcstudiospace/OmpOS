@@ -113,7 +113,7 @@ internal static class DispatchModule
         var time = provider.GetRequiredService<TimeProvider>();
         if (string.Equals(provider.GetRequiredService<IConfiguration>()["Sessions:Store"], "Postgres", StringComparison.OrdinalIgnoreCase))
         {
-            return new PostgresDispatchStore(provider.GetRequiredService<NpgsqlDataSource>(), limits, time, provider.GetRequiredService<ITenantHasher>().HashTenant);
+            return new PostgresDispatchStore(provider.GetRequiredService<NpgsqlDataSource>(), limits, time, provider.GetRequiredService<ITenantHasher>().HashTenant, provider.GetRequiredService<PostgresResilience>());
         }
 
         if (provider.GetRequiredService<IHostEnvironment>().IsDevelopment())

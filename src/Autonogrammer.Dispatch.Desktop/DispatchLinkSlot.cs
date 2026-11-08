@@ -9,12 +9,14 @@ internal sealed class DispatchLinkSlot
     private TaskCompletionSource<Link> _ready = NewSource();
     private Link? _current;
     private long _generation;
+    private bool _deferred;
 
     public void Publish(AcpWebSocketTransport transport, CancellationTokenSource cancellation)
     {
         lock (_gate)
         {
             var link = new Link(transport, cancellation, ++_generation);
+            _deferred = false;
             _current = link;
             _ready.TrySetResult(link);
         }
@@ -25,6 +27,39 @@ internal sealed class DispatchLinkSlot
         lock (_gate)
         {
             return _current is not null && ReferenceEquals(_current.Transport, transport) ? _current : null;
+        }
+    }
+
+    public bool ShouldDefer(AcpWebSocketTransport transport)
+    {
+        lock (_gate)
+        {
+            return _current is null || !ReferenceEquals(_current.Transport, transport) || _deferred;
+        }
+    }
+
+    public void Defer(AcpWebSocketTransport transport)
+    {
+        lock (_gate)
+        {
+            if (_current is not null && ReferenceEquals(_current.Transport, transport))
+            {
+                _deferred = true;
+            }
+        }
+    }
+
+    public void ReconnectIfDeferred()
+    {
+        Link? link;
+        lock (_gate)
+        {
+            link = _deferred ? _current : null;
+        }
+
+        if (link is not null)
+        {
+            Break(link);
         }
     }
 
@@ -48,6 +83,7 @@ internal sealed class DispatchLinkSlot
             if (ReferenceEquals(_current, link))
             {
                 _current = null;
+                _deferred = false;
                 _ready = NewSource();
                 cancel = true;
             }

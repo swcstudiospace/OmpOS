@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Autonogrammer.Contracts.Dispatch;
 using Autonogrammer.Dispatch.Desktop.Tests.Support;
+using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.Acp.Tests;
 using Autonogrammer.Harness.Secrets;
 using Shouldly;
@@ -335,6 +336,74 @@ public sealed class ReconnectTests : IDisposable
     }
 
     [Fact]
+    public async Task ShutdownAbortsAHeartbeatBlockedInAnActiveSocketWrite()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        using var link = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token);
+        using var server = new TestWebSocketServer();
+        const int frameSize = 32 * 1024 * 1024;
+        var transport = new AcpWebSocketTransport(new AcpWebSocketTransportOptions
+        {
+            Endpoint = server.Endpoint,
+            BearerTokenProvider = _ => ValueTask.FromResult("test"),
+            MaxFrameBytes = frameSize,
+        });
+        await using var transportScope = transport.ConfigureAwait(true);
+        var accepting = server.AcceptAsync(timeout.Token);
+        await transport.ConnectAsync(timeout.Token).ConfigureAwait(true);
+        using var session = await accepting.ConfigureAwait(true);
+        var heartbeat = transport.SendAsync(new byte[frameSize], link.Token);
+        await Task.Yield();
+        heartbeat.IsCompleted.ShouldBeFalse();
+        await link.CancelAsync().ConfigureAwait(true);
+        await DispatchConnector.StopHeartbeatAsync(transport, heartbeat, link.Token).WaitAsync(TimeSpan.FromSeconds(5), timeout.Token).ConfigureAwait(true);
+        heartbeat.IsCompleted.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task AFullInboxStillReceivesRevocation()
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        using var server = new TestWebSocketServer();
+        var fixture = await Fixture.CreateAsync(_directory, server.Endpoint, Start.AddHours(1), new FixedJitterSource(0.5), cts.Token);
+        _disposables.Add(fixture);
+        var handler = new BlockingHandler();
+        var connector = fixture.BuildConnector(fixture.Pairing, [handler]);
+        var serverSide = Task.Run(async () =>
+        {
+            using var session = await server.AcceptAsync(cts.Token).ConfigureAwait(false);
+            await ChallengeAsync(session, server.Endpoint, fixture.DevicePublicKey, cts.Token).ConfigureAwait(false);
+            var welcome = new DispatchWelcomeFrame { V = 1, T = DispatchFrameTypes.Welcome, ServerTime = Start.ToUnixTimeSeconds(), HeartbeatSeconds = 20, Kids = [DispatchTestSigner.Kid], ResumeFromSeq = 0 };
+            await session.SendTextAsync(JsonSerializer.Serialize(welcome, DispatchJsonContext.Default.DispatchWelcomeFrame), cts.Token).ConfigureAwait(false);
+            for (var sequence = 1; sequence <= 32; sequence++)
+            {
+                var suffix = sequence.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var command = fixture.Signer.Sign(sequence, Start.ToUnixTimeSeconds(), Start.ToUnixTimeSeconds() + 300, commandId: "cmd-" + suffix, nonce: "nonce-" + suffix);
+                await session.SendTextAsync(Encoding.UTF8.GetString(DispatchTestSigner.Wire(command)), cts.Token).ConfigureAwait(false);
+                if (sequence == 1)
+                {
+                    await handler.Started.Task.WaitAsync(cts.Token).ConfigureAwait(false);
+                    _ = await session.ReceiveAsync(cts.Token).ConfigureAwait(false);
+                    _ = await session.ReceiveAsync(cts.Token).ConfigureAwait(false);
+                }
+
+                var received = await session.ReceiveAsync(cts.Token).ConfigureAwait(false);
+                using var ack = JsonDocument.Parse(received.Text);
+                ack.RootElement.GetProperty("state").GetString().ShouldBe(sequence == 1 ? "running" : "received");
+            }
+
+            var overflow = fixture.Signer.Sign(33, Start.ToUnixTimeSeconds(), Start.ToUnixTimeSeconds() + 300, commandId: "cmd-33", nonce: "nonce-33");
+            await session.SendTextAsync(Encoding.UTF8.GetString(DispatchTestSigner.Wire(overflow)), cts.Token).ConfigureAwait(false);
+            await session.SendTextAsync("{\"v\":1,\"t\":\"revoke\",\"reason\":\"revoked\"}", cts.Token).ConfigureAwait(false);
+            await handler.Cancelled.Task.WaitAsync(TimeSpan.FromSeconds(2), cts.Token).ConfigureAwait(false);
+        }, cts.Token);
+        await connector.RunAsync(cts.Token);
+        await serverSide.ConfigureAwait(true);
+        connector.State.ShouldBe(DispatchConnectionState.DeviceRevoked);
+        fixture.HighWater.ShouldBe(32);
+    }
+
+    [Fact]
     public async Task ATransientDisconnectPreservesRunningAndAcknowledgedQueuedCommands()
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
@@ -468,7 +537,7 @@ public sealed class ReconnectTests : IDisposable
 
     private static async Task ChallengeAsync(TestWebSocketSession session, Uri endpoint, string devicePublicKey, CancellationToken cancellationToken)
     {
-        var origin = new UriBuilder(endpoint) { Scheme = "http" }.Uri.GetLeftPart(UriPartial.Authority);
+        var origin = "HTTP://" + endpoint.Authority + "/";
         var challenge = new DispatchChallengeFrame { V = 1, T = DispatchFrameTypes.Challenge, Nonce = "challenge123", Origin = origin, ServerTime = Start.ToUnixTimeSeconds(), Protocols = ["1"] };
         await session.SendTextAsync(JsonSerializer.Serialize(challenge, DispatchJsonContext.Default.DispatchChallengeFrame), cancellationToken).ConfigureAwait(false);
         var message = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
@@ -508,6 +577,8 @@ public sealed class ReconnectTests : IDisposable
         }
 
         public DispatchPairing Pairing { get; }
+
+        public long HighWater => _dedupe.HighWater;
 
         public void Pause() => _policy.Save(_policy.Current with { Paused = true });
 

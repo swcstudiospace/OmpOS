@@ -334,6 +334,27 @@ public sealed class AcpWebSocketTransportTests
         await Should.ThrowAsync<DisconnectedHarnessException>(() => transport.ConnectAsync(ct)).ConfigureAwait(true);
     }
 
+    /// <summary>Aborting a connection interrupts a write when the peer does not read.</summary>
+    [Fact]
+    public async Task AbortInterruptsAStalledWrite()
+    {
+        using var timeout = Bounded();
+        var ct = timeout.Token;
+        using var server = new TestWebSocketServer();
+        const int frameSize = 32 * 1024 * 1024;
+        var transport = Create(server, options => options with { MaxFrameBytes = frameSize });
+        await using var transportScope = transport.ConfigureAwait(true);
+        var accepting = server.AcceptAsync(ct);
+        await transport.ConnectAsync(ct).ConfigureAwait(true);
+        using var session = await accepting.ConfigureAwait(true);
+
+        var pending = transport.SendAsync(new byte[frameSize], ct);
+        await Task.Yield();
+        pending.IsCompleted.ShouldBeFalse();
+        transport.Abort();
+        await Should.ThrowAsync<DisconnectedHarnessException>(() => pending.WaitAsync(TimeSpan.FromSeconds(5), ct)).ConfigureAwait(true);
+    }
+
     /// <summary>Operations before connect fail as disconnections, and connecting twice is refused.</summary>
     [Fact]
     public async Task OperationsBeforeConnectFailAndConnectTwiceIsRefused()

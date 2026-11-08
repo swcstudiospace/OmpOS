@@ -344,6 +344,7 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
                 if (string.Equals(row.AccountId, accountId, StringComparison.Ordinal)
                     && (deviceId is null || string.Equals(row.DeviceId, deviceId, StringComparison.Ordinal)))
                 {
+                    PurgeBody(row);
                     list.Add(row.ToRecord());
                 }
             }
@@ -388,7 +389,8 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
         DispatchCommandState desired,
         DispatchFailureReason? reason,
         DispatchFeedDraft? feed,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? resultText = null)
     {
         ArgumentNullException.ThrowIfNull(accountId);
         ArgumentNullException.ThrowIfNull(commandId);
@@ -414,6 +416,7 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
 
             row.StateEnteredAt = now;
             row.Reason = reason;
+            row.ResultText = string.IsNullOrEmpty(resultText) ? null : resultText;
             if (desired is DispatchCommandState.Completed or DispatchCommandState.Failed or DispatchCommandState.Cancelled or DispatchCommandState.Expired)
             {
                 row.TerminalAt = now;
@@ -487,6 +490,30 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
         }
     }
 
+    /// <inheritdoc />
+    public ValueTask<bool> TryAppendProgressAsync(string accountId, string deviceId, string commandId, string payload, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(deviceId);
+        ArgumentNullException.ThrowIfNull(commandId);
+        ArgumentNullException.ThrowIfNull(payload);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            if (!_commands.TryGetValue((accountId, commandId), out var row)
+                || !string.Equals(row.DeviceId, deviceId, StringComparison.Ordinal)
+                || row.State is not (DispatchCommandState.Received or DispatchCommandState.AwaitingApproval or DispatchCommandState.Accepted or DispatchCommandState.Running)
+                || row.ProgressCount >= 50)
+            {
+                return ValueTask.FromResult(false);
+            }
+
+            row.ProgressCount++;
+            _ = AppendFeedLocked(accountId, "command.evt", payload);
+            return ValueTask.FromResult(true);
+        }
+    }
+
     private DispatchFeedEventRecord AppendFeedLocked(string accountId, string kind, string? payload)
     {
         var feed = FeedFor(accountId);
@@ -531,6 +558,7 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
         if (_time.GetUtcNow() - terminal > _limits.BodyRetention)
         {
             row.BodyJson = null;
+            row.ResultText = null;
         }
     }
 
@@ -698,6 +726,10 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
 
         public DispatchFailureReason? Reason { get; set; }
 
+        public string? ResultText { get; set; }
+
+        public int ProgressCount { get; set; }
+
         public DateTimeOffset? TerminalAt { get; set; }
 
         public required DispatchCommandAcceptedResponse Accepted { get; init; }
@@ -715,7 +747,8 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
             BodyJson,
             IssuedAt,
             ExpiresAt,
-            Reason);
+            Reason,
+            ResultText);
     }
 
     private sealed class FeedRow

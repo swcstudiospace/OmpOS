@@ -21,7 +21,6 @@ internal sealed class DispatchDeviceFrames(IDispatchStore store, DispatchAuditWr
     private const string Duplicate = "duplicate";
     private const string StateFeedKind = "command.state";
     private const string ResultFeedKind = "command.result";
-    private const string EventFeedKind = "command.evt";
     private readonly CloudSecretRedactor _redactor = new(new[] { options.Value.Credentials.SigningKeyPem, options.Value.CommandSigning.KeyPem }.OfType<string>());
 
     /// <summary>Applies one ack. Only the acceptance states are acked: received, awaiting_approval, accepted and running. A duplicate changes nothing and writes no audit row.</summary>
@@ -33,7 +32,7 @@ internal sealed class DispatchDeviceFrames(IDispatchStore store, DispatchAuditWr
     public async ValueTask AckAsync(string accountId, string deviceId, byte[] payload, CancellationToken cancellationToken)
     {
         var frame = TryRead(payload, DispatchJsonContext.Default.DispatchAckFrame);
-        if (frame is null || string.Equals(frame.State, Duplicate, StringComparison.Ordinal))
+        if (frame is null || string.IsNullOrEmpty(frame.CommandId) || string.Equals(frame.State, Duplicate, StringComparison.Ordinal))
         {
             return;
         }
@@ -64,7 +63,7 @@ internal sealed class DispatchDeviceFrames(IDispatchStore store, DispatchAuditWr
     public async ValueTask ResultAsync(string accountId, string deviceId, byte[] payload, CancellationToken cancellationToken)
     {
         var frame = TryRead(payload, DispatchJsonContext.Default.DispatchResFrame);
-        if (frame is null)
+        if (frame is null || string.IsNullOrEmpty(frame.CommandId))
         {
             return;
         }
@@ -85,7 +84,7 @@ internal sealed class DispatchDeviceFrames(IDispatchStore store, DispatchAuditWr
         var reason = ResultReason(desired, frame.Reason);
         var text = Cap(_redactor.Redact(frame.Text), ResultTextCap);
         var feed = new DispatchFeedDraft(ResultFeedKind, ResultPayload(current.CommandId, desired, reason, text));
-        await MoveAsync(accountId, current, desired, reason, feed, cancellationToken).ConfigureAwait(false);
+        await MoveAsync(accountId, current, desired, reason, feed, cancellationToken, text).ConfigureAwait(false);
     }
 
     /// <summary>Records one progress event on the feed. The command must be in an acceptance state, and the event does not change the command.</summary>
@@ -97,7 +96,7 @@ internal sealed class DispatchDeviceFrames(IDispatchStore store, DispatchAuditWr
     public async ValueTask EventAsync(string accountId, string deviceId, byte[] payload, CancellationToken cancellationToken)
     {
         var frame = TryRead(payload, DispatchJsonContext.Default.DispatchEvtFrame);
-        if (frame is null)
+        if (frame is null || string.IsNullOrEmpty(frame.CommandId))
         {
             return;
         }
@@ -116,10 +115,10 @@ internal sealed class DispatchDeviceFrames(IDispatchStore store, DispatchAuditWr
         }
 
         var text = Cap(_redactor.Redact(frame.Text), EventTextCap);
-        _ = await store.AppendFeedEventAsync(accountId, EventFeedKind, EventPayload(current.CommandId, frame.Kind, text), cancellationToken).ConfigureAwait(false);
+        _ = await store.TryAppendProgressAsync(accountId, deviceId, current.CommandId, EventPayload(current.CommandId, frame.Kind, text), cancellationToken).ConfigureAwait(false);
     }
 
-    private async ValueTask MoveAsync(string accountId, DispatchCommandRecord current, DispatchCommandState desired, DispatchFailureReason? reason, DispatchFeedDraft feed, CancellationToken cancellationToken)
+    private async ValueTask MoveAsync(string accountId, DispatchCommandRecord current, DispatchCommandState desired, DispatchFailureReason? reason, DispatchFeedDraft feed, CancellationToken cancellationToken, string? resultText = null)
     {
         if (!DispatchTransitions.Allows(current.State, desired))
         {
@@ -127,7 +126,7 @@ internal sealed class DispatchDeviceFrames(IDispatchStore store, DispatchAuditWr
             return;
         }
 
-        var transition = await store.TryTransitionAsync(accountId, current.CommandId, current.State, desired, reason, feed, cancellationToken).ConfigureAwait(false);
+        var transition = await store.TryTransitionAsync(accountId, current.CommandId, current.State, desired, reason, feed, cancellationToken, resultText).ConfigureAwait(false);
         if (transition.Status != DispatchTransitionStatus.Applied)
         {
             await audit.RecordRejectedAsync(accountId, current.CommandId, "state_changed", cancellationToken).ConfigureAwait(false);
@@ -159,8 +158,8 @@ internal sealed class DispatchDeviceFrames(IDispatchStore store, DispatchAuditWr
     private static bool IsResultState(DispatchCommandState state) =>
         state is DispatchCommandState.Completed or DispatchCommandState.Failed or DispatchCommandState.Cancelled;
 
-    private static bool IsEventKind(string kind) =>
-        kind.Length is >= 1 and <= 32
+    private static bool IsEventKind(string? kind) =>
+        kind is { Length: >= 1 and <= 32 }
         && char.IsAsciiLetterLower(kind[0])
         && kind.All(static character => char.IsAsciiLetterLower(character) || char.IsAsciiDigit(character) || character is '_' or '.');
 
@@ -184,6 +183,7 @@ internal sealed class DispatchDeviceFrames(IDispatchStore store, DispatchAuditWr
             or DispatchFailureReason.UnsupportedOperation
             or DispatchFailureReason.CapabilityDisabled
             or DispatchFailureReason.ApprovalDenied
+            or DispatchFailureReason.ApprovalTimeout
             or DispatchFailureReason.PolicyDenied
             or DispatchFailureReason.PayloadInvalid
             or DispatchFailureReason.PayloadTooLarge

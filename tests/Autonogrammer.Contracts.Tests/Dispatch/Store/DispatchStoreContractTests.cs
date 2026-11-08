@@ -94,11 +94,48 @@ public abstract class DispatchStoreContractTests<TStore> where TStore : IDispatc
         await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Delivered, DispatchCommandState.Received, null, null, ct).ConfigureAwait(true);
         await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Received, DispatchCommandState.Accepted, null, null, ct).ConfigureAwait(true);
         await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Accepted, DispatchCommandState.Running, null, null, ct).ConfigureAwait(true);
-        var done = await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Running, DispatchCommandState.Completed, null, null, ct).ConfigureAwait(true);
+        var done = await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Running, DispatchCommandState.Completed, null, null, ct, "result").ConfigureAwait(true);
         done.Status.ShouldBe(DispatchTransitionStatus.Applied);
         var replay = await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Completed, DispatchCommandState.Failed, DispatchFailureReason.Internal, null, ct).ConfigureAwait(true);
         replay.Status.ShouldBe(DispatchTransitionStatus.Rejected);
         (await store.GetCommandAsync("acct", "c1", ct).ConfigureAwait(true))!.State.ShouldBe(DispatchCommandState.Completed);
+        (await store.GetCommandAsync("acct", "c1", ct).ConfigureAwait(true))!.ResultText.ShouldBe("result");
+    }
+
+    /// <summary>Terminal result text is not returned from either read path after body retention expires.</summary>
+    [Fact]
+    public async Task ResultTextExpiresFromListsAndSingleCommandReads()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var clock = new MutableTime();
+        var store = await CreateStoreAsync(DispatchStoreLimits.Default, clock, ct).ConfigureAwait(true);
+        await CreateDeviceAsync(store, "acct", "dev", ct).ConfigureAwait(true);
+        await EnqueueAsync(store, "acct", "dev", "c1", "k1", "fp", ct).ConfigureAwait(true);
+        await MoveToRunningAsync(store, "acct", "c1", ct).ConfigureAwait(true);
+        (await store.TryTransitionAsync("acct", "c1", DispatchCommandState.Running, DispatchCommandState.Completed, null, null, ct, "private result").ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+        (await store.ListCommandsAsync("acct", null, 10, ct).ConfigureAwait(true)).Single().ResultText.ShouldBe("private result");
+        clock.UtcNow += DispatchStoreLimits.Default.BodyRetention + TimeSpan.FromSeconds(1);
+        (await store.ListCommandsAsync("acct", null, 10, ct).ConfigureAwait(true)).Single().ResultText.ShouldBeNull();
+        (await store.GetCommandAsync("acct", "c1", ct).ConfigureAwait(true))!.ResultText.ShouldBeNull();
+    }
+
+    /// <summary>Concurrent progress writes share one cap and cannot write for another device or after completion.</summary>
+    [Fact]
+    public async Task ConcurrentProgressIsCappedPerActiveOwnedCommand()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var store = await CreateStoreAsync(DispatchStoreLimits.Default, TimeProvider.System, ct).ConfigureAwait(true);
+        await CreateDeviceAsync(store, "acct", "dev", ct).ConfigureAwait(true);
+        await EnqueueAsync(store, "acct", "dev", "c1", "k1", "fp", ct).ConfigureAwait(true);
+        await MoveToRunningAsync(store, "acct", "c1", ct).ConfigureAwait(true);
+        (await store.TryAppendProgressAsync("acct", "other", "c1", "{}", ct).ConfigureAwait(true)).ShouldBeFalse();
+        var attempts = Enumerable.Range(0, 64).Select(_ => store.TryAppendProgressAsync("acct", "dev", "c1", "{}", ct).AsTask()).ToArray();
+        (await Task.WhenAll(attempts).ConfigureAwait(true)).Count(static applied => applied).ShouldBe(50);
+        (await store.ReadFeedAsync("acct", 0, ct).ConfigureAwait(true)).Events.Count(item => string.Equals(item.Kind, "command.evt", StringComparison.Ordinal)).ShouldBe(50);
+        await EnqueueAsync(store, "acct", "dev", "c2", "k2", "fp", ct).ConfigureAwait(true);
+        await MoveToRunningAsync(store, "acct", "c2", ct).ConfigureAwait(true);
+        (await store.TryTransitionAsync("acct", "c2", DispatchCommandState.Running, DispatchCommandState.Completed, null, null, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+        (await store.TryAppendProgressAsync("acct", "dev", "c2", "{}", ct).ConfigureAwait(true)).ShouldBeFalse();
     }
 
     /// <summary>A source prefix is recorded for a known device only, and reads back on that device.</summary>

@@ -134,8 +134,9 @@ public interface IDispatchStore
     /// <param name="reason">Failure reason when the next state carries one.</param>
     /// <param name="feed">The feed event appended with the transition when it applies, or null.</param>
     /// <param name="cancellationToken">Cancels the transition.</param>
+    /// <param name="resultText">Redacted terminal result text, when supplied by the device.</param>
     /// <returns>Applied, rejected, or not found.</returns>
-    ValueTask<DispatchTransitionResult> TryTransitionAsync(string accountId, string commandId, DispatchCommandState expected, DispatchCommandState desired, DispatchFailureReason? reason, DispatchFeedDraft? feed, CancellationToken cancellationToken);
+    ValueTask<DispatchTransitionResult> TryTransitionAsync(string accountId, string commandId, DispatchCommandState expected, DispatchCommandState desired, DispatchFailureReason? reason, DispatchFeedDraft? feed, CancellationToken cancellationToken, string? resultText = null);
 
     /// <summary>Appends a feed event. Identifiers increase strictly per account.</summary>
     /// <param name="accountId">The account.</param>
@@ -144,6 +145,15 @@ public interface IDispatchStore
     /// <param name="cancellationToken">Cancels the append.</param>
     /// <returns>The stored event.</returns>
     ValueTask<DispatchFeedEventRecord> AppendFeedEventAsync(string accountId, string kind, string? payload, CancellationToken cancellationToken);
+
+    /// <summary>Atomically appends a device progress event while its owned command is active, up to 50 events per command.</summary>
+    /// <param name="accountId">The owning account.</param>
+    /// <param name="deviceId">The reporting device.</param>
+    /// <param name="commandId">The command.</param>
+    /// <param name="payload">The redacted JSON event payload.</param>
+    /// <param name="cancellationToken">Cancels the append.</param>
+    /// <returns>True if the event was appended; false if the command is unavailable, terminal, or at its limit.</returns>
+    ValueTask<bool> TryAppendProgressAsync(string accountId, string deviceId, string commandId, string payload, CancellationToken cancellationToken);
 
     /// <summary>Reads feed events after a position. A position older than retained history is a resync page.</summary>
     /// <param name="accountId">The account.</param>

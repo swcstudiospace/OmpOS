@@ -217,6 +217,58 @@ public sealed class DeliveryTests
         (await store.GetCommandAsync(DispatchTestClient.Owner, commandId, ct).ConfigureAwait(true)).ShouldNotBeNull().State.ShouldBe(DispatchCommandState.Received);
     }
 
+    /// <summary>Null required fields do not close the device link or prevent later valid frames from being applied.</summary>
+    [Fact]
+    public async Task Null_device_frame_fields_do_not_break_the_link()
+    {
+        using var bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        bound.CancelAfter(TimeSpan.FromSeconds(5));
+        var ct = bound.Token;
+        var host = await DispatchApiHost.StartAsync(ct).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var device = await HubTestSockets.PairAsync(host, key, ct).ConfigureAwait(true);
+        using var socket = await HubTestSockets.ConnectAsync(host, device, ct).ConfigureAwait(true);
+        (await HubTestSockets.HelloAsync(socket, device, 0, ct).ConfigureAwait(true)).GetProperty("t").GetString().ShouldBe("welcome");
+        using var owner = DispatchTestClient.As(host);
+        var accepted = await DispatchTestClient.SendAsync(owner, HttpMethod.Post, "/dispatch/devices/" + device.DeviceId + "/commands", DispatchTestClient.CommandJson(), ct).ConfigureAwait(true);
+        var commandId = HubTestSockets.Field(accepted.Body, "commandId");
+        _ = await HubTestSockets.ReceiveJsonAsync(socket, ct).ConfigureAwait(true);
+        var store = host.Services.GetRequiredService<IDispatchStore>();
+        await HubFrames.SendTextAsync(socket, "{\"v\":1,\"t\":\"ack\",\"commandId\":null,\"state\":\"received\"}", ct).ConfigureAwait(true);
+        await HubFrames.SendTextAsync(socket, "{\"v\":1,\"t\":\"res\",\"commandId\":null,\"state\":\"failed\"}", ct).ConfigureAwait(true);
+        await HubFrames.SendTextAsync(socket, "{\"v\":1,\"t\":\"ack\",\"commandId\":\"" + commandId + "\",\"state\":\"received\"}", ct).ConfigureAwait(true);
+        (await CommandStates.WaitForAsync(store, DispatchTestClient.Owner, commandId, DispatchCommandState.Received, ct).ConfigureAwait(true)).ShouldBeTrue();
+        await HubFrames.SendTextAsync(socket, "{\"v\":1,\"t\":\"evt\",\"commandId\":\"" + commandId + "\",\"kind\":null}", ct).ConfigureAwait(true);
+        await HubFrames.SendTextAsync(socket, "{\"v\":1,\"t\":\"ack\",\"commandId\":\"" + commandId + "\",\"state\":\"accepted\"}", ct).ConfigureAwait(true);
+        (await CommandStates.WaitForAsync(store, DispatchTestClient.Owner, commandId, DispatchCommandState.Accepted, ct).ConfigureAwait(true)).ShouldBeTrue();
+    }
+
+    /// <summary>A locally timed-out approval retains its reason in the command record.</summary>
+    [Fact]
+    public async Task A_device_approval_timeout_retains_its_reason()
+    {
+        using var bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        bound.CancelAfter(TimeSpan.FromSeconds(5));
+        var ct = bound.Token;
+        var host = await DispatchApiHost.StartAsync(ct).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var device = await HubTestSockets.PairAsync(host, key, ct).ConfigureAwait(true);
+        using var socket = await HubTestSockets.ConnectAsync(host, device, ct).ConfigureAwait(true);
+        (await HubTestSockets.HelloAsync(socket, device, 0, ct).ConfigureAwait(true)).GetProperty("t").GetString().ShouldBe("welcome");
+        using var owner = DispatchTestClient.As(host);
+        var accepted = await DispatchTestClient.SendAsync(owner, HttpMethod.Post, "/dispatch/devices/" + device.DeviceId + "/commands", DispatchTestClient.CommandJson(), ct).ConfigureAwait(true);
+        var commandId = HubTestSockets.Field(accepted.Body, "commandId");
+        _ = await HubTestSockets.ReceiveJsonAsync(socket, ct).ConfigureAwait(true);
+        await HubFrames.SendTextAsync(socket, "{\"v\":1,\"t\":\"ack\",\"commandId\":\"" + commandId + "\",\"state\":\"received\"}", ct).ConfigureAwait(true);
+        await HubFrames.SendTextAsync(socket, "{\"v\":1,\"t\":\"ack\",\"commandId\":\"" + commandId + "\",\"state\":\"awaiting_approval\"}", ct).ConfigureAwait(true);
+        await HubFrames.SendTextAsync(socket, "{\"v\":1,\"t\":\"res\",\"commandId\":\"" + commandId + "\",\"state\":\"failed\",\"reason\":\"approval_timeout\"}", ct).ConfigureAwait(true);
+        var store = host.Services.GetRequiredService<IDispatchStore>();
+        (await CommandStates.WaitForAsync(store, DispatchTestClient.Owner, commandId, DispatchCommandState.Failed, ct).ConfigureAwait(true)).ShouldBeTrue();
+        (await store.GetCommandAsync(DispatchTestClient.Owner, commandId, ct).ConfigureAwait(true))!.Reason.ShouldBe(DispatchFailureReason.ApprovalTimeout);
+    }
+
     /// <summary>A device result completes a running command, and the hub never completes a command on its own.</summary>
     [Fact]
     public async Task A_device_result_completes_a_running_command_and_the_hub_never_completes_on_its_own()
@@ -242,8 +294,13 @@ public sealed class DeliveryTests
         await Task.Delay(TimeSpan.FromMilliseconds(300), ct).ConfigureAwait(true);
         (await store.GetCommandAsync(DispatchTestClient.Owner, commandId, ct).ConfigureAwait(true)).ShouldNotBeNull().State.ShouldBe(DispatchCommandState.Running);
 
-        await HubFrames.SendTextAsync(socket, "{\"v\":1,\"t\":\"res\",\"commandId\":\"" + commandId + "\",\"state\":\"completed\",\"text\":\"done\"}", ct).ConfigureAwait(true);
+        var secret = host.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<DispatchOptions>>().Value.CommandSigning.KeyPem!;
+        var text = secret + new string('x', 5000);
+        var result = new DispatchResFrame { V = 1, T = DispatchFrameTypes.Res, CommandId = commandId, State = "completed", Text = text };
+        await HubFrames.SendTextAsync(socket, JsonSerializer.Serialize(result, DispatchJsonContext.Default.DispatchResFrame), ct).ConfigureAwait(true);
         (await CommandStates.WaitForAsync(store, DispatchTestClient.Owner, commandId, DispatchCommandState.Completed, ct).ConfigureAwait(true)).ShouldBeTrue();
+        var response = await DispatchTestClient.SendAsync(owner, HttpMethod.Get, "/dispatch/commands/" + commandId, null, ct).ConfigureAwait(true);
+        HubTestSockets.Field(response.Body, "resultText").ShouldBe(("[REDACTED]" + new string('x', 5000))[..4096]);
     }
 
     /// <summary>A progress event's text is capped at 1,024 characters before it reaches the feed.</summary>

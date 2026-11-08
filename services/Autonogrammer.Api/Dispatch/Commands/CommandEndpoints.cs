@@ -381,6 +381,7 @@ internal static class CommandEndpoints
         IssuedAt = row.IssuedAt.ToUnixTimeSeconds(),
         ExpiresAt = row.ExpiresAt.ToUnixTimeSeconds(),
         Reason = row.Reason,
+        ResultText = row.ResultText,
     };
 
     private static bool IsJson(byte[] decoded)

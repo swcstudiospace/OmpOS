@@ -6,6 +6,7 @@ using Autonogrammer.Contracts.Dispatch;
 using Autonogrammer.Dispatch.Desktop;
 using Autonogrammer.Harness.Secrets;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Shouldly;
 using Xunit;
@@ -27,6 +28,7 @@ public sealed class DesktopHubIntegrationTests
         {
             var host = await DispatchApiHost.StartAsync(ct, network: true).ConfigureAwait(true);
             await using var hostScope = host.ConfigureAwait(true);
+            host.Services.GetRequiredService<IOptions<DispatchOptions>>().Value.HubOrigin = host.Origin.AbsoluteUri;
             using var owner = DispatchTestClient.As(host);
             var pairing = new DispatchPairing(new InMemorySessionSecretStore(), Path.Combine(directory, "pairing.json"));
             var publicKey = await pairing.EnrollDeviceKeyAsync("pending", ct).ConfigureAwait(true);
