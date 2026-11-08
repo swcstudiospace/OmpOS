@@ -94,6 +94,9 @@ jobs:
           git fetch --no-tags origin "${{ github.base_ref }}"
           python3 scripts/ci/test_check_openapi_breaking.py
           python3 scripts/ci/check-openapi-breaking.py --base "origin/${{ github.base_ref }}"
+      - name: Version bump (pull requests only; VersionPrefix must rise above the base and CHANGELOG must have its section)
+        if: github.event_name == 'pull_request'
+        run: bash scripts/ci/check-version-bump.sh --base "origin/${{ github.base_ref }}"
       # The web payload budget is not a step of its own: scripts/web-smoke/run-smoke.sh ends its real-bundle half with it (size-budget.mjs, limits in size-budget.json), so it runs in the browser smoke step below.
       - name: Python unit tests of the CI and legal scripts
         run: python3 -m unittest scripts/ci/test_check_skip_markers.py scripts/legal/test_generate_sbom.py

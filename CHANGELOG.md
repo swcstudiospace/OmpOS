@@ -19,6 +19,10 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 - Code landing. With no session selected, the Code surface shows four environment cards: Local machine (with the Omp status it found), another machine linked to this account, Cloud, and Remote (the saved remote environments). Linked machines have no device source yet, and the remote Omp status reads "not checked yet" until the remote check is wired to the UI.
 - Remote provisioning service. It checks an SSH environment for Omp, Bun and the bundled plugins, reports drift, and installs only what has drifted, after a per-environment confirmation. It is not yet reachable from the UI.
 
+### Changed
+
+- Pull requests into main must raise `VersionPrefix` above the base and add its CHANGELOG section. `scripts/ci/check-version-bump.sh` runs in the CI job and fails the pull request otherwise.
+
 ### Fixed
 
 - Desktop checksums are published as `SHA256SUMS-desktop`. `release.yml` publishes image and SBOM checksums as `SHA256SUMS-images`, so a tag push cannot replace one file with the other.
