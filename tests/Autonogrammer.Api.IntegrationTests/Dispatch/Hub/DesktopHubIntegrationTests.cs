@@ -1,6 +1,7 @@
 using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Autonogrammer.Api.Dispatch;
 using Autonogrammer.Contracts.Dispatch;
 using Autonogrammer.Dispatch.Desktop;
 using Autonogrammer.Harness.Secrets;
@@ -14,9 +15,9 @@ namespace Autonogrammer.Api.IntegrationTests.Dispatch;
 /// <summary>Exercises the real desktop connector against the relay over loopback WebSockets.</summary>
 public sealed class DesktopHubIntegrationTests
 {
-    /// <summary>A server-issued device id binds the enrolled key, and a command reaches completed through signed hello and device acknowledgements.</summary>
+    /// <summary>Running and acknowledged queued work survive a transient disconnect and both complete after reconnect.</summary>
     [Fact]
-    public async Task DesktopPairsConnectsAndCompletesACommand()
+    public async Task DesktopPairsReconnectsAndCompletesRunningAndQueuedCommands()
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         var ct = timeout.Token;
@@ -48,21 +49,15 @@ public sealed class DesktopHubIntegrationTests
             var hubPublicKey = new DispatchPublicKey(verification.GetProperty("kid").GetString()!, Convert.ToBase64String(hubKey.ExportSubjectPublicKeyInfo()));
             await pairing.CompleteAsync("pending", new DispatchPairedDevice(deviceId, DispatchTestClient.Owner, [hubPublicKey]), new SecretString(root.GetProperty("credential").GetString()!), ct).ConfigureAwait(true);
             var endpoint = new UriBuilder(host.Origin) { Scheme = "ws", Path = "/dispatch/devices/" + deviceId + "/connect" }.Uri;
+            var handler = new SessionHandler();
             var connector = new DispatchConnector(new DispatchConnectorOptions { Endpoint = endpoint, ControllerName = "Controller" }, pairing,
                 new DispatchDedupeStore(Path.Combine(directory, "dedupe.json")), new DispatchPolicyStore(Path.Combine(directory, "policy.json")),
-                new DispatchApprovalFlow(new DenyPrompt(), TimeProvider.System), new Revocation(), [new SessionHandler()], TimeProvider.System, new Jitter());
+                new DispatchApprovalFlow(new DenyPrompt(), TimeProvider.System), new Revocation(), [handler], TimeProvider.System, new Jitter());
             using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
             var running = connector.RunAsync(stop.Token);
             try
             {
-                var command = await DispatchTestClient.SendAsync(owner, HttpMethod.Post, "/dispatch/devices/" + deviceId + "/commands", DispatchTestClient.CommandJson(), ct).ConfigureAwait(true);
-                command.Status.ShouldBe(HttpStatusCode.Accepted);
-                var commandId = HubTestSockets.Field(command.Body, "commandId");
-                var store = host.Services.GetRequiredService<IDispatchStore>();
-                while ((await store.GetCommandAsync(DispatchTestClient.Owner, commandId, ct).ConfigureAwait(true))?.State != DispatchCommandState.Completed)
-                {
-                    await Task.Delay(50, ct).ConfigureAwait(true);
-                }
+                await ExerciseReconnectAsync(host, owner, deviceId, handler, ct).ConfigureAwait(true);
             }
             finally
             {
@@ -73,6 +68,42 @@ public sealed class DesktopHubIntegrationTests
         finally
         {
             Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    private static async Task ExerciseReconnectAsync(DispatchApiHost host, HttpClient owner, string deviceId, SessionHandler handler, CancellationToken cancellationToken)
+    {
+        var store = host.Services.GetRequiredService<IDispatchStore>();
+        var first = await EnqueueAsync(owner, deviceId, cancellationToken).ConfigureAwait(true);
+        await handler.Started.Task.WaitAsync(cancellationToken).ConfigureAwait(true);
+        var second = await EnqueueAsync(owner, deviceId, cancellationToken).ConfigureAwait(true);
+        await WaitForStateAsync(store, second, DispatchCommandState.Received, cancellationToken).ConfigureAwait(true);
+        var sessions = host.Services.GetRequiredService<DispatchSessionRegistry>();
+        var previous = sessions.ForDevice(deviceId).Single();
+        await previous.CloseAsync(DispatchCloseCodes.GoingAway, "test reconnect", cancellationToken).ConfigureAwait(true);
+        while (!sessions.ForDevice(deviceId).Any(session => !ReferenceEquals(session, previous)))
+        {
+            await Task.Delay(25, cancellationToken).ConfigureAwait(true);
+        }
+
+        handler.Release.TrySetResult();
+        await WaitForStateAsync(store, first, DispatchCommandState.Completed, cancellationToken).ConfigureAwait(true);
+        await WaitForStateAsync(store, second, DispatchCommandState.Completed, cancellationToken).ConfigureAwait(true);
+        handler.Calls.ShouldBe(2);
+    }
+
+    private static async Task<string> EnqueueAsync(HttpClient owner, string deviceId, CancellationToken cancellationToken)
+    {
+        var command = await DispatchTestClient.SendAsync(owner, HttpMethod.Post, "/dispatch/devices/" + deviceId + "/commands", DispatchTestClient.CommandJson(), cancellationToken).ConfigureAwait(true);
+        command.Status.ShouldBe(HttpStatusCode.Accepted);
+        return HubTestSockets.Field(command.Body, "commandId");
+    }
+
+    private static async Task WaitForStateAsync(IDispatchStore store, string commandId, DispatchCommandState state, CancellationToken cancellationToken)
+    {
+        while ((await store.GetCommandAsync(DispatchTestClient.Owner, commandId, cancellationToken).ConfigureAwait(true))?.State != state)
+        {
+            await Task.Delay(25, cancellationToken).ConfigureAwait(true);
         }
     }
 
@@ -93,8 +124,24 @@ public sealed class DesktopHubIntegrationTests
 
     private sealed class SessionHandler : IDispatchCommandHandler
     {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public int Calls { get; private set; }
+
         public bool CanHandle(DispatchOp op) => op == DispatchOp.SessionList;
 
-        public ValueTask<DispatchOutcome> HandleAsync(DispatchCommand command, CancellationToken cancellationToken) => ValueTask.FromResult(DispatchOutcome.Completed("listed"));
+        public async ValueTask<DispatchOutcome> HandleAsync(DispatchCommand command, CancellationToken cancellationToken)
+        {
+            Calls++;
+            if (Calls == 1)
+            {
+                Started.TrySetResult();
+                await Release.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            return DispatchOutcome.Completed("listed");
+        }
     }
 }

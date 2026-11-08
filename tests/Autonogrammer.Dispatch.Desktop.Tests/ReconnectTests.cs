@@ -284,6 +284,11 @@ public sealed class ReconnectTests : IDisposable
             heartbeat.RootElement.GetProperty("t").GetString().ShouldBe("hb");
             heartbeat.RootElement.GetProperty("status").GetString().ShouldBe("idle");
             heartbeat.RootElement.GetProperty("runningCount").GetInt32().ShouldBe(0);
+            fixture.Pause();
+            clock.Advance(TimeSpan.FromSeconds(1));
+            var pausedFrame = await session.ReceiveAsync(cts.Token).ConfigureAwait(false);
+            using var paused = JsonDocument.Parse(pausedFrame.Text);
+            paused.RootElement.GetProperty("status").GetString().ShouldBe("paused");
             await session.CloseOutputAsync((WebSocketCloseStatus)DispatchCloseCodes.DeviceRevoked, "revoked", cts.Token).ConfigureAwait(false);
             _ = await session.ReceiveAsync(cts.Token).ConfigureAwait(false);
         }, cts.Token);
@@ -327,6 +332,91 @@ public sealed class ReconnectTests : IDisposable
         await serverSide.ConfigureAwait(true);
         connector.State.ShouldBe(DispatchConnectionState.DeviceRevoked);
         fixture.Revocation.Calls.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task ATransientDisconnectPreservesRunningAndAcknowledgedQueuedCommands()
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        using var server = new TestWebSocketServer();
+        var fixture = await Fixture.CreateAsync(_directory, server.Endpoint, Start.AddHours(1), new FixedJitterSource(0.5), cts.Token);
+        _disposables.Add(fixture);
+        var handler = new ResumableHandler();
+        var connector = fixture.BuildConnector(fixture.Pairing, [handler]);
+        var disconnected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        connector.StateChanged += (_, _) =>
+        {
+            if (connector.State == DispatchConnectionState.Reconnecting)
+            {
+                disconnected.TrySetResult();
+            }
+        };
+        var serverSide = Task.Run(async () =>
+        {
+            await DisconnectWithPendingCommandsAsync(server, fixture, handler, cts.Token).ConfigureAwait(false);
+            await disconnected.Task.WaitAsync(cts.Token).ConfigureAwait(false);
+            handler.Release.TrySetResult();
+            await handler.FirstFinished.Task.WaitAsync(cts.Token).ConfigureAwait(false);
+            await CompleteAfterReconnectAsync(server, fixture, cts.Token).ConfigureAwait(false);
+        }, cts.Token);
+        await connector.RunAsync(cts.Token);
+        await serverSide.ConfigureAwait(true);
+        handler.Calls.ShouldBe(2);
+    }
+
+    private static async Task DisconnectWithPendingCommandsAsync(TestWebSocketServer server, Fixture fixture, ResumableHandler handler, CancellationToken cancellationToken)
+    {
+        using var session = await server.AcceptAsync(cancellationToken).ConfigureAwait(false);
+        await ChallengeAsync(session, server.Endpoint, fixture.DevicePublicKey, cancellationToken).ConfigureAwait(false);
+        var welcome = new DispatchWelcomeFrame { V = 1, T = DispatchFrameTypes.Welcome, ServerTime = Start.ToUnixTimeSeconds(), HeartbeatSeconds = 20, Kids = [DispatchTestSigner.Kid], ResumeFromSeq = 0 };
+        await session.SendTextAsync(JsonSerializer.Serialize(welcome, DispatchJsonContext.Default.DispatchWelcomeFrame), cancellationToken).ConfigureAwait(false);
+        var first = fixture.Signer.Sign(1, Start.ToUnixTimeSeconds(), Start.ToUnixTimeSeconds() + 300, commandId: "cmd-running", nonce: "n-running");
+        await session.SendTextAsync(Encoding.UTF8.GetString(DispatchTestSigner.Wire(first)), cancellationToken).ConfigureAwait(false);
+        await handler.Started.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        for (var index = 0; index < 3; index++)
+        {
+            _ = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        var second = fixture.Signer.Sign(2, Start.ToUnixTimeSeconds(), Start.ToUnixTimeSeconds() + 300, commandId: "cmd-queued", nonce: "n-queued");
+        await session.SendTextAsync(Encoding.UTF8.GetString(DispatchTestSigner.Wire(second)), cancellationToken).ConfigureAwait(false);
+        var acknowledgement = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+        using var ack = JsonDocument.Parse(acknowledgement.Text);
+        ack.RootElement.GetProperty("state").GetString().ShouldBe("received");
+        ack.RootElement.GetProperty("commandId").GetString().ShouldBe("cmd-queued");
+        session.Abort();
+    }
+
+    private static async Task CompleteAfterReconnectAsync(TestWebSocketServer server, Fixture fixture, CancellationToken cancellationToken)
+    {
+        using var session = await server.AcceptAsync(cancellationToken).ConfigureAwait(false);
+        var origin = new UriBuilder(server.Endpoint) { Scheme = "http" }.Uri.GetLeftPart(UriPartial.Authority);
+        var challenge = new DispatchChallengeFrame { V = 1, T = DispatchFrameTypes.Challenge, Nonce = "reconnect123", Origin = origin, ServerTime = Start.ToUnixTimeSeconds(), Protocols = ["1"] };
+        await session.SendTextAsync(JsonSerializer.Serialize(challenge, DispatchJsonContext.Default.DispatchChallengeFrame), cancellationToken).ConfigureAwait(false);
+        var message = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+        using var hello = JsonDocument.Parse(message.Text);
+        hello.RootElement.GetProperty("lastAppliedSeq").GetInt64().ShouldBe(2);
+        var running = hello.RootElement.GetProperty("running").EnumerateArray().Select(item => item.GetString()).ToArray();
+        running.Contains("cmd-running", StringComparer.Ordinal).ShouldBeTrue();
+        running.Contains("cmd-queued", StringComparer.Ordinal).ShouldBeTrue();
+        var welcome = new DispatchWelcomeFrame { V = 1, T = DispatchFrameTypes.Welcome, ServerTime = Start.ToUnixTimeSeconds(), HeartbeatSeconds = 20, Kids = [DispatchTestSigner.Kid], ResumeFromSeq = 2 };
+        await session.SendTextAsync(JsonSerializer.Serialize(welcome, DispatchJsonContext.Default.DispatchWelcomeFrame), cancellationToken).ConfigureAwait(false);
+        var results = new HashSet<string>(StringComparer.Ordinal);
+        while (results.Count < 2)
+        {
+            var frame = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+            using var json = JsonDocument.Parse(frame.Text);
+            if (string.Equals(json.RootElement.GetProperty("t").GetString(), "res", StringComparison.Ordinal))
+            {
+                json.RootElement.GetProperty("state").GetString().ShouldBe("completed");
+                results.Add(json.RootElement.GetProperty("commandId").GetString()!);
+            }
+        }
+
+        results.Contains("cmd-running").ShouldBeTrue();
+        results.Contains("cmd-queued").ShouldBeTrue();
+        await session.CloseOutputAsync((WebSocketCloseStatus)DispatchCloseCodes.DeviceRevoked, "revoked", cancellationToken).ConfigureAwait(false);
+        _ = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
     }
 
     [Fact]
@@ -416,6 +506,8 @@ public sealed class ReconnectTests : IDisposable
         }
 
         public DispatchPairing Pairing { get; }
+
+        public void Pause() => _policy.Save(_policy.Current with { Paused = true });
 
         public string DevicePublicKey { get; private set; } = string.Empty;
 
@@ -524,6 +616,32 @@ public sealed class ReconnectTests : IDisposable
         }
 
         public void Advance(TimeSpan by) => _inner.Advance(by);
+    }
+
+    private sealed class ResumableHandler : IDispatchCommandHandler
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource FirstFinished { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public int Calls { get; private set; }
+
+        public bool CanHandle(DispatchOp op) => op == DispatchOp.SessionList;
+
+        public async ValueTask<DispatchOutcome> HandleAsync(DispatchCommand command, CancellationToken cancellationToken)
+        {
+            Calls++;
+            if (Calls == 1)
+            {
+                Started.TrySetResult();
+                await Release.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+                FirstFinished.TrySetResult();
+            }
+
+            return DispatchOutcome.Completed("listed");
+        }
     }
 
     private sealed class BlockingHandler : IDispatchCommandHandler

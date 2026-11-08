@@ -177,6 +177,16 @@ public sealed class PostgresDispatchStore : IDispatchStore
     }
 
     /// <inheritdoc />
+    public ValueTask<IReadOnlyList<DispatchCommandRecord>> ListInFlightAfterAsync(string accountId, string deviceId, long afterSeq, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(deviceId);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, 100);
+        return new ValueTask<IReadOnlyList<DispatchCommandRecord>>(_pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: true, token => ListInFlightCoreAsync(accountId, deviceId, afterSeq, limit, token), cancellationToken));
+    }
+
+    /// <inheritdoc />
     public ValueTask<DispatchTransitionResult> TryTransitionAsync(string accountId, string commandId, DispatchCommandState expected, DispatchCommandState desired, DispatchFailureReason? reason, DispatchFeedDraft? feed, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(accountId);
@@ -606,6 +616,31 @@ public sealed class PostgresDispatchStore : IDispatchStore
             command.CommandText = CommandSelect + " WHERE account_id = @account_id AND (@device_id::text IS NULL OR device_id = @device_id) ORDER BY created_at DESC, id DESC LIMIT @limit";
             command.Parameters.AddWithValue("account_id", accountId);
             command.Parameters.AddWithValue("device_id", (object?)deviceId ?? DBNull.Value);
+            command.Parameters.AddWithValue("limit", limit);
+            var list = new List<DispatchCommandRecord>();
+            var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using (reader.ConfigureAwait(false))
+            {
+                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    list.Add(ReadCommand(reader, accountId).ToRecord());
+                }
+            }
+
+            return list;
+        }
+    }
+
+    private async Task<IReadOnlyList<DispatchCommandRecord>> ListInFlightCoreAsync(string accountId, string deviceId, long afterSeq, int limit, CancellationToken cancellationToken)
+    {
+        var connection = await OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            using var command = PostgresSql.Create(connection, null);
+            command.CommandText = CommandSelect + " WHERE account_id = @account_id AND device_id = @device_id AND state IN ('received', 'awaiting_approval', 'accepted', 'running') AND seq > @after ORDER BY seq LIMIT @limit";
+            command.Parameters.AddWithValue("account_id", accountId);
+            command.Parameters.AddWithValue("device_id", deviceId);
+            command.Parameters.AddWithValue("after", afterSeq);
             command.Parameters.AddWithValue("limit", limit);
             var list = new List<DispatchCommandRecord>();
             var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);

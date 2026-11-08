@@ -117,6 +117,15 @@ public interface IDispatchStore
     /// <returns>The account's commands. Never another account's.</returns>
     ValueTask<IReadOnlyList<DispatchCommandRecord>> ListCommandsAsync(string accountId, string? deviceId, int limit, CancellationToken cancellationToken);
 
+    /// <summary>Pages a device's in-flight commands in ascending sequence order for restart reconciliation.</summary>
+    /// <param name="accountId">The owning account.</param>
+    /// <param name="deviceId">The device.</param>
+    /// <param name="afterSeq">The exclusive sequence cursor.</param>
+    /// <param name="limit">The page size, from 1 to 100.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>Received, awaiting-approval, accepted and running commands.</returns>
+    ValueTask<IReadOnlyList<DispatchCommandRecord>> ListInFlightAfterAsync(string accountId, string deviceId, long afterSeq, int limit, CancellationToken cancellationToken);
+
     /// <summary>Compare-and-set against <see cref="DispatchTransitions"/>. An illegal edge leaves the row unchanged. A feed event given with an applied transition is appended in the same transaction.</summary>
     /// <param name="accountId">The account.</param>
     /// <param name="commandId">The command.</param>

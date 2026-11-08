@@ -142,6 +142,30 @@ public abstract class DispatchStoreContractTests<TStore> where TStore : IDispatc
         (await store.ListOverdueAsync(cutoffs, 1, ct).ConfigureAwait(true)).Select(candidate => candidate.CommandId).ShouldBe(["c3"]);
     }
 
+    /// <summary>Restart reconciliation pages all in-flight rows, including rows older than the first 100, without exposing another account.</summary>
+    [Fact]
+    public async Task InFlightPagesReachPastOneHundredAndRemainAccountScoped()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var store = await CreateStoreAsync(DispatchStoreLimits.Default, TimeProvider.System, ct).ConfigureAwait(true);
+        await CreateDeviceAsync(store, "acct", "dev", ct).ConfigureAwait(true);
+        for (var index = 1; index <= 101; index++)
+        {
+            var id = "inflight-" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            (await EnqueueAsync(store, "acct", "dev", id, "key-" + id, "fp", ct).ConfigureAwait(true)).Status.ShouldBe(DispatchEnqueueStatus.Accepted);
+            (await store.TryTransitionAsync("acct", id, DispatchCommandState.Queued, DispatchCommandState.Delivered, null, null, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+            (await store.TryTransitionAsync("acct", id, DispatchCommandState.Delivered, DispatchCommandState.Received, null, null, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+        }
+
+        var first = await store.ListInFlightAfterAsync("acct", "dev", 0, 100, ct).ConfigureAwait(true);
+        first.Count.ShouldBe(100);
+        first[0].Seq.ShouldBe(1);
+        first[^1].Seq.ShouldBe(100);
+        var second = await store.ListInFlightAfterAsync("acct", "dev", first[^1].Seq, 100, ct).ConfigureAwait(true);
+        second.Select(row => row.Seq).ShouldBe([101L]);
+        (await store.ListInFlightAfterAsync("other", "dev", 0, 100, ct).ConfigureAwait(true)).ShouldBeEmpty();
+    }
+
     /// <summary>Later run-phase transitions do not restart the deadline measured from receipt.</summary>
     [Fact]
     public async Task RunDeadlineStartsAtReceiptNotMostRecentTransition()

@@ -1,5 +1,6 @@
 using System.Net.WebSockets;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Autonogrammer.Api.Dispatch.Devices;
 using Autonogrammer.Api.Services;
 using Autonogrammer.Contracts.Dispatch;
@@ -278,6 +279,12 @@ internal sealed class DispatchHub : IDispatchConnectHandler
 
     private async Task<bool> VerifyHelloAsync(DispatchHubSession session, DispatchDeviceRecord device, string nonce, string origin, DispatchHelloFrame hello, CancellationToken cancellationToken)
     {
+        if (hello.Running is { Count: > 32 })
+        {
+            await session.CloseAsync(DispatchCloseCodes.InvalidPayload, "too_many_running", cancellationToken).ConfigureAwait(false);
+            return false;
+        }
+
         if (!string.Equals(hello.DeviceId, device.DeviceId, StringComparison.Ordinal)
             || !string.Equals(hello.Nonce, nonce, StringComparison.Ordinal)
             || !await _nonces.TryConsumeAsync(DispatchHandshake.HashNonce(nonce), cancellationToken).ConfigureAwait(false))
@@ -343,20 +350,33 @@ internal sealed class DispatchHub : IDispatchConnectHandler
     private async Task FailRestartedAsync(DispatchHubSession session, IReadOnlyList<string>? running, CancellationToken cancellationToken)
     {
         var stillRunning = new HashSet<string>(running ?? Array.Empty<string>(), StringComparer.Ordinal);
-        var rows = await _store.ListCommandsAsync(session.Owner, session.DeviceId, 100, cancellationToken).ConfigureAwait(false);
-        foreach (var row in rows)
+        long cursor = 0;
+        while (true)
         {
-            if (stillRunning.Contains(row.CommandId) || !IsInFlight(row.State))
+            var rows = await _store.ListInFlightAfterAsync(session.Owner, session.DeviceId, cursor, 100, cancellationToken).ConfigureAwait(false);
+            if (rows.Count == 0)
             {
-                continue;
+                return;
             }
 
-            _ = await _store.TryTransitionAsync(session.Owner, row.CommandId, row.State, DispatchCommandState.Failed, DispatchFailureReason.DeviceRestarted, null, cancellationToken).ConfigureAwait(false);
+            foreach (var row in rows)
+            {
+                cursor = row.Seq;
+                if (stillRunning.Contains(row.CommandId))
+                {
+                    continue;
+                }
+
+                var payload = new JsonObject
+                {
+                    ["commandId"] = row.CommandId,
+                    ["state"] = DispatchCommandStateWire.ToWire(DispatchCommandState.Failed),
+                    ["reason"] = DispatchFailureReasonWire.ToWire(DispatchFailureReason.DeviceRestarted),
+                }.ToJsonString();
+                _ = await _store.TryTransitionAsync(session.Owner, row.CommandId, row.State, DispatchCommandState.Failed, DispatchFailureReason.DeviceRestarted, new DispatchFeedDraft("command.state", payload), cancellationToken).ConfigureAwait(false);
+            }
         }
     }
-
-    private static bool IsInFlight(DispatchCommandState state) =>
-        state is DispatchCommandState.Received or DispatchCommandState.AwaitingApproval or DispatchCommandState.Accepted or DispatchCommandState.Running;
 
     private async Task PumpAsync(DispatchHubSession session, CancellationToken cancellationToken)
     {
