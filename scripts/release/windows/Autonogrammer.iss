@@ -47,6 +47,13 @@ Name: "{userprograms}\Autonogrammer\Autonogrammer"; Filename: "{app}\Autonogramm
 Name: "{userdesktop}\Autonogrammer"; Filename: "{app}\Autonogrammer.Native.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Code]
+const
+  // Win32 message box flags and results. Inno Setup's Pascal does not define every flag name, so the values are written out:
+  // MB_YESNO (4) or MB_ICONQUESTION (32) or MB_DEFBUTTON2 (256) = 292; IDYES = 6; IDNO = 7.
+  MbYesNoQuestionDefaultNo = 292;
+  IdYes = 6;
+  IdNo = 7;
+
 // The per-user data folder that the app keeps its settings (config\settings.json) and sessions (sessions\) in. It is the state root
 // that AgentLoopEnvironment.ResolveStateRoot computes when AUTONOGRAMMER_STATE_DIR is not set:
 // UserDataDirectory.PathFor(ResolveDataHome), where ResolveDataHome is XDG_DATA_HOME when that is an absolute path, else
@@ -68,7 +75,7 @@ begin
   if CurUninstallStep = usPostUninstall then
   begin
     if SuppressibleMsgBox('Also remove your Autonogrammer data (settings and sessions)?', 'Autonogrammer',
-       MB_YESNO or MB_ICONQUESTION or MB_DEFBUTTON2, IDNO) = IDYES then
+       MbYesNoQuestionDefaultNo, IdNo) = IdYes then
     begin
       DataFolder := UserDataFolder();
       if DirExists(DataFolder) then
