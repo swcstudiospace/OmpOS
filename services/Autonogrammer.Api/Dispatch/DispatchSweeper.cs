@@ -51,7 +51,7 @@ internal sealed class DispatchSweeper(IServiceScopeFactory scopes, TimeProvider 
                 }
 
                 var feed = new DispatchFeedDraft(FeedKind, Payload(candidate.CommandId, move));
-                var transition = await MoveCandidateAsync(store, candidate, move, feed, now, settings.QueueTtl, cancellationToken).ConfigureAwait(false);
+                var transition = await MoveCandidateAsync(store, candidate, move, feed, settings.QueueTtl, cancellationToken).ConfigureAwait(false);
                 if (transition.Status == DispatchTransitionStatus.Applied)
                 {
                     moved++;
@@ -67,7 +67,7 @@ internal sealed class DispatchSweeper(IServiceScopeFactory scopes, TimeProvider 
         return moved;
     }
 
-    private async Task<DispatchTransitionResult> MoveCandidateAsync(IDispatchStore store, DispatchSweepCandidate candidate, (DispatchCommandState Desired, DispatchFailureReason Reason) move, DispatchFeedDraft feed, DateTimeOffset now, TimeSpan queueTtl, CancellationToken cancellationToken)
+    private async Task<DispatchTransitionResult> MoveCandidateAsync(IDispatchStore store, DispatchSweepCandidate candidate, (DispatchCommandState Desired, DispatchFailureReason Reason) move, DispatchFeedDraft feed, TimeSpan queueTtl, CancellationToken cancellationToken)
     {
         if (move.Reason != DispatchFailureReason.Timeout || candidate.Op == DispatchOp.CommandCancel)
         {
@@ -83,10 +83,11 @@ internal sealed class DispatchSweeper(IServiceScopeFactory scopes, TimeProvider 
         var body = new JsonObject { ["commandId"] = row.CommandId }.ToJsonString();
         var bodyHash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(body)));
         var fingerprint = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes($"{DispatchCapability.Sessions}\n{DispatchOp.CommandCancel}\n{bodyHash}")));
+        var issuedAt = time.GetUtcNow();
         // A leading space is not accepted in a controller's visible-ASCII Idempotency-Key.
         var cancellation = new EnqueueDispatchCommand(
             row.AccountId, row.DeviceId, DispatchCommandIds.New(time), " dispatch.timeout:" + row.CommandId,
-            fingerprint, DispatchCapability.Sessions, DispatchOp.CommandCancel, body, now, now + queueTtl);
+            fingerprint, DispatchCapability.Sessions, DispatchOp.CommandCancel, body, issuedAt, issuedAt + queueTtl);
         return await store.TryTimeoutAndEnqueueAsync(row.AccountId, row.CommandId, candidate.State, cancellation, feed, cancellationToken).ConfigureAwait(false);
     }
 

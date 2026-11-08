@@ -52,6 +52,31 @@ public sealed class SweepRegressionTests
         feed.Select(item => item.Kind).ShouldBe(["command.state"]);
     }
 
+    /// <summary>A sweep that outlives the queue TTL still gives each new cancellation a full delivery window.</summary>
+    [Fact]
+    public async Task A_long_sweep_uses_the_current_time_for_each_cancellation()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var clock = new SettableClock();
+        var store = new InMemoryDispatchStore(DispatchStoreLimits.Default, clock);
+        await store.CreateDeviceAsync(new CreateDispatchDevice("acct", "dev", "dev", null, "jti", null, [], null), ct).ConfigureAwait(true);
+        _ = await store.EnqueueAsync(new EnqueueDispatchCommand("acct", "dev", "target", "key", "fp", DispatchCapability.Sessions, DispatchOp.SessionList, "{}", clock.UtcNow, clock.UtcNow.AddMinutes(5)), ct).ConfigureAwait(true);
+        await RunToRunningAsync(store, "target", ct).ConfigureAwait(true);
+        clock.UtcNow += TimeSpan.FromSeconds(61);
+        clock.JumpAfterNextRead = true;
+        var services = new ServiceCollection();
+        services.AddSingleton<IDispatchStore>(store);
+        services.AddSingleton<TimeProvider>(clock);
+        services.AddSingleton<IOptions<DispatchOptions>>(Microsoft.Extensions.Options.Options.Create(new DispatchOptions { Enabled = true }));
+        services.AddLogging();
+        services.AddSingleton<DispatchSweeper>();
+        using var provider = services.BuildServiceProvider();
+        (await provider.GetRequiredService<DispatchSweeper>().SweepOnceAsync(ct).ConfigureAwait(true)).ShouldBe(1);
+        var cancellation = (await store.ListQueuedAfterAsync("acct", "dev", 0, ct).ConfigureAwait(true)).Single();
+        cancellation.IssuedAt.ShouldBe(clock.UtcNow);
+        cancellation.ExpiresAt.ShouldBe(clock.UtcNow.AddMinutes(5));
+    }
+
     private static async Task RunToRunningAsync(InMemoryDispatchStore store, string commandId, CancellationToken cancellationToken)
     {
         (DispatchCommandState From, DispatchCommandState To)[] path =
@@ -71,6 +96,18 @@ public sealed class SweepRegressionTests
     {
         public DateTimeOffset UtcNow { get; set; } = new(2026, 10, 30, 0, 0, 0, TimeSpan.Zero);
 
-        public override DateTimeOffset GetUtcNow() => UtcNow;
+        public bool JumpAfterNextRead { get; set; }
+
+        public override DateTimeOffset GetUtcNow()
+        {
+            var now = UtcNow;
+            if (JumpAfterNextRead)
+            {
+                JumpAfterNextRead = false;
+                UtcNow = now.AddMinutes(6);
+            }
+
+            return now;
+        }
     }
 }
