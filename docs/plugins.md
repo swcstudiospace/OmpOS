@@ -31,7 +31,7 @@ prompt -> Ultrathink (plan) -> Swarm (subagents) -> Substrate (session state, st
 | Path | Remote URL | Pin | Licence | Visibility |
 | ---- | ---------- | --- | ------- | ---------- |
 | `plugins/claude-ultrathink` | `https://github.com/swcstudiospace/ultrathink.git` | `71101ed069a66b3862fa5da5b01995a60c2160c2` (tracks `main`) | AGPL-3.0-or-later | public |
-| `plugins/agent-swarm` | `https://github.com/swcstudiospace/swarm.git` | `c900a510db3e50de6e9f8b60453bdded6fdf72df` (tracks `main`) | no LICENSE file in the repository | public |
+| `plugins/agent-swarm` | `https://github.com/swcstudiospace/swarm.git` | `1944a6bbbf4a09ffe6569843af7f85bf1937527a` (on branch `fix/taskstore-update-allowlist`, not `main`; the gitlink on `main` pins it) | no LICENSE file in the repository | public |
 | `plugins/agent-substrate` | `https://github.com/swcstudiospace/substrate.git` | `754c51a17a9e6ffbc222d04bdaf4e783b4eca720` (tracks `main`) | no LICENSE file in the repository | private |
 | `plugins/gsd-core-omp` | tracked in this repository, not a submodule | n/a | Autonogrammer-owned; `AGPL-3.0-or-later` like Autonogrammer (see Licence facts) | n/a |
 
