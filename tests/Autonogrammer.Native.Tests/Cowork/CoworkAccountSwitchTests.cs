@@ -1,4 +1,3 @@
-#pragma warning disable CA2007
 using Autonogrammer.Accounts;
 using Autonogrammer.Contracts.Accounts;
 using Autonogrammer.Cowork;
@@ -19,17 +18,23 @@ public sealed class CoworkAccountSwitchTests
         using var root = new TempDir();
         var ct = TestContext.Current.CancellationToken;
         var account = new ScriptedAccount(SignedIn("account-a"));
-        await using var host = Host(root.Path, account);
+        var host = Host(root.Path, account);
+        try
+        {
+            var sessionA = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+            account.Change(SignedIn("account-b"));
+            await SettleAsync(host).ConfigureAwait(true);
+            var sessionB = await host.CreateSessionAsync(ct).ConfigureAwait(true);
 
-        var sessionA = await host.CreateSessionAsync(ct).ConfigureAwait(true);
-        account.Change(SignedIn("account-b"));
-        await SettleAsync(host).ConfigureAwait(true);
-        var sessionB = await host.CreateSessionAsync(ct).ConfigureAwait(true);
-
-        Ids(root.Path, account).ShouldBe([sessionB]);
-        account.Change(SignedIn("account-a"));
-        await SettleAsync(host).ConfigureAwait(true);
-        Ids(root.Path, account).ShouldBe([sessionA]);
+            Ids(root.Path, account).ShouldBe([sessionB]);
+            account.Change(SignedIn("account-a"));
+            await SettleAsync(host).ConfigureAwait(true);
+            Ids(root.Path, account).ShouldBe([sessionA]);
+        }
+        finally
+        {
+            await host.DisposeAsync().ConfigureAwait(true);
+        }
     }
 
     [Fact]
@@ -38,16 +43,23 @@ public sealed class CoworkAccountSwitchTests
         using var root = new TempDir();
         var ct = TestContext.Current.CancellationToken;
         var account = new ScriptedAccount(SignedIn("account-a"));
-        await using var host = Host(root.Path, account);
-        var sessionA = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+        var host = Host(root.Path, account);
+        try
+        {
+            var sessionA = await host.CreateSessionAsync(ct).ConfigureAwait(true);
 
-        account.Change(AccountState.SignedOut);
-        await SettleAsync(host).ConfigureAwait(true);
+            account.Change(AccountState.SignedOut);
+            await SettleAsync(host).ConfigureAwait(true);
 
-        await Should.ThrowAsync<InvalidOperationException>(() => host.CreateSessionAsync(ct)).ConfigureAwait(true);
-        account.Change(SignedIn("account-a"));
-        await SettleAsync(host).ConfigureAwait(true);
-        Ids(root.Path, account).ShouldBe([sessionA]);
+            await Should.ThrowAsync<InvalidOperationException>(() => host.CreateSessionAsync(ct)).ConfigureAwait(true);
+            account.Change(SignedIn("account-a"));
+            await SettleAsync(host).ConfigureAwait(true);
+            Ids(root.Path, account).ShouldBe([sessionA]);
+        }
+        finally
+        {
+            await host.DisposeAsync().ConfigureAwait(true);
+        }
     }
 
     [Fact]
@@ -56,16 +68,23 @@ public sealed class CoworkAccountSwitchTests
         using var root = new TempDir();
         var ct = TestContext.Current.CancellationToken;
         var account = new ScriptedAccount(SignedIn("account-a"));
-        await using var host = Host(root.Path, account);
-        _ = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+        var host = Host(root.Path, account);
+        try
+        {
+            _ = await host.CreateSessionAsync(ct).ConfigureAwait(true);
 
-        account.ChangeWithoutEvent(SignedIn("account-b"));
-        await Should.ThrowAsync<InvalidOperationException>(() => host.CreateSessionAsync(ct)).ConfigureAwait(true);
+            account.ChangeWithoutEvent(SignedIn("account-b"));
+            await Should.ThrowAsync<InvalidOperationException>(() => host.CreateSessionAsync(ct)).ConfigureAwait(true);
 
-        account.RaiseChanged();
-        await SettleAsync(host).ConfigureAwait(true);
-        var sessionB = await host.CreateSessionAsync(ct).ConfigureAwait(true);
-        Ids(root.Path, account).ShouldBe([sessionB]);
+            account.RaiseChanged();
+            await SettleAsync(host).ConfigureAwait(true);
+            var sessionB = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+            Ids(root.Path, account).ShouldBe([sessionB]);
+        }
+        finally
+        {
+            await host.DisposeAsync().ConfigureAwait(true);
+        }
     }
 
     // SignOutAsync queues behind the account release, so awaiting it waits for the release. The host has no engines in these tests, so it stops nothing.
@@ -131,5 +150,3 @@ public sealed class CoworkAccountSwitchTests
         public void Dispose() => Directory.Delete(Path, true);
     }
 }
-
-#pragma warning restore CA2007

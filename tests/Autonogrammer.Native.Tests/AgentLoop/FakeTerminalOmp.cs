@@ -52,7 +52,7 @@ internal sealed class FakeTerminalOmp
     /// <param name="tree">The tree whose root holds the fake.</param>
     /// <returns>The fake.</returns>
     public static FakeTerminalOmp Waiting(TempTree tree) =>
-        Write(tree, "echo $$ > \"__PID__\"\nexec sleep 600");
+        Write(tree, "echo $$ > \"__PID__.tmp\" && mv \"__PID__.tmp\" \"__PID__\"\nexec sleep 600");
 
     /// <summary>Reads the arguments the fake was started with, in order.</summary>
     /// <returns>The arguments.</returns>
