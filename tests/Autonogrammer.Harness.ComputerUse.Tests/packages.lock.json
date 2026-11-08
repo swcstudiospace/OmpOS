@@ -207,14 +207,14 @@
       "autonogrammer.cowork.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.2, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
       "autonogrammer.harness.computeruse": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Cowork.Abstractions": "[0.16.2, )",
-          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.16.2, )"
+          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.15.0, )"
         }
       },
       "autonogrammer.harness.computeruse.abstractions": {

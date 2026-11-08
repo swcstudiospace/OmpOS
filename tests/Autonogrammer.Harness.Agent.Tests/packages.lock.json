@@ -207,26 +207,26 @@
       "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.2, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
       "autonogrammer.harness.acp": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.16.2, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.harness.agent": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.16.2, )"
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "autonogrammer.harness.rpc": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.16.2, )"
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "Microsoft.Extensions.Configuration": {

@@ -207,29 +207,29 @@
       "autonogrammer.cowork.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.2, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
       "autonogrammer.cowork.memory": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.2, )",
-          "Autonogrammer.Cowork.Abstractions": "[0.16.2, )"
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )"
         }
       },
       "autonogrammer.cowork.memory.postgres": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Cowork.Memory": "[0.16.2, )",
+          "Autonogrammer.Cowork.Memory": "[0.15.0, )",
           "Npgsql": "[10.0.3, )"
         }
       },
       "autonogrammer.cowork.memory.tests": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Cowork.Memory": "[0.16.2, )",
-          "Autonogrammer.Cowork.Memory.Postgres": "[0.16.2, )",
-          "Autonogrammer.Sessions.Postgres": "[0.16.2, )",
+          "Autonogrammer.Cowork.Memory": "[0.15.0, )",
+          "Autonogrammer.Cowork.Memory.Postgres": "[0.15.0, )",
+          "Autonogrammer.Sessions.Postgres": "[0.15.0, )",
           "Microsoft.Testing.Extensions.TrxReport": "[2.5.1, )",
           "Shouldly": "[4.3.0, )",
           "coverlet.MTP": "[10.1.0, )",
@@ -239,7 +239,7 @@
       "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.2, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
       "autonogrammer.resilience": {
@@ -251,17 +251,17 @@
       "autonogrammer.sessions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.2, )",
-          "Autonogrammer.Harness.Abstractions": "[0.16.2, )"
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "autonogrammer.sessions.postgres": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.2, )",
-          "Autonogrammer.Harness.Abstractions": "[0.16.2, )",
-          "Autonogrammer.Resilience": "[0.16.2, )",
-          "Autonogrammer.Sessions": "[0.16.2, )",
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Resilience": "[0.15.0, )",
+          "Autonogrammer.Sessions": "[0.15.0, )",
           "Microsoft.Extensions.Configuration.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
           "Npgsql": "[10.0.3, )"

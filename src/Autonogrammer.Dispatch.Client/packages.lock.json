@@ -32,7 +32,7 @@
       "autonogrammer.genui": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.2, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
       "autonogrammer.harness.computeruse.abstractions": {
@@ -41,17 +41,17 @@
       "autonogrammer.parser": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.2, )",
+          "Autonogrammer.Contracts": "[0.15.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.presentation": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.2, )",
-          "Autonogrammer.GenUi": "[0.16.2, )",
-          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.16.2, )",
-          "Autonogrammer.Parser": "[0.16.2, )",
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.GenUi": "[0.15.0, )",
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Parser": "[0.15.0, )",
           "Markdig": "[1.4.2, )"
         }
       },

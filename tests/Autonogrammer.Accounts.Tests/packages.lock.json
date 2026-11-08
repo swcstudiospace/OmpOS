@@ -204,8 +204,8 @@
       "autonogrammer.accounts": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.2, )",
-          "Autonogrammer.Harness.Secrets": "[0.16.2, )",
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
