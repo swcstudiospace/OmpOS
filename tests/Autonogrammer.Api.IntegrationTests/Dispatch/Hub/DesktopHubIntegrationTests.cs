@@ -92,6 +92,19 @@ public sealed class DesktopHubIntegrationTests
         await WaitForStateAsync(store, first, DispatchCommandState.Completed, cancellationToken).ConfigureAwait(true);
         await WaitForStateAsync(store, second, DispatchCommandState.Completed, cancellationToken).ConfigureAwait(true);
         handler.Calls.ShouldBe(2);
+        var third = await EnqueueAsync(owner, deviceId, cancellationToken).ConfigureAwait(true);
+        await handler.ThirdStarted.Task.WaitAsync(cancellationToken).ConfigureAwait(true);
+        await WaitForStateAsync(store, third, DispatchCommandState.Running, cancellationToken).ConfigureAwait(true);
+        host.Services.GetRequiredService<IOptions<DispatchOptions>>().Value.RunLimits.Session = TimeSpan.FromTicks(1);
+        (await host.Services.GetRequiredService<DispatchSweeper>().SweepOnceAsync(cancellationToken).ConfigureAwait(true)).ShouldBe(1);
+        await handler.Cancelled.Task.WaitAsync(cancellationToken).ConfigureAwait(true);
+        (await store.GetCommandAsync(DispatchTestClient.Owner, third, cancellationToken).ConfigureAwait(true))!.Reason.ShouldBe(DispatchFailureReason.Timeout);
+        var commands = await store.ListCommandsAsync(DispatchTestClient.Owner, deviceId, 20, cancellationToken).ConfigureAwait(true);
+        var cancel = commands.Single(row => row.Op == DispatchOp.CommandCancel);
+        await WaitForStateAsync(store, cancel.CommandId, DispatchCommandState.Completed, cancellationToken).ConfigureAwait(true);
+        var fourth = await EnqueueAsync(owner, deviceId, cancellationToken).ConfigureAwait(true);
+        await WaitForStateAsync(store, fourth, DispatchCommandState.Completed, cancellationToken).ConfigureAwait(true);
+        handler.Calls.ShouldBe(4);
     }
 
     private static async Task<string> EnqueueAsync(HttpClient owner, string deviceId, CancellationToken cancellationToken)
@@ -130,6 +143,10 @@ public sealed class DesktopHubIntegrationTests
 
         public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+        public TaskCompletionSource ThirdStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Cancelled { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         public int Calls { get; private set; }
 
         public bool CanHandle(DispatchOp op) => op == DispatchOp.SessionList;
@@ -141,6 +158,19 @@ public sealed class DesktopHubIntegrationTests
             {
                 Started.TrySetResult();
                 await Release.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            else if (Calls == 3)
+            {
+                ThirdStarted.TrySetResult();
+                try
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    Cancelled.TrySetResult();
+                    throw;
+                }
             }
 
             return DispatchOutcome.Completed("listed");

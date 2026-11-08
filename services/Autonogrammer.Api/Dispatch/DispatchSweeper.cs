@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json.Nodes;
 using Autonogrammer.Contracts.Dispatch;
 using Microsoft.Extensions.Options;
@@ -7,7 +9,8 @@ namespace Autonogrammer.Api.Dispatch;
 /// <summary>
 /// Moves overdue dispatch commands on (ADR-0036). A queued or delivered command past its expiry becomes expired. An awaiting-approval command past its
 /// approval timeout fails approval_timeout. A received, accepted or running command past its run limit fails timeout. The store returns only overdue
-/// commands, so a command that is not due never takes a slot from one that is. Each move is one transaction with its feed event.
+/// commands, so a command that is not due never takes a slot from one that is. Each move commits with its feed event; a run timeout also
+/// commits a cancellation command in the same transaction.
 /// The store is resolved per pass, so the host starts without one and a disabled dispatch never needs it.
 /// </summary>
 internal sealed class DispatchSweeper(IServiceScopeFactory scopes, TimeProvider time, IOptions<DispatchOptions> options, ILogger<DispatchSweeper> logger) : BackgroundService
@@ -48,7 +51,7 @@ internal sealed class DispatchSweeper(IServiceScopeFactory scopes, TimeProvider 
                 }
 
                 var feed = new DispatchFeedDraft(FeedKind, Payload(candidate.CommandId, move));
-                var transition = await store.TryTransitionAsync(candidate.AccountId, candidate.CommandId, candidate.State, move.Desired, move.Reason, feed, cancellationToken).ConfigureAwait(false);
+                var transition = await MoveCandidateAsync(store, candidate, move, feed, now, settings.QueueTtl, cancellationToken).ConfigureAwait(false);
                 if (transition.Status == DispatchTransitionStatus.Applied)
                 {
                     moved++;
@@ -62,6 +65,29 @@ internal sealed class DispatchSweeper(IServiceScopeFactory scopes, TimeProvider 
         }
 
         return moved;
+    }
+
+    private async Task<DispatchTransitionResult> MoveCandidateAsync(IDispatchStore store, DispatchSweepCandidate candidate, (DispatchCommandState Desired, DispatchFailureReason Reason) move, DispatchFeedDraft feed, DateTimeOffset now, TimeSpan queueTtl, CancellationToken cancellationToken)
+    {
+        if (move.Reason != DispatchFailureReason.Timeout || candidate.Op == DispatchOp.CommandCancel)
+        {
+            return await store.TryTransitionAsync(candidate.AccountId, candidate.CommandId, candidate.State, move.Desired, move.Reason, feed, cancellationToken).ConfigureAwait(false);
+        }
+
+        var row = await store.GetCommandAsync(candidate.AccountId, candidate.CommandId, cancellationToken).ConfigureAwait(false);
+        if (row is null)
+        {
+            return new DispatchTransitionResult(DispatchTransitionStatus.NotFound, null);
+        }
+
+        var body = new JsonObject { ["commandId"] = row.CommandId }.ToJsonString();
+        var bodyHash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(body)));
+        var fingerprint = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes($"{DispatchCapability.Sessions}\n{DispatchOp.CommandCancel}\n{bodyHash}")));
+        // A leading space is not accepted in a controller's visible-ASCII Idempotency-Key.
+        var cancellation = new EnqueueDispatchCommand(
+            row.AccountId, row.DeviceId, DispatchCommandIds.New(time), " dispatch.timeout:" + row.CommandId,
+            fingerprint, DispatchCapability.Sessions, DispatchOp.CommandCancel, body, now, now + queueTtl);
+        return await store.TryTimeoutAndEnqueueAsync(row.AccountId, row.CommandId, candidate.State, cancellation, feed, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />

@@ -138,6 +138,16 @@ public interface IDispatchStore
     /// <returns>Applied, rejected, or not found.</returns>
     ValueTask<DispatchTransitionResult> TryTransitionAsync(string accountId, string commandId, DispatchCommandState expected, DispatchCommandState desired, DispatchFailureReason? reason, DispatchFeedDraft? feed, CancellationToken cancellationToken, string? resultText = null);
 
+    /// <summary>Atomically fails an overdue command and enqueues its same-device cancellation, bypassing the ordinary queue cap.</summary>
+    /// <param name="accountId">The owning account.</param>
+    /// <param name="commandId">The timed-out command.</param>
+    /// <param name="expected">The command's expected in-flight state.</param>
+    /// <param name="cancellation">The system cancellation command.</param>
+    /// <param name="feed">The timeout feed event.</param>
+    /// <param name="cancellationToken">Cancels the transaction.</param>
+    /// <returns>The transition outcome; a rejected transition enqueues nothing.</returns>
+    ValueTask<DispatchTransitionResult> TryTimeoutAndEnqueueAsync(string accountId, string commandId, DispatchCommandState expected, EnqueueDispatchCommand cancellation, DispatchFeedDraft feed, CancellationToken cancellationToken);
+
     /// <summary>Appends a feed event. Identifiers increase strictly per account.</summary>
     /// <param name="accountId">The account.</param>
     /// <param name="kind">Event kind.</param>

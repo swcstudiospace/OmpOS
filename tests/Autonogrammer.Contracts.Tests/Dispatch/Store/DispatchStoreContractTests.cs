@@ -138,6 +138,39 @@ public abstract class DispatchStoreContractTests<TStore> where TStore : IDispatc
         (await store.TryAppendProgressAsync("acct", "dev", "c2", "{}", ct).ConfigureAwait(true)).ShouldBeFalse();
     }
 
+    /// <summary>A timeout and its cancellation commit once even when the ordinary queue is full and sweepers race.</summary>
+    [Fact]
+    public async Task TimeoutAtomicallyEnqueuesOneCancellationPastTheQueueCap()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var clock = new MutableTime();
+        var limits = DispatchStoreLimits.Default with { MaxQueuedPerDevice = 1 };
+        var store = await CreateStoreAsync(limits, clock, ct).ConfigureAwait(true);
+        await CreateDeviceAsync(store, "acct", "dev", ct).ConfigureAwait(true);
+        await EnqueueAsync(store, "acct", "dev", "target", "target-key", "fp", ct).ConfigureAwait(true);
+        await MoveToRunningAsync(store, "acct", "target", ct).ConfigureAwait(true);
+        var queued = new EnqueueDispatchCommand("acct", "dev", "queued", "queued-key", "fp", DispatchCapability.Sessions, DispatchOp.SessionList, "{}", clock.UtcNow, clock.UtcNow.AddMinutes(5));
+        (await store.EnqueueAsync(queued, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchEnqueueStatus.Accepted);
+        var cancel = new EnqueueDispatchCommand("acct", "dev", "cancel", " dispatch.timeout:target", "fp", DispatchCapability.Sessions, DispatchOp.CommandCancel, "{\"commandId\":\"target\"}", clock.UtcNow, clock.UtcNow.AddMinutes(5));
+        var feed = new DispatchFeedDraft("command.state", "{\"state\":\"failed\"}");
+        var wrongDevice = cancel with { DeviceId = "other", CommandId = "wrong" };
+        (await store.TryTimeoutAndEnqueueAsync("acct", "target", DispatchCommandState.Running, wrongDevice, feed, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Rejected);
+        var attempts = Enumerable.Range(0, 8).Select(_ => store.TryTimeoutAndEnqueueAsync("acct", "target", DispatchCommandState.Running, cancel, feed, ct).AsTask()).ToArray();
+        (await Task.WhenAll(attempts).ConfigureAwait(true)).Count(static result => result.Status == DispatchTransitionStatus.Applied).ShouldBe(1);
+        var target = (await store.GetCommandAsync("acct", "target", ct).ConfigureAwait(true))!;
+        target.State.ShouldBe(DispatchCommandState.Failed);
+        target.Reason.ShouldBe(DispatchFailureReason.Timeout);
+        var rows = await store.ListQueuedAfterAsync("acct", "dev", 0, ct).ConfigureAwait(true);
+        rows.Select(static row => row.CommandId).ShouldBe(["queued", "cancel"]);
+        rows[1].Op.ShouldBe(DispatchOp.CommandCancel);
+        (await store.ReadFeedAsync("acct", 0, ct).ConfigureAwait(true)).Events.Count.ShouldBe(1);
+        await MoveToRunningAsync(store, "acct", "queued", ct).ConfigureAwait(true);
+        (await store.TryTransitionAsync("acct", "queued", DispatchCommandState.Running, DispatchCommandState.Completed, null, null, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+        var stale = cancel with { CommandId = "stale-cancel", IdempotencyKey = " dispatch.timeout:queued", BodyJson = "{\"commandId\":\"queued\"}" };
+        (await store.TryTimeoutAndEnqueueAsync("acct", "queued", DispatchCommandState.Running, stale, feed, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Rejected);
+        (await store.GetCommandAsync("acct", "stale-cancel", ct).ConfigureAwait(true)).ShouldBeNull();
+    }
+
     /// <summary>A source prefix is recorded for a known device only, and reads back on that device.</summary>
     [Fact]
     public async Task SourcePrefixIsRecordedForKnownDevicesOnly()

@@ -432,6 +432,44 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
     }
 
     /// <inheritdoc />
+    public ValueTask<DispatchTransitionResult> TryTimeoutAndEnqueueAsync(string accountId, string commandId, DispatchCommandState expected, EnqueueDispatchCommand cancellation, DispatchFeedDraft feed, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(commandId);
+        ArgumentNullException.ThrowIfNull(cancellation);
+        ArgumentNullException.ThrowIfNull(feed);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            if (!_commands.TryGetValue((accountId, commandId), out var row))
+            {
+                return ValueTask.FromResult(new DispatchTransitionResult(DispatchTransitionStatus.NotFound, null));
+            }
+
+            if (row.State != expected || !DispatchTransitions.Allows(expected, DispatchCommandState.Failed)
+                || expected is not (DispatchCommandState.Received or DispatchCommandState.Accepted or DispatchCommandState.Running)
+                || row.Op == DispatchOp.CommandCancel || cancellation.Op != DispatchOp.CommandCancel
+                || !string.Equals(cancellation.AccountId, accountId, StringComparison.Ordinal)
+                || !string.Equals(cancellation.DeviceId, row.DeviceId, StringComparison.Ordinal)
+                || !_devices.TryGetValue((accountId, row.DeviceId), out var device) || device.RevokedAt is not null
+                || _commands.ContainsKey((accountId, cancellation.CommandId))
+                || (cancellation.IdempotencyKey is { Length: > 0 } key && _idempotency.ContainsKey((accountId, row.DeviceId, key))))
+            {
+                return ValueTask.FromResult(new DispatchTransitionResult(DispatchTransitionStatus.Rejected, row.State));
+            }
+
+            _ = Insert(device, cancellation);
+            var now = _time.GetUtcNow();
+            row.State = DispatchCommandState.Failed;
+            row.Reason = DispatchFailureReason.Timeout;
+            row.StateEnteredAt = now;
+            row.TerminalAt = now;
+            _ = AppendFeedLocked(accountId, feed.Kind, feed.Payload);
+            return ValueTask.FromResult(new DispatchTransitionResult(DispatchTransitionStatus.Applied, row.State));
+        }
+    }
+
+    /// <inheritdoc />
     public ValueTask<bool> RecordSourcePrefixAsync(string accountId, string deviceId, string? sourcePrefix, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(accountId);

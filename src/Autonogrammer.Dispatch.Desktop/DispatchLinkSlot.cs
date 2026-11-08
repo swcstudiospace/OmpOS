@@ -8,6 +8,7 @@ internal sealed class DispatchLinkSlot
     private readonly Lock _gate = new();
     private TaskCompletionSource<Link> _ready = NewSource();
     private Link? _current;
+    private Link? _controlLink;
     private long _generation;
     private bool _deferred;
 
@@ -17,6 +18,7 @@ internal sealed class DispatchLinkSlot
         {
             var link = new Link(transport, cancellation, ++_generation);
             _deferred = false;
+            _controlLink = null;
             _current = link;
             _ready.TrySetResult(link);
         }
@@ -49,17 +51,48 @@ internal sealed class DispatchLinkSlot
         }
     }
 
+    public Link? BeginControl(AcpWebSocketTransport transport)
+    {
+        lock (_gate)
+        {
+            if (_current is null || !ReferenceEquals(_current.Transport, transport))
+            {
+                return null;
+            }
+
+            _controlLink = _current;
+            return _current;
+        }
+    }
+
+    public void EndControl(Link link)
+    {
+        lock (_gate)
+        {
+            if (ReferenceEquals(_controlLink, link))
+            {
+                _controlLink = null;
+            }
+        }
+    }
+
     public void ReconnectIfDeferred()
     {
         Link? link;
         lock (_gate)
         {
-            link = _deferred ? _current : null;
+            link = _deferred && _controlLink is null ? _current : null;
+            if (link is not null)
+            {
+                _current = null;
+                _deferred = false;
+                _ready = NewSource();
+            }
         }
 
         if (link is not null)
         {
-            Break(link);
+            Cancel(link);
         }
     }
 
@@ -70,6 +103,7 @@ internal sealed class DispatchLinkSlot
             if (_current is not null && ReferenceEquals(_current.Transport, transport))
             {
                 _current = null;
+                _controlLink = null;
                 _ready = NewSource();
             }
         }
@@ -84,6 +118,7 @@ internal sealed class DispatchLinkSlot
             {
                 _current = null;
                 _deferred = false;
+                _controlLink = null;
                 _ready = NewSource();
                 cancel = true;
             }
@@ -91,14 +126,19 @@ internal sealed class DispatchLinkSlot
 
         if (cancel)
         {
-            try
-            {
-                link.Cancellation.Cancel();
-            }
-            catch (ObjectDisposedException)
-            {
-                // The old link finished disposal after it was detached.
-            }
+            Cancel(link);
+        }
+    }
+
+    private static void Cancel(Link link)
+    {
+        try
+        {
+            link.Cancellation.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // The old link finished disposal after it was detached.
         }
     }
 

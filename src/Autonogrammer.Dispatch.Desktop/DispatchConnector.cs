@@ -157,6 +157,11 @@ public sealed class DispatchConnector
     {
         lock (_pendingGate)
         {
+            foreach (var pending in _pending.Values)
+            {
+                pending.Dispose();
+            }
+
             _pending.Clear();
         }
 
@@ -337,6 +342,7 @@ public sealed class DispatchConnector
                 {
                     _pending.Remove(pending.Command.CommandId);
                 }
+                pending.Dispose();
                 links.ReconnectIfDeferred();
             }
         }
@@ -452,30 +458,13 @@ public sealed class DispatchConnector
 
     private async Task<DispatchLinkDecision?> AdmitFrameAsync(AcpWebSocketTransport transport, ReadOnlyMemory<byte> frame, ChannelWriter<DispatchPendingCommand> commands, DispatchLinkSlot links, CancellationToken cancellationToken)
     {
-        if (!_welcomed || _verifier is null || links.ShouldDefer(transport))
+        if (!_welcomed || _verifier is null || links.Current(transport) is null)
         {
             return null;
         }
 
-        // There is one writer. Once a slot is available it cannot be taken by another producer.
-        var writable = commands.WaitToWriteAsync(cancellationToken);
-        if (!writable.IsCompletedSuccessfully || !writable.Result)
-        {
-            DeferUntilCapacity(transport, links);
-            return null;
-        }
-
-        DispatchCmdFrame? cmd;
-        try
-        {
-            cmd = JsonSerializer.Deserialize(frame.Span, DispatchJsonContext.Default.DispatchCmdFrame);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-
-        if (cmd is null || !_verifier.Verify(cmd, _clockOffset).Accepted)
+        var cmd = ReadVerifiedCommand(frame, links.ShouldDefer(transport));
+        if (cmd is null)
         {
             return null;
         }
@@ -483,6 +472,25 @@ public sealed class DispatchConnector
         if (!DispatchOpWire.TryParse(cmd.Op, out var op) || !DispatchCapabilityWire.TryParse(cmd.Capability, out var capability)
             || !DispatchBase64Url.TryDecode(cmd.Payload, out var payload))
         {
+            return null;
+        }
+
+        if (op == DispatchOp.CommandCancel)
+        {
+            await HandleControlAsync(transport, cmd, payload, links, cancellationToken).ConfigureAwait(false);
+            return null;
+        }
+
+        if (links.ShouldDefer(transport))
+        {
+            return null;
+        }
+
+        // There is one writer, so no other producer can take a reserved channel slot.
+        var writable = commands.WaitToWriteAsync(cancellationToken);
+        if (!writable.IsCompletedSuccessfully || !writable.Result)
+        {
+            DeferUntilCapacity(transport, links);
             return null;
         }
 
@@ -506,6 +514,108 @@ public sealed class DispatchConnector
         await QueuePendingAsync(transport, new DispatchCommand(cmd.CommandId, capability, op, payload), commands, links, cancellationToken).ConfigureAwait(false);
 
         return null;
+    }
+
+    private DispatchCmdFrame? ReadVerifiedCommand(ReadOnlyMemory<byte> frame, bool deferred)
+    {
+        try
+        {
+            var command = JsonSerializer.Deserialize(frame.Span, DispatchJsonContext.Default.DispatchCmdFrame);
+            return command is not null
+                && (!deferred || string.Equals(command.Op, "command.cancel", StringComparison.Ordinal))
+                && _verifier!.Verify(command, _clockOffset).Accepted ? command : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private async Task HandleControlAsync(AcpWebSocketTransport transport, DispatchCmdFrame command, byte[] payload, DispatchLinkSlot links, CancellationToken cancellationToken)
+    {
+        var active = links.BeginControl(transport);
+        if (active is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await CancelCommandAsync(transport, command, payload, links.ShouldDefer(transport), cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            links.EndControl(active);
+            if (HasCapacity())
+            {
+                links.ReconnectIfDeferred();
+            }
+        }
+    }
+
+    private async Task CancelCommandAsync(AcpWebSocketTransport transport, DispatchCmdFrame frame, byte[] payload, bool outOfOrder, CancellationToken cancellationToken)
+    {
+        var admission = outOfOrder
+            ? _dedupe.AdmitOutOfOrder(frame.CommandId, frame.Nonce, frame.Seq)
+            : _dedupe.Admit(frame.CommandId, frame.Nonce, frame.Seq);
+        if (admission != DispatchAdmission.Execute)
+        {
+            if (admission == DispatchAdmission.Duplicate)
+            {
+                await SendAckAsync(transport, frame.CommandId, "duplicate", cancellationToken).ConfigureAwait(false);
+            }
+
+            return;
+        }
+
+        var target = ReadCancellationTarget(payload);
+        DispatchPendingCommand? pending = null;
+        if (target is not null)
+        {
+            lock (_pendingGate)
+            {
+                _pending.TryGetValue(target, out pending);
+            }
+
+            pending?.Cancel();
+        }
+
+        await SendAckAsync(transport, frame.CommandId, "received", cancellationToken).ConfigureAwait(false);
+        if (target is null)
+        {
+            await SendResultAsync(transport, frame.CommandId, DispatchOutcome.Failed(DispatchFailureReason.PayloadInvalid), cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        if (pending is null)
+        {
+            await SendResultAsync(transport, frame.CommandId, DispatchOutcome.Failed(DispatchFailureReason.ExecutionError), cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        await SendAckAsync(transport, frame.CommandId, "accepted", cancellationToken).ConfigureAwait(false);
+        await SendAckAsync(transport, frame.CommandId, "running", cancellationToken).ConfigureAwait(false);
+        await SendResultAsync(transport, frame.CommandId, DispatchOutcome.Completed(), cancellationToken).ConfigureAwait(false);
+    }
+
+    private static string? ReadCancellationTarget(byte[] payload)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(payload);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("commandId", out var id) || id.ValueKind != JsonValueKind.String)
+            {
+                return null;
+            }
+
+            var target = id.GetString();
+            return string.IsNullOrEmpty(target) ? null : target;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private void DeferUntilCapacity(AcpWebSocketTransport transport, DispatchLinkSlot links)
@@ -557,10 +667,22 @@ public sealed class DispatchConnector
         try
         {
             await FlushStatesAsync(pending, links, cancellationToken).ConfigureAwait(false);
-            var outcome = await _router.RouteAsync(
-                pending.Command,
-                (state, token) => ReportStateAsync(pending, links, state, token),
-                cancellationToken).ConfigureAwait(false);
+            using var commandCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, pending.Cancellation);
+            DispatchOutcome outcome;
+            try
+            {
+                commandCancellation.Token.ThrowIfCancellationRequested();
+                outcome = await _router.RouteAsync(
+                    pending.Command,
+                    (state, token) => ReportStateAsync(pending, links, state, token),
+                    commandCancellation.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (pending.Cancellation.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                outcome = pending.States.Contains(DispatchCommandState.Running)
+                    ? new DispatchOutcome(DispatchCommandState.Cancelled, DispatchFailureReason.CancelledByUser, null)
+                    : DispatchOutcome.Failed(DispatchFailureReason.CancelledByUser);
+            }
             await SendResultWithRetryAsync(pending, outcome, links, cancellationToken).ConfigureAwait(false);
         }
         finally

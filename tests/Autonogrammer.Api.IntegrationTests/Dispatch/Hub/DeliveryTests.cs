@@ -144,6 +144,13 @@ public sealed class DeliveryTests
         var row = (await store.GetCommandAsync(DispatchTestClient.Owner, "01RUNNINGSESSION000000000000", ct).ConfigureAwait(true)).ShouldNotBeNull();
         row.State.ShouldBe(DispatchCommandState.Failed);
         row.Reason.ShouldBe(DispatchFailureReason.Timeout);
+        var cancellation = (await store.ListQueuedAfterAsync(DispatchTestClient.Owner, "device-run", 0, ct).ConfigureAwait(true)).Single();
+        cancellation.Op.ShouldBe(DispatchOp.CommandCancel);
+        await CommandStates.AdvanceAsync(store, DispatchTestClient.Owner, cancellation.CommandId, CommandStates.ToRunning, ct).ConfigureAwait(true);
+        clock.Advance(TimeSpan.FromSeconds(61));
+        (await host.Services.GetRequiredService<DispatchSweeper>().SweepOnceAsync(ct).ConfigureAwait(true)).ShouldBe(1);
+        (await store.GetCommandAsync(DispatchTestClient.Owner, cancellation.CommandId, ct).ConfigureAwait(true))!.Reason.ShouldBe(DispatchFailureReason.Timeout);
+        (await store.ListQueuedAfterAsync(DispatchTestClient.Owner, "device-run", 0, ct).ConfigureAwait(true)).ShouldBeEmpty();
     }
 
     /// <summary>A coworking task that runs for longer than four hours is failed timeout by the sweeper, and not before.</summary>

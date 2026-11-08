@@ -402,6 +402,127 @@ public sealed class ReconnectTests : IDisposable
         connector.State.ShouldBe(DispatchConnectionState.DeviceRevoked);
         fixture.HighWater.ShouldBe(32);
     }
+    [Fact]
+    public async Task CancellationPassesAFullInboxWithoutSkippingDeferredWork()
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var server = new TestWebSocketServer();
+        var fixture = await Fixture.CreateAsync(_directory, server.Endpoint, Start.AddHours(1), new FixedJitterSource(0.5), cts.Token);
+        _disposables.Add(fixture);
+        var handler = new CancelFirstHandler();
+        var connector = fixture.BuildConnector(fixture.Pairing, [handler]);
+        var serverSide = Task.Run(async () =>
+        {
+            await CancelWithFullInboxAsync(server, fixture, handler, cts.Token).ConfigureAwait(false);
+            await CompleteDeferredCommandAsync(server, fixture, cts.Token).ConfigureAwait(false);
+        }, cts.Token);
+        await connector.RunAsync(cts.Token);
+        await serverSide.ConfigureAwait(true);
+        handler.Calls.ShouldBe(32);
+    }
+
+    private static async Task CancelWithFullInboxAsync(TestWebSocketServer server, Fixture fixture, CancelFirstHandler handler, CancellationToken cancellationToken)
+    {
+        using var session = await server.AcceptAsync(cancellationToken).ConfigureAwait(false);
+        await ChallengeAsync(session, server.Endpoint, fixture.DevicePublicKey, cancellationToken).ConfigureAwait(false);
+        var welcome = new DispatchWelcomeFrame { V = 1, T = DispatchFrameTypes.Welcome, ServerTime = Start.ToUnixTimeSeconds(), HeartbeatSeconds = 20, Kids = [DispatchTestSigner.Kid], ResumeFromSeq = 0 };
+        await session.SendTextAsync(JsonSerializer.Serialize(welcome, DispatchJsonContext.Default.DispatchWelcomeFrame), cancellationToken).ConfigureAwait(false);
+        for (var sequence = 1; sequence <= 32; sequence++)
+        {
+            var suffix = sequence.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var command = fixture.Signer.Sign(sequence, Start.ToUnixTimeSeconds(), Start.ToUnixTimeSeconds() + 300, commandId: "cmd-" + suffix, nonce: "nonce-" + suffix);
+            await session.SendTextAsync(Encoding.UTF8.GetString(DispatchTestSigner.Wire(command)), cancellationToken).ConfigureAwait(false);
+            if (sequence == 1)
+            {
+                await handler.Started.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+                _ = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+                _ = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            _ = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        var deferred = fixture.Signer.Sign(33, Start.ToUnixTimeSeconds(), Start.ToUnixTimeSeconds() + 300, commandId: "cmd-33", nonce: "nonce-33");
+        await session.SendTextAsync(Encoding.UTF8.GetString(DispatchTestSigner.Wire(deferred)), cancellationToken).ConfigureAwait(false);
+        await RejectForgeryAndCancelQueuedAsync(session, fixture, handler, cancellationToken).ConfigureAwait(false);
+        var cancel = fixture.Signer.Sign(37, Start.ToUnixTimeSeconds(), Start.ToUnixTimeSeconds() + 300, commandId: "cancel-37", nonce: "nonce-37", payloadJson: "{\"commandId\":\"cmd-1\"}", op: "command.cancel");
+        await session.SendTextAsync(Encoding.UTF8.GetString(DispatchTestSigner.Wire(cancel)), cancellationToken).ConfigureAwait(false);
+        await handler.Cancelled.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        var results = new HashSet<string>(StringComparer.Ordinal);
+        while (true)
+        {
+            var message = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+            if (message.Type == WebSocketMessageType.Close)
+            {
+                await session.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "closing", cancellationToken).ConfigureAwait(false);
+                break;
+            }
+
+            using var json = JsonDocument.Parse(message.Text);
+            if (string.Equals(json.RootElement.GetProperty("t").GetString(), "res", StringComparison.Ordinal))
+            {
+                results.Add(json.RootElement.GetProperty("commandId").GetString()!);
+            }
+        }
+
+        results.Contains("cmd-1").ShouldBeTrue();
+        results.Contains("cancel-37").ShouldBeTrue();
+        fixture.HighWater.ShouldBe(32);
+    }
+
+    private static async Task RejectForgeryAndCancelQueuedAsync(TestWebSocketSession session, Fixture fixture, CancelFirstHandler handler, CancellationToken cancellationToken)
+    {
+        using var wrongKey = System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP256);
+        var forged = fixture.Signer.Sign(34, Start.ToUnixTimeSeconds(), Start.ToUnixTimeSeconds() + 300, commandId: "forged-34", nonce: "nonce-34", payloadJson: "{\"commandId\":\"cmd-1\"}", op: "command.cancel", signer: wrongKey);
+        var unknown = fixture.Signer.Sign(35, Start.ToUnixTimeSeconds(), Start.ToUnixTimeSeconds() + 300, commandId: "unknown-35", nonce: "nonce-35", payloadJson: "{\"commandId\":\"missing\"}", op: "command.cancel");
+        await session.SendTextAsync(Encoding.UTF8.GetString(DispatchTestSigner.Wire(forged)), cancellationToken).ConfigureAwait(false);
+        await session.SendTextAsync(Encoding.UTF8.GetString(DispatchTestSigner.Wire(unknown)), cancellationToken).ConfigureAwait(false);
+        _ = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+        var rejected = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+        using var rejection = JsonDocument.Parse(rejected.Text);
+        rejection.RootElement.GetProperty("state").GetString().ShouldBe("failed");
+        handler.Cancelled.Task.IsCompleted.ShouldBeFalse();
+        var queued = fixture.Signer.Sign(36, Start.ToUnixTimeSeconds(), Start.ToUnixTimeSeconds() + 300, commandId: "cancel-36", nonce: "nonce-36", payloadJson: "{\"commandId\":\"cmd-2\"}", op: "command.cancel");
+        await session.SendTextAsync(Encoding.UTF8.GetString(DispatchTestSigner.Wire(queued)), cancellationToken).ConfigureAwait(false);
+        for (var index = 0; index < 3; index++)
+        {
+            _ = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        var result = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+        using var completed = JsonDocument.Parse(result.Text);
+        completed.RootElement.GetProperty("state").GetString().ShouldBe("completed");
+        handler.Calls.ShouldBe(1);
+    }
+
+    private static async Task CompleteDeferredCommandAsync(TestWebSocketServer server, Fixture fixture, CancellationToken cancellationToken)
+    {
+        using var session = await server.AcceptAsync(cancellationToken).ConfigureAwait(false);
+        var origin = new UriBuilder(server.Endpoint) { Scheme = "http" }.Uri.GetLeftPart(UriPartial.Authority);
+        var challenge = new DispatchChallengeFrame { V = 1, T = DispatchFrameTypes.Challenge, Nonce = "reconnect-full", Origin = origin, ServerTime = Start.ToUnixTimeSeconds(), Protocols = ["1"] };
+        await session.SendTextAsync(JsonSerializer.Serialize(challenge, DispatchJsonContext.Default.DispatchChallengeFrame), cancellationToken).ConfigureAwait(false);
+        var message = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+        using var hello = JsonDocument.Parse(message.Text);
+        hello.RootElement.GetProperty("lastAppliedSeq").GetInt64().ShouldBe(32);
+        var welcome = new DispatchWelcomeFrame { V = 1, T = DispatchFrameTypes.Welcome, ServerTime = Start.ToUnixTimeSeconds(), HeartbeatSeconds = 20, Kids = [DispatchTestSigner.Kid], ResumeFromSeq = 32 };
+        await session.SendTextAsync(JsonSerializer.Serialize(welcome, DispatchJsonContext.Default.DispatchWelcomeFrame), cancellationToken).ConfigureAwait(false);
+        var deferred = fixture.Signer.Sign(33, Start.ToUnixTimeSeconds(), Start.ToUnixTimeSeconds() + 300, commandId: "cmd-33", nonce: "nonce-redelivery");
+        await session.SendTextAsync(Encoding.UTF8.GetString(DispatchTestSigner.Wire(deferred)), cancellationToken).ConfigureAwait(false);
+        while (true)
+        {
+            var frame = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+            using var json = JsonDocument.Parse(frame.Text);
+            if (string.Equals(json.RootElement.GetProperty("t").GetString(), "res", StringComparison.Ordinal)
+                && string.Equals(json.RootElement.GetProperty("commandId").GetString(), "cmd-33", StringComparison.Ordinal))
+            {
+                json.RootElement.GetProperty("state").GetString().ShouldBe("completed");
+                break;
+            }
+        }
+
+        await session.SendTextAsync("{\"v\":1,\"t\":\"revoke\",\"reason\":\"revoked\"}", cancellationToken).ConfigureAwait(false);
+    }
+
 
     [Fact]
     public async Task ATransientDisconnectPreservesRunningAndAcknowledgedQueuedCommands()
@@ -744,6 +865,37 @@ public sealed class ReconnectTests : IDisposable
             }
 
             return DispatchOutcome.Completed("unexpected");
+        }
+    }
+
+    private sealed class CancelFirstHandler : IDispatchCommandHandler
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Cancelled { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public int Calls { get; private set; }
+
+        public bool CanHandle(DispatchOp op) => op == DispatchOp.SessionList;
+
+        public async ValueTask<DispatchOutcome> HandleAsync(DispatchCommand command, CancellationToken cancellationToken)
+        {
+            Calls++;
+            if (Calls == 1)
+            {
+                Started.TrySetResult();
+                try
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    Cancelled.TrySetResult();
+                    throw;
+                }
+            }
+
+            return DispatchOutcome.Completed("listed");
         }
     }
 

@@ -195,6 +195,16 @@ public sealed class PostgresDispatchStore : IDispatchStore
     }
 
     /// <inheritdoc />
+    public ValueTask<DispatchTransitionResult> TryTimeoutAndEnqueueAsync(string accountId, string commandId, DispatchCommandState expected, EnqueueDispatchCommand cancellation, DispatchFeedDraft feed, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(commandId);
+        ArgumentNullException.ThrowIfNull(cancellation);
+        ArgumentNullException.ThrowIfNull(feed);
+        return new ValueTask<DispatchTransitionResult>(_pipeline.ExecuteTransactionAsync(OperationClass.Interactive, token => TimeoutAndEnqueueCoreAsync(accountId, commandId, expected, cancellation, feed, token), cancellationToken));
+    }
+
+    /// <inheritdoc />
     public ValueTask<DispatchFeedEventRecord> AppendFeedEventAsync(string accountId, string kind, string? payload, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(accountId);
@@ -697,6 +707,49 @@ public sealed class PostgresDispatchStore : IDispatchStore
 
                 await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
                 return new DispatchTransitionResult(DispatchTransitionStatus.Applied, desired);
+            }
+        }
+    }
+
+    private async Task<DispatchTransitionResult> TimeoutAndEnqueueCoreAsync(string accountId, string commandId, DispatchCommandState expected, EnqueueDispatchCommand cancellation, DispatchFeedDraft feed, CancellationToken cancellationToken)
+    {
+        if (!string.Equals(accountId, cancellation.AccountId, StringComparison.Ordinal) || cancellation.Op != DispatchOp.CommandCancel
+            || expected is not (DispatchCommandState.Received or DispatchCommandState.Accepted or DispatchCommandState.Running))
+        {
+            return new DispatchTransitionResult(DispatchTransitionStatus.Rejected, null);
+        }
+
+        var connection = await OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await using (transaction.ConfigureAwait(false))
+            {
+                if (!await LockLiveDeviceAsync(connection, transaction, cancellation, cancellationToken).ConfigureAwait(false))
+                {
+                    return new DispatchTransitionResult(DispatchTransitionStatus.Rejected, null);
+                }
+
+                var row = await ReadCommandAsync(connection, transaction, accountId, commandId, cancellationToken).ConfigureAwait(false);
+                if (row is null || !DispatchCommandStateWire.TryParse(row.State, out var current))
+                {
+                    return new DispatchTransitionResult(DispatchTransitionStatus.NotFound, null);
+                }
+
+                if (current != expected || !string.Equals(row.DeviceId, cancellation.DeviceId, StringComparison.Ordinal)
+                    || string.Equals(row.Op, DispatchOpWire.ToWire(DispatchOp.CommandCancel), StringComparison.Ordinal)
+                    || await ReadIdempotentAsync(connection, transaction, cancellation, cancellationToken).ConfigureAwait(false) is not null)
+                {
+                    return new DispatchTransitionResult(DispatchTransitionStatus.Rejected, current);
+                }
+
+                var sequence = await AllocateSeqAsync(connection, transaction, cancellation, cancellationToken).ConfigureAwait(false);
+                await InsertCommandAsync(connection, transaction, cancellation, sequence, cancellationToken).ConfigureAwait(false);
+                await ApplyTransitionAsync(connection, transaction, accountId, commandId, DispatchCommandState.Failed, DispatchFailureReason.Timeout, row, cancellationToken).ConfigureAwait(false);
+                _ = await InsertFeedInTransactionAsync(connection, transaction, accountId, feed.Kind, feed.Payload, cancellationToken).ConfigureAwait(false);
+                await AuditAsync(connection, transaction, accountId, row.DeviceId, cancellation.CommandId, "command.enqueue", "accepted", cancellationToken).ConfigureAwait(false);
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                return new DispatchTransitionResult(DispatchTransitionStatus.Applied, DispatchCommandState.Failed);
             }
         }
     }
