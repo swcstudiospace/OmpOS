@@ -546,7 +546,7 @@ internal sealed class AgentHead : IAsyncDisposable
         CoworkHead.CreateAsync(
             options.Loop.StateRoot,
             options.Loop.WorkspaceRoot,
-            new SignedOutCoworkGate(),
+            services is null ? new SignedOutCoworkGate() : new NativeCoworkAccountGate(services.AccountHost.Session),
             options.TransportFactory,
             options.LoggerFactory,
             options.OmpPath,
@@ -554,7 +554,8 @@ internal sealed class AgentHead : IAsyncDisposable
             options.ProviderKeys,
             services?.Mcp,
             coworkTools,
-            services is null ? null : ct => services.ResolveOmpForLaunchAsync(ct));
+            services is null ? null : ct => services.ResolveOmpForLaunchAsync(ct),
+            services?.AccountHost.Session);
 
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
     private static async Task<AgentHead> BuildModelsAsync(SessionEngineSet host, HeadSettings settings, CoworkHead cowork, SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, Autonogrammer.Native.Composition.HeadServices? services, BrowserUseCompositionResult browser)

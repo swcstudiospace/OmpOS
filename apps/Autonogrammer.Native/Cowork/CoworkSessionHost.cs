@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Text.Json;
+using Autonogrammer.Accounts;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Cowork;
 using Autonogrammer.Cowork.Abstractions;
@@ -16,21 +17,29 @@ using Autonogrammer.Native.Views.Sessions;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Composer.Attachments;
 using Avalonia.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Autonogrammer.Native.Cowork;
 
 /// <summary>The Cowork <see cref="IAgentPanelHost"/>: one registry and engine per opened task, local turn origin on every prompt. Startup, close and sign-out are serialized; disposal drains their cleanup before the head closes its borrowed tool server.</summary>
 internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
 {
+    private static readonly Action<ILogger, Exception?> AccountReleaseFailed = LoggerMessage.Define(
+        LogLevel.Error,
+        new EventId(9301, nameof(AccountReleaseFailed)),
+        "Stopping the Cowork sessions of the previous account failed");
+
     private readonly CoworkSessionHostOptions _options;
     private readonly Lock _gate = new();
     private readonly Dictionary<string, Slot> _slots = new(StringComparer.Ordinal);
     private CoworkSessionRegistry? _registry;
+    private string? _registryKey;
     // The tail always completes successfully, even when an operation fails. Shutdown drains it before closing tools.
     private Task _operations = Task.CompletedTask;
     private Task? _disposeTask;
     private int _enginesStopped;
     private bool _disposed;
+    private readonly ILogger? _logger;
 
     /// <summary>Creates the host. It opens the registry on the first create or reload.</summary>
     /// <param name="options">The seams.</param>
@@ -39,6 +48,11 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         ArgumentNullException.ThrowIfNull(options);
         _options = options;
         Broker = new CoworkApprovalBroker(options.ToolOptions, options.Clock, options.WindowAvailable);
+        _logger = options.LoggerFactory?.CreateLogger("Autonogrammer.Native.Cowork");
+        if (options.AccountSession is not null)
+        {
+            options.AccountSession.StateChanged += OnAccountStateChanged;
+        }
     }
 
     /// <summary>Gets how many times <see cref="CoworkSessionRegistry.RecoverAfterRestart"/> ran.</summary>
@@ -310,6 +324,11 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             if (_disposeTask is null)
             {
                 _disposed = true;
+                if (_options.AccountSession is not null)
+                {
+                    _options.AccountSession.StateChanged -= OnAccountStateChanged;
+                }
+
                 _disposeTask = DisposeCoreAsync(_operations);
             }
 
@@ -354,6 +373,65 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         // Tools is borrowed from CoworkHead, which closes it only after every acquisition and engine has stopped.
         await operations.WaitAsync(CancellationToken.None).ConfigureAwait(false);
         await StopSessionsAsync().ConfigureAwait(false);
+    }
+
+    // The switch is queued behind in-flight operations, so a turn that began on the previous account finishes before its registry is released.
+    private void OnAccountStateChanged(object? sender, AccountStateChangedEventArgs e) => _ = ReleaseAccountAsync();
+
+    private async Task ReleaseAccountAsync()
+    {
+        var completion = TryQueueOperation(out var previous);
+        if (completion is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await previous.ConfigureAwait(false);
+            var stale = TakeStaleSessions();
+            if (stale is not null)
+            {
+                await DisposeSlotsAsync(stale).ConfigureAwait(false);
+            }
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            if (_logger is not null)
+            {
+                AccountReleaseFailed(_logger, exception);
+            }
+        }
+        finally
+        {
+            completion.SetResult();
+        }
+    }
+
+    // Returns the previous account's sessions once the registry no longer matches the signed-in account. Null when nothing needs releasing.
+    private Slot[]? TakeStaleSessions()
+    {
+        var key = CurrentAccountKey();
+        lock (_gate)
+        {
+            if (_registry is null || string.Equals(_registryKey, key, StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            _registry = null;
+            _registryKey = null;
+            Slot[] slots = [.. _slots.Values];
+            _slots.Clear();
+            return slots;
+        }
+    }
+
+    // Read before the host's lock is taken, so the session's lock is never held while this host waits on its own.
+    private string? CurrentAccountKey()
+    {
+        var gate = _options.Gate;
+        return gate.IsSignedIn && !string.IsNullOrWhiteSpace(gate.AccountFolderKey) ? gate.AccountFolderKey : null;
     }
 
     private Task StopSessionsAsync()
@@ -416,26 +494,43 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         }
     }
 
+    // Requires a signed-in account. A registry belongs to the account it opened for: a signed-out or switched account gets none from this host.
     private CoworkSessionRegistry EnsureRegistry(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        var key = CurrentAccountKey() ?? throw new InvalidOperationException("Cowork storage requires a signed-in account.");
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            if (_registry is null)
+            if (_registry is not null)
             {
-                var registry = CoworkSessionRegistry.Open(
-                    new CoworkSessionOptions { StateRoot = _options.StateRoot },
-                    _options.Gate,
-                    _options.Clock,
-                    _options.LoggerFactory?.CreateLogger("Autonogrammer.Native.Cowork"));
-                _ = registry.RecoverAfterRestart();
-                Recoveries++;
-                _registry = registry;
+                if (!string.Equals(_registryKey, key, StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException("The signed-in account changed. Cowork is stopping the previous account's sessions; try again.");
+                }
+
+                return _registry;
             }
 
-            return _registry;
+            var registry = CoworkSessionRegistry.Open(
+                new CoworkSessionOptions { StateRoot = _options.StateRoot },
+                new SnapshotGate(key),
+                _options.Clock,
+                _options.LoggerFactory?.CreateLogger("Autonogrammer.Native.Cowork"));
+            _ = registry.RecoverAfterRestart();
+            Recoveries++;
+            _registry = registry;
+            _registryKey = key;
+            return registry;
         }
+    }
+
+    // The registry reads its account folder once, when it opens. The snapshot pins that folder to the key this host recorded.
+    private sealed class SnapshotGate(string key) : ICoworkAccountGate
+    {
+        public bool IsSignedIn => true;
+
+        public string? AccountFolderKey => key;
     }
 
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]

@@ -1,3 +1,4 @@
+using Autonogrammer.Accounts;
 using Autonogrammer.Cowork;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
@@ -17,6 +18,9 @@ internal sealed class CoworkSessionHostOptions
 
     /// <summary>Gets the account gate.</summary>
     public required ICoworkAccountGate Gate { get; init; }
+
+    /// <summary>Gets the account session whose changes the host follows. Null keeps the host on the gate alone, as a head without account services does.</summary>
+    public IAccountSession? AccountSession { get; init; }
 
     /// <summary>Gets the clock.</summary>
     public TimeProvider Clock { get; init; } = TimeProvider.System;
