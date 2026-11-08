@@ -42,6 +42,21 @@ public sealed class BoundedLineReaderTests
         var malformed = await Should.ThrowAsync<MalformedFrameHarnessException>(
             () => BoundedLineReader.ReadLineAsync(reader, ct)).ConfigureAwait(true);
 
-        malformed.Message.ShouldBe("A physical frame exceeds the 1 MiB transport limit.");
+        malformed.Message.ShouldBe("A physical frame exceeds the transport limit of 1048576 characters.");
+    }
+
+    /// <summary>A caller-chosen cap accepts a line of exactly that length and refuses one character more.</summary>
+    [Fact]
+    public async Task ConfiguredCapAcceptsTheLimitAndRefusesOneMore()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var atLimit = new StringReader("abcd\n");
+        (await BoundedLineReader.ReadLineAsync(atLimit, 4, ct).ConfigureAwait(true)).ShouldBe("abcd");
+
+        using var overLimit = new StringReader("abcde\n");
+        var malformed = await Should.ThrowAsync<MalformedFrameHarnessException>(
+            () => BoundedLineReader.ReadLineAsync(overLimit, 4, ct)).ConfigureAwait(true);
+
+        malformed.Message.ShouldBe("A physical frame exceeds the transport limit of 4 characters.");
     }
 }

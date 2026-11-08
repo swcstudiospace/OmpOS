@@ -50,8 +50,9 @@ The API and web runbook sections land with their phases:
 The Blazor WASM head (`apps/Autonogrammer.Web`) hosts the shared `Autonogrammer.UI` chat surface and
 talks to the API over HTTP + SSE. No host is hardcoded: the API origin comes from
 `apps/Autonogrammer.Web/wwwroot/appsettings.json` (`Api:BaseUrl`, default
-`http://127.0.0.1:5187`) and can be overridden per boot with
-`?apiBaseUrl=https://api-host` in the page URL.
+`http://127.0.0.1:5187`). A `?apiBaseUrl=` override in the page URL is honoured only for an origin listed in
+`Api:OverrideOrigins` in the same file. That list is empty by default, so an override is refused. To point a local build at
+another API origin, list that origin there (for example `"https://localhost:5001"`) and rebuild.
 
 ### Serve the API (in-memory adapter)
 

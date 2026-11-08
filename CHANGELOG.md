@@ -23,6 +23,8 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 - The API and worker images move to runtime 10.0.14 and upgrade apt, to address GHSA-p3jp-9v83-76w9 and CVE-2026-109518 reported by the image scan.
 - The Android project's lock file restores in locked mode again.
 - Packaged apps find `plugins/` beside the executable.
+- The web head sends prompts and the event stream only to `Api:BaseUrl`, or to a `?apiBaseUrl=` origin listed in the build-time `Api:OverrideOrigins` (empty by default). Any other override, including a loopback origin that is not listed, is refused.
+- The ACP transport stops `omp acp` when a stdout line passes its cap (1 MiB by default, a constructor parameter) and fails the session with a malformed-frame error, instead of leaving the child running.
 
 ## [0.16.1] - 2026-11-07
 
