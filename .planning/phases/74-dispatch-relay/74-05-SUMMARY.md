@@ -38,6 +38,7 @@ The Dispatch relay connects paired desktops to the API over outbound WebSockets.
 - Earlier service-backed Dispatch integration filter: **111 passed**; Postgres dispatch-store filter: **19 passed**. After the reconnect and paged-settlement changes, focused tests passed against both in-memory and Postgres stores, including settlement past 100 rows.
 - Desktop Dispatch suite: **72 passed**, including manual-clock heartbeat, signed challenge, immediate acknowledgement behind an executing command, offline result retention, handler fault isolation, and cancellation of an executing handler after a revoke frame.
 - Architecture suite: **83 passed**. Repo checks and SBOM check passed. The documentation check initially reported one GitBook-outside-root link; it was changed to a GitHub URL and the subsequent check reported **0 errors and 0 warnings**.
+- The first clean-checkout bootstrap stopped at the history secret scan on the fixed RFC 6455 example WebSocket nonce in `06787cc`. It is not a credential. `4cd7404` replaces the current test value with a generated nonce and allowlists only that historical fingerprint; the subsequent history scan passed. The full clean-checkout gate must be rerun.
 - The generated OpenAPI file matched the committed file after the build.
 
 ## Deviations and limits
@@ -57,3 +58,4 @@ The Dispatch relay connects paired desktops to the API over outbound WebSockets.
 - `f8bde92` — `fix(dispatch): process revocation during command execution`
 - `5b63395` — `fix(dispatch): acknowledge queued commands and isolate handler failures`
 - `9ccebf5` — `fix(dispatch): retain outstanding commands across reconnects`
+- `4cd7404` — `test(dispatch): avoid static websocket nonce scan false positive`
