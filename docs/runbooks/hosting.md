@@ -69,7 +69,7 @@ The platform health check runs at deploy time from host `healthcheck.railway.app
 | Stage | Image | Why |
 |-------|-------|-----|
 | Build | `mcr.microsoft.com/dotnet/sdk:10.0.402-noble` | `global.json` pins SDK `10.0.402` with `rollForward: latestPatch`. |
-| Runtime | `mcr.microsoft.com/dotnet/aspnet:10.0.13-noble` | Runtime bundled with SDK 10.0.402 is 10.0.13. Noble is used because the entrypoint needs `/bin/sh` to map `PORT`. |
+| Runtime | `mcr.microsoft.com/dotnet/aspnet:10.0.14-noble` | Shipped runtime. The 10.0.13 bundled with SDK 10.0.402 carries GHSA-p3jp-9v83-76w9, fixed in 10.0.14. Noble is used because the entrypoint needs `/bin/sh` to map `PORT`. |
 
 Both stages pass `--locked-mode` restore, then `publish --no-restore`. The final stage runs as UID/GID `10001`. Pin by digest before production (for example `sdk:10.0.402-noble@sha256:...`). No digest has been recorded, because no registry pull was performed.
 
