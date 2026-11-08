@@ -419,14 +419,16 @@ public sealed class ReconnectTests : IDisposable
         _ = await session.ReceiveAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    [Fact]
-    public async Task AHandlerFailureDoesNotStopTheNextCommand()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AHandlerFailureDoesNotStopTheNextCommand(bool unrelatedCancellation)
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         using var server = new TestWebSocketServer();
         var fixture = await Fixture.CreateAsync(_directory, server.Endpoint, Start.AddHours(1), new FixedJitterSource(0.5), cts.Token);
         _disposables.Add(fixture);
-        var handler = new ThrowOnceHandler();
+        var handler = new ThrowOnceHandler(unrelatedCancellation);
         var connector = fixture.BuildConnector(fixture.Pairing, [handler]);
         var serverSide = Task.Run(async () =>
         {
@@ -578,7 +580,7 @@ public sealed class ReconnectTests : IDisposable
         }
     }
 
-    private sealed class ThrowOnceHandler : IDispatchCommandHandler
+    private sealed class ThrowOnceHandler(bool unrelatedCancellation) : IDispatchCommandHandler
     {
         public int Calls { get; private set; }
 
@@ -589,6 +591,11 @@ public sealed class ReconnectTests : IDisposable
             Calls++;
             if (Calls == 1)
             {
+                if (unrelatedCancellation)
+                {
+                    throw new OperationCanceledException("The handler cancelled its own operation.");
+                }
+
                 throw new IOException("The handler failed.");
             }
 

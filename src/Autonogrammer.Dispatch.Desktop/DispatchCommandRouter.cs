@@ -91,7 +91,7 @@ public sealed class DispatchCommandRouter
         {
             return await handler.HandleAsync(command, cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+        catch (Exception exception) when (exception is not OutOfMemoryException && (exception is not OperationCanceledException || !cancellationToken.IsCancellationRequested))
         {
             return DispatchOutcome.Failed(DispatchFailureReason.ExecutionError);
         }
