@@ -24,6 +24,12 @@ public sealed class HerdrSessionService : IDisposable
             new EventId(1, "HerdrCompensationRefused"),
             "The herdr session {SessionId} could not be terminated after its record failed to persist; the server session may still run.");
 
+    private static readonly Action<ILogger, HerdrSessionId, string, Exception?> CompensationFailed =
+        LoggerMessage.Define<HerdrSessionId, string>(
+            LogLevel.Error,
+            new EventId(3, "HerdrCompensationFailed"),
+            "Terminating herdr session {SessionId} after its record failed to persist failed with {ExceptionType}; the server session may still run.");
+
     private static readonly Action<ILogger, HerdrSessionId, Exception?> CompensationTimedOut =
         LoggerMessage.Define<HerdrSessionId>(
             LogLevel.Error,
@@ -268,6 +274,11 @@ public sealed class HerdrSessionService : IDisposable
         {
             // The cleanup did not finish within CompensationTimeout. The persist failure is still the one reported.
             CompensationTimedOut(_logger, id, ex);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // Any other failure of the cleanup is logged, never rethrown, so it cannot replace the persist failure.
+            CompensationFailed(_logger, id, ex.GetType().FullName ?? ex.GetType().Name, ex);
         }
     }
 

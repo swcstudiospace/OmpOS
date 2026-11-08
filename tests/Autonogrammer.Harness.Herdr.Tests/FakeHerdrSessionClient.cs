@@ -17,7 +17,7 @@ internal sealed class FakeHerdrSessionClient : IHerdrSessionClient
     private readonly Channel<HerdrSessionId> _beatRequests = Channel.CreateUnbounded<HerdrSessionId>();
     private Func<Task>? _beforeNextBeat;
     private bool _restartBeforeNextAttach;
-    private bool _failNextTerminate;
+    private Exception? _nextTerminateFault;
     private int _nativeCount;
 
     /// <summary>Gets a copy of every recorded call, oldest first.</summary>
@@ -165,11 +165,16 @@ internal sealed class FakeHerdrSessionClient : IHerdrSessionClient
     }
 
     /// <summary>Refuses the next terminate, so a test can observe a failed compensation.</summary>
-    public void FailNextTerminate()
+    public void FailNextTerminate() =>
+        FailNextTerminateWith(new HerdrInvalidTransitionException("The test server refused to end the herdr session."));
+
+    /// <summary>Makes the next terminate throw <paramref name="fault"/>, so a test can observe any compensation failure.</summary>
+    public void FailNextTerminateWith(Exception fault)
     {
+        ArgumentNullException.ThrowIfNull(fault);
         lock (_gate)
         {
-            _failNextTerminate = true;
+            _nextTerminateFault = fault;
         }
     }
 
@@ -301,10 +306,16 @@ internal sealed class FakeHerdrSessionClient : IHerdrSessionClient
 
     private HerdrSessionSnapshot Terminate(HerdrSessionId sessionId)
     {
-        if (_failNextTerminate)
+        Exception? fault;
+        lock (_gate)
         {
-            _failNextTerminate = false;
-            throw new HerdrInvalidTransitionException($"The test server refused to end the herdr session {sessionId}.");
+            fault = _nextTerminateFault;
+            _nextTerminateFault = null;
+        }
+
+        if (fault is not null)
+        {
+            throw fault;
         }
 
         var session = Find(sessionId);

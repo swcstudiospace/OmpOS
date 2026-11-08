@@ -34,4 +34,31 @@ public sealed class HerdrCompensationLoggingTests
         error.Level.ShouldBe(LogLevel.Error);
         error.Exception.ShouldBeOfType<HerdrInvalidTransitionException>();
     }
+
+    [Fact]
+    public async Task AnUnexpectedCompensationFailureIsLoggedAtErrorAndNeverReplacesThePersistFailure()
+    {
+        using var directory = new TempDirectory();
+        var path = Path.Combine(directory.Path, "herdr-sessions.json");
+        using var store = await HerdrSessionStore.OpenAsync(path, NoCancellation).ConfigureAwait(true);
+        // The store file's path is a directory, so the record cannot be written and the server session must be ended.
+        Directory.CreateDirectory(path);
+        var client = new FakeHerdrSessionClient();
+        var logger = new CapturingLogger<HerdrSessionService>();
+        using var service = new HerdrSessionService(client, store, new ManualTimeProvider(Start), logger);
+        client.FailNextTerminateWith(new HttpRequestException("The herdr server is unreachable."));
+
+        var failure = await StoreFileFailure.CaptureAsync(async () =>
+        {
+            await service.CreateAsync(Alpha, "local-omp", NoCancellation).ConfigureAwait(true);
+        }).ConfigureAwait(true);
+
+        // The caller must see the persist fault, not the cleanup's HttpRequestException.
+        failure.ShouldNotBeNull();
+        failure.ShouldNotBeOfType<HttpRequestException>();
+        (failure is IOException or UnauthorizedAccessException).ShouldBeTrue();
+        var error = logger.Entries.ShouldHaveSingleItem();
+        error.Level.ShouldBe(LogLevel.Error);
+        error.Exception.ShouldBeOfType<HttpRequestException>();
+    }
 }
