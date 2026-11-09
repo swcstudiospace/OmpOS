@@ -153,6 +153,7 @@ A prompt typed on any surface becomes an `IntentEnvelope` (parser), runs through
 
 The web workbench reads its catalogue snapshot before connecting to `GET /events`. Its first subscription requests a cursor beyond the server's head, causing a resync and a fresh snapshot after the stream is connected; stale history is not replayed. Snapshot responses merge with newer local and streamed row changes, and a later-started applied snapshot wins over an older response, so a delayed resync cannot discard a new chat or draft. If the connection ends before a newer event supplies an ID, the next connection requests another resync rather than an unprotected live tail. If a live subscriber falls behind the bounded event history, the server sends another resync and then replays the events still retained, including stage updates absent from the catalogue snapshot.
 On resync, open sessions also reload their stage snapshots, so stages that fell out of retained history can recover; one failed stage read does not block the other sessions.
+Status events older than the current row's activity are ignored, including the runtime-follow action, so retained replay cannot restart a completed session.
 
 ## Session run path (in process)
 

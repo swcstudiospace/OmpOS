@@ -161,15 +161,22 @@ internal sealed class WebSessionCatalog : ISessionCatalog
 
     /// <summary>Applies a <c>session_status</c> event to its row.</summary>
     /// <param name="status">The event.</param>
+    /// <param name="applied">True when the event was not older than the current row.</param>
     /// <returns>False when the session is not in the catalogue yet, so the caller reloads it.</returns>
-    internal bool Apply(SessionStatusEvent status)
+    internal bool Apply(SessionStatusEvent status, out bool applied)
     {
         ArgumentNullException.ThrowIfNull(status);
+        applied = false;
         lock (_gate)
         {
             if (!_entries.TryGetValue(status.SessionId, out var entry))
             {
                 return false;
+            }
+
+            if (status.LastActivityAt < entry.LastActivityAt)
+            {
+                return true;
             }
 
             _entries[status.SessionId] = entry with
@@ -181,6 +188,7 @@ internal sealed class WebSessionCatalog : ISessionCatalog
             };
             var next = ++_revision;
             _entryRevisions[status.SessionId] = _entryRevisions.GetValueOrDefault(status.SessionId) with { Last = next, Status = next, Classification = next };
+            applied = true;
         }
         Changed?.Invoke(this, EventArgs.Empty);
         return true;

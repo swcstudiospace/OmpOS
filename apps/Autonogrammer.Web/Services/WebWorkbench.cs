@@ -358,12 +358,15 @@ internal sealed class WebWorkbench : IAsyncDisposable
 
                 break;
             case CatalogEventKinds.SessionStatus when evt.Status is { } status:
-                if (!_catalog.Apply(status))
+                if (!_catalog.Apply(status, out var applied))
                 {
                     await ReloadCatalogAsync(cancellationToken).ConfigureAwait(true);
+                    if (_catalog.Find(status.SessionId) is { } refreshed && _runtimes.TryGetValue(status.SessionId, out var loaded))
+                    {
+                        await loaded.ApplyStatusAsync(refreshed.RowStatus).ConfigureAwait(true);
+                    }
                 }
-
-                if (_runtimes.TryGetValue(status.SessionId, out var observed))
+                else if (applied && _runtimes.TryGetValue(status.SessionId, out var observed))
                 {
                     await observed.ApplyStatusAsync(status.RowStatus).ConfigureAwait(true);
                 }

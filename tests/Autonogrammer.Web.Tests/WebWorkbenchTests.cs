@@ -203,7 +203,7 @@ public sealed class WebWorkbenchTests : IDisposable
         var status = new SessionStatusEvent { SessionId = first.Id, Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running, LastActivityAt = _host.Time.GetUtcNow() };
         for (var index = 0; index < 20; index++)
         {
-            catalogue.Apply(status).ShouldBeTrue();
+            catalogue.Apply(status, out _).ShouldBeTrue();
         }
 
         var afterChanges = catalogue.BeginSnapshot();
@@ -221,6 +221,48 @@ public sealed class WebWorkbenchTests : IDisposable
         catalogue.MergeSnapshot(current, afterChanges).ShouldBeTrue();
         catalogue.MergeSnapshot(rows, beforeChanges).ShouldBeFalse();
         catalogue.Find(removed.Id).ShouldBeNull();
+    }
+
+    /// <summary>A retained older status cannot move a fresh catalogue activity time backward.</summary>
+    [Fact]
+    public async Task ReplayedStatusKeepsNewerCatalogueActivity()
+    {
+        var rows = await _host.Api.ListSessionsAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        var catalogue = new WebSessionCatalog();
+        catalogue.MergeSnapshot(rows, catalogue.BeginSnapshot()).ShouldBeTrue();
+        var row = rows.Single(entry => string.Equals(entry.Id, DemoFixtures.CompletedId, StringComparison.Ordinal));
+        var status = new SessionStatusEvent { SessionId = row.Id, Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running, LastActivityAt = row.LastActivityAt.AddMinutes(-1) };
+        catalogue.Apply(status, out var applied).ShouldBeTrue();
+        applied.ShouldBeFalse();
+        catalogue.Find(row.Id)!.LastActivityAt.ShouldBe(row.LastActivityAt);
+        catalogue.Find(row.Id)!.RowStatus.ShouldBe(CatalogRowStatus.Completed);
+        var newer = status with { LastActivityAt = row.LastActivityAt.AddMinutes(1) };
+        catalogue.Apply(newer, out applied).ShouldBeTrue();
+        applied.ShouldBeTrue();
+        catalogue.Find(row.Id)!.LastActivityAt.ShouldBe(newer.LastActivityAt);
+        catalogue.Find(row.Id)!.RowStatus.ShouldBe(CatalogRowStatus.Running);
+    }
+
+    /// <summary>A stale retained status cannot restart following an already-completed session.</summary>
+    [Fact]
+    public async Task ReplayedStatusDoesNotRestartACompletedSession()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var workbench = NewWorkbench();
+        await using var scope = workbench.ConfigureAwait(true);
+        await workbench.StartAsync(ct).ConfigureAwait(true);
+        workbench.Panel.SelectSession(DemoFixtures.CompletedId).ShouldBeTrue();
+        var session = workbench.Panel.Selected.ShouldNotBeNull();
+        await _host.PumpUntilAsync(() => session.Session.State != SessionViewState.LoadingHistory).ConfigureAwait(true);
+        var rows = await _host.Api.ListSessionsAsync(ct).ConfigureAwait(true);
+        var completed = rows.Single(row => string.Equals(row.Id, session.Id, StringComparison.Ordinal));
+        var stale = new SessionStatusEvent { SessionId = session.Id, Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running, LastActivityAt = completed.LastActivityAt.AddMinutes(-1) };
+        var barrier = new SessionStatusEvent { SessionId = DemoFixtures.FailedId, Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running, LastActivityAt = _host.Time.GetUtcNow().AddMinutes(1) };
+        _host.World.Bus.Publish(CatalogEventKinds.SessionStatus, JsonSerializer.Serialize(stale, CatalogJsonContext.Default.SessionStatusEvent));
+        _host.World.Bus.Publish(CatalogEventKinds.SessionStatus, JsonSerializer.Serialize(barrier, CatalogJsonContext.Default.SessionStatusEvent));
+        await _host.PumpUntilAsync(() => workbench.Panel.Catalog.Sessions.Single(row => string.Equals(row.Id, DemoFixtures.FailedId, StringComparison.Ordinal)).Status == AgentRowStatus.Running).ConfigureAwait(true);
+        session.Composer.IsStreaming.ShouldBeFalse();
+        workbench.Panel.Catalog.Sessions.Single(row => string.Equals(row.Id, session.Id, StringComparison.Ordinal)).Status.ShouldBe(AgentRowStatus.Completed);
     }
 
     /// <summary>A just-created session survives stale lists until the server confirms it, then ordinary removal works.</summary>
