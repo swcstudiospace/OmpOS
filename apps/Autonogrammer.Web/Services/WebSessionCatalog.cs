@@ -14,7 +14,7 @@ internal sealed class WebSessionCatalog : ISessionCatalog
 {
     private readonly Lock _gate = new();
     private readonly Dictionary<string, SessionCatalogEntry> _entries = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, long> _entryRevisions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, EntryRevision> _entryRevisions = new(StringComparer.Ordinal);
     private readonly HashSet<string> _unconfirmedCreates = new(StringComparer.Ordinal);
     private long _revision;
     private long _nextSnapshot;
@@ -87,11 +87,24 @@ internal sealed class WebSessionCatalog : ISessionCatalog
             foreach (var entry in entries)
             {
                 _ = seen.Add(entry.Id);
-                if (!_entryRevisions.TryGetValue(entry.Id, out var revision) || revision <= stamp.Revision)
+                if (!_entryRevisions.TryGetValue(entry.Id, out var revision) || revision.Last <= stamp.Revision)
                 {
                     _ = _unconfirmedCreates.Remove(entry.Id);
                     _entries[entry.Id] = entry;
                     _ = _entryRevisions.Remove(entry.Id);
+                }
+                else if (revision.Created <= stamp.Revision)
+                {
+                    _ = _unconfirmedCreates.Remove(entry.Id);
+                    var current = _entries[entry.Id];
+                    _entries[entry.Id] = entry with
+                    {
+                        Status = revision.Status > stamp.Revision ? current.Status : entry.Status,
+                        LastActivityAt = revision.Status > stamp.Revision ? current.LastActivityAt : entry.LastActivityAt,
+                        RowStatus = revision.Classification > stamp.Revision ? current.RowStatus : entry.RowStatus,
+                        Group = revision.Classification > stamp.Revision ? current.Group : entry.Group,
+                        Closed = revision.Closed > stamp.Revision ? current.Closed : entry.Closed,
+                    };
                 }
             }
 
@@ -99,7 +112,7 @@ internal sealed class WebSessionCatalog : ISessionCatalog
             foreach (var id in _entries.Keys)
             {
                 if (!seen.Contains(id) && !_unconfirmedCreates.Contains(id)
-                    && (!_entryRevisions.TryGetValue(id, out var revision) || revision <= stamp.Revision))
+                    && (!_entryRevisions.TryGetValue(id, out var revision) || revision.Last <= stamp.Revision))
                 {
                     (removed ??= []).Add(id);
                 }
@@ -135,7 +148,8 @@ internal sealed class WebSessionCatalog : ISessionCatalog
                 added = true;
             }
 
-            _entryRevisions[created.Id] = ++_revision;
+            var next = ++_revision;
+            _entryRevisions[created.Id] = _entryRevisions.GetValueOrDefault(created.Id) with { Last = next, Created = next };
             _ = _unconfirmedCreates.Add(created.Id);
         }
 
@@ -165,7 +179,8 @@ internal sealed class WebSessionCatalog : ISessionCatalog
                 Group = status.Group,
                 LastActivityAt = status.LastActivityAt,
             };
-            _entryRevisions[status.SessionId] = ++_revision;
+            var next = ++_revision;
+            _entryRevisions[status.SessionId] = _entryRevisions.GetValueOrDefault(status.SessionId) with { Last = next, Status = next, Classification = next };
         }
         Changed?.Invoke(this, EventArgs.Empty);
         return true;
@@ -195,7 +210,14 @@ internal sealed class WebSessionCatalog : ISessionCatalog
                     _ => entry.Closed,
                 },
             };
-            _entryRevisions[change.SessionId] = ++_revision;
+            var next = ++_revision;
+            var revision = _entryRevisions.GetValueOrDefault(change.SessionId);
+            _entryRevisions[change.SessionId] = revision with
+            {
+                Last = next,
+                Classification = next,
+                Closed = change.Change is CatalogChangeKind.Closed or CatalogChangeKind.Reopened ? next : revision.Closed,
+            };
         }
         Changed?.Invoke(this, EventArgs.Empty);
         return true;
@@ -215,7 +237,8 @@ internal sealed class WebSessionCatalog : ISessionCatalog
             }
 
             _entries[lifecycle.Id] = entry with { Closed = lifecycle.Closed, RowStatus = lifecycle.RowStatus, Group = lifecycle.Group };
-            _entryRevisions[lifecycle.Id] = ++_revision;
+            var next = ++_revision;
+            _entryRevisions[lifecycle.Id] = _entryRevisions.GetValueOrDefault(lifecycle.Id) with { Last = next, Classification = next, Closed = next };
         }
         Changed?.Invoke(this, EventArgs.Empty);
         return true;
@@ -240,4 +263,7 @@ internal sealed class WebSessionCatalog : ISessionCatalog
 
     [StructLayout(LayoutKind.Auto)]
     internal readonly record struct SnapshotStamp(long Revision, long Sequence);
+
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct EntryRevision(long Last, long Created, long Status, long Classification, long Closed);
 }

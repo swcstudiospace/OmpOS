@@ -84,13 +84,11 @@ internal sealed class CatalogEventHub
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                var (batch, wake, nextCursor, overflow) = ReadAfter(cursor);
-                cursor = nextCursor;
+                var (batch, wake, overflow) = ReadAfter(cursor);
 
                 if (overflow)
                 {
                     yield return Resync(ownerId);
-                    continue;
                 }
 
                 if (batch.Length == 0)
@@ -125,14 +123,14 @@ internal sealed class CatalogEventHub
         CatalogEventKinds.Resync,
         JsonSerializer.Serialize(new CatalogResyncEvent { Reason = "The requested position is no longer retained. Reload the session list." }, CatalogJsonContext.Default.CatalogResyncEvent));
 
-    private (CatalogEventRecord[] Batch, Task Wake, long Cursor, bool Overflow) ReadAfter(long cursor)
+    private (CatalogEventRecord[] Batch, Task Wake, bool Overflow) ReadAfter(long cursor)
     {
         lock (_gate)
         {
             var oldest = _history.Count > 0 ? _history[0].Id : _last + 1;
             return cursor < oldest - 1
-                ? ([], _tick.Task, _last, true)
-                : ([.. _history.Where(record => record.Id > cursor)], _tick.Task, cursor, false);
+                ? ([.. _history], _tick.Task, true)
+                : ([.. _history.Where(record => record.Id > cursor)], _tick.Task, false);
         }
     }
 

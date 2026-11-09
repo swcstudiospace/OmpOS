@@ -32,6 +32,7 @@ public sealed class CatalogEventStreamTests
         {
             _ = hub.Publish("other", "other", "{}");
         }
+        _ = hub.Publish("owner", "stage", "{}");
 
         var overflow = stream.MoveNextAsync().AsTask();
         try
@@ -39,6 +40,8 @@ public sealed class CatalogEventStreamTests
             (await overflow.WaitAsync(TimeSpan.FromSeconds(2), bound.Token).ConfigureAwait(true)).ShouldBeTrue();
             stream.Current.Kind.ShouldBe("resync");
             _ = hub.Publish("owner", "fresh", "{}");
+            (await stream.MoveNextAsync().AsTask().WaitAsync(bound.Token).ConfigureAwait(true)).ShouldBeTrue();
+            stream.Current.Kind.ShouldBe("stage");
             (await stream.MoveNextAsync().AsTask().WaitAsync(bound.Token).ConfigureAwait(true)).ShouldBeTrue();
             stream.Current.Kind.ShouldBe("fresh");
         }

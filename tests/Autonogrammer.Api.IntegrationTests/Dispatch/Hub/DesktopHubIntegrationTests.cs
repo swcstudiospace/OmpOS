@@ -105,6 +105,14 @@ public sealed class DesktopHubIntegrationTests
         var fourth = await EnqueueAsync(owner, deviceId, cancellationToken).ConfigureAwait(true);
         await WaitForStateAsync(store, fourth, DispatchCommandState.Completed, cancellationToken).ConfigureAwait(true);
         handler.Calls.ShouldBe(4);
+        var fifth = await EnqueueAsync(owner, deviceId, cancellationToken).ConfigureAwait(true);
+        await handler.FifthStarted.Task.WaitAsync(cancellationToken).ConfigureAwait(true);
+        await WaitForStateAsync(store, fifth, DispatchCommandState.Running, cancellationToken).ConfigureAwait(true);
+        var requested = await DispatchTestClient.SendAsync(owner, HttpMethod.Post, "/dispatch/commands/" + fifth + "/cancel", null, cancellationToken).ConfigureAwait(true);
+        requested.Status.ShouldBe(HttpStatusCode.OK);
+        HubTestSockets.Field(requested.Body, "state").ShouldBe("running");
+        await handler.FifthCancelled.Task.WaitAsync(cancellationToken).ConfigureAwait(true);
+        await WaitForStateAsync(store, fifth, DispatchCommandState.Cancelled, cancellationToken).ConfigureAwait(true);
     }
 
     private static async Task<string> EnqueueAsync(HttpClient owner, string deviceId, CancellationToken cancellationToken)
@@ -147,6 +155,10 @@ public sealed class DesktopHubIntegrationTests
 
         public TaskCompletionSource Cancelled { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+        public TaskCompletionSource FifthStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource FifthCancelled { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         public int Calls { get; private set; }
 
         public bool CanHandle(DispatchOp op) => op == DispatchOp.SessionList;
@@ -169,6 +181,19 @@ public sealed class DesktopHubIntegrationTests
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
                     Cancelled.TrySetResult();
+                    throw;
+                }
+            }
+            else if (Calls == 5)
+            {
+                FifthStarted.TrySetResult();
+                try
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    FifthCancelled.TrySetResult();
                     throw;
                 }
             }

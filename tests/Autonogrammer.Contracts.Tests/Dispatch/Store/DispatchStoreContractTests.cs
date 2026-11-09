@@ -171,6 +171,61 @@ public abstract class DispatchStoreContractTests<TStore> where TStore : IDispatc
         (await store.GetCommandAsync("acct", "stale-cancel", ct).ConfigureAwait(true)).ShouldBeNull();
     }
 
+    /// <summary>A controller cancellation leaves a running target unchanged until the device reports its outcome.</summary>
+    [Fact]
+    public async Task RunningCancellationIsQueuedOnceEvenWhenTheQueueIsFull()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var clock = new MutableTime();
+        var store = await CreateStoreAsync(DispatchStoreLimits.Default with { MaxQueuedPerDevice = 1 }, clock, ct).ConfigureAwait(true);
+        await CreateDeviceAsync(store, "acct", "dev", ct).ConfigureAwait(true);
+        await EnqueueAsync(store, "acct", "dev", "target", "target-key", "fp", ct).ConfigureAwait(true);
+        await MoveToRunningAsync(store, "acct", "target", ct).ConfigureAwait(true);
+        var queued = new EnqueueDispatchCommand("acct", "dev", "queued", "queued-key", "fp", DispatchCapability.Sessions, DispatchOp.SessionList, "{}", clock.UtcNow, clock.UtcNow.AddMinutes(5));
+        (await store.EnqueueAsync(queued, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchEnqueueStatus.Accepted);
+        var cancel = new EnqueueDispatchCommand("acct", "dev", "cancel", " dispatch.cancel:target:1", "fp", DispatchCapability.Sessions, DispatchOp.CommandCancel, "{\"commandId\":\"target\"}", clock.UtcNow, clock.UtcNow.AddMinutes(5));
+        var wrongDevice = cancel with { DeviceId = "other", CommandId = "wrong" };
+        (await store.TryRequestCancelAsync("acct", "target", wrongDevice, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Rejected);
+        var attempts = Enumerable.Range(0, 8).Select(_ => store.TryRequestCancelAsync("acct", "target", cancel, ct).AsTask()).ToArray();
+        (await Task.WhenAll(attempts).ConfigureAwait(true)).Count(static result => result.Status == DispatchTransitionStatus.Applied).ShouldBe(1);
+        (await store.GetCommandAsync("acct", "target", ct).ConfigureAwait(true))!.State.ShouldBe(DispatchCommandState.Running);
+        var rows = await store.ListQueuedAfterAsync("acct", "dev", 0, ct).ConfigureAwait(true);
+        rows.Select(static row => row.CommandId).ShouldBe(["queued", "cancel"]);
+        (await store.TryTransitionAsync("acct", "target", DispatchCommandState.Running, DispatchCommandState.Completed, null, null, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+        var stale = cancel with { CommandId = "stale", IdempotencyKey = " dispatch.cancel:target:2" };
+        (await store.TryRequestCancelAsync("acct", "target", stale, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Rejected);
+        (await store.GetCommandAsync("acct", "stale", ct).ConfigureAwait(true)).ShouldBeNull();
+    }
+
+    /// <summary>An in-flight cancellation request never fabricates a terminal result.</summary>
+    [Theory]
+    [InlineData(DispatchCommandState.Delivered)]
+    [InlineData(DispatchCommandState.Received)]
+    [InlineData(DispatchCommandState.AwaitingApproval)]
+    [InlineData(DispatchCommandState.Accepted)]
+    public async Task CancellationOfInFlightCommandWaitsForTheDevice(DispatchCommandState state)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var clock = new MutableTime();
+        var store = await CreateStoreAsync(DispatchStoreLimits.Default, clock, ct).ConfigureAwait(true);
+        await CreateDeviceAsync(store, "acct", "dev", ct).ConfigureAwait(true);
+        await EnqueueAsync(store, "acct", "dev", "target", "target-key", "fp", ct).ConfigureAwait(true);
+        (await store.TryTransitionAsync("acct", "target", DispatchCommandState.Queued, DispatchCommandState.Delivered, null, null, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+        if (state != DispatchCommandState.Delivered)
+        {
+            (await store.TryTransitionAsync("acct", "target", DispatchCommandState.Delivered, DispatchCommandState.Received, null, null, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+        }
+        if (state is DispatchCommandState.AwaitingApproval or DispatchCommandState.Accepted)
+        {
+            (await store.TryTransitionAsync("acct", "target", DispatchCommandState.Received, state, null, null, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+        }
+
+        var control = new EnqueueDispatchCommand("acct", "dev", "cancel", " dispatch.cancel:target:1", "fp", DispatchCapability.Sessions, DispatchOp.CommandCancel, "{\"commandId\":\"target\"}", clock.UtcNow, clock.UtcNow.AddMinutes(5));
+        (await store.TryRequestCancelAsync("acct", "target", control, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.Applied);
+        (await store.GetCommandAsync("acct", "target", ct).ConfigureAwait(true))!.State.ShouldBe(state);
+        (await store.ListQueuedAfterAsync("acct", "dev", 0, ct).ConfigureAwait(true)).Any(static row => string.Equals(row.CommandId, "cancel", StringComparison.Ordinal)).ShouldBeTrue();
+    }
+
     /// <summary>A source prefix is recorded for a known device only, and reads back on that device.</summary>
     [Fact]
     public async Task SourcePrefixIsRecordedForKnownDevicesOnly()

@@ -470,6 +470,36 @@ internal sealed class InMemoryDispatchStore : IDispatchStore
     }
 
     /// <inheritdoc />
+    public ValueTask<DispatchTransitionResult> TryRequestCancelAsync(string accountId, string commandId, EnqueueDispatchCommand cancellation, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(commandId);
+        ArgumentNullException.ThrowIfNull(cancellation);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_gate)
+        {
+            if (!_commands.TryGetValue((accountId, commandId), out var row))
+            {
+                return ValueTask.FromResult(new DispatchTransitionResult(DispatchTransitionStatus.NotFound, null));
+            }
+
+            if (row.State is not (DispatchCommandState.Delivered or DispatchCommandState.Received or DispatchCommandState.AwaitingApproval or DispatchCommandState.Accepted or DispatchCommandState.Running)
+                || row.Op == DispatchOp.CommandCancel || cancellation.Op != DispatchOp.CommandCancel
+                || !string.Equals(cancellation.AccountId, accountId, StringComparison.Ordinal)
+                || !string.Equals(cancellation.DeviceId, row.DeviceId, StringComparison.Ordinal)
+                || !_devices.TryGetValue((accountId, row.DeviceId), out var device) || device.RevokedAt is not null
+                || _commands.ContainsKey((accountId, cancellation.CommandId))
+                || (cancellation.IdempotencyKey is { Length: > 0 } key && _idempotency.ContainsKey((accountId, row.DeviceId, key))))
+            {
+                return ValueTask.FromResult(new DispatchTransitionResult(DispatchTransitionStatus.Rejected, row.State));
+            }
+
+            _ = Insert(device, cancellation);
+            return ValueTask.FromResult(new DispatchTransitionResult(DispatchTransitionStatus.Applied, row.State));
+        }
+    }
+
+    /// <inheritdoc />
     public ValueTask<bool> RecordSourcePrefixAsync(string accountId, string deviceId, string? sourcePrefix, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(accountId);

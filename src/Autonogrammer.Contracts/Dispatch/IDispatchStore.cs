@@ -148,6 +148,14 @@ public interface IDispatchStore
     /// <returns>The transition outcome; a rejected transition enqueues nothing.</returns>
     ValueTask<DispatchTransitionResult> TryTimeoutAndEnqueueAsync(string accountId, string commandId, DispatchCommandState expected, EnqueueDispatchCommand cancellation, DispatchFeedDraft feed, CancellationToken cancellationToken);
 
+    /// <summary>Atomically queues a control for an already-delivered command without claiming the work has stopped.</summary>
+    /// <param name="accountId">The owning account.</param>
+    /// <param name="commandId">The delivered or in-flight command.</param>
+    /// <param name="cancellation">A same-device cancellation control.</param>
+    /// <param name="cancellationToken">Cancels the transaction.</param>
+    /// <returns>Applied, rejected, or not found. Applied leaves the target unchanged until the device reports its result.</returns>
+    ValueTask<DispatchTransitionResult> TryRequestCancelAsync(string accountId, string commandId, EnqueueDispatchCommand cancellation, CancellationToken cancellationToken);
+
     /// <summary>Appends a feed event. Identifiers increase strictly per account.</summary>
     /// <param name="accountId">The account.</param>
     /// <param name="kind">Event kind.</param>

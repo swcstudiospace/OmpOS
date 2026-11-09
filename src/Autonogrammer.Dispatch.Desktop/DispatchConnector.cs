@@ -555,6 +555,20 @@ public sealed class DispatchConnector
 
     private async Task CancelCommandAsync(AcpWebSocketTransport transport, DispatchCmdFrame frame, byte[] payload, bool outOfOrder, CancellationToken cancellationToken)
     {
+        var target = ReadCancellationTarget(payload);
+        if (outOfOrder && target is not null)
+        {
+            lock (_pendingGate)
+            {
+                // The target may be among the ordinary frames deferred by a full inbox.
+                // Leave this control unacknowledged so both are redelivered in order.
+                if (!_pending.ContainsKey(target))
+                {
+                    return;
+                }
+            }
+        }
+
         var admission = outOfOrder
             ? _dedupe.AdmitOutOfOrder(frame.CommandId, frame.Nonce, frame.Seq)
             : _dedupe.Admit(frame.CommandId, frame.Nonce, frame.Seq);
@@ -568,7 +582,6 @@ public sealed class DispatchConnector
             return;
         }
 
-        var target = ReadCancellationTarget(payload);
         DispatchPendingCommand? pending = null;
         if (target is not null)
         {

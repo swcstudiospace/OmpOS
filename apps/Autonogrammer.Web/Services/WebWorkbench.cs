@@ -383,6 +383,14 @@ internal sealed class WebWorkbench : IAsyncDisposable
                     if (_catalog.Find(runtime.ViewModel.Id) is { } entry)
                     {
                         await runtime.ApplyStatusAsync(entry.RowStatus).ConfigureAwait(true);
+                        try
+                        {
+                            await runtime.Stages.RefreshAsync(cancellationToken).ConfigureAwait(true);
+                        }
+                        catch (Exception fault) when (WebFailureText.IsExpected(fault))
+                        {
+                            // A failed stage read must not prevent the other sessions from resyncing.
+                        }
                     }
                 }
 

@@ -1,7 +1,9 @@
 using System.Buffers.Text;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Autonogrammer.Api.Idempotency;
 using Autonogrammer.Api.Security;
 using Autonogrammer.Api.Services;
@@ -332,6 +334,8 @@ internal static class CommandEndpoints
         [FromServices] IDispatchStore store,
         [FromServices] IDispatchSignals signals,
         IUserContext user,
+        IOptions<DispatchOptions> options,
+        TimeProvider time,
         CancellationToken cancellationToken)
     {
         var owner = user.Name;
@@ -339,6 +343,11 @@ internal static class CommandEndpoints
         if (row is null)
         {
             return CommandNotFound();
+        }
+
+        if (row.State is DispatchCommandState.Delivered or DispatchCommandState.Received or DispatchCommandState.AwaitingApproval or DispatchCommandState.Accepted or DispatchCommandState.Running)
+        {
+            return await RequestCancelAsync(row, store, signals, options.Value.QueueTtl, time, cancellationToken).ConfigureAwait(false);
         }
 
         if (!DispatchTransitions.Allows(row.State, DispatchCommandState.Cancelled))
@@ -365,6 +374,32 @@ internal static class CommandEndpoints
         }
 
         return TypedResults.Json(ToDto(updated), DispatchJsonContext.Default.DispatchCommandDto);
+    }
+
+    private static async Task<Results<JsonHttpResult<DispatchCommandDto>, ProblemHttpResult>> RequestCancelAsync(
+        DispatchCommandRecord row, IDispatchStore store, IDispatchSignals signals, TimeSpan queueTtl, TimeProvider time, CancellationToken cancellationToken)
+    {
+        var body = new JsonObject { ["commandId"] = row.CommandId }.ToJsonString();
+        var bodyHash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(body)));
+        var fingerprint = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes($"{DispatchCapability.Sessions}\n{DispatchOp.CommandCancel}\n{bodyHash}")));
+        var issuedAt = time.GetUtcNow();
+        var window = (issuedAt.UtcTicks / queueTtl.Ticks).ToString(CultureInfo.InvariantCulture);
+        var cancellation = new EnqueueDispatchCommand(
+            row.AccountId, row.DeviceId, DispatchCommandIds.New(time), " dispatch.cancel:" + row.CommandId + ":" + window,
+            fingerprint, DispatchCapability.Sessions, DispatchOp.CommandCancel, body, issuedAt, issuedAt + queueTtl);
+        var result = await store.TryRequestCancelAsync(row.AccountId, row.CommandId, cancellation, cancellationToken).ConfigureAwait(false);
+        if (result.Status == DispatchTransitionStatus.NotFound)
+        {
+            return CommandNotFound();
+        }
+
+        if (result.Status == DispatchTransitionStatus.Rejected)
+        {
+            return Problem(StatusCodes.Status409Conflict, "command_state_changed", "Command state changed.", "The command changed or a cancellation was already requested. Read it again.");
+        }
+
+        await signals.PublishAsync(row.DeviceId, cancellationToken).ConfigureAwait(false);
+        return TypedResults.Json(ToDto(row), DispatchJsonContext.Default.DispatchCommandDto);
     }
 
     private static JsonHttpResult<DispatchCommandAcceptedResponse> Accepted(DispatchCommandAcceptedResponse body) =>

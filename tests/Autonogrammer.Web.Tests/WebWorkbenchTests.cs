@@ -130,6 +130,24 @@ public sealed class WebWorkbenchTests : IDisposable
         }
     }
 
+    /// <summary>A resync reloads stages lost from the bounded feed, even for an idle session.</summary>
+    [Fact]
+    public async Task ResyncReloadsStagesForAnOpenIdleSession()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var workbench = NewWorkbench();
+        await using var scope = workbench.ConfigureAwait(true);
+        await workbench.StartAsync(ct).ConfigureAwait(true);
+        workbench.Panel.SelectSession(DemoFixtures.CompletedId).ShouldBeTrue();
+        var session = workbench.Panel.Selected.ShouldNotBeNull();
+        await _host.PumpUntilAsync(() => session.Timeline.StatusOf(StageSource.Gsd) == StageStatus.Succeeded).ConfigureAwait(true);
+        var stages = _host.World.Find(session.Id).Stages;
+        var index = stages.FindIndex(static stage => stage.Source == StageSource.Gsd);
+        stages[index] = stages[index] with { Status = StageStatus.Failed, Timestamp = _host.Time.GetUtcNow().AddMinutes(1) };
+        _host.World.Bus.Publish(CatalogEventKinds.Resync, JsonSerializer.Serialize(new CatalogResyncEvent { Reason = "history overflow" }, CatalogJsonContext.Default.CatalogResyncEvent));
+        await _host.PumpUntilAsync(() => session.Timeline.StatusOf(StageSource.Gsd) == StageStatus.Failed).ConfigureAwait(true);
+    }
+
     /// <summary>A stale resync response cannot remove a newer chat, its selection or its unsent draft.</summary>
     [Fact]
     public async Task ResyncSnapshotCannotDiscardANewerChatOrDraft()
@@ -189,9 +207,14 @@ public sealed class WebWorkbenchTests : IDisposable
         }
 
         var afterChanges = catalogue.BeginSnapshot();
-        var withoutRemoved = rows.Where(row => !string.Equals(row.Id, removed.Id, StringComparison.Ordinal)).ToArray();
+        var withoutRemoved = rows.Where(row => !string.Equals(row.Id, removed.Id, StringComparison.Ordinal))
+            .Select(row => string.Equals(row.Id, first.Id, StringComparison.Ordinal)
+                ? row with { Messages = [new Message { Role = "user", Content = "new prompt", Timestamp = _host.Time.GetUtcNow() }], Closed = !first.Closed }
+                : row).ToArray();
         catalogue.MergeSnapshot(withoutRemoved, beforeChanges).ShouldBeTrue();
         catalogue.Find(first.Id)!.RowStatus.ShouldBe(CatalogRowStatus.Running);
+        catalogue.Find(first.Id)!.Messages.Single().Content.ShouldBe("new prompt");
+        catalogue.Find(first.Id)!.Closed.ShouldBe(!first.Closed);
         var current = withoutRemoved.Select(row => string.Equals(row.Id, first.Id, StringComparison.Ordinal)
             ? row with { Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running }
             : row).ToArray();
