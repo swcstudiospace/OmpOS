@@ -227,9 +227,7 @@ internal sealed class WebWorkbench : IAsyncDisposable
 
     private async Task ReloadAsync(CancellationToken cancellationToken)
     {
-        var sessions = await _api.ListSessionsAsync(cancellationToken).ConfigureAwait(true);
-        _catalog.Replace(sessions);
-        await PruneRuntimesAsync().ConfigureAwait(true);
+        await RefreshCatalogAsync(cancellationToken).ConfigureAwait(true);
         Workspace = await TryAsync(_api.GetWorkspaceAsync, cancellationToken).ConfigureAwait(true);
         Source = await TryAsync(_api.GetSourceAsync, cancellationToken).ConfigureAwait(true);
         Changed?.Invoke(this, EventArgs.Empty);
@@ -301,6 +299,12 @@ internal sealed class WebWorkbench : IAsyncDisposable
         var listed = _catalog.Entries.Select(static entry => entry.Id).ToHashSet(StringComparer.Ordinal);
         foreach (var id in _runtimes.Keys.Where(id => !listed.Contains(id)).ToList())
         {
+            // A session created while another runtime was being disposed is not stale.
+            if (_catalog.Find(id) is not null)
+            {
+                continue;
+            }
+
             var runtime = _runtimes[id];
             _ = _runtimes.Remove(id);
             await runtime.DisposeAsync().ConfigureAwait(true);
@@ -392,12 +396,21 @@ internal sealed class WebWorkbench : IAsyncDisposable
     {
         try
         {
-            _catalog.Replace(await _api.ListSessionsAsync(cancellationToken).ConfigureAwait(true));
-            await PruneRuntimesAsync().ConfigureAwait(true);
+            await RefreshCatalogAsync(cancellationToken).ConfigureAwait(true);
         }
         catch (Exception fault) when (WebFailureText.IsExpected(fault))
         {
             // The stream stays open; the next event or Retry loads the list again.
+        }
+    }
+
+    private async Task RefreshCatalogAsync(CancellationToken cancellationToken)
+    {
+        var stamp = _catalog.BeginSnapshot();
+        var sessions = await _api.ListSessionsAsync(cancellationToken).ConfigureAwait(true);
+        if (_catalog.MergeSnapshot(sessions, stamp))
+        {
+            await PruneRuntimesAsync().ConfigureAwait(true);
         }
     }
 }

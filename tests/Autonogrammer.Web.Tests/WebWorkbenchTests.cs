@@ -130,6 +130,100 @@ public sealed class WebWorkbenchTests : IDisposable
         }
     }
 
+    /// <summary>A stale resync response cannot remove a newer chat, its selection or its unsent draft.</summary>
+    [Fact]
+    public async Task ResyncSnapshotCannotDiscardANewerChatOrDraft()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var captured = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var reads = 0;
+        _host.Interceptor.AfterResponse = async (request, _, token) =>
+        {
+            if (request.Method == HttpMethod.Get && string.Equals(request.RequestUri!.AbsolutePath, "/sessions", StringComparison.Ordinal)
+                && Interlocked.Increment(ref reads) == 2)
+            {
+                captured.TrySetResult();
+                await release.Task.WaitAsync(token).ConfigureAwait(false);
+            }
+        };
+        var workbench = NewWorkbench();
+        await using var scope = workbench.ConfigureAwait(true);
+        try
+        {
+            await workbench.StartAsync(ct).ConfigureAwait(true);
+            await captured.Task.WaitAsync(ct).ConfigureAwait(true);
+            await workbench.Panel.NewSessionAsync(ct).ConfigureAwait(true);
+            var created = workbench.Panel.Selected.ShouldNotBeNull();
+            created.Composer.Draft = "keep this draft";
+            release.TrySetResult();
+            var status = new SessionStatusEvent { SessionId = DemoFixtures.CompletedId, Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running, LastActivityAt = _host.Time.GetUtcNow() };
+            _host.World.Bus.Publish(CatalogEventKinds.SessionStatus, JsonSerializer.Serialize(status, CatalogJsonContext.Default.SessionStatusEvent));
+            await _host.PumpUntilAsync(() => workbench.Panel.Catalog.Sessions.Single(row => string.Equals(row.Id, DemoFixtures.CompletedId, StringComparison.Ordinal)).Status == AgentRowStatus.Running).ConfigureAwait(true);
+            workbench.Panel.Selected.ShouldBeSameAs(created);
+            created.Composer.Draft.ShouldBe("keep this draft");
+            workbench.Panel.Catalog.Sessions.ShouldContain(row => string.Equals(row.Id, created.Id, StringComparison.Ordinal));
+        }
+        finally
+        {
+            release.TrySetResult();
+        }
+    }
+
+    /// <summary>A snapshot merges unrelated rows while preserving newer status changes, and an older response cannot resurrect removed rows.</summary>
+    [Fact]
+    public async Task CatalogueSnapshotsMergeNewerChangesWithoutRetrying()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var rows = await _host.Api.ListSessionsAsync(ct).ConfigureAwait(true);
+        var catalogue = new WebSessionCatalog();
+        catalogue.MergeSnapshot(rows, catalogue.BeginSnapshot()).ShouldBeTrue();
+        var beforeChanges = catalogue.BeginSnapshot();
+        var first = rows.Single(row => string.Equals(row.Id, DemoFixtures.CompletedId, StringComparison.Ordinal));
+        var removed = rows.Single(row => string.Equals(row.Id, DemoFixtures.FailedId, StringComparison.Ordinal));
+        first.RowStatus.ShouldBe(CatalogRowStatus.Completed);
+        var status = new SessionStatusEvent { SessionId = first.Id, Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running, LastActivityAt = _host.Time.GetUtcNow() };
+        for (var index = 0; index < 20; index++)
+        {
+            catalogue.Apply(status).ShouldBeTrue();
+        }
+
+        var afterChanges = catalogue.BeginSnapshot();
+        var withoutRemoved = rows.Where(row => !string.Equals(row.Id, removed.Id, StringComparison.Ordinal)).ToArray();
+        catalogue.MergeSnapshot(withoutRemoved, beforeChanges).ShouldBeTrue();
+        catalogue.Find(first.Id)!.RowStatus.ShouldBe(CatalogRowStatus.Running);
+        var current = withoutRemoved.Select(row => string.Equals(row.Id, first.Id, StringComparison.Ordinal)
+            ? row with { Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running }
+            : row).ToArray();
+        catalogue.MergeSnapshot(current, afterChanges).ShouldBeTrue();
+        catalogue.MergeSnapshot(rows, beforeChanges).ShouldBeFalse();
+        catalogue.Find(removed.Id).ShouldBeNull();
+    }
+
+    /// <summary>A just-created session survives stale lists until the server confirms it, then ordinary removal works.</summary>
+    [Fact]
+    public async Task UnconfirmedCreatedSessionSurvivesStaleSnapshots()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var oldRows = await _host.Api.ListSessionsAsync(ct).ConfigureAwait(true);
+        var catalogue = new WebSessionCatalog();
+        catalogue.MergeSnapshot(oldRows, catalogue.BeginSnapshot()).ShouldBeTrue();
+        var created = await _host.Api.CreateSessionAsync(ct).ConfigureAwait(true);
+        catalogue.EnsureCreated(created);
+        catalogue.MergeSnapshot(oldRows, catalogue.BeginSnapshot()).ShouldBeTrue();
+        catalogue.Find(created.Id).ShouldNotBeNull();
+        var confirmed = await _host.Api.ListSessionsAsync(ct).ConfigureAwait(true);
+        catalogue.MergeSnapshot(confirmed, catalogue.BeginSnapshot()).ShouldBeTrue();
+        var stale = catalogue.BeginSnapshot();
+        catalogue.EnsureCreated(created);
+        catalogue.MergeSnapshot(confirmed, stale).ShouldBeTrue();
+        catalogue.MergeSnapshot(oldRows, catalogue.BeginSnapshot()).ShouldBeTrue();
+        catalogue.Find(created.Id).ShouldNotBeNull();
+        catalogue.MergeSnapshot(confirmed, catalogue.BeginSnapshot()).ShouldBeTrue();
+        catalogue.MergeSnapshot(oldRows, catalogue.BeginSnapshot()).ShouldBeTrue();
+        catalogue.Find(created.Id).ShouldBeNull();
+    }
+
     /// <summary>A fresh snapshot skips old history rather than reloading once per stale event.</summary>
     [Fact]
     public async Task InitialResyncSkipsStaleHistoryWithoutRepeatedCatalogueReads()

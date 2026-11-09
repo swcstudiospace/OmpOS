@@ -15,6 +15,43 @@ namespace Autonogrammer.Api.IntegrationTests;
 /// </summary>
 public sealed class CatalogEventStreamTests
 {
+    /// <summary>A slow subscriber is told to resync when an event it has not read falls out of retained history.</summary>
+    [Fact]
+    public async Task SlowSubscriber_ResyncsAfterHistoryOverflow()
+    {
+        using var bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        bound.CancelAfter(TimeSpan.FromSeconds(10));
+        var hub = new CatalogEventHub();
+        await using var stream = hub.SubscribeAsync("owner", null, bound.Token).GetAsyncEnumerator(bound.Token);
+        var first = stream.MoveNextAsync().AsTask();
+        _ = hub.Publish("owner", "first", "{}");
+        (await first.WaitAsync(bound.Token).ConfigureAwait(true)).ShouldBeTrue();
+        stream.Current.Kind.ShouldBe("first");
+        _ = hub.Publish("owner", "lost", "{}");
+        for (var index = 0; index < CatalogEventHub.Capacity; index++)
+        {
+            _ = hub.Publish("other", "other", "{}");
+        }
+
+        var overflow = stream.MoveNextAsync().AsTask();
+        try
+        {
+            (await overflow.WaitAsync(TimeSpan.FromSeconds(2), bound.Token).ConfigureAwait(true)).ShouldBeTrue();
+            stream.Current.Kind.ShouldBe("resync");
+            _ = hub.Publish("owner", "fresh", "{}");
+            (await stream.MoveNextAsync().AsTask().WaitAsync(bound.Token).ConfigureAwait(true)).ShouldBeTrue();
+            stream.Current.Kind.ShouldBe("fresh");
+        }
+        finally
+        {
+            await bound.CancelAsync().ConfigureAwait(true);
+            if (!overflow.IsCompleted)
+            {
+                _ = await overflow.ConfigureAwait(true);
+            }
+        }
+    }
+
     /// <summary>A new session produces a created change, a status and a stage event, in that order, with consecutive identifiers.</summary>
     [Fact]
     public async Task NewSession_PublishesChangeStatusAndStage_WithIdentifiers()

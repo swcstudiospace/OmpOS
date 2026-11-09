@@ -79,21 +79,18 @@ internal sealed class CatalogEventHub
 
             if (resync)
             {
-                yield return new CatalogEventRecord(
-                    0,
-                    ownerId,
-                    CatalogEventKinds.Resync,
-                    JsonSerializer.Serialize(new CatalogResyncEvent { Reason = "The requested position is no longer retained. Reload the session list." }, CatalogJsonContext.Default.CatalogResyncEvent));
+                yield return Resync(ownerId);
             }
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                CatalogEventRecord[] batch;
-                Task wake;
-                lock (_gate)
+                var (batch, wake, nextCursor, overflow) = ReadAfter(cursor);
+                cursor = nextCursor;
+
+                if (overflow)
                 {
-                    batch = [.. _history.Where(record => record.Id > cursor)];
-                    wake = _tick.Task;
+                    yield return Resync(ownerId);
+                    continue;
                 }
 
                 if (batch.Length == 0)
@@ -119,6 +116,23 @@ internal sealed class CatalogEventHub
         finally
         {
             _ = Interlocked.Decrement(ref _subscribers);
+        }
+    }
+
+    private static CatalogEventRecord Resync(string ownerId) => new(
+        0,
+        ownerId,
+        CatalogEventKinds.Resync,
+        JsonSerializer.Serialize(new CatalogResyncEvent { Reason = "The requested position is no longer retained. Reload the session list." }, CatalogJsonContext.Default.CatalogResyncEvent));
+
+    private (CatalogEventRecord[] Batch, Task Wake, long Cursor, bool Overflow) ReadAfter(long cursor)
+    {
+        lock (_gate)
+        {
+            var oldest = _history.Count > 0 ? _history[0].Id : _last + 1;
+            return cursor < oldest - 1
+                ? ([], _tick.Task, _last, true)
+                : ([.. _history.Where(record => record.Id > cursor)], _tick.Task, cursor, false);
         }
     }
 
