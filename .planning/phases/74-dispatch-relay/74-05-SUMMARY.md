@@ -37,6 +37,7 @@ The Dispatch relay connects paired desktops to the API over outbound WebSockets.
 - A delayed catalogue snapshot merges around newer streamed and local changes instead of removing a newly created conversation or its draft; an older response cannot replace a later-started snapshot. A live feed that falls behind retained history emits a resync rather than silently skipping events.
 - A controller cancel request marks a still-queued command cancelled; for delivered or in-flight work it atomically enqueues a same-device control while leaving the target nonterminal until the device reports an outcome. A control for a target skipped by a full inbox remains unacknowledged for ordered redelivery after capacity returns.
 - Catalogue merges retain newer changed fields while accepting untouched snapshot fields. Overflow captures the retained batch before yielding resync, and open sessions reload stage snapshots to recover events no longer retained.
+- A retained status older than the current catalogue row is ignored entirely, including the runtime-follow action, so replay does not regress activity or restart a completed chat.
 
 ## Verification
 
@@ -57,6 +58,7 @@ The Dispatch relay connects paired desktops to the API over outbound WebSockets.
 - After `cb96864`, the delayed-snapshot and slow-subscriber fixes passed **443 web tests** and **10 catalogue event-stream tests**. The slow-subscriber regression failed before the fix (the underlying read remained pending) and passed afterward. Targeted format verification passed. A newly published Demo in isolated Chromium created a conversation, sent a message and reached **Completed**. The clean gate above predates these changes.
 - `9096811`: **127 Dispatch API integration tests, 28 Postgres Dispatch store tests, 77 desktop Dispatch tests, 10 catalogue-stream tests and 444 web tests passed**. The real hub/desktop test reproduced the premature `cancelled` response, then verified the handler token and device-reported result. The full-inbox test verifies deferred-target cancellation after reconnect. The stale-prompt and lost-stage regressions failed before their fixes and passed afterward; a published Demo turn reached Completed in isolated Chromium. Targeted formatting passed. The clean gate at `cb96864` predates all these changes.
 - Clean checkout of `26b6d37`, with one test module at a time: **14,925 tests: 14,922 passed, 0 failed, 3 skipped**. `./bootstrap.sh` passed locked restore, Release warnings-as-errors build, formatting, Gitleaks, and API/Demo/artifact browser smokes with axe. Evidence: `/tmp/tmp.JuKSX3ZbkR`. This gate includes `9096811`.
+- `3915939`: the stale-status regression failed before the fix; **446 web tests passed** afterward, including a completed-session runtime regression. Targeted formatting passed and a published Demo turn reached Completed in isolated Chromium. The clean `26b6d37` gate predates this fix.
 - Format verification and the API, Demo and artifact browser/axe smokes also passed separately against `2d5907c`; evidence is in `/tmp/ag-74-05-final-smoke`. Those runs predate the web resync change and did not make that earlier full gate green.
 - Architecture suite: **83 passed**. Repo checks and SBOM check passed. The documentation check initially reported one GitBook-outside-root link; it was changed to a GitHub URL and the subsequent check reported **0 errors and 0 warnings**.
 - The first clean-checkout bootstrap stopped at the history secret scan on the fixed RFC 6455 example WebSocket nonce in `06787cc`. It is not a credential. `4cd7404` replaces the current test value with a generated nonce and allowlists only that historical fingerprint. The history scan and clean bootstrap subsequently passed.
@@ -89,3 +91,4 @@ The Dispatch relay connects paired desktops to the API over outbound WebSockets.
 - `a494534` — `fix(web): resync without replaying stale catalogue history`
 - `c511de0` — `fix(web): preserve catalogue state across resync`
 - `9096811` — `fix(dispatch): cancel in-flight work and recover catalogue`
+- `3915939` — `fix(web): ignore stale replayed status events`
