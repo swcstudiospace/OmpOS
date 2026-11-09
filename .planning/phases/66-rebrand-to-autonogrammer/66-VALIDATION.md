@@ -2,7 +2,7 @@
 phase: "66"
 slug: "rebrand-to-autonogrammer"
 status: draft
-nyquist_compliant: true
+nyquist_compliant: false
 wave_0_complete: false
 created: "2026-10-28"
 ---
@@ -51,3 +51,5 @@ Windows and macOS data-directory move and system hook paths (compile only); Andr
 
 - [x] All plans carry automated verify with `fails_when`; plan-check: `66-PLAN-CHECK.md` (0 blockers, 3 accepted scope warnings)
 - [ ] `nyquist_compliant` confirmed after execution
+
+The 2026-11-09 read-only coverage audit found outstanding evidence and coverage gaps. The rebrand Python unit suite passed 61 tests on the current checkout; this alone does not establish phase-wide compliance.
