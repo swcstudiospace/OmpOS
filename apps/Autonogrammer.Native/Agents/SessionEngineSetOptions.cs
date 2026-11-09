@@ -51,7 +51,7 @@ internal sealed class SessionEngineSetOptions
     /// <summary>Gets how often the maintenance timer runs. A value that is not positive starts no timer.</summary>
     public TimeSpan MaintenanceInterval { get; init; } = DefaultMaintenanceInterval;
 
-    /// <summary>Gets how a terminal session starts omp: the backend that opens the pseudo-terminal. Null uses <see cref="LinuxLocalPtyBackend"/>.</summary>
+    /// <summary>Gets how a terminal session starts omp: the backend that opens the pseudo-terminal. Null uses <see cref="LocalPtyBackend.ForCurrentOperatingSystem"/>.</summary>
     public ITerminalBackend? TerminalBackend { get; init; }
 
     /// <summary>Gets how omp is located for a terminal session, or null to search <c>PATH</c> and the known install places, after <see cref="OmpPath"/> when that is set.</summary>

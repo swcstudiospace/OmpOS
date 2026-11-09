@@ -3,7 +3,7 @@ namespace Autonogrammer.Harness.Terminal;
 /// <summary>
 /// Starts interactive sessions in a Linux pseudo-terminal, over the same <see cref="PtyCore"/> that
 /// <see cref="PtyProcessRunner"/> uses. It runs only on Linux: on any other operating system <see cref="StartAsync"/>
-/// throws <see cref="PlatformNotSupportedException"/>, because no Windows or macOS backend exists yet.
+/// throws <see cref="PlatformNotSupportedException"/>. Windows uses <see cref="WindowsLocalPtyBackend"/>. macOS has no local terminal backend yet.
 /// </summary>
 /// <remarks>
 /// The executable and the working directory must be absolute, and the caller supplies both. No shell is chosen from the
@@ -72,7 +72,7 @@ public sealed class LinuxLocalPtyBackend : ITerminalBackend
         if (!OperatingSystem.IsLinux())
         {
             throw new PlatformNotSupportedException(
-                "The local terminal backend runs only on Linux. Windows and macOS have no local terminal backend yet.");
+                "The Linux local terminal backend runs only on Linux. Windows uses WindowsLocalPtyBackend. macOS has no local terminal backend yet.");
         }
 
         ArgumentNullException.ThrowIfNull(options.Arguments, nameof(options));

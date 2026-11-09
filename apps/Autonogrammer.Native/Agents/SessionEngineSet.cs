@@ -315,7 +315,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     private PlannedOmpTerminalStarter CreateTerminalStarter(SessionSlot slot) => new(
         slot,
         () => Registry is { } registry && registry.TryGet(slot.Id, out var record) ? record.ResumeReference : null,
-        new OmpTerminalLauncher(_options.TerminalBackend ?? new LinuxLocalPtyBackend(), _options.TerminalLocator ?? OmpLocatorOptions.FromEnvironment(_options.OmpPath)),
+        new OmpTerminalLauncher(_options.TerminalBackend ?? LocalPtyBackend.ForCurrentOperatingSystem(), _options.TerminalLocator ?? OmpLocatorOptions.FromEnvironment(_options.OmpPath)),
         _options.ProviderKeys);
 
     /// <summary>
