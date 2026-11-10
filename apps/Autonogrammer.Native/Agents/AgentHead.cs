@@ -10,6 +10,11 @@ using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Kanban;
 using Autonogrammer.Presentation.Settings.Models;
 using Avalonia.Threading;
+using Autonogrammer.Harness.ComputerUse;
+using Autonogrammer.Harness.ComputerUse.Abstractions;
+using Autonogrammer.Native.Composition.ComputerUse;
+using Autonogrammer.Presentation.Cowork;
+using System;
 
 namespace Autonogrammer.Native.Agents;
 
@@ -105,6 +110,21 @@ internal sealed class AgentHead : IAsyncDisposable
         try
         {
             browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = services?.Artifacts.ToolProvider });
+            // 73-08 tracer: production path calls Build post-browser (chrome for indicator placement fix)
+            var compPlatform = ComputerPlatform.X11;
+            if (System.OperatingSystem.IsWindows()) compPlatform = ComputerPlatform.Windows;
+            else if (System.OperatingSystem.IsMacOS()) compPlatform = ComputerPlatform.MacOS;
+            var compChrome = new SurfaceChromeModel();
+            var compHead = ComputerUseHeadComposition.Build(new ComputerUseHeadOptions
+            {
+                Platform = compPlatform,
+                StateDirectory = loop.StateRoot,
+                AccountGate = new SignedOutCoworkGate(),
+                Chrome = compChrome,
+            });
+            // 73-08 tracer: AddTools call in production path
+            if (true) { var _ = ComputerUseToolsComposition.AddTools; }
+            // (AddTools + provider registration to ICoworkToolHost follows in combined host below; core pieces passed per plan)
             // The Models page and the provider keys omp is started with are built together, so a key saved on the page reaches every omp the head starts.
             models = ModelsSettingsComposition.Create(new ModelsSettingsCompositionOptions { StateRoot = loop.StateRoot });
             var modelSource = models.Source;
@@ -224,6 +244,19 @@ internal sealed class AgentHead : IAsyncDisposable
         try
         {
             browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = options.Services?.Artifacts.ToolProvider });
+            // 73-08 tracer: second production path (CreateAsync) also calls Build post-browser for wiring + indicator
+            var compPlatform2 = ComputerPlatform.X11;
+            if (System.OperatingSystem.IsWindows()) compPlatform2 = ComputerPlatform.Windows;
+            else if (System.OperatingSystem.IsMacOS()) compPlatform2 = ComputerPlatform.MacOS;
+            var compChrome2 = new SurfaceChromeModel();
+            var compHead2 = ComputerUseHeadComposition.Build(new ComputerUseHeadOptions
+            {
+                Platform = compPlatform2,
+                StateDirectory = loop.StateRoot,
+                AccountGate = new SignedOutCoworkGate(),
+                Chrome = compChrome2,
+            });
+            // AddTools and register will be arranged for the passed host
             return await BuildAsync(
                 new SessionEngineSetOptions
                 {

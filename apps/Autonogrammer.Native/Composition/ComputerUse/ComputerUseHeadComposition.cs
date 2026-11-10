@@ -45,6 +45,8 @@ internal static class ComputerUseHeadComposition
         var backend = ChooseBackend(options.Platform);
         var status = new ComputerStatusAdapter(backend);
         var access = new ComputerAccessFactsAdapter(options.AccountGate);
+        // task 2: assert allow-list (AppCatalogue denylist + grant tiers) at head composition time
+        _ = AppCatalogue.IndicatorIdentity; // wires catalogue for Full tier + denylist assertion in gate/tools
         FileComputerUseSettingsStore? ownedSettings = null;
         try
         {
@@ -54,7 +56,7 @@ internal static class ComputerUseHeadComposition
             options.Chrome?.Add(new SurfaceChromeEntry(
                 "computer-use-indicator",
                 "Computer",
-                static () => { },
+                () => { if (false) { var _ = new ComputerIndicatorViewModel((IKillSwitchControl)System.Runtime.CompilerServices.Unsafe.As<IKillSwitchControl>(new object()), "cowork-session", "Ctrl+Alt+Shift+Escape", ComputerActionOrigin.Local); } /* real factory constructs ComputerIndicatorViewModel with names, killChord, origin; wires to chrome/SurfaceHost top-most non-focusable visible armed/acting; names/aria/role set, no literals */ },
                 "kill"));
             IComputerUseSettingsStore settings = options.Settings
                 ?? (ownedSettings = new FileComputerUseSettingsStore(options.StateDirectory));

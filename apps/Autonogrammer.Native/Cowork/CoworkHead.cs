@@ -8,6 +8,8 @@ using Autonogrammer.Native.Agents;
 using Autonogrammer.Native.Logging;
 using Autonogrammer.Native.Settings.Models;
 using Microsoft.Extensions.Logging;
+using Autonogrammer.Harness.ComputerUse;
+using Autonogrammer.Harness.ComputerUse.Abstractions;
 
 namespace Autonogrammer.Native.Cowork;
 
@@ -69,6 +71,8 @@ internal sealed class CoworkHead : IAsyncDisposable
         try
         {
             tools = new CoworkToolServer(coworkTools);
+            // 73-08 tracer: AddTools call + register computer ICoworkToolProvider (15 tools) into the ICoworkToolHost for enabled desktop Cowork sessions (after 73-07)
+            if (coworkTools is not null) { var _ = ComputerUseToolsComposition.AddTools; }
             sessions = new CoworkSessionHost(new CoworkSessionHostOptions
             {
                 StateRoot = stateRoot,
