@@ -1,28 +1,24 @@
-using System.Diagnostics;
-using System.Text.Json;
-using Autonogrammer.Cowork.Abstractions;
-using Microsoft.Extensions.Logging;
-using System.Diagnostics.CodeAnalysis;
- 
  using System.Diagnostics;
  using System.Text.Json;
  using Autonogrammer.Cowork.Abstractions;
  using Microsoft.Extensions.Logging;
+ using System.Diagnostics.CodeAnalysis;
  
  namespace Autonogrammer.Cowork.Tools;
+ 
+ /// <summary>
+ /// The one seam through which Artifacts, Browser Use and Computer Use reach omp.
+ /// InvokeAsync runs the eight steps in order and does not skip a step that applies to a call the host accepted.
+ /// </summary>
+ public sealed partial class CoworkToolHost : ICoworkToolHost
+ {
 
-namespace Autonogrammer.Cowork.Tools;
-
-/// <summary>
-/// The one seam through which Artifacts, Browser Use and Computer Use reach omp.
-/// InvokeAsync runs the eight steps in order and does not skip a step that applies to a call the host accepted.
-/// </summary>
-public sealed partial class CoworkToolHost : ICoworkToolHost
-{
-    /// <summary>The most bytes of JSON arguments a call may carry.</summary>
-    public const int MaxArgumentBytes = 256 * 1024;
-
-    private readonly IReadOnlyList<ICoworkToolProvider> _providers;
+     /// <summary>
+     /// Creates the host.
+     /// </summary>
+     public const int MaxArgumentBytes = 256 * 1024;
+ 
+     private readonly IReadOnlyList<ICoworkToolProvider> _providers;
     private readonly ICoworkPolicyGate _gate;
     private readonly ICoworkApprovalBroker _broker;
     private readonly ICoworkGrantStore _grants;

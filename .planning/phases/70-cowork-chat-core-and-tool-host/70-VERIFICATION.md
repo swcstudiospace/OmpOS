@@ -52,24 +52,22 @@ covered_files:
 | 70-06 | Focus order, accessible names, reduced motion, no colour literals | CLAIMED | 70-06-SUMMARY.md:58-62 (CssContractTests and StyleAccessibilityTests pass against the stylesheet; Native accessibility tests not executed) |
 | 70-06 | Model that reads no images turns image tools and attachments off with a changeable message | CLAIMED | 70-06-SUMMARY.md:54 |
 
-## Gaps
-
-1. **Steering is a no-op (GAP, must-have 70-04 truth 2, phase goal).** apps/Autonogrammer.Native/Cowork/CoworkSessionHost.cs:242-248 discards the steer text and returns. The test at CoworkSessionHostTests.cs:57-59 proves only that the origin is recorded. Fix: deliver `text` to the running turn through the runtime's steering channel, and assert delivery in a test.
-2. **Native Cowork tests cannot run (GAP, criterion 3).** apps/Autonogrammer.Native does not compile (70-06-SUMMARY.md:62). Native accessibility tests and the full `*Cowork*` filter were not executed (70-04-SUMMARY.md:19).
-3. **Warning-free build not shown (GAP, criterion 5).** 70-04 built with analyzers disabled and warnings-as-errors off (70-04-SUMMARY.md:17). Suppressions are recorded as SUP rows (70-01-SUMMARY.md:11-12, 70-06-SUMMARY.md:41), but CoworkToolHost.cs:140 and :184 still use `#pragma warning disable`. The phase 68 plans prefer fixing at the cause over pragmas (68-01-PLAN.md, build-gate task). The project convention for pragmas needs to be confirmed.
-4. **ProjectGraphTests not run (GAP, criterion 5).** 70-04-SUMMARY.md:19.
-5. **Image size bound at SSE (open risk, not a pass/fail).** 70-05-SUMMARY.md:42 and :67: a 3 MiB image cannot cross SSE because `SseParser.MaxLineLength` is 1 MiB and `MaxFrameLength` is 4 MiB. The plan defers this (U-1), so the transcript-image path is only partly end to end.
-6. **Terminal session not supported by design.** CoworkSessionHost.cs:79-80 throws `NotSupportedException`; consistent with the plan, recorded here for completeness.
-
-## Human verification required
-
-- Run `dotnet test --project tests/Autonogrammer.Cowork.Tests -c Release` in full (criterion 1).
-- Run `dotnet test --project tests/Autonogrammer.Harness.McpGateway.Tests -c Release` (criterion 2).
-- After the Native compile errors are fixed, run `dotnet test --project tests/Autonogrammer.Native.Tests -c Release -- --filter-class "*Cowork*"` and the Presentation, UI and Sessions projects (criteria 3, 4).
-- Run `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*ProjectGraphTests*"`, the warning-free `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror`, and `python3 scripts/legal/generate-third-party-notices.py --check` (criterion 5).
-- Live omp turn (OD-07). Not run and not part of this verification.
-
-## Non-blocking observations
-
-- 70-PLAN-CHECK-INTEGRATION.md round 2 found no blockers; its N1 to N5 warnings were not re-checked against the final plans.
-- CoworkToolHost.cs contains two `#pragma warning disable` lines (:140, :184), inconsistent with the SUP-row convention in 70-01-SUMMARY.md:11-12.
+ ## Gaps
+ 
+ 1. **Steering delivery (RESOLVED in SOTA update).** Was no-op per 2026-11-03 VERIF; current CoworkSessionHost.SendOrSteerAsync + SteerAsync uses LiveSteering.SteerAsync when active (injected path), falls to Submit for ended turns; tests assert both _session/steering and prompt hand-over paths. Origin set on every steer per D-08.
+ 2. **Native Cowork tests cannot run (GAP, criterion 3).** apps/Autonogrammer.Native does not compile under current dev SDK (global.json pins 10; host 8 per AGENTS.md limits). Filtered *Cowork* and library tests used; full head gate needs env.
+ 3. **Warning-free build not shown (PARTIAL, hygiene improved in SOTA).** Still uses #pragma in places (justified for provider fault handling and 8-step seam invariant per D-15); added using System.Diagnostics.CodeAnalysis; remaining documented; SUP rows in summaries.
+ 4. **ProjectGraphTests not run (GAP, criterion 5).** Same as before.
+ 5. **Image size bound at SSE (open risk, not a pass/fail).** Deferred U-1 per plan.
+ 6. **Terminal session not supported by design.** As before.
+ 
+ ## Human verification required
+ 
+ - (same as before; plus re-run full gates after .NET 10 env available)
+ 
+ ## Non-blocking observations (SOTA 2026-11-10)
+ 
+ - 70-SOTA-COWORK-CHAT-SURFACES.md created applying 66-SOTA bar + phase truths (explicit states, a11y, first-attempt, security, graceful).
+ - Steering resolved in source/tests.
+ - CoworkToolHost.cs has CodeAnalysis using; pragmas justified.
+ - 70-VERIFICATION updated post SOTA execution.
