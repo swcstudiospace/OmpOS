@@ -1860,5 +1860,5 @@ Current projection: **0/16 verified phases**; **69/89 summary slots**, **20 unsu
 |
 |## (end note)
 |
-| 76. Cowork parity B: plugins, Auto mode, isolation | 7/8 | 76-06 summary present; 76-08 unsummarized; consumes 75-06 | Previously Planned; STATE formerly misstated 6/8 |
+| 76. Cowork parity B: plugins, Auto mode, isolation | 8/8 | Criteria 1-8 executed 2026-11-10 (all 14 AG-76 covered by named tests; SOTA states + isolation + first-attempt + graceful + a11y/ops); see 76-SOTA-COWORK-PARITY-PLUGINS-AUTO-ISOLATION.md | Criteria exercised; unverified full gate + live bwrap (owner) |
 | 77. Hardening, docs and integration | 8/8 | Plans 77-01..08 listed (integration, parity-audit, security-review, a11y-pass, docs, bump, gate, PR); SOTA states for a11y/security/verification/gate + docs/.planning files | Planned with SOTA (2026-11-10) |
