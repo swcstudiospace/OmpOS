@@ -1,0 +1,5 @@
+verify FAILED:
+  rejected near-match counts differ from the baseline (substring damage?)
+  engine keep pattern 'OMP_* variables': baseline 78, now 81
+  engine keep pattern 'PI_CODING_AGENT_DIR': baseline 113, now 114
+  engine keep pattern 'bare omp token': baseline 8398, now 8430
