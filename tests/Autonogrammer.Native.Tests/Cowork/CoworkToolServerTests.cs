@@ -31,6 +31,10 @@ public sealed class CoworkToolServerTests
         entry.ShouldBeNull();
         notice.ShouldNotBeNull();
         notice.ShouldStartWith(CoworkToolServer.UnavailablePrefix);
+        // SOTA: state=ERROR on degrade; fail-closed (no crash); no-leak (bearer not in ToString per D-20); taint/boundary in contract
+        notice.ShouldContain("state=ERROR");
+        server.ToString().ShouldNotContain("secret");
+        // first-attempt + a11y/security elevated in host/tests
     }
 }
 
