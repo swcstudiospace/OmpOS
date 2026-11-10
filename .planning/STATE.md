@@ -6,16 +6,17 @@ current_phase: 67
 current_phase_name: "Accounts: Supabase passwordless sign-in"
 status: ready
 stopped_at: the Cursor parity audit and the record corrections of 2026-10-27; the code is committed through `d75fd88`. The earlier text of this section (2026-10-24) is superseded.
-last_updated: "2026-11-10T12:55:51.340Z"
+last_updated: "2026-11-10T12:58:12.134Z"
 last_activity: 2026-11-10
-last_activity_desc: "66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67"
+last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67
+state_head: 2a118eaa7c8efc2ce3c9978b82ac9c26df939985
 progress:
   total_phases: 16
-  completed_phases: 1
-  total_plans: 90
+  completed_phases: 11
+  total_plans: 91
   completed_plans: 76
-  percent: 84
-current_plan: "7"
+  percent: 69
+current_plan: 7
 ---
 
 # Project State
@@ -443,6 +444,7 @@ Next action (superseded 2026-10-24): see Autonomous Run 2026-10-24, Owner Decisi
 | Phase 1-foundation P03 | 13 min | 3 tasks | 18 files |
 | Phase 66 P08 | 45 | 3 tasks | 4 files |
 | Phase 66 P7 | 120m | 7 tasks | 3 files |
+| Phase 66 P7 | 90m | 7 tasks | 5 files |
 
 Note (2026-11-01): the `Phase 1` and `Phase 1-foundation` labels in this table and in the `[Phase 1]` decision entries below refer to the archived foundation phase (v0.9.1 per the 2026-11-01 audit). They are not ROADMAP.md's v0.9.2 `Phase 1` (Validation Evidence and Record Fixes, ROADMAP.md:47). Labels are kept as recorded; nothing is renumbered.
 
@@ -473,6 +475,7 @@ Recent decisions affecting current work:
 - [2026-10-24, F3]: Steer and follow-up messages are queued and delivered after the active turn ends, in send order. ACP v1 has no steer.
 - [2026-10-24, Phase 22]: Criterion 1 is met on the XWayland path using a headless weston session. The native Wayland backend is not added (package addition and no AT-SPI support).
 - [Phase 67]: Phase 66 C3 first attempt pass shown via SOTA wait fix in routes.mjs + logic tests 19/19 pass; rebrand 61 OK + verify OK; title test pass; licences/brand pass; externals 1-8 open via handle_blocker per owner actions and ROADMAP
+- [Phase 67]: Phase 66 complete: C3 first attempt pass verified (SOTA fix + 19 tests + ports + prior gate); rebrand/build/title/licence/brand met; external 1-8 via handle_blocker (owner actions open); STATE/ROADMAP/VERIF/SUMMARY updated per assignment refs phase 66 n7
 
 ### Pending Todos
 
