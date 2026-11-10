@@ -1653,13 +1653,14 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   5. The project graph holds, the build is warning-free and the notices check is clean (no new package). Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*ProjectGraphTests*"` passes; `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` is clean; `python3 scripts/legal/generate-third-party-notices.py --check` is clean (no new package).
 
 **Plans**: `70-01-PLAN.md` through `70-06-PLAN.md` + SOTA update (70-SOTA-COWORK-CHAT-SURFACES.md + 70-SOTA-SUMMARY.md; steering resolved, hygiene, 66-SOTA bar applied) in `.planning/phases/70-cowork-chat-core-and-tool-host/`
+- [ ] 70-08-PLAN.md
 - [x] 70-01-PLAN.md
 - [x] 70-02-PLAN.md
 - [x] 70-03-PLAN.md
 - [x] 70-04-PLAN.md
 - [x] 70-05-PLAN.md
 - [x] 70-06-PLAN.md
-- [ ] 70-07-PLAN.md
+- [x] 70-07-PLAN.md
  
  SOTA: explicit states, first-attempt, a11y, security (fail-closed, taint, no-leak, owner), graceful, audit. Criteria exercised (filtered); full gate env-dependent.
 

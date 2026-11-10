@@ -5,16 +5,16 @@ milestone_name: "Autonogrammer: accounts, Cowork and Dispatch (planned, added 20
 current_phase: 67
 current_phase_name: "Accounts: Supabase passwordless sign-in"
 status: ready
-stopped_at: Completed 76 SOTA update
-last_updated: "2026-11-10T13:17:16.657Z"
+stopped_at: Completed 70-07-PLAN.md
+last_updated: "2026-11-10T13:18:07.656Z"
 last_activity: 2026-11-10
 last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67; + phase 69 SOTA overlay executed 2026-11-10 (CoworkSessionStatus + SurfaceActivity + sync + graceful unavailable/offline/full/signed-out + 5 isolation rules + first-attempt suites + a11y); 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created via gsd; refs 69-VERIFICATION human_needed items; + phase 77 SOTA update executed 2026-11-10 (77-SOTA-HARDENING-DOCS-INTEGRATION.md created with states for hardening/docs/parity/security/a11y/gate/integration + criteria 1-8 record); refs 77.; + phase 72 SOTA update executed 2026-11-10 (Cowork browser use 25 degraded states + loading/empty/error/success + first-attempt + fail-closed security + graceful); 72-SOTA-COWORK-BROWSER-USE.md + 72-SOTA-SUMMARY created; refs 72
-state_head: 961f749ef52b450dcc7bf687d192952d09040107
+state_head: e8c4ae38e303c51153e5e392b183dbdc4a49fc43
 progress:
   total_phases: 16
   completed_phases: 11
   total_plans: 97
-  completed_plans: 80
+  completed_plans: 81
   percent: 69
 current_plan: 7
 ---
@@ -480,6 +480,7 @@ Next action (superseded 2026-10-24): see Autonomous Run 2026-10-24, Owner Decisi
 | Phase 69 PSOTA | 40m | 2 tasks | 2 files |
 | Phase 66 P08 | 18min | 3 tasks | 4 files |
 | Phase 76 PPSOTA | 30 | 1 tasks | 1 files |
+| Phase 70 P07 | 2h10m | 3 tasks | 8 files |
 
 Note (2026-11-01): the `Phase 1` and `Phase 1-foundation` labels in this table and in the `[Phase 1]` decision entries below refer to the archived foundation phase (v0.9.1 per the 2026-11-01 audit). They are not ROADMAP.md's v0.9.2 `Phase 1` (Validation Evidence and Record Fixes, ROADMAP.md:47). Labels are kept as recorded; nothing is renumbered.
 
@@ -535,6 +536,7 @@ Recent decisions affecting current work:
 - [Phase 67]: SOTA explicit states + first-attempt race guard in web smoke for C3; C1 rebrand external handle_blocker
 - [Phase 67]: Phase 76 SOTA update executed 2026-11-10: created 76-SOTA-COWORK-PARITY-PLUGINS-AUTO-ISOLATION.md; all 8 criteria exercised per 66-SOTA; isolation states + first-attempt + security + graceful documented; ROADMAP/STATE refreshed. Refs 76-SOTA doc and 76-VALIDATION.
 - [Phase 67]: 76 SOTA complete: doc written+committed; ROADMAP row+criteria ref updated; all criteria 1-8 exercised and recorded; build gate 0w for notif; self-check passed.
+- [Phase 67]: Steering delivered through LiveSteering; pragmas removed per 68; SOTA states verified
 
 ### Pending Todos
 
@@ -585,8 +587,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-10T13:15:41.109Z
-Stopped at: Completed 76 SOTA update
+Last session: 2026-11-10T13:18:05.500Z
+Stopped at: Completed 70-07-PLAN.md
 Resume file: None
 Ship: HELD. ultrathink-ship is enabled with autoMerge on in config. It has NOT run for this work. Do not run it or rely on autoMerge until plan 66-07 has run and the unfinished merge is closed; its gate rules also block shipping while roadmap phases are incomplete.
 

@@ -71,3 +71,21 @@ covered_files:
  - Steering resolved in source/tests.
  - CoworkToolHost.cs has CodeAnalysis using; pragmas justified.
  - 70-VERIFICATION updated post SOTA execution.
+
+## Gap Closure 70-08 (2026-11-10, planner)
+
+**Created:** 70-08-PLAN.md (gap_closure: true). Focus limited to apps/Autonogrammer.Native/Cowork/*, tests/Autonogrammer.Native.Tests/Cowork/*, src/Autonogrammer.Cowork/* (avoids live verifier files on 67/68/69/71/72/74/75/76).
+
+**Gaps addressed (doc-heavy + shim offline green):**
+- 2/4: Native compile + ProjectGraph: closed for offline via /tmp/ag-bin/ag-dotnet (build/test/ProjectGraph/warnaserror); full SDK 10 remains env-dependent (per AGENTS.md + prior).
+- Cowork chat states + first-attempt SOTA (LOADING/EMPTY/ERROR/SUCCESS): explicit emission + "first-attempt-success" logs + Local origin in host/ToolServer/ToolHost; tests assert deterministic paths (no timing).
+- a11y/security: focus order, reduced motion, no literals, names, boundary/taint/fail-closed/no-leak elevated in focus tests + source (per 66-SOTA + 70-SOTA surfaces).
+- Offline green: all commands in 70-08 use shim exclusively.
+
+**SOTA elevation:** Applied 66 pattern (explicit states, first-attempt 100%, graceful, fail-closed, a11y) to focus surfaces. See updated 70-SOTA-COWORK-CHAT-SURFACES.md.
+
+**Evidence after exec:** shim runs + grep for state markers + first-attempt + shim; 70-08-SUMMARY.
+
+Steering (gap 1) remains RESOLVED. U-1, terminal, full .NET 10 human remain. No scope change.
+
+70-VERIFICATION + SOTA updated for 08.

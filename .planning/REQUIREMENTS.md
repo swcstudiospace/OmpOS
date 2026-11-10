@@ -748,15 +748,15 @@ Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.m
 
 - [ ] **AG-70-1**: `CoworkSessionProfile` produces the omp launch of a Cowork session: `--no-extensions`, an approval mode from the Cowork permission mode, `--add-dir` per trusted folder, an absolute `--append-system-prompt` file path, and a `--config` overlay with `browser.enabled: false` and `computer.enabled: false`.
 - [ ] **AG-70-2**: `CoworkPermissionResolver` denies paths outside the trusted and Storage folders, always asks before a delete, allows `mcp__cowork_*` tools at the omp level, and follows Manual, Auto or Skip (`CoworkPermissionMode`; Auto is shown as "Auto (rules)") for the rest.
-- [ ] **AG-70-3**: `CoworkSessionHost` implements `IAgentPanelHost` over the Cowork registry and composes engines with `EngineComposition.Compose`, never through the Code planner.
-- [ ] **AG-70-4**: A Cowork conversation supports send, stop, retry, steer, resume from history (`session/load`), file attachments and image attachments, and refuses images with a specific message when the model reads none.
+- [x] **AG-70-3**: `CoworkSessionHost` implements `IAgentPanelHost` over the Cowork registry and composes engines with `EngineComposition.Compose`, never through the Code planner.
+- [x] **AG-70-4**: A Cowork conversation supports send, stop, retry, steer, resume from history (`session/load`), file attachments and image attachments, and refuses images with a specific message when the model reads none.
 - [ ] **AG-70-5**: Tool-call updates carry images: `ToolUpdateContent.Images`, an image block in the transcript fold, the views, the export and the web projection, with alt text.
 - [ ] **AG-70-6**: `Autonogrammer.Cowork.Abstractions` holds exactly the contract of ADR-0032 D5 and nothing else.
 - [ ] **AG-70-7**: `CoworkToolHost` runs the eight-step call sequence of D5 for every call and enforces the descriptor rules and result caps.
 - [ ] **AG-70-8**: `McpGatewayServer.Start(registry, invoker, coworkTools)` serves Cowork tools beside registry tools with disjoint names and maps results, images included, to `CallToolResult`.
 - [ ] **AG-70-9**: `CoworkPolicyGate`, `CoworkApprovalBroker`, the grant store and the audit hook implement D6; `EveryCallOnExecutingDevice` is never satisfied by a grant, a mode or a remote decision.
 - [ ] **AG-70-10**: `CoworkToolServer` starts one loopback gateway for Cowork, health-checks it before `session/new` and degrades with a visible notice, never by failing the session.
-- [ ] **AG-70-11**: Cowork conversation models and views (Native and Web) show the transcript, composer, approval cards, provider status chips and the dock host.
+- [x] **AG-70-11**: Cowork conversation models and views (Native and Web) show the transcript, composer, approval cards, provider status chips and the dock host.
 - [ ] **AG-70-12**: `FakeCoworkToolProvider` and a contract test base let ADR-0033, 0034 and 0035 prove their providers against the same rules.
 - [ ] **AG-70-13**: The host taints a session when a result carries untrusted content, raises `CoworkToolEvent`s (started, approval requested, completed, failed, denied), and in a tainted session Auto and Skip no longer apply to actuating calls or to `edit`, `delete`, `move` and `execute` (tests in units 1 and 3).
 - [ ] **AG-70-14**: `ConfigOverlayWriter.WriteYaml(sessionStateDirectory, yaml)` (new, `Autonogrammer.Harness.AgentLoop/Launch`, owner-only mode, deleted on dispose) writes the Cowork overlay; the Cowork environment holds provider keys only and `CoworkPathBoundary` refuses the secrets, `~/.omp`, `~/.ssh` and account folders as trusted folders (tests in units 3 and 4).
