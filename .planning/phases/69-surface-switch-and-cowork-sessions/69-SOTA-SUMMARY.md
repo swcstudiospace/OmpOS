@@ -107,10 +107,11 @@ None new (isolation already in plan threat model; SOTA documents it).
 ## Self-Check: PASSED
 All claims grounded in reads/VERIF/SUMMARIES/gsd output. SOTA file + commit + STATE updates verified.
 
-**Duration:** ~30min (research+write+state+commit+checks)
+**Duration:** ~40min (research+write+state+append-to-06+commit+checks)
 **Commits:**
+- 979597e6: docs(69-06): SOTA update section appended to plan summary (refs 69 SOTA overlay, explicit states + isolation + first-attempt + graceful)
 - 262928fe: docs(69-SOTA): Phase 69 SOTA update overlay...
-
-**Status:** complete (SOTA doc produced; phase 69 artifacts now have SOTA quality note). 
+- f45185f9: docs(69): SOTA update for surface switch and cowork sessions...
+**Status:** complete (SOTA doc + append to last plan summary + STATE; phase 69 artifacts now have SOTA quality note per 66-SOTA elevation). 
 
 _Refs 69; SOTA recommended output complete._
