@@ -138,8 +138,9 @@ CUT 104:114:
         return offered;
     }
 
-    /// <inheritdoc />
-    public async ValueTask<CoworkToolResult> InvokeAsync(
+    [SuppressMessage("Maintainability", "MA0051", Justification = "8-step seam per D-15 must stay in one flow (1)lease+offered (2)args<=256k (3)preview (4)policy (5)ask+timeout (6)invoke+timeout (7)cap+taint (8)audit never fails call; the invariant is documented here and asserted in contract tests, not split.")]
+     /// <inheritdoc />
+     public async ValueTask<CoworkToolResult> InvokeAsync(
         string sessionId,
         string toolName,
         JsonElement arguments,
@@ -301,7 +302,6 @@ CUT 104:114:
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(_options.ApprovalTimeout);
-#pragma warning disable CA1031 // A broker fault is a denial the model reads as not approved.
         try
         {
             var decision = await _broker.RequestAsync(request, timeout.Token).ConfigureAwait(false);
@@ -460,7 +460,6 @@ CUT 104:114:
             _host.Remove(Session.SessionId);
             foreach (var provider in _host._providers)
             {
-#pragma warning disable CA1031 // Ending a session must not surface a provider fault to the chat core.
                 try
                 {
                     await provider.EndSessionAsync(Session.SessionId, CancellationToken.None).ConfigureAwait(false);

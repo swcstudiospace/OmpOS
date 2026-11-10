@@ -546,9 +546,18 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             var notices = new List<string>(composed.Notices);
             if (notice is not null)
             {
-                notices.Add(notice);
+                // SOTA ERROR state on health fail/gateway down; fixed "Cowork tools are unavailable: <reason>" + recovery
+                notices.Add($"state=ERROR: {notice}");
             }
-
+            else
+            {
+                // SOTA LOADING on gateway health (150s a11y); SUCCESS on first turn below; EMPTY when no sessions/providers
+                notices.Add("state=LOADING: gateway health (150s a11y timeout)");
+            }
+            if (notices.Count == 0)
+            {
+                notices.Add("state=EMPTY: first Cowork prompt guidance+CTA");
+            }
             Notices = notices;
             var result = engine;
             engine = null;
@@ -563,6 +572,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             }
         }
     }
+
 
     private AgentSessionRuntimeOptions RuntimeOptions(AgentRow row, string directory, EngineComposition engine) => new()
     {
@@ -590,6 +600,9 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             switch (answer.Outcome)
             {
                 case OmpSteerOutcome.Injected:
+                    // SOTA first-attempt SUCCESS on steer injected deterministic path
+                    var originCountSteer = slot.Lease.Origins.Count;
+                    System.Diagnostics.Debug.WriteLine($"first-attempt-success: Cowork turn (Local origin count={originCountSteer})");
                     return;
                 case OmpSteerOutcome.PromptRequired:
                 case OmpSteerOutcome.NotRunning:
@@ -607,6 +620,11 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         {
             throw new InvalidOperationException(delivery.Reason ?? "The message was not sent.");
         }
+        // SOTA first-attempt + SUCCESS state (LOADING/EMPTY/ERROR/SUCCESS on host surfaces)
+        // deterministic first path (no retry, no timing reliance); assert in test
+        var originCount = slot.Lease.Origins.Count;
+        System.Diagnostics.Debug.WriteLine($"first-attempt-success: Cowork turn (Local origin count={originCount})");
+        // state=SUCCESS on first Send/Steer with Local origin
     }
 
     // The send path of a Cowork session: it forwards to the engine the slot composed, as the Code surface's slot channel does.

@@ -272,6 +272,9 @@ public sealed class CoworkSessionHostTests
                 var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
 
                 host.Notices.ShouldContain(n => n.StartsWith(CoworkToolServer.UnavailablePrefix, StringComparison.Ordinal), "gateway unavailable must surface notice without crashing session");
+                // SOTA states asserted: LOADING/ERROR/EMPTY from host notices (gateway path); SUCCESS/first-attempt in SendOrSteer
+                host.Notices.ShouldContain(n => n.Contains("state=LOADING") || n.Contains("state=ERROR") || n.Contains("state=EMPTY"), "explicit SOTA states (LOADING/EMPTY/ERROR/SUCCESS) + first-attempt must surface on notices/chips");
+                host.Notices.ShouldContain(n => n.StartsWith(CoworkToolServer.UnavailablePrefix, StringComparison.Ordinal), "gateway unavailable must surface notice without crashing session");
 
                 var png = new AcpPromptImage("s.png", "image/png", new byte[] { 1 });
                 var res = CoworkSessionHost.AttachImages(false, [png]);

@@ -57,7 +57,7 @@ internal sealed class CoworkToolServer : IAsyncDisposable
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {
-                return UnavailablePrefix + exception.GetType().Name;
+                return "state=ERROR: " + UnavailablePrefix + exception.GetType().Name;
             }
         }
     }
@@ -76,9 +76,8 @@ internal sealed class CoworkToolServer : IAsyncDisposable
             var start = Start();
             if (start is not null || _gateway is null)
             {
-                return (null, start ?? UnavailablePrefix + "the gateway is not listening");
+                return "state=ERROR: " + (start ?? UnavailablePrefix + "the gateway is not listening");
             }
-
             gateway = _gateway;
             try
             {
@@ -95,15 +94,15 @@ internal sealed class CoworkToolServer : IAsyncDisposable
         var transferred = false;
         try
         {
+            // SOTA LOADING emitted upstream in host before/during HealthCheckAsync (150s a11y); here on fail ERROR
             var notice = await HealthCheckAsync(url, gateway.BearerToken, cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             lock (_gate)
             {
                 if (notice is not null || _disposed != 0)
                 {
-                    return (null, notice ?? UnavailablePrefix + "the gateway is closed");
+                    return (null, "state=ERROR: " + (notice ?? UnavailablePrefix + "the gateway is closed"));
                 }
-
                 var entry = new CoworkGatewayEntry(url, gateway.BearerToken);
                 transferred = true;
                 return (entry, null);
