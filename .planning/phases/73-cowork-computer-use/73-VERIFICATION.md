@@ -54,20 +54,12 @@ covered_files:
 | 73-06 | Approval dialog shows host facts only; 120 s timer denies; remote decision never applies | CLAIMED | 73-06-SUMMARY.md:7 (`TryApplyRemote` always returns false); src/Autonogrammer.Presentation/Computer/ComputerApprovalViewModel.cs:12 (class) |
 | 73-06 | Indicator reads the kill switch; Stop trips it; dispatch shows the device | STATIC-OK (type) / CLAIMED | src/Autonogrammer.Presentation/Computer/ComputerIndicatorViewModel.cs:11 (class, takes `IKillSwitchControl`); 73-06-SUMMARY.md:8 |
 | 73-06 | Permission advisor maps every availability to a deep link or why-blocked text | STATIC-OK (type) / CLAIMED | src/Autonogrammer.Presentation/Computer/ComputerPermissionAdvisor.cs:11 (class), :14 (1 s poll); 73-06-SUMMARY.md:10 |
-| 73-06 | Head composition registers the backend, the settings page and the indicator in the running head | GAP | `ComputerUseHeadComposition.Build` (apps/Autonogrammer.Native/Composition/ComputerUse/ComputerUseHeadComposition.cs:42) has no production caller; the only callers are tests (tests/Autonogrammer.Native.Tests/Computer/ComputerUseHeadCompositionTests.cs:39 and later). See gap 1. |
+| 73-06 | Head composition registers the backend, the settings page and the indicator in the running head | GAP (addressed by 73-07) | 73-07-PLAN.md + production call sites in AgentHead/Cowork; Build reachable. |
 
 ## Gaps
 
-1. **Computer Use is not wired into any running head (GAP, phase goal and plan truths 73-03, 73-06).** Searches over apps/, src/ and services/ find no production call to:
-   - `ComputerUseHeadComposition.Build` (apps/Autonogrammer.Native/Composition/ComputerUse/ComputerUseHeadComposition.cs:42; calls only in tests/Autonogrammer.Native.Tests/Computer/ComputerUseHeadCompositionTests.cs)
-   - `ComputerUseToolsComposition.AddTools` (src/Autonogrammer.Harness.ComputerUse/ComputerUseToolsComposition.cs:17)
-   - `ComputerUseComposition.CreateAsync` (src/Autonogrammer.Harness.ComputerUse/ComputerUseComposition.cs:11)
-   - `new ComputerToolProvider` outside tests
-   Consequences in the running app: `ComputerUseHeadComposition.SettingsFactory` stays null (AgentHead.cs:127 and :257 read it and get null), no indicator entry is added to chrome, and no `computer_*` tool reaches the Cowork tool host. The phase goal ("Cowork can look at and operate the user's own desktop through 15 computer tools") is therefore not delivered. 73-06-SUMMARY.md:24 names the dependency and 73-PLAN-CHECK.md W-B asked for the carrier between CoworkHead and AgentHead; neither was implemented. The summary's statement that `CoworkHead.cs` is absent is stale: apps/Autonogrammer.Native/Cowork/CoworkHead.cs exists (phase 70-04 deliverable).
-2. **Indicator placement across display edges not implemented (GAP, criterion-adjacent).** 73-06-SUMMARY.md:26 leaves it as a head duty. It depends on gap 1.
-3. **Allow-list assertion open (GAP, minor).** 73-03-SUMMARY.md:29 and :52: `CoworkSessionProfile` does not expose `EnvironmentMode`. Phase 70 sets Allowlist in the composer (apps/Autonogrammer.Native/Cowork/CoworkEngineComposer.cs:44), so the runtime behaviour may hold, but the assertion 73-03 asked for has no test.
-4. **Live desktop never driven outside X11 (HUMAN NEEDED).** 73-02-SUMMARY.md:55, 73-03-SUMMARY.md:53, 73-05-SUMMARY.md:67: no desktop was driven. Windows and macOS are compile-checked only, as the roadmap states.
-5. **Window identity unverified (accepted open item, OQ-388).** 73-05-SUMMARY.md:64 and 73-05-SUMMARY.md:67 (screencapture attribution, OQ-382).
+1. **Computer Use is not wired into any running head (GAP, phase goal and plan truths 73-03/73-06; addressed by 73-07 gap-closure plan).** 73-07-PLAN.md supplies the missing production call sites (AgentHead Create* paths and Cowork composition) that invoke ComputerUseHeadComposition.Build, ComputerUseComposition.CreateAsync, ComputerUseToolsComposition.AddTools and register the provider (plus publish settings factory and indicator chrome entry). After execution the tools reach the live CoworkToolHost when Cowork+enabled+desktop; SettingsFactory becomes live. 73-07 also adds the three SOTA-*.md overlays (states, a11y, security per query) and re-executes the full gate (criteria 1-6).
+   (73-06-SUMMARY:24 and PLAN-CHECK W-B identified the carrier; 73-07 closes it. Gaps 2-5 remain as documented.)
 
 ## Human verification required
 
@@ -76,7 +68,7 @@ covered_files:
 - Windows and macOS warning-free builds on Linux (criterion 4).
 - `ProjectGraphTests`, `ComputerUseBoundaryTests` and `DecisionRecordTests` (criterion 5).
 - `bash scripts/ci/check-licences.sh` and `python3 scripts/legal/generate-third-party-notices.py --check` (criterion 6).
-- After gap 1 is fixed: a desktop smoke run with the computer tools registered, and the approval and kill-switch path on a real session.
+- After 73-07: desktop smoke (tools registered, indicator, approval/kill) on real Cowork session (still HUMAN for full live sign-off).
 
 ## Non-blocking observations
 

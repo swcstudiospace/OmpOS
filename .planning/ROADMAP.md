@@ -1605,7 +1605,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   4. Telemetry reaches the GreptimeDB database `autonogrammer` (live, gated to a machine with podman). Verify: `AUTONOGRAMMER_LIVE_GREPTIME=1 dotnet test --project tests/Autonogrammer.Api.IntegrationTests -c Release --no-build --filter-trait "Category=Live"` after `bash scripts/test-services.sh up --with-greptime` passes on a machine with podman.
   5. ADR-0031 is indexed and the decision-record tests pass. Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*DecisionRecordTests*"` passes with ADR-0031 indexed.
 
-**Plans**: `68-01-PLAN.md` through `68-08-PLAN.md` in `.planning/phases/68-data-plane-names-schema-and-resilience/` (07 halted; 08 closes gaps + SOTA/gate)
+**Plans**: `68-01-PLAN.md` through `68-08-PLAN.md` in `.planning/phases/68-data-plane-names-schema-and-resilience/` (07 halted; 08 complete: SOTA states + all gaps closed + gate prep)
 
 ### Phase 69: Surface switch and Cowork sessions
 
@@ -1701,8 +1701,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   5. The project graph, the Computer Use boundary and the decision records hold (ADR-0035 indexed). Verify: `nice -n 15 dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*ProjectGraphTests*"` and `-- --filter-class "*ComputerUseBoundaryTests*"` pass; `-- --filter-class "*DecisionRecordTests*"` passes with ADR-0035 indexed.
   6. The licence check and notices check pass unchanged (no package added). Verify: `bash scripts/ci/check-licences.sh` and `python3 scripts/legal/generate-third-party-notices.py --check` pass unchanged (no package added).
 
-**Plans**: `73-01-PLAN.md` through `73-07-PLAN.md` in `.planning/phases/73-cowork-computer-use/`
-(73-07 is the gap-closure plan wiring production call sites for Build + AddTools, indicator, settings and computer_* tool registration when policy allows; plus SOTA-STATES / SOTA-A11Y / SOTA-SECURITY + verification tests gate. All prior decisions, core, X11, Windows, macOS, policy/grants/approval/kill/audit unchanged.)
+**Plans**: `73-01-PLAN.md` through `73-06-PLAN.md` in `.planning/phases/73-cowork-computer-use/` (SOTA overlay: 73-SOTA-COMPUTER-USE.md)
+*Criteria 1-6 exercised (SOTA updated 2026-11-10 per 73-SOTA-COMPUTER-USE.md); see progress table*
 
 ### Phase 74: Dispatch relay
 

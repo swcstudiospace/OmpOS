@@ -121,10 +121,66 @@ public static class OmpLaunchPlanner
         var overlayPath = AddConfigOverlay(settings, sessionDirectory, bashOverlayYaml, arguments);
         AddDirectories(extraDirectories, arguments);
 
+        // Generic contributor application (D-12): walk list, compose, refuse over-budget paragraph, no surface-specific names here.
+        var contribs = contributors ?? System.Array.Empty<ILaunchContributor>();
+        var req = new LaunchRequest
+        {
+            Surface = surface,
+            SessionId = sessionId,
+            WorkingDirectory = workspaceRoot,
+            TrustedFolders = extraDirectories
+        };
+        var addArgs = new List<string>();
+        var addEnv = new Dictionary<string, string?>(System.StringComparer.Ordinal);
+        var addOverlay = new List<string>();
+        string? para = null;
+        foreach (var c in contribs)
+        {
+            var ct = c.Contribute(req, System.Threading.CancellationToken.None);
+            addArgs.AddRange(ct.Arguments);
+            foreach (var kvp in ct.Environment)
+            {
+                addEnv[kvp.Key] = kvp.Value;
+            }
+            addOverlay.AddRange(ct.OverlayEntries);
+            if (!string.IsNullOrEmpty(ct.SystemPromptParagraph))
+            {
+                var b = System.Text.Encoding.UTF8.GetByteCount(ct.SystemPromptParagraph);
+                if (b > ContributorParagraphBudgetBytes)
+                {
+                    throw new System.ArgumentOutOfRangeException("SystemPromptParagraph", $"The contributed paragraph is {b} bytes over the {ContributorParagraphBudgetBytes} byte budget.");
+                }
+                para = ct.SystemPromptParagraph;
+            }
+            // FirstPromptBlock carried for Cowork profile / starter consumption (task 2)
+        }
+        arguments.AddRange(addArgs);
+        if (addOverlay.Count > 0 && string.IsNullOrEmpty(overlayPath))
+        {
+            overlayPath = SessionStateLayout.ConfigOverlayFile(sessionDirectory);
+            arguments.Add("--config");
+            arguments.Add(overlayPath);
+        }
+        // env merge happens in caller or after Build; for planner return we merge below
+
+        var baseEnv = BuildEnvironment(settings, sessionDirectory, substrateActive ? substrate.BaseAddress : null, hooksLoaded ? hookBridge : null);
+        var finalEnv = new Dictionary<string, string>(baseEnv, System.StringComparer.Ordinal);
+        foreach (var kv in addEnv)
+        {
+            if (kv.Value is null)
+            {
+                finalEnv.Remove(kv.Key);
+            }
+            else
+            {
+                finalEnv[kv.Key] = kv.Value;
+            }
+        }
+
         return new OmpLaunchPlan
         {
             ExtraArguments = arguments,
-            Environment = BuildEnvironment(settings, sessionDirectory, substrateActive ? substrate.BaseAddress : null, hooksLoaded ? hookBridge : null),
+            Environment = finalEnv,
             McpServers = substrateActive ? [BuildMcpServer(settings, substrate.BaseAddress!)] : [],
             WorkingDirectory = workspaceRoot,
             ConfigOverlayPath = overlayPath,

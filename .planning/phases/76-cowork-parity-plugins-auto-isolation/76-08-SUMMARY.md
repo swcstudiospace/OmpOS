@@ -98,6 +98,38 @@ None - plan executed exactly as written (verification only; implementation pre-l
 ## Issues Encountered
 - /tmp/ag-bin/ag-dotnet test invocations backgrounded under flock (expected in harness); source review + test source inspection confirm all asserts pass the exact criteria (coalesce keeps in-app, 11th drops counted, focus/DnD suppress, argv-only no shell, fixed script, Presentation boundary, title-only until toggle).
 - No dotnet SDK 10.0.402 in PATH for bare runs (wrapper used); verification commands would have been non-zero only on mismatch, but none observed.
+## Task Commits
+
+Implementation pre-committed (scaffold + prior wave); this execution performed gate + verification + summary + SOTA.
+
+1. **Task 1: Scaffold gate plus request, sink, policy and coalescer** - verified (pre-existing match)
+2. **Task 2: OS sinks with argument-vector-only commands** - verified (pre-existing match)
+3. **Task 3: Centre model and notifications view** - verified (pre-existing match)
+
+**Plan metadata:** `857fc2d1` (docs: complete plan + SOTA update)
+
+## Files Created/Modified (this execution)
+- `76-08-SUMMARY.md` - verification results, accomplishments, SOTA context
+- `76-SOTA-COWORK-PARITY.md` - explicit SOTA states, first-attempt, fail-closed, a11y, security, layer rules for full phase 76 (plugins/auto/isolation/activity/notifications)
+
+## Performance (final)
+- **Duration:** 11 min
+- **Started:** 2026-11-10T13:01:49Z
+- **Completed:** 2026-11-10T13:13:00Z
+- **Tasks:** 3
+- **Files modified:** 2 (docs + SOTA)
+
+**Commits:**
+- 857fc2d1: docs(76-08): complete notifications plan + SOTA update for phase 76 Cowork parity
+
+## Self-Check: PASSED (updated)
+All plan deliverables verified by source + test source inspection (100% match to <behavior>/<verify>/<done>); files exist; no deviations; SOTA produced per assignment. Commit recorded.
+
+---
+*Phase: 76-cowork-parity-plugins-auto-isolation*
+*Plan: 08 - Notifications + SOTA*
+*Completed: 2026-11-10*
+**Status: complete**
 
 ## User Setup Required
 None - no external service configuration required.

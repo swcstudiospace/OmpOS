@@ -21,6 +21,11 @@ public sealed class ResiliencePipelineTests
 
     private static readonly string[] AllowedTagKeys = ["component", "operation_class", "result", "reason"];
 
+    // SOTA states: LOADING (deadline start), ERROR (DataPlaneTimeout with reason), SUCCESS (cutover resilient)
+    private const string SotaLoading = "deadline start (LOADING)";
+    private const string SotaError = "DataPlaneTimeout (ERROR: data_plane_unavailable)";
+    private const string SotaSuccess = "cutover resilient (SUCCESS)";
+
     private static async Task<int> HangAsync(CancellationToken cancellationToken)
     {
         try
@@ -28,6 +33,12 @@ public sealed class ResiliencePipelineTests
             await new TaskCompletionSource().Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException exception)
+        {
+            // A driver exception that quotes the connection string, the way a provider message can.
+            throw new InvalidOperationException(Secret, exception);
+        }
+        return 0;
+    }
         {
             // A driver exception that quotes the connection string, the way a provider message can.
             throw new InvalidOperationException(Secret, exception);

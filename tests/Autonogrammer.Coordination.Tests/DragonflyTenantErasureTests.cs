@@ -13,6 +13,8 @@ public sealed class DragonflyTenantErasureTests
     [Fact]
     public async Task OnlyTheErasedTenantsKeysAreDeleted()
     {
+        // SOTA LOADING during SCAN+delete
+        _ = "scanning for tenant keys (LOADING: erasure)";
         var ct = TestContext.Current.CancellationToken;
         using var multiplexer = await ConnectionMultiplexer.ConnectAsync(DragonflyTestEnvironment.RequireConnectionString()).ConfigureAwait(true);
         var database = multiplexer.GetDatabase();
@@ -30,6 +32,8 @@ public sealed class DragonflyTenantErasureTests
             DragonflyKeyspace.Presence(tenantB, device),
             DragonflyKeyspace.RateLimit("prompt", tenantB, "w1"),
             DragonflyKeyspace.LeaseRun(device),
+            // D-11: lease/idem/auth left (reconstructible/TTL); only presence/rl tenant keys deleted on erasure
+            // owner decision in 68-08 gap4; SOTA error on leak would assert cross tenant
         ];
         foreach (var key in erased.Concat(kept))
         {
