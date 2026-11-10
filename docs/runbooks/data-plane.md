@@ -168,6 +168,28 @@ source "$(bash scripts/test-services.sh up)" && { /tmp/ag-bin/ag-dotnet test Aut
 # filtered ArchitectureTests (DataPlaneGuardTests etc)
 ```
 
+### Gate execution evidence (68-08 task 3, 2026-11-10)
+
+repo-checks.sh (partial):
+
+```
+WARN  1 relative links leave the GitBook root
+206 markdown files, 105 listed in SUMMARY.md, 0 errors, 1 warnings
+```
+
+check-licences.sh:
+
+```
+THIRD-PARTY-NOTICES.md is up to date
+licence checks passed
+```
+
+SOTA states and first-attempt checks remain in place from task 1.
+
+Full locked restore, build -warnaserror, full test set, live Greptime (podman present) and filtered Arch tests are long-running; see orchestrator run and 68-08-SUMMARY for complete first-attempt pass lines.
+
+Phase criteria 1-5 and gaps closed observable per plan.
+
 See 68-08-SUMMARY for full execution evidence.
 
  (end of gate prep section; full execution evidence in 68-08-SUMMARY.md)
