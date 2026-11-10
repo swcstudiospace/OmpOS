@@ -6,14 +6,14 @@ current_phase: 67
 current_phase_name: "Accounts: Supabase passwordless sign-in"
 status: ready
 stopped_at: the Cursor parity audit and the record corrections of 2026-10-27; the code is committed through `d75fd88`. The earlier text of this section (2026-10-24) is superseded.
-last_updated: "2026-11-10T12:58:12.134Z"
+last_updated: "2026-11-10T12:59:24.856Z"
 last_activity: 2026-11-10
 last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67
-state_head: 2a118eaa7c8efc2ce3c9978b82ac9c26df939985
+state_head: 6af340f6aeb3e157486722b496bf7984a70e47f5
 progress:
   total_phases: 16
   completed_phases: 11
-  total_plans: 91
+  total_plans: 92
   completed_plans: 76
   percent: 69
 current_plan: 7
@@ -445,6 +445,7 @@ Next action (superseded 2026-10-24): see Autonomous Run 2026-10-24, Owner Decisi
 | Phase 66 P08 | 45 | 3 tasks | 4 files |
 | Phase 66 P7 | 120m | 7 tasks | 3 files |
 | Phase 66 P7 | 90m | 7 tasks | 5 files |
+| Phase 71 P06 | 600 | 3 tasks | 40 files |
 
 Note (2026-11-01): the `Phase 1` and `Phase 1-foundation` labels in this table and in the `[Phase 1]` decision entries below refer to the archived foundation phase (v0.9.1 per the 2026-11-01 audit). They are not ROADMAP.md's v0.9.2 `Phase 1` (Validation Evidence and Record Fixes, ROADMAP.md:47). Labels are kept as recorded; nothing is renumbered.
 
