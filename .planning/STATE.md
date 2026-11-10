@@ -6,10 +6,10 @@ current_phase: 67
 current_phase_name: "Accounts: Supabase passwordless sign-in"
 status: ready
 stopped_at: Completed 69 SOTA update (surface switch + cowork sessions explicit states + isolation + first-attempt per 66-SOTA); 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created
-last_updated: "2026-11-10T13:06:24.474Z"
+last_updated: "2026-11-10T13:06:37.416Z"
 last_activity: 2026-11-10
 last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67; + phase 69 SOTA overlay executed 2026-11-10 (CoworkSessionStatus + SurfaceActivity + sync + graceful unavailable/offline/full/signed-out + 5 isolation rules + first-attempt suites + a11y); 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created via gsd; refs 69-VERIFICATION human_needed items
-state_head: 4ed555c5fd24086348e83d669660ff9ed7ffe3bf
+state_head: 5600a1a7328cd7fbc37d58a8c507acccc7b9a76e
 progress:
   total_phases: 16
   completed_phases: 11
@@ -453,6 +453,7 @@ Next action (superseded 2026-10-24): see Autonomous Run 2026-10-24, Owner Decisi
 | Phase 69 PSOTA | 600 | 1 tasks | 1 files |
 | Phase 77 PSOTA | 120 | 1 tasks | 1 files |
 | Phase 71 P06 | 600 | 3 tasks | 40 files |
+| Phase 74 P05 | 0min | 3 tasks | 22 files |
 
 Note (2026-11-01): the `Phase 1` and `Phase 1-foundation` labels in this table and in the `[Phase 1]` decision entries below refer to the archived foundation phase (v0.9.1 per the 2026-11-01 audit). They are not ROADMAP.md's v0.9.2 `Phase 1` (Validation Evidence and Record Fixes, ROADMAP.md:47). Labels are kept as recorded; nothing is renumbered.
 
@@ -489,6 +490,7 @@ Recent decisions affecting current work:
 - [Phase 67]: 77-01: integration evidence complete; rebrand fixed for verify; OQ-484 to merge-descends; first-attempt SOTA
 - [Phase 67]: Notifications fan-out, policy, safe OS commands and Presentation centre complete for AG-76-13 (plan 76-08)
 - [Phase 67]: Phase 77 SOTA overlay created: 77-SOTA-HARDENING-DOCS-INTEGRATION.md with states, criteria record per assignment
+- [Phase 67]: 74-05 hub complete (pre-landed tree + SUMMARY); structure deviation noted as Rule 3; SDK 10 env limitation recorded
 
 ### Pending Todos
 
