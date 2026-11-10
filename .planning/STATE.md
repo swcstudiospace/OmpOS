@@ -6,10 +6,10 @@ current_phase: 67
 current_phase_name: "Accounts: Supabase passwordless sign-in"
 status: ready
 stopped_at: the Cursor parity audit and the record corrections of 2026-10-27; the code is committed through `d75fd88`. The earlier text of this section (2026-10-24) is superseded.
-last_updated: "2026-11-10T12:59:24.856Z"
+last_updated: "2026-11-10T13:01:02.287Z"
 last_activity: 2026-11-10
 last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67
-state_head: 6af340f6aeb3e157486722b496bf7984a70e47f5
+state_head: a055aec1982b7a6c6af84fec45383a367899b66a
 progress:
   total_phases: 16
   completed_phases: 11
@@ -477,6 +477,7 @@ Recent decisions affecting current work:
 - [2026-10-24, Phase 22]: Criterion 1 is met on the XWayland path using a headless weston session. The native Wayland backend is not added (package addition and no AT-SPI support).
 - [Phase 67]: Phase 66 C3 first attempt pass shown via SOTA wait fix in routes.mjs + logic tests 19/19 pass; rebrand 61 OK + verify OK; title test pass; licences/brand pass; externals 1-8 open via handle_blocker per owner actions and ROADMAP
 - [Phase 67]: Phase 66 complete: C3 first attempt pass verified (SOTA fix + 19 tests + ports + prior gate); rebrand/build/title/licence/brand met; external 1-8 via handle_blocker (owner actions open); STATE/ROADMAP/VERIF/SUMMARY updated per assignment refs phase 66 n7
+- [Phase 67]: Phase 67 criteria 1-8 executed (library/OS/keyring/API/surfaces/arch/build/restore); licence+changelog PASSED; SOTA updated 2026-11-10 per 67-SOTA-AUTH-SURFACES.md
 
 ### Pending Todos
 

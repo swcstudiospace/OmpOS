@@ -1638,7 +1638,6 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   4. Image fold and replay parity hold in the presentation, UI and session projects. Verify: `dotnet test --project tests/Autonogrammer.Presentation.Tests -c Release`, `tests/Autonogrammer.UI.Tests` and `tests/Autonogrammer.Sessions.Tests` pass (image fold and replay parity).
   5. The project graph holds, the build is warning-free and the notices check is clean (no new package). Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*ProjectGraphTests*"` passes; `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` is clean; `python3 scripts/legal/generate-third-party-notices.py --check` is clean (no new package).
 
-**Plans**: `70-01-PLAN.md` through `70-06-PLAN.md` in `.planning/phases/70-cowork-chat-core-and-tool-host/`
 **Plans**: `70-01-PLAN.md` through `70-06-PLAN.md` + `70-07-PLAN.md` (gap closure: steering, build hygiene/pragmas, a11y/security/SOTA states/attachments/profile/host, Harness verification tests gate) in `.planning/phases/70-cowork-chat-core-and-tool-host/`
 
 ### Phase 71: Cowork Artifacts
