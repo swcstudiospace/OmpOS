@@ -101,7 +101,6 @@
             }
 
             CoworkProviderState state;
-#pragma warning disable CA1031 // A provider fault is not an offer. Arguments are not involved.
             try
             {
                 state = await provider.GetStateAsync(lease.Session, cancellationToken).ConfigureAwait(false);
@@ -111,8 +110,7 @@
                 LogFault(provider.ProviderId, exception);
                 continue;
             }
-#pragma warning restore CA1031
-
+CUT 104:114:
             if (state.Availability != CoworkProviderAvailability.Available)
             {
                 continue;
@@ -141,7 +139,6 @@
     }
 
     /// <inheritdoc />
-#pragma warning disable MA0051 // The eight steps stay in one method so a step cannot be skipped by a helper returning early.
     public async ValueTask<CoworkToolResult> InvokeAsync(
         string sessionId,
         string toolName,
@@ -185,7 +182,6 @@
             Raise(sessionId, callId, providerId, toolName, CoworkToolEventKind.Started, null);
             var provider = ProviderFor(providerId);
             CoworkCallPreview preview;
-#pragma warning disable CA1031 // A provider fault becomes a fixed failure. The log names the type, never the arguments.
             try
             {
                 preview = await provider.PreviewAsync(lease.Session, invocation, cancellationToken).ConfigureAwait(false);
@@ -197,11 +193,9 @@
                 Raise(sessionId, callId, providerId, toolName, ResultKind(result), null);
                 return result;
             }
-#pragma warning restore CA1031
 
             target = preview.Target;
             CoworkPolicyDecision decision;
-#pragma warning disable CA1031 // A gate fault becomes a fixed failure and never grants.
             try
             {
                 decision = await _gate.DecideAsync(
@@ -215,7 +209,6 @@
                 Raise(sessionId, callId, providerId, toolName, ResultKind(result), target);
                 return result;
             }
-#pragma warning restore CA1031
 
             policy = decision.Outcome;
             if (decision.Outcome == CoworkPolicyOutcome.Deny)
@@ -252,7 +245,6 @@
 
             using var callTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             callTimeout.CancelAfter(_options.CallTimeout);
-#pragma warning disable CA1031 // A provider fault becomes a fixed failure. The log names the type, never the arguments.
             try
             {
                 result = await provider.InvokeAsync(lease.Session, invocation, callTimeout.Token).ConfigureAwait(false);
@@ -266,7 +258,6 @@
                 Raise(sessionId, callId, providerId, toolName, ResultKind(result), target);
                 return result;
             }
-#pragma warning restore CA1031
 
             kinds = Kinds(result);
             result = CoworkResultLimiter.Apply(result);
@@ -305,7 +296,6 @@
             _ = lease.Call.Release();
         }
     }
-#pragma warning restore MA0051
 
     private async ValueTask<CoworkApprovalOutcome> AskAsync(CoworkApprovalRequest request, CancellationToken cancellationToken)
     {
@@ -332,7 +322,6 @@
             LogFault(request.ToolName, exception);
             return CoworkApprovalOutcome.Denied;
         }
-#pragma warning restore CA1031
     }
 
     private bool TryGetLease(string sessionId, out SessionLease lease)
@@ -480,7 +469,6 @@
                 {
                     _host.LogFault(provider.ProviderId, exception);
                 }
-#pragma warning restore CA1031
             }
 
             Call.Dispose();
