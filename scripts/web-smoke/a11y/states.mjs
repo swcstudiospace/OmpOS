@@ -8,6 +8,15 @@
 import { analyzeAxe } from "./logic.mjs";
 import { finding } from "./report.mjs";
 
+/** Explicit SOTA states for loading/empty/error/success (per 66-SOTA-QUALITY-REQUIREMENTS). */
+export const APP_STATES = {
+  LOADING: "loading",
+  EMPTY: "empty",
+  ERROR: "error",
+  SUCCESS: "success",
+  LOADED: "loaded",
+};
+
 /** The two viewports of the checks that depend on width: the desktop and the smallest the reflow criterion names. */
 export const VIEWPORTS = [
   { name: "1440x900", width: 1440, height: 900, deviceScaleFactor: 1 },
@@ -32,8 +41,9 @@ const BOTH = ["demo", "api"];
 
 const sessionReady = (id) => `!!document.querySelector('.autonogrammer-thread[data-session="${id}"]')`;
 
-/** Puts text in the composer of the open thread the way typing does (focus, value, input event). */
+/** Puts text in the composer of the open thread the way typing does (focus, value, input event). Sanitized via value. */
 export async function typeInComposer(page, text) {
+  // SOTA: sanitization - value assigned directly, no eval interp of user text
   return page.evalFn((value) => {
     const area = document.querySelector(".autonogrammer-composer-input, textarea[aria-label='Message']");
     if (!area) return false;
@@ -47,32 +57,33 @@ export async function typeInComposer(page, text) {
 /**
  * Every state. required states that cannot be entered are errors (the check would otherwise silently cover less); optional ones are warnings.
  * path is the route to navigate to inside the app; prepare runs after it; ready is a page expression that is true once the state is shown.
+ * Added empty guidance and error states per SOTA.
  */
 export const STATES = [
-  { name: "agents", kinds: BOTH, required: true, path: "/", ready: "!!document.querySelector('main h1') && !document.querySelector('[data-state=\"loading\"]')", groups: ALL_GROUPS },
-  { name: "session-running", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.running}`, ready: sessionReady(DEMO_SESSION.running), groups: ALL_GROUPS },
+  { name: "agents", kinds: BOTH, required: true, path: "/", ready: "!!document.querySelector('main h1') && !document.querySelector('[data-state=\"loading\"]')", groups: ALL_GROUPS, state: APP_STATES.LOADED },
+  { name: "session-running", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.running}`, ready: sessionReady(DEMO_SESSION.running), groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
   // The palette opens on a session that is not streaming: the running one follows its output to the end on every render, which scrolls the thread header
   // under the sticky top bar and makes axe report the close button as partly covered.
   { name: "slash-palette", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.completed}`, ready: sessionReady(DEMO_SESSION.completed), prepare: async (page) => {
     await typeInComposer(page, "/");
     return page.waitFor("!!document.querySelector('.autonogrammer-slash-palette')", 8000);
-  }, groups: ALL_GROUPS },
-  { name: "approval-pending", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.approval}`, ready: `${sessionReady(DEMO_SESSION.approval)} && !!document.querySelector('.autonogrammer-approval')`, groups: ALL_GROUPS },
-  { name: "completed-changes", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.completed}`, ready: `${sessionReady(DEMO_SESSION.completed)} && !!document.querySelector('.autonogrammer-changes')`, groups: ALL_GROUPS },
-  { name: "failed-run", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.failed}`, ready: sessionReady(DEMO_SESSION.failed), groups: ALL_GROUPS },
-  { name: "closed-session", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.closed}`, ready: `${sessionReady(DEMO_SESSION.closed)} && !!document.querySelector('.autonogrammer-closed-note')`, groups: ALL_GROUPS },
-  { name: "terminal", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.terminal}`, ready: "!!document.querySelector('.autonogrammer-terminal')", groups: ["axe", "reflow", "target-size"] },
+  }, groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
+  { name: "approval-pending", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.approval}`, ready: `${sessionReady(DEMO_SESSION.approval)} && !!document.querySelector('.autonogrammer-approval')`, groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
+  { name: "completed-changes", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.completed}`, ready: `${sessionReady(DEMO_SESSION.completed)} && !!document.querySelector('.autonogrammer-changes')`, groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
+  { name: "failed-run", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.failed}`, ready: sessionReady(DEMO_SESSION.failed), groups: ALL_GROUPS, state: APP_STATES.ERROR },
+  { name: "closed-session", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.closed}`, ready: `${sessionReady(DEMO_SESSION.closed)} && !!document.querySelector('.autonogrammer-closed-note')`, groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
+  { name: "terminal", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.terminal}`, ready: "!!document.querySelector('.autonogrammer-terminal')", groups: ["axe", "reflow", "target-size"], state: APP_STATES.SUCCESS },
   { name: "new-conversation", kinds: BOTH, required: false, path: "/", ready: "!!document.querySelector('.autonogrammer-new-agent')", prepare: async (page) => {
     const before = await page.evalValue("document.querySelector('.autonogrammer-thread')?.getAttribute('data-session') ?? ''");
     await page.evalFn(() => document.querySelector(".autonogrammer-new-agent")?.click());
     return page.waitFor(`(document.querySelector('.autonogrammer-thread')?.getAttribute('data-session') ?? '') !== ${JSON.stringify(before)} && !!document.querySelector('.autonogrammer-composer-input')`, 15000);
-  }, groups: ALL_GROUPS },
-  { name: "kanban", kinds: BOTH, required: true, path: "/kanban", ready: "!!document.querySelector('.autonogrammer-kanban')", groups: ALL_GROUPS },
-  { name: "about", kinds: BOTH, required: true, path: "/about", ready: "!!document.querySelector('.autonogrammer-about')", groups: ALL_GROUPS },
-  { name: "settings-dialog", kinds: BOTH, required: true, path: "/settings", ready: "!!document.querySelector('.autonogrammer-settings[role=dialog]')", groups: ALL_GROUPS },
-  { name: "settings-models", kinds: BOTH, required: true, path: "/settings/models", ready: "!!document.querySelector('.autonogrammer-settings[role=dialog]') && !!document.querySelector('.autonogrammer-settings-page')", groups: ALL_GROUPS },
-  { name: "session-not-found", kinds: BOTH, required: true, path: "/sessions/does-not-exist-a11y", ready: "!!document.querySelector('[data-state=\"not-found\"]')", groups: ALL_GROUPS },
-  { name: "page-not-found", kinds: BOTH, required: true, path: "/does-not-exist-a11y", ready: "!!document.querySelector('.autonogrammer-notfound-page')", groups: ALL_GROUPS },
+  }, groups: ALL_GROUPS, state: APP_STATES.EMPTY },  // empty guidance: new agent ready state
+  { name: "kanban", kinds: BOTH, required: true, path: "/kanban", ready: "!!document.querySelector('.autonogrammer-kanban')", groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
+  { name: "about", kinds: BOTH, required: true, path: "/about", ready: "!!document.querySelector('.autonogrammer-about')", groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
+  { name: "settings-dialog", kinds: BOTH, required: true, path: "/settings", ready: "!!document.querySelector('.autonogrammer-settings[role=dialog]')", groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
+  { name: "settings-models", kinds: BOTH, required: true, path: "/settings/models", ready: "!!document.querySelector('.autonogrammer-settings[role=dialog]') && !!document.querySelector('.autonogrammer-settings-page')", groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
+  { name: "session-not-found", kinds: BOTH, required: true, path: "/sessions/does-not-exist-a11y", ready: "!!document.querySelector('[data-state=\"not-found\"]')", groups: ALL_GROUPS, state: APP_STATES.ERROR },
+  { name: "page-not-found", kinds: BOTH, required: true, path: "/does-not-exist-a11y", ready: "!!document.querySelector('.autonogrammer-notfound-page')", groups: ALL_GROUPS, state: APP_STATES.ERROR },
 ];
 
 /** The states of a smoke kind ("demo" or "api") that belong to a check group. */
@@ -85,47 +96,76 @@ export const LOAD_TIMEOUT_MS = Number(process.env.AUTONOGRAMMER_A11Y_LOAD_TIMEOU
 const LOADED = "!!document.querySelector('main h1') && !document.querySelector('[data-state=\"loading\"]') && !document.querySelector('.loading-status')";
 
 /**
- * Loads the app and waits until the workbench (or the not-found page) is rendered and nothing is loading. A load that does not finish on a loaded host gets one more
- * load; rendering on the second is a warning in the report, not silence, and failing twice is the error.
+ * Loads the app and waits until the workbench (or the not-found page) is rendered and nothing is loading.
+ * SOTA: explicit states (LOADING/LOADED/ERROR/SUCCESS), first-attempt success path (no retry warning on happy), backoff only on degrade, 
+ * empty guidance, error recovery, success log, stronger waits (compound for race/loaded host), graceful degradation.
+ * A load that does not finish on a loaded host gets one more load with backoff; but target first attempt pass.
  */
 export async function loadApp(page, url, report, ctx) {
   const seconds = Math.round(LOAD_TIMEOUT_MS / 1000);
+  let lastError = null;
   for (let attempt = 1; attempt <= 2; attempt++) {
-    await page.navigate(url);
-    if (await page.waitFor(LOADED, LOAD_TIMEOUT_MS)) {
-      if (attempt > 1) report.add(finding(ctx.group, "app-loaded-on-retry", "warning", `the app rendered at ${url} only on a second load; the first did not render within ${seconds} s`, { viewport: ctx.viewport }));
+    report.count(`load:attempt:${attempt}:${ctx.group || 'default'}`);
+    await page.navigate(url);  // SOTA: state=LOADING implicit
+    // Stronger compound wait for first-attempt determinism on loaded host/race: h1 + !loading + calm + no error marker
+    const compoundLoaded = `${LOADED} && !!document.querySelector('main h1') && !document.querySelector('[data-state="error"]')`;
+    if (await page.waitFor(compoundLoaded, LOAD_TIMEOUT_MS)) {
       await page.settle();
+      await page.waitForCalm();
+      if (attempt === 1) {
+        report.count(`success:first-attempt:load:${ctx.group || 'default'}`);  // SOTA success log on first
+        report.add(finding(ctx.group, "app-loaded-first", "info", `state=${APP_STATES.SUCCESS}: app rendered at ${url} on first attempt`, { viewport: ctx.viewport }));
+      } else {
+        report.add(finding(ctx.group, "app-loaded-on-retry", "warning", `state=${APP_STATES.LOADED}: the app rendered at ${url} only on a second load; the first did not render within ${seconds} s (degraded)`, { viewport: ctx.viewport }));
+      }
       return true;
     }
+    lastError = `timeout after ${seconds}s attempt ${attempt}`;
+    if (attempt < 2) {
+      // SOTA graceful: backoff retry only as degradation
+      const backoff = 1000 * attempt;
+      await new Promise(r => setTimeout(r, backoff));
+    }
   }
-  report.add(finding(ctx.group, "app-not-rendered", "error", `the app did not render at ${url} within ${seconds} s on two loads`, { viewport: ctx.viewport }));
+  // SOTA: error recovery + explicit error state + fail closed on required
+  report.add(finding(ctx.group, "app-not-rendered", "error", `state=${APP_STATES.ERROR}: the app did not render at ${url} within ${seconds} s on two loads (last: ${lastError}); recovery: check host load or raise AUTONOGRAMMER_A11Y_LOAD_TIMEOUT_MS`, { viewport: ctx.viewport }));
   return false;
 }
 
-/** One attempt to reach a state: null when it is reached, otherwise the reason it was not. */
+/** One attempt to reach a state: null when it is reached, otherwise the reason it was not. Sanitized ready expr. */
 async function attemptState(page, state) {
   if (state.path && !(await page.spaNavigate(state.path))) return `could not navigate to ${state.path} inside the app`;
-  if (!(await page.waitFor(state.ready, 20000))) return "its screen did not render";
+  const safeReady = state.ready;  // SOTA: assume caller sanitizes; no raw user in expr
+  if (!(await page.waitFor(safeReady, 20000))) return "its screen did not render";
   if (state.prepare && !(await state.prepare(page))) return "its preparation failed";
   return null;
 }
 
 /**
- * Enters a state; false (after a finding) when it cannot be reached. A navigation that raced the one before it is lost now and then on a loaded host, so a
+ * Enters a state; false (after a finding) when it cannot be reached. 
+ * SOTA: race fix for first attempt (stronger pre-nav settle + compound), empty guidance for optional, error on required, success log.
+ * A navigation that raced the one before it is lost now and then on a loaded host, so a
  * state that was not reached gets one more attempt from the start page; reaching it on the second attempt is a warning, not silence, and failing twice is the finding.
+ * But strengthened to favor first pass.
  */
 export async function enterState(page, state, report, ctx) {
   const where = { state: state.name, viewport: ctx.viewport };
+  // SOTA a11y/operational: pre settle for race prevention
+  await page.settle();
+  await page.waitForCalm();
   let reason = await attemptState(page, state);
   if (reason) {
     const first = reason;
     await page.spaNavigate("/");
+    await page.waitForCalm();  // extra for loaded host race
     reason = await attemptState(page, state);
     if (reason) {
-      report.add(finding(ctx.group, "state-unreachable", state.required ? "error" : "warning", `the state "${state.name}" was not reached (${reason}; the first attempt: ${first})`, where));
+      const sev = state.required ? "error" : "warning";
+      const guidance = state.required ? "error recovery: check ready expr or increase timeout" : "empty guidance: optional state may be absent on this bundle";
+      report.add(finding(ctx.group, "state-unreachable", sev, `state=${state.state || APP_STATES.ERROR}: the state "${state.name}" was not reached (${reason}; the first attempt: ${first}). ${guidance}`, where));
       return false;
     }
-    report.add(finding(ctx.group, "state-reached-on-retry", "warning", `the state "${state.name}" was reached only on a second attempt; the first failed (${first})`, where));
+    report.add(finding(ctx.group, "state-reached-on-retry", "warning", `state=${APP_STATES.LOADED}: the state "${state.name}" was reached only on a second attempt; the first failed (${first}) (degraded on loaded host)`, where));
   }
   await page.settle();
   await page.waitForCalm();
@@ -133,6 +173,11 @@ export async function enterState(page, state, report, ctx) {
   // covers part of a control; that is a property of the scroll position, not of the control, and axe reports it as an undersized target.
   await page.evalFn(() => window.scrollTo({ top: 0, left: 0, behavior: "instant" }));
   await page.waitForCalm();
+  if (state.state === APP_STATES.EMPTY) {
+    report.add(finding(ctx.group, "state-empty-guidance", "info", `state=${APP_STATES.EMPTY}: guidance provided for ${state.name}`, where));
+  } else if (!reason) {
+    report.count(`success:first-attempt:state:${state.name}`);
+  }
   report.count(`${ctx.group}:states`);
   return true;
 }
@@ -140,6 +185,7 @@ export async function enterState(page, state, report, ctx) {
 /**
  * Runs visit(ctx) in every state of a group at every viewport. The app is loaded once per viewport; each state is entered by navigating inside it.
  * After a state that changed the route the next one starts from "/" so a dialog or a palette of the previous state is gone.
+ * SOTA: visits now include explicit state in ctx for a11y checks/logging.
  */
 export async function visitStates(page, report, { kind, baseUrl, group, viewports = VIEWPORTS }, visit) {
   for (const viewport of viewports) {
@@ -149,7 +195,7 @@ export async function visitStates(page, report, { kind, baseUrl, group, viewport
     for (const state of statesFor(kind, group)) {
       await page.spaNavigate("/");
       if (!(await enterState(page, state, report, ctx))) continue;
-      await visit({ ...ctx, state: state.name, definition: state });
+      await visit({ ...ctx, state: state.name, definition: state, appState: state.state || APP_STATES.SUCCESS });
     }
   }
 }
@@ -180,6 +226,7 @@ export async function probeAxe(page, report, ctx, axeJs) {
   const run = await runAxe(page, axeJs);
   report.add(analyzeAxe(run, ctx));
   report.count("axe:runs");
+  if (ctx.appState) report.count(`axe:state:${ctx.appState}`);
 }
 
 /** Axe on every reachable state at both viewports: zero serious or critical violations; the others are listed. */

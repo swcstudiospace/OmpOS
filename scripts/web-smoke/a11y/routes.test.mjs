@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { bootShellOutcome } from "./routes.mjs";
+import { bootShellOutcome, readyFor, waitForInitialTitle } from "./routes.mjs";
 
 test("a second attempt that produced entries adds no finding", () => {
   assert.equal(bootShellOutcome([{ route: "/kanban" }]), null);
@@ -15,4 +15,35 @@ test("a second attempt that also landed on the boot shell is an error, not a pas
   assert.equal(outcome.severity, "error");
   assert.equal(outcome.check, "routes");
   assert.equal(outcome.id, "sequence-boot-shell");
+});
+
+test("initial navigation waits for a non-boot title and fails closed on timeout", async () => {
+  const findings = [];
+  let expression;
+  const report = { add: (finding) => findings.push(finding) };
+  const page = { waitFor: async (condition) => { expression = condition; return false; } };
+  assert.equal(await waitForInitialTitle(page, report), false);
+  const ready = new Function("document", `return ${expression}`);
+  assert.equal(ready({ title: "Autonogrammer" }), false);
+  assert.equal(ready({ title: "" }), false);
+  assert.equal(ready({ title: "Agents - Autonogrammer" }), true);
+  assert.equal(findings[0].id, "initial-title-not-ready");
+  assert.equal(findings[0].severity, "error");
+});
+
+test("dynamic session readiness waits for the requested thread and its title", () => {
+  const ready = new Function("document", `return ${readyFor("/sessions/session%20one")}`);
+  const document = {
+    title: "Session - Autonogrammer",
+    querySelector: () => null,
+  };
+  assert.equal(!!ready(document), false);
+  document.querySelector = () => ({ getAttribute: () => "other" });
+  document.title = "Other - Autonogrammer";
+  assert.equal(ready(document), false);
+  document.querySelector = () => ({ getAttribute: () => "session one" });
+  document.title = "Session - Autonogrammer";
+  assert.equal(ready(document), false);
+  document.title = "Session one - Autonogrammer";
+  assert.equal(ready(document), true);
 });
