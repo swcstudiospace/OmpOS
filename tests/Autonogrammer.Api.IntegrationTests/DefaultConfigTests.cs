@@ -1,12 +1,12 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Routing;
 using Shouldly;
 using Xunit;
-
 namespace Autonogrammer.Api.IntegrationTests;
-
 /// <summary>
 /// AG-77-12: shipped default configuration boots; Dispatch/Cowork/Accounts answer their disabled problem type (or 404);
 /// options validators refuse the three unsafe values named in the briefs (in-memory with 2 replicas, missing signing key with feature on, file key store).
@@ -65,31 +65,36 @@ public sealed class DefaultConfigTests
     [Fact]
     public void ValidatorRefusesInMemoryPresenceWithTwoReplicas()
     {
+        Environment.SetEnvironmentVariable("AUTONOGRAMMER_TEST_POSTGRES_CONNECTION", "Host=127.0.0.1;Port=5432;Database=autonogrammer_test;Username=autonogrammer;Password=dummy");
         var config = JwtTestHost.ProductionConfig();
-        config["Sessions:Store"] = "InMemory"; // or whatever triggers replica rule; actual unsafe is per brief
-        // RED placeholder: the StartupFailure will be asserted after impl
+        config["Dispatch:ReplicaMode"] = "Multi";
+        config["Coordination:Store"] = "InMemory";
         var ex = Record.Exception(() => StartupFailureOfForDefault(config, "Production"));
-        // will assert message after GREEN
-        _ = ex; // keep for RED
+        ex.ShouldNotBeNull("in-memory with two replicas must be refused");
+        ex!.Message.ShouldContain("ReplicaMode", "must name the replica setting");
     }
 
     [Fact]
     public void ValidatorRefusesMissingSigningKeyWithFeatureOn()
     {
+        Environment.SetEnvironmentVariable("AUTONOGRAMMER_TEST_POSTGRES_CONNECTION", "Host=127.0.0.1;Port=5432;Database=autonogrammer_test;Username=autonogrammer;Password=dummy");
         var config = JwtTestHost.ProductionConfig();
-        // simulate unsafe: remove key or set feature that requires it
-        config.Remove("Api:Auth:OwnerToken:Sha256"); // example unsafe for owner token feature
+        config["Api:Auth:Mode"] = "OwnerToken";
+        config.Remove("Api:Auth:OwnerToken:Sha256");
         var ex = Record.Exception(() => StartupFailureOfForDefault(config, "Production"));
-        _ = ex;
+        ex.ShouldNotBeNull("missing signing key with OwnerToken feature on must refuse");
+        ex!.Message.ShouldContain("OwnerToken", "must name the owner token key");
     }
 
     [Fact]
     public void ValidatorRefusesFileKeyStore()
     {
+        Environment.SetEnvironmentVariable("AUTONOGRAMMER_TEST_POSTGRES_CONNECTION", "Host=127.0.0.1;Port=5432;Database=autonogrammer_test;Username=autonogrammer;Password=dummy");
         var config = JwtTestHost.ProductionConfig();
-        config["Secrets:Store"] = "File"; // unsafe per brief
+        config["Secrets:Store"] = "File";
         var ex = Record.Exception(() => StartupFailureOfForDefault(config, "Production"));
-        _ = ex;
+        ex.ShouldNotBeNull("file key store must be refused");
+        ex!.Message.ShouldContain("Secrets:Store", "must name the secrets store setting");
     }
 
     [Fact]
@@ -113,12 +118,23 @@ public sealed class DefaultConfigTests
     [Fact]
     public void OpenApiAnonymousEndpointEnumerationMatchesExpectedForProductionShape()
     {
-        // cross-cutting evidence for Task 1 OpenAPI scheme coverage
+        // cross-cutting evidence for Task 1 OpenAPI scheme coverage (per D-32/D-33 and task1)
+        Environment.SetEnvironmentVariable("AUTONOGRAMMER_TEST_POSTGRES_CONNECTION", "Host=127.0.0.1;Port=5432;Database=autonogrammer_test;Username=autonogrammer;Password=dummy");
         var config = JwtTestHost.ProductionConfig();
         using var factory = new ApiFactory(config, environment: "Production");
-        // RED: enumerate EndpointDataSource, assert anonymous set matches expected (health, auth/config etc)
-        // placeholder assert for RED
-        factory.ShouldNotBeNull();
+        using var client = factory.CreateClient(); // force host build for data source
+        var eds = factory.Services.GetRequiredService<EndpointDataSource>();
+        var anon = eds.Endpoints
+            .Where(e => e.Metadata.GetMetadata<IAllowAnonymous>() != null)
+            .Select(e => e.RoutePattern?.RawText ?? e.DisplayName ?? string.Empty)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .ToHashSet(StringComparer.Ordinal);
+        // production shape per plan: health + auth/config anonymous; dev-only openapi/scalar excluded
+        anon.ShouldContain("/health/live");
+        anon.ShouldContain("/health/ready");
+        anon.ShouldContain("/health/startup");
+        anon.ShouldContain("/auth/config");
+        anon.ShouldNotContain("/openapi/v1.json");
     }
 
     private static string StartupFailureOfForDefault(Dictionary<string, string?> config, string environment)
@@ -128,6 +144,6 @@ public sealed class DefaultConfigTests
         {
             using var client = factory.CreateClient();
         });
-        return StartupFailureText.Of(caught); // assumes helper exists in test assembly
+        return StartupFailureText.Of(caught);
     }
 }
