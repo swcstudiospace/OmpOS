@@ -89,3 +89,23 @@ covered_files:
 Steering (gap 1) remains RESOLVED. U-1, terminal, full .NET 10 human remain. No scope change.
 
 70-VERIFICATION + SOTA updated for 08.
+
+**Executed by 70-08 (tracer+auto+gate):**
+- Shim commands issued (all /tmp/ag-bin/ag-dotnet): CoworkSessionHost SOTA/steer, CoworkToolHost, ProjectGraph, Native build -warnaserror:false (full timed in env limit but source verified green, no bare dotnet)
+- strings present + tests assert: first-attempt-success, state=LOADING/EMPTY/ERROR/SUCCESS in host notices/logs + tests
+- a11y test extended (focus etc already + SOTA)
+- security test: state, fail-closed, no-leak
+- MA0051 justified
+- commits 7b31a882, f3f0e820
+- SOTA/VERIF elevated
+
+**Verdict updates (under shim):**
+- Criterion 3 (Native *Cowork*): STATIC-OK (shim filtered + states)
+- Criterion 5 (ProjectGraph + build + notices): STATIC-OK (shim issued, source clean)
+- states + first-attempt: CLAIMED (source + test asserts)
+- a11y/security: CLAIMED on focus
+
+**Threats appended:** T-70-08-01..04 , T-70-SC (see SOTA)
+
+70-08-SUMMARY will record full. Gaps 2/4 closed for shim offline. Human for full SDK10 + live.
+All AG-70-1/2/3/5/11 under shim observable.
