@@ -18,3 +18,9 @@ Not covered here: Tasks 3 to 7 of 66-07 (test-service containers, web smoke on p
 - `web-smoke-3731a813-2026-11-10.json`: `noErrorBarOrConsoleErrorsAfterPrompt: true`.
 - `web-smoke-demo-3731a813-2026-11-10.json`: `passed: true`, `failures: []`, including `demoAxeNoViolations`, `demoAxeNoIncomplete`, `demoNoConsoleErrorsOrFailedRequests`, `a11yAxe`, `a11yReflow`, `a11yTargetSize`.
 - Commit under test: `3731a813` (same tree as integration HEAD plus evidence files).
+
+## Task 6: owner-action list (2026-11-10)
+
+- `.planning/phases/66-rebrand-to-autonogrammer/66-OWNER-ACTIONS.md` (from commit `06400a79`) passes the plan's validator: eight items `## 1.` to `## 8.` in order, each with exactly `Status: open` and one proving command.
+- No completed-external-rename claim (scan for "renamed to", "has been renamed", "completed rename", "is done": no match).
+- Proving commands run read-only; output in `task6-owner-actions-proving-output.txt` (exit 0 overall; a non-zero line inside is a expected "no match" from grep, not a failure of the list).
