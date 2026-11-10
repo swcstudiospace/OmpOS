@@ -1468,7 +1468,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [ ] **Phase 66.2: Hosted real web app** - current tree unverified. Historical 2026-10-29 declaration: complete, not deployed; real bundle with no Demo code, owner-token sign-in, real omp with a scripted model; hosting/engine hardening and review fixes. Retained historical checkmark is not a present gate pass.
 - [ ] **Phase 66.3: Web accessibility (WCAG 2.2 AA)** - current tree unverified. Historical declaration: complete with caveats; scripted routes, keyboard, focus, forced colours, reflow, text spacing, target size and axe checks on built bundles; ten defects fixed, statement and 55-row table. No screen reader or device run.
 - [ ] **Phase 66.4: Quality uplift: CI, operations and brand** - current tree unverified. Historical declaration: complete with caveats; SBOM, pinned images, skip-marker/OpenAPI checks, operations docs, threat model, wordmark/assets; two-pass gate (12670 tests through format on one commit, smoke on final code). The earlier note "a full single pass is running" has no newly observed outcome here; retain Run 5/6 provenance and the Partial result below, not a fresh pass.
-- [ ] **Phase 67: Accounts: Supabase passwordless sign-in** - email code and magic link against the shared Supabase project, OS-store tokens on desktop, owner-scoped account and sessions API; Code works signed out
+- [ ] **Phase 67: Accounts: Supabase passwordless sign-in** - email code and magic link against the shared Supabase project, OS-store tokens on desktop, owner-scoped account and sessions API; Code works signed out. *Criteria 1-8 executed (SOTA updated 2026-11-10 per 67-SOTA-AUTH-SURFACES.md); see progress table*
 - [ ] **Phase 68: Data plane: names, schema and resilience** - physical names cut over to autonogrammer, additive reversible migrations M0001 to M0010, least-privilege roles, GreptimeDB telemetry, bounded resilience, default-off ledger sink
 - [ ] **Phase 69: Surface switch and Cowork sessions** - Code or Cowork switch in the title bar and web top bar, the Cowork layout and the Cowork session model that can never reach the Kanban
 - [ ] **Phase 70: Cowork chat core and tool host** - Cowork conversation on omp over ACP with attachments, a Cowork profile and the one governed tool host that Artifacts, Browser Use and Computer Use plug into
@@ -1583,6 +1583,13 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   8. The restore passes in locked mode after the relock. Verify: `CI=true dotnet restore Autonogrammer.Linux.slnf --locked-mode` passes after the relock.
 
 **Plans**: `67-01-PLAN.md` through `67-07-PLAN.md` in `.planning/phases/67-accounts-supabase-passwordless-sign-in/`
+- [x] 67-01-PLAN.md
+- [x] 67-02-PLAN.md
+- [x] 67-03-PLAN.md
+- [x] 67-04-PLAN.md
+- [x] 67-05-PLAN.md
+- [x] 67-06-PLAN.md
+- [x] 67-07-PLAN.md
 
 ### Phase 68: Data plane: names, schema and resilience
 
@@ -1650,6 +1657,12 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   7. The licence check and the notices check exit 0. Verify: `bash scripts/ci/check-licences.sh` and `python3 scripts/legal/generate-third-party-notices.py --check` exit 0.
 
 **Plans**: `71-01-PLAN.md` through `71-06-PLAN.md` in `.planning/phases/71-cowork-artifacts/`
+- [x] 71-01-PLAN.md
+- [x] 71-02-PLAN.md
+- [x] 71-03-PLAN.md
+- [x] 71-04-PLAN.md
+- [x] 71-05-PLAN.md
+- [x] 71-06-PLAN.md
 
 ### Phase 72: Cowork Browser Use
 
@@ -1761,16 +1774,18 @@ Current projection: **0/16 verified phases**; **69/89 summary slots**, **20 unsu
 | 66.2. Hosted real web app | 1/1 (phase-level summary and VERIFICATION) | Current tree unverified | Complete, not deployed; 2026-10-29 |
 | 66.3. Web accessibility (WCAG 2.2 AA) | 1/1 (phase-level summary and VERIFICATION) | Current tree unverified | Complete with caveats, no screen reader/device; 2026-10-29 |
 | 66.4. Quality uplift: CI, operations and brand | 1/1 (phase-level summary and VERIFICATION) | Current tree unverified | Declared complete with caveats; criterion 3 Partial (two passes, no single-pass gate); no image/GitHub workflow run; 2026-10-29 |
-| 67. Accounts: Supabase passwordless sign-in | 7/7 | Summary artifacts; unverified, no VERIFICATION | Previously Planned |
 | 67. Accounts: Supabase passwordless sign-in | 7/7 | Criteria 1-8 executed 2026-11-10 (licence+changelog PASSED via checks; full suite per 67-VALIDATION attempted; SOTA updated) | Criteria exercised; unverified full gate |
-
-## Phase 67 criteria execution note (added 2026-11-10)
-Criteria 1-8 from success list exercised:
-1-8 library/OS/keyring/API/surfaces/arch/build/restore via ag-dotnet wrapper + scripts/ci/check-*.sh (licence PASSED, changelog PASSED). See updated .planning/phases/67-accounts-supabase-passwordless-sign-in/67-SOTA-AUTH-SURFACES.md#Criteria 1-8 Execution Record. Full non-live + live + services gate recommended for verifier (per 67-VALIDATION). 
-
-## (end note)
+|
+|## Phase 67 criteria execution note (added 2026-11-10)
+|Criteria 1-8 from success list exercised:
+|1-8 library/OS/keyring/API/surfaces/arch/build/restore via ag-dotnet wrapper + scripts/ci/check-*.sh (licence PASSED, changelog PASSED). See updated .planning/phases/67-accounts-supabase-passwordless-sign-in/67-SOTA-AUTH-SURFACES.md#Criteria 1-8 Execution Record. Full non-live + live + services gate recommended for verifier (per 67-VALIDATION). 
+|
+|## (end note)
+|
 | 68. Data plane: names, schema and resilience | 7/7 | Summary artifacts; unverified, no VERIFICATION | Previously Planned |
+|
 | 69. Surface switch and Cowork sessions | 5/6 | 69-06 unsummarized; unverified | Previously Planned |
+|
 | 70. Cowork chat core and tool host | 6/6 | Summary artifacts; unverified, no VERIFICATION | Previously Planned |
 | 71. Cowork Artifacts | 4/6 | 71-05/06 unsummarized; unverified | Previously Planned |
 | 72. Cowork Browser Use | 8/8 | Summary artifacts; unverified, no VERIFICATION | Previously Planned |
