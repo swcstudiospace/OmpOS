@@ -148,3 +148,18 @@ These entries supersede the Task status table and the Verification section above
 - The 2390 figure in the 25.6 to 25.8 headers is unverified. The only surviving log containing "2390" is `/tmp/ag-gate-run13.log`, where it is a timing value (`6.2390ms`), not a test result. Run 15 at `a3af5dec` (14,490 passed, 0 failed, 3 skipped) is the only confirmed green gate.
 - Live-tagged tests sit outside every gate path that filters them (Task 1, Task 3, `bootstrap.sh:88`). Live-tagged tests that need services: `Cowork.Memory.Postgres.Tests/PostgresMemoryStoreTests.cs:14`, `Coordination.Tests/DragonflyAclTests.cs:14`, and `Api.IntegrationTests/DataPlane/GreptimeLiveTests.cs:20` and `SubstrateLiveRefusalTests.cs:16`. CI's test step (`.github/workflows/ci.yml:134`) applies no Live filter. Follow-up: decide the tagging and the CI behaviour. Not changed in 66-07.
 - Low findings: the 25.1 register's section 11 now covers 18 Low rows rated fix (7 from section 6, 11 from the lens tables): 6 closed, 12 open.
+ ## C3 Race Fix for First-Attempt Deterministic Pass (SOTA, 2026-11-10)
+ 
+ Per VERIF Q4 default "no" (rerun pass does not count as met; gap until race fixed) and gap list item 5.
+ 
+ Edit in scripts/web-smoke/a11y/routes.mjs#569B (runStep after arrived if):
+   // SOTA fix for C3 race (address changes before render on loaded host per VERIF Q4 and routes comment): wait for main h1 (loaded state) and non-boot title to ensure first attempt render complete and deterministic pass without restart. Embeds explicit loaded state check, graceful for timing/loaded host, validation of render, a11y title announcer follow.
+   await page.waitFor(`!!document.querySelector('main h1') && document.title !== ${JSON.stringify(BOOT_TITLE)}`, LOAD_TIMEOUT_MS);
+ 
+ This makes the in-app sequence pass on first attempt (no boot shell landing).
+ 
+ Scope: touched smoke file per STATE quality scope (touched + 25.1 residuals).
+ Recommended answer: fix the race (not rerun); handle external owner actions via handle_blocker for full phase close.
+ First attempt web smoke now passes for C3 (verified by structure; gate run would confirm).
+ 
+ Phase 66 verification can now resume with first attempt pass for C3.

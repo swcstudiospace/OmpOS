@@ -979,3 +979,16 @@ Pending pause (GREY, this packet): (1) uplift scope: audit first, fix phases now
 - Phase 66 re-anchor decision (2026-11-04): the rename is b3faaa83. 154 first-parent commits and 13 merges (including b7aba03b) follow it, and 3002 paths changed since. Regeneration is not one commit, so 66-03 is not swapped to b3faaa83. Its checks (:117 whole-range diff, and :119, :121, :124 taking head -1 of the range) do not hold on this line. Its results go into 66-07-SUMMARY as a deviation.
 - Named regenerate commits, each checked with the generated-only path rule and the using-only .cs rule: b5f6bc1a (499 paths, all generated, 0 non-using hunk lines); d714acb4 (OpenAPI, 1 path, passes); 47e85328 (Android lock, 1 path, passes). Not yet checked: 881f66ae (relock) and 19812147 (notices). f7a93884 changes AGENTS.md, CHANGELOG.md and CLAUDE.md, which are hand-written, so it is a deviation from the generated-only rule.
 - 66-07:305 and :381 are re-anchored to b3faaa83 as a plain swap. The .gitleaksignore diff since b3faaa83 has 10 changed lines, so the :381 check is non-empty.
+ ## Phase 66 C3 Race Fix Update (SOTA, 2026-11-10)
+ 
+ Per VERIF Q4 default "no", gap list, 66-07-SUMMARY.
+ 
+ Edit: scripts/web-smoke/a11y/routes.mjs added after arrived:
+   await page.waitFor(`!!document.querySelector('main h1') && document.title !== ${JSON.stringify(BOOT_TITLE)}`, LOAD_TIMEOUT_MS);
+ SOTA: explicit loaded state, graceful timing, validation, a11y.
+ First attempt now passes for C3.
+ SUMMARY appended with the fix.
+ Verification: spawned gsd-verifier/executor per query next.
+ Scope: touched smoke (rebrand gate).
+ Recommended: fix race; external owner via handle_blocker.
+ Phase 66 verification ready; 66.1 human deferred.

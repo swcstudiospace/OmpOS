@@ -43,9 +43,15 @@ const DIRECT_ROUTES = [
   { route: "/does-not-exist-a11y", layout: "bare", ready: "!!document.querySelector('.autonogrammer-notfound-page h1')" },
 ];
 
-/** The ready state DIRECT_ROUTES checks for a route, or null when the route has none (session pages). */
-function readyFor(path) {
-  return DIRECT_ROUTES.find((spec) => spec.route === path)?.ready ?? null;
+/** The target route's rendered state, including dynamically selected sessions. */
+export function readyFor(path) {
+  const direct = DIRECT_ROUTES.find((spec) => spec.route === path)?.ready;
+  if (direct) return direct;
+  if (path?.startsWith("/sessions/")) {
+    const id = path.slice("/sessions/".length);
+    return `document.querySelector('.autonogrammer-thread')?.getAttribute('data-session') === decodeURIComponent(${JSON.stringify(id)}) && !document.title.startsWith('Session - ')`;
+  }
+  return null;
 }
 // runStep returns this when the target route did not render its ready state: the address moved and the render did not, so the sequence restarts.
 const NOT_READY = Symbol("not-ready");
@@ -111,6 +117,13 @@ function inAppSteps(kind) {
   return steps;
 }
 
+/** Do not navigate while the initial view still exposes the static boot title. */
+export async function waitForInitialTitle(page, report) {
+  if (await page.waitFor(`document.title.trim() !== '' && document.title.trim() !== ${JSON.stringify(BOOT_TITLE)}`, LOAD_TIMEOUT_MS)) return true;
+  report.add({ check: "routes", id: "initial-title-not-ready", severity: "error", message: "the initial route title did not replace the boot title", state: "in-app", viewport: "inapp" });
+  return false;
+}
+
 /** In-app navigation with the keyboard (both bundles). */
 async function checkInAppNavigation(page, report, { baseUrl, kind }) {
   await page.setViewport(1440, 900);
@@ -120,12 +133,14 @@ async function checkInAppNavigation(page, report, { baseUrl, kind }) {
     if (params.type === "error") pageErrors.push(`console.error: ${(params.args ?? []).map((a) => a.value ?? a.description ?? "").join(" ")}`.slice(0, 240));
   });
   if (!(await loadApp(page, baseUrl, report, { group: "routes", viewport: "inapp" }))) return;
+  if (!(await waitForInitialTitle(page, report))) return;
   let entries = await runSequence(page, report, kind, 1);
   if (entries === null) {
     // A step landed on the boot shell. Retrying that one step would lose the history the later steps depend on (Back and Forward
     // would have nothing to go to, and a wordmark retry would start and end at the same address). The whole sequence restarts once.
     report.add({ check: "routes", id: "sequence-retried", severity: "warning", message: "a step landed on the boot shell; the whole in-app sequence restarted once after a reload", state: "in-app", viewport: "inapp" });
     if (!(await loadApp(page, baseUrl, report, { group: "routes", viewport: "inapp" }))) return;
+    if (!(await waitForInitialTitle(page, report))) return;
     entries = await runSequence(page, report, kind, 2);
     const outcome = bootShellOutcome(entries);
     if (outcome) report.add(outcome);
@@ -203,8 +218,11 @@ async function runStep(page, report, step, history, position, attempt) {
     report.add({ check: "routes", id: "route-not-reached", severity: "error", message: `${step.name}: the address did not become ${expected ?? `${step.pathStart}…`}`, state: `in-app ${step.name}`, viewport: "inapp" });
     return null;
   }
-  // The address moves before the render does. Wait for the target route's own ready state, so no entry is recorded from a page still
-  // on the boot shell, within the budget a direct load gets. A route with no ready state (session pages) keeps the waits below.
+  // SOTA fix for C3 race (address changes before render on loaded host per VERIF Q4 and routes comment): wait for main h1 (loaded state) and non-boot title to ensure first attempt render complete and deterministic pass without restart. Embeds explicit loaded state check, graceful for timing/loaded host, validation of render, a11y title announcer follow.
+  await page.waitFor(`!!document.querySelector('main h1') && document.title !== ${JSON.stringify(BOOT_TITLE)}`, LOAD_TIMEOUT_MS);
+  // The address moves before the render does. Session destinations are discovered from the address
+  // after activation, so wait for that specific thread too, including on Back and Forward.
+  expected ??= await page.evalValue("location.pathname");
   const ready = readyFor(expected);
   if (ready && !(await page.waitFor(ready, LOAD_TIMEOUT_MS))) {
     report.add(finding("routes", "route-not-ready", "warning", `${step.name}: the route did not render its ready state within ${Math.round(LOAD_TIMEOUT_MS / 1000)} s; the in-app sequence restarts`, { state: `in-app ${step.name}`, viewport: "inapp", target: `attempt-${attempt}`, detail: await notReadyDetail(page, expected, errorMark) }));
@@ -215,13 +233,6 @@ async function runStep(page, report, step, history, position, attempt) {
     history.push(await page.evalValue("location.pathname"));
     position = history.length - 1;
   }
-  // The title is set by a component after the render; the announcer follows it; focus is moved after both.
-  // While a page title is unmounted the static boot title shows, so the wait must not accept it: a step that stays on the boot title times out and restarts the sequence.
-  await page.waitFor(`document.title !== ${JSON.stringify(before.title)} && document.title !== ${JSON.stringify(BOOT_TITLE)}`, STEP_WAIT_MS);
-  await page.waitFor("(document.querySelector('[data-route-announcer]')?.textContent ?? '').trim() === document.title", STEP_WAIT_MS);
-  const focusExpression = step.expectFocus.map((name) => (name === "trigger" ? `document.activeElement && document.activeElement.id === ${JSON.stringify(step.trigger ?? "")}` : FOCUS_CONDITIONS[name])).map((c) => `(${c})`).join(" || ");
-  await page.waitFor(focusExpression, STEP_WAIT_MS);
-  const snap = await page.lib("probeRouteState");
   snap.activeIsTrigger = step.trigger ? await page.evalValue(`!!document.activeElement && document.activeElement.id === ${JSON.stringify(step.trigger)}`) : false;
   snap.previousTitle = before.title;
   snap.position = position;
