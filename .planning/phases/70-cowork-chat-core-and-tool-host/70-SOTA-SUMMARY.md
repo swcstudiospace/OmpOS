@@ -73,3 +73,8 @@ None new (all per original 70-01 threat model + D-* mitigations verified in SOTA
 
 ## Next
 Update STATE/ROADMAP via gsd, final metadata commit (or skipped per config).
+## Self-Check: PASSED
+- Commit: 55cde684 includes SOTA doc, SUMMARY, VERIF, ROADMAP, source hygiene.
+- Files present on disk.
+- STATE/ROADMAP updated via gsd + commit.
+

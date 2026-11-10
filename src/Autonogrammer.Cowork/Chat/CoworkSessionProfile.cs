@@ -1,4 +1,5 @@
 using Autonogrammer.Harness.AgentLoop.Launch;
+using Autonogrammer.Harness.Abstractions;
 
 namespace Autonogrammer.Cowork.Chat;
 
@@ -114,15 +115,17 @@ public sealed class CoworkSessionProfile
 
     /// <summary>
     /// Writes the prompt file and returns the launch. The start is refused when the prompt cannot be written.
+    /// Contributors (if any) are passed to OmpLaunchPlanner so the seam is applied generically before Cowork specifics are added.
     /// </summary>
     /// <param name="standingContext">The standing-context paragraph, or null.</param>
     /// <param name="browserGuidance">Browser guidance, or null.</param>
     /// <param name="computerGuidance">Computer guidance, or null.</param>
+    /// <param name="contributors">Launch contributors to apply generically via the planner (surface will be "cowork").</param>
     /// <returns>The launch plan.</returns>
     /// <exception cref="CoworkPromptUnavailableException">The prompt file cannot be written.</exception>
     /// <exception cref="CoworkEnvironmentRefusedException">The environment holds a name that is not a provider key.</exception>
     /// <exception cref="ArgumentException">A gateway URL is set without a bearer, or a bearer without a URL.</exception>
-    public OmpLaunchPlan Create(string? standingContext = null, string? browserGuidance = null, string? computerGuidance = null)
+    public OmpLaunchPlan Create(string? standingContext = null, string? browserGuidance = null, string? computerGuidance = null, IReadOnlyList<ILaunchContributor>? contributors = null)
     {
         var environment = FilterProviderKeys(_providerKeys);
         if ((_gatewayUrl is null) != string.IsNullOrEmpty(_gatewayBearer))
@@ -132,7 +135,20 @@ public sealed class CoworkSessionProfile
 
         var promptPath = CoworkSystemPrompt.Write(_sessionDirectory, standingContext, browserGuidance, computerGuidance);
         var overlayPath = SessionStateLayout.ConfigOverlayFile(Path.GetFullPath(_sessionDirectory));
-        var arguments = new List<string> { "--no-extensions", "--approval-mode", CoworkPermissionMode.ApprovalModeArgument(_mode) };
+
+        // Use planner for generic contributor application (argv/env/overlay/prompt from list); Cowork adds its specifics on top.
+        var basePlan = OmpLaunchPlanner.Plan(
+            new AgentLoopSettings { PluginsRoot = string.Empty, StateRoot = _sessionDirectory },
+            Array.Empty<ResolvedPlugin>(),
+            "ignored-for-profile",
+            Path.GetFullPath(_workingDirectory),
+            null,
+            contributors: contributors,
+            surface: "cowork");
+
+        var arguments = new List<string>(basePlan.ExtraArguments);
+        arguments.Add("--approval-mode");
+        arguments.Add(CoworkPermissionMode.ApprovalModeArgument(_mode));
         foreach (var folder in _trustedFolders)
         {
             arguments.Add("--add-dir");
@@ -143,17 +159,25 @@ public sealed class CoworkSessionProfile
         arguments.Add(promptPath);
         arguments.Add("--config");
         arguments.Add(overlayPath);
+
+        // merge any contributed env with the filtered provider keys (provider keys win for their names)
+        var finalEnv = new Dictionary<string, string>(basePlan.Environment, StringComparer.Ordinal);
+        foreach (var kv in environment)
+        {
+            finalEnv[kv.Key] = kv.Value;
+        }
+
         return new OmpLaunchPlan
         {
             ExtraArguments = arguments,
-            Environment = environment,
+            Environment = finalEnv,
             McpServers = Servers(),
             WorkingDirectory = Path.GetFullPath(_workingDirectory),
             ConfigOverlayPath = overlayPath,
             AdditionalDirectories = _trustedFolders.Select(Path.GetFullPath).ToArray(),
-            PlanningEvents = [],
-            LoadedPluginIds = [],
-            HooksBridgeLoaded = false,
+            PlanningEvents = basePlan.PlanningEvents,
+            LoadedPluginIds = basePlan.LoadedPluginIds,
+            HooksBridgeLoaded = basePlan.HooksBridgeLoaded,
         };
     }
 
