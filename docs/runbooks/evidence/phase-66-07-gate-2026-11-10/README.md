@@ -9,3 +9,12 @@ Commit under test: `5ce514eb` (branch `gate/head-fixes`), worktree `/tmp/autonog
 - LegacyBrandNames inventory: 14 tracked files (3 product, 9 test, 2 services), matching the plan's verify pin set. The plan's acceptance text says 12; recorded as a discrepancy.
 
 Not covered here: Tasks 3 to 7 of 66-07 (test-service containers, web smoke on private ports, window title, owner-action list, final record).
+
+## Task 4: web smoke on private ports (2026-11-10)
+
+- Ports 5387 (API), 5380 (web), 5391 (demo): free before and after the run (`ss -ltn`), and no listener left behind.
+- Run under `/tmp/ag-dotnet.lock` with `SMOKE_TARGETS="api demo"`, `OUT_DIR` a mktemp directory outside the repo.
+- Result: `api smoke exit=0`, `demo smoke exit=0`, `SMOKE_EXIT=0`.
+- `web-smoke-3731a813-2026-11-10.json`: `noErrorBarOrConsoleErrorsAfterPrompt: true`.
+- `web-smoke-demo-3731a813-2026-11-10.json`: `passed: true`, `failures: []`, including `demoAxeNoViolations`, `demoAxeNoIncomplete`, `demoNoConsoleErrorsOrFailedRequests`, `a11yAxe`, `a11yReflow`, `a11yTargetSize`.
+- Commit under test: `3731a813` (same tree as integration HEAD plus evidence files).
