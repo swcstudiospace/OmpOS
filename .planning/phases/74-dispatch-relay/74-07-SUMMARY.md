@@ -95,3 +95,11 @@ The signed-in controller surface: owner-scoped device and command routes with id
 - The hub must call `IDispatchPresence.SetAsync` on connect and `RemoveAsync` on disconnect. Revoke already calls `RemoveAsync`.
 - The hub's delivery loop should wake on `IDispatchSignals` (this plan publishes on enqueue, cancel and revoke).
 - Feed events for presence and command changes are appended with `IDispatchStore.AppendFeedEventAsync`; the feed streamer already reads them.
+
+## SOTA Update (executed 2026-11-10, refs 74)
+
+- SOTA explicit error/success states in routes (503 data_plane, 429, 401, 404 disabled map to host failures and phases); first-attempt tests with fakes; no-leak (no body in POST tests, audit design).
+- Per 74-SOTA-DISPATCH-RELAY.md.
+
+## Pending 74-05 notes
+- Will realize the degrade states and hub side SOTA (presence, delivery, shutdown).
