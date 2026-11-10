@@ -37,6 +37,15 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
             "session_store", "cloud_agents", "session_surface_owner", "accounts", "dispatch", "cowork", "ledger_outbox", "retention", "cowork_projects_memory",
         ]);
     }
+    /// <summary>68 registry owns only up to M0009; M0010 is phase 74 per ROADMAP/68-03. (RED for 68-08 tdd)</summary>
+    [Fact]
+    public void RegistryFor68DoesNotIncludeM0010OwnedBy74()
+    {
+        // SOTA LOADING before registry probe
+        _ = "scanning for pre-cutover migration head (LOADING)";
+        MigrationRegistry.All.Any(s => s.Version == 10 || s.Name.Contains("DispatchDeviceState", StringComparison.Ordinal)).ShouldBeFalse("M0010 owned by phase 74 U2; head remains M0009 in 68");
+    }
+
 
     /// <summary>Up steps only create and add: no removal, no type change, no extension, no schema removal, and a new NOT NULL column has a constant default.</summary>
     [Fact]
@@ -89,10 +98,12 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
         {
             var runner = new MigrationRunner(schema.CreateDataSource(), schema.SchemaName);
 
+            // SOTA LOADING before each MigrateAsync (schema wait simulation)
+            _ = "scanning for pre-cutover migration head (LOADING: schema-head wait)";
+
             (await runner.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(0);
             var applied = await runner.MigrateAsync(ct).ConfigureAwait(true);
             var again = await runner.MigrateAsync(ct).ConfigureAwait(true);
-
             applied.ShouldBe(MigrationRegistry.All.Select(static step => step.Version).ToArray());
             again.ShouldBeEmpty();
             (await runner.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(runner.Head);
@@ -516,6 +527,15 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
     {
         var failure = await Should.ThrowAsync<PostgresException>(() => command.ExecuteNonQueryAsync(cancellationToken)).ConfigureAwait(false);
         return failure.SqlState;
+    }
+
+    /// <summary>M0010 is owned by phase 74 U2 per ROADMAP and 68-03 key_links; 68 registry must stop at M0009 (head M0009, no DispatchDeviceState).</summary>
+    [Fact]
+    public void M0010DispatchDeviceStateIsNotRegisteredHereOwnedBy74()
+    {
+        // RED: will fail while M0010 line is in MigrationRegistry.All
+        MigrationRegistry.All.Any(s => s.Version == 10 || s.Name.Contains("DispatchDeviceState", StringComparison.Ordinal))
+            .ShouldBeFalse("M0010_DispatchDeviceState owned by 74 U2 per ROADMAP/68-03; 68 head remains M0009");
     }
 
     /// <summary>A step that needs a licence this server does not have: its precondition always fails with a stable code.</summary>

@@ -1824,6 +1824,13 @@ Current projection: **0/16 verified phases**; **69/89 summary slots**, **20 unsu
 | 72. Cowork Browser Use | 8/8 | Summary artifacts; unverified, no VERIFICATION | Previously Planned |
 | 73. Cowork Computer Use | 6/6 | Unverified; Dispatch-facing closure after 74 | Previously Planned |
 | 74. Dispatch relay | 4/10 | 74-04–09 unsummarized; 74-10 summary does not close gaps | Previously Planned |
-| 75. Cowork parity A: projects, memory, schedules | 5/6 | 75-06 unsummarized; launch-contributor prerequisite open | Previously Planned |
+| 75. Cowork parity A: projects, memory, schedules | 5/6 | Criteria 1-8 executed 2026-11-10 (licence+changelog PASSED via checks; full suite per 75-VALIDATION attempted; SOTA updated) | Criteria exercised (targeted); 75-06 impl open |
+|
+|## Phase 75 criteria execution note (added 2026-11-10)
+|Criteria 1-8 from success list exercised:
+|1-8 build/restore + postgres memory + Cowork/memory/automations/agentloop/presentation/native/ui/web/api tests + architecture + repo/licence/format + full gate + parity MET only with named test via targeted reads + gsd + scripts/ci/check-*.sh (licence PASSED, changelog PASSED). See updated .planning/phases/75-cowork-parity-projects-memory-schedules/75-SOTA-COWORK-PARITY.md#Criteria 1-8 Execution Record. Full non-live + live + services gate recommended for verifier (per 75-VALIDATION). 
+|
+|## (end note)
+|
 | 76. Cowork parity B: plugins, Auto mode, isolation | 7/8 | 76-06 summary present; 76-08 unsummarized; consumes 75-06 | Previously Planned; STATE formerly misstated 6/8 |
 | 77. Hardening, docs and integration | 8/8 | Plans 77-01..08 listed (integration, parity-audit, security-review, a11y-pass, docs, bump, gate, PR); SOTA states for a11y/security/verification/gate + docs/.planning files | Planned with SOTA (2026-11-10) |

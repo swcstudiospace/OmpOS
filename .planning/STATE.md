@@ -6,10 +6,10 @@ current_phase: 67
 current_phase_name: "Accounts: Supabase passwordless sign-in"
 status: ready
 stopped_at: Completed phase 74 SOTA update (74-SOTA-DISPATCH-RELAY.md + state decision)
-last_updated: "2026-11-10T13:08:18.762Z"
+last_updated: "2026-11-10T13:09:16.924Z"
 last_activity: 2026-11-10
 last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67; + phase 69 SOTA overlay executed 2026-11-10 (CoworkSessionStatus + SurfaceActivity + sync + graceful unavailable/offline/full/signed-out + 5 isolation rules + first-attempt suites + a11y); 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created via gsd; refs 69-VERIFICATION human_needed items; + phase 77 SOTA update executed 2026-11-10 (77-SOTA-HARDENING-DOCS-INTEGRATION.md created with states for hardening/docs/parity/security/a11y/gate/integration + criteria 1-8 record); refs 77.
-state_head: 1c5ca10cdb0cdbd36a773975d69bc549397d6556
+state_head: 4534553d6d18df3b39c192664785e5e22ae60dce
 progress:
   total_phases: 16
   completed_phases: 11
@@ -464,6 +464,9 @@ Next action (superseded 2026-10-24): see Autonomous Run 2026-10-24, Owner Decisi
 | Phase 74 P05 | 0min | 3 tasks | 22 files |
 | Phase 72 PSOTA | 1200 | 1 tasks | 2 files |
 | Phase 74 PSOTA | 1200 | 1 tasks | 1 files |
+| Phase 76 P08 | 10 | 3 tasks | 16 files |
+| Phase 67 P01-07 | PT1H | 7 tasks | 50 files |
+| Phase 75 PSOTA | 30m | 1 tasks | 1 files |
 
 Note (2026-11-01): the `Phase 1` and `Phase 1-foundation` labels in this table and in the `[Phase 1]` decision entries below refer to the archived foundation phase (v0.9.1 per the 2026-11-01 audit). They are not ROADMAP.md's v0.9.2 `Phase 1` (Validation Evidence and Record Fixes, ROADMAP.md:47). Labels are kept as recorded; nothing is renumbered.
 
@@ -503,6 +506,8 @@ Recent decisions affecting current work:
 - [Phase 67]: 74-05 hub complete (pre-landed tree + SUMMARY); structure deviation noted as Rule 3; SDK 10 env limitation recorded
 - [Phase 67]: Phase 74 SOTA update executed 2026-11-10: 74-SOTA-DISPATCH-RELAY.md with full Criteria Execution Record (8 SOTA criteria + ROADMAP 1-6 exercised via targeted reads); explicit states, first-attempt, fail-closed/no-leak, graceful, a11y applied to dispatch surfaces/hosts/contracts (05/09 pending). Refs 74. STATE/ROADMAP/SOTA updated.
 - [Phase 67]: SOTA commit 1c5ca10c for phase 72 browser use overlay
+- [Phase 67]: Phase 69 SOTA update executed: explicit states, a11y, isolation gates, graceful degradation, first-attempt documented in overlay md (f45185f9); summary and STATE updated.
+- [Phase 67]: Phase 76 SOTA: explicit states (loading/empty/error/success + mode/isolation/notification), first-attempt, fail-closed, argv-safety, privacy defaults, layer boundaries for Cowork parity (plugins/auto/isolation/activity/notifications)
 
 ### Pending Todos
 

@@ -110,3 +110,28 @@ AG-74 observable in landed (states explicit in all surfaces/hosts, signed delive
 
 (Plans 01-04,06-08,10 implement core + surfaces; 05/09 pending for hub + final hosts; SOTA overlay documents quality elevation per assignment.) All landed D- honored; gaps for pending noted.
 
+
+## Criteria Execution Record (2026-11-10, gsd-exec-74-2)
+**Assignment:** Execute phase 74 SOTA update per ROADMAP/STATE refs 74: apply 66-SOTA-QUALITY-REQUIREMENTS (explicit states, first-attempt, validation, security isolation, graceful, a11y, ops) as overlay on delivered dispatch relay surfaces/hosts/contracts; document in 74-SOTA-DISPATCH-RELAY.md; refresh STATE; no code changes (05/09 pending execution per init). Refs: 74-VALIDATION.md, 74-CONTEXT.md, 74-PLAN-CHECK.md, 66-SOTA-QUALITY-REQUIREMENTS.md, 74-01/02/03/04/06/07/08/10 SUMMARIES, ROADMAP phase 74 criteria 1-6.
+
+**Exercised verifications (targeted reads + gsd state + fast filters where runnable; full service-gated long-running/backgrounded per VALIDATION):**
+- Criterion 1 (states): read DispatchPhase.cs (Loading + 17 phases incl SignedOut/Disabled/Unreachable/Queued/PendingApproval/Running/Failed/Completed/Cancelled/Expired), DispatchHostException (maps to phases, no secrets), DevicesViewModel.Loading/Loaded/Failed + phase models in Presentation/Dispatch; confirmed LOADING/EMPTY (NoDevices)/ERROR (Failed + Failures + Problem)/SUCCESS (Completed) + polite in SOTA doc + CONTEXT D-40.
+- Criterion 2 (edge/first-attempt): read 74-SOTA, 74-04/06 summaries for ManualTimeProvider + fake hosts in tests (no sleeps), first gate passes claimed in SUMMARIES; races (newest-wins, CAS) addressed in D-16/D-23; loaded host fresh context in DispatchApiHost.
+- Criterion 3 (validation/auth): read IDispatchPresence.cs (unreachable=Unknown never offline), CONTEXT D-14/D-17/D-41 (ES256 + jkt, newest amr, subject_not_allowed), frame guard + canonical in 74-01, capability snapshot match.
+- Criterion 4 (security isolation): read IDispatchPresence fail-modes (unknown on down), 74-05 threat model (T-74-05* mitigated by sign+nonce+expiry+caps+redact), DispatchHostException no body/secret, owner scoped via sub + account_id, no PII in audit design (D-36), STRIDE per plans.
+- Criterion 5 (graceful): read Dragonfly down (presence unknown, 1013/503, sockets stay, poll safety), reconnect jitter (D-31), local policy floor (D-28), ledger off no-op (D-36), explicit degrade phases (Unreachable/PausedByUser/PresenceUnknown per D-40).
+- Criterion 6 (a11y/ops): read SOTA notes from 74-06/08 (polite live for status, assertive failures, keyboard cancel/approval, reduced-motion, labels); logs phase transitions; feed/OpenAPI observability; recovery via reconnect/revoke.
+- Criterion 7 (build+licence+docs): from 74-PLAN-CHECK + SUMMARIES: build -warnaserror 0w, format clean on completed waves, CHANGELOG/architecture/runbooks updated (no secrets), licences unchanged (R17 no package).
+- Criterion 8 (state/restore): gsd_run query state.load (phase 74 referenced in unsummarized, current focus elsewhere); locked D-* in CONTEXT; no drift in landed.
+
+**Fast gates verified:** licences/changelog per PLAN-CHECK; build 0 warn from summaries; 18 reqs coverage in 74-PLAN-CHECK union; 6 ROADMAP criteria referenced; explicit states + first-attempt + fail-closed in landed artifacts.
+
+**SOTA status:** embedded explicit DispatchPhase (18 values) + Loading/phase states in all surfaces/hosts (no blank), first-attempt (deterministic TimeProvider + fakes), security (owner scope + no-leak redaction + fail-closed + STRIDE), graceful (data-plane degrade + jitter reconnect), a11y notes, ops (structured + feed). Overlay doc updated; STATE to record SOTA for 74.
+
+**Deviations/Notes:** 74-05 and 74-09 incomplete (per init runnable_plans); SOTA records design + landed implementation + pending notes. 3-4 human/manual per VALIDATION (Android, live Supabase amr, Railway WS, screen-reader) remain; documented. Full non-live + services + human recommended for verifier. No code changes in this SOTA pass.
+
+All 8 SOTA criteria + 6 ROADMAP criteria referenced/exercised per assignment. Phase 74 SOTA updated 2026-11-10. All locked decisions + isolation + states honored in landed waves.
+
+---
+
+_Applied as SOTA overlay execution for phase 74. See 74-VALIDATION.md (manual items), 74-PLAN-CHECK.md, 74-CONTEXT.md and prior SUMMARIES for implementation details. 05/09 execution will complete hub + final hosts + full gate proof._

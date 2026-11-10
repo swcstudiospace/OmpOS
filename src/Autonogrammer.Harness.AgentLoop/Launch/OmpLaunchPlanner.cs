@@ -12,6 +12,9 @@ namespace Autonogrammer.Harness.AgentLoop.Launch;
 /// </summary>
 public static class OmpLaunchPlanner
 {
+    /// <summary>The budget (bytes) for a contributed system-prompt paragraph. Refused above this (2 KiB, see D-10 and task 1 test).</summary>
+    public const int ContributorParagraphBudgetBytes = 2 * 1024;
+
     /// <summary>The name of the MCP server entry that reaches the substrate.</summary>
     public const string SubstrateMcpServerName = "substrate";
 
@@ -20,7 +23,6 @@ public static class OmpLaunchPlanner
 
     /// <summary>The environment variable that tells the omp plugin where to write its connection report.</summary>
     public const string ConnectionFileVariable = "AUTONOGRAMMER_CONNECTION_FILE";
-
     /// <summary>
     /// Plans the launch of one session.
     /// </summary>
@@ -49,6 +51,11 @@ public static class OmpLaunchPlanner
     /// The <c>bash</c> block of the run mode's overlay (see <see cref="RunModeOverlay.RenderYaml"/>), or null for none. omp enforces its deny patterns in every approval mode. A non-null value makes the plan carry
     /// <see cref="OmpLaunchPlan.ConfigOverlayPath"/>, and the caller writes the file with <see cref="ConfigOverlayWriter.Write"/> before launching.
     /// </param>
+    /// <param name="contributors">
+    /// Zero or more <see cref="ILaunchContributor"/> instances. The planner walks them and composes their contributions (arguments, environment, overlay entries, prompt paragraph/block) without naming any concrete type such as Cowork.
+    /// A paragraph over <see cref="ContributorParagraphBudgetBytes"/> is refused.
+    /// </param>
+    /// <param name="surface">The surface identifier passed in the <see cref="LaunchRequest"/> to each contributor (e.g. "cowork", "code").</param>
     /// <returns>The plan.</returns>
     /// <exception cref="ArgumentException">
     /// The session identifier is unsafe, the workspace is not an absolute path, the isolated profile has no home directory, or an
@@ -64,7 +71,9 @@ public static class OmpLaunchPlanner
         IReadOnlyList<string>? additionalDirectories = null,
         HookBridgeEndpoint? hookBridge = null,
         RunModeLaunch? runMode = null,
-        string? bashOverlayYaml = null)
+        string? bashOverlayYaml = null,
+        IReadOnlyList<ILaunchContributor>? contributors = null,
+        string surface = "code")
     {
         ValidateInputs(settings, plugins, sessionId, workspaceRoot);
         var extraDirectories = ValidateAdditionalDirectories(additionalDirectories, workspaceRoot);
