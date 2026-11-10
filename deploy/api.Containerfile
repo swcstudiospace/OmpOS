@@ -116,7 +116,7 @@ RUN for d in /usr/share/dotnet /usr/lib/dotnet; do for f in LICENSE.txt ThirdPar
 #   podman build -f deploy/api.Containerfile --build-arg AUTONOGRAMMER_REVISION="$(git rev-parse HEAD)" -t autonogrammer-api:local .
 ARG AUTONOGRAMMER_SOURCE=https://github.com/swcstudiospace/OmpOS
 ARG AUTONOGRAMMER_REVISION=unknown
-ARG AUTONOGRAMMER_VERSION=0.15.0
+ARG AUTONOGRAMMER_VERSION=0.16.0
 # SourceInfoProvider reads GIT_SHA for GET /source (the AGPL-3.0 section 13 source offer).
 ENV GIT_SHA=${AUTONOGRAMMER_REVISION}
 LABEL org.opencontainers.image.licenses="AGPL-3.0-or-later" \
