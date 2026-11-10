@@ -1623,6 +1623,12 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   6. The build is warning-free and the notices check is clean (no new package). Verify: `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` is clean; `python3 scripts/legal/generate-third-party-notices.py --check` is clean (no new package).
 
 **Plans**: `69-01-PLAN.md` through `69-06-PLAN.md` in `.planning/phases/69-surface-switch-and-cowork-sessions/`
+- [x] 69-01-PLAN.md
+- [x] 69-02-PLAN.md
+- [x] 69-03-PLAN.md
+- [x] 69-04-PLAN.md
+- [x] 69-05-PLAN.md
+- [x] 69-06-PLAN.md
 
 ### Phase 70: Cowork chat core and tool host
 
@@ -1762,6 +1768,14 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   5. The full gate exits 0, the evidence page is committed and CI is green on the PR. Verify: `./bootstrap.sh` exits 0 and the evidence page is committed; CI is green on the PR.
 
 **Plans**: `77-01-PLAN.md` through `77-08-PLAN.md` in `.planning/phases/77-hardening-docs-and-integration/`
+- [x] 77-01-PLAN.md
+- [ ] 77-02-PLAN.md
+- [ ] 77-03-PLAN.md
+- [ ] 77-04-PLAN.md
+- [ ] 77-05-PLAN.md
+- [ ] 77-06-PLAN.md
+- [ ] 77-07-PLAN.md
+- [ ] 77-08-PLAN.md
 
 ### Progress (v0.16.0)
 
