@@ -169,6 +169,10 @@ public sealed class AcpWebSocketTransport : IAcpTransport
         {
             throw new DisconnectedHarnessException("Failed to write to the cloud worker.", _context, ex);
         }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new DisconnectedHarnessException("Failed to write to the cloud worker.", _context, ex);
+        }
     }
 
     /// <inheritdoc />
@@ -186,6 +190,15 @@ public sealed class AcpWebSocketTransport : IAcpTransport
 
         // The pump always completes the queue with the reason the connection ended, so the loop above ends by throwing it.
         throw new DisconnectedHarnessException("The cloud worker connection ended.", _context);
+    }
+
+    /// <summary>Aborts the socket to interrupt an in-progress write when the connection must stop.</summary>
+    public void Abort()
+    {
+        lock (_gate)
+        {
+            _socket?.Abort();
+        }
     }
 
     /// <inheritdoc />

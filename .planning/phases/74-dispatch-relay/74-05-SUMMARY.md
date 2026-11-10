@@ -1,0 +1,95 @@
+---
+phase: 74-dispatch-relay
+plan: 74-05
+subsystem: api
+status: partial
+updated: 2026-11-08
+tags: [dispatch, websocket, postgres, presence, audit]
+requires: [74-01, 74-02, 74-03, 74-07, 74-10]
+provides:
+  - Authenticated outbound device WebSockets with nonce-bound signed hello, heartbeats, delivery, acknowledgements and results
+  - Durable Postgres dispatch-store selection, coarse source-prefix persistence, and overdue-command sweeping
+  - Desktop pairing key binding and connector-to-hub state reporting
+  - Atomic command-state feed events and closed-field rejection auditing
+requirements-completed: []
+---
+
+# Phase 74 plan 05 summary
+
+The Dispatch relay connects paired desktops to the API over outbound WebSockets. The desktop signs the hub challenge with its enrolled device key, reports state transitions and heartbeats, and deduplicates commands before execution. A real desktop connector and loopback Kestrel hub completed running and queued commands after a forced reconnect.
+
+**Status:** transient-disconnect queue loss and timeout cancellation are implemented and exercised. The clean gate passed at `cb96864`. Plan 74-05 remains partial pending OQ-510, OQ-504, OQ-516 and OQ-517; PR #9 remains draft.
+
+## Implementation
+
+- The hub registers the Postgres store when `Sessions:Store=Postgres`; in-memory storage is restricted to Development. Disabled Dispatch does not eagerly resolve a store. A production-shaped host startup test exercises the disabled case.
+- An authenticated device's address is persisted only as `LastSourcePrefix`: IPv4 /24, IPv6 /48, including IPv4-mapped IPv6. No raw address or prefix enters the audit payload.
+- The delivery loop transitions a queued row to delivered before sending, so an immediate device acknowledgement cannot race the transition. Delivered, unexpired rows are eligible for redelivery after reconnect. This deliberately differs from the plan's send-before-transition order; redelivery makes a failed send recoverable.
+- The sweeper selects only overdue rows, pages them, and commits each applied transition with its feed event. Queued/delivered rows expire at their delivery deadline; approval waits use the approval timeout; received/accepted/running rows use the original receipt time and the configured session or task limit. `ApprovalDecide` and `CodePrompt` take the task limit, as do the other non-session operations.
+- M0011 records `received_at` and adds partial sweep indexes. A row already in flight when M0011 runs is backfilled from its current state-entry time: its actual historical receipt time was not stored and cannot be reconstructed.
+- The desktop reports `awaiting_approval` before the local prompt and `accepted`/`running` only for an operation with a handler. It emits heartbeats at the negotiated interval. The hub rejects malformed heartbeat status, replies to peer close, answers nonce-store timeouts with 1013, and leaves established sockets open when a presence refresh times out.
+- The connector verifies, deduplicates and acknowledges command admission on its receive loop, then executes commands serially through a bounded queue while continuing to receive control frames. Up to 32 admitted commands and their in-memory state survive a transient link loss; their IDs are listed in the next hello and outbound state/results wait for a welcomed link. Revocation cancels the active handler, which must honour its cancellation token. Handler exceptions, including unrelated cancellations, produce `execution_error` without stopping later commands.
+- Pairing completion transfers the enrolled secret from its temporary enrollment ID to the server-issued device ID before committing the pairing record. Command/result transitions use the closed transition table; invalid transitions leave the row unchanged. Rejected inputs with valid command identifiers are sent to the configured closed-field audit sink.
+- Review fixes normalize the hub origin for comparison while signing the exact validated challenge, reject null device-frame fields safely, retain `approval_timeout`, and use the host's configured Postgres resilience pipeline.
+- Progress events are capped at 50 per command in the store transaction. Terminal result text is capped, redacted for the configured Dispatch signing keys, stored with the result transition and withheld from command reads after body retention; feed copies follow feed retention.
+- A full 32-command inbox keeps the link open for revocation and defers later commands without advancing the high-water mark. Link shutdown aborts a heartbeat write that does not finish after cancellation.
+- A run timeout atomically fails the target and enqueues a same-device `command.cancel` beyond the ordinary queue cap. The desktop verifies and handles cancellation controls for admitted targets even when ordinary delivery is deferred, without advancing the high-water mark past skipped commands. Active and queued targets receive their own cancellation tokens; timed-out cancellation commands do not recursively enqueue more cancellations.
+- A delayed catalogue snapshot merges around newer streamed and local changes instead of removing a newly created conversation or its draft; an older response cannot replace a later-started snapshot. A live feed that falls behind retained history emits a resync rather than silently skipping events.
+- A controller cancel request marks a still-queued command cancelled; for delivered or in-flight work it atomically enqueues a same-device control while leaving the target nonterminal until the device reports an outcome. A control for a target skipped by a full inbox remains unacknowledged for ordered redelivery after capacity returns.
+- Catalogue merges retain newer changed fields while accepting untouched snapshot fields. Overflow captures the retained batch before yielding resync, and open sessions reload stage snapshots to recover events no longer retained.
+- A retained status older than the current catalogue row is ignored entirely, including the runtime-follow action, so replay does not regress activity or restart a completed chat.
+
+## Verification
+
+- `./bootstrap.sh` with isolated `AUTONOGRAMMER_TEST_SERVICES_NAME=g7405`: **passed**, SDK 10.0.402, locked restore, Release warnings-as-errors build, **14,883 tests: 14,880 passed, 0 failed, 3 skipped**, format verification, secret scan, and API/demo/artifact browser smoke with axe. Smoke evidence: `/tmp/tmp.RHfCVFfRj1` (the gate ran against the worktree before the implementation commit; its output labelled the then-current HEAD `16696724`).
+- Clean checkout of committed head `fbb8d93`, `./bootstrap.sh` with isolated `g7405-clean`: **passed**, with **14,891 tests: 14,888 passed, 0 failed, 3 skipped**, locked restore, warnings-as-errors build, format, secret scan, and API/demo/artifact browser smokes with axe. Smoke evidence: `/tmp/tmp.iFc3j5PnQn`. Build-time Development logs warned that process inspection was unrestricted and that the signup email lacked a code; those are runtime-configuration warnings, not compiler warnings.
+- `DesktopHubIntegrationTests.DesktopPairsReconnectsAndCompletesRunningAndQueuedCommands`: **passed** over an actual loopback WebSocket, covering pairing, challenge signature, a forced disconnect, reconnect and completed rows for both commands.
+- Earlier service-backed Dispatch integration filter: **111 passed**; Postgres dispatch-store filter: **19 passed**. After the reconnect and paged-settlement changes, focused tests passed against both in-memory and Postgres stores, including settlement past 100 rows.
+- Desktop Dispatch suite: **72 passed**, including manual-clock heartbeat, signed challenge, immediate acknowledgement behind an executing command, offline result retention, handler fault isolation, and cancellation of an executing handler after a revoke frame.
+- After clean gate `fbb8d93`, handler cancellation mapping was corrected in `a719127`. The focused test passed all three cases: an I/O failure, an unrelated handler cancellation, and actual revocation cancellation. The full clean gate above predates this correction.
+- Review-fix verification: 35 desktop reconnect tests passed; the saturated-inbox test exercised revocation and verified the high-water mark stayed at 32. A real loopback socket test stalled a write and exercised the bounded heartbeat shutdown; two transport close/abort tests passed.
+- Review-fix verification: the hub integration exercised the owner GET of a redacted, 4,096-character result; null fields, approval timeout and actual Kestrel origin handling passed. Shared in-memory and live Postgres tests passed for result persistence, retention and 64 concurrent progress writes capped at 50. A configured open Postgres circuit refused a Dispatch store read as `circuit_open`.
+- Timeout-fix verification: **121 Dispatch API integration tests passed** with real test services; **77 desktop Dispatch tests passed**. A real Kestrel/desktop test swept a running command, observed the handler token cancel, and completed later work. A saturated-inbox loopback test rejected a forged control, cancelled running and queued work, then redelivered the skipped command. Shared in-memory and live Postgres tests passed for concurrent timeout transactions, full-queue bypass and stale-state rejection.
+- Greptile found that a sweep lasting longer than the queue TTL could issue an already-expired cancellation. `ddfbf82` reads a fresh issuance time for each cancellation; a clock-controlled long-sweep regression and the real connector/hub cancellation test both passed.
+- Clean checkout of `39dde9d`: the full gate ran **14,902 tests: 14,898 passed, 1 failed, 3 skipped**. The failure was `AccountSessionManagerTests.OfflineRetriesStopAfterFifteenMinutesAndTheSessionStaysSignedIn` (14 refresh calls versus an assertion of fewer than 14); the same test passed when run alone. This gate stopped before format and browser smoke, and predates `e98ecf7`.
+- Clean checkout of `2d5907c`, with one test module at a time: **14,906 tests: 14,902 passed, 1 failed, 3 skipped**. `WebWorkbenchTests.APromptStreamsTheScriptedReplyAndReleasesTheComposer` timed out waiting for the completed rail status; it passed when run alone. The gate stopped before format and browser smoke. The catalogue snapshot is loaded before a live-tail-only event subscription, leaving a possible missed-event window; that race has not been proven to cause this failure.
+- The web catalogue's snapshot-to-subscription gap was reproduced with a delayed feed: the regression failed before `55483ad` and passed afterwards. `a494534` requests a connected resync instead of replaying stale history; a 20-event regression confirms it avoids repeated catalogue reads. The final web suite passed **440 tests**, targeted format verification passed, and a published Demo turn reached Completed in isolated Chromium. This proves the gap was real, not that it caused the prior full-gate timeout.
+- Clean checkout of `cb96864`, with one test module at a time: **14,910 tests: 14,907 passed, 0 failed, 3 skipped**. Locked restore, warnings-as-errors build, format, secret scan, API/Demo/artifact browser smokes and axe checks all passed. Evidence: `/tmp/tmp.cOtHCkXATX`.
+- After `cb96864`, the delayed-snapshot and slow-subscriber fixes passed **443 web tests** and **10 catalogue event-stream tests**. The slow-subscriber regression failed before the fix (the underlying read remained pending) and passed afterward. Targeted format verification passed. A newly published Demo in isolated Chromium created a conversation, sent a message and reached **Completed**. The clean gate above predates these changes.
+- `9096811`: **127 Dispatch API integration tests, 28 Postgres Dispatch store tests, 77 desktop Dispatch tests, 10 catalogue-stream tests and 444 web tests passed**. The real hub/desktop test reproduced the premature `cancelled` response, then verified the handler token and device-reported result. The full-inbox test verifies deferred-target cancellation after reconnect. The stale-prompt and lost-stage regressions failed before their fixes and passed afterward; a published Demo turn reached Completed in isolated Chromium. Targeted formatting passed. The clean gate at `cb96864` predates all these changes.
+- Clean checkout of `26b6d37`, with one test module at a time: **14,925 tests: 14,922 passed, 0 failed, 3 skipped**. `./bootstrap.sh` passed locked restore, Release warnings-as-errors build, formatting, Gitleaks, and API/Demo/artifact browser smokes with axe. Evidence: `/tmp/tmp.JuKSX3ZbkR`. This gate includes `9096811`.
+- `3915939`: the stale-status regression failed before the fix; **446 web tests passed** afterward, including a completed-session runtime regression. Targeted formatting passed and a published Demo turn reached Completed in isolated Chromium. The clean `26b6d37` gate predates this fix.
+- Clean checkout of `c98f761`, one test module at a time: **14,927 tests: 14,923 passed, 1 failed, 3 skipped**. `SshCommandBuilderTests.HostilePathsReachTheRemoteShellAsPlainWords` returned exit 0 with empty stdout for `amp&&touch pwned`; its eight cases passed in each of three isolated runs on the same checkout. The cause is unproven. The gate stopped before format and browser smokes; the earlier green `26b6d37` gate predates `3915939`.
+- Format verification and the API, Demo and artifact browser/axe smokes also passed separately against `2d5907c`; evidence is in `/tmp/ag-74-05-final-smoke`. Those runs predate the web resync change and did not make that earlier full gate green.
+- Architecture suite: **83 passed**. Repo checks and SBOM check passed. The documentation check initially reported one GitBook-outside-root link; it was changed to a GitHub URL and the subsequent check reported **0 errors and 0 warnings**.
+- The first clean-checkout bootstrap stopped at the history secret scan on the fixed RFC 6455 example WebSocket nonce in `06787cc`. It is not a credential. `4cd7404` replaces the current test value with a generated nonce and allowlists only that historical fingerprint. The history scan and clean bootstrap subsequently passed.
+- The generated OpenAPI file matched the committed file after the build.
+
+## Deviations and limits
+
+- Existing hub files live directly under `services/Autonogrammer.Api/Dispatch/`, rather than the planned `Dispatch/Hub/` directory. The changes follow the existing layout.
+- `Dispatch:Sweeper:Enabled` was added to allow deterministic test-host sweeps; it defaults to enabled when Dispatch itself is enabled.
+- The real connector-to-hub test added a project reference from the API integration tests to `Autonogrammer.Dispatch.Desktop`. Its test lockfile and the generated SBOM were refreshed for that dependency graph; no NuGet package was introduced.
+- OQ-500 is updated to record the durable and in-memory store-selection rules.
+- OQ-515 is resolved by paged in-flight reconciliation. OQ-516 records the remaining crash-time durability and result-receipt gap: the inbox is in memory, and a successful socket write does not prove the hub committed the result.
+- OQ-517 remains open for the native 74-04 handlers: cancellation is cooperative and those handlers are not yet wired. A cancellation expires at the normal queue TTL, so it cannot stop a disconnected task once it has expired.
+- The receipt-time backfill described above is an approximation for pre-existing in-flight rows. `Dispatch:RunLimits` is measured from `Received` for newly transitioned rows; approval waits have their separate approval timeout.
+- The loopback integration uses test authentication and in-memory coordination; it does not establish live Supabase, Railway, or multi-replica availability. Railway long-WebSocket draining remains OQ-420. Native Windows, macOS, Android and physical-device packaging were not exercised here.
+- Phase 74 remains open: plan 74-09 has no summary, and a plan summary is not phase-level verification.
+
+## Commit
+
+- `06787cc` — `feat(74-05): complete dispatch relay and device handshake`
+- `f8bde92` — `fix(dispatch): process revocation during command execution`
+- `5b63395` — `fix(dispatch): acknowledge queued commands and isolate handler failures`
+- `9ccebf5` — `fix(dispatch): retain outstanding commands across reconnects`
+- `4cd7404` — `test(dispatch): avoid static websocket nonce scan false positive`
+- `a719127` — `fix(dispatch): isolate unrelated handler cancellations`
+- `12b1b60` — `fix(dispatch): harden device protocol and bounded progress`
+- `e98ecf7` — `fix(dispatch): cancel timed-out device commands`
+- `55483ad` — `fix(web): replay catalogue changes after initial snapshot`
+- `ddfbf82` — `fix(dispatch): timestamp cancellations when enqueued`
+- `a494534` — `fix(web): resync without replaying stale catalogue history`
+- `c511de0` — `fix(web): preserve catalogue state across resync`
+- `9096811` — `fix(dispatch): cancel in-flight work and recover catalogue`
+- `3915939` — `fix(web): ignore stale replayed status events`

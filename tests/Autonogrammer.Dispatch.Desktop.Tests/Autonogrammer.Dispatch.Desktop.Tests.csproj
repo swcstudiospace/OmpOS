@@ -17,6 +17,7 @@
     <!-- The loopback WebSocket doubles the transport tests use, shared so the server exists once. -->
     <Compile Include="../Autonogrammer.Harness.Acp.Tests/TestWebSocketServer.cs" Link="Shared/TestWebSocketServer.cs" />
     <Compile Include="../Autonogrammer.Harness.Acp.Tests/TestWebSocketSession.cs" Link="Shared/TestWebSocketSession.cs" />
+    <Compile Include="../Autonogrammer.Accounts.Desktop.Tests/ManualTimeProvider.cs" Link="Shared/ManualTimerTimeProvider.cs" />
   </ItemGroup>
 
 </Project>

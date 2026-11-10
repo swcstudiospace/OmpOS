@@ -48,6 +48,18 @@ internal sealed class WebStageSource : IStageSource
         }
     }
 
+    /// <summary>Reloads every stage after a user-feed resync, including stages whose events were no longer retained.</summary>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>A task that completes when the snapshot was published.</returns>
+    internal async Task RefreshAsync(CancellationToken cancellationToken)
+    {
+        var response = await _api.GetStagesAsync(_sessionId, cancellationToken).ConfigureAwait(true);
+        foreach (var stage in response.Stages)
+        {
+            Publish(stage);
+        }
+    }
+
     /// <inheritdoc />
     public async IAsyncEnumerable<StageEvent> ObserveAsync(StageObservationScope scope, [EnumeratorCancellation] CancellationToken cancellationToken)
     {

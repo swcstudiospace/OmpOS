@@ -47,9 +47,17 @@ internal sealed class DispatchDeliveryLoop
                         continue;
                     }
 
+                    if (command.State == DispatchCommandState.Queued)
+                    {
+                        var transition = await _store.TryTransitionAsync(session.Owner, command.CommandId, DispatchCommandState.Queued, DispatchCommandState.Delivered, null, null, cancellationToken).ConfigureAwait(false);
+                        if (transition.Status != DispatchTransitionStatus.Applied)
+                        {
+                            continue;
+                        }
+                    }
+
                     var frame = _signer.Sign(session.Owner, command, command.BodyJson, DispatchHandshake.NewNonce());
                     await session.SendAsync(frame, DispatchJsonContext.Default.DispatchCmdFrame, cancellationToken).ConfigureAwait(false);
-                    _ = await _store.TryTransitionAsync(session.Owner, command.CommandId, DispatchCommandState.Queued, DispatchCommandState.Delivered, null, cancellationToken).ConfigureAwait(false);
                 }
 
                 await session.WaitForWorkAsync(Poll, cancellationToken).ConfigureAwait(false);

@@ -8364,6 +8364,13 @@
                 "$ref": "#/components/schemas/DispatchFailureReason"
               }
             ]
+          },
+          "resultText": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Redacted terminal result text, if supplied by the device."
           }
         },
         "description": "One command row returned to its owner."

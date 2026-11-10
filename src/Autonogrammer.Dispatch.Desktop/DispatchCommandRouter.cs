@@ -38,7 +38,13 @@ public sealed class DispatchCommandRouter
     /// <param name="command">The verified command.</param>
     /// <param name="cancellationToken">Cancels the work.</param>
     /// <returns>The terminal outcome.</returns>
-    public async ValueTask<DispatchOutcome> RouteAsync(DispatchCommand command, CancellationToken cancellationToken)
+    public ValueTask<DispatchOutcome> RouteAsync(DispatchCommand command, CancellationToken cancellationToken) =>
+        RouteAsync(command, null, cancellationToken);
+
+    internal async ValueTask<DispatchOutcome> RouteAsync(
+        DispatchCommand command,
+        Func<DispatchCommandState, CancellationToken, ValueTask>? reportState,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         var decision = DispatchPolicyEvaluator.Evaluate(command, _policy.Current, _computerUse);
@@ -47,8 +53,19 @@ public sealed class DispatchCommandRouter
             return DispatchOutcome.Failed(decision.Reason ?? DispatchFailureReason.PolicyDenied);
         }
 
+        var handler = _handlers.FirstOrDefault(candidate => candidate.CanHandle(command.Op));
+        if (handler is null)
+        {
+            return DispatchOutcome.Failed(DispatchFailureReason.UnsupportedOperation);
+        }
+
         if (decision.Task is { } task && task.ToolClasses.Contains(DispatchTaskPayload.ComputerUse, StringComparer.Ordinal))
         {
+            if (reportState is not null)
+            {
+                await reportState(DispatchCommandState.AwaitingApproval, cancellationToken).ConfigureAwait(false);
+            }
+
             // Every Computer Use task starts with a local approval. Nothing remote can answer it.
             var approval = await _approvals.ApproveTaskAsync(
                 new DispatchApprovalRequest(_controllerName, task.ToolClasses, task.ApprovalText()),
@@ -64,9 +81,19 @@ public sealed class DispatchCommandRouter
             }
         }
 
-        var handler = _handlers.FirstOrDefault(candidate => candidate.CanHandle(command.Op));
-        return handler is null
-            ? DispatchOutcome.Failed(DispatchFailureReason.UnsupportedOperation)
-            : await handler.HandleAsync(command, cancellationToken).ConfigureAwait(false);
+        if (reportState is not null)
+        {
+            await reportState(DispatchCommandState.Accepted, cancellationToken).ConfigureAwait(false);
+            await reportState(DispatchCommandState.Running, cancellationToken).ConfigureAwait(false);
+        }
+
+        try
+        {
+            return await handler.HandleAsync(command, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException && (exception is not OperationCanceledException || !cancellationToken.IsCancellationRequested))
+        {
+            return DispatchOutcome.Failed(DispatchFailureReason.ExecutionError);
+        }
     }
 }

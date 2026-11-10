@@ -1,5 +1,3 @@
-using Autonogrammer.Contracts.Catalog;
-using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Terminal;
 
@@ -42,14 +40,10 @@ internal sealed class WebAgentPanelHost : IAgentPanelHost
     public async Task<string> CreateSessionAsync(CancellationToken cancellationToken)
     {
         var created = await _api.CreateSessionAsync(cancellationToken).ConfigureAwait(true);
+        var stamp = _catalog.BeginSnapshot();
         var listed = await _api.ListSessionsAsync(cancellationToken).ConfigureAwait(true);
-        IReadOnlyList<SessionCatalogEntry> entries = listed;
-        if (!listed.Any(entry => string.Equals(entry.Id, created.Id, StringComparison.Ordinal)))
-        {
-            entries = [.. listed, EntryOf(created)];
-        }
-
-        _catalog.Replace(entries);
+        _ = _catalog.MergeSnapshot(listed, stamp);
+        _catalog.EnsureCreated(created);
         return created.Id;
     }
 
@@ -75,20 +69,4 @@ internal sealed class WebAgentPanelHost : IAgentPanelHost
     /// <inheritdoc />
     public Task ReloadAsync(CancellationToken cancellationToken) => _reload(cancellationToken);
 
-    private static SessionCatalogEntry EntryOf(Session created) => new()
-    {
-        Id = created.Id,
-        OwnerId = created.OwnerId,
-        CreatedAt = created.CreatedAt,
-        UpdatedAt = created.UpdatedAt,
-        Status = created.Status,
-        SandboxId = created.SandboxId,
-        Messages = created.Messages,
-        Events = created.Events,
-        Kind = CatalogSessionKind.Agent,
-        RowStatus = CatalogRowStatus.Ready,
-        Group = CatalogRowGroup.Idle,
-        LastActivityAt = created.UpdatedAt,
-        Closed = false,
-    };
 }

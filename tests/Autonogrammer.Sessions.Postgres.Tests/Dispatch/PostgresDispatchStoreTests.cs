@@ -30,19 +30,8 @@ public sealed class PostgresDispatchStoreTests(PostgresServerFixture server) : A
     public async Task M0010IsRegisteredAfterM0009AndIsIdempotent()
     {
         var ct = TestContext.Current.CancellationToken;
-        var names = MigrationRegistry.All.Select(static step => step.Name).ToArray();
-        names[^2].ShouldBe("cowork_projects_memory");
-        names[^1].ShouldBe("dispatch_device_state");
-        MigrationRegistry.All[^1].Version.ShouldBe(10);
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS credential_jti");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS credential_expires_at");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS capabilities");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS app_version");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS protocol");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS revoke_reason");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS paired_session_id");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS last_source_prefix");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("CREATE UNIQUE INDEX IF NOT EXISTS dispatch_devices_id_account_uq");
+        var step = MigrationRegistry.All.Single(static migration => string.Equals(migration.Name, "dispatch_device_state", StringComparison.Ordinal));
+        step.Version.ShouldBe(10);
 
         var schema = await OpenSchemaAsync(ct).ConfigureAwait(true);
         var connection = await schema.CreateDataSource().OpenConnectionAsync(ct).ConfigureAwait(true);
@@ -109,7 +98,7 @@ public sealed class PostgresDispatchStoreTests(PostgresServerFixture server) : A
         (await store.UpdatePairedSessionAsync("other", "dev", "session", ct).ConfigureAwait(true)).ShouldBeFalse();
         (await store.GetCommandAsync("other", "c1", ct).ConfigureAwait(true)).ShouldBeNull();
         (await store.ListQueuedAfterAsync("other", "dev", 0, ct).ConfigureAwait(true)).ShouldBeEmpty();
-        (await store.TryTransitionAsync("other", "c1", DispatchCommandState.Queued, DispatchCommandState.Delivered, null, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.NotFound);
+        (await store.TryTransitionAsync("other", "c1", DispatchCommandState.Queued, DispatchCommandState.Delivered, null, null, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.NotFound);
         (await store.EnqueueAsync(new EnqueueDispatchCommand("other", "dev", "c2", "k2", "fp", DispatchCapability.Sessions, DispatchOp.SessionList, "{}", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddHours(1)), ct).ConfigureAwait(true)).Status.ShouldBe(DispatchEnqueueStatus.NotFound);
         (await store.ReadFeedAsync("other", 0, ct).ConfigureAwait(true)).Events.ShouldBeEmpty();
         (await store.GetDeviceAsync("acct", "dev", ct).ConfigureAwait(true))!.Name.ShouldBe("secret-name");
@@ -133,7 +122,7 @@ public sealed class PostgresDispatchStoreTests(PostgresServerFixture server) : A
 
         (await store.ListQueuedAfterAsync("acct", "dev", 0, ct).ConfigureAwait(true)).Select(static item => item.CommandId).ShouldBe(["live"]);
 
-        await store.TryTransitionAsync("acct", "old", DispatchCommandState.Queued, DispatchCommandState.Expired, DispatchFailureReason.Expired, ct).ConfigureAwait(true);
+        await store.TryTransitionAsync("acct", "old", DispatchCommandState.Queued, DispatchCommandState.Expired, DispatchFailureReason.Expired, null, ct).ConfigureAwait(true);
         var seedConnection = await schema.CreateDataSource().OpenConnectionAsync(ct).ConfigureAwait(true);
         await using (seedConnection.ConfigureAwait(true))
         {

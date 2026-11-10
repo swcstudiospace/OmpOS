@@ -14,6 +14,7 @@ namespace Autonogrammer.Contracts.Dispatch;
 /// <param name="IssuedAt">Hub clock at accept.</param>
 /// <param name="ExpiresAt">Delivery deadline.</param>
 /// <param name="Reason">Failure reason, when the state carries one.</param>
+/// <param name="ResultText">Redacted terminal result text, if supplied by the device.</param>
 public sealed record DispatchCommandRecord(
     string AccountId,
     string DeviceId,
@@ -27,4 +28,5 @@ public sealed record DispatchCommandRecord(
     string? BodyJson,
     DateTimeOffset IssuedAt,
     DateTimeOffset ExpiresAt,
-    DispatchFailureReason? Reason);
+    DispatchFailureReason? Reason,
+    string? ResultText = null);

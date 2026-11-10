@@ -12,6 +12,7 @@ namespace Autonogrammer.Contracts.Dispatch;
 /// <param name="LastSeenAt">Last presence touch.</param>
 /// <param name="RevokedAt">Revocation time. A revoked device does not count toward the cap.</param>
 /// <param name="RevokeReason">Revoke reason, when set.</param>
+/// <param name="LastSourcePrefix">Source prefix of the latest verified connection (/24 for IPv4, /48 for IPv6), when recorded.</param>
 public sealed record DispatchDeviceRecord(
     string AccountId,
     string DeviceId,
@@ -23,4 +24,5 @@ public sealed record DispatchDeviceRecord(
     string? PairedSessionId,
     DateTimeOffset? LastSeenAt,
     DateTimeOffset? RevokedAt,
-    string? RevokeReason);
+    string? RevokeReason,
+    string? LastSourcePrefix = null);

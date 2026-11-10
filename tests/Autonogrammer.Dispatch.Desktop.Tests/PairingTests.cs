@@ -52,8 +52,10 @@ public sealed class PairingTests : IDisposable
     {
         var pairing = new DispatchPairing(new InMemorySessionSecretStore(), PairingPath);
         using var signer = new DispatchTestSigner();
+        await pairing.EnrollDeviceKeyAsync("pending", CancellationToken.None);
 
         await pairing.CompleteAsync(
+            "pending",
             new DispatchPairedDevice("device_2", "acct_1", [signer.PublicKey]),
             new SecretString(DispatchTestSigner.Jwt(DateTimeOffset.UtcNow.AddHours(1))),
             CancellationToken.None);
@@ -62,6 +64,8 @@ public sealed class PairingTests : IDisposable
         loaded.ShouldNotBeNull();
         loaded.AccountId.ShouldBe("acct_1");
         loaded.Keys.Single().Kid.ShouldBe(DispatchTestSigner.Kid);
+        (await pairing.HasDeviceKeyAsync("device_2", CancellationToken.None)).ShouldBeTrue();
+        (await pairing.HasDeviceKeyAsync("pending", CancellationToken.None)).ShouldBeFalse();
     }
 
     [Fact]

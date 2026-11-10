@@ -1,6 +1,9 @@
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using Autonogrammer.Contracts.Agents;
+using Autonogrammer.Contracts.Catalog;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Presentation.AgentPanel;
@@ -97,6 +100,224 @@ public sealed class WebWorkbenchTests : IDisposable
         blocks.OfType<CodeBlock>().ShouldNotBeEmpty();
         _host.World.Find(session.Id).Status.ShouldBe(SessionStatus.Completed);
         await _host.PumpUntilAsync(() => workbench.Panel.Catalog.Sessions.Single(row => string.Equals(row.Id, session.Id, StringComparison.Ordinal)).Status == AgentRowStatus.Completed).ConfigureAwait(true);
+    }
+
+    /// <summary>A status emitted after the initial snapshot but before the feed connects is recovered by the connected resync.</summary>
+    [Fact]
+    public async Task AStatusBeforeTheFeedConnectsIsRecoveredByResync()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var delayed = new DelayedFeed(_host.Feed);
+        var workbench = NewWorkbench(delayed);
+        await using var scope = workbench.ConfigureAwait(true);
+        try
+        {
+            await workbench.StartAsync(ct).ConfigureAwait(true);
+            await delayed.Entered.Task.WaitAsync(ct).ConfigureAwait(true);
+            await workbench.Panel.NewSessionAsync(ct).ConfigureAwait(true);
+            var session = workbench.Panel.Selected.ShouldNotBeNull();
+            await _host.PumpUntilAsync(() => session.Session.State != SessionViewState.LoadingHistory).ConfigureAwait(true);
+            session.Composer.Draft = "hello there";
+            await session.Composer.SendAsync().ConfigureAwait(true);
+            await _host.PumpUntilAsync(() => session.Session.State == SessionViewState.Success && !session.Composer.IsStreaming).ConfigureAwait(true);
+            _host.World.Find(session.Id).Status.ShouldBe(SessionStatus.Completed);
+            delayed.Release.TrySetResult();
+            await _host.PumpUntilAsync(() => workbench.Panel.Catalog.Sessions.Single(row => string.Equals(row.Id, session.Id, StringComparison.Ordinal)).Status == AgentRowStatus.Completed).ConfigureAwait(true);
+        }
+        finally
+        {
+            delayed.Release.TrySetResult();
+        }
+    }
+
+    /// <summary>A resync reloads stages lost from the bounded feed, even for an idle session.</summary>
+    [Fact]
+    public async Task ResyncReloadsStagesForAnOpenIdleSession()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var workbench = NewWorkbench();
+        await using var scope = workbench.ConfigureAwait(true);
+        await workbench.StartAsync(ct).ConfigureAwait(true);
+        workbench.Panel.SelectSession(DemoFixtures.CompletedId).ShouldBeTrue();
+        var session = workbench.Panel.Selected.ShouldNotBeNull();
+        await _host.PumpUntilAsync(() => session.Timeline.StatusOf(StageSource.Gsd) == StageStatus.Succeeded).ConfigureAwait(true);
+        var stages = _host.World.Find(session.Id).Stages;
+        var index = stages.FindIndex(static stage => stage.Source == StageSource.Gsd);
+        stages[index] = stages[index] with { Status = StageStatus.Failed, Timestamp = _host.Time.GetUtcNow().AddMinutes(1) };
+        _host.World.Bus.Publish(CatalogEventKinds.Resync, JsonSerializer.Serialize(new CatalogResyncEvent { Reason = "history overflow" }, CatalogJsonContext.Default.CatalogResyncEvent));
+        await _host.PumpUntilAsync(() => session.Timeline.StatusOf(StageSource.Gsd) == StageStatus.Failed).ConfigureAwait(true);
+    }
+
+    /// <summary>A stale resync response cannot remove a newer chat, its selection or its unsent draft.</summary>
+    [Fact]
+    public async Task ResyncSnapshotCannotDiscardANewerChatOrDraft()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var captured = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var reads = 0;
+        _host.Interceptor.AfterResponse = async (request, _, token) =>
+        {
+            if (request.Method == HttpMethod.Get && string.Equals(request.RequestUri!.AbsolutePath, "/sessions", StringComparison.Ordinal)
+                && Interlocked.Increment(ref reads) == 2)
+            {
+                captured.TrySetResult();
+                await release.Task.WaitAsync(token).ConfigureAwait(false);
+            }
+        };
+        var workbench = NewWorkbench();
+        await using var scope = workbench.ConfigureAwait(true);
+        try
+        {
+            await workbench.StartAsync(ct).ConfigureAwait(true);
+            await captured.Task.WaitAsync(ct).ConfigureAwait(true);
+            await workbench.Panel.NewSessionAsync(ct).ConfigureAwait(true);
+            var created = workbench.Panel.Selected.ShouldNotBeNull();
+            created.Composer.Draft = "keep this draft";
+            release.TrySetResult();
+            var status = new SessionStatusEvent { SessionId = DemoFixtures.CompletedId, Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running, LastActivityAt = _host.Time.GetUtcNow() };
+            _host.World.Bus.Publish(CatalogEventKinds.SessionStatus, JsonSerializer.Serialize(status, CatalogJsonContext.Default.SessionStatusEvent));
+            await _host.PumpUntilAsync(() => workbench.Panel.Catalog.Sessions.Single(row => string.Equals(row.Id, DemoFixtures.CompletedId, StringComparison.Ordinal)).Status == AgentRowStatus.Running).ConfigureAwait(true);
+            workbench.Panel.Selected.ShouldBeSameAs(created);
+            created.Composer.Draft.ShouldBe("keep this draft");
+            workbench.Panel.Catalog.Sessions.ShouldContain(row => string.Equals(row.Id, created.Id, StringComparison.Ordinal));
+        }
+        finally
+        {
+            release.TrySetResult();
+        }
+    }
+
+    /// <summary>A snapshot merges unrelated rows while preserving newer status changes, and an older response cannot resurrect removed rows.</summary>
+    [Fact]
+    public async Task CatalogueSnapshotsMergeNewerChangesWithoutRetrying()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var rows = await _host.Api.ListSessionsAsync(ct).ConfigureAwait(true);
+        var catalogue = new WebSessionCatalog();
+        catalogue.MergeSnapshot(rows, catalogue.BeginSnapshot()).ShouldBeTrue();
+        var beforeChanges = catalogue.BeginSnapshot();
+        var first = rows.Single(row => string.Equals(row.Id, DemoFixtures.CompletedId, StringComparison.Ordinal));
+        var removed = rows.Single(row => string.Equals(row.Id, DemoFixtures.FailedId, StringComparison.Ordinal));
+        first.RowStatus.ShouldBe(CatalogRowStatus.Completed);
+        var status = new SessionStatusEvent { SessionId = first.Id, Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running, LastActivityAt = _host.Time.GetUtcNow() };
+        for (var index = 0; index < 20; index++)
+        {
+            catalogue.Apply(status, out _).ShouldBeTrue();
+        }
+
+        var afterChanges = catalogue.BeginSnapshot();
+        var withoutRemoved = rows.Where(row => !string.Equals(row.Id, removed.Id, StringComparison.Ordinal))
+            .Select(row => string.Equals(row.Id, first.Id, StringComparison.Ordinal)
+                ? row with { Messages = [new Message { Role = "user", Content = "new prompt", Timestamp = _host.Time.GetUtcNow() }], Closed = !first.Closed }
+                : row).ToArray();
+        catalogue.MergeSnapshot(withoutRemoved, beforeChanges).ShouldBeTrue();
+        catalogue.Find(first.Id)!.RowStatus.ShouldBe(CatalogRowStatus.Running);
+        catalogue.Find(first.Id)!.Messages.Single().Content.ShouldBe("new prompt");
+        catalogue.Find(first.Id)!.Closed.ShouldBe(!first.Closed);
+        var current = withoutRemoved.Select(row => string.Equals(row.Id, first.Id, StringComparison.Ordinal)
+            ? row with { Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running }
+            : row).ToArray();
+        catalogue.MergeSnapshot(current, afterChanges).ShouldBeTrue();
+        catalogue.MergeSnapshot(rows, beforeChanges).ShouldBeFalse();
+        catalogue.Find(removed.Id).ShouldBeNull();
+    }
+
+    /// <summary>A retained older status cannot move a fresh catalogue activity time backward.</summary>
+    [Fact]
+    public async Task ReplayedStatusKeepsNewerCatalogueActivity()
+    {
+        var rows = await _host.Api.ListSessionsAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        var catalogue = new WebSessionCatalog();
+        catalogue.MergeSnapshot(rows, catalogue.BeginSnapshot()).ShouldBeTrue();
+        var row = rows.Single(entry => string.Equals(entry.Id, DemoFixtures.CompletedId, StringComparison.Ordinal));
+        var status = new SessionStatusEvent { SessionId = row.Id, Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running, LastActivityAt = row.LastActivityAt.AddMinutes(-1) };
+        catalogue.Apply(status, out var applied).ShouldBeTrue();
+        applied.ShouldBeFalse();
+        catalogue.Find(row.Id)!.LastActivityAt.ShouldBe(row.LastActivityAt);
+        catalogue.Find(row.Id)!.RowStatus.ShouldBe(CatalogRowStatus.Completed);
+        var newer = status with { LastActivityAt = row.LastActivityAt.AddMinutes(1) };
+        catalogue.Apply(newer, out applied).ShouldBeTrue();
+        applied.ShouldBeTrue();
+        catalogue.Find(row.Id)!.LastActivityAt.ShouldBe(newer.LastActivityAt);
+        catalogue.Find(row.Id)!.RowStatus.ShouldBe(CatalogRowStatus.Running);
+    }
+
+    /// <summary>A stale retained status cannot restart following an already-completed session.</summary>
+    [Fact]
+    public async Task ReplayedStatusDoesNotRestartACompletedSession()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var workbench = NewWorkbench();
+        await using var scope = workbench.ConfigureAwait(true);
+        await workbench.StartAsync(ct).ConfigureAwait(true);
+        workbench.Panel.SelectSession(DemoFixtures.CompletedId).ShouldBeTrue();
+        var session = workbench.Panel.Selected.ShouldNotBeNull();
+        await _host.PumpUntilAsync(() => session.Session.State != SessionViewState.LoadingHistory).ConfigureAwait(true);
+        var rows = await _host.Api.ListSessionsAsync(ct).ConfigureAwait(true);
+        var completed = rows.Single(row => string.Equals(row.Id, session.Id, StringComparison.Ordinal));
+        var stale = new SessionStatusEvent { SessionId = session.Id, Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running, LastActivityAt = completed.LastActivityAt.AddMinutes(-1) };
+        var barrier = new SessionStatusEvent { SessionId = DemoFixtures.FailedId, Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running, LastActivityAt = _host.Time.GetUtcNow().AddMinutes(1) };
+        _host.World.Bus.Publish(CatalogEventKinds.SessionStatus, JsonSerializer.Serialize(stale, CatalogJsonContext.Default.SessionStatusEvent));
+        _host.World.Bus.Publish(CatalogEventKinds.SessionStatus, JsonSerializer.Serialize(barrier, CatalogJsonContext.Default.SessionStatusEvent));
+        await _host.PumpUntilAsync(() => workbench.Panel.Catalog.Sessions.Single(row => string.Equals(row.Id, DemoFixtures.FailedId, StringComparison.Ordinal)).Status == AgentRowStatus.Running).ConfigureAwait(true);
+        session.Composer.IsStreaming.ShouldBeFalse();
+        workbench.Panel.Catalog.Sessions.Single(row => string.Equals(row.Id, session.Id, StringComparison.Ordinal)).Status.ShouldBe(AgentRowStatus.Completed);
+    }
+
+    /// <summary>A just-created session survives stale lists until the server confirms it, then ordinary removal works.</summary>
+    [Fact]
+    public async Task UnconfirmedCreatedSessionSurvivesStaleSnapshots()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var oldRows = await _host.Api.ListSessionsAsync(ct).ConfigureAwait(true);
+        var catalogue = new WebSessionCatalog();
+        catalogue.MergeSnapshot(oldRows, catalogue.BeginSnapshot()).ShouldBeTrue();
+        var created = await _host.Api.CreateSessionAsync(ct).ConfigureAwait(true);
+        catalogue.EnsureCreated(created);
+        catalogue.MergeSnapshot(oldRows, catalogue.BeginSnapshot()).ShouldBeTrue();
+        catalogue.Find(created.Id).ShouldNotBeNull();
+        var confirmed = await _host.Api.ListSessionsAsync(ct).ConfigureAwait(true);
+        catalogue.MergeSnapshot(confirmed, catalogue.BeginSnapshot()).ShouldBeTrue();
+        var stale = catalogue.BeginSnapshot();
+        catalogue.EnsureCreated(created);
+        catalogue.MergeSnapshot(confirmed, stale).ShouldBeTrue();
+        catalogue.MergeSnapshot(oldRows, catalogue.BeginSnapshot()).ShouldBeTrue();
+        catalogue.Find(created.Id).ShouldNotBeNull();
+        catalogue.MergeSnapshot(confirmed, catalogue.BeginSnapshot()).ShouldBeTrue();
+        catalogue.MergeSnapshot(oldRows, catalogue.BeginSnapshot()).ShouldBeTrue();
+        catalogue.Find(created.Id).ShouldBeNull();
+    }
+
+    /// <summary>A fresh snapshot skips old history rather than reloading once per stale event.</summary>
+    [Fact]
+    public async Task InitialResyncSkipsStaleHistoryWithoutRepeatedCatalogueReads()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        for (var index = 0; index < 20; index++)
+        {
+            var change = new CatalogChangedEvent { SessionId = "gone-" + index.ToString(System.Globalization.CultureInfo.InvariantCulture), Change = CatalogChangeKind.Updated, RowStatus = CatalogRowStatus.Ready, Group = CatalogRowGroup.Idle };
+            _host.World.Bus.Publish(CatalogEventKinds.CatalogChanged, JsonSerializer.Serialize(change, CatalogJsonContext.Default.CatalogChangedEvent));
+        }
+
+        var reads = 0;
+        _host.Interceptor.Intercept = request =>
+        {
+            if (request.Method == HttpMethod.Get && string.Equals(request.RequestUri!.AbsolutePath, "/sessions", StringComparison.Ordinal))
+            {
+                Interlocked.Increment(ref reads);
+            }
+
+            return null;
+        };
+        var workbench = NewWorkbench();
+        await using var scope = workbench.ConfigureAwait(true);
+        await workbench.StartAsync(ct).ConfigureAwait(true);
+        await _host.PumpUntilAsync(() => Volatile.Read(ref reads) >= 2).ConfigureAwait(true);
+        var status = new SessionStatusEvent { SessionId = DemoFixtures.CompletedId, Status = SessionStatus.Running, RowStatus = CatalogRowStatus.Running, Group = CatalogRowGroup.Running, LastActivityAt = _host.Time.GetUtcNow() };
+        _host.World.Bus.Publish(CatalogEventKinds.SessionStatus, JsonSerializer.Serialize(status, CatalogJsonContext.Default.SessionStatusEvent));
+        await _host.PumpUntilAsync(() => workbench.Panel.Catalog.Sessions.Single(row => string.Equals(row.Id, DemoFixtures.CompletedId, StringComparison.Ordinal)).Status == AgentRowStatus.Running).ConfigureAwait(true);
+        Volatile.Read(ref reads).ShouldBe(2);
     }
 
     /// <summary>A steering message while a turn runs is delivered into the turn, shown in the steering history, and acknowledged in the transcript.</summary>
@@ -355,5 +576,22 @@ public sealed class WebWorkbenchTests : IDisposable
     /// <inheritdoc />
     public void Dispose() => _host.Dispose();
 
-    private WebWorkbench NewWorkbench() => new(_host.Api, _host.Feed, new NoJsRuntime(), _host.Time, new WebWorkbenchOptions(IsDemo: true, ApiHost: "demo"), []);
+    private WebWorkbench NewWorkbench(IUserEventFeed? feed = null) => new(_host.Api, feed ?? _host.Feed, new NoJsRuntime(), _host.Time, new WebWorkbenchOptions(IsDemo: true, ApiHost: "demo"), []);
+
+    private sealed class DelayedFeed(IUserEventFeed inner) : IUserEventFeed
+    {
+        public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async IAsyncEnumerable<UserStreamEvent> StreamAsync(long? afterId, [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            Entered.TrySetResult();
+            await Release.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await foreach (var item in inner.StreamAsync(afterId, cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
+            {
+                yield return item;
+            }
+        }
+    }
 }

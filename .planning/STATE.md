@@ -979,3 +979,10 @@ Pending pause (GREY, this packet): (1) uplift scope: audit first, fix phases now
 - Phase 66 re-anchor decision (2026-11-04): the rename is b3faaa83. 154 first-parent commits and 13 merges (including b7aba03b) follow it, and 3002 paths changed since. Regeneration is not one commit, so 66-03 is not swapped to b3faaa83. Its checks (:117 whole-range diff, and :119, :121, :124 taking head -1 of the range) do not hold on this line. Its results go into 66-07-SUMMARY as a deviation.
 - Named regenerate commits, each checked with the generated-only path rule and the using-only .cs rule: b5f6bc1a (499 paths, all generated, 0 non-using hunk lines); d714acb4 (OpenAPI, 1 path, passes); 47e85328 (Android lock, 1 path, passes). Not yet checked: 881f66ae (relock) and 19812147 (notices). f7a93884 changes AGENTS.md, CHANGELOG.md and CLAUDE.md, which are hand-written, so it is a deviation from the generated-only rule.
 - 66-07:305 and :381 are re-anchored to b3faaa83 as a plain swap. The .gitleaksignore diff since b3faaa83 has 10 changed lines, so the :381 check is non-empty.
+
+## Dispatch relay plan 74-05 (2026-11-08)
+
+- Implementation commit `06787cc`; plan evidence is recorded in `.planning/phases/74-dispatch-relay/74-05-SUMMARY.md`.
+- The worktree bootstrap gate passed: 14,883 tests, 0 failed, 3 skipped, and API/demo/artifact browser smokes passed. The real desktop connector also completed a command through the loopback hub. These results do not establish hosted Railway, Supabase, or physical-device behavior.
+- Phase 74 remains open: 74-09 has no summary and phase-level verification has not been completed. This update does not change the milestone's historical phase-completion projection.
+- Plan 74-05 remains partial. Clean gate `26b6d37` passed: 14,922 passed, 0 failed, 3 skipped, but predates `3915939`. The later clean gate `c98f761` had 14,923 passed, 1 failed and 3 skipped: an SSH shell-output test returned empty stdout and passed three isolated reruns; cause unproven. PR #9 remains draft with OQ-510, OQ-504, OQ-516 and OQ-517 open. Verified controller-device enrollment and proof remain unimplemented.
