@@ -1731,6 +1731,15 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   6. The licence check and notices check pass unchanged (no package added). Verify: `bash scripts/ci/check-licences.sh` and `python3 scripts/legal/generate-third-party-notices.py --check` pass unchanged (no package added).
 
 **Plans**: `73-01-PLAN.md` through `73-06-PLAN.md` in `.planning/phases/73-cowork-computer-use/` (SOTA overlay: 73-SOTA-COMPUTER-USE.md)
+- [x] 73-01-PLAN.md
+- [x] 73-02-PLAN.md
+- [x] 73-03-PLAN.md
+- [x] 73-04-PLAN.md
+- [x] 73-05-PLAN.md
+- [x] 73-06-PLAN.md
+- [ ] 73-07-PLAN.md
+- [x] 73-08-PLAN.md
+
 *Criteria 1-6 exercised (SOTA updated 2026-11-10 per 73-SOTA-COMPUTER-USE.md); see progress table*
 
 ### Phase 74: Dispatch relay
@@ -1822,6 +1831,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   5. The full gate exits 0, the evidence page is committed and CI is green on the PR. Verify: `./bootstrap.sh` exits 0 and the evidence page is committed; CI is green on the PR.
 
 **Plans**: `77-01-PLAN.md` through `77-08-PLAN.md` in `.planning/phases/77-hardening-docs-and-integration/`
+- [ ] 77-09-PLAN.md
+- [ ] 77-10-PLAN.md
 - [x] 77-01-PLAN.md
 - [ ] 77-02-PLAN.md
 - [ ] 77-03-PLAN.md
@@ -1829,7 +1840,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [ ] 77-05-PLAN.md
 - [ ] 77-06-PLAN.md
 - [ ] 77-07-PLAN.md
-- [ ] 77-08-PLAN.md
+- [x] 77-08-PLAN.md
 
 ### Progress (v0.16.0)
 
