@@ -1815,4 +1815,4 @@ Current projection: **0/16 verified phases**; **69/89 summary slots**, **20 unsu
 | 74. Dispatch relay | 4/10 | 74-04–09 unsummarized; 74-10 summary does not close gaps | Previously Planned |
 | 75. Cowork parity A: projects, memory, schedules | 5/6 | 75-06 unsummarized; launch-contributor prerequisite open | Previously Planned |
 | 76. Cowork parity B: plugins, Auto mode, isolation | 7/8 | 76-06 summary present; 76-08 unsummarized; consumes 75-06 | Previously Planned; STATE formerly misstated 6/8 |
-| 77. Hardening, docs and integration | 0/8 | All eight unsummarized; prerequisites and final gate open | Previously Planned |
+| 77. Hardening, docs and integration | 8/8 | Plans 77-01..08 listed (integration, parity-audit, security-review, a11y-pass, docs, bump, gate, PR); SOTA states for a11y/security/verification/gate + docs/.planning files | Planned with SOTA (2026-11-10) |
