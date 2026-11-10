@@ -36,3 +36,12 @@ Not covered here: Tasks 3 to 7 of 66-07 (test-service containers, web smoke on p
 - Done: Task 1 (gate `5ce514eb`, `bootstrap: OK`), Task 2 (rebrand tool, 61 unit tests, fresh verify exact string, 14 LegacyBrandNames files), Task 4 (web smoke, private ports, passed), Task 5 headless (passed), Task 6 (owner-action list validated).
 - Blocked: Task 3 (AG-66-12). The unsuffixed test containers and the `-g7405-*` containers belong to other sessions; see `task3-blocked.md`. The gate at `5ce514eb` ran the service-backed suites green with suffixed containers, cited as the gate record.
 - Not complete: 66-07 is not marked passed. Criterion 3 is blocked; the desktop Xvfb title route is not run.
+
+## Task 5: route B, live window on a private display (2026-11-10)
+
+- Private Xvfb on `:131` (never `:99`, which belongs to another session); socket absent before start and gone after teardown.
+- Native head launched with `DISPLAY=:131`, a mktemp `AUTONOGRAMMER_STATE_DIR`, and `DOTNET_ROOT`/`PATH` set (the apphost needs them).
+- Within 60 s: `xdotool search --name Autonogrammer` returned exactly one window; its title is `Autonogrammer`. `_NET_CLIENT_LIST` is absent because no window manager runs on the private display; that is recorded, not a failure.
+- Both started PIDs ended (`head alive: no`, `xvfb alive: no`). Output: `task5-route-b-xvfb-result.txt`, `task5-route-b-head-output.txt`.
+- Earlier attempt (before the stale `:131` socket was cleared) failed at the head launch for missing `DOTNET_ROOT`; the log is not kept as evidence.
+- Task 5 is now met on both routes (A headless: `task5-window-title-headless.txt`; B: this section).
