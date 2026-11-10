@@ -8,6 +8,12 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.16.3] - 2026-11-08
+
+### Changed
+
+- A JavaScript interop failure in the web head logs the frames of its stack, never its message, and the next smoke failure names the call that threw. Other failures still log only the exception type.
+
 ## [0.16.2] - 2026-11-08
 
 ### Added
@@ -373,7 +379,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.2...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.3...HEAD
+[0.16.3]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.15.0...v0.16.0
