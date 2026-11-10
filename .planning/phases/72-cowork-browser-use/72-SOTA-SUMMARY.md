@@ -118,3 +118,9 @@ All claims grounded in reads/CONTEXT/ADR/brief/VALIDATION/SUMMARIES/gsd output. 
 **Status:** complete (SOTA doc produced; phase 72 artifacts now have SOTA quality note per assignment).
 
 _Refs 72; SOTA recommended output complete. All per-task protocol followed._
+## Self-Check: PASSED
+Files: 72-SOTA-COWORK-BROWSER-USE.md and 72-SOTA-SUMMARY.md present and tracked (git ls-files).
+Commits: tracked via gsd/git protocol; ledger measured.
+STATE: last_activity + decision + metric recorded via gsd_run.
+Content: matches 66/68/69 SOTA pattern, sources (CONTEXT/ADR/brief/VALIDATION), all 6 categories + 25 states + success criteria.
+No deviations, no auth gates, no stubs. All per executor flow + protocol.

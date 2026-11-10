@@ -1693,6 +1693,17 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   5. A live omp turn with the gateway, an image result and `browser.enabled: false` is recorded in the runbook as an owner-approved run, or stays stated as not run. Verify: A live omp turn with the gateway, an image result and `browser.enabled: false` is a separate owner-approved run (ADR-0010, OD-07), recorded in `docs/runbooks/browser-use.md`.
 
 **Plans**: `72-01-PLAN.md` through `72-11-PLAN.md` in `.planning/phases/72-cowork-browser-use/` (09-11 gap-closure addressing VERIFICATION gaps 1-6 for live drive, product wiring, egress/audit, full gate, SOTA states, a11y/security)
+- [x] 72-01-PLAN.md
+- [x] 72-02-PLAN.md
+- [x] 72-03-PLAN.md
+- [x] 72-04-PLAN.md
+- [x] 72-05-PLAN.md
+- [x] 72-06-PLAN.md
+- [x] 72-07-PLAN.md
+- [x] 72-08-PLAN.md
+- [ ] 72-09-PLAN.md
+- [ ] 72-10-PLAN.md
+- [ ] 72-11-PLAN.md
 
 ### Phase 73: Cowork Computer Use
 
