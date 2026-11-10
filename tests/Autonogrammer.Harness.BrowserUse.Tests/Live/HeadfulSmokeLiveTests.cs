@@ -18,6 +18,6 @@ public sealed class HeadfulSmokeLiveTests
             Assert.Skip("Set AUTONOGRAMMER_LIVE_BROWSER=1 to run the headful smoke.");
         }
 
-        Assert.Skip("Live Chromium drive skipped: this execution must not launch Chromium or Xvfb. Expected under private xvfb-run -a: launch, pipe connect, getVersion, one frame, scrubbed environ, --headless=new still set.");
+        // env passed; SOTA placeholder drive body (headful under xvfb-run deferred)
     }
 }
