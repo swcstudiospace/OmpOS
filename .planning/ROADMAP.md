@@ -1701,7 +1701,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   5. The project graph, the Computer Use boundary and the decision records hold (ADR-0035 indexed). Verify: `nice -n 15 dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*ProjectGraphTests*"` and `-- --filter-class "*ComputerUseBoundaryTests*"` pass; `-- --filter-class "*DecisionRecordTests*"` passes with ADR-0035 indexed.
   6. The licence check and notices check pass unchanged (no package added). Verify: `bash scripts/ci/check-licences.sh` and `python3 scripts/legal/generate-third-party-notices.py --check` pass unchanged (no package added).
 
-**Plans**: `73-01-PLAN.md` through `73-06-PLAN.md` in `.planning/phases/73-cowork-computer-use/`
+**Plans**: `73-01-PLAN.md` through `73-07-PLAN.md` in `.planning/phases/73-cowork-computer-use/`
+(73-07 is the gap-closure plan wiring production call sites for Build + AddTools, indicator, settings and computer_* tool registration when policy allows; plus SOTA-STATES / SOTA-A11Y / SOTA-SECURITY + verification tests gate. All prior decisions, core, X11, Windows, macOS, policy/grants/approval/kill/audit unchanged.)
 
 ### Phase 74: Dispatch relay
 
@@ -1719,6 +1720,16 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   6. The build and format are clean and the OpenAPI document is regenerated and equal to the served one. Verify: `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` and `dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore` are clean; `docs/api/openapi.json` is regenerated and `GuardTests` equality holds.
 
 **Plans**: `74-01-PLAN.md` through `74-10-PLAN.md` in `.planning/phases/74-dispatch-relay/`
+- [x] 74-01-PLAN.md
+- [x] 74-02-PLAN.md
+- [x] 74-03-PLAN.md
+- [x] 74-04-PLAN.md
+- [x] 74-05-PLAN.md
+- [x] 74-06-PLAN.md
+- [x] 74-07-PLAN.md
+- [x] 74-08-PLAN.md
+- [x] 74-09-PLAN.md
+- [x] 74-10-PLAN.md
 
 ### Phase 75: Cowork parity A: projects, memory, schedules
 
