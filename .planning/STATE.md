@@ -6,10 +6,10 @@ current_phase: 67
 current_phase_name: "Accounts: Supabase passwordless sign-in"
 status: ready
 stopped_at: Completed 68-08-PLAN.md SOTA gap closure
-last_updated: "2026-11-10T13:10:44.413Z"
+last_updated: "2026-11-10T13:11:18.581Z"
 last_activity: 2026-11-10
 last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67; + phase 69 SOTA overlay executed 2026-11-10 (CoworkSessionStatus + SurfaceActivity + sync + graceful unavailable/offline/full/signed-out + 5 isolation rules + first-attempt suites + a11y); 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created via gsd; refs 69-VERIFICATION human_needed items; + phase 77 SOTA update executed 2026-11-10 (77-SOTA-HARDENING-DOCS-INTEGRATION.md created with states for hardening/docs/parity/security/a11y/gate/integration + criteria 1-8 record); refs 77.; + phase 72 SOTA update executed 2026-11-10 (Cowork browser use 25 degraded states + loading/empty/error/success + first-attempt + fail-closed security + graceful); 72-SOTA-COWORK-BROWSER-USE.md + 72-SOTA-SUMMARY created; refs 72
-state_head: c8d86056be5a3da2f9c95918c2f5871d467e30b7
+state_head: e6215dc226f1e25870888340e133c47d678f9723
 progress:
   total_phases: 16
   completed_phases: 11
@@ -470,6 +470,7 @@ Next action (superseded 2026-10-24): see Autonomous Run 2026-10-24, Owner Decisi
 | Phase 72 PSOTA | 1800 | 1 tasks | 2 files |
 | Phase 69 PSOTA | 1200 | 1 tasks | 2 files |
 | Phase 68 P08 | 55 | 3 tasks | 14 files |
+| Phase 69 PSOTA | 30m | 1 tasks | 2 files |
 
 Note (2026-11-01): the `Phase 1` and `Phase 1-foundation` labels in this table and in the `[Phase 1]` decision entries below refer to the archived foundation phase (v0.9.1 per the 2026-11-01 audit). They are not ROADMAP.md's v0.9.2 `Phase 1` (Validation Evidence and Record Fixes, ROADMAP.md:47). Labels are kept as recorded; nothing is renumbered.
 
@@ -1029,3 +1030,15 @@ Pending pause (GREY, this packet): (1) uplift scope: audit first, fix phases now
  Scope: touched smoke (rebrand gate).
  Recommended: fix race; external owner via handle_blocker.
  Phase 66 verification ready; 66.1 human deferred.
+ ## Phase 73 SOTA Computer Use Update (2026-11-10)
+ 
+ Per assignment execute SOTA update refs 73, 73-VERIFICATION (gaps_found), 73-01..06-SUMMARYs, 73-CONTEXT (D-01..D-43), 66-SOTA base.
+ 
+ Created: .planning/phases/73-cowork-computer-use/73-SOTA-COMPUTER-USE.md
+ SOTA: explicit states (availability/denial/approval/kill/frame/audit + remediation), first-attempt (X11 7/7 live + units), security (gate 8-step only-executor + owner audit + no-relay + mask + isolation), graceful (all unavailable + advisor), a11y, ops. Criteria 1-6 exercised via summaries.
+ 
+ Updated: ROADMAP (short list + detailed plans + progress table row), this STATE.
+ No code changes.
+ 
+ Recommended: full gate + post-wiring desktop smoke + verifier run. Dispatch closure after 74. Gaps per 73-VERIFICATION remain for owner.
+ Phase 73 SOTA updated.
