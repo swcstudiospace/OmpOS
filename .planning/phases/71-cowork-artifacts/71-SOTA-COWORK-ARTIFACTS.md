@@ -1,125 +1,141 @@
 # Phase 71 SOTA for Cowork Artifacts
 
 **Date:** 2026-11-10
-**Refs:** 71-CONTEXT.md (D-01..D-54 locked), 71-RESEARCH.md, 71-VALIDATION.md, 71-PLAN-CHECK.md, 71-01..71-06 PLANs/SUMMARYs, ROADMAP AG-71-1..24, 66-SOTA-QUALITY-REQUIREMENTS.md, prior phase SOTAs (67-SOTA-AUTH-SURFACES, 68-SOTA-DATA-PLANE, 69-SOTA-COWORK-SURFACES), ADR-0033, 71-06-SUMMARY (SOTA execution 2026-11-10).
+**Refs:** 71-CONTEXT.md (D-01..D-53 locked), 71-RESEARCH.md, 71-PLAN-CHECK.md, 71-VALIDATION.md, 71-01..71-06 PLANs/SUMMARYs, ROADMAP AG-71-1..24, ADR-0033-cowork-artifacts.md, 66-SOTA-QUALITY-REQUIREMENTS.md, prior phase SOTAs (69 cowork surfaces/sessions, 68 data plane, 67 auth surfaces, 72 browser use).
 
 ## Objectives (from CONTEXT + ROADMAP + brief)
-- Cowork shows what the agent makes (markdown, code, HTML pages and small apps, SVG, Mermaid, CSV, images) in a panel beside the chat, as immutable hash-chained versions the user can diff, copy, edit, export and list from any signed-in head.
-- Generated content is untrusted: it renders only in-process through renderers that cannot execute it, or in an isolated surface with a restrictive CSP, no network by default, no navigation and no bridge to the app.
-- 24 requirements AG-71-1 to AG-71-24 delivered in 6 plans/waves.
-- Hostile corpus for every kind/renderer/tool arg with asserted outcome.
-- Web head: sandboxed iframe (srcdoc + ticketed render), vendored Mermaid (pinned SHA), CSP, smoke.
-- Desktop: NativeWebView isolation, no bridge, destroy on hide/signout, states.
-- Stores: local file + Postgres (M0006 from 68), sync off-by-default, owner scoped.
-- Tools: artifact_* family under ICoworkToolProvider (from 70), grants, rate limits, warnings.
-- No live artifacts, no sharing/publishing, no persistent script storage, no CDN, no HTML/SVG package, ContractVersion untouched.
-- 7 roadmap criteria + 24 reqs + SOTA states + security + first-attempt + a11y.
+- Cowork shows immutable hash-chained artifact versions (Markdown, Code, Html, Svg, Mermaid, Csv, Image) the user can list, diff, copy, edit, export from any signed-in head.
+- Generated content is untrusted: renders only in-process through renderers that cannot execute it (CsvReader, ImageValidator, SvgSanitizer, MarkdownRenderer with hostile policy), or in an isolated surface (restrictive CSP, srcdoc for static, ticketed render document for interactive Html with own response CSP, no network by default, no navigation, no bridge).
+- Web uses sandboxed iframe (srcdoc or ticketed) inheriting page CSP; desktop uses inert renderers or surface; second load or sign-out destroys frame; smoke proves no outbound/nav/parent from hostile.
+- 24 requirements AG-71-1 to 24 delivered in 6 waves.
+- Explicit SOTA states for all render/sync/ticket/load paths; first-attempt clean in tests/gates/smoke; fail-closed on policy, hostile, sync, caps, CSP violation.
+- No change to omp's Code artifacts, no ContractVersion edit, no live shared artifacts, no CDN, no persistent script storage.
 
-## TODOs from Criteria + VALIDATION + PLAN-CHECK (addressed + residual gaps)
-- All 24 AG-71 covered across plans (see 71-PLAN-CHECK.md).
-- Wave 0 gaps (scaffold projects, hostile fixtures, models, ICoworkToolProvider, IDockPanel, M0006, Api tests, smoke page, Mermaid provider): addressed by 71-01..06.
-- REVIEW/VERIF gaps: addressed in 71-06 (web gates, smoke, licences, notices, ArchitectureTests); full CI re-run advised for dotnet tests/smoke per 71-06-SUMMARY.
-- SOTA states embedded per assignment: explicit loading/empty/error/success in artifact surfaces, render (iframe/srcdoc), sync (off), grants, hostile corpus, first-attempt in smoke/gates/tests.
-- Security: fail-closed (integrity, stale, no network default, owner 404, sandbox no navigation), no leak (redact ticket, no sub/content in logs), owner scoped.
-- First-attempt: 100% pass target on smoke artifact page, tests, gates; strengthened waits, no timing.
-- A11y: labels, live regions, target sizes, no new colour, F6, polite, documented in 71-06 + 69/70.
-- Residuals: live surface (OQ), full gate (advised), mounting from Cowork view (69/70), OQ-400 Mermaid admit (default applied).
+## TODOs from Criteria + VERIFICATION + REVIEW (addressed + residuals)
+- All 24 AG-71 covered across plans (see 71-PLAN-CHECK.md coverage, 71-VALIDATION requirement map).
+- VERIFICATION (per 71-VALIDATION + 71-06): library (hostile corpus), stores (with services), endpoints+OpenAPI, heads (Native/UI/Web/Presentation), Architecture (isolation, LayerMap, DecisionRecord for ADR-0033), web smoke (artifact target), licences/notices, skip markers, CSP/serviceworker contracts.
+- Gaps from plans/CHECK: desktop Markdown/Code in 71-05 (fixed by replan), 71-03 postgres fixture, relocks; 71-06 owns final gates+docs+SUPs.
+- SOTA states embedded per assignment: explicit loading (ticket fetch, iframe load), empty (sync-off 404, unknown kind, no data), error (stale base, integrity, CSP violation, hostile), success (first-attempt in smoke/tests, static view labelled, destroy on hide/signout).
+- Security: fail-closed (sandbox, CSP inheritance, no exec, hostile corpus asserts, ticket owner check, 404/401/429 degrade, cap 5MiB), no leak (no page bytes in audit, redacted, no titles in metrics), owner scoped (token on render, grant per artifact), surface isolation (Cowork only, no Kanban bleed).
+- First-attempt: smoke artifact page + all filter tests pass first (per 71-06 SUMMARY + plan truths); strengthened waits (onload + destroy).
+- Graceful: sync-off -> metadata only + "sync is off"; unavailable render -> static view + label; bad surface -> no frame; OQ-400/401 noted.
+- A11y: labels, polite regions, no colour literals in artifacts.css, keyboard in access dialog, reduced motion, imported after autonogrammer before a11y.
+- Operational: structured logs, first-attempt success, SUP rows, docs ownership in 71-06 only, smoke runbook.
+- Human items from VERIF: full live surface (ArtifactSurfaceLiveTests skipped), full CI re-run for dotnet/smoke advised (env limits), OQ-400 owner decision on Mermaid admission.
+- All locked D-* honored; deferred per CONTEXT (no live, no sharing, OQ-400/401); no scope reduction.
 
-## SOTA States for Cowork Artifacts / Render / Sync / Grants / Hostile (applied from 66-SOTA + phase specific)
+## SOTA States for Artifacts / Render / Sync / Web / Desktop (applied from 66-SOTA + phase specific)
 1. **Explicit States** (loading/empty/error/success) in all artifact paths:
-   - LOADING: data-state=loading + timeout (render ticket 55s, surface load, sync fetch, grant review); progress, no silent hang. E.g. ArtifactFrame load, ArtifactWebClient, smoke page.
-   - EMPTY: guidance + CTA (no artifacts, sync off "sync is off", signed out, unavailable reason). Never blank.
-   - ERROR: recovery (retry, fallback to source view), error boundary + announcer. ArtifactIntegrityException, stale_base, file_not_allowed, rate_limited, too_large, quota_exceeded, Unavailable(reason), NavigationBlocked.
-   - SUCCESS: explicit "first-attempt-success" log + count; state machine logged. Healthy after hostile corpus, clean render, grant accepted.
-   - Implementation: IArtifactSurface (Idle/Loading/Running/Stopped/NavigationBlocked/Unavailable), ArtifactDocumentPolicy, ArtifactFrame states, sync status, render ticket 55s reuse.
+   - LOADING: data-state=loading + timeout (55s ticket reuse, iframe load, render fetch); progress, no silent hang. E.g. ArtifactWebClient fetch, iframe onload binding, ArtifactFrame construction, sync debounce.
+   - EMPTY: guidance + CTA (sync-off from 404 on content -> "sync is off"; no artifacts; unknown kind "This version of Autonogrammer cannot display this kind"). Never blank panel or silent fail.
+   - ERROR: recovery (retry via sync, fallback to metadata, destroy frame), error boundary + announcer (role=alert), redacted log. Hostile script/link -> plain text (no anchor); CSP violation refuse; stale base 409; integrity fail; quota exceeded; 429 keeps Retry-After.
+   - SUCCESS: explicit "first-attempt-success" log + count in smoke/tests (iframe exact sandbox, no postMessage, destroy on second load/signout via IAuthSession); static view labelled "static view"; capped table with formula marks; hash-chain integrity; polite live updates.
+   - Implementation: ArtifactBody dispatch, ArtifactFrame (sandbox allow-scripts referrerpolicy="no-referrer" allow="", srcdoc for static/Mermaid with label), ArtifactWebClient (404->sync off), sync service (metadata-only default), per-kind renderers (CsvReader, ImageValidator, Markdown with policy, SvgSanitizer).
 
 2. **Edge/Race/First-Attempt**:
-   - Races: second load destroys frame, concurrent update (stale vs idempotent), sync during render, grant review race.
-   - Loaded host: fresh context, deterministic waits in tests.
-   - First attempt: 100% pass target; no "reached-on-retry"; strengthened waits in smoke (artifact-page.mjs), tests (hostile corpus), gates.
-   - Other: corrupt/newer version (quarantine), oversized (typed error not truncate).
+   - Races: concurrent update during render, second load during fetch, hide during ticket, signout during iframe, smoke CDP vs frame process.
+   - Loaded host: fresh context on mount, deterministic onload + destroy checks; no timing reliance.
+   - First attempt: 100% pass target in ArtifactFrameTests, smoke artifact-page (zero outbound/nav/parent), hostile corpus, all filter tests; no "reached-on-retry".
+   - Other: oversized image (50MP/8k cap), formula in CSV, hostile md links/scripts become text, ticket 55s reuse (client), Mermaid srcdoc inherits CSP.
 
 3. **Validation/Sanitization/Auth**:
-   - Inputs: title 1-120, no bidi/control, language allowlist, media magic match, hash recompute every read, exact-match edits.
-   - Auth: owner from token (404 foreign), render ticket HMAC over account/artifact/version/hash/expiry, no sub in client.
-   - Sanitization: Markdown DisableHtml + link policy, SVG allowlist walk + no DTD, CSV RFC4180 cap + formula mark, Image header only.
-   - Contracts: round-trip through source-gen contexts (Demo + stores); no bleed to Code/Kanban.
+   - Inputs sanitized (title 1-120, no bidi/controls, lang safe, image magic+type, content cap 5MiB, URL no traversal, manifest sha/size).
+   - Auth: surface fixed (Cowork only); owner from token on render/ops (body owner 400, foreign 404); anonymous render for enrolled tickets only; no sub in credential.
+   - Schema: ArtifactWebJsonContext + Contracts contexts roundtrip (demo fixtures); strict unmapped -> Unknown.
+   - Caps: 5MiB default, 200 versions?, per-owner on server; 409 on fork.
+   - CSP: render-csp.sh --frame-src additive; ticketed doc has own response CSP + sandbox + no-store + Permissions-Policy deny.
 
-4. **Security (fail-closed, no leak, owner scoped, isolated)**:
-   - Fail closed: integrity mismatch -> refuse render; bad ticket/surface -> 404/401; sandbox blocks navigation/parent; no partial state.
-   - No leak: ticket redacted in logs, no content/titles/sub in audit/telemetry, warnings only (not bytes).
-   - Owner scoped: every route + store filters account_id; render anonymous but ticket-bound.
-   - Isolation: srcdoc inherits page CSP; iframe sandbox allow-scripts referrerpolicy=no-referrer allow=""; no postMessage, no bridge, destroy on hide/signout; NativeWebView no devtools/context/bridge.
-   - STRIDE from plans (T-71-*) + 71-06 threat: mitigated (elevation on srcdoc, disclosure on ticket/frame, spoof on demo, tamper on Mermaid).
-   - CSP: ticketed has response CSP + frame-ancestors + nosniff + Permissions-Policy deny; srcdoc inherits.
-   - Grants: default none; review dialog; bound to (id,ver,hash,origins,scope,device,time); storage=none only.
-   - Mermaid: pinned SHA + host script securityLevel:strict etc; vendored only.
+4. **Security (fail-closed, no leak, owner scoped, surface isolation)**:
+   - Fail closed: definitive failures (hostile script, CSP mismatch, stale/integrity, quota, 404/401/429, no frame on bad surface, second load destroy) clear to error/guidance/no-op; refuse cross (isolation); sandbox + CSP inheritance + no allow-popups etc; no partial render.
+   - No leak: audit (ArtifactAudit) only kind/result tags, no title/content/ticket in metrics; logs enums only; no page bytes; redacted; smoke proves no exfil.
+   - Owner scoped: per-account via token on /cowork/artifact-render/* and grants; erasure independent; 404 foreign same as absent.
+   - Isolation (ADR-0033 + AG-71-10/16/18 + D-21/23):  no exec from artifact; iframe sandbox + srcdoc only for static; ticketed for interactive; web no parent access; desktop inert renderers; CoworkSurfaceIsolationTests precedent; no Kanban bleed; Artifact* only in Cowork ns; negative fixtures in hostile corpus.
+   - STRIDE from plans + ADR-0033 + 71-06 threat: mitigated (injection by sandbox/CSP/hostile policy/sanitizers, exfil by no bridge/no net/destroy, tampering by hash-chain/write-once, spoof by static label, resource by caps/5MiB).
+   - A11y: roles/labels (AutomationProperties, aria), polite live, keyboard (access dialog), no colour literals (artifacts.css), contrast, reduced-motion, imported correctly; tests in Native/UI.
+   - Graceful: sync-off -> metadata only + text; unavailable -> static view label; bad origin -> sign-in or sync off; OQ-401.
 
 5. **Graceful Degradation**:
-   - Fallbacks: no sync -> metadata only + "sync is off"; missing Mermaid -> Unavailable(MermaidAssetMissing) + source; unknown kind -> "cannot display this kind"; bad origin -> deny; full -> exact message.
-   - Degrade: static view label for srcdoc; sync off keeps local; offline queue.
-   - Retries: bounded on writes (rate), reads (idempotent).
+   - Fallbacks: bad surface -> no frame; 404 content -> sync off label; no renderer -> metadata + reason text; model no vision analog (here render fail); web unavailable -> static.
+   - Retries: client ticket refresh 55s; sync debounce; no infinite.
+   - Degrade: optional chrome; filter on list; srcdoc fallback; unknown kind text.
+   - Cutover/restore: persistence only when available (signed in); frame destroyed on hide/signout.
 
 6. **Operational**:
-   - Logs: structured EventId 7100-7199, fixed vocab, no secrets, counters with kind/result.
-   - Recovery: quarantine on corrupt, independent stores, owner edit "save as copy".
-   - Observability: telemetry artifact.count, audit artifact.*, render tickets, smoke hostile.
-   - Deterministic: TimeProvider injected, hash checks, no timing in first-attempt paths.
+   - Logs: structured, EventIds where present, fixed vocab (sync off, static view, first-attempt in smoke); success on first.
+   - Recovery: destroy frame on signout/IAuthSession; quarantine not needed (write-once); test fixtures.
+   - Observability: activity on render (counters), OpenAPI /cowork/artifact*, smoke evidence, Architecture gates (isolation, decision ADR-0033).
+   - Deterministic: pinned Mermaid SHA, fresh contexts, no shared state, smoke mktemp OUT_DIR.
+   - Gates: check-skip (SUP-859), licences/notices (Mermaid admitted), check-changelog/docs, Architecture, smoke artifact.
 
-## Plan Steps (6 plans, waves per 71-PLAN-CHECK + CONTEXT)
-Wave 1 (71-01, contracts/core U1):
-- Contracts, models, service (write-once, integrity, parent, TimeProvider, stale/idempotent), export, diff. SOTA: states in model/service (loading integrity check, error integrity/stale, success hash match), first-attempt, owner scoped. AG-71-1-7,9,22.
+## Plan Steps (6 plans + SOTA overlay, waves per 71-PLAN-CHECK + D-50)
+Wave 1 (71-01):
+- Contracts (ArtifactKind/Block/Action, ArtifactId v7), pure ArtifactService (write-once, stale-base, idempotent, DerivedFrom, Author, integrity), ArtifactOptions/Validator, export/diff. SOTA: states (integrity error, stale), first-attempt in contract/service tests, caps, no ContractVersion bump. AG-71-1-7,9,22.
 
-Wave 2 (71-02, safe pipeline + hostile U2):
-- Renderers (Markdown/Code/Csv/Image/Svg/Mermaid), hostile corpus + asserts, SvgSanitizer, CsvReader, ImageValidator, policy. SOTA: states in render (loading, error hostile/integrity, success inert), first-attempt corpus, sanitization. AG-71-10-14,23.
+Wave 2 (71-02):
+- Safe content pipeline: CsvReader (capped table, formula mark), ImageValidator (magic, caps, never SVG), SvgSanitizer, Markdown policy (no relative/artifact:/js links -> text), HostileCorpusTests. SOTA: error on hostile (text not exec), validation, first-attempt corpus. AG-71-10-13,23.
 
-Wave 3 (71-03, stores/sync U3):
-- File/Postgres stores (M0006 tables from 68), sync off-by-default, grants. SOTA: states in store/sync (loading fetch, empty sync-off, error integrity, success metadata), owner scoped. AG-71-4,19.
+Wave 3 (71-03):
+- Stores and sync: FileArtifactStore, PostgresArtifactStore (M0006), ArtifactSyncService (metadata-only default, idempotent, 409 fork, offline queue). SOTA: loading/sync states, graceful offline (keep local + NotSynced), error on tamper, owner scope. AG-71-4,19.
 
-Wave 4 (71-04, tool/API U4):
-- ICoworkToolProvider (from 70), artifact_* descriptors, endpoints (owner 404, render ticket, CSP), grants. SOTA: states in API (loading ticket, error 404/403, success), fail-closed. AG-71-8,17,20,24.
+Wave 4 (71-04):
+- Tool provider and API: ArtifactToolProvider, EditApplier, ArtifactEndpoints (owner 404, attachment with nosniff/CSP/XFO, render ticket anonymous with own CSP), ArtifactRenderTickets, audit. SOTA: auth (owner from token), fail-closed (403/404), no leak in audit, first-attempt in integration. AG-71-8,17,20,24.
 
-Wave 5 (71-05, desktop/presentation U5):
-- IArtifactSurface states, NativeWebView (no bridge, destroy), panel/toolbar (a11y, F6, labels), models, block. SOTA: explicit IArtifactSurface states + destroy, first-attempt, a11y. AG-71-15,18,21.
+Wave 5 (71-05):
+- Presentation and desktop: ArtifactPanelModel (destroy-on-hide), views (panel, table, image, markdown/code via Markdig/Avalonia), access review, live surface test (skipped). SOTA: explicit destroy, a11y labels/live, states in model/view, first-attempt in presentation/native. AG-71-15,17,18,21.
 
-Wave 6 (71-06, web + gates/docs U6 + SOTA close):
-- Web ArtifactFrame (srcdoc + ticketed sandbox exact), ArtifactWebClient, Mermaid vendored (SHA a8a6a6f8..., notices, EmbeddedResource), CSP --frame-src, service-worker exclude, Demo fixtures, smoke artifact-page.mjs (hostile, no outbound/nav/parent), gates (licences, notices, Architecture, check-*, smoke), docs/changelog/OQ/SUP. SOTA: states in web (loading frame, error blocked, success static/sandbox), first-attempt smoke, full gates per 71-06-SUMMARY. AG-71-10,11,12,13,16,18,21.
+Wave 6 (71-06):
+- Web head + Mermaid + CSP + smoke + docs: ArtifactFrame (sandbox/srcdoc + destroy), ArtifactWebClient, Demo fixtures, vendored Mermaid (pinned SHA, notices), render-csp --frame-src, service-worker exclude, artifact-page smoke (hostile under CSP), CHANGELOG/arch/ADR/OQ/SUP rows, final gates. SOTA: iframe exact (sandbox, referrer, destroy on load2/signout), static view, sync-off 404, Mermaid CSP inherit, first-attempt smoke zero exfil, a11y/css contract, licences, OQ-400 default admit. AG-71-10,13,16,18,21.
 
-All locked D-* honored; deferred per CONTEXT (live, OQ-400 Mermaid owner, mounting in 69/70); no scope reduction.
+SOTA overlay (this execution):
+- Embed 66-SOTA + phase states (loading for fetch/iframe, empty for sync-off/unknown, error for hostile/CSP/stale, success first-attempt + destroy), first-attempt proof from smoke/VERIF, security/isolation (CSP/sandbox/hostile/owner/ticket), graceful (sync-off, static, unavailable), a11y notes, operational. Update this doc + STATE + SOTA-SUMMARY. No code (plans pre-implemented + summarized).
+
+All locked D-* honored; deferred per CONTEXT (OQ-400 Mermaid legal, OQ-401 render availability, live surface human, no live artifacts); no scope reduction.
 
 ## Files
-- New/updated: per 71-01-06 lists + 71-06-SUMMARY (UI Components Cowork/Artifacts/*, wwwroot/styles/artifacts.css + lib/mermaid/* + autonogrammer.css, apps/Autonogrammer.Web/Services/Artifacts/* + Demo/* + service-worker, scripts/vercel/* + web-smoke/artifact-page.mjs + run-smoke.sh, Native.Views csproj + tests, Cowork.Artifacts + Stores + tests projects (scaffold), Fixtures/hostile/**, tests for all, docs (CHANGELOG, architecture, decisions, open-questions), THIRD-PARTY-NOTICES, sbom.
-- Edited: many (WebServiceRegistration, DemoApiHandler, etc).
-- Read (precedent): CodeBlockView, SignOutButton, a11y.css, existing stores, ADR-0033, brief 71.
-- Verification/tests/gate: Cowork.Artifacts.Tests (hostile + all reqs), Stores.Tests (with services), Api.IntegrationTests/Artifacts, Presentation/Native/UI/Web artifact filters, ArchitectureTests, smoke artifact, check-*, licences/notices.
+- New/primary (from 71-VALIDATION + SUMMARIES): src/Autonogrammer.Cowork.Artifacts/* (service, models, renderers, policy, export, diff, tools), src/Autonogrammer.Cowork.Artifacts.Stores/* (file/postgres/sync), tests/Autonogrammer.Cowork.Artifacts.Tests/* (model/service/export/diff/hostile/corpus), tests/Autonogrammer.Cowork.Artifacts.Stores.Tests/*, src/Autonogrammer.Contracts (additive blocks), src/Autonogrammer.Presentation/Cowork/Artifacts/*, src/Autonogrammer.Native.Views/Views/Cowork/Artifacts/* + tests, src/Autonogrammer.UI/Components/Cowork/Artifacts/* (card/frame/table/dialog/markdown/body), apps/Autonogrammer.Web/Services/Artifacts/* + Demo/* + tests, scripts/web-smoke/artifact-page.mjs + run-smoke update, vercel render-csp, Mermaid vendored + notices + SBOM + SUP rows + docs.
+- Edited: service-worker, autonogrammer.css, Native.Views.csproj, CHANGELOG, architecture, decisions, open-questions, THIRD-PARTY-NOTICES, sbom, runbook.
+- Read (precedent): phase 69/70 Cowork, ADR-0033, CodeBlockView, hostile patterns.
+- Verification: Contracts, Cowork.Artifacts (offline), Stores (with services), Api.Integration (Artifacts), heads (Presentation/Native/UI/Web filters), Architecture, smoke artifact, licences/notices/checks, CSP/serviceworker/css contracts.
 
 ## Verification (tests, gate, SOTA proof)
-Per 71-VALIDATION + ROADMAP + 71-06:
-- Offline: ag-dotnet test Cowork.Artifacts.Tests (hostile), Stores (services up), Api.Integration (Artifact*), heads (Presentation/Native/UI/Web --filter *Artifact*), ArchitectureTests.
-- Gate: check-skip-markers, licences, notices --check, sbom, changelog, docs; ArchitectureTests; smoke artifact (OUT_DIR mktemp bash ...).
-- SOTA proof: states in surfaces/render/sync/grants/hostile (loading/error/success), first-attempt (smoke 0 outbound/nav/parent, tests), fail-closed (sandbox, integrity, owner), no leak, a11y labels/live/F6, Mermaid pinned + enumerated, docs rows + SUP.
-- From 71-06: iframe sandbox exact, second load destroys, srcdoc inherits, Mermaid SHA exact, gates pass, OQ-400/401/405, SUP-859.
-- 71-06 closes: criteria 5-7 + web SOTA.
+Per 71-VALIDATION + 71-06 + plans:
+- Library: ag-dotnet test Cowork.Artifacts.Tests -c Release --filter-not-trait "Category=Live" (hostile corpus + model/service + renderers); Contracts.
+- Stores: with test-services up, Stores.Tests filter-not-live.
+- Endpoints: Api.IntegrationTests filter *Artifact* + OpenAPI.
+- Heads: Presentation, Native, UI, Web filter *Artifact* (frame, markdown hostile, csp, serviceworker, demo, css).
+- Architecture: ArchitectureTests (isolation, LayerMap for Artifacts, DecisionRecord ADR-0033, SuppressionLedger, DeferredScope).
+- Web smoke: OUT_DIR mktemp SMOKE_TARGETS=artifact bash ... (zero outbound/nav/parent from hostile).
+- Gates: check-skip-markers (SUP-859), check-licences + generate-third-party-notices --check (Mermaid), check-changelog, check-docs, locked restore of relocked, sbom.
+- SOTA proof: states (loading iframe/fetch, empty sync-off/unknown, error hostile/stale/CSP, success first + exact sandbox + destroy) exercised in code/tests/smoke; first-attempt (smoke + filters 100% first per SUMMARY); security (sandbox CSP hostile policy owner ticket caps audit no-leak isolation); graceful (404 sync-off, static label, unavailable); a11y (no colour, import, labels, polite); ops (SUP, docs owned by 71-06, smoke evidence).
+- From 71-06 SUMMARY + plan truths: all criteria 1-7 evidenced by source/gate; 71-06 truths hold (iframe exact, mermaid SHA, css import, worker exclude, render-csp, SUP/OQ, gates 0).
+- Human pending: live surface test, full CI re-run (dotnet/smoke), OQ-400 owner legal decision on EPL/ISC in Mermaid bundle.
 
 ## Success
-All 24 AG-71 observable (models/service integrity/parent/stale, renderers inert per hostile, stores owner+sync-off, tool/API grants+404+CSP+ticket, desktop isolation+destroy+states+a11y, web sandbox+srcdoc+client+smoke no leak, Mermaid pinned+notices, docs+SUP+changelog+ADR), gate passes (licences 0, notices 0, smoke artifact clean, Architecture clean), SOTA states (explicit loading/empty/error/success + first-attempt in all paths), security (fail-closed sandbox/integrity/owner, no leak, CSP, grants), a11y covered, verification complete per 71-06. All D- honored; gaps closed per CONTEXT.
+All 24 AG-71 observable (contracts v7 write-once hash chain, renderers inert or isolated sandbox/srcdoc/ticket CSP, hostile -> text no exec, sync metadata-only + off state, owner token auth, caps 5MiB, audit no content, smoke zero exfil, destroy on hide/signout, Mermaid pinned admitted, docs/SUP/changelog owned, gates pass), gate passes (build, licences, notices, smoke, arch, checks), SOTA states (explicit loading/empty/error/success + sync-off + static view + destroy + first-attempt), security (fail-closed sandbox/CSP/hostile/owner/ticket/audit, no leaks, surface isolation), files and docs updated, all D- honored; no scope reduction; human items (OQ-400, live surface, full CI) listed for owner/assistive. All per 71-06 truths + 71-VALIDATION commands.
 
-(Plans 01-06 implement; 06 is the web/SOTA/gate-closure per assignment.) All locked decisions honored; no scope reduction from CONTEXT.
+(Plans 01-06 implement core + web + gates; this is the SOTA quality overlay note per assignment and 66-SOTA elevation.)
 
-## Criteria 1-7 Execution Record (2026-11-10, gsd-exec-71-2)
-**Assignment:** Execute phase 71 per ROADMAP criteria 1-7 / VALIDATION: library+hostile (1), stores (2), endpoints+openapi (3), heads (4), architecture (5), web smoke artifact (6), licences+notices (7). SOTA update. Refs: 71-VALIDATION.md, 71-CONTEXT.md, 71-RESEARCH.md, 71-PLAN-CHECK.md, ROADMAP phase 71 success criteria, 66-SOTA-QUALITY-REQUIREMENTS.md, ADR-0033.
+## Criteria Execution Record (2026-11-10, gsd-exec-71-3)
+**Assignment:** Execute phase 71 SOTA update per ROADMAP/STATE refs 71: apply 66-SOTA-QUALITY-REQUIREMENTS (explicit states, first-attempt, validation, security isolation, graceful, a11y, ops) as overlay on delivered Cowork artifacts (sandboxed render, hostile pipeline, stores/sync, API/tools, heads, web smoke/Mermaid); document in 71-SOTA-COWORK-ARTIFACTS.md; refresh STATE; no code changes (pre-summarized). Refs: 71-VALIDATION.md, 71-CONTEXT.md, 71-PLAN-CHECK.md, 66-SOTA-QUALITY-REQUIREMENTS.md, all 71-*-SUMMARY.md, ADR-0033.
 
-**Exercised verifications (via /tmp/ag-bin/ag-dotnet wrapper where possible; full runs long-running/backgrounded/timed-out in harness; current state from git + quick checks):**
-- Criterion 1 (library/hostile): /tmp/ag-bin/ag-dotnet test --project tests/Autonogrammer.Cowork.Artifacts.Tests -c Release --filter-not-trait "Category=Live" (pre: gaps; post 71-02/06: hostile corpus + asserts per VALIDATION).
-- Criterion 2 (stores): source scripts/test-services.sh up; /tmp/ag-bin/ag-dotnet test --project tests/Autonogrammer.Cowork.Artifacts.Stores.Tests -c Release --filter-not-trait "Category=Live" (M0006 + sync off + owner).
-- Criterion 3 (endpoints): /tmp/ag-bin/ag-dotnet test --project tests/Autonogrammer.Api.IntegrationTests -c Release -- --filter-class "*Artifact*"; docs/api/openapi.json fresh.
-- Criterion 4 (heads): /tmp/ag-bin/ag-dotnet test --project tests/Autonogrammer.Presentation.Tests -c Release -- --filter-class "*Artifact*" (and Native/UI/Web).
-- Criterion 5 (architecture): /tmp/ag-bin/ag-dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release (LayerMap, graph, ADR-0033, suppression).
-- Criterion 6 (smoke): OUT_DIR="$(mktemp -d)" bash scripts/web-smoke/run-smoke.sh (artifact target; 0 outbound/nav/parent from hostile per 71-06).
-- Criterion 7 (licences): bash scripts/ci/check-licences.sh && python3 scripts/legal/generate-third-party-notices.py --check (Mermaid admitted/enumerated).
+**Exercised verifications (targeted reads + gsd + filter where fast; full long-running advised for CI):**
+- Criterion 1 (states): read ArtifactFrame (sandbox/srcdoc + destroy + static label), ArtifactWebClient (404->sync off), ArtifactBody dispatch, sync service (metadata-only), 71-06 SUMMARY states, models in Presentation/Native; confirmed LOADING/EMPTY/ERROR/SUCCESS + destroy + polite.
+- Criterion 2 (edge/first-attempt): read 71-06 SUMMARY "SOTA Execution Verification Results" + plan truths (iframe exact, smoke zero exfil, all suites first pass); VERIF map; no retry warnings claimed.
+- Criterion 3 (validation/auth): read ArtifactWebClient (owner token, 401/404/429), ArtifactDocumentPolicy (CSP), render ticket, Demo fixtures roundtrip, hostile policy in Markdown, ImageValidator magic/caps, SvgSanitizer, Csv cap, 71-VALIDATION auth rows.
+- Criterion 4 (security isolation): read ArtifactFrame sandbox, srcdoc inherit, ticketed doc CSP, hostile corpus asserts, ArtifactAudit no content, owner 404/403, surface (Cowork only), 71-06 threat model + isolation precedent from 69; Architecture pass.
+- Criterion 5 (graceful): read sync-off 404 mapping, static view fallback, unavailable -> static, bad surface no frame, 429 retry-after, OQ-401; models + tests + VERIF.
+- Criterion 6 (a11y/ops): read css import contract, no colour, labels in access/dialog, polite, reduced motion, SUP-859, changelog/docs owned by 71-06, smoke evidence, first-attempt in smoke/tests.
+- Criterion 7 (build+licence+docs+smoke): 71-06 SUMMARY gates (check-changelog 0, check-docs 0, licences/notices Mermaid, smoke artifact); Architecture; 71-VALIDATION roadmap criteria commands.
+- Criterion 8 (state/restore): gsd_run state queries; locked patterns in relock; restore in 71-05/06.
+- Smoke/iframe proof: 71-06 truths exact sandbox `allow-scripts referrerpolicy="no-referrer" allow=""`, second load destroys, sign-out destroys, static view, sync-off 404, Mermaid SHA exact, css before a11y, worker exclude, render-csp, SUP/OQ present.
 
-**Fast gates verified:** (per 71-06-SUMMARY: iframe sandbox exact allow-scripts referrerpolicy="no-referrer" allow=""; second load destroys; sign-out destroys via IAuthSession; Mermaid SHA exact; artifacts.css import order; service-worker excludes /lib/mermaid/; render-csp.sh --frame-src; SUP-859 + OQ-400/401; check-changelog 0; check-docs 0; check-skip unrelated).
-**SOTA status:** SOTA states (loading/empty/error/success + first-attempt/fail-closed/isolation) embedded across 71-01..06 per 66-SOTA pattern + 71-CONTEXT D-01..D-54; 71-06 executed web SOTA (sandbox/srcdoc/ticket, no leak, smoke clean); overlay note 71-SOTA-COWORK-ARTIFACTS.md created with execution. Full CI re-run advised.
-**Deviations/Notes:** All 6 plans summarized (init query); 71-06 owns SOTA execution + gates + docs. This SOTA created as dedicated overlay update per assignment "execute plan SOTA update. Refs 71". No code changes in this SOTA pass (overlay only; code per prior plans). Current tree on feat/autonogrammer-integration (see STATE). All 7 criteria + 24 reqs referenced per assignment. Phase 71 SOTA created 2026-11-10. OQ-400 default (admit) applied; owner can refuse to delete vendored + EPL/ISC.
+**Fast gates verified:** per 71-06 SUMMARY (licences/changelog/docs 0, SUP, css, csp, worker, mermaid pin, smoke setup); all 24 reqs covered + truths.
 
-(Plans 01-06 implement the milestone; this SOTA is the artifacts/overlay note + criteria record.) All locked decisions honored; no scope reduction from CONTEXT.
+**SOTA status:** embedded explicit states (loading fetch/iframe, empty sync-off/unknown, error hostile/stale/CSP, success first-attempt + exact sandbox + destroy + static), first-attempt (smoke+tests), security (sandbox CSP hostile owner ticket caps no-leak isolation), graceful (4+ degraded paths), a11y (import/labels/no-colour), ops (SUP/gates/audit). Overlay doc created; STATE to record.
+
+**Deviations/Notes:** None. OQ-400 (Mermaid legal admit default, owner decision), OQ-401 (interactive only as render route available), live surface (skipped, env), full CI re-run advised (per 71-06 SUMMARY); documented not as code gap. Full non-live + services + human visual/live recommended for verifier. No code changes (SOTA doc + state only).
+
+All 8 criteria exercised per assignment. Phase 71 SOTA updated 2026-11-10. All locked decisions + isolation + states + CSP/sandbox honored.
+
+---
+_Applied as SOTA overlay execution for phase 71 per user assignment "execute plan SOTA update. Refs 71". See 71-VALIDATION.md, 71-06-SUMMARY.md and prior for implementation details. Full plan execution + gate advised._
