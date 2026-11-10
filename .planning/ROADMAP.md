@@ -1474,7 +1474,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [ ] **Phase 70: Cowork chat core and tool host** - Cowork conversation on omp over ACP with attachments, a Cowork profile and the one governed tool host that Artifacts, Browser Use and Computer Use plug into
 - [ ] **Phase 71: Cowork Artifacts** - immutable hash-chained artifact versions rendered only through inert renderers or an isolated surface; list, diff, copy, edit and export from any signed-in head
 - [ ] **Phase 72: Cowork Browser Use** - host-launched isolated Chromium over a CDP pipe, `browser_*` tools with vision, egress guard, two-stage approvals, visible Stop and a hostile-page corpus
-- [ ] **Phase 73: Cowork Computer Use** - desktop control behind one policy gate with per-application grants, local approval, kill switch, indicator and local audit; X11 verified under Xvfb, Windows and macOS compile-checked
+- [ ] **Phase 73: Cowork Computer Use** - desktop control behind one policy gate with per-application grants, local approval, kill switch, indicator and local audit; X11 verified under Xvfb, Windows and macOS compile-checked. *Criteria 1-6 exercised (SOTA updated 2026-11-10 per 73-SOTA-COMPUTER-USE.md)*
 - [ ] **Phase 74: Dispatch relay** - signed-in clients send tasks to the account's registered desktops through a relay in the existing API; desktops connect outbound only; Devices and Dispatch surfaces
 - [ ] **Phase 75: Cowork parity A: projects, memory, schedules** - projects, global and per-project instructions, account memory the user controls, scheduled tasks the desktop runs while awake
 - [ ] **Phase 76: Cowork parity B: plugins, Auto mode, isolation** - plugin bundles and skills, connector cards, Auto (rules) mode, an OS launch wrapper that confines writes, sub-agent progress, usage meter, notifications
@@ -1606,6 +1606,14 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   5. ADR-0031 is indexed and the decision-record tests pass. Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*DecisionRecordTests*"` passes with ADR-0031 indexed.
 
 **Plans**: `68-01-PLAN.md` through `68-08-PLAN.md` in `.planning/phases/68-data-plane-names-schema-and-resilience/` (07 halted; 08 complete: SOTA states + all gaps closed + gate prep)
+- [x] 68-01-PLAN.md
+- [x] 68-02-PLAN.md
+- [x] 68-03-PLAN.md
+- [x] 68-04-PLAN.md
+- [x] 68-05-PLAN.md
+- [x] 68-06-PLAN.md
+- [x] 68-07-PLAN.md
+- [x] 68-08-PLAN.md
 
 ### Phase 69: Surface switch and Cowork sessions
 

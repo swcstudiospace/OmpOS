@@ -713,20 +713,20 @@ Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.m
 
 ### Data plane (68) (AG-68)
 
-- [ ] **AG-68-1**: Every Dragonfly key and channel is built by `DragonflyKeyspace` under the prefix `autonogrammer:v1:`, with a mandatory TTL of at most 24 h in the same command.
-- [ ] **AG-68-2**: Autonogrammer uses its own pinned Dragonfly service, with no ACL user as the isolation boundary and no eviction.
-- [ ] **AG-68-3**: The schema, database and test names are `autonogrammer`, `autonogrammer` and `autonogrammer_test`; no first-party source contains the old physical names.
-- [ ] **AG-68-4**: Migrations up to the compiled head (M0001 to M0010; phase 68 U3 authors M0001 to M0009, M0006 carries the artifact tables and M0009 the ADR-0037 projects, instructions and memory tables, and M0010 `dispatch_device_state` is authored and registered in the runner list by phase 74 U2) are numbered, checksummed, additive, each with a down step, run by `Autonogrammer.Api migrate` under one advisory lock with the migrator role only.
-- [ ] **AG-68-5**: The runtime role `autonogrammer_app` has DML only (INSERT and SELECT only on `dispatch_audit`); a role test proves it cannot run DDL or read another schema.
-- [ ] **AG-68-6**: `ISessionRepository.ListByOwnerAsync` and `SetClosedAsync`, `Session.Surface` and `Session.ClosedAt` exist in the in-memory and Postgres stores.
-- [ ] **AG-68-7**: Telemetry goes to GreptimeDB database `autonogrammer` with source `Autonogrammer.Api` and `autonogrammer.*` instruments, using only the pinned OpenTelemetry 1.20.0 packages.
-- [ ] **AG-68-8**: `Autonogrammer.Resilience` gives every Postgres, Dragonfly and ledger call a deadline, bounded jittered retry (idempotent calls only), circuit breaker and bulkhead, on an injected `TimeProvider`.
-- [ ] **AG-68-9**: Dragonfly outages fail closed (503 `data_plane_unavailable`, never a separate coordination problem type) for leases, idempotency and device nonces, and open for signals and presence; rate limits degrade to the in-process limiter.
-- [ ] **AG-68-10**: `GET /status/data-plane` and the 503 problem `data_plane_unavailable` expose only component, state and a closed reason enum.
-- [ ] **AG-68-11**: The ledger sink is off by default, outbox-fed, writes only through `SubstrateGateway.EmitEventAsync`, and sends only the closed field set (no personal data).
-- [ ] **AG-68-12**: No client build, head or log holds a data-plane credential, connection string or pepper; configuration errors name the key, never the value.
-- [ ] **AG-68-13**: Throwaway containers and variables are named `autonogrammer-test-*` and `AUTONOGRAMMER_TEST_*`; live tests are trait- and variable-gated; `GateParityTests` covers the test-services calls.
-- [ ] **AG-68-14**: Account erasure deletes owner rows from every user-content table (including `cowork_memory_entries`, `cowork_memory_settings`, `cowork_instructions`, `cowork_projects`) and the tenant's Dragonfly keys, and leaves only keyed-hash audit rows.
+- [x] **AG-68-1**: Every Dragonfly key and channel is built by `DragonflyKeyspace` under the prefix `autonogrammer:v1:`, with a mandatory TTL of at most 24 h in the same command.
+- [x] **AG-68-2**: Autonogrammer uses its own pinned Dragonfly service, with no ACL user as the isolation boundary and no eviction.
+- [x] **AG-68-3**: The schema, database and test names are `autonogrammer`, `autonogrammer` and `autonogrammer_test`; no first-party source contains the old physical names.
+- [x] **AG-68-4**: Migrations up to the compiled head (M0001 to M0010; phase 68 U3 authors M0001 to M0009, M0006 carries the artifact tables and M0009 the ADR-0037 projects, instructions and memory tables, and M0010 `dispatch_device_state` is authored and registered in the runner list by phase 74 U2) are numbered, checksummed, additive, each with a down step, run by `Autonogrammer.Api migrate` under one advisory lock with the migrator role only.
+- [x] **AG-68-5**: The runtime role `autonogrammer_app` has DML only (INSERT and SELECT only on `dispatch_audit`); a role test proves it cannot run DDL or read another schema.
+- [x] **AG-68-6**: `ISessionRepository.ListByOwnerAsync` and `SetClosedAsync`, `Session.Surface` and `Session.ClosedAt` exist in the in-memory and Postgres stores.
+- [x] **AG-68-7**: Telemetry goes to GreptimeDB database `autonogrammer` with source `Autonogrammer.Api` and `autonogrammer.*` instruments, using only the pinned OpenTelemetry 1.20.0 packages.
+- [x] **AG-68-8**: `Autonogrammer.Resilience` gives every Postgres, Dragonfly and ledger call a deadline, bounded jittered retry (idempotent calls only), circuit breaker and bulkhead, on an injected `TimeProvider`.
+- [x] **AG-68-9**: Dragonfly outages fail closed (503 `data_plane_unavailable`, never a separate coordination problem type) for leases, idempotency and device nonces, and open for signals and presence; rate limits degrade to the in-process limiter.
+- [x] **AG-68-10**: `GET /status/data-plane` and the 503 problem `data_plane_unavailable` expose only component, state and a closed reason enum.
+- [x] **AG-68-11**: The ledger sink is off by default, outbox-fed, writes only through `SubstrateGateway.EmitEventAsync`, and sends only the closed field set (no personal data).
+- [x] **AG-68-12**: No client build, head or log holds a data-plane credential, connection string or pepper; configuration errors name the key, never the value.
+- [x] **AG-68-13**: Throwaway containers and variables are named `autonogrammer-test-*` and `AUTONOGRAMMER_TEST_*`; live tests are trait- and variable-gated; `GateParityTests` covers the test-services calls.
+- [x] **AG-68-14**: Account erasure deletes owner rows from every user-content table (including `cowork_memory_entries`, `cowork_memory_settings`, `cowork_instructions`, `cowork_projects`) and the tenant's Dragonfly keys, and leaves only keyed-hash audit rows.
 
 ### Surface switch and Cowork sessions (69) (AG-69)
 
