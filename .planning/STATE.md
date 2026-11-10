@@ -5,11 +5,11 @@ milestone_name: "Autonogrammer: accounts, Cowork and Dispatch (planned, added 20
 current_phase: 67
 current_phase_name: "Accounts: Supabase passwordless sign-in"
 status: ready
-stopped_at: Completed 71 SOTA update (Cowork artifacts explicit states + isolation + first-attempt + sandbox + hostile per 66-SOTA + 71-CONTEXT); 71-SOTA-COWORK-ARTIFACTS.md + 71-SOTA-SUMMARY.md created; 71-06 SOTA execution + gates; refs 71; gsd-exec-71-2
-last_updated: "2026-11-10T13:10:18.522Z"
+stopped_at: Completed 68-08-PLAN.md SOTA gap closure
+last_updated: "2026-11-10T13:10:44.413Z"
 last_activity: 2026-11-10
-last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67; + phase 69 SOTA overlay executed 2026-11-10 (CoworkSessionStatus + SurfaceActivity + sync + graceful unavailable/offline/full/signed-out + 5 isolation rules + first-attempt suites + a11y); 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created via gsd; refs 69-VERIFICATION human_needed items; + phase 77 SOTA update executed 2026-11-10 (77-SOTA-HARDENING-DOCS-INTEGRATION.md created with states for hardening/docs/parity/security/a11y/gate/integration + criteria 1-8 record); refs 77.
-state_head: c83e388a4598b7951fe0c35badcd647561fcfdda
+last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67; + phase 69 SOTA overlay executed 2026-11-10 (CoworkSessionStatus + SurfaceActivity + sync + graceful unavailable/offline/full/signed-out + 5 isolation rules + first-attempt suites + a11y); 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created via gsd; refs 69-VERIFICATION human_needed items; + phase 77 SOTA update executed 2026-11-10 (77-SOTA-HARDENING-DOCS-INTEGRATION.md created with states for hardening/docs/parity/security/a11y/gate/integration + criteria 1-8 record); refs 77.; + phase 72 SOTA update executed 2026-11-10 (Cowork browser use 25 degraded states + loading/empty/error/success + first-attempt + fail-closed security + graceful); 72-SOTA-COWORK-BROWSER-USE.md + 72-SOTA-SUMMARY created; refs 72
+state_head: c8d86056be5a3da2f9c95918c2f5871d467e30b7
 progress:
   total_phases: 16
   completed_phases: 11
@@ -469,6 +469,7 @@ Next action (superseded 2026-10-24): see Autonomous Run 2026-10-24, Owner Decisi
 | Phase 75 PSOTA | 30m | 1 tasks | 1 files |
 | Phase 72 PSOTA | 1800 | 1 tasks | 2 files |
 | Phase 69 PSOTA | 1200 | 1 tasks | 2 files |
+| Phase 68 P08 | 55 | 3 tasks | 14 files |
 
 Note (2026-11-01): the `Phase 1` and `Phase 1-foundation` labels in this table and in the `[Phase 1]` decision entries below refer to the archived foundation phase (v0.9.1 per the 2026-11-01 audit). They are not ROADMAP.md's v0.9.2 `Phase 1` (Validation Evidence and Record Fixes, ROADMAP.md:47). Labels are kept as recorded; nothing is renumbered.
 
@@ -515,6 +516,7 @@ Recent decisions affecting current work:
 - [Phase 67]: Phase 71 SOTA overlay 71-SOTA-COWORK-ARTIFACTS.md + 71-SOTA-SUMMARY.md created per execute plan SOTA update assignment; states (loading/empty/error/success + first-attempt/fail-closed) embedded; refs 71-CONTEXT/71-06; gsd-exec-71-2
 - [Phase 67]: Phase 72 SOTA update complete: 72-SOTA-COWORK-BROWSER-USE.md with explicit states for 25 degraded conditions, first-attempt, fail-closed egress/approval/taint, graceful, a11y per 66-SOTA pattern. SUMMARY created. Refs 72 assignment.
 - [Phase 67]: SOTA overlay for phase 69 complete: states, isolation, a11y, graceful documented and committed.
+- [Phase 67]: M0010 74-owned; D-11 erasure scope; SOTA states in data plane cutover tests/docs
 
 ### Pending Todos
 
@@ -565,8 +567,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-10T13:10:13.432Z
-Stopped at: Completed 71 SOTA update (Cowork artifacts explicit states + isolation + first-attempt + sandbox + hostile per 66-SOTA + 71-CONTEXT); 71-SOTA-COWORK-ARTIFACTS.md + 71-SOTA-SUMMARY.md created; 71-06 SOTA execution + gates; refs 71; gsd-exec-71-2
+Last session: 2026-11-10T13:10:40.308Z
+Stopped at: Completed 68-08-PLAN.md SOTA gap closure
 Resume file: None
 Ship: HELD. ultrathink-ship is enabled with autoMerge on in config. It has NOT run for this work. Do not run it or rely on autoMerge until plan 66-07 has run and the unfinished merge is closed; its gate rules also block shipping while roadmap phases are incomplete.
 
