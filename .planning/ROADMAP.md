@@ -1822,7 +1822,7 @@ Current projection: **0/16 verified phases**; **69/89 summary slots**, **20 unsu
 | 70. Cowork chat core and tool host | 6/6 | Summary artifacts; unverified, no VERIFICATION | Previously Planned |
 | 71. Cowork Artifacts | 4/6 | 71-05/06 unsummarized; unverified | Previously Planned |
 | 72. Cowork Browser Use | 8/8 | Summary artifacts; unverified, no VERIFICATION | Previously Planned |
-| 73. Cowork Computer Use | 6/6 | Unverified; Dispatch-facing closure after 74 | Previously Planned |
+| 73. Cowork Computer Use | 6/6 | Unverified; Dispatch-facing closure after 74; SOTA updated 2026-11-10 per 73-SOTA-COMPUTER-USE.md | Previously Planned |
 | 74. Dispatch relay | 4/10 | 74-04–09 unsummarized; 74-10 summary does not close gaps | Previously Planned |
 | 75. Cowork parity A: projects, memory, schedules | 5/6 | Criteria 1-8 executed 2026-11-10 (licence+changelog PASSED via checks; full suite per 75-VALIDATION attempted; SOTA updated) | Criteria exercised (targeted); 75-06 impl open |
 |

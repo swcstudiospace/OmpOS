@@ -5,11 +5,11 @@ milestone_name: "Autonogrammer: accounts, Cowork and Dispatch (planned, added 20
 current_phase: 67
 current_phase_name: "Accounts: Supabase passwordless sign-in"
 status: ready
-stopped_at: Completed phase 74 SOTA update (74-SOTA-DISPATCH-RELAY.md + state decision)
-last_updated: "2026-11-10T13:09:44.528Z"
+stopped_at: Completed 71 SOTA update (Cowork artifacts explicit states + isolation + first-attempt + sandbox + hostile per 66-SOTA + 71-CONTEXT); 71-SOTA-COWORK-ARTIFACTS.md + 71-SOTA-SUMMARY.md created; 71-06 SOTA execution + gates; refs 71; gsd-exec-71-2
+last_updated: "2026-11-10T13:10:18.522Z"
 last_activity: 2026-11-10
 last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67; + phase 69 SOTA overlay executed 2026-11-10 (CoworkSessionStatus + SurfaceActivity + sync + graceful unavailable/offline/full/signed-out + 5 isolation rules + first-attempt suites + a11y); 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created via gsd; refs 69-VERIFICATION human_needed items; + phase 77 SOTA update executed 2026-11-10 (77-SOTA-HARDENING-DOCS-INTEGRATION.md created with states for hardening/docs/parity/security/a11y/gate/integration + criteria 1-8 record); refs 77.
-state_head: 857fc2d10431345c6b5bf02507e14593310daa24
+state_head: c83e388a4598b7951fe0c35badcd647561fcfdda
 progress:
   total_phases: 16
   completed_phases: 11
@@ -513,6 +513,8 @@ Recent decisions affecting current work:
 - [Phase 67]: SOTA serialization and hygiene fixes applied during 67-01 execution per REVIEW L-05 L-12 (commit 9b7c87a6)
 - [Phase 67]: Phase 75 SOTA update executed 2026-11-10: 75-SOTA-COWORK-PARITY.md created with criteria 1-8 record (licence/changelog PASSED, targeted tests/reads per 75-VALIDATION/ROADMAP); ROADMAP note inserted; refs 75-06 open for impl
 - [Phase 67]: Phase 71 SOTA overlay 71-SOTA-COWORK-ARTIFACTS.md + 71-SOTA-SUMMARY.md created per execute plan SOTA update assignment; states (loading/empty/error/success + first-attempt/fail-closed) embedded; refs 71-CONTEXT/71-06; gsd-exec-71-2
+- [Phase 67]: Phase 72 SOTA update complete: 72-SOTA-COWORK-BROWSER-USE.md with explicit states for 25 degraded conditions, first-attempt, fail-closed egress/approval/taint, graceful, a11y per 66-SOTA pattern. SUMMARY created. Refs 72 assignment.
+- [Phase 67]: SOTA overlay for phase 69 complete: states, isolation, a11y, graceful documented and committed.
 
 ### Pending Todos
 
@@ -563,8 +565,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-10T13:08:16.493Z
-Stopped at: Completed phase 74 SOTA update (74-SOTA-DISPATCH-RELAY.md + state decision)
+Last session: 2026-11-10T13:10:13.432Z
+Stopped at: Completed 71 SOTA update (Cowork artifacts explicit states + isolation + first-attempt + sandbox + hostile per 66-SOTA + 71-CONTEXT); 71-SOTA-COWORK-ARTIFACTS.md + 71-SOTA-SUMMARY.md created; 71-06 SOTA execution + gates; refs 71; gsd-exec-71-2
 Resume file: None
 Ship: HELD. ultrathink-ship is enabled with autoMerge on in config. It has NOT run for this work. Do not run it or rely on autoMerge until plan 66-07 has run and the unfinished merge is closed; its gate rules also block shipping while roadmap phases are incomplete.
 

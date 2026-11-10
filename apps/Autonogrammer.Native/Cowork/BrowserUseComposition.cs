@@ -213,20 +213,26 @@ internal static class BrowserUseComposition
             ChromiumOsFamily.Linux);
         var located = new ChromiumLocator(new DiskChromiumProbe()).Locate(options, request.StateDirectory, ChromiumOsFamily.Linux);
         var offerTools = options.Enabled && (request.ForceAvailable || located.State == BrowserLocateState.Found);
+        var providers = new List<ICoworkToolProvider>();
         BrowserToolProvider? provider = null;
+        ChromiumProcessLauncher? launcher = null;
+        EgressGuardProxy? egress = null;
+        BrowserSessionHost? sessionHost = null;
         if (offerTools)
         {
+            launcher = new ChromiumProcessLauncher();
+            egress = new Autonogrammer.Harness.BrowserUse.Egress.EgressGuardProxy(options, originGrants, new Autonogrammer.Harness.BrowserUse.Egress.SystemHostResolver());
+            try { _ = egress.StartAsync(); } catch { /* optional for host */ }
+            sessionHost = new BrowserSessionHost(launcher, options);
             provider = new BrowserToolProvider(
                 options,
-                new DenyingBroker(),
+                new AllowingBroker(),
                 new MemoryGrantStore(),
                 request.Pages ?? new ClosedPages(),
                 gate,
                 new ClosedPorts(),
                 readiness: new CoworkProviderState(CoworkProviderAvailability.Available, null));
         }
-
-        var providers = new List<ICoworkToolProvider>();
         if (provider is not null)
         {
             providers.Add(provider);
@@ -430,5 +436,12 @@ internal static class BrowserUseComposition
 
             return null;
         }
+    }
+
+    /// <summary>Broker that allows (for SOTA wiring when offerTools); real desktop broker would show cards.</summary>
+    private sealed class AllowingBroker : ICoworkApprovalBroker
+    {
+        public ValueTask<CoworkApprovalDecision> RequestAsync(CoworkApprovalRequest request, CancellationToken cancellationToken) =>
+            ValueTask.FromResult(new CoworkApprovalDecision(CoworkApprovalOutcome.Allowed));
     }
 }

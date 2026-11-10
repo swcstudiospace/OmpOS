@@ -686,30 +686,30 @@ Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.m
 
 ### Accounts (67) (AG-67)
 
-- [ ] **AG-67-1**: The desktop head signs in with an email one-time code (6 to 10 digits) through POST /otp and POST /verify with type email.
-- [ ] **AG-67-2**: The desktop head also signs in through a magic link with PKCE and a one-shot loopback listener on 127.0.0.1 with a path nonce, falling back cleanly to the code.
-- [ ] **AG-67-3**: First-time email users (F1, signup email without a code) see a specific hint and a working link-then-new-code path whichever owner actions are done.
-- [ ] **AG-67-4**: The web head signs in by code or by link, holds tokens and the PKCE verifier in memory only, and hands the returned code to the asking tab over a BroadcastChannel.
-- [ ] **AG-67-5**: A hand-written GoTrue client in `Autonogrammer.Accounts` has typed models, source-generated JSON and results (no exceptions) for expected failures, and uses no Supabase SDK.
-- [ ] **AG-67-6**: Refresh is single flight, writes the rotated refresh token to the store before publishing it, and adopts a token rotated by another process under a cross-process lock.
-- [ ] **AG-67-7**: Startup never waits on the network; a stored session starts SignedIn and refreshes in the background; Offline is a notice, not a sign-out.
-- [ ] **AG-67-8**: Sign-out clears local state first, then revokes with scope=local; sign out everywhere (global) and others are separate, confirmed actions.
-- [ ] **AG-67-9**: Every failure maps to one of the AuthErrorKind values with its own fixed message and never shows raw exception or server text.
-- [ ] **AG-67-10**: `Autonogrammer.Harness.Secrets.Os` implements ISecretStore with libsecret on Linux, Keychain Services on macOS and DPAPI on Windows, reporting typed Unavailable, Locked, Denied.
-- [ ] **AG-67-11**: When the OS store fails the session is memory-only with a visible notice; the owner-only file store is used for accounts only after an explicit consent setting, and never for a device private key.
-- [ ] **AG-67-12**: A first launch of a Code-only user makes no keyring call (setting `account.hasStoredSession`).
-- [ ] **AG-67-13**: The API validates Supabase tokens with ES256 pinned, issuer and audience authenticated, rejects is_anonymous and a role other than authenticated, and takes the owner from sub.
-- [ ] **AG-67-14**: GET /auth/config is anonymous and serves project URL, publishable key, enabled methods and timings; the validator refuses a secret key and a non-https URL.
-- [ ] **AG-67-15**: Every rate-limit policy partitions by sub; unauthenticated callers share one partition.
-- [ ] **AG-67-16**: With open sign-up, WorkspaceAccess denies every caller when Api:Workspace:Owners is empty unless the development principal is on.
-- [ ] **AG-67-17**: OpenAPI declares the bearer scheme, security [] on the anonymous operations (`/auth/config`, `/source`, the webhook receiver and `/cowork/artifact-render/{ticket}` with its own limiter partition), scheme `DispatchDevice` on `/dispatch/devices/{id}/connect`, and 401 and 403 responses.
-- [ ] **AG-67-18**: The `accounts` row (ADR-0031 M0004, no email stored; `AccountResponse.email` comes from the token's `email` claim) is created on the first authenticated request and `AccountEnrollmentMiddleware` upserts `last_seen_at` only, at most one write per sub per 10 minutes, and never blocks a request.
-- [ ] **AG-67-19**: GET /account, /account/sessions, /account/sessions/{id} and /account/board are owner-scoped; an item of another owner is the same 404 as an absent one.
-- [ ] **AG-67-20**: GET /board is replaced by GET /account/board and every caller moves in the same change.
-- [ ] **AG-67-21**: SessionRegistry and SessionLifecycleStore are deleted and their callers use the repository (brief 68), so a restart keeps the list.
-- [ ] **AG-67-22**: A Cowork session appears in /account/sessions and nowhere on the board, /sessions or the catalog event stream.
-- [ ] **AG-67-23**: Both heads draw exactly one of SignedOut, AwaitingLink (resend cooldown, expiry countdown, change email), SigningIn (cancelable), SignedIn (identity, devices, sign out) and Error, accessibly.
-- [ ] **AG-67-24**: The hosted web CSP gains a second validated connect-src origin for the auth host and the web head refuses a config whose project origin differs.
+- [x] **AG-67-1**: The desktop head signs in with an email one-time code (6 to 10 digits) through POST /otp and POST /verify with type email.
+- [x] **AG-67-2**: The desktop head also signs in through a magic link with PKCE and a one-shot loopback listener on 127.0.0.1 with a path nonce, falling back cleanly to the code.
+- [x] **AG-67-3**: First-time email users (F1, signup email without a code) see a specific hint and a working link-then-new-code path whichever owner actions are done.
+- [x] **AG-67-4**: The web head signs in by code or by link, holds tokens and the PKCE verifier in memory only, and hands the returned code to the asking tab over a BroadcastChannel.
+- [x] **AG-67-5**: A hand-written GoTrue client in `Autonogrammer.Accounts` has typed models, source-generated JSON and results (no exceptions) for expected failures, and uses no Supabase SDK.
+- [x] **AG-67-6**: Refresh is single flight, writes the rotated refresh token to the store before publishing it, and adopts a token rotated by another process under a cross-process lock.
+- [x] **AG-67-7**: Startup never waits on the network; a stored session starts SignedIn and refreshes in the background; Offline is a notice, not a sign-out.
+- [x] **AG-67-8**: Sign-out clears local state first, then revokes with scope=local; sign out everywhere (global) and others are separate, confirmed actions.
+- [x] **AG-67-9**: Every failure maps to one of the AuthErrorKind values with its own fixed message and never shows raw exception or server text.
+- [x] **AG-67-10**: `Autonogrammer.Harness.Secrets.Os` implements ISecretStore with libsecret on Linux, Keychain Services on macOS and DPAPI on Windows, reporting typed Unavailable, Locked, Denied.
+- [x] **AG-67-11**: When the OS store fails the session is memory-only with a visible notice; the owner-only file store is used for accounts only after an explicit consent setting, and never for a device private key.
+- [x] **AG-67-12**: A first launch of a Code-only user makes no keyring call (setting `account.hasStoredSession`).
+- [x] **AG-67-13**: The API validates Supabase tokens with ES256 pinned, issuer and audience authenticated, rejects is_anonymous and a role other than authenticated, and takes the owner from sub.
+- [x] **AG-67-14**: GET /auth/config is anonymous and serves project URL, publishable key, enabled methods and timings; the validator refuses a secret key and a non-https URL.
+- [x] **AG-67-15**: Every rate-limit policy partitions by sub; unauthenticated callers share one partition.
+- [x] **AG-67-16**: With open sign-up, WorkspaceAccess denies every caller when Api:Workspace:Owners is empty unless the development principal is on.
+- [x] **AG-67-17**: OpenAPI declares the bearer scheme, security [] on the anonymous operations (`/auth/config`, `/source`, the webhook receiver and `/cowork/artifact-render/{ticket}` with its own limiter partition), scheme `DispatchDevice` on `/dispatch/devices/{id}/connect`, and 401 and 403 responses.
+- [x] **AG-67-18**: The `accounts` row (ADR-0031 M0004, no email stored; `AccountResponse.email` comes from the token's `email` claim) is created on the first authenticated request and `AccountEnrollmentMiddleware` upserts `last_seen_at` only, at most one write per sub per 10 minutes, and never blocks a request.
+- [x] **AG-67-19**: GET /account, /account/sessions, /account/sessions/{id} and /account/board are owner-scoped; an item of another owner is the same 404 as an absent one.
+- [x] **AG-67-20**: GET /board is replaced by GET /account/board and every caller moves in the same change.
+- [x] **AG-67-21**: SessionRegistry and SessionLifecycleStore are deleted and their callers use the repository (brief 68), so a restart keeps the list.
+- [x] **AG-67-22**: A Cowork session appears in /account/sessions and nowhere on the board, /sessions or the catalog event stream.
+- [x] **AG-67-23**: Both heads draw exactly one of SignedOut, AwaitingLink (resend cooldown, expiry countdown, change email), SigningIn (cancelable), SignedIn (identity, devices, sign out) and Error, accessibly.
+- [x] **AG-67-24**: The hosted web CSP gains a second validated connect-src origin for the auth host and the web head refuses a config whose project origin differs.
 
 ### Data plane (68) (AG-68)
 
