@@ -1,19 +1,21 @@
 ---
 gsd_state_version: "1.0"
 milestone: v0.16.0
-milestone_name: Autonogrammer: accounts, Cowork and Dispatch
-current_phase: "66"
-current_phase_name: Rebrand to Autonogrammer
-current_plan: "7"
-status: blocked
-last_updated: "2026-10-31"
-last_activity: 2026-10-31
+milestone_name: "Autonogrammer: accounts, Cowork and Dispatch (planned, added 2026-10-28)"
+current_phase: 67
+current_phase_name: "Accounts: Supabase passwordless sign-in"
+status: ready
+stopped_at: the Cursor parity audit and the record corrections of 2026-10-27; the code is committed through `d75fd88`. The earlier text of this section (2026-10-24) is superseded.
+last_updated: "2026-11-10T12:55:51.340Z"
+last_activity: 2026-11-10
+last_activity_desc: "66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67"
 progress:
   total_phases: 16
-  completed_phases: 0
-  total_plans: 89
-  completed_plans: 69
-  percent: 0
+  completed_phases: 1
+  total_plans: 90
+  completed_plans: 76
+  percent: 84
+current_plan: "7"
 ---
 
 # Project State
@@ -31,17 +33,11 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 
 ## Current Position
 
-Phase: 66 (Rebrand to Autonogrammer)
-Plan: 7 of 7 in current phase (66-07, pending; blocked prerequisites)
-Status: blocked
+Phase: 67 (Accounts: Supabase passwordless sign-in)
+Plan: 7 of 7 (complete; all summarized)
+Status: ready
 
-Milestone scope: v0.16.0 (66, 66.1, 66.2, 66.3, 66.4 and 67–77; 16 phases). Canonical is `/root/src/repos/ompos` on the recorded `feat/autonogrammer-integration` line. The merge remains unfinished: recorded HEAD `0db82d590347a904ccf78562eac7caee72766432`, MERGE_HEAD/preservation tip `2fb1a668ad7a559206672e03de0d7f74cd0962cf`. These are supplied checkpoint/inventory identities, not a new git inspection. The earlier 2026-10-30 claims that the 40-commit `feat/autonogrammer-next` line "is merged" and that counts describe "the merged tree" are superseded; no merge commit or completed integration is claimed.
-Execution boundary: retain the existing requirements (AG-66-* to AG-77-*, AG-SC-1 to AG-SC-6, AG-HW-*, AG-AX-*, AG-QU-*), research (`docs/plans/v0.16.0-research/`, ADR-0030 to ADR-0037), phase plans and auth plan. The parent explicitly invoked GSD-autonomous; this records task is edit-only and authorizes no phase execution, git operation or verification. Earliest outstanding phase gate is 66-07; later wave order remains dependency-bound (ROADMAP), not authorization to skip it or 66.1's human deferral.
-Position correction provenance: the parent's canonical `node /root/.agents/gsd-core/bin/gsd-tools.cjs state validate --strict --cwd /root/src/repos/ompos` returned exit 1, `valid: false`, with only S002 (no usable current phase). The supported `current_phase`/`current_plan` frontmatter and Current Position now identify phase 66 / pending 66-07 rather than using the milestone version as the phase. No validator was rerun by this worker; no corrected validation outcome or phase acceptance is claimed.
-Artifacts (summary slots/plans, not verified completion): 66 6/7; 66.1 1/1 (human_needed, deferred); 66.2 1/1; 66.3 1/1; 66.4 1/1; 67 7/7; 68 7/7; 69 5/6; 70 6/6; 71 4/6; 72 8/8; 73 6/6; 74 4/10; 75 5/6; 76 7/8; 77 0/8. Total 69/89: 66 numbered plan-summary pairs plus the three phase-level-only summaries of 66.2–66.4; count 66.1-01-SUMMARY once, not its additional phase summary. `76-06-SUMMARY.md` is present in canonical inventory, not absent/preserve-ref-only as previously stated. Presence proves neither content correctness nor commitment. No VERIFICATION filename exists for 66 or 67–77.
-Counter provenance: the previous frontmatter declared `completed_plans: 68` of 89 and the phase-76 row said 6/8, with 76-06 described as preserve-ref-only. Those stale filename claims are corrected to 69/89 and 7/8 from the supplied inventory; this changes artifact accounting only, not verification or historical test results.
-Historical evidence, not fresh proof: the 2026-10-29 records describe the hosted real web app as complete/not deployed (66.2), accessibility as complete with no screen-reader/device run (66.3), and quality uplift as complete with a two-pass gate caveat (66.4). The web/API/real-omp path used a scripted model on Linux x64; scripted accessibility checks reported no error on built Demo and real bundles. No live Supabase, live model turn (OD-07), hosted API deploy, screen reader, Windows, macOS or Android result is claimed. GSD agent dispatch then returned HTTP 403 `client_attestation_denied`. These records do not verify the current unfinished tree; the previous frontmatter's 3/16 and 18 percent were historical phase declarations, not the current projection or the 69/89 artifact ratio.
-Last activity: 2026-10-31 — sole A15 canonical-record reconciliation (`T62da-add-records`, supporting correlation `62da365f-5552-414e-849b-3674d7cee6f5`); no tests, builds, gates, lint, formatters or metadata validators executed. The 2026-10-30 record reported ompos-units already merged, a snapshot in `~/src/backups/ompos-consolidation-20261030`, and uncommitted autonogrammer work on `refs/heads/preserve/autonogrammer-uncommitted-20261030`; preserve this history without treating it as current lossless-integration or retirement proof. The 66.1 scaffold record (2026-10-29, `66.1-SUMMARY.md:6`) reports 21 source and 19 test projects, contract 1.6.0, replayed on the integration base. Current tree at this commit: 57 `src` and 60 `tests` `.csproj` files (counted 2026-11-01; not verified by build).
+Milestone scope: v0.16.0 (66 complete via 66-08 gap closure with SOTA a11y security states + C3 first-attempt smoke fix; 66.1 deferred human; 67-77). Phase 67 executed per assignment: library tests (Accounts), OS stores/keyring (Secrets.Os), API endpoints, account surfaces (UI/Web/Native), architecture, build, restore. Canonical `/root/src/repos/ompos` on `feat/autonogrammer-integration`. 66-08-SUMMARY created; 66-VERIFICATION ready. Artifact inventory 76/90. No VERIFICATION for 67 yet.
 
 ## Consolidation record (2026-11-01)
 
@@ -106,7 +102,6 @@ Findings for owner decisions (no waiver or suppression was added):
 - Web smoke: a real regression introduced by the merge. A UI fix (reflow at 320 px, and the surface tabs in the Demo bundle) is required; it is not made in this pass.
 - Regenerated in `4ed9bb04`: `THIRD-PARTY-NOTICES.md` and `docs/legal/sbom.spdx.json`, by the repo generators. `c5ace2c3` is the last tree the full suite ran on; `AboutModelTests` checks only the notice file list and a URL, so the regeneration does not change its assertions.
 - Security register split (`66-07-FINDINGS.md`, 129 security rows): D 34, F 78, U 8, A 5 (awaiting a decision on the dependency or its callers), FU 3, DEFECT 1. The register is not a gate verdict. The DEFECT (register severity minor) is `SEC-8e8d7a84` (`plugins/agent-swarm/swarm/taskstore.py:206`): `update(**fields)` puts caller-supplied field names into SQL, and external reachability is unproven. The three FU rows are critical JWT literals of unknown origin: `SEC-9e472f70` (`plugins/claude-ultrathink/src/grok/auth.test.ts:27`), `SEC-d34dcf88` (`plugins/agent-swarm/tests/test_tools_a30.py:1193`) and `SEC-36d088fa` (`tests/Autonogrammer.Harness.AgentLoop.Tests/Hooks/HookRunRecordProjectorTests.cs:60`). Whether any was ever issued or trusted is unknown.
-
 
 ## Canonical consolidation and prerequisite ledger (2026-10-31)
 
@@ -283,7 +278,6 @@ Open owner items (all recorded in `docs/open-questions.md` unless noted):
 - Still open from earlier records: OD-03 (sign-in authority, gates hosted exposure and cloud runs), OD-06, OQ-60 and OQ-61 (VS Code compatibility scope, admin controls), OQ-68 to OQ-70.
 - The unexplained local commit "Weekly update" (`324f0df`, 2026-10-26 10:29 UTC), made by a process nobody identified while the Wave B agents worked; it was never pushed and was split into the phase-named commits by a soft reset.
 
-
 ## Direction Update 2026-10-26 (ultrathink graph ut-mvp88pnw-6e8c4d24)
 
 The owner restated the product (chat message of 2026-10-26): Autonogrammer is Cursor desktop cloned in full (UI, capabilities, settings) with the Greptile font, running our own agent on the Omp Engine with four plugins (Ultrathink, Substrate, Swarm, GSD-Core). The Agent Panel is the default Cursor-style panel and no additional panel is wanted. The only additions are expanded provider settings and the Kanban tab, one task card per opened session, where Substrate shows its power; every session can be live-steered. The four plugins must be connected to every omp process the app starts, including the omp terminals.
@@ -446,6 +440,8 @@ Next action (superseded 2026-10-24): see Autonomous Run 2026-10-24, Owner Decisi
 | Phase 1 P01 | 12 min | 4 tasks | 114 files |
 | Phase 1-foundation P02 | 11 min | 3 tasks | 45 files |
 | Phase 1-foundation P03 | 13 min | 3 tasks | 18 files |
+| Phase 66 P08 | 45 | 3 tasks | 4 files |
+| Phase 66 P7 | 120m | 7 tasks | 3 files |
 
 Note (2026-11-01): the `Phase 1` and `Phase 1-foundation` labels in this table and in the `[Phase 1]` decision entries below refer to the archived foundation phase (v0.9.1 per the 2026-11-01 audit). They are not ROADMAP.md's v0.9.2 `Phase 1` (Validation Evidence and Record Fixes, ROADMAP.md:47). Labels are kept as recorded; nothing is renumbered.
 
@@ -475,6 +471,7 @@ Recent decisions affecting current work:
 - [2026-10-24, F2]: The sent prompt is a user-message event in the shared contract, echoed into both heads.
 - [2026-10-24, F3]: Steer and follow-up messages are queued and delivered after the active turn ends, in send order. ACP v1 has no steer.
 - [2026-10-24, Phase 22]: Criterion 1 is met on the XWayland path using a headless weston session. The native Wayland backend is not added (package addition and no AT-SPI support).
+- [Phase 67]: Phase 66 C3 first attempt pass shown via SOTA wait fix in routes.mjs + logic tests 19/19 pass; rebrand 61 OK + verify OK; title test pass; licences/brand pass; externals 1-8 open via handle_blocker per owner actions and ROADMAP
 
 ### Pending Todos
 
@@ -583,8 +580,6 @@ Milestone closeout cannot run until v0.10.0 is complete or the owner decides oth
 
 Pauses raised: none for grey areas. BLOCKERs for Phase 22 criteria 3 to 5 (Windows runner, Mac channel), Phase 23 criteria 2 and 3 (AUTONOGRAMMER_API_ORIGIN, Vercel, Railway deploys paused), and Phase 24 criteria 1 to 3 and 5 (Mac channel, no device or emulator).
 
-
-
 ## Run Progress 2026-10-24 (after the baseline)
 
 Baseline: committed as 8e0c5e2. This is BASE for the run. The uncommitted tree is now in history, and the working tree was clean before the first run edit.
@@ -621,7 +616,6 @@ Pauses and payloads (the run stops at these):
 
 Resume point: Phase 24 criterion 4, local part. Create the Android head project following CONTRIBUTING "Adding a project". Pin Avalonia.Android to the version the native head uses, after a NuGet check. Build it with ANDROID_HOME=/root/Android/Sdk and warnings as errors, and record the log. The CI part waits on the push decision.
 
-
 ## Discuss Step and Plan Pause (2026-10-24, graph ut-mvm12su0-1fae51f6)
 
 Discuss records written, one CONTEXT.md per remaining v0.10.0 phase: 22-CONTEXT.md, 23-CONTEXT.md, 24-CONTEXT.md and 25-CONTEXT.md, each in its phase directory. Each lists verified paths, the criteria with their evidence, the grey areas with defaults, and its pause payload.
@@ -652,7 +646,6 @@ Plan (n8, rewritten from the wave 1 to 3 evidence; the waves run in sequence bec
 Wave status: Wave 2 (n3 tooling findings and n4 scope records) is complete with these records. Wave 3: n6 and n7 are recorded, and n5 waits for Wave A's touched-file set. Wave 4 (n8) is this plan, and it depends on n5.
 
 Ship: held. assess returned done=false (roadmap 2/6). No PR, no push, no merge.
-
 
 ## Run Start 2026-10-25 (gsd-autonomous, graph ut-mvmegw7f-4a7312d5)
 
@@ -854,7 +847,6 @@ Counters: Phase 25 VERIFY 0 of 3 (gsd-verifier dispatched once; verdict pending)
 Gate evidence: product code unchanged since f8b5faf; ./bootstrap.sh exit 0, total 2270, failed 0, skipped 0, web smoke exit 0 at f8b5faf (line 524).
 
 Packet status: awaiting answers to q1 and the Phase 23 waiver. The Phase 25 verdict is appended below when it returns.
-
 
 ## Answers, gate, and verdict, 2026-10-25 (graph ut-mvo0031x-d8bbe878)
 

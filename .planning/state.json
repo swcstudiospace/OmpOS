@@ -1,12 +1,108 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "v0.9.2",
-  "phases": [],
+  "milestone": "v0.16.0 — Autonogrammer: accounts, Cowork and Dispatch (planned, added 2026-10-28)",
+  "phases": [
+    {
+      "number": "1",
+      "name": "Validation Evidence and Record Fixes",
+      "status": "complete"
+    },
+    {
+      "number": "2",
+      "name": "Acceptance-Criteria List Recovery",
+      "status": "complete"
+    },
+    {
+      "number": "3",
+      "name": "Web Head Reflection and Browser Verification",
+      "status": "complete"
+    },
+    {
+      "number": "4",
+      "name": "AgentOS Remaining Operations",
+      "status": "complete"
+    },
+    {
+      "number": "5",
+      "name": "Railway Swarm Remaining Operations",
+      "status": "complete"
+    },
+    {
+      "number": "6",
+      "name": "Per-Sandbox Credential Issuance",
+      "status": "pending"
+    },
+    {
+      "number": "7",
+      "name": "PostgreSQL Session Log",
+      "status": "complete"
+    },
+    {
+      "number": "8",
+      "name": "Worker Composition and Routed Settlement and Streaming",
+      "status": "pending"
+    },
+    {
+      "number": "9",
+      "name": "Replay Re-Validation",
+      "status": "pending"
+    },
+    {
+      "number": "10",
+      "name": "Routed Interactive Approvals",
+      "status": "complete"
+    },
+    {
+      "number": "11",
+      "name": "RPC-Mode Update Recording",
+      "status": "complete"
+    },
+    {
+      "number": "12",
+      "name": "Hosted Deploy Config and Exposure Gate",
+      "status": "pending"
+    },
+    {
+      "number": "13",
+      "name": "Hosted Routed omp Harness",
+      "status": "pending"
+    },
+    {
+      "number": "14",
+      "name": "Vercel Web Against Production Origin",
+      "status": "pending"
+    },
+    {
+      "number": "15",
+      "name": "macOS iOS and MacCatalyst Builds",
+      "status": "pending"
+    },
+    {
+      "number": "16",
+      "name": "macOS Runtime Spot-Check",
+      "status": "pending"
+    },
+    {
+      "number": "17",
+      "name": "Blocking Record and Nyquist Verdicts",
+      "status": "complete"
+    },
+    {
+      "number": "18",
+      "name": "Handoff and Open-Question Closure",
+      "status": "complete"
+    },
+    {
+      "number": "19",
+      "name": "Milestone Re-Audit",
+      "status": "complete"
+    }
+  ],
   "next": {
-    "command": "/gsd:discuss-phase",
-    "label": "Discuss the first phase",
-    "reason": "Project initialized — plan your first phase"
+    "command": "/gsd-progress",
+    "label": "Show progress",
+    "reason": "Unsure of state — showing progress"
   },
-  "updated_at": "2026-10-21T10:22:28.527Z"
+  "updated_at": "2026-11-10T12:54:42.538Z"
 }
