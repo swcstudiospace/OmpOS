@@ -6,10 +6,10 @@ current_phase: 67
 current_phase_name: "Accounts: Supabase passwordless sign-in"
 status: ready
 stopped_at: Completed phase 74 SOTA update (74-SOTA-DISPATCH-RELAY.md + state decision)
-last_updated: "2026-11-10T13:09:16.924Z"
+last_updated: "2026-11-10T13:09:26.917Z"
 last_activity: 2026-11-10
 last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67; + phase 69 SOTA overlay executed 2026-11-10 (CoworkSessionStatus + SurfaceActivity + sync + graceful unavailable/offline/full/signed-out + 5 isolation rules + first-attempt suites + a11y); 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created via gsd; refs 69-VERIFICATION human_needed items; + phase 77 SOTA update executed 2026-11-10 (77-SOTA-HARDENING-DOCS-INTEGRATION.md created with states for hardening/docs/parity/security/a11y/gate/integration + criteria 1-8 record); refs 77.
-state_head: 4534553d6d18df3b39c192664785e5e22ae60dce
+state_head: f5c5a60be9a08edb5b6d629edcf38137344820c6
 progress:
   total_phases: 16
   completed_phases: 11
@@ -508,6 +508,8 @@ Recent decisions affecting current work:
 - [Phase 67]: SOTA commit 1c5ca10c for phase 72 browser use overlay
 - [Phase 67]: Phase 69 SOTA update executed: explicit states, a11y, isolation gates, graceful degradation, first-attempt documented in overlay md (f45185f9); summary and STATE updated.
 - [Phase 67]: Phase 76 SOTA: explicit states (loading/empty/error/success + mode/isolation/notification), first-attempt, fail-closed, argv-safety, privacy defaults, layer boundaries for Cowork parity (plugins/auto/isolation/activity/notifications)
+- [Phase 67]: SOTA serialization and hygiene fixes applied during 67-01 execution per REVIEW L-05 L-12 (commit 9b7c87a6)
+- [Phase 67]: Phase 75 SOTA update executed 2026-11-10: 75-SOTA-COWORK-PARITY.md created with criteria 1-8 record (licence/changelog PASSED, targeted tests/reads per 75-VALIDATION/ROADMAP); ROADMAP note inserted; refs 75-06 open for impl
 
 ### Pending Todos
 
