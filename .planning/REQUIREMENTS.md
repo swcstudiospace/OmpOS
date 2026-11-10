@@ -857,17 +857,17 @@ Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.m
 
 ### Cowork parity A (75) (AG-75)
 
-- [ ] **AG-75-1**: A user can create, list, rename, archive and hard-delete projects (at most 200, name at most 100 characters) and bind local folders to them without uploading a file.
+- [x] **AG-75-1**: A user can create, list, rename, archive and hard-delete projects (at most 200, name at most 100 characters) and bind local folders to them without uploading a file.
 - [ ] **AG-75-2**: The API stores projects, global instructions and memory per account (`sub`), answers 404 for another account's row, and is rate limited per user.
-- [ ] **AG-75-3**: Global instructions (at most 8 KiB) and project instructions (at most 16 KiB) are built with the memory brief (at most 4 KiB) into one standing-context block delivered as an embedded resource at the start of the first prompt, with a fixed paragraph of at most 2 KiB in the system-prompt file, inside the 8 KiB total apportioned in `CoworkSystemPromptOptions` (base 4 KiB, standing context 2 KiB, browser 1 KiB, computer 1 KiB).
+- [x] **AG-75-3**: Global instructions (at most 8 KiB) and project instructions (at most 16 KiB) are built with the memory brief (at most 4 KiB) into one standing-context block delivered as an embedded resource at the start of the first prompt, with a fixed paragraph of at most 2 KiB in the system-prompt file, inside the 8 KiB total apportioned in `CoworkSystemPromptOptions` (base 4 KiB, standing context 2 KiB, browser 1 KiB, computer 1 KiB).
 - [ ] **AG-75-4**: Memory entries are scoped to an account or a project, full-text searchable, capped (1,000 entries, 1,000 characters, 20 agent saves per session per hour) and hard-deleted on request.
 - [ ] **AG-75-5**: `MemoryContentPolicy` refuses never-saved classes always and sensitive categories unless the user opted in, before every write, and says why to the agent and the user.
-- [ ] **AG-75-6**: `MemoryMode` is the session's fixed memory-off flag; Off removes the provider and the brief; pause, reset, per-entry delete and JSON export exist.
-- [ ] **AG-75-7**: The agent reaches memory through the `memory` tool provider (`memory_recall`, `memory_save`, `memory_forget`, all `ByPolicy`), so Manual and Auto ask for save and forget.
-- [ ] **AG-75-8**: A scheduled task can target a Cowork or Code session with a preset schedule, an approval mode and optional project and folders; a missed run folds into one late run within 24 hours.
+- [x] **AG-75-6**: `MemoryMode` is the session's fixed memory-off flag; Off removes the provider and the brief; pause, reset, per-entry delete and JSON export exist.
+- [x] **AG-75-7**: The agent reaches memory through the `memory` tool provider (`memory_recall`, `memory_save`, `memory_forget`, all `ByPolicy`), so Manual and Auto ask for save and forget.
+- [x] **AG-75-8**: A scheduled task can target a Cowork or Code session with a preset schedule, an approval mode and optional project and folders; a missed run folds into one late run within 24 hours.
 - [ ] **AG-75-9**: An unattended run that needs approval waits, notifies and is cancelled after `UnattendedApprovalTimeout` (30 minutes), and the run writes `schedule.run`, `schedule.late` and `schedule.waiting_for_approval` events (the closed `cowork_events.kind` list of phase 68 U3); Skip is refused without a FilesystemIsolated session.
 - [ ] **AG-75-10**: Projects, instructions, memory and scheduled tasks have view models and desktop views (projects and memory also on the web) with accessible names, keyboard paths and specific degraded states.
-- [ ] **AG-75-11**: `docs/parity/cowork-parity.md` exists with rows C1 to C31 and K01 to K20 and this phase's rows graded with evidence.
+- [x] **AG-75-11**: `docs/parity/cowork-parity.md` exists with rows C1 to C31 and K01 to K20 and this phase's rows graded with evidence.
 
 ### Cowork parity B (76) (AG-76)
 

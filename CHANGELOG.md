@@ -8,6 +8,9 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+### Added
+- Phase 75 Cowork parity A integration (75-06): ILaunchContributor seam applied generically; StandingContextContributor, ScheduledCoworkSessionStarter, MemoryProviderRegistration; docs/parity/cowork-parity.md (C7 PARTIAL, C8 MET with 5 named tests, C9/C10/K17 PARTIAL); openapi regenerated; per-phase doc rows.
+
 ## [0.16.0] - 2026-11-07
 
 ### Added

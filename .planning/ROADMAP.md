@@ -1776,6 +1776,12 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   6. The full gate passes and a parity row is MET only when a named passing test class covers it. Verify: `./bootstrap.sh` is the full gate. A parity row is MET only if a named test class above covers it.
 
 **Plans**: `75-01-PLAN.md` through `75-06-PLAN.md` in `.planning/phases/75-cowork-parity-projects-memory-schedules/`
+- [x] 75-01-PLAN.md
+- [x] 75-02-PLAN.md
+- [x] 75-03-PLAN.md
+- [x] 75-04-PLAN.md
+- [x] 75-05-PLAN.md
+- [x] 75-06-PLAN.md
 
 ### Phase 76: Cowork parity B: plugins, Auto mode, isolation
 

@@ -131,6 +131,7 @@
 * [Deferred and blocked items, 2026-10-26](runbooks/deferred-and-blocked-2026-10-26.md)
 * [Quality bar, 2026-10-22](quality/quality-bar.md)
 * [Session and chat parity inventory](parity/session-chat-parity.md)
+* [Cowork parity A (projects, memory, schedules)](parity/cowork-parity.md)
 * [Handoff, v0.9.1 (historical)](handoff.md)
 * [Phase 20 Avalonia foundation (record)](runbooks/phase-20-avalonia-foundation.md)
 * [Phase 22 desktop heads (record)](runbooks/phase-22-desktop-heads.md)
