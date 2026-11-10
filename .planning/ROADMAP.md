@@ -1752,6 +1752,14 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   5. A parity row is MET only with a named passing test class; rows that depend on omp consuming a flag stay PARTIAL until a live run is recorded. Verify: A row of `docs/parity/cowork-parity.md` is MET only with a named passing test class; rows that depend on omp consuming a flag stay PARTIAL until a live run is recorded.
 
 **Plans**: `76-01-PLAN.md` through `76-08-PLAN.md` in `.planning/phases/76-cowork-parity-plugins-auto-isolation/`
+- [x] 76-01-PLAN.md
+- [x] 76-02-PLAN.md
+- [x] 76-03-PLAN.md
+- [x] 76-04-PLAN.md
+- [x] 76-05-PLAN.md
+- [x] 76-06-PLAN.md
+- [x] 76-07-PLAN.md
+- [x] 76-08-PLAN.md
 
 ### Phase 77: Hardening, docs and integration
 

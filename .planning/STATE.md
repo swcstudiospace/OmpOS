@@ -5,16 +5,18 @@ milestone_name: "Autonogrammer: accounts, Cowork and Dispatch (planned, added 20
 current_phase: 67
 current_phase_name: "Accounts: Supabase passwordless sign-in"
 status: ready
-stopped_at: Completed 77-01-PLAN.md (evidence page + fixes)
-last_updated: "2026-11-10T13:02:54.165Z"
+stopped_at: Completed 76-08-PLAN.md (notifications SOTA)
+stopped_at: Completed 69 SOTA update (surface switch + cowork sessions explicit states + isolation + first-attempt per 66-SOTA); 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created
+last_updated: "2026-11-10T13:03:28.672Z"
 last_activity: 2026-11-10
 last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67
-state_head: b0b710c58e280758c322272dc1852edee5c9f616
+last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67; + phase 69 SOTA overlay executed 2026-11-10 (CoworkSessionStatus + SurfaceActivity + sync + graceful unavailable/offline/full/signed-out + 5 isolation rules + first-attempt suites + a11y); 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created via gsd; refs 69-VERIFICATION human_needed items
+state_head: 5a99c841989be67ead7fc17279bbf18e0bdb460e
 progress:
   total_phases: 16
   completed_phases: 11
   total_plans: 92
-  completed_plans: 76
+  completed_plans: 77
   percent: 69
 current_plan: 7
 ---
@@ -39,6 +41,7 @@ Plan: 7 of 7 (complete; all summarized)
 Status: ready
 
 Milestone scope: v0.16.0 (66 complete via 66-08 gap closure with SOTA a11y security states + C3 first-attempt smoke fix; 66.1 deferred human; 67-77). Phase 67 executed per assignment: library tests (Accounts), OS stores/keyring (Secrets.Os), API endpoints, account surfaces (UI/Web/Native), architecture, build, restore. Canonical `/root/src/repos/ompos` on `feat/autonogrammer-integration`. 66-08-SUMMARY created; 66-VERIFICATION ready. Artifact inventory 76/90. No VERIFICATION for 67 yet.
+Milestone scope: v0.16.0 (66 complete via 66-08 gap closure with SOTA a11y security states + C3 first-attempt smoke fix; 66.1 deferred human; 67-77). Phase 67 executed per assignment: library tests (Accounts), OS stores/keyring (Secrets.Os), API endpoints, account surfaces (UI/Web/Native), architecture, build, restore. Canonical `/root/src/repos/ompos` on `feat/autonogrammer-integration`. 66-08-SUMMARY created; 66-VERIFICATION ready. Artifact inventory 76/90. No VERIFICATION for 67 yet. Phase 69 SOTA update executed: 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md (explicit states per 66-SOTA, security isolation gates + behavioral, first-attempt clean per VERIF, graceful degradation) created as post-plan overlay; 6/6 plans summarized; VERIF 7/7 truths + 3 human_needed (a11y/visual/shortcuts) noted.
 
 ## Consolidation record (2026-11-01)
 
@@ -448,6 +451,7 @@ Next action (superseded 2026-10-24): see Autonomous Run 2026-10-24, Owner Decisi
 | Phase 71 P06 | 600 | 3 tasks | 40 files |
 | Phase 69 PSOTA | 1800 | 1 tasks | 1 files |
 | Phase 77 P01 | 45 | 2 tasks | 3 files |
+| Phase 76 P08 | 45min | 3 tasks | 18 files |
 
 Note (2026-11-01): the `Phase 1` and `Phase 1-foundation` labels in this table and in the `[Phase 1]` decision entries below refer to the archived foundation phase (v0.9.1 per the 2026-11-01 audit). They are not ROADMAP.md's v0.9.2 `Phase 1` (Validation Evidence and Record Fixes, ROADMAP.md:47). Labels are kept as recorded; nothing is renumbered.
 
@@ -482,6 +486,7 @@ Recent decisions affecting current work:
 - [Phase 67]: Phase 67 criteria 1-8 executed (library/OS/keyring/API/surfaces/arch/build/restore); licence+changelog PASSED; SOTA updated 2026-11-10 per 67-SOTA-AUTH-SURFACES.md
 - [Phase 67]: Phase 69 SOTA overlay: explicit states (CoworkSessionStatus + SurfaceActivity + sync + guidance), first-attempt clean suites, security via 5 isolation rules + behavioral + surface scoping, graceful degraded paths (unavailable/offline/full/signed-out), a11y keyboard+polite, applied 66-SOTA requirements. 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created. Refs 69-VERIF human items noted.
 - [Phase 67]: 77-01: integration evidence complete; rebrand fixed for verify; OQ-484 to merge-descends; first-attempt SOTA
+- [Phase 67]: Notifications fan-out, policy, safe OS commands and Presentation centre complete for AG-76-13 (plan 76-08)
 
 ### Pending Todos
 
@@ -532,9 +537,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-10T13:02:50.345Z
-Stopped at: Completed 77-01-PLAN.md (evidence page + fixes)
-Resume file: 77-02-PLAN.md
+Last session: 2026-11-10T13:03:27.187Z
+Stopped at: Completed 76-08-PLAN.md (notifications SOTA)
+Resume file: None
 Ship: HELD. ultrathink-ship is enabled with autoMerge on in config. It has NOT run for this work. Do not run it or rely on autoMerge until plan 66-07 has run and the unfinished merge is closed; its gate rules also block shipping while roadmap phases are incomplete.
 
 ## Operator Next Steps

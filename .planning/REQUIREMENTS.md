@@ -883,7 +883,7 @@ Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.m
 - [ ] **AG-76-10**: The omp child starts through a process wrapper from a launch contribution: bubblewrap on Linux, `sandbox-exec` on macOS, a job object on Windows, with a probe, a reported level and named degraded states.
 - [ ] **AG-76-11**: The sub-agent panel lists `task` tool calls from the ACP stream with status, elapsed time and the number running, accessibly.
 - [ ] **AG-76-12**: A usage meter sums `usage_update` and per-turn usage into per-session and per-day views and a local ledger; the export history is no longer empty.
-- [ ] **AG-76-13**: Notifications fan out to an in-app centre and OS sinks (Linux, macOS) with focus suppression, coalescing, Do-not-disturb and title-only privacy by default.
+- [x] **AG-76-13**: Notifications fan out to an in-app centre and OS sinks (Linux, macOS) with focus suppression, coalescing, Do-not-disturb and title-only privacy by default.
 - [ ] **AG-76-14**: The phase's rows of `docs/parity/cowork-parity.md` are graded with evidence.
 
 ### Hardening and integration (77) (AG-77)
