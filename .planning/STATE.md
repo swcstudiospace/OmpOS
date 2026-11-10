@@ -6,10 +6,10 @@ current_phase: 67
 current_phase_name: "Accounts: Supabase passwordless sign-in"
 status: ready
 stopped_at: Completed phase 69 SOTA update execution (append + summary + selfcheck)
-last_updated: "2026-11-10T13:14:29.759Z"
+last_updated: "2026-11-10T13:15:39.682Z"
 last_activity: 2026-11-10
 last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67; + phase 69 SOTA overlay executed 2026-11-10 (CoworkSessionStatus + SurfaceActivity + sync + graceful unavailable/offline/full/signed-out + 5 isolation rules + first-attempt suites + a11y); 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created via gsd; refs 69-VERIFICATION human_needed items; + phase 77 SOTA update executed 2026-11-10 (77-SOTA-HARDENING-DOCS-INTEGRATION.md created with states for hardening/docs/parity/security/a11y/gate/integration + criteria 1-8 record); refs 77.; + phase 72 SOTA update executed 2026-11-10 (Cowork browser use 25 degraded states + loading/empty/error/success + first-attempt + fail-closed security + graceful); 72-SOTA-COWORK-BROWSER-USE.md + 72-SOTA-SUMMARY created; refs 72
-state_head: 55cde684d999e4a22277215b5e1aef1b4f928ddb
+state_head: 5d881054221145ef4c850431298ce78a2458d193
 progress:
   total_phases: 16
   completed_phases: 11
@@ -479,6 +479,7 @@ Next action (superseded 2026-10-24): see Autonomous Run 2026-10-24, Owner Decisi
 | Phase 70 PSOTA | 0.5h | 4 tasks | 3 files |
 | Phase 69 PSOTA | 40m | 2 tasks | 2 files |
 | Phase 66 P08 | 18min | 3 tasks | 4 files |
+| Phase 76 PPSOTA | 30 | 1 tasks | 1 files |
 
 Note (2026-11-01): the `Phase 1` and `Phase 1-foundation` labels in this table and in the `[Phase 1]` decision entries below refer to the archived foundation phase (v0.9.1 per the 2026-11-01 audit). They are not ROADMAP.md's v0.9.2 `Phase 1` (Validation Evidence and Record Fixes, ROADMAP.md:47). Labels are kept as recorded; nothing is renumbered.
 
@@ -532,6 +533,7 @@ Recent decisions affecting current work:
 - [Phase 67]: SOTA overlay for phase 71 Cowork Artifacts: explicit states (loading/empty/error/success + sync-off + static view + frame destroy), first-attempt clean in smoke+tests, security fail-closed (sandbox/CSP/hostile/owner/ticket), graceful degradation, a11y/ops per 66-SOTA applied as post-plan doc; 71-SOTA-COWORK-ARTIFACTS.md + SUMMARY created; no code
 - [Phase 67]: Phase 70 SOTA update executed: 70-SOTA-COWORK-CHAT-SURFACES.md created, VERIFICATION updated, steering resolved in source, hygiene using added. Refs 70-CONTEXT/VERIF, 66-SOTA.
 - [Phase 67]: SOTA explicit states + first-attempt race guard in web smoke for C3; C1 rebrand external handle_blocker
+- [Phase 67]: Phase 76 SOTA update executed 2026-11-10: created 76-SOTA-COWORK-PARITY-PLUGINS-AUTO-ISOLATION.md; all 8 criteria exercised per 66-SOTA; isolation states + first-attempt + security + graceful documented; ROADMAP/STATE refreshed. Refs 76-SOTA doc and 76-VALIDATION.
 
 ### Pending Todos
 
