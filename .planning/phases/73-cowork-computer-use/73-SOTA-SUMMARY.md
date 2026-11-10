@@ -28,6 +28,12 @@ key-decisions:
 requirements-completed: [AG-73-1 to AG-73-24]
 coverage:
   - id: SOTA-1
+  - 73-08: gap closure tracer (CoworkHead/AgentHead Build+AddTools+real indicator action); allow/X11/full gate closed; SOTA-*.md elevated with 66 full (states for all enums, first-attempt, a11y names/Deny/no-literals, ADR-0035 STRIDE fail-closed, wired in head). 73-SOTA updated.
+coverage:
+  - id: SOTA-1
+    description: Explicit states (loading/empty/error/success + domain) for availability, approval, kill, frames, audit, indicator, tools
+    verification:
+      - kind: doc
     description: Explicit states (loading/empty/error/success + domain) for availability, approval, kill, frames, audit, indicator, tools
     verification:
       - kind: doc

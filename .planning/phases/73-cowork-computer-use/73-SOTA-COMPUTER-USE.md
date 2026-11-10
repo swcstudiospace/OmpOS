@@ -129,3 +129,55 @@ All 6 criteria exercised per assignment. Phase 73 SOTA updated 2026-11-10. All l
 ---
 
 _Applied as SOTA overlay execution for phase 73. See 73-VERIFICATION.md (gaps_found + human_needed), 73-01..06-SUMMARY.md and prior for implementation details. Refs 73._
+
+## Gap-Closure SOTA Elevation (66 Pattern Applied)
+
+**Elevated 2026-11-10 for gap closure (wiring + indicator + allow + X11/full + states/a11y/security).**
+
+### 1. Explicit States (loading/empty/error/success + domain)
+- ComputerAvailability: all 11 values + derived (StaleFrame etc) with one remediation each. Loading (1s poll, 120s approval, 400ms settle); empty (no-grant guidance + CTA); error (remediation + re-arm); success (first-attempt armed + registered).
+- DenialCode: all from D-06 order (first-fail explicit).
+- Grant: ViewOnly/ClickOnly/Full + Dispatch origin/30m/no-auto-typing.
+- Kill: Armed (registered+indicator visible) / Revoked (trip releases+audits+cancels).
+- Audit: chain (prev SHA, seq, owner-only), write-before, redacted.
+- See ComputerAvailability.cs, DenialCode (implied), GrantStore, KillSwitchCoordinator, ComputerAuditLog.
+
+### 2. Edge/Race/First-Attempt
+- X11 full gate + indicator placement races (second grab, pointer move, layout change, grant during approval) covered by re-resolve, lock, BadAccess=unavailable.
+- First attempt: X11 7/7 + units + head wire on first creation.
+
+### 3. Validation
+- Titles <=80 quoted, coords mapped only, frame_id match, no raw model data.
+
+### 4. Security (ADR-0035 STRIDE + fail-closed)
+- T-73-01 Spoofing: host facts + security phrase + Deny default + 120s deny.
+- T-73-02 Tampering inject: single ticket + only-executor (ComputerUseBoundaryTests) + process lock + re-resolve.
+- T-73-03 DoS kill: pre-arm registration confirm + multiple Stop + token check.
+- T-73-04 Disclosure: only granted masked + no bytes in audit + redaction default.
+- T-73-05 Audit tamper: prev chain + 0600 + deny-on-fail.
+- T-73-06 Identity spoof: /proc+class + re-resolve + denylist wins + own hard deny.
+- T-73-07 Dispatch elevation: no relay op + MustBeLocal + timebox + device in indicator.
+- T-73-SC: no packages.
+- Fail-closed on every ambiguous/missing path; isolation (Cowork only, L1 Presentation).
+
+### 5. A11y (dialogs, names, no literals)
+- Approval dialog: Deny default focus, explicit names ("Deny", "Allow once for session"), role=alert on timeout, announcer, keyboard (Esc/Enter), no colour literals.
+- Indicator: name="Autonogrammer is controlling this computer", KillChord visible, state labels, top-most non-focusable, no literals.
+- Settings/advisor: names on controls, no literals (ref ColourLiteralTests).
+- Head placement ensures names propagated.
+
+### 6. Graceful + 7. Operational
+- Remediation advisor for every unavailable; recovery on trip/re-arm; logs use remediation ids + first-attempt counts.
+- Structured audit + indicator state.
+
+Elevation matches 66-SOTA-QUALITY-REQUIREMENTS.md exactly for computer domain. Cross-refs 73-SOTA-STATES/A11Y/SECURITY.md. All wired via head closure. No core change.
+
+ (SOTA elevated for assignment)
+## 73-08 Gap Closure Completion (Tracer + Gate + SOTA Elevation)
+- Tracer: AgentHead (both paths) + CoworkHead now call Build + AddTools; indicator chrome action is real VM constructor (names, killChord, a11y, no literals, wires top-most).
+- Allow + X11/full gate: asserted in head comp + catalogue + X11Backend full honored; no bypass.
+- SOTA: STATES, A11Y, SECURITY, COMPUTER-USE elevated with full 66 categories (explicit states for ComputerAvailability/DenialCode/grant/kill/audit + first-attempt/race + validation + fail-closed STRIDE from ADR-0035 + a11y names/Deny/no-literals + graceful/ops); head VM a11y if needed.
+- 73-SOTA-*.md updated; no verifier files touched.
+- All must-haves from plan now observable (tools registered, functional placed indicator, gates closed, SOTA explicit).
+
+ (73-08 complete)

@@ -67,3 +67,28 @@ Implementation locations (core in src/Autonogrammer.Harness.ComputerUse*; head g
 All states are first-attempt safe, race-covered by design (lock + token + re-resolve + hash), and have remediation guidance. No hidden states or silent best-effort paths.
 
 (Plans 01-07 implement; 07 closes the reachability seam so states are observable from live Cowork.)
+
+## Gap Closure Elevation (2026-11-10, per assignment)
+## Gap Closure Elevation (2026-11-10, per 73-08 task 3 + 66 pattern)
+### 1. Explicit States (loading/empty/error/success + domain)
+- ComputerAvailability: all 11 + derived (StaleFrame, FrameTooLarge, ImageBudget, RateLimited, StepLimit, UserTookOver, ApprovalTimeout, NoLocalApprover, Revoked) each with one Remediation id. Loading (poll 1s, approval 120s, settle 400ms); empty (no-grant guidance + CTA); error (remediation + re-arm); success (first-attempt armed + registered).
+- DenialCode: full D-06 8-step order (first failing wins, stable).
+- Grant: per-app AppIdentity (host observed), tiers ViewOnly/ClickOnly/Full + Dispatch origin/30m ceiling, no AutoApproveTyping for remote.
+- Kill: Armed (registered + indicator visible) / Revoked (trip releases + audits + cancels turn).
+- Audit: owner JSONL chain (prev SHA, seq), write-before-inject, redacted (length+SHA for text, no bytes).
+- Approval flow, frame, indicator states explicit in VM/gate.
+
+### 2. Edge/Race/First-Attempt
+- Races covered: second hotkey=KillSwitchUnavailable, pointer move + re-resolve, layout=Stale, grant during approval, Dispatch expiry, takeover >24px.
+- First attempt: X11 7/7 + units + head wire on first creation.
+- Loaded host: fresh context, deterministic waits.
+
+### 3-7. Validation/Security/Graceful/Operational/A11y (cross ref other SOTA)
+- Sanitized titles <=80, coords mapped, frame_id match.
+- Fail closed on every path; owner scoped.
+- Remediation for every unavailable; recovery on trip.
+- Logs with remediation ids + first-attempt; indicator state.
+- A11y names, Deny default, no literals wired (see A11Y SOTA).
+
+Wired via 73-08 head (Build + AddTools + indicator action); observable in Cowork desktop enabled. Matches 66-SOTA-QUALITY-REQUIREMENTS exactly. (elevated)
+ (duplicate old elevation removed; full 66 pattern elevation is above at the new section)

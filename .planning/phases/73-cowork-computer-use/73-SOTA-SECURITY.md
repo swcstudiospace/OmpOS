@@ -43,3 +43,19 @@
 - Live omp honouring computer.enabled=false unverified (OQ-387, OD-07).
 
 All mitigations are present in the core (01-06) and are now reachable from a live desktop Cowork head (73-07). No new trust boundary or secret introduced by the wiring.
+
+## Gap Closure Elevation (2026-11-10, per 73-08 task 3 + 66 pattern)
+### 4. Security (fail closed, no leak)
+- Full ADR-0035 STRIDE (T-73-01 to T-73-07 + SC) documented + mitigations wired and reachable via 73-08 head (Build, AddTools, allow assertion, X11/full gate, indicator action).
+- T-73-01 Spoofing: host facts + security phrase + Deny default + 120s deny.
+- T-73-02 Tampering: single ticket + only-executor (BoundaryTests) + process lock + re-resolve.
+- T-73-03 DoS: pre-arm confirm + multiple Stop + token.
+- T-73-04 Disclosure: granted only + masked + no bytes + redaction.
+- T-73-05 Audit tamper: prev chain + 0600 + deny-on-fail.
+- T-73-06 Identity: /proc + re-resolve + denylist + own hard deny.
+- T-73-07 Dispatch: no relay + MustBeLocal + timebox + device in indicator.
+- T-73-SC: no packages.
+- Fail-closed on every ambiguous/missing; gate first-fail; only-executor; owner-only audit; mask; no-relay; local-only; allow-list asserted at head + X11/full honored.
+- Wired in head composition + tools + X11 gate + catalogue; matches 66 SOTA security + ADR-0035 173-184.
+
+ (elevated)

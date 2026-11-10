@@ -55,3 +55,13 @@
 - OQ-386 (indicator coverage on full-screen/Spaces) documented as open risk; gate still denies correctly.
 
 All a11y properties are first-attempt verified in headless tests and static checks. Wiring in 73-07 preserves them.
+
+## Gap Closure Elevation (2026-11-10, per 73-08 task 3 + 66 pattern)
+### 5. A11y (keyboard, focus, labels, contrast, reduced-motion)
+- Approval dialog: Deny default focus, explicit names ("Deny", "Allow once for session"), role=alert on timeout, announcer, keyboard (Esc/Enter), no colour literals. Host facts only.
+- Indicator: name="Autonogrammer is controlling this computer", KillChord visible, state labels (armed/idle/acting), top-most non-focusable (IsHitTestVisible=false), no literals. Wired via real chrome action factory in head composition.
+- Settings/advisor: controls named, groups labelled, no literals (ref ColourLiteralTests); advisor maps every state.
+- General: no colour literals enforced; high contrast via theme; live region/announcer for state; indicator/dialog not steal focus; headless tests under Avalonia.Headless.
+- Head chrome placement (73-08): ensures names/aria/role propagated to entry and VM; no literals.
+
+Wired via 73-08 (indicator action constructs VM with a11y); matches 66-SOTA a11y + D-34 + D-12. All first-attempt in tests. (elevated)

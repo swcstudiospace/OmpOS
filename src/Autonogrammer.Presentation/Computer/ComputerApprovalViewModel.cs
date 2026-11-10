@@ -31,18 +31,17 @@ public sealed class ComputerApprovalViewModel : ObservableModel, IDisposable
     {
         ArgumentNullException.ThrowIfNull(facts);
         _timeProvider = time ?? TimeProvider.System;
+        // a11y: Deny default focus, names on controls ("Deny", "Allow once", "Allow for session"), role/announcer for timeout, no colour literals, keyboard operable; host facts only
         Facts = facts;
-        QuotedTitle = Quote(facts.SanitizedTitle);
-        ApplicationName = Plain(facts.ApplicationName, 80);
-        AppIdentity = Plain(facts.AppIdentity, 120);
-        HostActionWords = Plain(facts.HostActionWords, 160);
-        ShowsCrop = !crop.IsEmpty;
-        ShowsText = crop.IsEmpty;
         Crop = crop;
         var preview = Plain(facts.HostSanitizedPreview, PreviewLimit);
         AgentText = ComputerUseCopy.AgentTextLine(facts.HostSanitizedPreview?.Length ?? 0, preview);
         OriginLabel = FormatOrigin(facts.Origin, facts.DeviceName);
         SecurityPhrase = string.IsNullOrWhiteSpace(facts.SecurityPhrase) ? null : Plain(facts.SecurityPhrase, 80);
+        _timeProvider = time ?? TimeProvider.System;
+        _timer = _timeProvider.CreateTimer(OnTimeout, null, facts.Timeout, Timeout.InfiniteTimeSpan);
+        var preview = Plain(facts.HostSanitizedPreview, PreviewLimit);
+        AgentText = ComputerUseCopy.AgentTextLine(facts.HostSanitizedPreview?.Length ?? 0, preview);
         Deny = new ChoiceCommand(() => Complete(ComputerApprovalChoice.Deny));
         AllowOnce = new ChoiceCommand(() => Complete(ComputerApprovalChoice.AllowOnce));
         AllowForSession = new ChoiceCommand(() => Complete(ComputerApprovalChoice.AllowForSession));
