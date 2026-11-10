@@ -6,15 +6,15 @@ current_phase: 67
 current_phase_name: "Accounts: Supabase passwordless sign-in"
 status: ready
 stopped_at: Completed 69 SOTA update (surface switch + cowork sessions explicit states + isolation + first-attempt per 66-SOTA); 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created
-last_updated: "2026-11-10T13:05:36.473Z"
+last_updated: "2026-11-10T13:06:24.474Z"
 last_activity: 2026-11-10
 last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67; + phase 69 SOTA overlay executed 2026-11-10 (CoworkSessionStatus + SurfaceActivity + sync + graceful unavailable/offline/full/signed-out + 5 isolation rules + first-attempt suites + a11y); 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created via gsd; refs 69-VERIFICATION human_needed items
-state_head: c0226cba7ef84a47690e83e94ea60ef6af501471
+state_head: 4ed555c5fd24086348e83d669660ff9ed7ffe3bf
 progress:
   total_phases: 16
   completed_phases: 11
-  total_plans: 94
-  completed_plans: 77
+  total_plans: 95
+  completed_plans: 78
   percent: 69
 current_plan: 7
 ---
@@ -452,6 +452,7 @@ Next action (superseded 2026-10-24): see Autonomous Run 2026-10-24, Owner Decisi
 | Phase 76 P08 | 45min | 3 tasks | 18 files |
 | Phase 69 PSOTA | 600 | 1 tasks | 1 files |
 | Phase 77 PSOTA | 120 | 1 tasks | 1 files |
+| Phase 71 P06 | 600 | 3 tasks | 40 files |
 
 Note (2026-11-01): the `Phase 1` and `Phase 1-foundation` labels in this table and in the `[Phase 1]` decision entries below refer to the archived foundation phase (v0.9.1 per the 2026-11-01 audit). They are not ROADMAP.md's v0.9.2 `Phase 1` (Validation Evidence and Record Fixes, ROADMAP.md:47). Labels are kept as recorded; nothing is renumbered.
 

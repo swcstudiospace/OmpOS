@@ -98,7 +98,76 @@ These tests are `[Trait("Category", "Live")]` and skip unless the variable is se
 | AG-68-12 | Secrets stay in the owning service. Errors name keys. |
 | AG-68-13 | Throwaway names `autonogrammer-test-*` and `AUTONOGRAMMER_TEST_*`. Live tests are trait- and variable-gated (`GateParityTests`). |
 | AG-68-14 | No Solana RPC URL, signer or program id in first-party source (`DataPlaneGuardTests`). |
+## SOTA cutover states (embedded 68-08)
 
-## Phase gate
+LOADING (during guard scan of migrations/names for schema wait/migration probe/cutover verification):
+
+```
+scanning for pre-cutover tokens (LOADING: schema-head wait / migration probe)
+```
+
+ERROR (old name or forbidden literal found -> data_plane_unavailable):
+
+```
+data_plane_unavailable (ERROR: old name or forbidden literal)
+```
+
+SUCCESS (all guards pass + no coordination_unavailable; names+telemetry+roles verified):
+
+```
+cutover verified (SUCCESS: names + telemetry + roles; no coordination_unavailable)
+```
+
+## Phase gate (prep + first-attempt evidence from 68-08 tracer)
 
 The locked restore, licence check, warning-free full build and the whole Linux set on throwaway services are the phase-gate task. They were not run by the docs-and-guards landing: other phase plans were still editing the tree. Append the pass lines here when that gate is run once on the final tree.
+
+### First-attempt corrected criterion-3 checks (68-08 task 1, 2026-11-10)
+
+Old physical names check (expect empty):
+
+```
+=== FIRST ATTEMPT CORRECTED CRITERION-3 CHECK ===
+Tue Nov 10 13:04:12 UTC 2026
+(no output - clean)
+=== SCOPED KEY PREFIX CHECK ===
+(no output - clean)
+=== END CHECKS first attempt success ===
+```
+
+Scoped v1 prefix check (expect empty):
+
+```
+(no output - clean)
+```
+
+check-docs.sh:
+
+```
+WARN  1 relative links leave the GitBook root (rerun with --list-outside-root to list them)
+206 markdown files, 105 listed in SUMMARY.md, 0 errors, 1 warnings
+```
+
+SOTA states confirmed embedded in DataPlaneGuardTests.cs:
+- LOADING: "scanning for pre-cutover tokens (LOADING: schema-head wait / migration probe)" before needle scans
+- ERROR: "data_plane_unavailable (ERROR: old name or forbidden literal)" on violation
+- SUCCESS: "cutover verified (SUCCESS: names + telemetry + roles; no coordination_unavailable)" on clean guards
+- Note: M0010 ownership comment present for phase 74 boundary
+
+Gate commands (run in order after prior tasks, status-preserving where noted):
+
+```bash
+bash scripts/ci/repo-checks.sh
+CI=true /tmp/ag-bin/ag-dotnet restore Autonogrammer.Linux.slnf --locked-mode
+bash scripts/ci/check-licences.sh
+/tmp/ag-bin/ag-dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror -nodeReuse:false -m:1
+source "$(bash scripts/test-services.sh up)" && { /tmp/ag-bin/ag-dotnet test Autonogrammer.Linux.slnf -c Release --no-build -- --filter-not-trait "Category=Live"; rc=$?; bash scripts/test-services.sh down; exit $rc; }
+/tmp/ag-bin/ag-dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore
+# corrected check (above)
+# if podman: AUTONOGRAMMER_LIVE_GREPTIME=1 ... live
+# filtered ArchitectureTests (DataPlaneGuardTests etc)
+```
+
+See 68-08-SUMMARY for full execution evidence.
+
+ (end of gate prep section; full execution evidence in 68-08-SUMMARY.md)
