@@ -5,7 +5,7 @@
     <Authors>SWC Studio</Authors>
     <Company>SWC Studio</Company>
     <Copyright>Copyright (C) 2026 SWC Studio</Copyright>
-    <VersionPrefix>0.16.4</VersionPrefix>
+    <VersionPrefix>0.16.3</VersionPrefix>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/swcstudiospace/OmpOS</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
