@@ -1684,7 +1684,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   4. The heads, architecture graph, notices and decision records pass and the build is warning-free. Verify: `dotnet test --project tests/Autonogrammer.Presentation.Tests -c Release`, `tests/Autonogrammer.Native.Tests`, `tests/Autonogrammer.UI.Tests` and `tests/Autonogrammer.ArchitectureTests -- --filter-class "*ProjectGraphTests*"` pass; `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` is clean; `python3 scripts/legal/generate-third-party-notices.py --check` passes; `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*DecisionRecordTests*"` passes.
   5. A live omp turn with the gateway, an image result and `browser.enabled: false` is recorded in the runbook as an owner-approved run, or stays stated as not run. Verify: A live omp turn with the gateway, an image result and `browser.enabled: false` is a separate owner-approved run (ADR-0010, OD-07), recorded in `docs/runbooks/browser-use.md`.
 
-**Plans**: `72-01-PLAN.md` through `72-08-PLAN.md` in `.planning/phases/72-cowork-browser-use/`
+**Plans**: `72-01-PLAN.md` through `72-11-PLAN.md` in `.planning/phases/72-cowork-browser-use/` (09-11 gap-closure addressing VERIFICATION gaps 1-6 for live drive, product wiring, egress/audit, full gate, SOTA states, a11y/security)
 
 ### Phase 73: Cowork Computer Use
 

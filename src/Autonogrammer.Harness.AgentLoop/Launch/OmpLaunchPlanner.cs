@@ -2,6 +2,7 @@ using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Harness.AgentLoop.Plugins;
 using Autonogrammer.Harness.AgentLoop.Safety;
 
+using Autonogrammer.Harness.Abstractions;
 namespace Autonogrammer.Harness.AgentLoop.Launch;
 
 /// <summary>
