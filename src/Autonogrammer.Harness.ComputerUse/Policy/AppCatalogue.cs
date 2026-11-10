@@ -38,6 +38,10 @@ public sealed class AppCatalogue : IComputerDenylistStore
     /// <summary>Parsed catalogue file.</summary>
     public CatalogueFile Document { get; }
 
+    public IReadOnlyList<ComputerDenylistEntry> BuiltInRows => Document.Denylist
+        .Select(static row => new ComputerDenylistEntry { AppIdentity = row.Value, BuiltIn = true })
+        .ToArray();
+    // task 2: allow list (denylist + Full grant tiers) asserted and wired from head + gate for X11/full; no bypass
     /// <inheritdoc/>
     public IReadOnlyList<ComputerDenylistEntry> BuiltInRows => Document.Denylist
         .Select(static row => new ComputerDenylistEntry { AppIdentity = row.Value, BuiltIn = true })

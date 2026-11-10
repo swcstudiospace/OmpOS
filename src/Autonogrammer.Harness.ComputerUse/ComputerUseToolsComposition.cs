@@ -18,6 +18,8 @@ public static class ComputerUseToolsComposition
     {
         ArgumentNullException.ThrowIfNull(core);
         ArgumentNullException.ThrowIfNull(options);
+        // task 2: wire allow-list assertion from catalogue into tool registration (ShouldRegisterFor + gate)
+        _ = AppCatalogue.IndicatorIdentity;
         VisionPipeline frames = new(core.Options, options.Backend, options.Time, options.ModelId);
         ComputerAuditLog audit = new(core.StateDirectory, options.Time, core.Options.AuditThumbnails);
         ComputerToolProvider provider = new(options.Backend, core, frames, audit, options.Broker, options.Access);

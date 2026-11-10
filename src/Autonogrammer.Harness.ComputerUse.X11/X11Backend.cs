@@ -38,7 +38,7 @@ public sealed class X11Backend : IComputerUseBackend, IDisposable
 
     /// <inheritdoc/>
     public ComputerBackendCapabilities Capabilities =>
-        ComputerBackendCapabilities.WindowEnumeration | ComputerBackendCapabilities.ClipboardText;
+        ComputerBackendCapabilities.WindowEnumeration | ComputerBackendCapabilities.ClipboardText; // full tier (type/chord/clipboard) gates honored by catalogue/gate; explicit no silent disable on X11
 
     /// <summary><c>EWMH</c> or <c>XQueryTree</c> from the last window list.</summary>
     public string StackingSource => _stackingSource;
