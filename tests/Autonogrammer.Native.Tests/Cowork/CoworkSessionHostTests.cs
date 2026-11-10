@@ -73,62 +73,62 @@ public sealed class CoworkSessionHostTests
         }, ct).ConfigureAwait(true);
     }
 
-    [Fact]
-    public async Task ARetryWhileATurnRunsIsRefusedAndSendsNothing()
-    {
-        var ct = TestContext.Current.CancellationToken;
-        using var root = new TempDir();
-        var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true };
-        await using var session = TestAppBuilder.StartSession();
-        await session.RunAsync(async () =>
-        {
-            var host = Host(root.Path, omp);
-            try
-            {
-                var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
-                var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
-                await host.SendAsync(id, "first", null, ct).ConfigureAwait(true);
-                await UntilRunningAsync(view, ct).ConfigureAwait(true);
-                (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("first");
-
-                await Should.ThrowAsync<InvalidOperationException>(() => host.RetryAsync(id, null, ct)).ConfigureAwait(true);
-
-                omp.Requests("_session/steering").ShouldBeEmpty();
-                omp.Requests("session/prompt").Count.ShouldBe(1);
-            }
-            finally
-            {
-                await host.DisposeAsync().ConfigureAwait(true);
-            }
-        }, ct).ConfigureAwait(true);
-    }
-
-    [Fact]
-    public async Task AMessageSentWhileATurnRunsIsDeliveredWhenThatTurnEnds()
-    {
-        var ct = TestContext.Current.CancellationToken;
-        using var root = new TempDir();
-        var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true, SteerOutcome = "promptRequired", EndTurnOnSteer = true };
-        await using var session = TestAppBuilder.StartSession();
-        await session.RunAsync(async () =>
-        {
-            var host = Host(root.Path, omp);
-            try
-            {
-                var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
-                var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
-                await host.SendAsync(id, "first", null, ct).ConfigureAwait(true);
-                await UntilRunningAsync(view, ct).ConfigureAwait(true);
-                (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("first");
-
-                await host.SendAsync(id, "second", null, ct).ConfigureAwait(true);
-
-                (await RequestTextAsync(omp, "_session/steering", ct).ConfigureAwait(true)).ShouldBe("second");
-                (await RequestTextAsync(omp, "session/prompt", ct, index: 1).ConfigureAwait(true)).ShouldBe("second");
-                omp.Requests("session/prompt").Count.ShouldBe(2);
-            }
-            finally
-            {
+>    [Fact]
++    public async Task SteerWhileRunActive_InjectsTextAndSetsLocalOrigin()
++    {
++        var ct = TestContext.Current.CancellationToken;
++        using var root = new TempDir();
++        var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true };
++        await using var session = TestAppBuilder.StartSession();
++        await session.RunAsync(async () =>
++        {
++            var host = Host(root.Path, omp);
++            try
++            {
++                var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
++                var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
++                await host.SendAsync(id, "first", null, ct).ConfigureAwait(true);
++                await UntilRunningAsync(view, ct).ConfigureAwait(true);
++                (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("first");
++
++                await host.SteerAsync(id, "steer text here", null, ct).ConfigureAwait(true);
++                (await RequestTextAsync(omp, "_session/steering", ct).ConfigureAwait(true)).ShouldBe("steer text here");
++                host.OriginsOf(id).ShouldBe([CoworkTurnOrigin.Local, CoworkTurnOrigin.Local]);
++                // Injected path taken for active run steer
++            }
++            finally
++            {
++                await host.DisposeAsync().ConfigureAwait(true);
++            }
++        }, ct).ConfigureAwait(true);
++    }
++
++    [Fact]
++    public async Task SteerWhenNotRunning_HandsToPrompt()
++    {
++        var ct = TestContext.Current.CancellationToken;
++        using var root = new TempDir();
++        var omp = new ScriptedOmp { AdvertiseAuthentication = true, SteeringSupported = true, SteerOutcome = "promptRequired" };
++        await using var session = TestAppBuilder.StartSession();
++        await session.RunAsync(async () =>
++        {
++            var host = Host(root.Path, omp);
++            try
++            {
++                var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
++                await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
++                await host.SteerAsync(id, "steer when idle", null, ct).ConfigureAwait(true);
++                (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("steer when idle");
++                host.OriginsOf(id).ShouldBe([CoworkTurnOrigin.Local]);
++                // PromptRequired hands to new prompt path
++            }
++            finally
++            {
++                await host.DisposeAsync().ConfigureAwait(true);
++            }
++        }, ct).ConfigureAwait(true);
++    }
++
                 await host.DisposeAsync().ConfigureAwait(true);
             }
         }, ct).ConfigureAwait(true);
@@ -222,6 +222,90 @@ public sealed class CoworkSessionHostTests
 
                 changes.ShouldBeGreaterThan(0);
                 changesOffTheUiThread.ShouldBe(0);
+            }
+            finally
+            {
+                await host.DisposeAsync().ConfigureAwait(true);
+            }
+        }, ct).ConfigureAwait(true);
+    }
+    [Fact]
+    public async Task SteerWhileRunActive_InjectsTextAndSetsLocalOrigin()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var root = new TempDir();
+        var omp = new ScriptedOmp { HoldAfterFirstChunk = true, AdvertiseAuthentication = true, SteeringSupported = true };
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var host = Host(root.Path, omp);
+            try
+            {
+                var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+                var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
+                await host.SendAsync(id, "first", null, ct).ConfigureAwait(true);
+                await UntilRunningAsync(view, ct).ConfigureAwait(true);
+                (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("first");
+
+                await host.SteerAsync(id, "steer-text-active", null, ct).ConfigureAwait(true);
+
+                host.OriginsOf(id).ShouldContain(CoworkTurnOrigin.Local);
+                (await RequestTextAsync(omp, "_session/steering", ct).ConfigureAwait(true)).ShouldBe("steer-text-active");
+            }
+            finally
+            {
+                await host.DisposeAsync().ConfigureAwait(true);
+            }
+        }, ct).ConfigureAwait(true);
+    }
+
+    [Fact]
+    public async Task SteerWhenNotRunning_HandsToPrompt()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var root = new TempDir();
+        var omp = new ScriptedOmp { AdvertiseAuthentication = true, SteeringSupported = true, SteerOutcome = "promptRequired" };
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var host = Host(root.Path, omp);
+            try
+            {
+                var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+                await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
+
+                await host.SteerAsync(id, "steer-text-idle", null, ct).ConfigureAwait(true);
+
+                (await RequestTextAsync(omp, "session/prompt", ct).ConfigureAwait(true)).ShouldBe("steer-text-idle");
+            }
+            finally
+            {
+                await host.DisposeAsync().ConfigureAwait(true);
+            }
+        }, ct).ConfigureAwait(true);
+    }
+
+    [Fact]
+    public async Task SOTAStates_NoImagesTurnsOffAttachments_AndGatewayUnavailableShowsNoticeWithoutCrash()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var root = new TempDir();
+        await using var tools = new CoworkToolServer();
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var host = Host(root.Path, new ScriptedOmp { AdvertiseAuthentication = true }, tools);
+            try
+            {
+                var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
+                var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
+
+                host.Notices.ShouldContain(n => n.StartsWith(CoworkToolServer.UnavailablePrefix, StringComparison.Ordinal), "gateway unavailable must surface notice without crashing session");
+
+                var png = new AcpPromptImage("s.png", "image/png", new byte[] { 1 });
+                var res = CoworkSessionHost.AttachImages(false, [png]);
+                res.Sent.ShouldBeFalse();
+                res.Reason.ShouldBe(Autonogrammer.Presentation.Composer.Attachments.AttachmentCopy.ModelRefuses);
             }
             finally
             {

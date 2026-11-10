@@ -7,7 +7,8 @@ namespace Autonogrammer.Presentation.Cowork;
 
 /// <summary>
 /// The Cowork conversation: the existing session and composer models, the approval queue, provider chips and
-/// attachment chips. Image limits match <c>AcpImageLimits</c> (8 images, 10 MB each, 25 MB total) without a Harness reference.
+/// attachment chips. SOTA degraded states (gateway down, model refuses images, provider unavailable, tainted) surface on chips and block send where appropriate.
+/// Image limits match <c>AcpImageLimits</c> (8 images, 10 MB each, 25 MB total) without a Harness reference.
 /// </summary>
 public sealed class CoworkConversationModel : ObservableModel
 {
