@@ -127,17 +127,7 @@ public static class BubblewrapArgvBuilder
 
                 case "--bind" when i + 2 < argv.Count:
                     {
-                        var source = argv[++i];
-                        var destination = argv[++i];
-                        if (!Directory.Exists(source))
-                        {
-                            throw new InvalidOperationException(
-                                $"Isolation policy requires an existing directory for the write bind, but '{source}' does not exist on this host.");
-                        }
-
-                        adapted.Add("--bind");
-                        adapted.Add(source);
-                        adapted.Add(destination);
+                        AdaptBind(adapted, argv[++i], argv[++i]);
                         break;
                     }
 
@@ -145,7 +135,7 @@ public static class BubblewrapArgvBuilder
                     {
                         var source = argv[++i];
                         var destination = argv[++i];
-                        if (source == SocketMaskSource || Directory.Exists(source))
+                        if (string.Equals(source, SocketMaskSource, StringComparison.Ordinal) || Directory.Exists(source))
                         {
                             adapted.Add("--ro-bind");
                             adapted.Add(source);
@@ -162,6 +152,19 @@ public static class BubblewrapArgvBuilder
         }
 
         return adapted;
+    }
+
+    private static void AdaptBind(List<string> adapted, string source, string destination)
+    {
+        if (!Directory.Exists(source))
+        {
+            throw new InvalidOperationException(
+                $"Isolation policy requires an existing directory for the write bind, but '{source}' does not exist on this host.");
+        }
+
+        adapted.Add("--bind");
+        adapted.Add(source);
+        adapted.Add(destination);
     }
 
     private static void Bind(List<string> argv, string option, string path)

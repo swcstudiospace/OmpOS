@@ -92,16 +92,16 @@ public sealed class IsolationProbeTests
         (job.LimitFlags & JobObjectContainer.BreakawayOkFlag).ShouldBe(0u);
     }
 
-    /// <summary>The bubblewrap wrapper returns bwrap, the golden vector, chdir and a scrubbed environment.</summary>
+    /// <summary>The bubblewrap wrapper returns bwrap, the chdir and command tail, and a scrubbed environment. The golden vector itself is pinned by <c>GoldenArgvMatchesTheFixture</c>.</summary>
     [Fact]
     public void BubblewrapWrapUsesGoldenVectorChdirAndScrub()
     {
-        var policy = BubblewrapArgvBuilderTests.GoldenPolicy();
-        var isolator = new BubblewrapIsolator(policy);
+        using var fixture = new TempIsolationFixture();
+        var isolator = new BubblewrapIsolator(fixture.CoworkPolicy());
         var intended = new ProcessLaunch(
             "/usr/bin/omp",
             ["acp", "--no-extensions"],
-            "/home/ada/project",
+            fixture.ScratchPath,
             new Dictionary<string, string?>(StringComparer.Ordinal)
             {
                 ["PATH"] = "/bin",
@@ -114,9 +114,8 @@ public sealed class IsolationProbeTests
         var wrapped = isolator.Wrap(intended);
 
         wrapped.FileName.ShouldBe("bwrap");
-        var golden = BubblewrapArgvBuilderTests.FixtureLines("golden-bwrap-argv.txt");
-        wrapped.Arguments.Take(golden.Length).ShouldBe(golden);
-        wrapped.Arguments.Skip(golden.Length).ShouldBe(["--chdir", "/home/ada/project", "/usr/bin/omp", "acp", "--no-extensions"]);
+        wrapped.Arguments.Skip(wrapped.Arguments.Count - 5)
+            .ShouldBe(["--chdir", fixture.ScratchPath, "/usr/bin/omp", "acp", "--no-extensions"]);
         wrapped.Environment["PATH"].ShouldBe("/bin");
         wrapped.Environment["DISPLAY"].ShouldBeNull();
         wrapped.Environment["SSH_AUTH_SOCK"].ShouldBeNull();

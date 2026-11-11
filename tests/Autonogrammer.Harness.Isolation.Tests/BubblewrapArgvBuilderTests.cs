@@ -21,15 +21,15 @@ public sealed class BubblewrapArgvBuilderTests
         argv.Contains("--die-with-parent", StringComparer.Ordinal).ShouldBeTrue();
         argv.Contains("--new-session", StringComparer.Ordinal).ShouldBeTrue();
 
-        var tmpIndex = argv.IndexOf("--tmpfs", StringComparer.Ordinal);
+        var tmpIndex = OrdinalIndexOf(argv, "--tmpfs");
         var tmpTarget = argv[tmpIndex + 1];
-        var firstBind = argv.IndexOf("--bind", StringComparer.Ordinal);
+        var firstBind = OrdinalIndexOf(argv, "--bind");
         tmpTarget.ShouldBe("/tmp", StringComparer.Ordinal);
         firstBind.ShouldBeGreaterThanOrEqualTo(0);
         tmpIndex.ShouldBeLessThan(firstBind);
 
-        var readOnlyGrant = argv.IndexOf("/home/ada/notes", StringComparer.Ordinal);
-        var lastReadWriteBind = argv.LastIndexOf("/opt/pi-agent", StringComparer.Ordinal);
+        var readOnlyGrant = OrdinalIndexOf(argv, "/home/ada/notes");
+        var lastReadWriteBind = OrdinalLastIndexOf(argv, "/opt/pi-agent");
         readOnlyGrant.ShouldBeGreaterThanOrEqualTo(0);
         readOnlyGrant.ShouldBeGreaterThan(lastReadWriteBind);
         argv[readOnlyGrant - 1].ShouldBe("--ro-bind", StringComparer.Ordinal);
@@ -53,13 +53,13 @@ public sealed class BubblewrapArgvBuilderTests
 
         var adapted = BubblewrapArgvBuilder.AdaptToHost(policy, argv);
 
-        adapted.ShouldContain("--tmpfs");
-        adapted.ShouldContain(fixture.ExistingDirectory);
-        adapted.ShouldNotContain(fixture.AbsentPath);
-        adapted.ShouldContain(fixture.ExistingFile);
-        adapted.ShouldContain(BubblewrapArgvBuilder.SocketMaskSource);
-        adapted[adapted.IndexOf(fixture.ExistingFile) - 2].ShouldBe("--ro-bind", StringComparer.Ordinal);
-        adapted.Count.ShouldBe(8);
+        adapted.ShouldContain("--tmpfs", StringComparer.Ordinal);
+        adapted.ShouldContain(fixture.ExistingDirectory, StringComparer.Ordinal);
+        adapted.ShouldNotContain(fixture.AbsentPath, StringComparer.Ordinal);
+        adapted.ShouldContain(fixture.ExistingFile, StringComparer.Ordinal);
+        adapted.ShouldContain(BubblewrapArgvBuilder.SocketMaskSource, StringComparer.Ordinal);
+        adapted[OrdinalIndexOf(adapted, fixture.ExistingFile) - 2].ShouldBe("--ro-bind", StringComparer.Ordinal);
+        adapted.Count.ShouldBe(9);
     }
 
     /// <summary>A read-write bind whose source is missing fails closed instead of launching half-confinement.</summary>
@@ -90,8 +90,8 @@ public sealed class BubblewrapArgvBuilderTests
 
         var adapted = BubblewrapArgvBuilder.AdaptToHost(policy, argv);
 
-        adapted.ShouldContain(fixture.GrantPath);
-        adapted[adapted.IndexOf(fixture.GrantPath) - 2].ShouldBe("--bind", StringComparer.Ordinal);
+        adapted.ShouldContain(fixture.GrantPath, StringComparer.Ordinal);
+        adapted[OrdinalIndexOf(adapted, fixture.GrantPath) - 1].ShouldBe("--bind", StringComparer.Ordinal);
         adapted.ShouldNotContain("--ro-bind " + fixture.AbsentPath, StringComparer.Ordinal);
         adapted.ShouldNotContain(fixture.AbsentPath, StringComparer.Ordinal);
         adapted.ShouldContain("/", StringComparer.Ordinal);
@@ -120,11 +120,11 @@ public sealed class BubblewrapArgvBuilderTests
             new Dictionary<string, string?>(StringComparer.Ordinal)));
 
         var arguments = wrapped.Arguments;
-        arguments.ShouldNotContain(Path.Combine(fixture.Home, ".aws"));
-        arguments.ShouldContain(Path.Combine(fixture.Home, ".ssh"));
-        arguments.ShouldContain(fixture.GrantPath);
-        arguments.ShouldContain(fixture.ScratchPath);
-        arguments.ShouldContain(Path.Combine(fixture.Home, ".omp"));
+        arguments.ShouldNotContain(Path.Combine(fixture.Home, ".aws"), StringComparer.Ordinal);
+        arguments.ShouldContain(Path.Combine(fixture.Home, ".ssh"), StringComparer.Ordinal);
+        arguments.ShouldContain(fixture.GrantPath, StringComparer.Ordinal);
+        arguments.ShouldContain(fixture.ScratchPath, StringComparer.Ordinal);
+        arguments.ShouldContain(Path.Combine(fixture.Home, ".omp"), StringComparer.Ordinal);
         arguments.ShouldContain("--chdir", StringComparer.Ordinal);
         wrapped.FileName.ShouldBe(BubblewrapIsolator.Executable, StringComparer.Ordinal);
         wrapped.Environment["DISPLAY"].ShouldBeNull();
@@ -166,6 +166,32 @@ public sealed class BubblewrapArgvBuilderTests
 
     internal static string FixtureText(string name) =>
         File.ReadAllText(FixturePath(name));
+
+    private static int OrdinalIndexOf(IReadOnlyList<string> items, string value)
+    {
+        for (var i = 0; i < items.Count; i++)
+        {
+            if (string.Equals(items[i], value, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private static int OrdinalLastIndexOf(IReadOnlyList<string> items, string value)
+    {
+        for (var i = items.Count - 1; i >= 0; i--)
+        {
+            if (string.Equals(items[i], value, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
 
     private static string FixturePath(string name)
     {

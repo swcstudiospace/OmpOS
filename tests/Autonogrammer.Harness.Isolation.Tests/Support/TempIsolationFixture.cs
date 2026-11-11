@@ -1,12 +1,10 @@
-using Autonogrammer.Harness.Isolation;
-
 namespace Autonogrammer.Harness.Isolation.Tests;
 
 /// <summary>
 /// A uniquely owned temporary fixture: a home with <c>.ssh</c> and <c>.omp</c>, an existing grant and scratch
 /// directory, one existing directory, one existing file and one path that never exists. Disposal removes the tree.
 /// </summary>
-public sealed class TempIsolationFixture : IDisposable
+internal sealed class TempIsolationFixture : IDisposable
 {
     /// <summary>Gets the fixture root directory.</summary>
     public string Root { get; }
