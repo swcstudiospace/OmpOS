@@ -162,7 +162,7 @@ public sealed class DataPlaneGuardTests
         ("tests/Autonogrammer.Cowork.Artifacts.Stores.Tests/Support/PostgresArtifactFixture.cs", "EXECUTE format('DROP SCHEMA IF EXISTS %I CASCADE', current_setting('autonogrammer.drop_schema'));"),
         ("tests/Autonogrammer.Cowork.Memory.Postgres.Tests/PostgresMemoryStoreTests.cs", "await using var drop = new NpgsqlCommand(\"DROP SCHEMA IF EXISTS \" + _schema + \" CASCADE; DROP ROLE IF EXISTS \" + _role, connection);"),
         ("tests/Autonogrammer.Cowork.Memory.Tests/MemoryStoreContractTests.cs", "await using var drop = new NpgsqlCommand(\"DROP SCHEMA IF EXISTS \" + _schema + \" CASCADE\", connection);"),
-        ("tests/Autonogrammer.Api.IntegrationTests/Cowork/CoworkPersistenceTests.cs", "await using var command = _admin.CreateCommand(\"DROP SCHEMA IF EXISTS \" + _schema + \" CASCADE; DROP ROLE IF EXISTS \" + _role);"),
+        ("tests/Autonogrammer.Api.IntegrationTests/Cowork/CoworkPersistenceTests.cs", "var command = _admin.CreateCommand(\"DROP SCHEMA IF EXISTS \" + _schema + \" CASCADE; DROP ROLE IF EXISTS \" + _role);"),
         ("tests/Autonogrammer.Api.IntegrationTests/Cowork/ProjectsApiTests.cs", "var command = _admin.CreateCommand(\"DROP SCHEMA IF EXISTS \" + _schema + \" CASCADE\");"),
         ("tests/Autonogrammer.Api.IntegrationTests/DataPlane/DataPlaneStartupGateTests.cs", "await ExecuteAdminAsync($\"DROP SCHEMA IF EXISTS \\\"{_schema}\\\" CASCADE; DROP ROLE IF EXISTS \\\"{_role}\\\"\", CancellationToken.None).ConfigureAwait(false);"),
         ("tests/Autonogrammer.Sessions.Postgres.Tests/PostgresTestSchema.cs", "await ExecuteAdminAsync($\"DROP SCHEMA IF EXISTS \\\"{SchemaName}\\\" CASCADE\", CancellationToken.None).ConfigureAwait(false);"),

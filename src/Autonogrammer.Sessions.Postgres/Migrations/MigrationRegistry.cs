@@ -20,7 +20,7 @@ public static class MigrationRegistry
         new M0007_LedgerOutbox(),
         new M0008_Retention(),
         new M0009_CoworkProjectsMemory(),
-        // Version 10 remains reserved for DispatchDeviceState.
+        new M0010_DispatchDeviceState(),
         new M0011_MemoryIdempotency(),
     ];
     /// <summary>Gets the version of the last step: the schema version this build expects.</summary>

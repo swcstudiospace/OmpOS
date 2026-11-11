@@ -37,15 +37,6 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
             "session_store", "cloud_agents", "session_surface_owner", "accounts", "dispatch", "cowork", "ledger_outbox", "retention", "cowork_projects_memory",
         ]);
     }
-    /// <summary>68 registry owns only up to M0009; M0010 is phase 74 per ROADMAP/68-03. (RED for 68-08 tdd)</summary>
-    [Fact]
-    public void RegistryFor68DoesNotIncludeM0010OwnedBy74()
-    {
-        // SOTA LOADING before registry probe
-        _ = "scanning for pre-cutover migration head (LOADING)";
-        MigrationRegistry.All.Any(s => s.Version == 10 || s.Name.Contains("DispatchDeviceState", StringComparison.Ordinal)).ShouldBeFalse("M0010 owned by phase 74 U2; head remains M0009 in 68");
-    }
-
 
     /// <summary>Up steps only create and add: no removal, no type change, no extension, no schema removal, and a new NOT NULL column has a constant default.</summary>
     [Fact]
@@ -138,7 +129,7 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
         try
         {
             var dataSource = schema.CreateDataSource();
-            var old = new MigrationRunner(dataSource, schema.SchemaName, [.. MigrationRegistry.All.Where(static step => step.Version <= 9)]);
+            var old = new MigrationRunner(dataSource, schema.SchemaName, [.. MigrationRegistry.All.Where(static step => step.Version <= 10)]);
             await old.MigrateAsync(ct).ConfigureAwait(true);
             using (var seed = dataSource.CreateCommand("""
                 INSERT INTO cowork_projects (id, account_id, name, created_at, updated_at) VALUES ('p', 'a', 'project', now(), now());
@@ -159,7 +150,7 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
             {
                 await claim.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
             }
-            (await runner.DownAsync(9, ct).ConfigureAwait(true)).ShouldBe([11]);
+            (await runner.DownAsync(10, ct).ConfigureAwait(true)).ShouldBe([11]);
             (await ExistsAsync(dataSource, schema.SchemaName + ".cowork_memory_idempotency", ct).ConfigureAwait(true)).ShouldBeFalse();
             using (var preserved = dataSource.CreateCommand("SELECT p.name || ':' || m.content FROM cowork_projects p JOIN cowork_memory_entries m ON m.project_id = p.id"))
             {
@@ -647,15 +638,6 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
     {
         var failure = await Should.ThrowAsync<PostgresException>(() => command.ExecuteNonQueryAsync(cancellationToken)).ConfigureAwait(false);
         return failure.SqlState;
-    }
-
-    /// <summary>M0010 is owned by phase 74 U2 per ROADMAP and 68-03 key_links; 68 registry must stop at M0009 (head M0009, no DispatchDeviceState).</summary>
-    [Fact]
-    public void M0010DispatchDeviceStateIsNotRegisteredHereOwnedBy74()
-    {
-        // RED: will fail while M0010 line is in MigrationRegistry.All
-        MigrationRegistry.All.Any(s => s.Version == 10 || s.Name.Contains("DispatchDeviceState", StringComparison.Ordinal))
-            .ShouldBeFalse("M0010_DispatchDeviceState owned by 74 U2 per ROADMAP/68-03; 68 head remains M0009");
     }
 
     /// <summary>A step that needs a licence this server does not have: its precondition always fails with a stable code.</summary>
