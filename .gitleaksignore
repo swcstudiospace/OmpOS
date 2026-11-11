@@ -45,3 +45,7 @@ ca7b53d77ad2abbf32725db6569a334084d94619:plugins/ompos-hooks-omp/test/helpers.mj
 # The flagged text is the property name keyCount in the minified esbuild bundle of mermaid (src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js,
 # added in commit dba27a6a). It reads the size of a style map and is not a credential. History is not rewritten.
 dba27a6a2ac5e4b07af6265435397e448e63c2a2:src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:generic-api-key:636
+# The flagged literal is a test canary (`const string key`) in tests/Autonogrammer.Cowork.Memory.Postgres.Tests/PostgresMemoryStoreTests.cs,
+# added in snapshot commit 0d1f6f37. It checks that Npgsql logs do not expose keyed values and is not a credential.
+# Owner-approved suppression (phase 66 gate, 2026-11-11). History is not rewritten.
+0d1f6f37f657fcc2aa0c3175f6a099f7348245e7:tests/Autonogrammer.Cowork.Memory.Postgres.Tests/PostgresMemoryStoreTests.cs:generic-api-key:721
