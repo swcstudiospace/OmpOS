@@ -12,6 +12,8 @@ covered_files:
 
 # Phase 73 verification: Cowork Computer Use
 
+**Current-tree update (2026-11-10):** `KillSwitchCoordinatorTests` passed 3/3 and `ComputerUseHeadCompositionTests` passed 14/14. These focused tests do not prove the actual local opt-in, visible indicator, approval, audit or desktop actuation path. Plans 73-09 and 73-10 remain blocked by their phase-75 prerequisites; the production safety gap remains open.
+
 ## Verdict vocabulary
 
 - STATIC-OK: the artifact exists and the truth holds, confirmed by reading the cited lines. Nothing was executed.
@@ -54,12 +56,11 @@ covered_files:
 | 73-06 | Approval dialog shows host facts only; 120 s timer denies; remote decision never applies | CLAIMED | 73-06-SUMMARY.md:7 (`TryApplyRemote` always returns false); src/Autonogrammer.Presentation/Computer/ComputerApprovalViewModel.cs:12 (class) |
 | 73-06 | Indicator reads the kill switch; Stop trips it; dispatch shows the device | STATIC-OK (type) / CLAIMED | src/Autonogrammer.Presentation/Computer/ComputerIndicatorViewModel.cs:11 (class, takes `IKillSwitchControl`); 73-06-SUMMARY.md:8 |
 | 73-06 | Permission advisor maps every availability to a deep link or why-blocked text | STATIC-OK (type) / CLAIMED | src/Autonogrammer.Presentation/Computer/ComputerPermissionAdvisor.cs:11 (class), :14 (1 s poll); 73-06-SUMMARY.md:10 |
-| 73-06 | Head composition registers the backend, the settings page and the indicator in the running head | GAP (addressed by 73-07) | 73-07-PLAN.md + production call sites in AgentHead/Cowork; Build reachable. |
+| 73-06 | Head composition registers the backend, settings page and functional kill indicator in the running head | GAP | The 73-08 tracer discarded composition results and used an unreachable indicator action. Those insertions were removed; actual provider registration and kill wiring remain absent. |
 
 ## Gaps
 
-1. **Computer Use is not wired into any running head (GAP, phase goal and plan truths 73-03/73-06; addressed by 73-07 gap-closure plan).** 73-07-PLAN.md supplies the missing production call sites (AgentHead Create* paths and Cowork composition) that invoke ComputerUseHeadComposition.Build, ComputerUseComposition.CreateAsync, ComputerUseToolsComposition.AddTools and register the provider (plus publish settings factory and indicator chrome entry). After execution the tools reach the live CoworkToolHost when Cowork+enabled+desktop; SettingsFactory becomes live. 73-07 also adds the three SOTA-*.md overlays (states, a11y, security per query) and re-executes the full gate (criteria 1-6).
-   (73-06-SUMMARY:24 and PLAN-CHECK W-B identified the carrier; 73-07 closes it. Gaps 2-5 remain as documented.)
+1. **Computer Use is not wired into the running head (GAP).** The 73-08 tracer did not register a provider or construct a functional indicator. Its dead-code additions were removed, restoring the five Native files to the `5ce514eb` baseline; the baseline indicator callback is also not a verified kill action. Real registration, kill-switch wiring and passing gate evidence remain required.
 
 ## Human verification required
 

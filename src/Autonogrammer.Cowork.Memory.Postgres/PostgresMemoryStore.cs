@@ -1,4 +1,7 @@
+using System.Buffers.Binary;
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Autonogrammer.Contracts.Cowork.Memory;
 using Npgsql;
@@ -10,7 +13,7 @@ namespace Autonogrammer.Cowork.Memory.Postgres;
 /// Account memory over the M0009 tables. The host supplies the <c>autonogrammer_app</c> data source. This type writes no migration,
 /// runs DML only, and filters every query on <c>account_id</c>. There is no row-level security.
 /// </summary>
-public sealed class PostgresMemoryStore : IMemoryStore
+public sealed class PostgresMemoryStore : IMemoryStore, IMemoryIdempotentStore
 {
     /// <summary>
     /// The GIN expression from M0009. Search uses this text so the index <c>cowork_memory_entries_search_idx</c> can be used.
@@ -23,6 +26,11 @@ public sealed class PostgresMemoryStore : IMemoryStore
     private readonly NpgsqlDataSource _dataSource;
     private readonly TimeProvider _timeProvider;
     private readonly IMemoryNoticeSink? _notices;
+
+    // Test seam: simulate loss of acknowledgement after the database has committed.
+    internal Func<bool>? SuppressCommitAcknowledgement { get; set; }
+    // Test seam: coordinate another database connection after the database-clock sample.
+    internal Func<DateTimeOffset, CancellationToken, Task>? AfterExpiryTimeSample { get; set; }
 
     /// <summary>Initializes a new instance of the <see cref="PostgresMemoryStore"/> class.</summary>
     /// <param name="dataSource">The host data source. This type does not dispose it.</param>
@@ -62,21 +70,25 @@ public sealed class PostgresMemoryStore : IMemoryStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(accountId);
         ArgumentNullException.ThrowIfNull(settings);
-        var command = _dataSource.CreateCommand(
+        var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using var connectionDisposal = connection.ConfigureAwait(false);
+        var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        await using var transactionDisposal = transaction.ConfigureAwait(false);
+        await LockAccountAsync(accountId, connection, transaction, cancellationToken).ConfigureAwait(false);
+        var command = new NpgsqlCommand(
             """
             INSERT INTO cowork_memory_settings (account_id, enabled, paused, include_sensitive)
             VALUES (@account_id, @enabled, @paused, @include_sensitive)
             ON CONFLICT (account_id) DO UPDATE
             SET enabled = EXCLUDED.enabled, paused = EXCLUDED.paused, include_sensitive = EXCLUDED.include_sensitive
-            """);
-        await using (command.ConfigureAwait(false))
-        {
-            command.Parameters.Add(Account(accountId));
-            command.Parameters.Add(new NpgsqlParameter("enabled", NpgsqlDbType.Boolean) { Value = settings.Enabled });
-            command.Parameters.Add(new NpgsqlParameter("paused", NpgsqlDbType.Boolean) { Value = settings.Paused });
-            command.Parameters.Add(new NpgsqlParameter("include_sensitive", NpgsqlDbType.Boolean) { Value = settings.IncludeSensitive });
-            _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
+            """, connection, transaction);
+        await using var commandDisposal = command.ConfigureAwait(false);
+        command.Parameters.Add(Account(accountId));
+        command.Parameters.Add(new NpgsqlParameter("enabled", NpgsqlDbType.Boolean) { Value = settings.Enabled });
+        command.Parameters.Add(new NpgsqlParameter("paused", NpgsqlDbType.Boolean) { Value = settings.Paused });
+        command.Parameters.Add(new NpgsqlParameter("include_sensitive", NpgsqlDbType.Boolean) { Value = settings.IncludeSensitive });
+        _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -91,13 +103,251 @@ public sealed class PostgresMemoryStore : IMemoryStore
             return refused;
         }
 
-        var capped = await CapAsync(scope, cancellationToken).ConfigureAwait(false);
-        if (capped is not null)
+        return await InsertAsync(scope, draft, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<MemoryIdempotentResult> SaveIdempotentAsync(MemoryScope scope, MemoryDraft draft, string key, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentNullException.ThrowIfNull(draft);
+        ArgumentException.ThrowIfNullOrWhiteSpace(scope.AccountId, nameof(scope));
+        ArgumentNullException.ThrowIfNull(key);
+        if (key.Length is < 1 or > 128 || key.Any(static c => c < '!' || c > '~'))
         {
-            return capped;
+            throw new ArgumentException("The key must contain 1 to 128 visible ASCII characters.", nameof(key));
         }
 
-        return await InsertAsync(scope, draft, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+            await using var connectionDisposal = connection.ConfigureAwait(false);
+            var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await using var transactionDisposal = transaction.ConfigureAwait(false);
+            return await SaveIdempotentInTransactionAsync(scope, draft, key, Fingerprint(scope, draft), connection, transaction, cancellationToken).ConfigureAwait(false);
+        }
+        catch (NpgsqlException)
+        {
+            // A failed commit may have committed. Never retry as an unkeyed write.
+            return new(MemoryIdempotentStatus.Unavailable, null);
+        }
+    }
+
+    private async Task<MemoryIdempotentResult> SaveIdempotentInTransactionAsync(
+        MemoryScope scope, MemoryDraft draft, string key, byte[] fingerprint,
+        NpgsqlConnection connection, NpgsqlTransaction transaction, CancellationToken cancellationToken)
+    {
+        await LockAccountAsync(scope.AccountId, connection, transaction, cancellationToken).ConfigureAwait(false);
+        var settings = await ReadSettingsAsync(scope.AccountId, connection, transaction, cancellationToken).ConfigureAwait(false);
+        if (settings.Paused)
+        {
+            return new(MemoryIdempotentStatus.Refused, Notice(MemoryCodes.MemoryPaused, "Memory is paused. Entries are kept, and nothing was read or written."));
+        }
+        var asOf = await SampleExpiryTimeAsync(connection, transaction, cancellationToken).ConfigureAwait(false);
+        if (AfterExpiryTimeSample is { } afterSample)
+        {
+            await afterSample(asOf, cancellationToken).ConfigureAwait(false);
+        }
+        await PruneExpiredClaimsAsync(scope.AccountId, asOf, connection, transaction, cancellationToken).ConfigureAwait(false);
+
+        var prior = await FindClaimAsync(scope.AccountId, key, fingerprint, asOf, connection, transaction, cancellationToken).ConfigureAwait(false);
+        if (prior is not null)
+        {
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            return prior;
+        }
+
+        var refusal = Refuse(scope, draft, settings)
+            ?? await CheckWriteScopeAsync(scope, connection, transaction, cancellationToken).ConfigureAwait(false);
+        if (refusal is not null)
+        {
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            return new(MemoryIdempotentStatus.Refused, refusal);
+        }
+
+        var entry = await InsertClaimedEntryAsync(scope, draft, key, fingerprint, connection, transaction, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancellation during COMMIT cannot prove whether the server committed.
+            return new(MemoryIdempotentStatus.Unavailable, null);
+        }
+
+        return SuppressCommitAcknowledgement?.Invoke() == true
+            ? new(MemoryIdempotentStatus.Unavailable, null)
+            : new(MemoryIdempotentStatus.Created, new MemoryMutation(true, MemoryCodes.Ok, null, entry));
+    }
+
+    private static async Task<DateTimeOffset> SampleExpiryTimeAsync(
+        NpgsqlConnection connection, NpgsqlTransaction transaction, CancellationToken cancellationToken)
+    {
+        var command = new NpgsqlCommand("SELECT clock_timestamp()", connection, transaction);
+        await using var commandDisposal = command.ConfigureAwait(false);
+        var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        await using var readerDisposal = reader.ConfigureAwait(false);
+        await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+        return await reader.GetFieldValueAsync<DateTimeOffset>(0, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task PruneExpiredClaimsAsync(
+        string accountId, DateTimeOffset asOf, NpgsqlConnection connection, NpgsqlTransaction transaction, CancellationToken cancellationToken)
+    {
+        var command = new NpgsqlCommand(
+            """
+            DELETE FROM cowork_memory_idempotency AS claims
+            USING (
+                SELECT account_id, operation, key
+                FROM cowork_memory_idempotency
+                WHERE account_id = @account_id AND expires_at <= @as_of
+                ORDER BY expires_at
+                LIMIT 100
+                FOR UPDATE SKIP LOCKED
+            ) AS expired
+            WHERE claims.account_id = expired.account_id AND claims.operation = expired.operation AND claims.key = expired.key
+            """, connection, transaction);
+        await using var commandDisposal = command.ConfigureAwait(false);
+        command.Parameters.Add(Account(accountId));
+        command.Parameters.AddWithValue("as_of", asOf);
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<MemoryIdempotentResult?> FindClaimAsync(
+        string accountId, string key, byte[] fingerprint, DateTimeOffset asOf, NpgsqlConnection connection,
+        NpgsqlTransaction transaction, CancellationToken cancellationToken)
+    {
+        var expired = new NpgsqlCommand(
+            "DELETE FROM cowork_memory_idempotency WHERE account_id = @account_id AND operation = 'create' AND key = @key AND expires_at <= @as_of", connection, transaction);
+        await using (expired.ConfigureAwait(false))
+        {
+            expired.Parameters.Add(Account(accountId));
+            expired.Parameters.AddWithValue("key", key);
+            expired.Parameters.AddWithValue("as_of", asOf);
+            await expired.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        var claim = new NpgsqlCommand(
+            "SELECT fingerprint_version, fingerprint, entry_id FROM cowork_memory_idempotency WHERE account_id = @account_id AND operation = 'create' AND key = @key", connection, transaction);
+        string? entryId;
+        await using (claim.ConfigureAwait(false))
+        {
+            claim.Parameters.Add(Account(accountId));
+            claim.Parameters.AddWithValue("key", key);
+            var reader = await claim.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using (reader.ConfigureAwait(false))
+            {
+                if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    return null;
+                }
+
+                var digest = await reader.GetFieldValueAsync<byte[]>(1, cancellationToken).ConfigureAwait(false);
+                if (reader.GetInt32(0) != 1 || !CryptographicOperations.FixedTimeEquals(digest, fingerprint))
+                {
+                    return new(MemoryIdempotentStatus.Conflict, null);
+                }
+
+                entryId = reader.GetString(2);
+            }
+        }
+
+        var existing = await ReadEntryAsync(accountId, entryId, connection, transaction, cancellationToken).ConfigureAwait(false);
+        return existing is null
+            ? new(MemoryIdempotentStatus.Gone, null)
+            : new(MemoryIdempotentStatus.Replayed, new MemoryMutation(true, MemoryCodes.Ok, null, existing));
+    }
+
+    private async Task<MemoryEntry?> InsertClaimedEntryAsync(
+        MemoryScope scope, MemoryDraft draft, string key, byte[] fingerprint,
+        NpgsqlConnection connection, NpgsqlTransaction transaction, CancellationToken cancellationToken)
+    {
+        var entryId = Guid.NewGuid().ToString("n");
+        var insert = new NpgsqlCommand(
+            """
+            INSERT INTO cowork_memory_entries (id, account_id, project_id, topic, content, category, source_session, created_at, updated_at)
+            VALUES (@id, @account_id, @project_id, @topic, @content, @category, @session_id, @now, @now)
+            """, connection, transaction);
+        await using (insert.ConfigureAwait(false))
+        {
+            insert.Parameters.AddWithValue("id", entryId);
+            insert.Parameters.Add(Account(scope.AccountId));
+            insert.Parameters.Add(NullableText("project_id", scope.ProjectId));
+            insert.Parameters.Add(NullableText("topic", draft.Topic));
+            insert.Parameters.AddWithValue("content", draft.Content);
+            insert.Parameters.Add(NullableText("category", draft.Category));
+            insert.Parameters.AddWithValue("session_id", scope.SessionId);
+            insert.Parameters.Add(new NpgsqlParameter("now", NpgsqlDbType.TimestampTz) { Value = _timeProvider.GetUtcNow() });
+            await insert.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        var entry = await ReadEntryAsync(scope.AccountId, entryId, connection, transaction, cancellationToken).ConfigureAwait(false);
+        var complete = new NpgsqlCommand(
+            """
+            INSERT INTO cowork_memory_idempotency (account_id, operation, key, fingerprint_version, fingerprint, entry_id, created_at, expires_at)
+            SELECT @account_id, 'create', @key, 1, @fingerprint, @entry_id, stamp, stamp + interval '24 hours'
+            FROM (SELECT clock_timestamp() AS stamp) AS sampled
+            """, connection, transaction);
+        await using (complete.ConfigureAwait(false))
+        {
+            complete.Parameters.Add(Account(scope.AccountId));
+            complete.Parameters.AddWithValue("key", key);
+            complete.Parameters.AddWithValue("fingerprint", fingerprint);
+            complete.Parameters.AddWithValue("entry_id", entryId);
+            await complete.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return entry;
+    }
+
+    // Version 1: UTF-8 strings prefixed by signed big-endian 32-bit byte lengths; -1 is null.
+    // Field order: topic, content, category, project, account-memory flag ("1"/"0"), session.
+    private static byte[] Fingerprint(MemoryScope scope, MemoryDraft draft)
+    {
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        Span<byte> length = stackalloc byte[4];
+        foreach (var value in new[] { draft.Topic, draft.Content, draft.Category, scope.ProjectId, scope.UseAccountMemory ? "1" : "0", scope.SessionId })
+        {
+            var bytes = value is null ? null : Encoding.UTF8.GetBytes(value);
+            BinaryPrimitives.WriteInt32BigEndian(length, bytes?.Length ?? -1);
+            hash.AppendData(length);
+            if (bytes is not null) hash.AppendData(bytes);
+        }
+
+        return hash.GetHashAndReset();
+    }
+
+    private static async Task<MemorySettings> ReadSettingsAsync(string accountId, NpgsqlConnection connection, NpgsqlTransaction transaction, CancellationToken cancellationToken)
+    {
+        var command = new NpgsqlCommand("SELECT enabled, paused, include_sensitive FROM cowork_memory_settings WHERE account_id = @account_id", connection, transaction);
+        await using var commandDisposal = command.ConfigureAwait(false);
+        command.Parameters.Add(Account(accountId));
+        var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        await using var readerDisposal = reader.ConfigureAwait(false);
+        return await reader.ReadAsync(cancellationToken).ConfigureAwait(false)
+            ? new MemorySettings(reader.GetBoolean(0), reader.GetBoolean(1), reader.GetBoolean(2))
+            : new MemorySettings(false, false, false);
+    }
+
+    private static async Task<MemoryEntry?> ReadEntryAsync(string accountId, string id, NpgsqlConnection connection, NpgsqlTransaction transaction, CancellationToken cancellationToken)
+    {
+        var command = new NpgsqlCommand(
+            "SELECT id, account_id, project_id, topic, content, category, source_session, created_at, updated_at FROM cowork_memory_entries WHERE account_id = @account_id AND id = @id FOR KEY SHARE",
+            connection, transaction);
+        await using var commandDisposal = command.ConfigureAwait(false);
+        command.Parameters.Add(Account(accountId));
+        command.Parameters.AddWithValue("id", id);
+        var entries = await ReadEntriesAsync(command, cancellationToken).ConfigureAwait(false);
+        return entries.Count == 0 ? null : entries[0];
+    }
+
+    private static async Task LockAccountAsync(string accountId, NpgsqlConnection connection, NpgsqlTransaction transaction, CancellationToken cancellationToken)
+    {
+        var gate = new NpgsqlCommand("SELECT pg_advisory_xact_lock(hashtextextended('cowork-memory:' || @account_id, 0))", connection, transaction);
+        await using var gateDisposal = gate.ConfigureAwait(false);
+        gate.Parameters.Add(Account(accountId));
+        await gate.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -190,14 +440,14 @@ public sealed class PostgresMemoryStore : IMemoryStore
         }
     }
 
-    private async Task<MemoryMutation?> CapAsync(MemoryScope scope, CancellationToken cancellationToken)
+    private async Task<MemoryMutation?> CapAsync(MemoryScope scope, NpgsqlConnection connection, NpgsqlTransaction transaction, CancellationToken cancellationToken)
     {
-        var command = _dataSource.CreateCommand(
+        var command = new NpgsqlCommand(
             """
             SELECT
                 (SELECT count(*) FROM cowork_memory_entries WHERE account_id = @account_id),
                 (SELECT count(*) FROM cowork_memory_entries WHERE account_id = @account_id AND source_session = @session_id AND created_at >= @since)
-            """);
+            """, connection, transaction);
         await using (command.ConfigureAwait(false))
         {
             command.Parameters.Add(Account(scope.AccountId));
@@ -226,11 +476,21 @@ public sealed class PostgresMemoryStore : IMemoryStore
     {
         var now = _timeProvider.GetUtcNow();
         var id = Guid.NewGuid().ToString("n");
-        var command = _dataSource.CreateCommand(
+        var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using var connectionDisposal = connection.ConfigureAwait(false);
+        var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        await using var transactionDisposal = transaction.ConfigureAwait(false);
+        var refused = await CheckWriteScopeAsync(scope, connection, transaction, cancellationToken).ConfigureAwait(false);
+        if (refused is not null)
+        {
+            return refused;
+        }
+
+        var command = new NpgsqlCommand(
             """
             INSERT INTO cowork_memory_entries (id, account_id, project_id, topic, content, category, source_session, created_at, updated_at)
             VALUES (@id, @account_id, @project_id, @topic, @content, @category, @session_id, @now, @now)
-            """);
+            """, connection, transaction);
         try
         {
             await using (command.ConfigureAwait(false))
@@ -245,6 +505,7 @@ public sealed class PostgresMemoryStore : IMemoryStore
                 command.Parameters.Add(new NpgsqlParameter("now", NpgsqlDbType.TimestampTz) { Value = now });
                 _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
             }
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (NpgsqlException)
         {
@@ -263,6 +524,35 @@ public sealed class PostgresMemoryStore : IMemoryStore
             CreatedAt = now,
             UpdatedAt = now,
         });
+    }
+
+    private async Task<MemoryMutation?> CheckWriteScopeAsync(
+        MemoryScope scope,
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        CancellationToken cancellationToken)
+    {
+        await LockAccountAsync(scope.AccountId, connection, transaction, cancellationToken).ConfigureAwait(false);
+
+        var capped = await CapAsync(scope, connection, transaction, cancellationToken).ConfigureAwait(false);
+        if (capped is not null)
+        {
+            return capped;
+        }
+
+        if (string.IsNullOrEmpty(scope.ProjectId))
+        {
+            return null;
+        }
+
+        var ownership = new NpgsqlCommand(
+            "SELECT 1 FROM cowork_projects WHERE id = @id AND account_id = @account_id FOR KEY SHARE", connection, transaction);
+        await using var ownershipDisposal = ownership.ConfigureAwait(false);
+        ownership.Parameters.AddWithValue("id", scope.ProjectId);
+        ownership.Parameters.Add(Account(scope.AccountId));
+        return await ownership.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) is null
+            ? new MemoryMutation(false, MemoryCodes.MemoryNotFound, "That project was not found.", null)
+            : null;
     }
 
     private static async Task<List<MemoryEntry>> ReadEntriesAsync(NpgsqlCommand command, CancellationToken cancellationToken)

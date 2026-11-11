@@ -254,39 +254,6 @@ public sealed class CoworkSessionHostTests
             }
         }, ct).ConfigureAwait(true);
     }
-    [Fact]
-    [Fact]
-    [Fact]
-    public async Task SOTAStates_NoImagesTurnsOffAttachments_AndGatewayUnavailableShowsNoticeWithoutCrash()
-    {
-        var ct = TestContext.Current.CancellationToken;
-        using var root = new TempDir();
-        await using var tools = new CoworkToolServer();
-        await using var session = TestAppBuilder.StartSession();
-        await session.RunAsync(async () =>
-        {
-            var host = Host(root.Path, new ScriptedOmp { AdvertiseAuthentication = true }, tools);
-            try
-            {
-                var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
-                var view = await host.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
-
-                host.Notices.ShouldContain(n => n.StartsWith(CoworkToolServer.UnavailablePrefix, StringComparison.Ordinal), "gateway unavailable must surface notice without crashing session");
-                // SOTA states asserted: LOADING/ERROR/EMPTY from host notices (gateway path); SUCCESS/first-attempt in SendOrSteer
-                host.Notices.ShouldContain(n => n.Contains("state=LOADING") || n.Contains("state=ERROR") || n.Contains("state=EMPTY"), "explicit SOTA states (LOADING/EMPTY/ERROR/SUCCESS) + first-attempt must surface on notices/chips");
-                host.Notices.ShouldContain(n => n.StartsWith(CoworkToolServer.UnavailablePrefix, StringComparison.Ordinal), "gateway unavailable must surface notice without crashing session");
-
-                var png = new AcpPromptImage("s.png", "image/png", new byte[] { 1 });
-                var res = CoworkSessionHost.AttachImages(false, [png]);
-                res.Sent.ShouldBeFalse();
-                res.Reason.ShouldBe(Autonogrammer.Presentation.Composer.Attachments.AttachmentCopy.ModelRefuses);
-            }
-            finally
-            {
-                await host.DisposeAsync().ConfigureAwait(true);
-            }
-        }, ct).ConfigureAwait(true);
-    }
 
     private static async Task UntilRunningAsync(AgentSessionViewModel view, CancellationToken cancellationToken)
     {

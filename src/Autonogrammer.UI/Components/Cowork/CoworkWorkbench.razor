@@ -6,7 +6,7 @@
 @inject IServiceProvider Services
 
 <div class="autonogrammer-cowork" @onkeydown="OnKeyDown">
-    <div class="autonogrammer-cowork-rail" role="region" aria-label="Rail" tabindex="-1" @ref="_rail">
+    <div class="autonogrammer-cowork-rail" role="region" aria-label="Rail" tabindex="-1" @ref="_rail" @onfocusin="() => _focusedRegion = 0">
         @if (!Available)
         {
             <p class="autonogrammer-rail-state-body">@CoworkCopy.SignInToUseCowork</p>
@@ -31,14 +31,17 @@
             </div>
         }
     </div>
-    <div id="autonogrammer-conversation" class="autonogrammer-cowork-conversation" role="region" aria-label="Conversation" tabindex="-1" @ref="_conversation"></div>
-    <div class="autonogrammer-cowork-dock" role="region" aria-label="Dock" tabindex="-1" @ref="_dock">
+    <div id="autonogrammer-conversation" class="autonogrammer-cowork-conversation" role="region" aria-label="Conversation" tabindex="-1" @ref="_conversation" @onfocusin="() => _focusedRegion = 1"></div>
+    <div class="autonogrammer-cowork-dock" role="region" aria-label="Dock" tabindex="-1" @ref="_dock" @onfocusin="() => _focusedRegion = 2">
         @if (Shell is { Panels.Count: > 1 } && Shell.ShowTabStrip)
         {
-            <div role="tablist" aria-label="Dock">
-                @foreach (var panel in Shell.Panels)
+            EnsureDockTabReferences(Shell.Panels.Count);
+            <div role="tablist" aria-label="Dock" @onkeydown="OnDockKeyDownAsync">
+                @for (var i = 0; i < Shell.Panels.Count; i++)
                 {
-                    <button type="button" role="tab" aria-selected="@(panel.Id == Shell.SelectedPanelId ? "true" : "false")" @onclick="() => Shell.SelectPanel(panel.Id)">@panel.Title</button>
+                    var index = i;
+                    var panel = Shell.Panels[index];
+                    <button type="button" role="tab" aria-selected="@(panel.Id == Shell.SelectedPanelId ? "true" : "false")" tabindex="@(panel.Id == Shell.SelectedPanelId ? 0 : -1)" @ref="_dockTabs[index]" @onclick="() => Shell.SelectPanel(panel.Id)">@panel.Title</button>
                 }
             </div>
         }
@@ -64,7 +67,8 @@
     /// <summary>The alert shown when the session list could not be loaded.</summary>
     public const string LoadFailedMessage = "Cowork tasks could not be loaded.";
 
-    private readonly string[] _cycle = ["rail", "conversation", "dock"];
+    private int _focusedRegion;
+    private ElementReference[] _dockTabs = [];
     private ICoworkAccess? _access;
     private ElementReference _rail;
     private ElementReference _conversation;
@@ -125,6 +129,48 @@
         }
     }
 
+    private void EnsureDockTabReferences(int count)
+    {
+        if (_dockTabs.Length != count)
+        {
+            _dockTabs = new ElementReference[count];
+        }
+    }
+
+    private async Task OnDockKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (Shell is not { Panels.Count: > 1 } shell)
+        {
+            return;
+        }
+
+        var index = 0;
+        for (var i = 0; i < shell.Panels.Count; i++)
+        {
+            if (string.Equals(shell.Panels[i].Id, shell.SelectedPanelId, StringComparison.Ordinal))
+            {
+                index = i;
+                break;
+            }
+        }
+
+        var target = args.Key switch
+        {
+            "ArrowRight" => (index + 1) % shell.Panels.Count,
+            "ArrowLeft" => (index + shell.Panels.Count - 1) % shell.Panels.Count,
+            "Home" => 0,
+            "End" => shell.Panels.Count - 1,
+            _ => -1,
+        };
+        if (target < 0)
+        {
+            return;
+        }
+
+        shell.SelectPanel(shell.Panels[target].Id);
+        await _dockTabs[target].FocusAsync().ConfigureAwait(true);
+    }
+
     private async Task OnKeyDown(KeyboardEventArgs args)
     {
         if (!string.Equals(args.Key, "F6", StringComparison.Ordinal))
@@ -133,9 +179,8 @@
         }
 
         var step = args.ShiftKey ? 2 : 1;
-        var index = Array.IndexOf(_cycle, _cycle[0]);
-        _ = index;
-        var next = (_cycle.Length + step) % _cycle.Length;
+        var next = (_focusedRegion + step) % 3;
+        _focusedRegion = next;
         var target = next switch
         {
             1 => _conversation,

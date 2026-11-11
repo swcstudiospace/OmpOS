@@ -1,8 +1,8 @@
 ---
 phase: 66-rebrand-to-autonogrammer
 verified: 2026-11-10T13:00:00Z
-status: passed
-score: 5/5 must-haves verified
+status: gaps_found
+score: "not recomputed for current tree"
 covered_files:
 - .planning/phases/66-rebrand-to-autonogrammer/66-07-PLAN.md
 - .planning/phases/66-rebrand-to-autonogrammer/66-07-SUMMARY.md
@@ -18,7 +18,7 @@ covered_files:
 - scripts/ci/check-brand.sh
 - scripts/ci/repo-checks.sh
 covered_digest: "v1:sha256:phase66-verif-20261110"
-behavior_unverified: 0
+behavior_unverified: 2
 overrides_applied: 0
 re_verification: true
 previous_status: gaps_found
@@ -26,12 +26,22 @@ previous_score: "2/5 (approx from prior C1/C3 gaps)"
 gaps_closed:
   - "C3: web smoke first attempt (race fixed by wait main h1 + non-boot title in routes.mjs runStep; smoke json passed:true, a11yRoutes:true, failures:0, exit:0)"
   - "C1: rebrand tool (61 tests OK, verify OK clean)"
-gaps_remaining: []
+gaps_remaining:
+  - "The checksum-matched historical rebrand baseline no longer matches the current near-match and protected engine counts; the cause has not been established."
+  - "The full current-tree Linux, service and web gate has not passed; the last non-Live solution run had failures."
 advisory: []
-behavior_unverified_items: []
+behavior_unverified_items:
+  - "Current-tree rebrand baseline count changes require investigation."
+  - "Current-tree full service and web gate remains unverified."
 coincidental_reliance_items: []
 human_verification: []
-gaps: []
+gaps:
+  - truth: "Rebrand verification preserves the approved baseline."
+    status: failed
+    reason: "The baseline comparison reports changed near-match and engine keep-pattern counts; its cause is unverified."
+  - truth: "The final current tree passes the Linux, service and web gate."
+    status: unverified
+    reason: "The last non-Live solution run failed and the full guarded bootstrap has not run on this tree."
 deferred:
   - truth: "External owner actions 1-8 (repo/domain rename, env vars, state/containers, Android id, legal, gitleaks fingerprints post-rename, submodules, brand artwork) remain open per 66-OWNER-ACTIONS.md"
     addressed_in: "owner action (external, per runbook s.5 and plan D-24)"
@@ -40,9 +50,21 @@ deferred:
 
 # Phase 66: Rebrand to Autonogrammer Verification Report
 
+**Current-tree update:** The rebrand unit suite passed 61/61, `rebrand.py verify` without a baseline reported no remaining renames, the desktop headless title test passed 1/1, and the brand and licence checks passed. Verification against the recorded, checksum-matched 2026-11-04 baseline failed: rejected near-match counts and four engine keep-pattern counts differ. The cause is not established; growth or substring damage cannot be inferred from counts alone. These focused checks do not refresh the complete Phase 66 gate: the last non-Live solution run had failures, the web and service gate has not been rerun on the current tree, and the recorded full-gate safety holds remain. The historical `passed` verdict below applies to its recorded earlier tree, not this checkout.
+
+The report comparison found no decreases in the aggregated rejected-window or protected engine counts. Three newly distinct rejected words are classified benign by the tool and their recorded examples are in planning files. Comparing protected URL entries by file, matched text and rule found all 293 baseline entries still represented and two additional entries. These aggregates cannot prove that every original near-match or engine occurrence was preserved, and the baseline comparison still fails.
+
+A fresh dry-run followed immediately by `verify` against that report both exited 0; the verifier reported no remaining renames and 295 protected URL tokens. Planning files changed afterward, so this is a snapshot rather than a final-tree gate. It does not resolve historical baseline provenance or the acceptance conflict.
+
+`LegacyBrandLiteralGuardTests` passed 3/3 in the Release architecture test project; this focused check does not replace the full bootstrap gate.
+
+**Baseline provenance:** The approved report records command `verify` and generation time `2026-11-04T23:35:47Z`; the summary attributes it to `deb1fcdb`, whose recorded commit time is `23:37:54Z`. The keep-marker change could have been uncommitted at scan time, but the exact tracked, index, untracked and tool/config inputs have not been authenticated. The report also contains 1,074 excluded/frozen protected URL occurrences only as an aggregate. Searches of the named baseline backup and available reconciliation records found no contemporaneous complete input manifest; the search does not establish global absence.
+
+**Acceptance decision:** The owner selected strict original-baseline equality rather than the later informational-growth ruling. D-05 and AG-66-3 therefore remain the governing criteria for this work. The baseline comparison still fails, historical scan inputs remain unauthenticated, and the guarded evidence required by `66-09-PLAN.md` has not been created; this decision does not close the phase or authorize the bootstrap gate.
+
 **Phase Goal:** Every name the project owns changes from the former name to Autonogrammer in one mechanical pass (paths, contents, identifiers, containers, schema, headers, Android id), existing users keep their data through three C# migrations, the generated files are regenerated, and the renamed tree is built and gated once. Not delivered: new artwork, the trademark decision, external renames (GitHub, Vercel, Railway, domain), `--urls`, a store identity for Android (runbook section 5 items are owner actions).
 **Verified:** 2026-11-10T13:00:00Z (HEAD 919ebed1)
-**Status:** passed
+**Status:** gaps_found for the current tree; the earlier pass below is historical.
 **Re-verification:** Yes — after C3 gap closure and C1 confirmation; previous gaps_found on C1/C3
 
 ## Goal Achievement

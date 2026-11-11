@@ -88,6 +88,7 @@ internal sealed class AccountsHarness : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
+        Coordinator.Dispose();
         Manager.Dispose();
         Http.Dispose();
         Handler.Dispose();

@@ -1,4 +1,6 @@
 using System.Net;
+using System.Text;
+using System.Text.Json;
 using Autonogrammer.Contracts.Artifacts;
 using Autonogrammer.Cowork.Artifacts.Model;
 using Microsoft.Extensions.Options;
@@ -18,18 +20,31 @@ public sealed class ArtifactSyncServiceTests : IDisposable
     [Fact]
     public async Task Disabled_sync_sends_metadata_only()
     {
-        using var handler = new RecordingHandler();
+        using var handler = new RecordingHandler { FailuresRemaining = 1 };
         using var client = new HttpClient(handler, disposeHandler: false) { BaseAddress = new Uri("https://account.example/") };
         var (service, store) = Create(client, enabled: false);
-        var created = await CreateNoteAsync(store, [1, 2, 3, 4]).ConfigureAwait(true);
+        const string privateContent = "private-artifact-content-3191";
+        var created = await CreateNoteAsync(store, Encoding.UTF8.GetBytes(privateContent)).ConfigureAwait(true);
         service.StatusText.ShouldBe(ArtifactSyncService.SyncOffText);
-        var outcome = await service.PushAsync(created, Token).ConfigureAwait(true);
+        (await service.PushAsync(created, Token).ConfigureAwait(true)).Status.ShouldBe(HttpArtifactRemote.RemoteStatus.Offline);
+        (await service.RetryAsync(Token).ConfigureAwait(true)).Status.ShouldBe(HttpArtifactRemote.RemoteStatus.Accepted);
 
-        outcome.Status.ShouldBe(HttpArtifactRemote.RemoteStatus.Accepted);
-        handler.Bodies.Count.ShouldBe(1);
-        handler.MediaTypes.Single().ShouldBe(ArtifactWireContract.MetadataMediaType);
-        handler.Bodies[0].ShouldNotBe([1, 2, 3, 4]);
-        Contains(handler.Bodies[0], [1, 2, 3, 4]).ShouldBeFalse();
+        handler.Bodies.Count.ShouldBe(2);
+        foreach (var body in handler.Bodies)
+        {
+            using var document = JsonDocument.Parse(body);
+            var names = document.RootElement.EnumerateObject().Select(static property => property.Name).ToHashSet(StringComparer.Ordinal);
+            names.SetEquals(["id", "title", "kind", "versionCount", "createdAt", "updatedAt", "hashes"]).ShouldBeTrue();
+            Encoding.UTF8.GetString(body).Contains(privateContent, StringComparison.Ordinal).ShouldBeFalse();
+        }
+
+        handler.MediaTypes.ShouldAllBe(static mediaType => mediaType == ArtifactWireContract.MetadataMediaType);
+        handler.Headers.ShouldAllBe(header => !header.Contains(privateContent, StringComparison.Ordinal));
+        handler.Headers.ShouldAllBe(static header =>
+            !header.Contains("grant", StringComparison.OrdinalIgnoreCase) &&
+            !header.Contains("permission", StringComparison.OrdinalIgnoreCase) &&
+            !header.Contains("origin", StringComparison.OrdinalIgnoreCase) &&
+            !header.Contains("reason", StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>The same hash writes nothing. Different bytes for an existing number fork the desktop copy.</summary>
@@ -113,19 +128,6 @@ public sealed class ArtifactSyncServiceTests : IDisposable
         return created.Value!.ArtifactId;
     }
 
-    private static bool Contains(byte[] haystack, byte[] needle)
-    {
-        for (var index = 0; index <= haystack.Length - needle.Length; index++)
-        {
-            if (haystack.AsSpan(index, needle.Length).SequenceEqual(needle))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private sealed class RecordingHandler : HttpMessageHandler
     {
         private readonly Dictionary<string, string> _hashes = new(StringComparer.Ordinal);
@@ -133,6 +135,8 @@ public sealed class ArtifactSyncServiceTests : IDisposable
         internal List<byte[]> Bodies { get; } = [];
 
         internal List<string> MediaTypes { get; } = [];
+
+        internal List<string> Headers { get; } = [];
 
         internal List<string> Accepted { get; } = [];
 
@@ -147,6 +151,12 @@ public sealed class ArtifactSyncServiceTests : IDisposable
             var body = request.Content is null ? [] : await request.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(true);
             Bodies.Add(body);
             MediaTypes.Add(request.Content?.Headers.ContentType?.MediaType ?? string.Empty);
+            Headers.AddRange(request.Headers.Select(static header => header.Key + ":" + string.Join(",", header.Value)));
+            if (request.Content is not null)
+            {
+                Headers.AddRange(request.Content.Headers.Select(static header => header.Key + ":" + string.Join(",", header.Value)));
+            }
+
             if (FailuresRemaining > 0)
             {
                 FailuresRemaining--;

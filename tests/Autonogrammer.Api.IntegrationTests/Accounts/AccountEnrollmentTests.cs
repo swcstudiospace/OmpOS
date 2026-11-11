@@ -36,6 +36,7 @@ public sealed class AccountEnrollmentTests
         var ct = TestContext.Current.CancellationToken;
         var config = JwtTestHost.DevelopmentConfig();
         config["Accounts:RequestsPerMinute"] = "1";
+        config["Accounts:Enabled"] = "true";
         using var factory = new ApiFactory(config, JwtTestHost.InjectStaticMetadata);
         using var alice = factory.CreateClient();
         using var bob = factory.CreateClient();
@@ -58,8 +59,10 @@ public sealed class AccountEnrollmentTests
         var ct = TestContext.Current.CancellationToken;
         var clock = new ManualTimeProvider();
         var failing = new FailingAccountStore();
+        var config = JwtTestHost.DevelopmentConfig();
+        config["Accounts:Enabled"] = "true";
         using var factory = new ApiFactory(
-            JwtTestHost.DevelopmentConfig(),
+            config,
             services =>
             {
                 JwtTestHost.InjectStaticMetadata(services);

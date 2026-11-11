@@ -22,8 +22,10 @@ public sealed class IsolationLiveTests
         Directory.CreateDirectory(root);
         var grant = Path.Combine(root, "grant");
         var scratch = Path.Combine(root, "scratch");
+        var ungranted = Path.Combine(root, "ungranted");
         Directory.CreateDirectory(grant);
         Directory.CreateDirectory(scratch);
+        Directory.CreateDirectory(ungranted);
         try
         {
             var runner = new SystemIsolationProcessRunner();
@@ -34,14 +36,14 @@ public sealed class IsolationLiveTests
             var policy = IsolationPolicy.ForCowork(home, scratch, [new IsolationGrant(grant, true)]);
             var wrapped = new BubblewrapIsolator(policy).Wrap(new Autonogrammer.Harness.Abstractions.ProcessLaunch(
                 "/bin/sh",
-                ["-c", "touch /etc/autonogrammer-isolation-denied"],
+                ["-c", "touch \"$1/allowed\" || exit 11; touch \"$2/denied\" && exit 12; exit 0", "sh", grant, ungranted],
                 grant,
                 new Dictionary<string, string?>(StringComparer.Ordinal)));
             var run = await runner.RunAsync(wrapped.FileName, wrapped.Arguments, TimeSpan.FromSeconds(15), ct).ConfigureAwait(true);
-
             run.TimedOut.ShouldBeFalse();
-            run.ExitCode.ShouldNotBe(0);
-            File.Exists("/etc/autonogrammer-isolation-denied").ShouldBeFalse();
+            run.ExitCode.ShouldBe(0, run.Output);
+            File.Exists(Path.Combine(grant, "allowed")).ShouldBeTrue();
+            File.Exists(Path.Combine(ungranted, "denied")).ShouldBeFalse();
         }
         finally
         {

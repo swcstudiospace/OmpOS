@@ -25,9 +25,7 @@ public sealed class CoworkConversationAccessibilityTests
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(() =>
         {
-            // SOTA elevation (task2): focus transcript->composer->approvals, reduced motion, no literals, names on chips/notices; first-attempt asserted; security fail-closed/taint/boundary/no-leak in related tests
-            // states: LOADING/EMPTY/ERROR/SUCCESS + a11y 150s
-             var queue = new CoworkApprovalQueue();
+            var queue = new CoworkApprovalQueue();
             queue.Add(Approval(), "workspace/notes.md", "host observed read", "do not render this model text");
             var model = new CoworkConversationModel(
                 new SessionViewModel(),

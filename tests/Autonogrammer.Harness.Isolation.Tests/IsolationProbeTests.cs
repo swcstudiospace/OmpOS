@@ -34,9 +34,9 @@ public sealed class IsolationProbeTests
         var runner = new FakeProcessRunner
         {
             Handler = (_, arguments, _) => Task.FromResult(
-                arguments.Contains("true", StringComparer.Ordinal)
-                    ? new IsolationProcessRun(1, "unshare", false, false)
-                    : new IsolationProcessRun(0, "bwrap 0", false, false)),
+                arguments.Contains("--version", StringComparer.Ordinal)
+                    ? new IsolationProcessRun(0, "bwrap 0", false, false)
+                    : new IsolationProcessRun(1, "unshare", false, false)),
         };
         var probe = new IsolationProbe(runner, "linux-x64", TimeSpan.FromSeconds(1));
 

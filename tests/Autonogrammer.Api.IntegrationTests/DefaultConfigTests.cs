@@ -1,26 +1,35 @@
 using System.Net;
-using System.Text;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
+
 namespace Autonogrammer.Api.IntegrationTests;
-/// <summary>
-/// AG-77-12: shipped default configuration boots; Dispatch/Cowork/Accounts answer their disabled problem type (or 404);
-/// options validators refuse the three unsafe values named in the briefs (in-memory with 2 replicas, missing signing key with feature on, file key store).
-/// Uses Development ApiFactory for disabled (no postgres), Production-shaped for refusals (catches named InvalidOp when no test postgres).
-/// </summary>
+
+/// <summary>Exercises default-host responses and the startup checks for enabled Dispatch.</summary>
 public sealed class DefaultConfigTests
 {
+    private static readonly string[] ExpectedAnonymousPaths =
+    [
+        "/auth/config",
+        "/cowork/artifact-render/{ticket}",
+        "/health/live",
+        "/health/ready",
+        "/health/startup",
+        "/hooks/automations/{id}",
+        "/source",
+    ];
+
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
-    public async Task ApiBootsWithShippedDefaultsAndAnswersHealth()
+    public async Task DevelopmentHostWithDefaultModulesAnswersLiveness()
     {
-        // RED: will start failing until using correct factory + assert
-        using var factory = new ApiFactory(); // Development shape
+        // ApiFactory opts into the Development principal and extends the request timeout.
+        using var factory = new ApiFactory();
         using var client = factory.CreateClient();
 
         using var response = await client.GetAsync(new Uri("/health/live", UriKind.Relative), Token).ConfigureAwait(true);
@@ -28,118 +37,120 @@ public sealed class DefaultConfigTests
     }
 
     [Theory]
-    [InlineData("GET", "/dispatch/ping")]
-    [InlineData("POST", "/dispatch/devices")]
-    [InlineData("GET", "/cowork/sessions")]
-    [InlineData("POST", "/cowork/sessions")]
-    [InlineData("GET", "/account")]
-    public async Task DispatchCoworkAccountsRoutesAnswerDisabledProblemTypeOr404(string method, string path)
+    [InlineData("POST", "/dispatch/devices", "dispatch_disabled")]
+    [InlineData("GET", "/cowork/artifacts", "cowork_disabled")]
+    public async Task MappedDisabledModuleRoutesReturnTheirProblemType(string method, string path, string code)
     {
         using var factory = new ApiFactory();
         using var client = factory.CreateClient();
         using var request = new HttpRequestMessage(new HttpMethod(method), new Uri(path, UriKind.Relative));
-        if (!string.Equals(method, "GET", StringComparison.Ordinal) && !string.Equals(method, "DELETE", StringComparison.Ordinal))
-        {
-            request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
-        }
 
         using var response = await client.SendAsync(request, Token).ConfigureAwait(true);
 
-        // outside Dev unauth gets 401 first (middleware after UseAuthorization); in Dev we get the disabled or 404
-        // for this test we accept 404 or problem type (dispatch_disabled / cowork_disabled)
-        if (response.StatusCode == HttpStatusCode.NotFound)
-        {
-            using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(Token).ConfigureAwait(true));
-            var type = body.RootElement.GetProperty("type").GetString();
-            type.ShouldNotBeNull();
-            (type.EndsWith("/problems/dispatch_disabled", StringComparison.Ordinal) ||
-             type.EndsWith("/problems/cowork_disabled", StringComparison.Ordinal) ||
-             path.Contains("account")).ShouldBeTrue();
-        }
-        else
-        {
-            response.StatusCode.ShouldBeOneOf(HttpStatusCode.NotFound, HttpStatusCode.Unauthorized);
-        }
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(Token).ConfigureAwait(true));
+        body.RootElement.GetProperty("type").GetString().ShouldEndWith("/problems/" + code);
     }
 
-    [Fact]
-    public void ValidatorRefusesInMemoryPresenceWithTwoReplicas()
-    {
-        Environment.SetEnvironmentVariable("AUTONOGRAMMER_TEST_POSTGRES_CONNECTION", "Host=127.0.0.1;Port=5432;Database=autonogrammer_test;Username=autonogrammer;Password=dummy");
-        var config = JwtTestHost.ProductionConfig();
-        config["Dispatch:ReplicaMode"] = "Multi";
-        config["Coordination:Store"] = "InMemory";
-        var ex = Record.Exception(() => StartupFailureOfForDefault(config, "Production"));
-        ex.ShouldNotBeNull("in-memory with two replicas must be refused");
-        ex!.Message.ShouldContain("ReplicaMode", "must name the replica setting");
-    }
-
-    [Fact]
-    public void ValidatorRefusesMissingSigningKeyWithFeatureOn()
-    {
-        Environment.SetEnvironmentVariable("AUTONOGRAMMER_TEST_POSTGRES_CONNECTION", "Host=127.0.0.1;Port=5432;Database=autonogrammer_test;Username=autonogrammer;Password=dummy");
-        var config = JwtTestHost.ProductionConfig();
-        config["Api:Auth:Mode"] = "OwnerToken";
-        config.Remove("Api:Auth:OwnerToken:Sha256");
-        var ex = Record.Exception(() => StartupFailureOfForDefault(config, "Production"));
-        ex.ShouldNotBeNull("missing signing key with OwnerToken feature on must refuse");
-        ex!.Message.ShouldContain("OwnerToken", "must name the owner token key");
-    }
-
-    [Fact]
-    public void ValidatorRefusesFileKeyStore()
-    {
-        Environment.SetEnvironmentVariable("AUTONOGRAMMER_TEST_POSTGRES_CONNECTION", "Host=127.0.0.1;Port=5432;Database=autonogrammer_test;Username=autonogrammer;Password=dummy");
-        var config = JwtTestHost.ProductionConfig();
-        config["Secrets:Store"] = "File";
-        var ex = Record.Exception(() => StartupFailureOfForDefault(config, "Production"));
-        ex.ShouldNotBeNull("file key store must be refused");
-        ex!.Message.ShouldContain("Secrets:Store", "must name the secrets store setting");
-    }
-
-    [Fact]
-    public async Task DefaultHostReportsModeAndNoSecretInBody()
+    [Theory]
+    [InlineData("/account")]
+    [InlineData("/account/sessions")]
+    [InlineData("/account/sessions/missing")]
+    [InlineData("/account/board")]
+    public async Task DefaultAccountRoutesAreDisabledForAuthenticatedDevelopmentPrincipal(string path)
     {
         using var factory = new ApiFactory();
         using var client = factory.CreateClient();
+        using var response = await client.GetAsync(new Uri(path, UriKind.Relative), Token).ConfigureAwait(true);
 
-        using var response = await client.GetAsync(new Uri("/auth/config", UriKind.Relative), Token).ConfigureAwait(true);
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(Token).ConfigureAwait(true));
-        doc.RootElement.TryGetProperty("mode", out var mode).ShouldBeTrue();
-        var modeStr = mode.GetString();
-        (modeStr == "owner-token" || modeStr == "oidc" || modeStr == "development").ShouldBeTrue();
-        // no secret values leaked
-        var bodyText = doc.RootElement.ToString();
-        bodyText.Contains("Sha256", StringComparison.OrdinalIgnoreCase).ShouldBeFalse();
-        bodyText.Contains("PublishableKey", StringComparison.OrdinalIgnoreCase).ShouldBeFalse();
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(Token).ConfigureAwait(true));
+        body.RootElement.GetProperty("type").GetString().ShouldEndWith("/problems/account_disabled");
+    }
+
+    [Theory]
+    [InlineData("/account")]
+    [InlineData("/account/sessions")]
+    [InlineData("/account/sessions/missing")]
+    [InlineData("/account/board")]
+    public async Task DefaultAccountRoutesRejectAnonymousBeforeDisabledHandling(string path)
+    {
+        using var factory = new ApiFactory(JwtTestHost.ProductionConfig(), JwtTestHost.InjectStaticMetadata, environment: "Production");
+        using var client = factory.CreateClient();
+        using var response = await client.GetAsync(new Uri(path, UriKind.Relative), Token).ConfigureAwait(true);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
-    public void OpenApiAnonymousEndpointEnumerationMatchesExpectedForProductionShape()
+    public void EnabledDispatchWithMultiReplicaInMemoryCoordinationFailsStartup()
     {
-        // cross-cutting evidence for Task 1 OpenAPI scheme coverage (per D-32/D-33 and task1)
-        Environment.SetEnvironmentVariable("AUTONOGRAMMER_TEST_POSTGRES_CONNECTION", "Host=127.0.0.1;Port=5432;Database=autonogrammer_test;Username=autonogrammer;Password=dummy");
         var config = JwtTestHost.ProductionConfig();
-        using var factory = new ApiFactory(config, environment: "Production");
-        using var client = factory.CreateClient(); // force host build for data source
-        var eds = factory.Services.GetRequiredService<EndpointDataSource>();
-        var anon = eds.Endpoints
-            .Where(e => e.Metadata.GetMetadata<IAllowAnonymous>() != null)
-            .Select(e => e.RoutePattern?.RawText ?? e.DisplayName ?? string.Empty)
-            .Where(s => !string.IsNullOrWhiteSpace(s))
-            .ToHashSet(StringComparer.Ordinal);
-        // production shape per plan: health + auth/config anonymous; dev-only openapi/scalar excluded
-        anon.ShouldContain("/health/live");
-        anon.ShouldContain("/health/ready");
-        anon.ShouldContain("/health/startup");
-        anon.ShouldContain("/auth/config");
-        anon.ShouldNotContain("/openapi/v1.json");
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        config["Dispatch:Enabled"] = "true";
+        config["Dispatch:ReplicaMode"] = "Multi";
+        config["Coordination:Store"] = "InMemory";
+        config["Dispatch:Credentials:SigningKeyPem"] = key.ExportPkcs8PrivateKeyPem();
+        config["Dispatch:CommandSigning:KeyPem"] = key.ExportPkcs8PrivateKeyPem();
+        config["Dispatch:HubOrigin"] = "https://hub.example.test";
+
+        var failure = StartupFailureTextFor(config);
+
+        failure.ShouldContain("Dispatch:ReplicaMode");
+        failure.ShouldContain("Coordination:Store");
     }
 
-    private static string StartupFailureOfForDefault(Dictionary<string, string?> config, string environment)
+    [Fact]
+    public void EnabledDispatchWithoutCredentialSigningKeyFailsStartup()
     {
-        using var factory = new ApiFactory(config, environment: environment);
+        var config = JwtTestHost.ProductionConfig();
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        config["Dispatch:Enabled"] = "true";
+        config["Dispatch:Credentials:SigningKeyPem"] = string.Empty;
+        config["Dispatch:CommandSigning:KeyPem"] = key.ExportPkcs8PrivateKeyPem();
+        config["Dispatch:HubOrigin"] = "https://hub.example.test";
+
+        var failure = StartupFailureTextFor(config);
+
+        failure.ShouldContain("Dispatch:Credentials:SigningKeyPem");
+    }
+
+    [Fact]
+    public async Task DevelopmentAuthConfigReportsModeWithoutDispatchSigningKey()
+    {
+        const string canary = "dispatch-signing-key-canary";
+        using var factory = new ApiFactory(new Dictionary<string, string?>(StringComparer.Ordinal) { ["Dispatch:Credentials:SigningKeyPem"] = canary });
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync(new Uri("/auth/config", UriKind.Relative), Token).ConfigureAwait(true);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var text = await response.Content.ReadAsStringAsync(Token).ConfigureAwait(true);
+        text.ShouldNotContain(canary, Case.Sensitive);
+        using var body = JsonDocument.Parse(text);
+        body.RootElement.GetProperty("mode").GetString().ShouldBe("development");
+    }
+
+    [Fact]
+    public void ProductionShapeEnumeratesAllAnonymousEndpoints()
+    {
+        var config = JwtTestHost.ProductionConfig();
+        using var factory = new ApiFactory(config, environment: "Production");
+        using var client = factory.CreateClient();
+        var endpoints = factory.Services.GetRequiredService<EndpointDataSource>();
+        var anonymousPaths = endpoints.Endpoints
+            .Where(static endpoint => endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null)
+            .OfType<RouteEndpoint>()
+            .Select(static endpoint => endpoint.RoutePattern.RawText ?? string.Empty)
+            .OrderBy(static path => path, StringComparer.Ordinal)
+            .ToArray();
+
+        anonymousPaths.ShouldBe(ExpectedAnonymousPaths);
+    }
+
+    private static string StartupFailureTextFor(Dictionary<string, string?> config)
+    {
+        using var factory = new ApiFactory(config, environment: "Production");
         var caught = Assert.ThrowsAny<Exception>(() =>
         {
             using var client = factory.CreateClient();

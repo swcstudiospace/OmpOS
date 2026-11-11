@@ -6,10 +6,14 @@ using System.Net.Http.Headers;
 using System.Text;
 using Autonogrammer.Api.Cowork;
 using Autonogrammer.Api.Security;
+using Autonogrammer.Cowork.Memory;
+using Autonogrammer.Sessions.Postgres.Migrations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Npgsql;
 using Shouldly;
 using Xunit;
 
@@ -158,8 +162,17 @@ public sealed class ProjectsApiTests
 internal sealed class CoworkModuleHost : IAsyncDisposable
 {
     private readonly WebApplication _app;
+    private readonly NpgsqlDataSource? _admin;
+    private readonly NpgsqlDataSource? _dataSource;
+    private readonly string? _schema;
 
-    private CoworkModuleHost(WebApplication app) => _app = app;
+    private CoworkModuleHost(WebApplication app, NpgsqlDataSource? admin, NpgsqlDataSource? dataSource, string? schema)
+    {
+        _app = app;
+        _admin = admin;
+        _dataSource = dataSource;
+        _schema = schema;
+    }
 
     /// <summary>Starts the host.</summary>
     /// <param name="projects">Whether project routes are enabled.</param>
@@ -177,6 +190,25 @@ internal sealed class CoworkModuleHost : IAsyncDisposable
         settings["Cowork:Memory:Enabled"] = memory ? "true" : "false";
         settings["Cowork:Memory:RequestsPerMinute"] = memoryPerMinute.ToString(System.Globalization.CultureInfo.InvariantCulture);
         _ = builder.Configuration.AddInMemoryCollection(settings);
+        NpgsqlDataSource? admin = null;
+        NpgsqlDataSource? dataSource = null;
+        string? schema = null;
+        if (projects)
+        {
+            var connection = Environment.GetEnvironmentVariable("AUTONOGRAMMER_TEST_POSTGRES_CONNECTION");
+            if (string.IsNullOrWhiteSpace(connection))
+            {
+                throw new InvalidOperationException("A run-owned test PostgreSQL connection is required for project API tests.");
+            }
+
+            schema = "t_" + Guid.NewGuid().ToString("n");
+            admin = NpgsqlDataSource.Create(connection);
+            await new MigrationRunner(admin, schema).MigrateAsync(CancellationToken.None).ConfigureAwait(false);
+            dataSource = NpgsqlDataSource.Create(new NpgsqlConnectionStringBuilder(connection) { SearchPath = schema + ",public" }.ConnectionString);
+            builder.Services.AddSingleton(dataSource);
+        }
+
+        builder.Services.AddSingleton<IMemoryStore, InMemoryMemoryStore>();
         _ = builder.Services.AddApiAuthentication(builder.Environment);
         _ = builder.Services.AddCoworkProjects(builder.Configuration);
         _ = builder.Services.AddCoworkMemory(builder.Configuration);
@@ -189,7 +221,7 @@ internal sealed class CoworkModuleHost : IAsyncDisposable
         _ = app.MapCoworkProjects();
         _ = app.MapCoworkMemory();
         await app.StartAsync().ConfigureAwait(false);
-        return new CoworkModuleHost(app);
+        return new CoworkModuleHost(app, admin, dataSource, schema);
     }
 
     /// <summary>Creates a client. A null subject sends no token.</summary>
@@ -207,5 +239,18 @@ internal sealed class CoworkModuleHost : IAsyncDisposable
     }
 
     /// <inheritdoc />
-    public async ValueTask DisposeAsync() => await _app.DisposeAsync().ConfigureAwait(false);
+    public async ValueTask DisposeAsync()
+    {
+        await _app.DisposeAsync().ConfigureAwait(false);
+        if (_dataSource is not null) await _dataSource.DisposeAsync().ConfigureAwait(false);
+        if (_admin is not null)
+        {
+            var command = _admin.CreateCommand("DROP SCHEMA IF EXISTS " + _schema + " CASCADE");
+            await using (command.ConfigureAwait(false))
+            {
+                await command.ExecuteNonQueryAsync(CancellationToken.None).ConfigureAwait(false);
+            }
+            await _admin.DisposeAsync().ConfigureAwait(false);
+        }
+    }
 }

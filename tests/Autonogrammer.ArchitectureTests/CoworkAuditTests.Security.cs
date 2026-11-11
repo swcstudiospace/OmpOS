@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Shouldly;
 using Xunit;
 
@@ -34,7 +30,7 @@ public sealed partial class CoworkAuditTests
             if (trimmed.StartsWith("## ", StringComparison.Ordinal) && inTable) break; // next section ends table
             if (trimmed.StartsWith("| id |", StringComparison.Ordinal)) { inTable = true; continue; }
             if (trimmed.StartsWith("|---", StringComparison.Ordinal)) continue;
-            if (inTable && trimmed.StartsWith("|") && !trimmed.StartsWith("|-"))
+            if (inTable && trimmed.StartsWith('|') && !trimmed.StartsWith("|-", StringComparison.Ordinal))
             {
                 var cells = trimmed.Trim('|').Split('|').Select(c => c.Trim()).ToArray();
                 if (cells.Length >= 8)
@@ -53,12 +49,12 @@ public sealed partial class CoworkAuditTests
     private static List<string> ParseScopeAreas(string md)
     {
         var areas = new List<string>();
-        if (md.Contains("Accounts tokens/keyring")) areas.Add("Accounts tokens/keyring (67)");
-        if (md.Contains("Data-plane tenancy")) areas.Add("data-plane tenancy/no-RLS (68)");
-        if (md.Contains("Artifact sandbox")) areas.Add("artifact sandbox/CSP (71)");
-        if (md.Contains("Browser and computer-use")) areas.Add("browser/computer-use policies (72/73)");
-        if (md.Contains("Dispatch relay keys")) areas.Add("Dispatch relay keys/approvals (74)");
-        if (md.Contains("Cross-cutting")) areas.Add("cross-cutting");
+        if (md.Contains("Accounts tokens/keyring", StringComparison.Ordinal)) areas.Add("Accounts tokens/keyring (67)");
+        if (md.Contains("Data-plane tenancy", StringComparison.Ordinal)) areas.Add("data-plane tenancy/no-RLS (68)");
+        if (md.Contains("Artifact sandbox", StringComparison.Ordinal)) areas.Add("artifact sandbox/CSP (71)");
+        if (md.Contains("Browser and computer-use", StringComparison.Ordinal)) areas.Add("browser/computer-use policies (72/73)");
+        if (md.Contains("Dispatch relay keys", StringComparison.Ordinal)) areas.Add("Dispatch relay keys/approvals (74)");
+        if (md.Contains("Cross-cutting", StringComparison.Ordinal)) areas.Add("cross-cutting");
         // auth modes, rate limits, hosting, engine isolation, CSP, OpenAPI covered under above rows per D-32 amendments
         return areas;
     }
@@ -72,7 +68,7 @@ public sealed partial class CoworkAuditTests
 ";
         var ex = Record.Exception(() => ValidateNoOpenOrAcceptedCriticalHigh(ParseFindingsTable(badTable)));
         ex.ShouldNotBeNull("fixture with open High must fail");
-        ex!.Message.ShouldContain("T-77-03", "must name the row id in failure");
+        ex!.Message.ShouldContain("T-77-03");
     }
 
     [Fact]
@@ -146,7 +142,7 @@ public sealed partial class CoworkAuditTests
         // per plan, 6 areas + cross
         areas.Count.ShouldBeGreaterThanOrEqualTo(6, "every threat-model area must have a scope row");
         // Mermaid licence row must admit open (per acceptance)
-        md.ShouldContain("Mermaid", "Mermaid row required");
-        md.ShouldContain("licence open", "Mermaid licence must be stated open per plan");
+        md.ShouldContain("Mermaid");
+        md.ShouldContain("licence open");
     }
 }

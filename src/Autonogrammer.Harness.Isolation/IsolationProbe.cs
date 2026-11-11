@@ -7,7 +7,7 @@ namespace Autonogrammer.Harness.Isolation;
 public sealed class IsolationProbe
 {
     private static readonly string[] VersionArguments = ["--version"];
-    private static readonly string[] SelfTestArguments = ["--die-with-parent", "--unshare-user", "--unshare-pid", "true"];
+    private static readonly string[] SelfTestArguments = ["--die-with-parent", "--unshare-user", "--unshare-pid", "--ro-bind", "/", "/", "/bin/true"];
 
     private readonly IIsolationProcessRunner _runner;
     private readonly string _runtimeIdentifier;

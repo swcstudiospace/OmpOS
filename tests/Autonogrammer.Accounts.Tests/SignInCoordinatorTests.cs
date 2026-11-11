@@ -61,6 +61,40 @@ public sealed class SignInCoordinatorTests
     }
 
     [Fact]
+    public async Task DisposingDuringSendsKeepsTheGateUntilQueuedAndCancelledSendsFinish()
+    {
+        using var harness = AccountsHarness.Create();
+        using var cancellation = new CancellationTokenSource();
+        harness.Handler.ConfirmSignup(Email);
+        TaskCompletionSource arrived = harness.Handler.HoldOtp();
+        Task<AuthResult<SignInChallenge>> first = harness.Coordinator.SendCodeAsync(Email, null, Token);
+        try
+        {
+            await arrived.Task.WaitAsync(Token).ConfigureAwait(true);
+            Task<AuthResult<SignInChallenge>> queued = harness.Coordinator.SendCodeAsync(Email, null, Token);
+            Task<AuthResult<SignInChallenge>> cancelled = harness.Coordinator.SendCodeAsync(Email, null, cancellation.Token);
+            queued.IsCompleted.ShouldBeFalse();
+            cancelled.IsCompleted.ShouldBeFalse();
+
+            harness.Coordinator.Dispose();
+            await cancellation.CancelAsync().ConfigureAwait(true);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelled.WaitAsync(Token)).ConfigureAwait(true);
+            await Assert.ThrowsAsync<ObjectDisposedException>(
+                async () => await harness.Coordinator.SendCodeAsync(Email, null, Token).ConfigureAwait(true)).ConfigureAwait(true);
+            harness.Handler.Count("otp").ShouldBe(1);
+
+            harness.Handler.ReleaseOtp();
+            (await first.ConfigureAwait(true)).IsSuccess.ShouldBeTrue();
+            (await queued.ConfigureAwait(true)).Failure.Kind.ShouldBe(AuthErrorKind.TooManyRequests);
+            harness.Handler.Count("otp").ShouldBe(1);
+        }
+        finally
+        {
+            harness.Handler.ReleaseOtp();
+        }
+    }
+
+    [Fact]
     public async Task ACorrectCodeSignsInThroughTheManagerAndEndsTheAttempt()
     {
         using var harness = AccountsHarness.Create();

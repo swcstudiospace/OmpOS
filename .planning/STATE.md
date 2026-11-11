@@ -2,21 +2,21 @@
 gsd_state_version: "1.0"
 milestone: v0.16.0
 milestone_name: "Autonogrammer: accounts, Cowork and Dispatch (planned, added 2026-10-28)"
-current_phase: 67
-current_phase_name: "Accounts: Supabase passwordless sign-in"
-status: ready
-stopped_at: Completed 70-07-PLAN.md
-last_updated: "2026-11-10T13:23:30.069Z"
+current_phase: "74.1"
+current_phase_name: Durable account-scoped memory idempotency migration and atomic replay
+status: blocked
+stopped_at: "Phase 74.1 plan 03 awaiting independent human runbook review; 75-12 held"
+last_updated: "2026-11-10T15:16:20.720Z"
 last_activity: 2026-11-10
-last_activity_desc: 66-08 gap closure complete (SOTA a11y states + C3 first-attempt race fix); 66-08-SUMMARY created; phase 67 execution start (library/OS stores/keyring/API/account surfaces/arch/build/restore per assignment); refs phase 67; + phase 69 SOTA overlay executed 2026-11-10 (CoworkSessionStatus + SurfaceActivity + sync + graceful unavailable/offline/full/signed-out + 5 isolation rules + first-attempt suites + a11y); 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created via gsd; refs 69-VERIFICATION human_needed items; + phase 77 SOTA update executed 2026-11-10 (77-SOTA-HARDENING-DOCS-INTEGRATION.md created with states for hardening/docs/parity/security/a11y/gate/integration + criteria 1-8 record); refs 77.; + phase 72 SOTA update executed 2026-11-10 (Cowork browser use 25 degraded states + loading/empty/error/success + first-attempt + fail-closed security + graceful); 72-SOTA-COWORK-BROWSER-USE.md + 72-SOTA-SUMMARY created; refs 72
-state_head: 334de384e01cec715cfb1d70d37cdf5dcb421496
+last_activity_desc: "Phase 74.1 local checks passed but human runbook review remains pending. Independent account-default, Cowork notice and Chromium pipe fixes received focused verification; guarded browsing and release gates remain open."
+state_head: bcbb5658e2d68ab32e1d48e51ca1ba1b26b062b8
 progress:
-  total_phases: 16
+  total_phases: 17
   completed_phases: 11
-  total_plans: 100
-  completed_plans: 82
-  percent: 69
-current_plan: 7
+  total_plans: 111
+  completed_plans: 85
+  percent: 65
+current_plan: 3
 ---
 
 # Project State
@@ -26,7 +26,7 @@ current_plan: 7
 See: .planning/PROJECT.md (updated 2026-10-21)
 
 **Core value:** A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
-**Current focus:** v0.16.0 Autonogrammer: accounts, Cowork and Dispatch; lossless consolidation in canonical `/root/src/repos/ompos`, graph `ut-mvw138h5-b5d2e49a`. Execution is blocked on the unfinished merge, auth rework and expanded prerequisites. The current verified-completion projection is **0/16 phases**; the artifact inventory is **69/89 summarized plan slots**, leaving **20 unsummarized plans**. Summaries and source edits do not establish acceptance or a passing gate.
+**Current focus:** v0.16.0 in `/root/src/repos/autonogrammer` on `feat/autonogrammer-integration`. Phase 74.1 is implementing durable memory idempotency; 75-12 is held until its verification. Phase 72's locked browser restrictions and the final security and integration gates remain open. Generated frontmatter counts summarize artifact inventory, not verified phase completion; the current-tree completion count is not established.
 
 ### Historical focus (v0.15.0; retained provenance, not current-tree proof)
 
@@ -34,9 +34,15 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 
 ## Current Position
 
-Phase: 67 (Accounts: Supabase passwordless sign-in)
-Plan: 7 of 7 (complete; all summarized)
-Status: ready
+Phase: 74.1 (Durable account-scoped memory idempotency migration and atomic replay)
+Plan: 03 awaiting independent human runbook review; 01, 02 and 04 passed focused and integrated local checks
+Status: blocked; no production migration or release authorized
+
+Current gap-closure work: The owner chose strict Phase 66 baseline equality; the historical comparison remains failed and its scan inputs unauthenticated, although a fresh-baseline snapshot and focused branding tests pass. Phase 71's sync-off grants-field repair passes focused local and current-API tests, but artifact-access plans remain blocked on non-lossy sync rollout, verified device/session identity and browser destination enforcement. The owner chose to keep the affected Phase 74 production path disabled and leave the ambiguous legacy-row policy undecided. Phase 68's erasure writer-drain and composition boundary remain unresolved. None of these decisions releases the Phase 74.1 human-review hold or the 75-12 hold.
+
+Phase 76: the Bubblewrap namespace probe was corrected and its unit class passed 6/6. A protected live positive-control run exposed malformed session bind arguments and failed; isolation remains unverified pending a mount design that preserves deny precedence, socket masking and nested grant boundaries. SEC-77-08 is open at High because probe success is currently promoted to `FilesystemIsolated` before the session policy is exercised.
+
+The following milestone-scope paragraph and consolidation record are historical provenance, not current-tree acceptance evidence. See the current focus above and the phase verification files for present blockers.
 
 Milestone scope: v0.16.0 (66 complete via 66-08 gap closure with SOTA a11y security states + C3 first-attempt smoke fix; 66.1 deferred human; 67-77). Phase 67 executed per assignment: library tests (Accounts), OS stores/keyring (Secrets.Os), API endpoints, account surfaces (UI/Web/Native), architecture, build, restore. Canonical `/root/src/repos/ompos` on `feat/autonogrammer-integration`. 66-08-SUMMARY created; 66-VERIFICATION ready. Artifact inventory 76/90. No VERIFICATION for 67 yet. Phase 69 SOTA update executed: 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md (explicit states per 66-SOTA, security isolation gates + behavioral, first-attempt clean per VERIF, graceful degradation) created as post-plan overlay; 6/6 plans summarized; VERIF 7/7 truths + 3 human_needed (a11y/visual/shortcuts) noted. Phase 77 SOTA update executed: 77-SOTA-HARDENING-DOCS-INTEGRATION.md created (explicit states/edge/first-attempt/fail-closed/graceful/a11y/operational applied to hardening/docs/parity/security/a11y/gate/integration per 66-SOTA + 77-VALIDATION/CONTEXT); 77-01 summarized, 02-08 pending full execution + gate; criteria 1-8 referenced in SOTA record; committed. Refs 77.
 
@@ -572,6 +578,10 @@ Recent decisions affecting current work:
 - [External]: controller auth correlation `8514d046` stays BLOCKED on signed FAIL verdicts; zero auth cases executed under it.
 - [External, host]: `scan-images` (trivy) not run: trivy is not installed.
 - [Owner approval, irreversible]: milestone audit and complete; ship (PR, Greptile review, auto-merge).
+
+### Roadmap Evolution
+
+- Phase 74.1 inserted after Phase 74: Durable account-scoped memory idempotency migration and atomic replay; additive plan authorized, no production application (URGENT)
 
 ## Deferred Items
 

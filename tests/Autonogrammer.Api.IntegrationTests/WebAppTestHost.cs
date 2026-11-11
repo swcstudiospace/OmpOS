@@ -38,8 +38,19 @@ internal static class WebAppTestHost
     /// <param name="more">Further service replacements.</param>
     /// <param name="logger">An optional capturing log provider.</param>
     /// <returns>The host factory.</returns>
-    public static ApiFactory Dev(InMemoryScript? script = null, Dictionary<string, string?>? config = null, Action<IServiceCollection>? more = null, ILoggerProvider? logger = null) =>
-        new(config, services => Configure(services, script, more), logger);
+    public static ApiFactory Dev(InMemoryScript? script = null, Dictionary<string, string?>? config = null, Action<IServiceCollection>? more = null, ILoggerProvider? logger = null)
+    {
+        var merged = new Dictionary<string, string?>(StringComparer.Ordinal) { ["Accounts:Enabled"] = "true" };
+        if (config is not null)
+        {
+            foreach (var (key, value) in config)
+            {
+                merged[key] = value;
+            }
+        }
+
+        return new ApiFactory(merged, services => Configure(services, script, more), logger);
+    }
 
     /// <summary>Creates a host that validates bearer tokens, with the same harness setup as <see cref="Dev"/>.</summary>
     /// <param name="script">The script every prompt replays, or null for the default echo harness.</param>
@@ -50,6 +61,7 @@ internal static class WebAppTestHost
     public static ApiFactory Jwt(InMemoryScript? script = null, Dictionary<string, string?>? config = null, Action<IServiceCollection>? more = null, ILoggerProvider? logger = null)
     {
         var merged = JwtTestHost.DevelopmentConfig();
+        merged["Accounts:Enabled"] = "true";
         if (config is not null)
         {
             foreach (var (key, value) in config)

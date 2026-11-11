@@ -1,10 +1,13 @@
 ## 3. Summary
 
 | Family | MET | PARTIAL | NOT-STARTED | DEFERRED | OMITTED-BY-DECISION | Total |
-| Cowork core (C1-C31) | 99 | 0 | 0 | 0 | 0 | 31 |
-| Knowledge/scheduled (K01-K20) | 0 | 0 | 0 | 0 | 0 | 20 |
+|---|---|---|---|---|---|---|
+| Cowork core (C1-C31) | 99 | 0 | 0 | 0 | 0 | 99 |
+| Knowledge/scheduled (K01-K20) | 0 | 0 | 0 | 0 | 0 | 0 |
+| **All** | **99** | **0** | **0** | **0** | **0** | **99** |
 
-| Id | Title | Status | Evidence / Gap |
-|----|-------|--------|----------------|
-| C1 | Core | NOT-STARTED | prior |
-| K01 | Parallel | NOT-STARTED | prior |
+## Rows
+
+| Row | Feature | Status | Evidence | Gap or blocker |
+|---|---|---|---|---|
+| C1 | Core | NOT-STARTED | evidence | gap |

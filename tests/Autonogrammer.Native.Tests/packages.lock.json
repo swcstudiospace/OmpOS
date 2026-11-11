@@ -420,17 +420,17 @@
       "autonogrammer.accounts": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.16.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.accounts.desktop": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Accounts": "[0.15.0, )",
-          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
-          "Autonogrammer.Harness.Secrets.Os": "[0.15.0, )",
+          "Autonogrammer.Accounts": "[0.16.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.16.0, )",
+          "Autonogrammer.Harness.Secrets.Os": "[0.16.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
@@ -440,23 +440,23 @@
       "autonogrammer.cowork": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Harness.AgentLoop": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Harness.AgentLoop": "[0.16.0, )"
         }
       },
       "autonogrammer.cowork.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.0, )"
         }
       },
       "autonogrammer.cowork.artifacts": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.16.0, )",
           "DiffPlex": "[1.9.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.Options.ConfigurationExtensions": "[10.0.13, )"
@@ -465,79 +465,80 @@
       "autonogrammer.cowork.artifacts.stores": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Cowork.Artifacts": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Cowork.Artifacts": "[0.16.0, )",
           "Npgsql": "[10.0.3, )"
         }
       },
       "autonogrammer.dispatch.client": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Presentation": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Presentation": "[0.16.0, )"
         }
       },
       "autonogrammer.dispatch.desktop": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Accounts": "[0.15.0, )",
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Cowork": "[0.15.0, )",
-          "Autonogrammer.Harness.Acp": "[0.15.0, )",
-          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
-          "Autonogrammer.Presentation": "[0.15.0, )"
+          "Autonogrammer.Accounts": "[0.16.0, )",
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Cowork": "[0.16.0, )",
+          "Autonogrammer.Harness.Acp": "[0.16.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.16.0, )",
+          "Autonogrammer.Harness.Secrets.Os": "[0.16.0, )",
+          "Autonogrammer.Presentation": "[0.16.0, )"
         }
       },
       "autonogrammer.enginehost": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Harness.Acp": "[0.15.0, )",
-          "Autonogrammer.Harness.InMemory": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Harness.Acp": "[0.16.0, )",
+          "Autonogrammer.Harness.InMemory": "[0.16.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.genui": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.0, )"
         }
       },
       "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.0, )"
         }
       },
       "autonogrammer.harness.acp": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.harness.agentloop": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Harness.Acp": "[0.15.0, )",
-          "Autonogrammer.Harness.Plugins": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Harness.Acp": "[0.16.0, )",
+          "Autonogrammer.Harness.Plugins": "[0.16.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.harness.automations": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Plugins": "[0.15.0, )"
+          "Autonogrammer.Harness.Plugins": "[0.16.0, )"
         }
       },
       "autonogrammer.harness.browseruse": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.16.0, )",
           "PuppeteerSharp": "[25.15.0, )"
         }
       },
@@ -547,8 +548,8 @@
       "autonogrammer.harness.computeruse": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Cowork.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.16.0, )"
         }
       },
       "autonogrammer.harness.computeruse.abstractions": {
@@ -557,73 +558,73 @@
       "autonogrammer.harness.computeruse.macos": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.16.0, )"
         }
       },
       "autonogrammer.harness.computeruse.windows": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.16.0, )"
         }
       },
       "autonogrammer.harness.computeruse.x11": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.16.0, )"
         }
       },
       "autonogrammer.harness.inmemory": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )"
         }
       },
       "autonogrammer.harness.isolation": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )"
         }
       },
       "autonogrammer.harness.mcp": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Harness.Acp": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Harness.Acp": "[0.16.0, )",
           "ModelContextProtocol": "[2.3.0, )"
         }
       },
       "autonogrammer.harness.mcpgateway": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Harness.Mcp": "[0.15.0, )"
+          "Autonogrammer.Cowork.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Harness.Mcp": "[0.16.0, )"
         }
       },
       "autonogrammer.harness.notifications": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )"
         }
       },
       "autonogrammer.harness.ompconfig": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.OmpLauncher": "[0.15.0, )",
-          "Autonogrammer.Harness.Providers": "[0.15.0, )",
-          "Autonogrammer.Harness.Secrets": "[0.15.0, )"
+          "Autonogrammer.Harness.OmpLauncher": "[0.16.0, )",
+          "Autonogrammer.Harness.Providers": "[0.16.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.16.0, )"
         }
       },
       "autonogrammer.harness.omplauncher": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Terminal": "[0.15.0, )"
+          "Autonogrammer.Harness.Terminal": "[0.16.0, )"
         }
       },
       "autonogrammer.harness.pluginbundles": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )"
         }
       },
       "autonogrammer.harness.plugins": {
@@ -635,13 +636,13 @@
       "autonogrammer.harness.remote": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Harness.Acp": "[0.15.0, )",
-          "Autonogrammer.Harness.AgentLoop": "[0.15.0, )",
-          "Autonogrammer.Harness.Terminal": "[0.15.0, )",
-          "Autonogrammer.Harness.Workspace": "[0.15.0, )",
-          "Autonogrammer.Presentation": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Harness.Acp": "[0.16.0, )",
+          "Autonogrammer.Harness.AgentLoop": "[0.16.0, )",
+          "Autonogrammer.Harness.Terminal": "[0.16.0, )",
+          "Autonogrammer.Harness.Workspace": "[0.16.0, )",
+          "Autonogrammer.Presentation": "[0.16.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
@@ -651,7 +652,7 @@
       "autonogrammer.harness.secrets.os": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.16.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
           "System.Security.Cryptography.ProtectedData": "[10.0.13, )"
         }
@@ -665,7 +666,7 @@
       "autonogrammer.harness.workspace": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )"
         }
       },
       "autonogrammer.harness.worktrees": {
@@ -674,38 +675,38 @@
       "autonogrammer.native": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Accounts": "[0.15.0, )",
-          "Autonogrammer.Accounts.Desktop": "[0.15.0, )",
-          "Autonogrammer.Cowork": "[0.15.0, )",
-          "Autonogrammer.Cowork.Artifacts.Stores": "[0.15.0, )",
-          "Autonogrammer.Dispatch.Client": "[0.15.0, )",
-          "Autonogrammer.Dispatch.Desktop": "[0.15.0, )",
-          "Autonogrammer.EngineHost": "[0.15.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Harness.Acp": "[0.15.0, )",
-          "Autonogrammer.Harness.AgentLoop": "[0.15.0, )",
-          "Autonogrammer.Harness.Automations": "[0.15.0, )",
-          "Autonogrammer.Harness.BrowserUse": "[0.15.0, )",
-          "Autonogrammer.Harness.ComputerUse": "[0.15.0, )",
-          "Autonogrammer.Harness.ComputerUse.MacOS": "[0.15.0, )",
-          "Autonogrammer.Harness.ComputerUse.Windows": "[0.15.0, )",
-          "Autonogrammer.Harness.ComputerUse.X11": "[0.15.0, )",
-          "Autonogrammer.Harness.Isolation": "[0.15.0, )",
-          "Autonogrammer.Harness.Mcp": "[0.15.0, )",
-          "Autonogrammer.Harness.McpGateway": "[0.15.0, )",
-          "Autonogrammer.Harness.Notifications": "[0.15.0, )",
-          "Autonogrammer.Harness.OmpConfig": "[0.15.0, )",
-          "Autonogrammer.Harness.PluginBundles": "[0.15.0, )",
-          "Autonogrammer.Harness.Plugins": "[0.15.0, )",
-          "Autonogrammer.Harness.Providers": "[0.15.0, )",
-          "Autonogrammer.Harness.Remote": "[0.15.0, )",
-          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
-          "Autonogrammer.Harness.Secrets.Os": "[0.15.0, )",
-          "Autonogrammer.Harness.Terminal": "[0.15.0, )",
-          "Autonogrammer.Harness.Workspace": "[0.15.0, )",
-          "Autonogrammer.Harness.Worktrees": "[0.15.0, )",
-          "Autonogrammer.Native.Views": "[0.15.0, )",
-          "Autonogrammer.Presentation": "[0.15.0, )",
+          "Autonogrammer.Accounts": "[0.16.0, )",
+          "Autonogrammer.Accounts.Desktop": "[0.16.0, )",
+          "Autonogrammer.Cowork": "[0.16.0, )",
+          "Autonogrammer.Cowork.Artifacts.Stores": "[0.16.0, )",
+          "Autonogrammer.Dispatch.Client": "[0.16.0, )",
+          "Autonogrammer.Dispatch.Desktop": "[0.16.0, )",
+          "Autonogrammer.EngineHost": "[0.16.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Harness.Acp": "[0.16.0, )",
+          "Autonogrammer.Harness.AgentLoop": "[0.16.0, )",
+          "Autonogrammer.Harness.Automations": "[0.16.0, )",
+          "Autonogrammer.Harness.BrowserUse": "[0.16.0, )",
+          "Autonogrammer.Harness.ComputerUse": "[0.16.0, )",
+          "Autonogrammer.Harness.ComputerUse.MacOS": "[0.16.0, )",
+          "Autonogrammer.Harness.ComputerUse.Windows": "[0.16.0, )",
+          "Autonogrammer.Harness.ComputerUse.X11": "[0.16.0, )",
+          "Autonogrammer.Harness.Isolation": "[0.16.0, )",
+          "Autonogrammer.Harness.Mcp": "[0.16.0, )",
+          "Autonogrammer.Harness.McpGateway": "[0.16.0, )",
+          "Autonogrammer.Harness.Notifications": "[0.16.0, )",
+          "Autonogrammer.Harness.OmpConfig": "[0.16.0, )",
+          "Autonogrammer.Harness.PluginBundles": "[0.16.0, )",
+          "Autonogrammer.Harness.Plugins": "[0.16.0, )",
+          "Autonogrammer.Harness.Providers": "[0.16.0, )",
+          "Autonogrammer.Harness.Remote": "[0.16.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.16.0, )",
+          "Autonogrammer.Harness.Secrets.Os": "[0.16.0, )",
+          "Autonogrammer.Harness.Terminal": "[0.16.0, )",
+          "Autonogrammer.Harness.Workspace": "[0.16.0, )",
+          "Autonogrammer.Harness.Worktrees": "[0.16.0, )",
+          "Autonogrammer.Native.Views": "[0.16.0, )",
+          "Autonogrammer.Presentation": "[0.16.0, )",
           "Avalonia": "[12.1.4, )",
           "Avalonia.Desktop": "[12.1.4, )",
           "Avalonia.Themes.Fluent": "[12.1.4, )",
@@ -715,19 +716,19 @@
       "autonogrammer.native.views": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Cowork.Artifacts": "[0.15.0, )",
-          "Autonogrammer.GenUi": "[0.15.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Harness.AgentLoop": "[0.15.0, )",
-          "Autonogrammer.Harness.Completion": "[0.15.0, )",
-          "Autonogrammer.Harness.Mcp": "[0.15.0, )",
-          "Autonogrammer.Harness.OmpLauncher": "[0.15.0, )",
-          "Autonogrammer.Harness.Plugins": "[0.15.0, )",
-          "Autonogrammer.Harness.Terminal": "[0.15.0, )",
-          "Autonogrammer.Harness.Workspace": "[0.15.0, )",
-          "Autonogrammer.Presentation": "[0.15.0, )",
-          "Autonogrammer.Sessions": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Cowork.Artifacts": "[0.16.0, )",
+          "Autonogrammer.GenUi": "[0.16.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Harness.AgentLoop": "[0.16.0, )",
+          "Autonogrammer.Harness.Completion": "[0.16.0, )",
+          "Autonogrammer.Harness.Mcp": "[0.16.0, )",
+          "Autonogrammer.Harness.OmpLauncher": "[0.16.0, )",
+          "Autonogrammer.Harness.Plugins": "[0.16.0, )",
+          "Autonogrammer.Harness.Terminal": "[0.16.0, )",
+          "Autonogrammer.Harness.Workspace": "[0.16.0, )",
+          "Autonogrammer.Presentation": "[0.16.0, )",
+          "Autonogrammer.Sessions": "[0.16.0, )",
           "Avalonia": "[12.1.4, )",
           "Avalonia.AvaloniaEdit": "[12.0.0, )",
           "Avalonia.Controls.DataGrid": "[12.1.2, )",
@@ -741,31 +742,31 @@
       "autonogrammer.parity.support": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Presentation": "[0.15.0, )"
+          "Autonogrammer.Presentation": "[0.16.0, )"
         }
       },
       "autonogrammer.parser": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.16.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.presentation": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.GenUi": "[0.15.0, )",
-          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Parser": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.GenUi": "[0.16.0, )",
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Parser": "[0.16.0, )",
           "Markdig": "[1.4.2, )"
         }
       },
       "autonogrammer.sessions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )"
         }
       },
       "Avalonia": {

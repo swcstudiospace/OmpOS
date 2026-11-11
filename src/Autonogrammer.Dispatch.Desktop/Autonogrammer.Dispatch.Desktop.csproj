@@ -5,6 +5,7 @@
     <ProjectReference Include="../Autonogrammer.Cowork/Autonogrammer.Cowork.csproj" />
     <ProjectReference Include="../Autonogrammer.Harness.Acp/Autonogrammer.Harness.Acp.csproj" />
     <ProjectReference Include="../Autonogrammer.Harness.Secrets/Autonogrammer.Harness.Secrets.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Secrets.Os/Autonogrammer.Harness.Secrets.Os.csproj" />
     <ProjectReference Include="../Autonogrammer.Accounts/Autonogrammer.Accounts.csproj" />
     <ProjectReference Include="../Autonogrammer.Presentation/Autonogrammer.Presentation.csproj" />
   </ItemGroup>

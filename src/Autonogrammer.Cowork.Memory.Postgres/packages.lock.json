@@ -41,14 +41,14 @@
       "autonogrammer.cowork.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.0, )"
         }
       },
       "autonogrammer.cowork.memory": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.16.0, )"
         }
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Autonogrammer.Dispatch.Desktop/Autonogrammer.Dispatch.Desktop.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Accounts.Desktop/Autonogrammer.Accounts.Desktop.csproj" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="Shouldly" />
     <PackageReference Include="coverlet.MTP" />

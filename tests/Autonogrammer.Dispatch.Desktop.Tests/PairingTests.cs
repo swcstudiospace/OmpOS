@@ -1,6 +1,9 @@
+using System.Reflection;
 using System.Security.Cryptography;
+using Autonogrammer.Accounts.Desktop;
 using Autonogrammer.Dispatch.Desktop.Tests.Support;
 using Autonogrammer.Harness.Secrets;
+using Autonogrammer.Harness.Secrets.Os;
 using Shouldly;
 using Xunit;
 
@@ -21,10 +24,42 @@ public sealed class PairingTests : IDisposable
     }
 
     [Fact]
+    public void FileAndWrappedFileStoresAreRejectedBeforeWritingPairingSecrets()
+    {
+        var file = new OwnerOnlyFileSecretStore(Path.Combine(_directory, "secrets.json"));
+        using var wrapper = new AccountSecretStoreSelector(file, file, hasStoredSession: false, allowFileSecretStore: true);
+
+        Should.Throw<DispatchKeyStoreUnavailableException>(() => new DispatchPairing(file, PairingPath));
+        Should.Throw<DispatchKeyStoreUnavailableException>(() => new DispatchPairing(wrapper, PairingPath));
+        Should.Throw<DispatchKeyStoreUnavailableException>(() => new DispatchPairing(new InMemorySessionSecretStore(), PairingPath));
+        Directory.Exists(_directory).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void PublicPairingApiHasNoTestStoreBypass()
+    {
+        var constructors = typeof(DispatchPairing).GetConstructors();
+        constructors.Length.ShouldBe(1);
+        constructors[0].GetParameters().Select(static parameter => parameter.ParameterType)
+            .ShouldBe([typeof(ISecretStore), typeof(string)]);
+        typeof(DispatchPairing).GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(static method => method.ReturnType == typeof(DispatchPairing))
+            .ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void OperatingSystemStoreCanBeSelectedWithoutContactingTheKeyring()
+    {
+        var pairing = new DispatchPairing(new OsSecretStore(), PairingPath);
+
+        pairing.LoadPairing().ShouldBeNull();
+    }
+
+    [Fact]
     public async Task TheDeviceKeyIsStoredOnlyInTheSecretStore()
     {
         var secrets = new InMemorySessionSecretStore();
-        var pairing = new DispatchPairing(secrets, PairingPath);
+        var pairing = DispatchPairing.CreateForTesting(secrets, PairingPath);
 
         var spki = await pairing.EnrollDeviceKeyAsync("device_2", CancellationToken.None);
 
@@ -40,7 +75,7 @@ public sealed class PairingTests : IDisposable
     [Fact]
     public async Task AnUnavailableStoreRefusesPairingAndWritesNoRecord()
     {
-        var pairing = new DispatchPairing(new UnavailableSecretStore(), PairingPath);
+        var pairing = DispatchPairing.CreateForTesting(new UnavailableSecretStore(), PairingPath);
 
         await Should.ThrowAsync<DispatchKeyStoreUnavailableException>(() => pairing.EnrollDeviceKeyAsync("device_2", CancellationToken.None));
 
@@ -50,7 +85,7 @@ public sealed class PairingTests : IDisposable
     [Fact]
     public async Task ACompletedPairingReloadsItsAccountAndKeys()
     {
-        var pairing = new DispatchPairing(new InMemorySessionSecretStore(), PairingPath);
+        var pairing = DispatchPairing.CreateForTesting(new InMemorySessionSecretStore(), PairingPath);
         using var signer = new DispatchTestSigner();
 
         await pairing.CompleteAsync(

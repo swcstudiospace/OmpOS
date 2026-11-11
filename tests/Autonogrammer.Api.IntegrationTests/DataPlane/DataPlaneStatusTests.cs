@@ -8,6 +8,7 @@ using Autonogrammer.Contracts.DataPlane;
 using Autonogrammer.Coordination.Dragonfly;
 using Autonogrammer.Resilience;
 using Autonogrammer.Sessions.Postgres;
+using Autonogrammer.Sessions.Postgres.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
@@ -142,6 +143,59 @@ public sealed class DataPlaneStatusTests
 
         rows[0].ShouldBe(new DataPlaneStatus(DataPlaneComponent.Postgres, state, reason));
     }
+
+    /// <summary>Required membership and checksums take precedence over the highest recorded version, including a later registration of version 10.</summary>
+    [Fact]
+    public async Task SchemaProbe_RequiresEveryRegisteredVersionAndChecksum()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var current = MigrationRegistry.All;
+        var ten = (IMigrationStep)Activator.CreateInstance(
+            typeof(MigrationRunner).Assembly.GetType("Autonogrammer.Sessions.Postgres.Migrations.M0010_DispatchDeviceState", throwOnError: true)!,
+            nonPublic: true)!;
+        var future = current.Append(ten).OrderBy(static step => step.Version).ToArray();
+        var ledger = current.Where(static step => step.Version != 11).Select(Applied).Append(new AppliedMigration(12, "future", "future")).ToList();
+        var probe = new SchemaHeadProbe(_ => Task.FromResult<IReadOnlyList<AppliedMigration>>(ledger.ToArray()), current, true, Clock);
+
+        (await probe.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Behind);
+        ledger.RemoveAll(static row => row.Version == 12);
+        ledger.Add(Applied(current.Single(static step => step.Version == 11)));
+        (await probe.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Current);
+        var futureProbe = new SchemaHeadProbe(_ => Task.FromResult<IReadOnlyList<AppliedMigration>>(ledger.ToArray()), future, true, Clock);
+        (await futureProbe.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Behind);
+        ledger.Add(Applied(ten));
+        (await futureProbe.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Current);
+        ledger.Add(new AppliedMigration(12, "future", "future"));
+        (await futureProbe.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Ahead);
+        var index = ledger.FindIndex(static row => row.Version == 11);
+        ledger[index] = ledger[index] with { Checksum = "wrong" };
+        (await futureProbe.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Behind);
+    }
+
+    /// <summary>A forced refresh bypasses the bounded cache and non-PostgreSQL stores never read the ledger.</summary>
+    [Fact]
+    public async Task SchemaProbe_RefreshBypassesCache_AndNonPostgresDoesNotRead()
+    {
+        var token = TestContext.Current.CancellationToken;
+        IReadOnlyList<AppliedMigration> ledger = MigrationRegistry.All.Select(Applied).ToArray();
+        var reads = 0;
+        Task<IReadOnlyList<AppliedMigration>> ReadAsync(CancellationToken _)
+        {
+            reads++;
+            return Task.FromResult(ledger);
+        }
+
+        var probe = new SchemaHeadProbe(ReadAsync, MigrationRegistry.All, true, Clock);
+        (await probe.GetAsync(false, token).ConfigureAwait(true)).ShouldBe(SchemaState.Current);
+        ledger = [];
+        (await probe.GetAsync(false, token).ConfigureAwait(true)).ShouldBe(SchemaState.Current);
+        (await probe.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Behind);
+        var disabled = new SchemaHeadProbe(ReadAsync, MigrationRegistry.All, false, Clock);
+        (await disabled.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.NotApplicable);
+        reads.ShouldBe(2);
+    }
+
+    private static AppliedMigration Applied(IMigrationStep step) => new(step.Version, step.Name, MigrationRunner.ChecksumOf(step));
 
     /// <summary>Verifies a probe that times out is reported as unavailable with Timeout, and one that finds the breaker open as CircuitOpen.</summary>
     [Fact]
@@ -308,9 +362,15 @@ public sealed class DataPlaneStatusTests
                 NullLogger<TelemetryExportMonitor>.Instance));
             _provider = services.BuildServiceProvider();
 
+            IReadOnlyList<AppliedMigration> applied = schema switch
+            {
+                SchemaState.Behind => [],
+                SchemaState.Ahead => [.. MigrationRegistry.All.Select(Applied), new AppliedMigration(99, "future", "future")],
+                _ => [.. MigrationRegistry.All.Select(Applied)],
+            };
             var probe = new SchemaHeadProbe(
-                _ => probeFailure is null ? Task.FromResult(schema == SchemaState.Behind ? 1 : schema == SchemaState.Ahead ? 99 : 5) : Task.FromException<int>(probeFailure),
-                head: 5,
+                _ => probeFailure is null ? Task.FromResult(applied) : Task.FromException<IReadOnlyList<AppliedMigration>>(probeFailure),
+                MigrationRegistry.All,
                 applies: postgres is not null,
                 Clock);
             Service = new DataPlaneStatusService(

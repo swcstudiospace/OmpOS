@@ -120,6 +120,22 @@ public sealed class OmpApiClientRouteTests : IDisposable
         inner.Path.ShouldBe("/account/sessions");
     }
 
+    /// <summary>The board request carries the bearer token and reads the API board response shape.</summary>
+    [Fact]
+    public async Task GetBoardUsesBearerAndParsesApiResponse()
+    {
+        using var inner = new HeaderHandler("{\"state\":\"ready\",\"columns\":[{\"key\":\"backlog\",\"title\":\"Backlog\",\"acceptsDrop\":true,\"cards\":[{\"id\":\"session-1\",\"title\":\"Session 1\",\"rowStatus\":\"ready\",\"columnKey\":\"backlog\",\"lastActivityAt\":\"2026-11-10T00:00:00Z\",\"isStale\":false,\"closed\":false}]}]}");
+        using var bearer = new BearerTokenHandler(new StaticToken("board-token"), inner);
+        using var http = new HttpClient(bearer) { BaseAddress = new Uri("http://api.invalid/") };
+
+        var board = await new OmpApiClient(http).GetBoardAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        inner.Authorization.ShouldBe("Bearer board-token");
+        inner.Path.ShouldBe("/account/board");
+        board.State.ShouldBe(BoardStateKind.Ready);
+        board.Columns.Single().Cards.Single().Id.ShouldBe("session-1");
+    }
+
     /// <summary>The Demo offers 20 engine commands and a model list led by the default model.</summary>
     /// <returns>A task that completes when the assertions ran.</returns>
     [Fact]
@@ -143,7 +159,7 @@ public sealed class OmpApiClientRouteTests : IDisposable
         public ValueTask<string?> GetTokenAsync(CancellationToken cancellationToken) => ValueTask.FromResult<string?>(token);
     }
 
-    private sealed class HeaderHandler : HttpMessageHandler
+    private sealed class HeaderHandler(string json = "{\"items\":[]}") : HttpMessageHandler
     {
         public string? Authorization { get; private set; }
 
@@ -155,7 +171,7 @@ public sealed class OmpApiClientRouteTests : IDisposable
             Path = request.RequestUri?.AbsolutePath;
             return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
             {
-                Content = new System.Net.Http.StringContent("{\"items\":[]}", System.Text.Encoding.UTF8, "application/json"),
+                Content = new System.Net.Http.StringContent(json, System.Text.Encoding.UTF8, "application/json"),
             });
         }
     }

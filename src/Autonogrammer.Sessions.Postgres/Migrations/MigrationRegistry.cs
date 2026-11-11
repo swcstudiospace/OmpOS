@@ -20,8 +20,8 @@ public static class MigrationRegistry
         new M0007_LedgerOutbox(),
         new M0008_Retention(),
         new M0009_CoworkProjectsMemory(),
-        // M0010_DispatchDeviceState removed (owned by phase 74 U2 per ROADMAP/68-03 key_links and 68-08 gap 6); head remains M0009 for 68.
-        // 74 appends its own at end.
+        // Version 10 remains reserved for DispatchDeviceState.
+        new M0011_MemoryIdempotency(),
     ];
     /// <summary>Gets the version of the last step: the schema version this build expects.</summary>
     public static int Head => All[^1].Version;

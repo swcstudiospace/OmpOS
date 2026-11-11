@@ -8,6 +8,8 @@ Status: Operator steps only. Nothing in this page has been applied to Railway (O
 
 Last verified: 2026-10-30
 
+The Phase 74.1 durable-memory section below is newly authored and has not yet received the required human review; the date above does not attest to it.
+
 Applies to: the data-plane cutover in ADR-0031. Local compose and throwaway test services are in the tree; hosted services are described, not created.
 
 ## Corrected criterion-3 check
@@ -51,7 +53,64 @@ Nothing below is applied by this repository. Railway text is the intended operat
 5. **Close public exposure (OQ-347).** After the first successful private-network deploy, close the Timescale TCP proxy and the public Greptime domain. Nothing in the API depends on them. Do not give `autonogrammer-dragonfly` or the new database a TCP proxy or a public domain.
 6. **Owner item (D-58).** `deploy/railway/api.railway.json` sets `healthcheckTimeout` to 120. The default `DataPlane:Postgres:SchemaWaitSeconds` is 120. They must stay equal so the health check does not kill a start that is still waiting for the migrator. This page does not edit that JSON. Confirm both numbers before the first deploy.
 
-The API waits up to `DataPlane:Postgres:SchemaWaitSeconds` for `autonogrammer.schema_migrations` to reach the compiled head, then fails fast naming the key. A newer schema is accepted and reported `SchemaAhead`.
+The API checks the migration ledger against the steps registered in its running binary, including membership and matching checksums, not just the highest version. A newer ledger can be reported as `SchemaAhead` only if the binary's required steps are present and match; an ahead version does not excuse a missing registered step.
+
+## Durable Cowork memory: rollout and retention gates
+
+This is a procedure for a future authorized rollout, **not authorization to migrate, deploy, erase, or roll back production**. Phase 74.1 is independently implementing and verifying the schema, store and injected-PostgreSQL HTTP path. The parent must keep 75-12 stopped until all 74.1 plans and phase verification pass. Its later production-composition acceptance is described below; neither this page nor injected-store tests establish that it has passed.
+
+### Expand, drain and switch
+
+1. Inventory the migration registry and the target ledger. M0011 is the memory-claim table and expiry index; M0010 is reserved for Dispatch and must not be reused. Compare every step registered in the **candidate binary**, including version and checksum, to the ledger: a maximum version of 11 or higher alone is insufficient. Include the 9→11 and 9→10→11 histories in disposable rehearsal; if 10 becomes registered later, ensure readiness detects and the migrator applies a missing 10 even where 11 is already present. Stop on missing or mismatched registered steps.
+2. Verify the actual object-creator role and grants: the migrator can create objects in the target schema; `autonogrammer_app` has schema usage and the required table DML but no schema DDL. Default privileges are creator-specific, so verify them for the role that actually creates M0011 rather than assuming bootstrap grants apply. Rehearse migration up, down and re-up, membership/checksums and both roles on a uniquely run-owned disposable database/schema; never use production for this rehearsal.
+3. Obtain separate explicit owner approval before any production operation, with an agreed maintenance window and tested backup/restore plan. Expand the schema first with the migrator; verify M0011 and the candidate binary's complete ledger membership and checksums before allowing new writers. Existing keys used before expansion have no durable history and cannot be retroactively protected.
+4. **Quiesce creates before switching writers:** disable or block memory-create traffic at every ingress, drain all in-flight create requests to zero, confirm every old writer process is stopped, and prevent old processes from restarting until cutover is complete. Inventory all hosts, workers and other writers, and retain operator evidence of ingress blocks, zero in-flight requests, process inventory, stopped instances and restart controls. If any ingress, instance or writer cannot be accounted for, fail closed and keep the gate active. Merely deploying some new replicas is not a drain.
+5. Switch every writer to the durable implementation before enabling the durable route or restoring create traffic; mixed old/new writers can create duplicates and do not provide the guarantee. Verify independent hosts and restart behavior in the authorized environment before releasing the gate. This plan does not grant permission for those actions in production.
+
+### Bounded expiry cleanup
+
+Expiry concerns **claim metadata only**, never memory entries. Keyed writes can opportunistically prune a bounded number of expired claims for their own account, but that is not a global retention job: idle tenants receive no requests, so an operator-owned scheduler must run global cleanup independently. Agree and record the schedule, batch budget and acceptable maximum lag before rollout; run frequently enough to meet that threshold. Alert on failed/missed runs, duration and oldest-expired-claim lag, and investigate backlog or repeatedly locked rows. `SKIP LOCKED` may leave rows for a later run; a zero-row batch alone does not prove there is no backlog.
+
+The following is an **example for an explicitly authorized target**, not an instruction to execute now. Connect as the DML-only `autonogrammer_app` role (or an operator-controlled role with equivalent schema USAGE and table SELECT, UPDATE and DELETE privileges; row locking requires UPDATE privilege). It uses the M0011 composite primary key and `cowork_memory_idempotency_expires_idx`; the planner chooses the actual plan. One statement is one bounded transaction; no keys, fingerprints, entry IDs or account IDs are returned or logged.
+
+```sql
+WITH expired AS (
+    SELECT account_id, operation, key
+    FROM autonogrammer.cowork_memory_idempotency
+    WHERE expires_at <= statement_timestamp()
+    ORDER BY expires_at
+    LIMIT 100
+    FOR UPDATE SKIP LOCKED
+)
+DELETE FROM autonogrammer.cowork_memory_idempotency AS claims
+USING expired
+WHERE claims.account_id = expired.account_id
+  AND claims.operation = expired.operation
+  AND claims.key = expired.key;
+```
+
+Repeat bounded batches according to the scheduler's resource budget, committing each separately. The database's `statement_timestamp()` is a fixed cutoff for each batch; never use a host clock to decide expiry. Monitor lag with this aggregate, which reveals no claim values (a null result means none are expired):
+
+```sql
+SELECT count(*) AS expired_claims,
+       max(statement_timestamp() - expires_at) AS oldest_expired_lag
+FROM autonogrammer.cowork_memory_idempotency
+WHERE expires_at <= statement_timestamp();
+```
+
+Protect access to the table, backups and diagnostics: claim keys and request digests are sensitive metadata and must never be logged. The table stores an entry identifier and digest, not a second memory-content or response copy.
+
+### Rollback, deletion and privacy
+
+For application rollback, retain the expanded schema and keep the same complete quiescence gate active while changing versions. If the old application cannot honor durable claims, do not resume keyed creates while promising durable replay: keep those writes blocked until all writers again honor claims, or obtain a separate owner decision to suspend the guarantee and communicate the duplicate risk. Never mix incompatible writers. A retry after an unknown commit must use the same key; retrying unkeyed can duplicate a committed memory.
+
+Destructive M0011 down drops the claim table and **irreversibly loses current replay/tombstone history** unless recovered from a suitable backup; re-up creates an empty table and does not reconstruct it. It requires separate explicit owner approval, all create ingress blocked, in-flight requests drained, every writer stopped and restart prevented, plus an identified backup and recovery plan. Before any approved down, take a protected consistent backup containing both memory and claims and verify restoration on a disposable target. Record its timestamp, retention and recovery point. Keep the gate active through down and recovery; restore the consistent backup using the approved recovery procedure or re-up with explicit acceptance of lost history and duplicate/replay risks, validate ledger membership/checksums and writer compatibility, then release only after owner approval. Restoring an older backup can lose later writes or resurrect deleted data: reconcile deletions and account-erasure obligations before serving traffic. No down, backup or restore is authorized by this phase.
+
+Entry deletion, reset and project deletion remove memory but retain unexpired non-content claims: matching replays return 410, not deleted content. Account erasure must delete that account's claims as well as its memory. The existing cross-family race with active account writes is **not resolved**: disable the account, revoke sessions, block its writers and verify in-flight writes are drained before erasure; do not claim concurrent erasure safety. Treat backup copies under the applicable consent, retention and erasure policy, including restoration safeguards; restoring old data must not silently undo a deletion. Replay after deletion is safe only when the durable path and deletion serialization have passed their gates.
+
+### Held 75-12 handoff
+
+After independent 74.1 implementation and phase verification, the parent updates the 75-12 dependency or explicitly sequences it after 74.1 and controls release of its scheduler hold. 75-12 must bind the enabled-production PostgreSQL implementation without a local fallback, migrate its host fixtures, and rerun project/memory ownership, cap, restart, no-fallback and 74.1 HTTP checks. Acceptance must exercise **actual enabled-production registration**, not injected stores: on a freshly migrated run-owned schema, two independent API hosts perform same-account/key/payload replay across restart, changed-payload 409 and cross-account isolation, with one underlying row for the replayed create. Preserve its deletion-race checks. Only the parent may accept that later evidence; 75-12 remains stopped and is not complete.
 
 ## Degraded states
 

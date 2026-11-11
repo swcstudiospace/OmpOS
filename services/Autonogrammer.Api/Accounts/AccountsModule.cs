@@ -35,7 +35,8 @@ internal static class AccountsModule
     public static IEndpointRouteBuilder MapAccountEndpoints(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
-        endpoints.MapGet("/account", GetAccountAsync)
+        var routes = endpoints.MapGroup(string.Empty).WithMetadata(AccountRouteMarker.Instance);
+        routes.MapGet("/account", GetAccountAsync)
             .WithName("GetAccount")
             .WithTags(Tag)
             .WithSummary("Reads the caller's account. Email comes from the token and is never stored.")
@@ -45,7 +46,7 @@ internal static class AccountsModule
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
-        endpoints.MapGet("/account/sessions", ListSessionsAsync)
+        routes.MapGet("/account/sessions", ListSessionsAsync)
             .WithName("GetAccountSessions")
             .WithTags(Tag)
             .WithSummary("Lists the caller's Code and Cowork sessions, each labelled with its surface.")
@@ -55,7 +56,7 @@ internal static class AccountsModule
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
-        endpoints.MapGet("/account/sessions/{id}", GetSessionAsync)
+        routes.MapGet("/account/sessions/{id}", GetSessionAsync)
             .WithName("GetAccountSession")
             .WithTags(Tag)
             .WithSummary("Reads one of the caller's sessions. Another owner's session reads as absent.")
@@ -65,7 +66,7 @@ internal static class AccountsModule
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
-        endpoints.MapGet("/account/board", GetBoardAsync)
+        routes.MapGet("/account/board", GetBoardAsync)
             .WithName("GetAccountBoard")
             .WithTags(Tag)
             .WithSummary("Builds the Kanban board from the caller's Code sessions.")

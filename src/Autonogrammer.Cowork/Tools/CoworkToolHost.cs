@@ -1,24 +1,23 @@
- using System.Diagnostics;
- using System.Text.Json;
- using Autonogrammer.Cowork.Abstractions;
- using Microsoft.Extensions.Logging;
- using System.Diagnostics.CodeAnalysis;
- 
- namespace Autonogrammer.Cowork.Tools;
- 
- /// <summary>
- /// The one seam through which Artifacts, Browser Use and Computer Use reach omp.
- /// InvokeAsync runs the eight steps in order and does not skip a step that applies to a call the host accepted.
- /// </summary>
- public sealed partial class CoworkToolHost : ICoworkToolHost
- {
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
+using Autonogrammer.Cowork.Abstractions;
+using Microsoft.Extensions.Logging;
 
-     /// <summary>
-     /// Creates the host.
-     /// </summary>
-     public const int MaxArgumentBytes = 256 * 1024;
- 
-     private readonly IReadOnlyList<ICoworkToolProvider> _providers;
+namespace Autonogrammer.Cowork.Tools;
+
+/// <summary>
+/// The one seam through which Artifacts, Browser Use and Computer Use reach omp.
+/// InvokeAsync runs the eight steps in order and does not skip a step that applies to a call the host accepted.
+/// </summary>
+public sealed partial class CoworkToolHost : ICoworkToolHost
+{
+    /// <summary>
+    /// Creates the host.
+    /// </summary>
+    public const int MaxArgumentBytes = 256 * 1024;
+
+    private readonly IReadOnlyList<ICoworkToolProvider> _providers;
     private readonly ICoworkPolicyGate _gate;
     private readonly ICoworkApprovalBroker _broker;
     private readonly ICoworkGrantStore _grants;
@@ -110,7 +109,6 @@
                 LogFault(provider.ProviderId, exception);
                 continue;
             }
-CUT 104:114:
             if (state.Availability != CoworkProviderAvailability.Available)
             {
                 continue;
@@ -138,9 +136,9 @@ CUT 104:114:
         return offered;
     }
 
+    /// <inheritdoc />
     [SuppressMessage("Maintainability", "MA0051", Justification = "8-step seam per D-15 must stay in one flow (1)lease+offered (2)args<=256k (3)preview (4)policy (5)ask+timeout (6)invoke+timeout (7)cap+taint (8)audit never fails call; the invariant is documented here and asserted in contract tests, not split.")]
-     /// <inheritdoc />
-     public async ValueTask<CoworkToolResult> InvokeAsync(
+    public async ValueTask<CoworkToolResult> InvokeAsync(
         string sessionId,
         string toolName,
         JsonElement arguments,

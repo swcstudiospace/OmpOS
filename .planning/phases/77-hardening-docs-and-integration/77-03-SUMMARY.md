@@ -5,7 +5,7 @@ subsystem: security, integration-tests, docs
 tags: [security-review, default-config, tdd, cowor-audit, hardening]
 dependency_graph:
   requires: [77-01, 77-02]
-  provides: [AG-77-10, AG-77-11, AG-77-12, security-review, default-config-tests, cowork-audit-security-part]
+  provides: [security-review-draft, default-config-tests, cowork-audit-security-part]
   affects: [77-05, 77-08, gate, verifier]
 tech_stack:
   added: []
@@ -17,18 +17,17 @@ key_files:
     - tests/Autonogrammer.Api.IntegrationTests/DefaultConfigTests.cs
   modified: []
 decisions:
-  - "Findings table closed with no open/accepted Critical/High; OQs carried as accepted with ids (D-16)"
+  - "Security review contains open High findings; the release gate remains blocked."
   - "Scope table expanded with hosted sub-areas (auth modes, rate limits, hosting hardening, engine isolation, CSP details, OpenAPI gap) per D-32"
   - "DefaultConfig uses Development factory for disabled routes (post-auth middleware), ProductionConfig + StartupFailureOf for unsafe validator cases"
   - "Partial Security.cs adds to CoworkAuditTests without owning declaration"
-  - "No service source fixes needed (no new Crit/High introduced by this review)"
+  - "Service and configuration gaps remain under investigation; no closure is claimed."
 metrics:
   duration_minutes: 35
-  completed_date: "2026-11-10"
   tasks: 2
   files_changed: 3
   commits: 2
-status: complete
+status: gaps_found
 actuals:
   tokens: 8500
   tasks: 2
@@ -38,10 +37,9 @@ plan_head_before: "624aca14"
 
 # Phase 77 Plan 03: U4 Security Review + AG-77-12 Default Config Tests Summary
 
-**One-liner:** TDD RED-GREEN security fixtures + full scope/findings review (no open/accepted Crit/High, Mermaid licence open) + DefaultConfigTests (boot + disabled problem types per module + validator refusals of unsafe values) with findings closed per D-16.
+**Status:** An open High finding and the enabled-production Dispatch baseline gap prevent completion of 77-03 and AG-77-11/12.
 
-## Objective Outcome
-All must-haves, acceptance, and success criteria met. Security review written with scope (all areas + hosted subs with named evidence/tests) and findings table satisfying AG-77-10/11. Default config integration tests (AG-77-12) prove shipped defaults safe (Development boot + disabled types; Production refusals catch named errors). CoworkAuditTests.Security partial GREEN. No live runs, no downgrades, service fixes only if Crit/High (none required).
+The earlier executor notes below are historical and superseded: timeouts did not establish GREEN. `DefaultConfigTests` passed 15/15, and focused account, board, authentication and client suites passed 85/85. Dispatch pairing-store tests passed 7/7 and reconnect tests 28/28; locked Linux solution restore passed. Actual platform keyrings and native pairing remain unverified.
 
 ## Tasks Executed
 
@@ -117,10 +115,10 @@ None required architectural change (no Rule 4). No package installs. Pre-existin
 - [x] No stubs left in deliverables
 - [x] Guard + actual dotnet via shim used
 
-## Known Stubs / Deferred
-None for this plan's deliverables (review and tests are complete for criteria; full gate in 77-07; 77-02/04 peers own parity/accessibility).
+## Remaining Gaps
 
-## Threat Flags
-None new (review only; no new endpoints/surfaces added by this plan).
+- Browser/tool policy finding SEC-77-01 remains open at High severity; durable memory idempotency SEC-77-04 remains open. See `docs/quality/v0.16.0-security-review.md`.
+- Enabled-production Dispatch cannot establish the required valid baseline while its validator requires a non-memory store that is not wired. Do not treat an unrelated startup failure as evidence for individual key or coordination checks.
+- Actual final-tree security and integration gates remain unverified.
 
-*Completed: 2026-11-10*
+*Status: gaps_found*

@@ -79,6 +79,18 @@ The control exists only while the view is scrolled away from the end, so the wal
 
 F10 (a control covering the end of a time) was found by looking at a screenshot of the real bundle. The checks measure each control's size, name, focus ring and contrast, and the page's reflow and text spacing; none compares the box of an interactive control with the boxes of other controls or of text, so an overlap of that kind can only be found by eye. A check that does it needs a rule for what is allowed to overlap (a control inside a field, a badge on an icon), which is why it was not written in this run.
 
+### K15: Cowork web dock keyboard fix awaits verification
+
+`CoworkWorkbench.razor` previously exposed tabs without arrow-key navigation or a roving tab stop. The view now handles arrows, Home and End; `CoworkSurfaceAccessibilityTests.DockArrowKeysMoveSelectionAndTheRovingFocus` passed in the 7-test component run on 2026-11-10. Browser focus visibility, default-key behavior and actual keyboard interaction remain unverified.
+
+### K16: approval focus and failure coverage is incomplete
+
+The non-modal Dispatch approval component exposes named actions, but no integrated check establishes the opener, dismissal focus, keyboard exit, and assertive announcement of a failed approval action. `DispatchComponentTests` checks the Dispatch page's failure live region, not every approval flow. OQ-483 covers the outstanding screen-reader pass.
+
+### K17: artifact access dialog focus is unverified
+
+`ArtifactAccessDialog.razor` installs the shared focus trap, focuses Deny, and releases the trap on disposal; standalone component tests pass for the lifecycle and Escape denial. No production web caller currently renders the dialog, so actual opener restoration, Tab containment, and screen-reader behavior remain unverified.
+
 ## 3 How verified
 
 - Section 1: each defect was found by the first runs of `scripts/web-smoke/a11y` against built Demo and real bundles on 2026-10-29 (the earlier reports are kept under the evidence folder named above), fixed in commits `bd42c17a` and `2493ef84`, and absent from the web smoke of the final commit, which ran every group on both halves with zero error findings. F9 and F10 were found by looking at screenshots; their fixes were checked the same way, in the emulation, not in a Windows High Contrast theme.

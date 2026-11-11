@@ -53,6 +53,7 @@
 
 * [HTTP API](reference/api.md)
 * [Model providers and coding plans](reference/providers.md)
+* [Cowork projects and memory](reference/cowork-projects-memory.md)
 * [Settings parity](settings-parity.md)
 * [Brand](brand.md)
 
@@ -61,6 +62,7 @@
 * [Status and roadmap](guides/status-and-roadmap.md)
 * [Cursor parity audit, 2026-10-28](quality/cursor-parity-audit-2026-10-28.md)
 * [Cursor parity audit, 2026-10-26 (previous)](quality/cursor-parity-audit-2026-10-26.md)
+* [v0.16.0 security review](quality/v0.16.0-security-review.md)
 * [Troubleshooting and FAQ](guides/troubleshooting-and-faq.md)
 * [Licensing](licensing.md)
 * [Contributing, security and support](guides/community.md)
@@ -75,6 +77,7 @@
   * [Screen reader test plan](accessibility/screen-reader-test-plan.md)
   * [Reduced motion and forced colors](accessibility/reduced-motion-and-forced-colors.md)
   * [Accessibility known issues](accessibility/known-issues.md)
+  * [v0.16.0 accessibility pass](quality/v0.16.0-accessibility-pass.md)
 
 ## Operate and publish
 
@@ -84,6 +87,7 @@
 * [Development API on the VPS](runbooks/vps-development-host.md)
 * [Data plane](runbooks/data-plane.md)
 * [Accounts](runbooks/accounts.md)
+* [Dispatch pairing secret storage](runbooks/dispatch.md)
 * [Deploy and rollback](runbooks/deploy-and-rollback.md)
 * [SLOs, alerting and uptime monitoring](runbooks/slo-and-alerting.md)
 * [Incident response](runbooks/incident-response.md)

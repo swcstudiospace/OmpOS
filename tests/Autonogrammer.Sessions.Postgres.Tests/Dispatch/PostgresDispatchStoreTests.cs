@@ -30,26 +30,18 @@ public sealed class PostgresDispatchStoreTests(PostgresServerFixture server) : A
     public async Task M0010IsRegisteredAfterM0009AndIsIdempotent()
     {
         var ct = TestContext.Current.CancellationToken;
-        var names = MigrationRegistry.All.Select(static step => step.Name).ToArray();
-        names[^2].ShouldBe("cowork_projects_memory");
-        names[^1].ShouldBe("dispatch_device_state");
-        MigrationRegistry.All[^1].Version.ShouldBe(10);
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS credential_jti");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS credential_expires_at");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS capabilities");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS app_version");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS protocol");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS revoke_reason");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS paired_session_id");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("ADD COLUMN IF NOT EXISTS last_source_prefix");
-        MigrationRegistry.All[^1].UpSql.ShouldContain("CREATE UNIQUE INDEX IF NOT EXISTS dispatch_devices_id_account_uq");
+        var migration = MigrationRegistry.All.SingleOrDefault(static step => step.Version == 10);
+        migration.ShouldNotBeNull("M0010 must be registered before durable Dispatch can be enabled.");
+        migration.Name.ShouldBe("dispatch_device_state");
 
         var schema = await OpenSchemaAsync(ct).ConfigureAwait(true);
         var connection = await schema.CreateDataSource().OpenConnectionAsync(ct).ConfigureAwait(true);
         await using (connection.ConfigureAwait(true))
         {
             using var again = connection.CreateCommand();
+#pragma warning disable CA2100 // Reapply the built-in M0010 UpSql unchanged to test idempotence; no external input.
             again.CommandText = M0010Up;
+#pragma warning restore CA2100
             await again.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
             using var columns = connection.CreateCommand();
             columns.CommandText = ColumnSql;
@@ -108,6 +100,9 @@ public sealed class PostgresDispatchStoreTests(PostgresServerFixture server) : A
         (await store.TouchLastSeenAsync("other", "dev", DateTimeOffset.UnixEpoch, ct).ConfigureAwait(true)).ShouldBeFalse();
         (await store.UpdatePairedSessionAsync("other", "dev", "session", ct).ConfigureAwait(true)).ShouldBeFalse();
         (await store.GetCommandAsync("other", "c1", ct).ConfigureAwait(true)).ShouldBeNull();
+        (await store.ListCommandsAsync("other", null, 10, ct).ConfigureAwait(true)).ShouldBeEmpty();
+        (await store.ListCommandsAsync("other", "dev", 10, ct).ConfigureAwait(true)).ShouldBeEmpty();
+        (await store.ReplayAsync(new EnqueueDispatchCommand("other", "dev", "c3", "k", "fp", DispatchCapability.Sessions, DispatchOp.SessionList, "{}", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddHours(1)), ct).ConfigureAwait(true)).ShouldBeNull();
         (await store.ListQueuedAfterAsync("other", "dev", 0, ct).ConfigureAwait(true)).ShouldBeEmpty();
         (await store.TryTransitionAsync("other", "c1", DispatchCommandState.Queued, DispatchCommandState.Delivered, null, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchTransitionStatus.NotFound);
         (await store.EnqueueAsync(new EnqueueDispatchCommand("other", "dev", "c2", "k2", "fp", DispatchCapability.Sessions, DispatchOp.SessionList, "{}", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddHours(1)), ct).ConfigureAwait(true)).Status.ShouldBe(DispatchEnqueueStatus.NotFound);
@@ -203,6 +198,111 @@ public sealed class PostgresDispatchStoreTests(PostgresServerFixture server) : A
         }
     }
 
+    /// <summary>Racing accounts cannot both create the same globally unique device identifier.</summary>
+    [Fact]
+    public async Task ConcurrentAccountsClaimingSameDeviceReturnTaken()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var store = await CreateStoreAsync(DispatchStoreLimits.Default, TimeProvider.System, ct).ConfigureAwait(true);
+        var tasks = Enumerable.Range(0, 12).Select(i =>
+            store.CreateDeviceAsync(new CreateDispatchDevice("account-" + i.ToString(CultureInfo.InvariantCulture), "shared", "device", null, null, null, [], null), ct).AsTask());
+        var results = await Task.WhenAll(tasks).ConfigureAwait(true);
+        results.Count(static result => result.Status == DispatchDeviceCreateStatus.Created).ShouldBe(1);
+        results.Count(static result => result.Status == DispatchDeviceCreateStatus.DeviceIdTaken).ShouldBe(11);
+    }
+
+    /// <summary>Competing writers respect both caps and replay does not allocate a sequence.</summary>
+    [Fact]
+    public async Task ConcurrentCapsAndReplayPreserveSequences()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var limits = DispatchStoreLimits.Default with { DevicesPerAccount = 3, MaxQueuedPerDevice = 4 };
+        var store = await CreateStoreAsync(limits, TimeProvider.System, ct).ConfigureAwait(true);
+        var creates = await Task.WhenAll(Enumerable.Range(0, 12).Select(i =>
+            store.CreateDeviceAsync(new CreateDispatchDevice("acct", "dev-" + i.ToString(CultureInfo.InvariantCulture), "device", null, null, null, [], null), ct).AsTask())).ConfigureAwait(true);
+        creates.Count(static item => item.Status == DispatchDeviceCreateStatus.Created).ShouldBe(3);
+        creates.Count(static item => item.Status == DispatchDeviceCreateStatus.DeviceLimitReached).ShouldBe(9);
+        var device = (await store.ListDevicesAsync("acct", ct).ConfigureAwait(true))[0].DeviceId;
+        var now = DateTimeOffset.UtcNow;
+        var requests = Enumerable.Range(0, 12).Select(i =>
+            new EnqueueDispatchCommand("acct", device, "cmd-" + i.ToString(CultureInfo.InvariantCulture), "key-" + i.ToString(CultureInfo.InvariantCulture), "fp", DispatchCapability.Sessions, DispatchOp.SessionList, "{}", now, now.AddHours(1))).ToArray();
+        var results = await Task.WhenAll(requests.Select(request => store.EnqueueAsync(request, ct).AsTask())).ConfigureAwait(true);
+        results.Count(static item => item.Status == DispatchEnqueueStatus.Accepted).ShouldBe(4);
+        results.Count(static item => item.Status == DispatchEnqueueStatus.QueueFull).ShouldBe(8);
+        results.Where(static item => item.Status == DispatchEnqueueStatus.Accepted).Select(static item => item.Accepted!.Seq).Order().ShouldBe([1L, 2L, 3L, 4L]);
+        var acceptedIndex = Array.FindIndex(results, static item => item.Status == DispatchEnqueueStatus.Accepted);
+        var replay = await store.EnqueueAsync(requests[acceptedIndex] with { CommandId = "replay" }, ct).ConfigureAwait(true);
+        replay.Status.ShouldBe(DispatchEnqueueStatus.Replayed);
+        replay.Accepted!.Seq.ShouldBe(results[acceptedIndex].Accepted!.Seq);
+        (await store.EnqueueAsync(requests[acceptedIndex] with { CommandId = "reused", Fingerprint = "different" }, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchEnqueueStatus.IdempotencyKeyReused);
+    }
+
+    /// <summary>An audit failure rolls back the associated mutation and sequence allocation.</summary>
+    [Fact]
+    public async Task AuditFailureRollsBackMutationsAndSequences()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var schema = await OpenSchemaAsync(ct).ConfigureAwait(true);
+        var failAudit = false;
+        var store = new PostgresDispatchStore(schema.CreateDataSource(), DispatchStoreLimits.Default, TimeProvider.System, _ => failAudit ? throw new InvalidOperationException("audit failure") : "tenant-hash");
+        var device = new CreateDispatchDevice("acct", "dev", "original", null, null, null, [], null);
+        failAudit = true;
+        await Should.ThrowAsync<InvalidOperationException>(async () => await store.CreateDeviceAsync(device, ct).ConfigureAwait(true)).ConfigureAwait(true);
+        (await store.GetDeviceAsync("acct", "dev", ct).ConfigureAwait(true)).ShouldBeNull();
+        failAudit = false;
+        (await store.CreateDeviceAsync(device, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchDeviceCreateStatus.Created);
+        var now = DateTimeOffset.UtcNow;
+        var command = new EnqueueDispatchCommand("acct", "dev", "cmd", "key", "fp", DispatchCapability.Sessions, DispatchOp.SessionList, "{}", now, now.AddHours(1));
+        failAudit = true;
+        await Should.ThrowAsync<InvalidOperationException>(async () => await store.EnqueueAsync(command, ct).ConfigureAwait(true)).ConfigureAwait(true);
+        (await store.GetCommandAsync("acct", "cmd", ct).ConfigureAwait(true)).ShouldBeNull();
+        await Should.ThrowAsync<InvalidOperationException>(async () => await store.RenameDeviceAsync("acct", "dev", "changed", ct).ConfigureAwait(true)).ConfigureAwait(true);
+        (await store.GetDeviceAsync("acct", "dev", ct).ConfigureAwait(true))!.Name.ShouldBe("original");
+        await Should.ThrowAsync<InvalidOperationException>(async () => await store.AppendFeedEventAsync("acct", "queued", "{}", ct).ConfigureAwait(true)).ConfigureAwait(true);
+        failAudit = false;
+        (await store.EnqueueAsync(command, ct).ConfigureAwait(true)).Accepted!.Seq.ShouldBe(1);
+        (await store.AppendFeedEventAsync("acct", "queued", "{}", ct).ConfigureAwait(true)).Id.ShouldBe(1);
+        failAudit = true;
+        await Should.ThrowAsync<InvalidOperationException>(async () => await store.TryTransitionAsync("acct", "cmd", DispatchCommandState.Queued, DispatchCommandState.Delivered, null, ct).ConfigureAwait(true)).ConfigureAwait(true);
+        (await store.GetCommandAsync("acct", "cmd", ct).ConfigureAwait(true))!.State.ShouldBe(DispatchCommandState.Queued);
+    }
+
+    /// <summary>A revoked device still supports idempotent replay, but cannot accept a new command.</summary>
+    [Fact]
+    public async Task RevocationDoesNotInvalidateReplay()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var store = await CreateStoreAsync(DispatchStoreLimits.Default, TimeProvider.System, ct).ConfigureAwait(true);
+        await store.CreateDeviceAsync(new CreateDispatchDevice("acct", "dev", "device", null, null, null, [], null), ct).ConfigureAwait(true);
+        var now = DateTimeOffset.UtcNow;
+        var command = new EnqueueDispatchCommand("acct", "dev", "cmd", "key", "fp", DispatchCapability.Sessions, DispatchOp.SessionList, "{}", now, now.AddHours(1));
+        (await store.EnqueueAsync(command, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchEnqueueStatus.Accepted);
+        (await store.RevokeDeviceAsync("acct", "dev", null, now, ct).ConfigureAwait(true)).ShouldBeTrue();
+        (await store.EnqueueAsync(command with { CommandId = "retry" }, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchEnqueueStatus.Replayed);
+        (await store.EnqueueAsync(command with { CommandId = "new", IdempotencyKey = "new" }, ct).ConfigureAwait(true)).Status.ShouldBe(DispatchEnqueueStatus.NotFound);
+    }
+
+    /// <summary>Repeated reads do not repeat an already completed body purge or its audit entry.</summary>
+    [Fact]
+    public async Task PurgeIsAuditedOnlyOnce()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var clock = new MutableTime();
+        var store = await CreateStoreAsync(DispatchStoreLimits.Default, clock, ct).ConfigureAwait(true);
+        var schema = _schemas[^1];
+        await store.CreateDeviceAsync(new CreateDispatchDevice("acct", "dev", "device", null, null, null, [], null), ct).ConfigureAwait(true);
+        await store.EnqueueAsync(new EnqueueDispatchCommand("acct", "dev", "cmd", "key", "fp", DispatchCapability.Sessions, DispatchOp.SessionList, "{}", clock.UtcNow, clock.UtcNow.AddMinutes(1)), ct).ConfigureAwait(true);
+        await store.TryTransitionAsync("acct", "cmd", DispatchCommandState.Queued, DispatchCommandState.Expired, DispatchFailureReason.Expired, ct).ConfigureAwait(true);
+        clock.UtcNow = clock.UtcNow.AddDays(8);
+        (await store.ListCommandsAsync("acct", "dev", 10, ct).ConfigureAwait(true)).Single().BodyJson.ShouldBeNull();
+        (await store.GetCommandAsync("acct", "cmd", ct).ConfigureAwait(true))!.BodyJson.ShouldBeNull();
+        var connection = await schema.CreateDataSource().OpenConnectionAsync(ct).ConfigureAwait(true);
+        await using var connectionScope = connection.ConfigureAwait(true);
+        using var query = connection.CreateCommand();
+        query.CommandText = "SELECT count(*) FROM dispatch_audit WHERE op = 'command.purge'";
+        ((long)(await query.ExecuteScalarAsync(ct).ConfigureAwait(true))!).ShouldBe(1L);
+    }
+
     /// <inheritdoc />
     protected override async Task<PostgresDispatchStore> CreateStoreAsync(DispatchStoreLimits limits, TimeProvider time, CancellationToken cancellationToken)
     {
@@ -221,20 +321,17 @@ public sealed class PostgresDispatchStoreTests(PostgresServerFixture server) : A
     {
         var schema = await PostgresTestSchema.CreateMigratedAsync(server.AdminConnectionString, cancellationToken).ConfigureAwait(false);
         _schemas.Add(schema);
+        var connection = await schema.CreateDataSource().OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using var connectionScope = connection.ConfigureAwait(false);
+        using var command = connection.CreateCommand();
+#pragma warning disable CA2100 // Apply the built-in M0010 UpSql unchanged to this throwaway schema; no external input.
+        command.CommandText = M0010Up;
+#pragma warning restore CA2100
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         return schema;
     }
 
-    private const string M0010Up = """
-        ALTER TABLE dispatch_devices ADD COLUMN IF NOT EXISTS credential_jti text;
-        ALTER TABLE dispatch_devices ADD COLUMN IF NOT EXISTS credential_expires_at timestamptz;
-        ALTER TABLE dispatch_devices ADD COLUMN IF NOT EXISTS capabilities jsonb;
-        ALTER TABLE dispatch_devices ADD COLUMN IF NOT EXISTS app_version text;
-        ALTER TABLE dispatch_devices ADD COLUMN IF NOT EXISTS protocol text;
-        ALTER TABLE dispatch_devices ADD COLUMN IF NOT EXISTS revoke_reason text;
-        ALTER TABLE dispatch_devices ADD COLUMN IF NOT EXISTS paired_session_id text;
-        ALTER TABLE dispatch_devices ADD COLUMN IF NOT EXISTS last_source_prefix text;
-        CREATE UNIQUE INDEX IF NOT EXISTS dispatch_devices_id_account_uq ON dispatch_devices (id, account_id);
-        """;
+    private static readonly string M0010Up = new M0010_DispatchDeviceState().UpSql;
 
     private const string ColumnSql = """
         SELECT column_name FROM information_schema.columns

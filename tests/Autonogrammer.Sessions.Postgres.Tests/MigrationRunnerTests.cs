@@ -14,7 +14,7 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
 {
     private static readonly string[] ExpectedTables =
     [
-        "accounts", "artifact_grants", "artifact_versions", "artifacts", "cloud_agents", "cowork_events", "cowork_instructions", "cowork_memory_entries",
+        "accounts", "artifact_grants", "artifact_versions", "artifacts", "cloud_agents", "cowork_events", "cowork_instructions", "cowork_memory_entries", "cowork_memory_idempotency",
         "cowork_memory_settings", "cowork_projects", "dispatch_audit", "dispatch_commands", "dispatch_devices", "dispatch_events", "ledger_outbox",
         "schema_migrations", "session_events", "session_tool_approvals", "sessions",
     ];
@@ -126,6 +126,126 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
         finally
         {
             await schema.DisposeAsync().ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>M0011 preserves preexisting data through repeat, rollback and reapplication.</summary>
+    [Fact]
+    public async Task MemoryClaimsExpandAndRollbackPreserveMemory()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
+        try
+        {
+            var dataSource = schema.CreateDataSource();
+            var old = new MigrationRunner(dataSource, schema.SchemaName, [.. MigrationRegistry.All.Where(static step => step.Version <= 9)]);
+            await old.MigrateAsync(ct).ConfigureAwait(true);
+            using (var seed = dataSource.CreateCommand("""
+                INSERT INTO cowork_projects (id, account_id, name, created_at, updated_at) VALUES ('p', 'a', 'project', now(), now());
+                INSERT INTO cowork_memory_entries (id, account_id, project_id, content, created_at, updated_at) VALUES ('m', 'a', 'p', 'kept', now(), now())
+                """))
+            {
+                await seed.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
+            }
+            var runner = new MigrationRunner(dataSource, schema.SchemaName);
+            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([11]);
+            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBeEmpty();
+            (await runner.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(11);
+            var applied = await runner.ListAppliedAsync(ct).ConfigureAwait(true);
+            applied.Single(static step => step.Version == 11).Checksum.ShouldBe(MigrationRunner.ChecksumOf(MigrationRegistry.All.Single(static step => step.Version == 11)));
+            using (var claim = dataSource.CreateCommand("""
+                INSERT INTO cowork_memory_idempotency VALUES ('a', 'create', 'key', 1, decode(repeat('00', 32), 'hex'), 'm', now(), now() + interval '24 hours')
+                """))
+            {
+                await claim.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
+            }
+            (await runner.DownAsync(9, ct).ConfigureAwait(true)).ShouldBe([11]);
+            (await ExistsAsync(dataSource, schema.SchemaName + ".cowork_memory_idempotency", ct).ConfigureAwait(true)).ShouldBeFalse();
+            using (var preserved = dataSource.CreateCommand("SELECT p.name || ':' || m.content FROM cowork_projects p JOIN cowork_memory_entries m ON m.project_id = p.id"))
+            {
+                (await preserved.ExecuteScalarAsync(ct).ConfigureAwait(true)).ShouldBe("project:kept");
+            }
+            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([11]);
+            using var count = dataSource.CreateCommand("SELECT count(*) FROM cowork_memory_idempotency");
+            (await count.ExecuteScalarAsync(ct).ConfigureAwait(true)).ShouldBe(0L);
+        }
+        finally
+        {
+            await schema.DisposeAsync().ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>Reserved M0010 can be registered before M0011 and applied in version order.</summary>
+    [Fact]
+    public async Task ReservedVersionCanPrecedeMemoryClaims()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
+        try
+        {
+            var source = schema.CreateDataSource();
+            var old = new MigrationRunner(source, schema.SchemaName, [.. MigrationRegistry.All.Where(static step => step.Version <= 9)]);
+            await old.MigrateAsync(ct).ConfigureAwait(true);
+            var withTen = new MigrationRunner(source, schema.SchemaName, [.. MigrationRegistry.All.Where(static step => step.Version <= 9), new M0010_DispatchDeviceState(), MigrationRegistry.All.Single(static step => step.Version == 11)]);
+            (await withTen.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([10, 11]);
+            (await withTen.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(11);
+            var recorded = await withTen.ListAppliedAsync(ct).ConfigureAwait(true);
+            recorded.Select(static step => step.Version).ShouldContain(10);
+            recorded.Single(static step => step.Version == 10).Checksum.ShouldBe(MigrationRunner.ChecksumOf(new M0010_DispatchDeviceState()));
+        }
+        finally
+        {
+            await schema.DisposeAsync().ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>Creator-specific default privileges grant only table DML to the application role.</summary>
+    [Fact]
+    public async Task MemoryClaimsInheritMigratorDefaultPrivileges()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
+        var role = "r_" + Guid.NewGuid().ToString("n");
+        var password = Guid.NewGuid().ToString("n");
+        var source = schema.CreateDataSource();
+        try
+        {
+            using (var setup = source.CreateCommand($"""
+                CREATE ROLE "{role}" LOGIN PASSWORD '{password}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
+                GRANT USAGE ON SCHEMA "{schema.SchemaName}" TO "{role}";
+                ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema.SchemaName}" GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "{role}";
+                """))
+            {
+                await setup.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
+            }
+            await new MigrationRunner(source, schema.SchemaName).MigrateAsync(ct).ConfigureAwait(true);
+            var appConnection = new NpgsqlConnectionStringBuilder(schema.ConnectionString) { Username = role, Password = password };
+            var app = NpgsqlDataSource.Create(appConnection.ConnectionString);
+            await using var appDisposal = app.ConfigureAwait(true);
+            using (var dml = app.CreateCommand("""
+                SET lock_timeout = '2s';
+                INSERT INTO cowork_memory_idempotency VALUES ('a', 'create', 'key', 1, decode(repeat('00', 32), 'hex'), 'm', now(), now());
+                UPDATE cowork_memory_idempotency SET entry_id = 'm2' WHERE account_id = 'a';
+                SELECT entry_id FROM cowork_memory_idempotency WHERE account_id = 'a';
+                DELETE FROM cowork_memory_idempotency WHERE account_id = 'a';
+                """))
+            {
+                await dml.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
+            }
+            using var ddl = app.CreateCommand("CREATE TABLE forbidden (id integer)");
+            (await SqlStateOfAsync(ddl, ct).ConfigureAwait(true)).ShouldBe("42501");
+        }
+        finally
+        {
+            using (var revoke = source.CreateCommand($"ALTER DEFAULT PRIVILEGES IN SCHEMA \"{schema.SchemaName}\" REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLES FROM \"{role}\""))
+            {
+                await revoke.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
+            }
+            await schema.DisposeAsync().ConfigureAwait(true);
+            var admin = NpgsqlDataSource.Create(server.AdminConnectionString);
+            await using var adminDisposal = admin.ConfigureAwait(true);
+            using var drop = admin.CreateCommand($"DROP ROLE IF EXISTS \"{role}\"");
+            await drop.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
         }
     }
 

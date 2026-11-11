@@ -1,5 +1,6 @@
-using Autonogrammer.Harness.AgentLoop.Launch;
 using Autonogrammer.Harness.Abstractions;
+using Autonogrammer.Harness.AgentLoop.Launch;
+using Autonogrammer.Harness.AgentLoop.Plugins;
 
 namespace Autonogrammer.Cowork.Chat;
 
@@ -136,7 +137,7 @@ public sealed class CoworkSessionProfile
         var promptPath = CoworkSystemPrompt.Write(_sessionDirectory, standingContext, browserGuidance, computerGuidance);
         var overlayPath = SessionStateLayout.ConfigOverlayFile(Path.GetFullPath(_sessionDirectory));
 
-        // Use planner for generic contributor application (argv/env/overlay/prompt from list); Cowork adds its specifics on top.
+        // The planner applies contributed arguments and environment; overlay and prompt contribution delivery remains incomplete.
         var basePlan = OmpLaunchPlanner.Plan(
             new AgentLoopSettings { PluginsRoot = string.Empty, StateRoot = _sessionDirectory },
             Array.Empty<ResolvedPlugin>(),
@@ -144,7 +145,8 @@ public sealed class CoworkSessionProfile
             Path.GetFullPath(_workingDirectory),
             null,
             contributors: contributors,
-            surface: "cowork");
+            surface: "cowork",
+            includeSessionEnvironment: false);
 
         var arguments = new List<string>(basePlan.ExtraArguments);
         arguments.Add("--approval-mode");
@@ -160,8 +162,8 @@ public sealed class CoworkSessionProfile
         arguments.Add("--config");
         arguments.Add(overlayPath);
 
-        // merge any contributed env with the filtered provider keys (provider keys win for their names)
-        var finalEnv = new Dictionary<string, string>(basePlan.Environment, StringComparer.Ordinal);
+        // Contributors cannot expand the provider-only Cowork environment; configured provider keys take precedence.
+        var finalEnv = new Dictionary<string, string>(FilterProviderKeys(basePlan.Environment), StringComparer.Ordinal);
         foreach (var kv in environment)
         {
             finalEnv[kv.Key] = kv.Value;

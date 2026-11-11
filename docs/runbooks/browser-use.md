@@ -4,7 +4,7 @@ description: "Cowork browser use on the desktop head: setup, degraded states, an
 
 # Cowork browser use
 
-Status: Built on the desktop head. The live omp turn is not run.
+Status: Incomplete; desktop composition, required audit and guarded live browser behavior are not verified. Do not enable for production.
 
 Last verified: 2026-10-30
 
@@ -12,11 +12,11 @@ Applies to: v0.16.0
 
 ## Setup
 
-The desktop head binds `Cowork:BrowserUse` through `AddBrowserUse`. `Enabled` defaults to false. A located Chromium binary is required before tools are registered. The user confirms any managed download from Settings > Browser. The embedded manifest ships with no rows, so a missing binary stays degraded until a system or configured binary is found.
+`Cowork:BrowserUse:Enabled` defaults to false. The Native head does not yet wire the complete per-session page, approval, audit and egress path. A located Chromium binary alone is not sufficient to make browser tools safe or available.
 
-The capability name is `browser_use`. It is offered only when `Enabled` and `AllowDispatchSessions` both hold. Nothing in this phase calls a Dispatch hub.
+Dispatch additionally requires `AllowDispatchSessions`; the production capability path remains unverified.
 
-Stop is the catalogued chord Ctrl+Shift+. (scope Application). It cancels the in-flight call token, sets control to revoked, and leaves the browser process open. Close browser is a separate action.
+The intended Stop chord is Ctrl+Shift+. (scope Application); its integrated browser behavior remains unverified. Close browser is a separate action.
 
 ## Degraded states
 
@@ -26,7 +26,7 @@ Stop is the catalogued chord Ctrl+Shift+. (scope Application). It cancels the in
 | Chromium is not installed | Install Chromium, or set an explicit executable path |
 | The managed browser is not pinned | Keep using a system browser until a manifest row is pinned |
 | Chromium is too old | Update Chromium to at least the configured major (default 149) |
-| The sandbox is unavailable | Enable the sandbox. A root host may set `AUTONOGRAMMER_BROWSER_ALLOW_NO_SANDBOX` only for a live test the owner approved |
+| The sandbox is unavailable | Keep browser use disabled. The documented `AUTONOGRAMMER_BROWSER_ALLOW_NO_SANDBOX` variable is not consumed by the current launcher. |
 | This model cannot see page images | Choose a vision model the catalogue already marks as accepting images |
 | This browser runs on your desktop | Open the desktop app. Web and Android have no relay |
 

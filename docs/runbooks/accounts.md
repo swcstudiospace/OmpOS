@@ -10,6 +10,12 @@ Last verified: 2026-10-29 (offline tests only)
 
 Applies to: [ADR-0030](../decisions/ADR-0030-accounts-supabase-passwordless.md), the library `Autonogrammer.Accounts` and the contract folder `Autonogrammer.Contracts.Accounts`.
 
+## Account endpoint deployment transition
+
+`Accounts:Enabled` defaults to `false`. Before deploying this default to an existing installation that uses account or Code board endpoints, explicitly set `Accounts__Enabled=true` in its API environment. This applies to both OIDC and OwnerToken deployments; it does not change their authentication settings. Without the setting, an authenticated request to `/account`, `/account/sessions`, `/account/sessions/{id}`, or `/account/board` receives a 404 `account_disabled` problem instead of account data. Anonymous requests remain unauthorized. An installation that has not made this transition loses those endpoints and is not compatible with clients that require them.
+
+The default-off behavior has focused local test coverage but has not been deployed or live-verified. SEC-77-06 and SEC-77-02 are recorded as fixed; the independently owned High findings SEC-77-01, SEC-77-07 and SEC-77-08 remain open, so the release gate remains blocked.
+
 ## What exists
 
 - `Autonogrammer.Accounts` holds the plain `HttpClient` calls to the shared Supabase auth host: the email code and link calls (`SendEmailOtpAsync`, `VerifyEmailOtpAsync`, `ExchangeCodeAsync`, `RefreshAsync`, `SignOutAsync(scope)`, `GetUserAsync`) and the wallet grant (`SignInWithWeb3Async`). The session manager (`AccountSessionManager`, behind `IAccountSession`) and the sign-in coordinator (`SignInCoordinator`) sit on top. There is no Supabase SDK.

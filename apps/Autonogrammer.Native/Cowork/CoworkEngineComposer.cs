@@ -38,9 +38,9 @@ internal static class CoworkEngineComposer
         var plan = profile.Create(request.StandingContext);
         var notices = new List<string>();
         var extra = CatalogServers(request, notices);
-            // Cowork always wires LiveSteering unconditionally (unlike Code's LiveSteering option guard) so that
-            // host.SteerAsync and runtime NativeSteering both reach engine.Host.LiveSteering for conversation steer.
-            // Matches NativeSteering assignment in CoworkSessionHost.RuntimeOptions.
+        // Cowork always wires LiveSteering unconditionally (unlike Code's LiveSteering option guard) so that
+        // host.SteerAsync and runtime NativeSteering both reach engine.Host.LiveSteering for conversation steer.
+        // Matches NativeSteering assignment in CoworkSessionHost.RuntimeOptions.
         var options = new EngineCompositionOptions
         {
             ExtraMcpServers = extra,

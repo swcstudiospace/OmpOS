@@ -7,7 +7,7 @@ using Npgsql;
 namespace Autonogrammer.Api.DataPlane;
 
 /// <summary>
-/// Compares the highest applied migration with the compiled head. The answer is cached for <see cref="CacheFor"/> so a health probe and a status
+/// Compares every compiled migration with the applied ledger. The answer is cached for <see cref="CacheFor"/> so a health probe and a status
 /// request do not each send a query, and the last known answer is readable without I/O for the metric gauge. The read runs through the PostgreSQL
 /// resilience pipeline under the runtime role, which may read the ledger table.
 /// </summary>
@@ -16,7 +16,8 @@ internal sealed class SchemaHeadProbe
     /// <summary>Gets how long an answer is reused.</summary>
     public static readonly TimeSpan CacheFor = TimeSpan.FromSeconds(5);
 
-    private readonly Func<CancellationToken, Task<int>> _readVersion;
+    private readonly Func<CancellationToken, Task<IReadOnlyList<AppliedMigration>>> _readApplied;
+    private readonly IReadOnlyDictionary<int, string> _required;
     private readonly int _head;
     private readonly bool _applies;
     private readonly TimeProvider _time;
@@ -33,25 +34,34 @@ internal sealed class SchemaHeadProbe
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(sessions);
         _applies = SessionsOptions.IsPostgresStore(sessions.Value.Store);
+        _required = MigrationRegistry.All.ToDictionary(static step => step.Version, MigrationRunner.ChecksumOf);
         _head = MigrationRegistry.Head;
         _time = time;
         MigrationRunner? runner = null;
-        _readVersion = cancellationToken =>
+        _readApplied = cancellationToken =>
         {
             runner ??= new MigrationRunner(services.GetRequiredService<NpgsqlDataSource>(), resilience: services.GetRequiredService<PostgresResilience>());
-            return runner.GetCurrentVersionAsync(cancellationToken);
+            return runner.ListAppliedAsync(cancellationToken);
         };
     }
 
-    /// <summary>Initializes a new instance of the <see cref="SchemaHeadProbe"/> class over an explicit version reader.</summary>
-    /// <param name="readVersion">Reads the highest applied version.</param>
-    /// <param name="head">The compiled head.</param>
+    /// <summary>Initializes a new instance of the <see cref="SchemaHeadProbe"/> class over an explicit ledger reader and required steps.</summary>
+    /// <param name="readApplied">Reads the applied ledger.</param>
+    /// <param name="requiredSteps">The migrations compiled into the binary.</param>
     /// <param name="applies">Whether the store is PostgreSQL.</param>
     /// <param name="time">The clock.</param>
-    public SchemaHeadProbe(Func<CancellationToken, Task<int>> readVersion, int head, bool applies, TimeProvider time)
+    public SchemaHeadProbe(Func<CancellationToken, Task<IReadOnlyList<AppliedMigration>>> readApplied, IReadOnlyList<IMigrationStep> requiredSteps, bool applies, TimeProvider time)
     {
-        _readVersion = readVersion;
-        _head = head;
+        ArgumentNullException.ThrowIfNull(readApplied);
+        ArgumentNullException.ThrowIfNull(requiredSteps);
+        if (requiredSteps.Count == 0)
+        {
+            throw new ArgumentException("At least one required migration is needed.", nameof(requiredSteps));
+        }
+
+        _readApplied = readApplied;
+        _required = requiredSteps.ToDictionary(static step => step.Version, MigrationRunner.ChecksumOf);
+        _head = _required.Count == 0 ? 0 : _required.Keys.Max();
         _applies = applies;
         _time = time;
     }
@@ -88,8 +98,11 @@ internal sealed class SchemaHeadProbe
             }
         }
 
-        var version = await _readVersion(cancellationToken).ConfigureAwait(false);
-        var state = version < _head ? SchemaState.Behind : version > _head ? SchemaState.Ahead : SchemaState.Current;
+        var applied = await _readApplied(cancellationToken).ConfigureAwait(false);
+        var recorded = applied.ToDictionary(static migration => migration.Version, static migration => migration.Checksum);
+        var complete = _required.All(step => recorded.TryGetValue(step.Key, out var checksum) && string.Equals(step.Value, checksum, StringComparison.Ordinal));
+        var version = applied.Count == 0 ? 0 : applied.Max(static migration => migration.Version);
+        var state = !complete ? SchemaState.Behind : version > _head ? SchemaState.Ahead : SchemaState.Current;
         lock (_gate)
         {
             _last = state;

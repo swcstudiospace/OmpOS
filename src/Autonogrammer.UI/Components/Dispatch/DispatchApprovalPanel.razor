@@ -1,8 +1,8 @@
 @namespace Autonogrammer.UI.Components.Dispatch
 @using Autonogrammer.Presentation.Dispatch
 
-<section class="autonogrammer-dispatch-approval" aria-labelledby="autonogrammer-dispatch-approval-title">
-    <h3 id="autonogrammer-dispatch-approval-title">@DispatchCopy.ApprovalHeading</h3>
+<section class="autonogrammer-dispatch-approval" aria-labelledby="@_headingId">
+    <h3 id="@_headingId">@DispatchCopy.ApprovalHeading</h3>
     <dl class="autonogrammer-dispatch-facts">
         <dt>@DispatchCopy.ApprovalFromLabel</dt>
         <dd>@Model.DeviceName</dd>
@@ -22,6 +22,9 @@
 </section>
 
 @code {
+    private static int s_nextId;
+    private readonly string _headingId = "autonogrammer-dispatch-approval-title-" + System.Threading.Interlocked.Increment(ref s_nextId).ToString(System.Globalization.CultureInfo.InvariantCulture);
+
     /// <summary>Gets the approval to show.</summary>
     [Parameter, EditorRequired]
     public DispatchApprovalModel Model { get; set; } = default!;

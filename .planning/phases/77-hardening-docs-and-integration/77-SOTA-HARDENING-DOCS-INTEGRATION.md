@@ -129,3 +129,62 @@ All 17 AG-77 observable (bump only version/locks, locked restore, changelog empt
 **Deviations/Notes:** Phase plans 02-08 still incomplete (per init query); 77-01 summarized. This SOTA created as dedicated overlay update per assignment "execute plan SOTA update. Refs 77". Full execution of 77-02..08 + gate + SOTA refresh recommended for verifier. No code changes in this SOTA pass (overlay only). Current tree on feat/autonogrammer-integration (see STATE). All 17 criteria referenced per assignment. Phase 77 SOTA created 2026-11-10.
 
 (Plans 01-08 implement the milestone; this SOTA is the overlay note + criteria record.) All locked decisions honored; no scope reduction from CONTEXT.
+
+## Gap Closure SOTA Elevation (77-09/10) — A11y / Security / Gate / Parity (per 66-SOTA-QUALITY-REQUIREMENTS.md)
+
+**Date elevated:** 2026-11-10 (post 77-01, during gap planning for 02-08)
+**Refs:** 77-09-PLAN.md (parity script + CoworkAudit), 77-10-PLAN.md (security/a11y/runbooks/bump/gate/PR), 66-SOTA-QUALITY-REQUIREMENTS.md (7 categories), 77-VALIDATION.md, 77-CONTEXT D-11..D-24, docs/quality/v0.16.0-parity-audit-elevation.md (new), docs/quality/v0.16.0-*-review.md (new)
+
+### 1. Explicit States (loading/empty/error/success) applied to gap areas
+- **Parity (77-09):** parity_counts.py: LOADING on parse, EMPTY on no MET-LIVE rows, ERROR on bad vocab/mismatch/empty cell (fixture RED), SUCCESS "first-attempt: counts match + 51 graded". CoworkAuditTests: loading fixture load, error named failure, success GREEN real.
+- **Security (77-10):** review page: LOADING scope read, ERROR open Crit/High (fail stop), SUCCESS fixed+named test. Findings table states logged in CoworkAudit.Security.
+- **A11y (77-10):** matrix: LOADING cell fill, EMPTY no (enforced by !grep), ERROR empty cell (gate fail), SUCCESS "cell cites test or reason". 66 a11y states (focus, reduced-motion, labels, 44px) explicit.
+- **Gate (77-10):** bootstrap under flock: LOADING (flock wait + nice), ERROR (finding or no OK), SUCCESS "bootstrap: OK + counts + first-attempt". Evidence page records states.
+- **Docs/Runbooks:** Status: line + degraded states = explicit (per D-08); empty guidance for disabled features.
+
+### 2. Edge/Race/First-Attempt
+- Parity: --check deterministic (no timing), first-attempt target 100% (no on-retry); fixture RED before GREEN.
+- Bump/gate: single last bump; relock once; gate first-attempt under flock (no shared-state race via lock + pre-container check).
+- A11y/security: first-attempt matrix fill + findings assert; no race on post-merge tree (77-01 ancestor).
+- Implementation: strengthened waits (flock), no reliance on sleep; success logged on first pass.
+
+### 3. Validation/Sanitization
+- Parity: bracketed qualifier parse (matches cursor audit exactly); status vocab only (MET/MET-LIVE/PARTIAL/DEFERRED/NOT-STARTED/OMITTED-BY-DECISION); counts script vs table block.
+- Security: scope + findings schema enforced by test parser; no value in .env tables.
+- A11y: no colour literals (tokens), no @page per D-37, namespace only Presentation/Contracts.
+- Gate/bump: version strings sanitized, id collision checks (OQ/ADR/migration/ContractVersion), lock count exact.
+- Auth: dev-only (DefaultConfig + JwtTestHost); no live Supabase/Railway.
+
+### 4. Security (fail-closed, no leak, owner scoped)
+- Fail-closed: open Crit/High or mismatch or empty matrix cell or bad parity row → error + stop (no partial); duplicate id or non-ancestor → integration fail.
+- No leak: evidence/redacted logs use counts only; runbooks list var names never values; secret-scan evidence; rebrand reports no content.
+- Owner scoped: v0.16.0-owner-actions lists (D-24) but 77-10 PR performs none; routes 404 foreign.
+- STRIDE: T-77-17..24 + SC from 77-09/10; mitigated by script re-check, parser asserts, flock, 66 a11y rules.
+
+### 5. A11y (keyboard/focus/labels/contrast/reduced-motion/44px per 66)
+- Matrix covers: accessible name/role, keyboard path no trap + visible focus, focus return to opener, assertive aria-live for failure, contrast via tokens (no literals), reduced motion (no transition if prefers), 44px touch (Android).
+- Tests cite: WebShellAccessibilityTests, HeadMotionTests, ThemeContrastTests, UI/Native bUnit + axe groups in web-smoke.
+- Emulation: forced-colors/reduced-motion in checks; target-size/text-spacing/reflow at 320/400%.
+- Screen-reader: OMITTED-BY-DECISION (OQ-483) with reason; no live run.
+
+### 6. Graceful Degradation
+- Live/OD-07: PARTIAL or DEFERRED with blocker (parity row, runbook "cannot verify live", gate Live skip with reason).
+- Missing optional: warning not error (OQ-481 screenshots); OMITTED-BY-DECISION for Mermaid/EPL (OQ-400) and screen readers.
+- Windows/macOS: DEFERRED (no runner per CONTEXT).
+- Retries: bounded (flock wait, one verify backoff documented).
+
+### 7. Operational (logs, recovery, observability, deterministic)
+- Logs: evidence pages (command + date + commit + counts + "first-attempt"); parity --check + "success: counts match"; gate "bootstrap: OK".
+- Recovery: owner-actions page for post-ship; evidence "what was not verified"; rebrand verify recovery on collision.
+- Observability: counts blocks, parity script, check-*.sh, matrix cells, findings rows, gate evidence under docs/runbooks/evidence/.
+- Deterministic: flock + pinned ionice/nice; fresh post-77-01 context; no shared state; pinned axe; ProjectGraphChecker for repo reads.
+
+**Evidence of elevation:** 
+- New: docs/quality/v0.16.0-parity-audit-elevation.md (77-09 Task 3)
+- Updated: 77-SOTA-HARDENING-DOCS-INTEGRATION.md (this section + cross-refs in plan steps)
+- Plans 77-09/10 actions cite 66 categories + D-* + first-attempt/fail-closed.
+- All quick gates (parity_counts --check, CoworkAudit, check-*.sh) + full (flock bootstrap) target first-attempt + explicit states.
+
+All locked D- honored; no scope reduction; deferred (live, Windows, screen-reader, tag, owner-perform) remain graceful. Phase 77 now has full SOTA overlay + gap closure elevation matching 66 precedent for a11y/security/gate/parity/docs quality.
+
+(End of gap closure SOTA elevation. Plans 77-09/10 + prior 01 + future 77-08 execution close the unexecuted 02-08.)

@@ -5,7 +5,7 @@ subsystem: release-pr
 tags: [pr, ci, gate, oq, dco, ship]
 requires:
   - phase: 77-07
-    provides: gate evidence, bootstrap green, integration ancestor checks, 77-07 verification
+    provides: final gate evidence (outstanding)
 provides:
   - U8 ship PR body drafted per template (gate, tests, docs, CHANGELOG, OQ, DCO, not-verified list)
   - Ship path case A decided from live re-read facts (integration on origin, not in main)
@@ -27,20 +27,19 @@ key-decisions:
   - "Task 2 (green CI + review threads) intentionally not executed pre-PR (per before-approval outcome in verify)"
 patterns-established:
   - "Ship PR preparation is read-only + external body draft until owner approval for push"
-requirements-completed: [AG-77-16]
+requirements-completed: []
 duration: 25min
-completed: 2026-11-10T13:40:00Z
-status: complete
+status: blocked
 ---
 
 # Phase 77 Plan 08: U8 Ship PR Preparation Summary
 
-**U8 ship PR body drafted (case A on integration base); awaiting owner approval to push feat/autonogrammer-next + open PR with completed template, gate citations, not-verified list; CI green + threads left post-open per plan**
+**PR body drafted; final gate, owner approval, PR creation, CI and review remain outstanding.**
 
 ## Performance
 - **Duration:** ~25 min (read-first + facts re-read + body draft)
 - **Started:** 2026-11-10T13:10:00Z (approx from context + first bash)
-- **Completed:** 2026-11-10T13:40:00Z
+- **Status:** Blocked; PR not opened
 - **Tasks:** 1 (substantive; task 2 blocked pre-PR per explicit plan)
 - **Files modified:** 0 (per plan "No repo file edits"; only /tmp/ag-recon/pr-77-body.md outside + this SUMMARY)
 
@@ -93,4 +92,4 @@ None - no external service configuration required for this plan (owner will do p
 
 ---
 *Phase: 77-hardening-docs-and-integration*
-*Completed: 2026-11-10*
+*Status: blocked*

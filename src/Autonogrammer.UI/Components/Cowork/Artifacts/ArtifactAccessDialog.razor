@@ -1,6 +1,10 @@
 @namespace Autonogrammer.UI.Components.Cowork.Artifacts
 @using Autonogrammer.Presentation.Cowork.Artifacts
-<div class="autonogrammer-artifact-access" role="dialog" aria-modal="true" aria-labelledby="artifact-access-title" aria-describedby="artifact-access-warning">
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="autonogrammer-artifact-access" role="dialog" aria-modal="true" aria-labelledby="artifact-access-title" aria-describedby="artifact-access-warning" @ref="_dialog" @onkeydown="KeyDownAsync">
     <h3 id="artifact-access-title" class="autonogrammer-artifact-access-title">@ArtifactAccessReviewModel.BannerText</h3>
     <p class="autonogrammer-artifact-access-reason">@ArtifactAccessReviewModel.ReasonLabel</p>
     @if (Origins.Count == 0)
@@ -28,13 +32,21 @@
     }
     <p id="artifact-access-warning" class="autonogrammer-artifact-access-warning">@ArtifactAccessReviewModel.WarningText</p>
     <div class="autonogrammer-artifact-access-choices">
-        <button type="button" class="autonogrammer-btn" autofocus @onclick="() => Choose(ArtifactAccessChoice.Deny)">Deny</button>
+        <button type="button" class="autonogrammer-btn" @ref="_deny" @onclick="() => Choose(ArtifactAccessChoice.Deny)">Deny</button>
         <button type="button" class="autonogrammer-btn" @onclick="() => Choose(ArtifactAccessChoice.AllowVersion)">Allow for this version</button>
         <button type="button" class="autonogrammer-btn" @onclick="() => Choose(ArtifactAccessChoice.AllowSession)">Allow for this session</button>
     </div>
 </div>
 
 @code {
+    private const string ModulePath = "./_content/Autonogrammer.UI/scripts/autonogrammer-dialog.js";
+    private ElementReference _dialog;
+    private ElementReference _deny;
+    private IJSObjectReference? _module;
+    private int? _trapToken;
+    private Task? _initialization;
+    private bool _disposed;
+
     /// <summary>Gets the hosts the newest version asks to contact, each with its ASCII and decoded forms.</summary>
     [Parameter, EditorRequired]
     public IReadOnlyList<ArtifactOriginView> Origins { get; set; } = [];
@@ -43,5 +55,74 @@
     [Parameter]
     public EventCallback<ArtifactAccessChoice> OnChoose { get; set; }
 
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _initialization = InitializeFocusAsync();
+            await _initialization.ConfigureAwait(true);
+        }
+    }
+
+    private async Task InitializeFocusAsync()
+    {
+        try
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", ModulePath).ConfigureAwait(true);
+            if (_disposed)
+            {
+                return;
+            }
+
+            _trapToken = await _module.InvokeAsync<int>("trapFocus", _dialog).ConfigureAwait(true);
+            if (!_disposed)
+            {
+                await _deny.FocusAsync().ConfigureAwait(true);
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // The page is gone, and the module went with it.
+        }
+    }
+
+    private Task KeyDownAsync(KeyboardEventArgs args) =>
+        string.Equals(args.Key, "Escape", StringComparison.Ordinal) ? Choose(ArtifactAccessChoice.Deny) : Task.CompletedTask;
+
     private Task Choose(ArtifactAccessChoice choice) => OnChoose.InvokeAsync(choice);
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        if (_initialization is not null)
+        {
+            await _initialization.ConfigureAwait(true);
+        }
+
+        if (_module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (_trapToken is { } token)
+            {
+                await _module.InvokeVoidAsync("releaseFocus", token).ConfigureAwait(true);
+            }
+
+            await _module.DisposeAsync().ConfigureAwait(true);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The page is gone, and the module went with it.
+        }
+    }
 }

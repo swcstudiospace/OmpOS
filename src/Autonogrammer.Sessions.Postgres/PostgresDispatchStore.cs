@@ -212,12 +212,10 @@ public sealed class PostgresDispatchStore : IDispatchStore
                     return new DispatchDeviceCreateResult(DispatchDeviceCreateStatus.DeviceLimitReached, null);
                 }
 
-                if (await DeviceExistsAsync(connection, transaction, request.DeviceId, cancellationToken).ConfigureAwait(false))
+                if (!await InsertDeviceAsync(connection, transaction, request, now, cancellationToken).ConfigureAwait(false))
                 {
                     return new DispatchDeviceCreateResult(DispatchDeviceCreateStatus.DeviceIdTaken, null);
                 }
-
-                await InsertDeviceAsync(connection, transaction, request, now, cancellationToken).ConfigureAwait(false);
                 await AuditAsync(connection, transaction, request.AccountId, request.DeviceId, null, "device.create", "created", cancellationToken).ConfigureAwait(false);
                 await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
                 return new DispatchDeviceCreateResult(DispatchDeviceCreateStatus.Created, ToDevice(request));
@@ -428,7 +426,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
             var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
             await using (transaction.ConfigureAwait(false))
             {
-                if (!await LockLiveDeviceAsync(connection, transaction, request, cancellationToken).ConfigureAwait(false))
+                if (!await LockOwnedDeviceAsync(connection, transaction, request.AccountId, request.DeviceId, cancellationToken).ConfigureAwait(false))
                 {
                     return new DispatchEnqueueResult(DispatchEnqueueStatus.NotFound, null);
                 }
@@ -438,6 +436,11 @@ public sealed class PostgresDispatchStore : IDispatchStore
                 {
                     return replay;
                 }
+                if (!await LockLiveDeviceAsync(connection, transaction, request, cancellationToken).ConfigureAwait(false))
+                {
+                    return new DispatchEnqueueResult(DispatchEnqueueStatus.NotFound, null);
+                }
+
 
                 if (await CountQueuedAsync(connection, transaction, request, cancellationToken).ConfigureAwait(false) >= _limits.MaxQueuedPerDevice)
                 {
@@ -480,7 +483,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
                     return null;
                 }
 
-                if (ShouldPurge(loaded.State, loaded.Meta))
+                if (loaded.Body is not null && ShouldPurge(loaded.State, loaded.Meta))
                 {
                     loaded = await PurgeBodyAsync(connection, transaction, accountId, commandId, loaded, cancellationToken).ConfigureAwait(false);
                 }
@@ -527,22 +530,36 @@ public sealed class PostgresDispatchStore : IDispatchStore
         var connection = await OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
-            using var command = PostgresSql.Create(connection, null);
-            command.CommandText = CommandSelect + " WHERE account_id = @account_id AND (@device_id::text IS NULL OR device_id = @device_id) ORDER BY created_at DESC, id DESC LIMIT @limit";
-            command.Parameters.AddWithValue("account_id", accountId);
-            command.Parameters.AddWithValue("device_id", (object?)deviceId ?? DBNull.Value);
-            command.Parameters.AddWithValue("limit", limit);
-            var list = new List<DispatchCommandRecord>();
-            var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-            await using (reader.ConfigureAwait(false))
+            var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await using (transaction.ConfigureAwait(false))
             {
-                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                using var command = PostgresSql.Create(connection, transaction);
+                command.CommandText = CommandSelect + " WHERE account_id = @account_id AND (@device_id::text IS NULL OR device_id = @device_id) ORDER BY created_at DESC, id DESC LIMIT @limit FOR UPDATE";
+                command.Parameters.AddWithValue("account_id", accountId);
+                command.Parameters.AddWithValue("device_id", (object?)deviceId ?? DBNull.Value);
+                command.Parameters.AddWithValue("limit", limit);
+                var loaded = new List<LoadedCommand>();
+                var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                await using (reader.ConfigureAwait(false))
                 {
-                    list.Add(ReadCommand(reader, accountId).ToRecord());
+                    while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                    {
+                        loaded.Add(ReadCommand(reader, accountId));
+                    }
                 }
-            }
 
-            return list;
+                var list = new List<DispatchCommandRecord>(loaded.Count);
+                foreach (var item in loaded)
+                {
+                    var current = item.Body is not null && ShouldPurge(item.State, item.Meta)
+                        ? await PurgeBodyAsync(connection, transaction, accountId, item.CommandId, item, cancellationToken).ConfigureAwait(false)
+                        : item;
+                    list.Add(current.ToRecord());
+                }
+
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                return list;
+            }
         }
     }
 
@@ -647,12 +664,12 @@ public sealed class PostgresDispatchStore : IDispatchStore
         return _timeProvider.GetUtcNow() - terminal > _limits.BodyRetention;
     }
 
-    private static async Task InsertDeviceAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, CreateDispatchDevice request, DateTimeOffset now, CancellationToken cancellationToken)
+    private static async Task<bool> InsertDeviceAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, CreateDispatchDevice request, DateTimeOffset now, CancellationToken cancellationToken)
     {
         using var insert = PostgresSql.Create(connection, transaction);
         insert.CommandText =
             "INSERT INTO dispatch_devices (id, account_id, name, platform, public_key, created_at, credential_jti, credential_expires_at, capabilities, paired_session_id) " +
-            "VALUES (@id, @account_id, @name, @platform, @public_key, @created_at, @jti, @expires, CAST(@capabilities AS jsonb), @session)";
+            "VALUES (@id, @account_id, @name, @platform, @public_key, @created_at, @jti, @expires, CAST(@capabilities AS jsonb), @session) ON CONFLICT (id) DO NOTHING";
         insert.Parameters.AddWithValue("id", request.DeviceId);
         insert.Parameters.AddWithValue("account_id", request.AccountId);
         insert.Parameters.AddWithValue("name", request.Name);
@@ -663,7 +680,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
         insert.Parameters.AddWithValue("expires", request.CredentialExpiresAt.HasValue ? request.CredentialExpiresAt.Value : DBNull.Value);
         insert.Parameters.AddWithValue("capabilities", WriteCapabilities(request.Capabilities));
         insert.Parameters.AddWithValue("session", (object?)request.PairedSessionId ?? DBNull.Value);
-        await insert.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        return await insert.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) == 1;
     }
 
     private static async Task<bool> LockLiveDeviceAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, EnqueueDispatchCommand request, CancellationToken cancellationToken)
@@ -847,13 +864,6 @@ public sealed class PostgresDispatchStore : IDispatchStore
         return (long)(await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) ?? 0L);
     }
 
-    private static async Task<bool> DeviceExistsAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, string deviceId, CancellationToken cancellationToken)
-    {
-        using var command = PostgresSql.Create(connection, transaction);
-        command.CommandText = "SELECT count(*) FROM dispatch_devices WHERE id = @id";
-        command.Parameters.AddWithValue("id", deviceId);
-        return (long)(await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) ?? 0L) > 0;
-    }
 
     private static async Task<long> CountOwnedAsync(NpgsqlConnection connection, string accountId, string deviceId, CancellationToken cancellationToken)
     {

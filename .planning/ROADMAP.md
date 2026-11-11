@@ -10,7 +10,7 @@
 - v0.10.0 Cross-platform UI: active. Phases 20 and 21 complete (both verified). Phase 22 blocked on external hosts: criterion 1 met on the XWayland path (2026-10-24); criteria 3 (Windows runner) and 4 and 5 (Mac channel) open. Phases 23 to 25 partial or blocked (see STATE). Requirements XP-01 to XP-11.
 - ~~v0.14.0 Agent loop and Agent Panel~~ Superseded 2026-10-26 (DR-1: the default Cursor-style Agent Panel is the agent panel, there is no second surface) v0.14.0 Agent loop on the Omp Engine and the default Agent Panel: planned 2026-10-26 from the user request to connect claude-ultrathink, agent-swarm and agent-substrate to the agent loop as pinned submodules and omp plugins, add GSD-Core as an omp plugin, build the default Agent Panel and push to main; revised 2026-10-26 from the user message of that date: the four plugins are connected to every omp process the application starts (the engine session and the omp terminals), a running session can be live-steered, and the Kanban tab (Phase 39) and the Cursor-shaped Settings window with provider configuration (Phase 40) are the only additions beyond Cursor parity; ~~phases 44 to 47; requirements AL-01 to AL-12~~ Superseded 2026-10-26 (Phases 48 and 49 and AL-13 to AL-20 added): phases 44 to 49 (with Phases 33, 35, 39 and 40 extended); requirements AL-01 to AL-20 in `.planning/REQUIREMENTS.md`.
 - Position at commit `d75fd88` (audited 2026-10-27, `docs/quality/cursor-parity-audit-2026-10-26.md`): the Agent Panel, the Kanban tab, omp terminals with the four plugins, live steering, the Settings window with model providers and the Cursor-style restyle (Phase 50) are built and verified without a model turn. Not built or not wired: the browser pane (Phase 29), hooks, automations, the plugin host, herdr and the MCP gateway in any head, the Pets view, remote and mobile terminals, usage history. No live model turn was approved after Phase 11 (OD-07), and nothing was run on Windows, macOS, Android or a hosted deployment.
-- v0.16.0 Autonogrammer: accounts, Cowork and Dispatch: active, blocked prerequisites (2026-10-31), canonical `/root/src/repos/ompos`, graph `ut-mvw138h5-b5d2e49a`. Sixteen phases: 66, 66.1–66.4 and 67–77. Current verified-completion projection **0/16**; inventory **69/89 summarized plan slots**, **20 unsummarized**. Historical planning began 2026-10-28 on `feat/autonogrammer` in a separate worktree, with v0.15.0 developed by another session; that is provenance, not the current isolation/merge state. Existing requirements AG-66-* to AG-77-*, AG-SC-1 to AG-SC-6, AG-HW-*, AG-AX-* and AG-QU-* remain authoritative.
+- v0.16.0 Autonogrammer: accounts, Cowork and Dispatch: active. The current checkout is `/root/src/repos/autonogrammer` on `feat/autonogrammer-integration`; Phase 74.1 was inserted for the authorized idempotency migration plan, bringing the listed scope to 17 phases. Current-tree completion counts are not established: phases 70, 72, 73, 75 and 77 have open implementation or verification gaps. Historical planning began on `feat/autonogrammer`; its prior checkout paths and counts are provenance, not current gate evidence. Requirements AG-66-* to AG-77-*, AG-SC-1 to AG-SC-6, AG-HW-*, AG-AX-* and AG-QU-* remain authoritative.
 
 ## Planning Rules
 
@@ -1494,7 +1494,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   4. The desktop window title is Autonogrammer. Verify: Window title: build `apps/Autonogrammer.Native`, start `Xvfb :97 -screen 0 1280x800x24 &` (pick a free display; never `:99`, another session uses it; check `ls /tmp/.X11-unix`), run the head with `DISPLAY=:97` and a sandbox profile as in the desktop evidence page, read the title with `xdotool getwindowname` or `xprop -root _NET_ACTIVE_WINDOW`, expect `Autonogrammer`; stop the head and Xvfb. Alternative that needs no display: an Avalonia.Headless test asserting `MainWindow.Title == "Autonogrammer"`.
   5. The licence and brand checks pass and the leak-scan fingerprints of the relocated recorded frames are recorded. Verify: `bash scripts/ci/check-licences.sh`, `bash scripts/ci/check-brand.sh` pass; `.gitleaksignore` fingerprints for the relocated recorded frames added after the rename commit exists (runbook s.5 item 6).
 
-**Plans**: `66-01-PLAN.md` through `66-07-PLAN.md` in `.planning/phases/66-rebrand-to-autonogrammer/`
+**Plans**: `66-01-PLAN.md` through `66-09-PLAN.md` in `.planning/phases/66-rebrand-to-autonogrammer/`
 - [x] 66-01-PLAN.md
 - [x] 66-02-PLAN.md
 - [x] 66-03-PLAN.md
@@ -1503,6 +1503,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [x] 66-06-PLAN.md
 - [x] 66-07-PLAN.md
 - [x] 66-08-PLAN.md
+- [ ] 66-09-PLAN.md — baseline provenance and gated current-tree verification
 
 ### Phase 66.1: Scaffold: projects, registration and contract bump
 
@@ -1605,7 +1606,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   4. Telemetry reaches the GreptimeDB database `autonogrammer` (live, gated to a machine with podman). Verify: `AUTONOGRAMMER_LIVE_GREPTIME=1 dotnet test --project tests/Autonogrammer.Api.IntegrationTests -c Release --no-build --filter-trait "Category=Live"` after `bash scripts/test-services.sh up --with-greptime` passes on a machine with podman.
   5. ADR-0031 is indexed and the decision-record tests pass. Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*DecisionRecordTests*"` passes with ADR-0031 indexed.
 
-**Plans**: `68-01-PLAN.md` through `68-08-PLAN.md` in `.planning/phases/68-data-plane-names-schema-and-resilience/` (07 halted; 08 complete: SOTA states + all gaps closed + gate prep)
+**Plans**: `68-01-PLAN.md` through `68-11-PLAN.md` in `.planning/phases/68-data-plane-names-schema-and-resilience/`. Plans 09–11 are blocked drafts: the account-erasure writer fence, migration boundaries and authorized invocation remain unresolved; SEC-77-07 is open.
 - [x] 68-01-PLAN.md
 - [x] 68-02-PLAN.md
 - [x] 68-03-PLAN.md
@@ -1614,6 +1615,9 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [x] 68-06-PLAN.md
 - [x] 68-07-PLAN.md
 - [x] 68-08-PLAN.md
+- [ ] 68-09-PLAN.md — erasure architecture and scope decision (planning inconclusive)
+- [ ] 68-10-PLAN.md — writer fence and migration safety (blocked draft)
+- [ ] 68-11-PLAN.md — authorized erasure and recovery (blocked draft)
 
 ### Phase 69: Surface switch and Cowork sessions
 
@@ -1680,13 +1684,20 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   6. The artifact page of the web smoke makes no outbound request, no navigation and no parent access from the hostile fixtures. Verify: `OUT_DIR="$(mktemp -d)" bash scripts/web-smoke/run-smoke.sh` passes with the artifact page: no outbound request, no navigation, no parent access from the hostile fixtures.
   7. The licence check and the notices check exit 0. Verify: `bash scripts/ci/check-licences.sh` and `python3 scripts/legal/generate-third-party-notices.py --check` exit 0.
 
-**Plans**: `71-01-PLAN.md` through `71-06-PLAN.md` in `.planning/phases/71-cowork-artifacts/`
+**Plans**: `71-01-PLAN.md` through `71-13-PLAN.md` in `.planning/phases/71-cowork-artifacts/`. Plans 07–12 are gap-closure drafts; sync rollout, network-origin enforcement and authenticated device/session proof remain unresolved prerequisites.
 - [x] 71-01-PLAN.md
 - [x] 71-02-PLAN.md
 - [x] 71-03-PLAN.md
 - [x] 71-04-PLAN.md
 - [x] 71-05-PLAN.md
 - [x] 71-06-PLAN.md
+- [ ] 71-13-PLAN.md — sync-off metadata privacy repair implemented and focused-tested locally; uncommitted, plan close-out pending
+- [ ] 71-07-PLAN.md — artifact request metadata and durable grant storage (draft)
+- [ ] 71-12-PLAN.md — privacy-preserving sync producer and grant consumers (blocked draft)
+- [ ] 71-08-PLAN.md — sync, trusted identity and destination enforcement (blocked draft)
+- [ ] 71-11-PLAN.md — web host version and grant client (blocked draft)
+- [ ] 71-09-PLAN.md — selected conversation and artifact access flow (blocked draft)
+- [ ] 71-10-PLAN.md — integrated browser and accessibility proof (blocked draft)
 
 ### Phase 72: Cowork Browser Use
 
@@ -1757,7 +1768,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   5. The architecture tests pass (LayerMap, ADR-0036 record, Web free of process-spawning references, no TODO without an OQ row). Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release` passes (LayerMap, `DecisionRecordTests` for ADR-0036 and the README row, Web free of process-spawning references, no TODO marker without an OQ row).
   6. The build and format are clean and the OpenAPI document is regenerated and equal to the served one. Verify: `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` and `dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore` are clean; `docs/api/openapi.json` is regenerated and `GuardTests` equality holds.
 
-**Plans**: `74-01-PLAN.md` through `74-10-PLAN.md` in `.planning/phases/74-dispatch-relay/`
+**Plans**: `74-01-PLAN.md` through `74-11-PLAN.md` in `.planning/phases/74-dispatch-relay/`
 - [x] 74-01-PLAN.md
 - [x] 74-02-PLAN.md
 - [x] 74-03-PLAN.md
@@ -1768,6 +1779,20 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [x] 74-08-PLAN.md
 - [x] 74-09-PLAN.md
 - [x] 74-10-PLAN.md
+- [ ] 74-11-PLAN.md — Dispatch idempotency compatibility and durable readiness
+
+### Phase 74.1: Durable account-scoped memory idempotency migration and atomic replay (INSERTED)
+
+**Goal:** Add reversible, account-scoped PostgreSQL memory idempotency and atomic replay, with isolated migration, rollback, ownership and concurrency evidence. No production migration is authorized by this plan.
+**Requirements:** AG-75-2, AG-75-4, AG-75-6 (supporting slices; not completion claims).
+**Depends on:** Phase 74 and existing M0009 data-plane schema.
+**Plans:** 4 plans; 01, 02 and 04 passed focused local checks. Plan 03 and integrated phase verification remain open.
+
+Plans:
+- [x] 74.1-01: additive migration and atomic store-level replay (focused tests; final integrated rerun pending).
+- [x] 74.1-02: HTTP integration and cross-host replay (explicit test injection; production composition pending).
+- [ ] 74.1-03: retention, erasure, rollback and operations.
+- [x] 74.1-04: migration membership and readiness (focused tests; final integrated rerun pending).
 
 ### Phase 75: Cowork parity A: projects, memory, schedules
 
@@ -1806,7 +1831,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   4. The repository checks, licence check and format check pass and the full gate is run. Verify: `bash scripts/ci/repo-checks.sh`, `bash scripts/ci/check-licences.sh`, `dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore`; `./bootstrap.sh` is the full gate.
   5. A parity row is MET only with a named passing test class; rows that depend on omp consuming a flag stay PARTIAL until a live run is recorded. Verify: A row of `docs/parity/cowork-parity.md` is MET only with a named passing test class; rows that depend on omp consuming a flag stay PARTIAL until a live run is recorded.
 
-**Plans**: `76-01-PLAN.md` through `76-08-PLAN.md` in `.planning/phases/76-cowork-parity-plugins-auto-isolation/`
+**Plans**: `76-01-PLAN.md` through `76-09-PLAN.md` in `.planning/phases/76-cowork-parity-plugins-auto-isolation/`
 - [x] 76-01-PLAN.md
 - [x] 76-02-PLAN.md
 - [x] 76-03-PLAN.md
@@ -1815,6 +1840,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [x] 76-06-PLAN.md
 - [x] 76-07-PLAN.md
 - [x] 76-08-PLAN.md
+- [ ] 76-09-PLAN.md — probe corrected locally; live wrapper fails positive control and remains blocked
 
 ### Phase 77: Hardening, docs and integration
 
@@ -1835,11 +1861,11 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [ ] 77-10-PLAN.md
 - [x] 77-01-PLAN.md
 - [ ] 77-02-PLAN.md
-- [ ] 77-03-PLAN.md
+- [x] 77-03-PLAN.md
 - [ ] 77-04-PLAN.md
 - [ ] 77-05-PLAN.md
 - [ ] 77-06-PLAN.md
-- [ ] 77-07-PLAN.md
+- [x] 77-07-PLAN.md
 - [x] 77-08-PLAN.md
 
 ### Progress (v0.16.0)

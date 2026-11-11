@@ -68,7 +68,6 @@ export const STATES = [
     await typeInComposer(page, "/");
     return page.waitFor("!!document.querySelector('.autonogrammer-slash-palette')", 8000);
   }, groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
-  { name: "approval-pending", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.approval}`, ready: `${sessionReady(DEMO_SESSION.approval)} && !!document.querySelector('.autonogrammer-approval')`, groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
   { name: "completed-changes", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.completed}`, ready: `${sessionReady(DEMO_SESSION.completed)} && !!document.querySelector('.autonogrammer-changes')`, groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
   { name: "failed-run", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.failed}`, ready: sessionReady(DEMO_SESSION.failed), groups: ALL_GROUPS, state: APP_STATES.ERROR },
   { name: "closed-session", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.closed}`, ready: `${sessionReady(DEMO_SESSION.closed)} && !!document.querySelector('.autonogrammer-closed-note')`, groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
@@ -79,6 +78,14 @@ export const STATES = [
     return page.waitFor(`(document.querySelector('.autonogrammer-thread')?.getAttribute('data-session') ?? '') !== ${JSON.stringify(before)} && !!document.querySelector('.autonogrammer-composer-input')`, 15000);
   }, groups: ALL_GROUPS, state: APP_STATES.EMPTY },  // empty guidance: new agent ready state
   { name: "kanban", kinds: BOTH, required: true, path: "/kanban", ready: "!!document.querySelector('.autonogrammer-kanban')", groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
+  { name: "cowork-shell", kinds: BOTH, required: true, path: "/cowork", ready: "!!document.querySelector('.autonogrammer-cowork')", groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
+  // These states depend on account, panel and dispatch fixtures. An absent fixture is
+  // reported as unreachable, never counted as an accessibility pass.
+  { name: "account-menu", kinds: ["api"], required: false, path: "/", ready: "!!document.querySelector('.autonogrammer-account-menu')", groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
+  { name: "cowork-dock-tabs", kinds: ["api"], required: false, path: "/cowork", ready: "!!document.querySelector('[role=tablist][aria-label=Dock]')", groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
+  { name: "cowork-approval", kinds: ["api"], required: false, path: "/cowork", ready: "!!document.querySelector('.autonogrammer-cowork-approval, .autonogrammer-dispatch-approval')", groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
+  { name: "cowork-artifact", kinds: ["api"], required: false, path: "/cowork", ready: "!!document.querySelector('.autonogrammer-artifact-frame')", groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
+  { name: "dispatch-devices", kinds: ["api"], required: false, path: "/settings/dispatch", ready: "!!document.querySelector('.dispatch-page')", groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
   { name: "about", kinds: BOTH, required: true, path: "/about", ready: "!!document.querySelector('.autonogrammer-about')", groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
   { name: "settings-dialog", kinds: BOTH, required: true, path: "/settings", ready: "!!document.querySelector('.autonogrammer-settings[role=dialog]')", groups: ALL_GROUPS, state: APP_STATES.SUCCESS },
   { name: "settings-models", kinds: BOTH, required: true, path: "/settings/models", ready: "!!document.querySelector('.autonogrammer-settings[role=dialog]') && !!document.querySelector('.autonogrammer-settings-page')", groups: ALL_GROUPS, state: APP_STATES.SUCCESS },

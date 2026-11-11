@@ -18,6 +18,7 @@ namespace Autonogrammer.Sessions.Postgres;
 /// A failure leaves the families that already committed deleted and the account row in place, and the call can simply be repeated: every family delete is
 /// idempotent. The tenant-key delegate runs once, after the last transaction committed, and is not retried here.
 /// </para>
+/// <para>Callers must disable the account and quiesce all writers before erasure. The family transactions do not prevent concurrent account-wide writes.</para>
 /// <para>
 /// This class does not reference the Dragonfly project (both are layer-2 libraries). The composition root binds <c>eraseTenantKeys</c> to the tenant key eraser.
 /// </para>
@@ -30,6 +31,7 @@ public sealed class PostgresAccountErasure
 
     private const string DeleteCoworkEventsSql = "DELETE FROM cowork_events WHERE account_id = @account_id";
 
+    private const string DeleteMemoryClaimsSql = "DELETE FROM cowork_memory_idempotency WHERE account_id = @account_id";
     private const string DeleteMemoryEntriesSql = "DELETE FROM cowork_memory_entries WHERE account_id = @account_id";
     private const string DeleteMemorySettingsSql = "DELETE FROM cowork_memory_settings WHERE account_id = @account_id";
     private const string DeleteInstructionsSql = "DELETE FROM cowork_instructions WHERE account_id = @account_id";
@@ -105,6 +107,8 @@ public sealed class PostgresAccountErasure
 
     private static async Task EraseMemoryAsync(NpgsqlCommand command, CancellationToken cancellationToken)
     {
+        command.CommandText = DeleteMemoryClaimsSql;
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         command.CommandText = DeleteMemoryEntriesSql;
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         command.CommandText = DeleteMemorySettingsSql;

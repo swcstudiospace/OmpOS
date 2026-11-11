@@ -105,9 +105,6 @@ public static partial class ArtifactWireContract
 
         /// <summary>Gets or sets the version hashes, in number order.</summary>
         public required IReadOnlyList<string> Hashes { get; set; }
-
-        /// <summary>Gets or sets grants bound to those hashes.</summary>
-        public IReadOnlyList<Grant> Grants { get; set; } = [];
     }
 
     /// <summary>Source-generated JSON for the metadata-only sync form.</summary>

@@ -9,15 +9,6 @@ using Autonogrammer.Resilience;
 using Autonogrammer.Sessions.Postgres;
 using Microsoft.Extensions.Options;
 using Npgsql;
-using System.Diagnostics.Metrics;
-using Autonogrammer.Api.Options;
-using Autonogrammer.Api.Telemetry;
-using Autonogrammer.Contracts.DataPlane;
-using Autonogrammer.Coordination.Dragonfly;
-using Autonogrammer.Resilience;
-using Autonogrammer.Sessions.Postgres;
-using Microsoft.Extensions.Options;
-using Npgsql;
 
 namespace Autonogrammer.Api.DataPlane;
 

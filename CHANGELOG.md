@@ -9,7 +9,24 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 ## [Unreleased]
 
 ### Added
-- Phase 75 Cowork parity A integration (75-06): ILaunchContributor seam applied generically; StandingContextContributor, ScheduledCoworkSessionStarter, MemoryProviderRegistration; docs/parity/cowork-parity.md (C7 PARTIAL, C8 MET with 5 named tests, C9/C10/K17 PARTIAL); openapi regenerated; per-phase doc rows.
+- Phase 75 Cowork parity A has a launch-contributor seam and a parity inventory. Production standing-context, memory-tool registration and scheduled-session integration remain incomplete.
+- Enabled Cowork project, instruction and memory APIs use PostgreSQL; project-scoped memory writes verify ownership and serialize concurrent limit checks. Durable cross-instance idempotency remains open.
+
+### Fixed
+- The Linux Bubblewrap probe now runs its executable from a read-only root instead of misreporting an empty filesystem as disabled user namespaces. The session wrapper still fails its protected live launch test and is not verified.
+- Artifact sync-off metadata no longer includes a grants field; the current API accepts the reduced payload without changing existing grants. Compatibility with older deployed receivers has not been verified.
+- Account endpoints default off; existing installations requiring account and Code board routes must set `Accounts__Enabled=true` before upgrading. Anonymous requests remain unauthorized. The transition has not been deployed or live-verified.
+- Restored host-observed facts and a single deny timer in the Computer Use approval model.
+- Cowork dock tabs support roving keyboard navigation and correct F6 region cycling.
+- Cowork no longer reports a stale gateway-loading notice after startup and preserves the actionable gateway failure notice.
+- Cowork launches no longer inherit Code-session state paths and reject non-provider environment variables from contributors.
+- Artifact access dialogs capture focus, deny on Escape and request focus restoration when closed; the production opener remains unverified.
+- Multiple Dispatch approval panels now use distinct accessible heading references; integrated browser focus remains unverified.
+- Restored fail-closed browser stage-two approval; per-session policy, audit and egress integration remain open.
+- Chromium pipe connections start their receive loop, and cancellation terminates a stalled launched process. An isolated headless smoke passed with a test-only no-sandbox opt-in; guarded production browsing remains unverified.
+- Dispatch pairing rejects file-backed and other non-OS secret stores for device keys and credentials; native pairing and platform keyrings remain unverified.
+- PostgreSQL Dispatch store transaction handling covers duplicate devices, replay and retention; production Dispatch remains disabled pending migration registration and idempotency-key isolation.
+- Sign-in coordinator defers synchronization-resource disposal until registered sends finish.
 
 ## [0.16.0] - 2026-11-07
 

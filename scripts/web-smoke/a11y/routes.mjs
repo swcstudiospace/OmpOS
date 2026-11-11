@@ -46,6 +46,7 @@ const DIRECT_ROUTES = [
   { route: "/", layout: "shell", ready: "!!document.querySelector('main h1') && !document.querySelector('[data-state=\"loading\"]')" },
   { route: "/kanban", layout: "shell", ready: "!!document.querySelector('.autonogrammer-kanban')" },
   { route: `/sessions/${DEMO_SESSION.running}`, layout: "shell", ready: `!!document.querySelector('.autonogrammer-thread[data-session="${DEMO_SESSION.running}"]')` },
+  { route: "/cowork", layout: "shell", ready: "!!document.querySelector('.autonogrammer-cowork')" },
   { route: "/settings", layout: "dialog", ready: "!!document.querySelector('.autonogrammer-settings[role=dialog]')" },
   { route: "/about", layout: "shell", ready: "!!document.querySelector('.autonogrammer-about')" },
   { route: "/does-not-exist-a11y", layout: "shell", ready: "!!document.querySelector('.autonogrammer-notfound-page')" },
@@ -53,6 +54,7 @@ const DIRECT_ROUTES = [
 
 /** The target route's rendered state, including dynamically selected sessions. */
 export function readyFor(path) {
+  if (path === "/cowork") return "!!document.querySelector('.autonogrammer-cowork')";
   if (path === "/" || path === "/kanban" || path === "/about" || path === "/settings" || path.startsWith("/sessions/")) {
     return `!!document.querySelector('main h1') && !document.querySelector('[data-state="loading"]')`;
   }
@@ -92,7 +94,7 @@ async function checkDirectLoads(page, report, baseUrl) {
     }
     // SOTA: explicit state + first attempt validation
     const titleOk = await page.waitFor(`document.title.trim() !== '' && document.title.trim() !== ${JSON.stringify(BOOT_TITLE)}`, LOAD_TIMEOUT_MS);
-    const h1Ok = await page.waitFor("!!document.querySelector('main h1') && !document.querySelector('[data-state=\"loading\"]')", 10000);
+    const h1Ok = await page.waitFor(`(!!document.querySelector('main h1') && !document.querySelector('[data-state="loading"]')) && (${r.route === "/cowork" ? r.ready : "true"})`, 10000);
     const uniqueH1 = await page.evalValue("document.querySelectorAll('h1').length === 1");
     const landmarks = await page.evalValue("!!document.querySelector('main') && !!document.querySelector('nav, [role=\"navigation\"]')");
     if (titleOk && h1Ok && uniqueH1 && landmarks) {
@@ -111,7 +113,6 @@ function inAppSteps(kind) {
     { name: "About link in the footer", selector: ".autonogrammer-footer-about", path: "/about", expectFocus: ["h1"] },
     { name: "wordmark link", selector: ".autonogrammer-wordmark", path: "/", expectFocus: ["h1"] },
   ];
-  // The surface switch (the Code and Cowork tabs) renders only where Cowork is available. The Demo is never available (WebCoworkAccess), so its half leaves these two steps out.
   if (kind !== "demo") {
     steps.splice(1, 0,
       { name: "Cowork tab", selector: "#autonogrammer-tab-cowork", path: "/cowork", expectFocus: ["trigger"], trigger: "autonogrammer-tab-cowork" },
