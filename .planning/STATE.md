@@ -21,6 +21,15 @@ current_plan: 3
 
 # Project State
 
+## Resume gate record 2026-11-12 (user approval)
+
+- User message, verbatim: "Approved and review is confirmed and update confirmed".
+- Gate attribution (inferred, the message names no gate): the three open gates raised by the orchestrator on 2026-11-12. (1) SEC-77-07: artifact-store change to `PostgresArtifactStore` and the revised 68-10 ownership matrix. (2) Phase 74.1 plan 03: independent human runbook review. (3) STATE/ROADMAP update.
+- Approved in this record: items (1) to (3). Candidate A (operator-only erasure entry point), M0012 additive migration, and the D-34 trigger/function exception were approved earlier in the same session.
+- Still not authorised: nothing beyond these. Cleanup target list is not yet written; cleanup stays blocked until a list is recorded here.
+- Resume point: phase 68 (68-10, then 68-11) for SEC-77-07, under the approved design in 68-09. Then the remaining v0.16.0 phases in ROADMAP order.
+- Run mode: unattended to closeout, pausing only at defined gates (default; not contradicted by the user).
+
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-10-21)
