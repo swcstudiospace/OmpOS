@@ -10,6 +10,7 @@ using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Contracts.Catalog;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Sessions;
+using Autonogrammer.Sessions.Postgres;
 using Microsoft.Extensions.Options;
 using Npgsql;
 
@@ -110,6 +111,10 @@ internal sealed class PostgresAccountStore : IAccountStore
         finally
         {
             await command.DisposeAsync().ConfigureAwait(false);
+        }
+        using (var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false))
+        {
+            await AccountAdmission.EnsureRowAsync(connection, id, cancellationToken).ConfigureAwait(false);
         }
     }
 

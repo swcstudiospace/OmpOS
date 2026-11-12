@@ -20,14 +20,15 @@ public sealed class PostgresArtifactStoreTests : ArtifactStoreContract, IAsyncLi
     public ValueTask DisposeAsync() => _fixture.DisposeAsync();
 
     /// <inheritdoc />
-    protected override IArtifactStore CreateStore() => _fixture.CreateStore("contract-" + Guid.NewGuid().ToString("N"));
+    protected override async ValueTask<IArtifactStore> CreateStoreAsync() =>
+        await _fixture.CreateStoreAsync("contract-" + Guid.NewGuid().ToString("N")).ConfigureAwait(true);
 
     /// <summary>Bytes over 5242880 are a typed quota failure, and the table check rejects them too.</summary>
     [Fact]
     public async Task Content_over_the_cap_is_quota_exceeded_and_the_check_holds()
     {
         var account = "cap-" + Guid.NewGuid().ToString("N");
-        using var store = _fixture.CreateStore(account);
+        using var store = await _fixture.CreateStoreAsync(account).ConfigureAwait(true);
         var oversized = new byte[ArtifactWireContract.MaxContentBytes + 1];
         var failure = await Should.ThrowAsync<ArtifactQuotaException>(() => store.MutateAsync(
             mutation =>
@@ -68,8 +69,8 @@ public sealed class PostgresArtifactStoreTests : ArtifactStoreContract, IAsyncLi
     [Fact]
     public async Task Another_account_cannot_read_rows_or_grants()
     {
-        using var left = _fixture.CreateStore("left-" + Guid.NewGuid().ToString("N"));
-        using var right = _fixture.CreateStore("right-" + Guid.NewGuid().ToString("N"));
+        using var left = await _fixture.CreateStoreAsync("left-" + Guid.NewGuid().ToString("N")).ConfigureAwait(true);
+        using var right = await _fixture.CreateStoreAsync("right-" + Guid.NewGuid().ToString("N")).ConfigureAwait(true);
         var id = Guid.NewGuid().ToString("D");
         await left.MutateAsync(
             mutation =>

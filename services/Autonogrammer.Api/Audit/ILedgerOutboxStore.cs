@@ -10,12 +10,13 @@ internal interface ILedgerOutboxStore
     /// <summary>Gets how many rows have not been delivered. The value is cached; reading it does no I/O.</summary>
     long Depth { get; }
 
-    /// <summary>Inserts one row. A database failure is swallowed after a savepoint rollback so the caller's transaction stays usable.</summary>
+    /// <summary>Inserts one row after the erasure admission for the account. A database failure is swallowed after a savepoint rollback so the caller's transaction stays usable. A refused account throws AccountErasingException.</summary>
     /// <param name="audit">The event to notarize.</param>
     /// <param name="transaction">The caller's transaction, when there is one.</param>
+    /// <param name="accountId">The account the write belongs to. The insert is fenced by its erasure admission.</param>
     /// <param name="cancellationToken">Cancels the insert.</param>
     /// <returns>A task that completes when the row is queued or the failure has been isolated.</returns>
-    ValueTask EnqueueAsync(AuditLedgerEvent audit, NpgsqlTransaction? transaction, CancellationToken cancellationToken);
+    ValueTask EnqueueAsync(AuditLedgerEvent audit, NpgsqlTransaction? transaction, string accountId, CancellationToken cancellationToken);
 
     /// <summary>Returns due rows, at most <paramref name="limit"/>.</summary>
     /// <param name="limit">How many rows the pump may take. It is the ledger in-flight cap.</param>

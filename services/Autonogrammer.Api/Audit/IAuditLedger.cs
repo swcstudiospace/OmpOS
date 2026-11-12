@@ -9,13 +9,15 @@ internal interface IAuditLedger
 {
     /// <summary>
     /// Queues a notarisation copy of an audit row the caller has written in <paramref name="transaction"/> (the same transaction as the state change).
-    /// A failure is isolated: this does not throw and does not abort <paramref name="transaction"/>. It does not call the ledger.
+    /// A ledger failure is isolated: this does not throw and does not abort <paramref name="transaction"/>. It does not call the ledger.
+    /// An account refused by the erasure admission (not provisioned, erasing or erased) throws AccountErasingException, so the caller's write is refused.
     /// </summary>
     /// <param name="audit">The closed event. It carries no personal data.</param>
     /// <param name="transaction">The caller's transaction, or null when the caller has no database transaction.</param>
+    /// <param name="accountId">The account the write belongs to.</param>
     /// <param name="cancellationToken">Cancels the enqueue. Cancellation is not a ledger failure.</param>
     /// <returns>A task that completes when the copy has been queued or deliberately dropped.</returns>
-    ValueTask RecordAsync(AuditLedgerEvent audit, NpgsqlTransaction? transaction, CancellationToken cancellationToken);
+    ValueTask RecordAsync(AuditLedgerEvent audit, NpgsqlTransaction? transaction, string accountId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Sends one queued event through <c>SubstrateGateway.EmitEventAsync</c>. The null ledger does not send.

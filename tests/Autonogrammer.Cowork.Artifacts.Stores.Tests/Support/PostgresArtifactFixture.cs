@@ -31,15 +31,34 @@ internal sealed class PostgresArtifactFixture : IAsyncLifetime
         await new MigrationRunner(admin, SchemaName).MigrateAsync(CancellationToken.None).ConfigureAwait(false);
     }
 
-    /// <summary>Creates a store whose data source search path is this schema.</summary>
+    /// <summary>Provisions the account, then creates a store whose data source search path is this schema.</summary>
     /// <param name="accountId">The account the store filters on.</param>
     /// <returns>The store.</returns>
-    public PostgresArtifactStore CreateStore(string accountId)
+    public async ValueTask<PostgresArtifactStore> CreateStoreAsync(string accountId)
     {
+        await ProvisionAccountAsync(accountId).ConfigureAwait(false);
         var builder = new NpgsqlConnectionStringBuilder(_admin) { SearchPath = SchemaName + ",public" };
         var source = NpgsqlDataSource.Create(builder.ConnectionString);
         _sources.Add(source);
         return new PostgresArtifactStore(source, accountId);
+    }
+
+    /// <summary>Inserts the lifecycle row that write admission requires. Writes never insert it.</summary>
+    /// <param name="accountId">The account to provision.</param>
+    /// <returns>A task that completes when the row exists.</returns>
+    private async Task ProvisionAccountAsync(string accountId)
+    {
+        var builder = new NpgsqlConnectionStringBuilder(_admin) { SearchPath = SchemaName };
+        var connection = new NpgsqlConnection(builder.ConnectionString);
+        await using (connection.ConfigureAwait(false))
+        {
+            await connection.OpenAsync().ConfigureAwait(false);
+            using var command = new NpgsqlCommand(
+                "INSERT INTO account_lifecycle (account_id) VALUES (@id) ON CONFLICT (account_id) DO NOTHING",
+                connection);
+            command.Parameters.AddWithValue("id", accountId);
+            _ = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
     }
 
     /// <inheritdoc />

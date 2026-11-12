@@ -15,7 +15,7 @@ public sealed class FileArtifactStoreTests : ArtifactStoreContract, IDisposable
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     /// <inheritdoc />
-    protected override IArtifactStore CreateStore() => new FileArtifactStore(_root, "account-contract");
+    protected override ValueTask<IArtifactStore> CreateStoreAsync() => ValueTask.FromResult<IArtifactStore>(new FileArtifactStore(_root, "account-contract"));
 
     /// <summary>Deletes the temp root this test created.</summary>
     public void Dispose()

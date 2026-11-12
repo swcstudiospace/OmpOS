@@ -2,6 +2,7 @@ using System.Globalization;
 using Autonogrammer.Contracts.Dispatch;
 using Autonogrammer.Resilience;
 using Autonogrammer.Sessions.Postgres.Migrations;
+using Npgsql;
 using Shouldly;
 using Xunit;
 
@@ -204,6 +205,8 @@ public sealed class PostgresDispatchStoreTests(PostgresServerFixture server) : A
     {
         var ct = TestContext.Current.CancellationToken;
         var store = await CreateStoreAsync(DispatchStoreLimits.Default, TimeProvider.System, ct).ConfigureAwait(true);
+        var accounts = Enumerable.Range(0, 12).Select(i => "account-" + i.ToString(CultureInfo.InvariantCulture)).ToArray();
+        await ProvisionAsync(_schemas[^1].CreateDataSource(), ct, accounts).ConfigureAwait(true);
         var tasks = Enumerable.Range(0, 12).Select(i =>
             store.CreateDeviceAsync(new CreateDispatchDevice("account-" + i.ToString(CultureInfo.InvariantCulture), "shared", "device", null, null, null, [], null), ct).AsTask());
         var results = await Task.WhenAll(tasks).ConfigureAwait(true);
@@ -243,6 +246,7 @@ public sealed class PostgresDispatchStoreTests(PostgresServerFixture server) : A
     {
         var ct = TestContext.Current.CancellationToken;
         var schema = await OpenSchemaAsync(ct).ConfigureAwait(true);
+        await ProvisionAsync(schema.CreateDataSource(), ct, "acct").ConfigureAwait(true);
         var failAudit = false;
         var store = new PostgresDispatchStore(schema.CreateDataSource(), DispatchStoreLimits.Default, TimeProvider.System, _ => failAudit ? throw new InvalidOperationException("audit failure") : "tenant-hash");
         var device = new CreateDispatchDevice("acct", "dev", "original", null, null, null, [], null);
@@ -307,6 +311,7 @@ public sealed class PostgresDispatchStoreTests(PostgresServerFixture server) : A
     protected override async Task<PostgresDispatchStore> CreateStoreAsync(DispatchStoreLimits limits, TimeProvider time, CancellationToken cancellationToken)
     {
         var schema = await OpenSchemaAsync(cancellationToken).ConfigureAwait(false);
+        await ProvisionAsync(schema.CreateDataSource(), cancellationToken, "acct", "other").ConfigureAwait(false);
         var resilience = PostgresResilience.Create(new PostgresResilienceOptions
         {
             PoolInteractive = 64,
@@ -329,6 +334,22 @@ public sealed class PostgresDispatchStoreTests(PostgresServerFixture server) : A
 #pragma warning restore CA2100
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         return schema;
+    }
+
+    /// <summary>Provisions accounts as the provisioning step does: one lifecycle row each, committed before the account's first write.</summary>
+    private static async Task ProvisionAsync(NpgsqlDataSource dataSource, CancellationToken cancellationToken, params string[] accountIds)
+    {
+        var connection = await dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            foreach (var accountId in accountIds)
+            {
+                using var command = connection.CreateCommand();
+                command.CommandText = "INSERT INTO account_lifecycle (account_id) VALUES (@account_id) ON CONFLICT (account_id) DO NOTHING";
+                command.Parameters.AddWithValue("account_id", accountId);
+                _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
     }
 
     private static readonly string M0010Up = new M0010_DispatchDeviceState().UpSql;

@@ -25,6 +25,9 @@ public sealed class PostgresMemoryStoreTests : MemoryStoreContractTests, IAsyncL
     private NpgsqlDataSource? _admin;
     private NpgsqlDataSource? _app;
 
+    /// <summary>Accounts the tests write under. Each gets its lifecycle row before the first write.</summary>
+    private static readonly string[] Accounts = ["acct", "left", "right", "other", "owner", "cap-owner", "key-owner", "boundary-owner", "log-owner"];
+
     /// <inheritdoc />
     public async ValueTask InitializeAsync()
     {
@@ -40,11 +43,13 @@ public sealed class PostgresMemoryStoreTests : MemoryStoreContractTests, IAsyncL
             CREATE ROLE "{_role}" LOGIN PASSWORD '{_password}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
             GRANT USAGE ON SCHEMA "{_schema}" TO "{_role}";
             GRANT SELECT, INSERT, UPDATE, DELETE ON "{_schema}".cowork_projects, "{_schema}".cowork_instructions,
-                "{_schema}".cowork_memory_entries, "{_schema}".cowork_memory_settings, "{_schema}".cowork_memory_idempotency TO "{_role}";
+                "{_schema}".cowork_memory_entries, "{_schema}".cowork_memory_settings, "{_schema}".cowork_memory_idempotency,
+                "{_schema}".account_lifecycle TO "{_role}";
             """))
         {
             await grants.ExecuteNonQueryAsync(CancellationToken.None).ConfigureAwait(true);
         }
+        await ProvisionAccountsAsync(CancellationToken.None).ConfigureAwait(true);
         var builder = new NpgsqlConnectionStringBuilder(configured)
         {
             SearchPath = _schema + ",public",
@@ -60,6 +65,21 @@ public sealed class PostgresMemoryStoreTests : MemoryStoreContractTests, IAsyncL
             FROM pg_roles WHERE rolname = current_user
             """);
         ((bool)(await check.ExecuteScalarAsync(CancellationToken.None).ConfigureAwait(true))!).ShouldBeTrue();
+    }
+
+    /// <summary>Inserts the lifecycle row for each test account. Writes never insert it, so a missing row fails the write.</summary>
+    /// <param name="token">The cancellation token.</param>
+    /// <returns>A task that completes when every row exists.</returns>
+    private async Task ProvisionAccountsAsync(CancellationToken token)
+    {
+        foreach (var account in Accounts)
+        {
+            using var provision = _admin!.CreateCommand($"""
+                INSERT INTO "{_schema}".account_lifecycle (account_id) VALUES (@id) ON CONFLICT (account_id) DO NOTHING
+                """);
+            provision.Parameters.AddWithValue("id", account);
+            _ = await provision.ExecuteNonQueryAsync(token).ConfigureAwait(true);
+        }
     }
 
     /// <inheritdoc />

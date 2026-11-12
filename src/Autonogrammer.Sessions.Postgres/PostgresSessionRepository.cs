@@ -81,6 +81,8 @@ public sealed class PostgresSessionRepository : ISessionRepository
 
     private const string SessionExistsSql = "SELECT EXISTS (SELECT 1 FROM sessions WHERE id = @id)";
 
+    private const string SelectOwnerSql = "SELECT owner_id FROM sessions WHERE id = @id";
+
     private const string LockSessionRowSql = "SELECT 1 FROM sessions WHERE id = @id FOR UPDATE";
 
     private const string NextSeqSql =
@@ -186,6 +188,7 @@ public sealed class PostgresSessionRepository : ISessionRepository
             var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
             await using (transaction.ConfigureAwait(false))
             {
+                await AccountAdmission.AdmitSharedAsync(connection, transaction, session.OwnerId, cancellationToken).ConfigureAwait(false);
                 await UpsertHeaderAsync(connection, transaction, session, cancellationToken).ConfigureAwait(false);
                 var stored = await ReadStoredSeqsAsync(connection, transaction, session.Id, cancellationToken).ConfigureAwait(false);
                 ThrowOnConflict(session, stored);
@@ -232,6 +235,16 @@ public sealed class PostgresSessionRepository : ISessionRepository
             var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
             await using (transaction.ConfigureAwait(false))
             {
+                var owner = await ReadOwnerAsync(connection, transaction, sessionId, cancellationToken).ConfigureAwait(false);
+                if (owner is null)
+                {
+                    // The session may still be committing in a concurrent first save. The row lock waits for that commit and throws when no session exists.
+                    await LockSessionRowAsync(connection, transaction, sessionId, cancellationToken).ConfigureAwait(false);
+                    owner = await ReadOwnerAsync(connection, transaction, sessionId, cancellationToken).ConfigureAwait(false)
+                        ?? throw new KeyNotFoundException($"Session '{sessionId}' does not exist.");
+                }
+
+                await AccountAdmission.AdmitSharedAsync(connection, transaction, owner, cancellationToken).ConfigureAwait(false);
                 await LockSessionRowAsync(connection, transaction, sessionId, cancellationToken).ConfigureAwait(false);
                 var seq = await NextSeqAsync(connection, transaction, sessionId, cancellationToken).ConfigureAwait(false);
                 await InsertEventAsync(connection, transaction, sessionId, evt with { Seq = seq }, cancellationToken).ConfigureAwait(false);
@@ -333,25 +346,30 @@ public sealed class PostgresSessionRepository : ISessionRepository
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
-            if (!await SessionExistsAsync(connection, sessionId, cancellationToken).ConfigureAwait(false))
+            var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await using (transaction.ConfigureAwait(false))
             {
-                throw new KeyNotFoundException($"Session '{sessionId}' does not exist.");
-            }
+                var owner = await ReadOwnerAsync(connection, transaction, sessionId, cancellationToken).ConfigureAwait(false)
+                    ?? throw new KeyNotFoundException($"Session '{sessionId}' does not exist.");
+                await AccountAdmission.AdmitSharedAsync(connection, transaction, owner, cancellationToken).ConfigureAwait(false);
 
-            var command = PostgresSql.Create(connection, null);
-            command.CommandText = InsertApprovalSql;
-            await using (command.ConfigureAwait(false))
-            {
-                command.Parameters.AddWithValue("session_id", sessionId);
-                command.Parameters.AddWithValue("request_id", approval.RequestId);
-                command.Parameters.AddWithValue("tool_name", approval.ToolName);
-                command.Parameters.AddWithValue("granted_tools", JsonSerializer.Serialize(approval.GrantableTools.ToArray(), PostgresJsonContext.Default.StringArray));
-                command.Parameters.AddWithValue("requested_at", approval.RequestedAt);
-                command.Parameters.AddWithValue("decision", (object?)approval.Decision?.ToString() ?? DBNull.Value);
-                command.Parameters.AddWithValue("decided_at", approval.DecidedAt.HasValue ? approval.DecidedAt.Value : DBNull.Value);
+                var command = PostgresSql.Create(connection, transaction);
+                command.CommandText = InsertApprovalSql;
+                await using (command.ConfigureAwait(false))
+                {
+                    command.Parameters.AddWithValue("session_id", sessionId);
+                    command.Parameters.AddWithValue("request_id", approval.RequestId);
+                    command.Parameters.AddWithValue("tool_name", approval.ToolName);
+                    command.Parameters.AddWithValue("granted_tools", JsonSerializer.Serialize(approval.GrantableTools.ToArray(), PostgresJsonContext.Default.StringArray));
+                    command.Parameters.AddWithValue("requested_at", approval.RequestedAt);
+                    command.Parameters.AddWithValue("decision", (object?)approval.Decision?.ToString() ?? DBNull.Value);
+                    command.Parameters.AddWithValue("decided_at", approval.DecidedAt.HasValue ? approval.DecidedAt.Value : DBNull.Value);
 
-                // ON CONFLICT DO NOTHING leaves an existing request untouched: zero rows means the request id is already taken.
-                return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) == 1;
+                    // ON CONFLICT DO NOTHING leaves an existing request untouched: zero rows means the request id is already taken.
+                    var inserted = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) == 1;
+                    await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                    return inserted;
+                }
             }
         }
     }
@@ -424,17 +442,32 @@ public sealed class PostgresSessionRepository : ISessionRepository
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
-            var command = PostgresSql.Create(connection, null);
-            command.CommandText = DecideApprovalSql;
-            await using (command.ConfigureAwait(false))
+            var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await using (transaction.ConfigureAwait(false))
             {
-                command.Parameters.AddWithValue("session_id", sessionId);
-                command.Parameters.AddWithValue("request_id", requestId);
-                command.Parameters.AddWithValue("decision", decision.ToString());
-                command.Parameters.AddWithValue("decided_at", decidedAt);
+                // An approval row always belongs to an existing session, so a missing session means nothing to decide and nothing to admit.
+                var owner = await ReadOwnerAsync(connection, transaction, sessionId, cancellationToken).ConfigureAwait(false);
+                if (owner is null)
+                {
+                    return false;
+                }
 
-                // The conditional UPDATE is the decision: exactly one caller can change a pending row.
-                return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) == 1;
+                await AccountAdmission.AdmitSharedAsync(connection, transaction, owner, cancellationToken).ConfigureAwait(false);
+
+                var command = PostgresSql.Create(connection, transaction);
+                command.CommandText = DecideApprovalSql;
+                await using (command.ConfigureAwait(false))
+                {
+                    command.Parameters.AddWithValue("session_id", sessionId);
+                    command.Parameters.AddWithValue("request_id", requestId);
+                    command.Parameters.AddWithValue("decision", decision.ToString());
+                    command.Parameters.AddWithValue("decided_at", decidedAt);
+
+                    // The conditional UPDATE is the decision: exactly one caller can change a pending row.
+                    var decided = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) == 1;
+                    await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                    return decided;
+                }
             }
         }
     }
@@ -558,21 +591,37 @@ public sealed class PostgresSessionRepository : ISessionRepository
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
-            var command = PostgresSql.Create(connection, null);
-            if (closed)
+            var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await using (transaction.ConfigureAwait(false))
             {
-                command.CommandText = CloseSessionSql;
-            }
-            else
-            {
-                command.CommandText = ReopenSessionSql;
-            }
-            await using (command.ConfigureAwait(false))
-            {
-                command.Parameters.AddWithValue("id", sessionId);
+                // A session with no stored row has no closed flag to change, so there is no account to admit.
+                var owner = await ReadOwnerAsync(connection, transaction, sessionId, cancellationToken).ConfigureAwait(false);
+                if (owner is null)
+                {
+                    return false;
+                }
 
-                // The conditional UPDATE is the change detection: only a row whose flag differs is touched.
-                return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) == 1;
+                await AccountAdmission.AdmitSharedAsync(connection, transaction, owner, cancellationToken).ConfigureAwait(false);
+
+                var command = PostgresSql.Create(connection, transaction);
+                if (closed)
+                {
+                    command.CommandText = CloseSessionSql;
+                }
+                else
+                {
+                    command.CommandText = ReopenSessionSql;
+                }
+
+                await using (command.ConfigureAwait(false))
+                {
+                    command.Parameters.AddWithValue("id", sessionId);
+
+                    // The conditional UPDATE is the change detection: only a row whose flag differs is touched.
+                    var changed = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) == 1;
+                    await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                    return changed;
+                }
             }
         }
     }
@@ -805,6 +854,18 @@ public sealed class PostgresSessionRepository : ISessionRepository
             command.Parameters.AddWithValue("id", sessionId);
 
             return await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) is true;
+        }
+    }
+
+    private static async Task<string?> ReadOwnerAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, string sessionId, CancellationToken cancellationToken)
+    {
+        var command = PostgresSql.Create(connection, transaction);
+        command.CommandText = SelectOwnerSql;
+        await using (command.ConfigureAwait(false))
+        {
+            command.Parameters.AddWithValue("id", sessionId);
+
+            return await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) as string;
         }
     }
 }

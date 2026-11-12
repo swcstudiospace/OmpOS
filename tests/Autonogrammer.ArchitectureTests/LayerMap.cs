@@ -130,5 +130,9 @@ internal static class LayerMap
         ("Autonogrammer.UI", "Autonogrammer.Cowork.Artifacts"),
         // intentional: the memory Postgres store persists the memory library's shapes (Phase 75)
         ("Autonogrammer.Cowork.Memory.Postgres", "Autonogrammer.Cowork.Memory"),
+        // intentional: the artifact stores fence their writes through the shared account admission in the Postgres session library (Phase 68, SEC-77-07)
+        ("Autonogrammer.Cowork.Artifacts.Stores", "Autonogrammer.Sessions.Postgres"),
+        // intentional: the memory Postgres store fences its writes through the same shared account admission (Phase 68, SEC-77-07)
+        ("Autonogrammer.Cowork.Memory.Postgres", "Autonogrammer.Sessions.Postgres"),
     };
 }

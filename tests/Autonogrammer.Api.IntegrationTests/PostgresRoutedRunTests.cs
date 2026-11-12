@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using Autonogrammer.Api.Security;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Sessions.Postgres;
@@ -24,6 +25,8 @@ public sealed class PostgresRoutedRunTests
     public async Task RoutedRun_WritesEventsToPostgresLogAndReadsThemBack()
     {
         using var factory = new ApiFactory(PostgresSessionConfig());
+        var dataSource = factory.Services.GetRequiredService<NpgsqlDataSource>();
+        await AccountLifecycleProvisioning.ProvisionAsync(dataSource, [SingleDevPrincipal.DevName], CancellationToken.None).ConfigureAwait(true);
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
         var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
@@ -48,7 +51,6 @@ public sealed class PostgresRoutedRunTests
         loggedSeqs.ShouldNotBeEmpty("the routed run writes its events to the PostgreSQL session log");
         loggedSeqs.ShouldBe(apiSeqs, "the API reads the same Seq sequence from the PostgreSQL log that the run wrote");
 
-        var dataSource = factory.Services.GetRequiredService<NpgsqlDataSource>();
         var command = dataSource.CreateCommand("SELECT COUNT(*) FROM autonogrammer.session_events WHERE session_id = @session_id");
         await using (command.ConfigureAwait(true))
         {

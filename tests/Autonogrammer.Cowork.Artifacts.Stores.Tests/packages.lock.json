@@ -225,6 +225,7 @@
         "dependencies": {
           "Autonogrammer.Contracts": "[0.16.0, )",
           "Autonogrammer.Cowork.Artifacts": "[0.16.0, )",
+          "Autonogrammer.Sessions.Postgres": "[0.16.0, )",
           "Npgsql": "[10.0.3, )"
         }
       },

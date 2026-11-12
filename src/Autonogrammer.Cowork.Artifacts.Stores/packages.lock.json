@@ -54,6 +54,37 @@
           "Microsoft.Extensions.Options.ConfigurationExtensions": "[10.0.13, )"
         }
       },
+      "autonogrammer.harness.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.16.0, )"
+        }
+      },
+      "autonogrammer.resilience": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
+        }
+      },
+      "autonogrammer.sessions": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )"
+        }
+      },
+      "autonogrammer.sessions.postgres": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Resilience": "[0.16.0, )",
+          "Autonogrammer.Sessions": "[0.16.0, )",
+          "Microsoft.Extensions.Configuration.Abstractions": "[10.0.13, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
+          "Npgsql": "[10.0.3, )"
+        }
+      },
       "DiffPlex": {
         "type": "CentralTransitive",
         "requested": "[1.9.0, )",

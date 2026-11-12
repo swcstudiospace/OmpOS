@@ -40,6 +40,11 @@ public sealed class PostgresTwoProcessFeedTests(PostgresServerFixture server)
             var dataSource = await MigrateAsync(database, ct).ConfigureAwait(true);
             await using (dataSource.ConfigureAwait(true))
             {
+                using (var lifecycle = dataSource.CreateCommand("INSERT INTO account_lifecycle (account_id) VALUES ('acct-feed') ON CONFLICT (account_id) DO NOTHING"))
+                {
+                    await lifecycle.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
+                }
+
                 using (var account = dataSource.CreateCommand("INSERT INTO accounts (id, created_at, last_seen_at) VALUES ('acct-feed', now(), now())"))
                 {
                     await account.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
@@ -76,6 +81,11 @@ public sealed class PostgresTwoProcessFeedTests(PostgresServerFixture server)
             var dataSource = await MigrateAsync(database, ct).ConfigureAwait(true);
             await using (dataSource.ConfigureAwait(true))
             {
+                using (var lifecycle = dataSource.CreateCommand("INSERT INTO account_lifecycle (account_id) VALUES ('acct-feed') ON CONFLICT (account_id) DO NOTHING"))
+                {
+                    await lifecycle.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
+                }
+
                 using (var device = dataSource.CreateCommand(
                     "INSERT INTO dispatch_devices (id, account_id, name, platform, public_key, created_at) VALUES ('dev-1', 'acct-feed', 'laptop', 'linux', 'key', now())"))
                 {

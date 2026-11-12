@@ -15,6 +15,7 @@ namespace Autonogrammer.Sessions.Postgres.Tests;
 public sealed class PostgresAccountErasureTests(PostgresServerFixture server)
 {
     private const string SeedSql = """
+        INSERT INTO account_lifecycle (account_id) VALUES (@a) ON CONFLICT (account_id) DO NOTHING;
         INSERT INTO accounts (id, created_at, last_seen_at) VALUES (@a, now(), now());
         INSERT INTO dispatch_devices (id, account_id, name, platform, public_key, created_at) VALUES (@a || '-dev', @a, 'laptop', 'linux', 'key', now());
         INSERT INTO dispatch_commands (id, device_id, account_id, seq, op, state, idempotency_key, expires_at, created_at, updated_at)

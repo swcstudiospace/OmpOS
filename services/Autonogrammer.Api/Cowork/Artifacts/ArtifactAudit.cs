@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using Autonogrammer.Sessions.Postgres;
 using Npgsql;
 
 namespace Autonogrammer.Api.Cowork.Artifacts;
@@ -64,7 +65,9 @@ internal sealed class ArtifactAudit
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var command = new NpgsqlCommand("INSERT INTO cowork_events (account_id, session_id, seq, occurred_at, kind, payload) VALUES (@account_id, @session_id, @seq, now(), @kind, @payload::jsonb)", connection);
+            using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await AccountAdmission.AdmitSharedAsync(connection, transaction, accountId, cancellationToken).ConfigureAwait(false);
+            var command = new NpgsqlCommand("INSERT INTO cowork_events (account_id, session_id, seq, occurred_at, kind, payload) VALUES (@account_id, @session_id, @seq, now(), @kind, @payload::jsonb)", connection, transaction);
             try
             {
                 command.Parameters.AddWithValue("account_id", accountId);
@@ -78,6 +81,7 @@ internal sealed class ArtifactAudit
             {
                 await command.DisposeAsync().ConfigureAwait(false);
             }
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {

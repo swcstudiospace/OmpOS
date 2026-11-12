@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="../Autonogrammer.Cowork.Artifacts/Autonogrammer.Cowork.Artifacts.csproj" />
     <ProjectReference Include="../Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
+    <ProjectReference Include="../Autonogrammer.Sessions.Postgres/Autonogrammer.Sessions.Postgres.csproj" />
     <PackageReference Include="Npgsql" />
   </ItemGroup>
 

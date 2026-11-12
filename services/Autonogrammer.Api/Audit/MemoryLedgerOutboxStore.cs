@@ -22,7 +22,7 @@ internal sealed class MemoryLedgerOutboxStore : ILedgerOutboxStore
     }
 
     /// <inheritdoc />
-    public ValueTask EnqueueAsync(AuditLedgerEvent audit, NpgsqlTransaction? transaction, CancellationToken cancellationToken)
+    public ValueTask EnqueueAsync(AuditLedgerEvent audit, NpgsqlTransaction? transaction, string accountId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(audit);
         cancellationToken.ThrowIfCancellationRequested();

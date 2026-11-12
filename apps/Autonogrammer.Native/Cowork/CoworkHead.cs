@@ -176,7 +176,7 @@ internal sealed class CoworkHead : IAsyncDisposable
         IComputerUseBackend backend = ComputerUseHeadComposition.ChooseBackend(platform);
         FileComputerUseSettingsStore settings = new(stateRoot);
         ProductionGlobalHotkeyRegistrar hotkey = new(platform);
-        ComputerUseOwnership owner = new(backend, settings, hotkey);
+        ComputerUseOwnership owner = new(backend as IDisposable, settings, hotkey);
         var completed = false;
         try
         {
@@ -275,18 +275,17 @@ internal sealed class CoworkHead : IAsyncDisposable
         private readonly Stack<IDisposable> _owned = new();
         private int _disposed;
 
-        /// <summary>Takes the backend, the settings store and the hotkey registrar. A backend that is not disposable is not owned.</summary>
-        /// <param name="backend">The platform backend.</param>
+        /// <summary>Takes the backend owner, the settings store and the hotkey registrar. A backend that is not disposable is not owned.</summary>
+        /// <param name="backendOwner">The backend as a disposable, or null when the backend owns no resources.</param>
         /// <param name="settings">The settings store.</param>
         /// <param name="hotkey">The hotkey registrar.</param>
-        public ComputerUseOwnership(IComputerUseBackend backend, FileComputerUseSettingsStore settings, ProductionGlobalHotkeyRegistrar hotkey)
+        public ComputerUseOwnership(IDisposable? backendOwner, FileComputerUseSettingsStore settings, ProductionGlobalHotkeyRegistrar hotkey)
         {
-            ArgumentNullException.ThrowIfNull(backend);
             ArgumentNullException.ThrowIfNull(settings);
             ArgumentNullException.ThrowIfNull(hotkey);
-            if (backend is IDisposable disposableBackend)
+            if (backendOwner is not null)
             {
-                _owned.Push(disposableBackend);
+                _owned.Push(backendOwner);
             }
 
             _owned.Push(settings);

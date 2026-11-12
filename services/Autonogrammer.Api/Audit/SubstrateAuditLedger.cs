@@ -42,10 +42,10 @@ internal sealed class SubstrateAuditLedger : IAuditLedger, IDisposable
     }
 
     /// <inheritdoc />
-    public ValueTask RecordAsync(AuditLedgerEvent audit, NpgsqlTransaction? transaction, CancellationToken cancellationToken)
+    public ValueTask RecordAsync(AuditLedgerEvent audit, NpgsqlTransaction? transaction, string accountId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(audit);
-        return _outbox.EnqueueAsync(audit, transaction, cancellationToken);
+        return _outbox.EnqueueAsync(audit, transaction, accountId, cancellationToken);
     }
 
     /// <inheritdoc />

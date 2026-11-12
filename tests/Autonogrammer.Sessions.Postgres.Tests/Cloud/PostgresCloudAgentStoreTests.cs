@@ -172,6 +172,7 @@ public sealed class PostgresCloudAgentStoreTests(PostgresServerFixture server)
         try
         {
             await schema.MigrateAsync(ct).ConfigureAwait(true);
+            await ProvisionAsync(schema.CreateDataSource(), ct, "alice").ConfigureAwait(true);
 
             // Forty updates at once exceed the default interactive bulkhead of sixteen by design; this test is about atomicity, so the pipeline admits them all.
             var resilience = PostgresResilience.Create(new PostgresResilienceOptions { PoolInteractive = 64 });
@@ -304,7 +305,24 @@ public sealed class PostgresCloudAgentStoreTests(PostgresServerFixture server)
     {
         var dataSource = schema.CreateDataSource();
         await new MigrationRunner(dataSource, schema.SchemaName).MigrateAsync(cancellationToken).ConfigureAwait(false);
+        await ProvisionAsync(dataSource, cancellationToken, "alice", "bob").ConfigureAwait(false);
         return new PostgresCloudAgentStore(dataSource);
+    }
+
+    /// <summary>Provisions accounts as the provisioning step does: one lifecycle row each, committed before the account's first write.</summary>
+    private static async Task ProvisionAsync(NpgsqlDataSource dataSource, CancellationToken cancellationToken, params string[] accountIds)
+    {
+        var connection = await dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            foreach (var accountId in accountIds)
+            {
+                using var command = connection.CreateCommand();
+                command.CommandText = "INSERT INTO account_lifecycle (account_id) VALUES (@account_id) ON CONFLICT (account_id) DO NOTHING";
+                command.Parameters.AddWithValue("account_id", accountId);
+                _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
     }
 
     private static CloudAgentRecord Record(string id, string owner) =>

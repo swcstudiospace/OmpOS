@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Autonogrammer.Contracts.Cloud;
 using Autonogrammer.Contracts.Cowork.Projects;
+using Autonogrammer.Sessions.Postgres;
 using Npgsql;
 using NpgsqlTypes;
 
@@ -41,6 +42,7 @@ internal sealed class PostgresProjectAccountStore(NpgsqlDataSource dataSource)
         await using var connectionDisposal = connection.ConfigureAwait(false);
         var transaction = await connection.BeginTransactionAsync(token).ConfigureAwait(false);
         await using var transactionDisposal = transaction.ConfigureAwait(false);
+        await AccountAdmission.AdmitSharedAsync(connection, transaction, account, token).ConfigureAwait(false);
         var gate = new NpgsqlCommand("SELECT pg_advisory_xact_lock(hashtextextended(@account, 0))", connection, transaction);
         await using (gate.ConfigureAwait(false))
         {
@@ -90,23 +92,40 @@ internal sealed class PostgresProjectAccountStore(NpgsqlDataSource dataSource)
 
     public async Task<ProjectSyncRecord?> ArchiveAsync(string account, string id, DateTimeOffset now, CancellationToken token)
     {
-        var command = dataSource.CreateCommand($"UPDATE cowork_projects SET archived_at = @now, updated_at = @now WHERE account_id = @account AND id = @id RETURNING {Columns}");
+        var connection = await dataSource.OpenConnectionAsync(token).ConfigureAwait(false);
+        await using var connectionDisposal = connection.ConfigureAwait(false);
+        var transaction = await connection.BeginTransactionAsync(token).ConfigureAwait(false);
+        await using var transactionDisposal = transaction.ConfigureAwait(false);
+        await AccountAdmission.AdmitSharedAsync(connection, transaction, account, token).ConfigureAwait(false);
+        var command = new NpgsqlCommand($"UPDATE cowork_projects SET archived_at = @now, updated_at = @now WHERE account_id = @account AND id = @id RETURNING {Columns}", connection, transaction);
         await using var commandDisposal = command.ConfigureAwait(false);
         command.Parameters.AddWithValue("account", account);
         command.Parameters.AddWithValue("id", id);
         command.Parameters.AddWithValue("now", now);
+        ProjectSyncRecord? record;
         var reader = await command.ExecuteReaderAsync(token).ConfigureAwait(false);
-        await using var readerDisposal = reader.ConfigureAwait(false);
-        return await reader.ReadAsync(token).ConfigureAwait(false) ? Read(reader) : null;
+        await using (reader.ConfigureAwait(false))
+        {
+            record = await reader.ReadAsync(token).ConfigureAwait(false) ? Read(reader) : null;
+        }
+        await transaction.CommitAsync(token).ConfigureAwait(false);
+        return record;
     }
 
     public async Task<bool> DeleteAsync(string account, string id, CancellationToken token)
     {
-        var command = dataSource.CreateCommand("DELETE FROM cowork_projects WHERE account_id = @account AND id = @id");
+        var connection = await dataSource.OpenConnectionAsync(token).ConfigureAwait(false);
+        await using var connectionDisposal = connection.ConfigureAwait(false);
+        var transaction = await connection.BeginTransactionAsync(token).ConfigureAwait(false);
+        await using var transactionDisposal = transaction.ConfigureAwait(false);
+        await AccountAdmission.AdmitSharedAsync(connection, transaction, account, token).ConfigureAwait(false);
+        var command = new NpgsqlCommand("DELETE FROM cowork_projects WHERE account_id = @account AND id = @id", connection, transaction);
         await using var commandDisposal = command.ConfigureAwait(false);
         command.Parameters.AddWithValue("account", account);
         command.Parameters.AddWithValue("id", id);
-        return await command.ExecuteNonQueryAsync(token).ConfigureAwait(false) != 0;
+        var deleted = await command.ExecuteNonQueryAsync(token).ConfigureAwait(false) != 0;
+        await transaction.CommitAsync(token).ConfigureAwait(false);
+        return deleted;
     }
 
     public async Task<string> GetInstructionsAsync(string account, CancellationToken token)
@@ -119,11 +138,17 @@ internal sealed class PostgresProjectAccountStore(NpgsqlDataSource dataSource)
 
     public async Task SetInstructionsAsync(string account, string text, CancellationToken token)
     {
-        var command = dataSource.CreateCommand("INSERT INTO cowork_instructions (account_id, body, updated_at) VALUES (@account, @body, now()) ON CONFLICT (account_id) DO UPDATE SET body = EXCLUDED.body, updated_at = EXCLUDED.updated_at");
+        var connection = await dataSource.OpenConnectionAsync(token).ConfigureAwait(false);
+        await using var connectionDisposal = connection.ConfigureAwait(false);
+        var transaction = await connection.BeginTransactionAsync(token).ConfigureAwait(false);
+        await using var transactionDisposal = transaction.ConfigureAwait(false);
+        await AccountAdmission.AdmitSharedAsync(connection, transaction, account, token).ConfigureAwait(false);
+        var command = new NpgsqlCommand("INSERT INTO cowork_instructions (account_id, body, updated_at) VALUES (@account, @body, now()) ON CONFLICT (account_id) DO UPDATE SET body = EXCLUDED.body, updated_at = EXCLUDED.updated_at", connection, transaction);
         await using var commandDisposal = command.ConfigureAwait(false);
         command.Parameters.AddWithValue("account", account);
         command.Parameters.AddWithValue("body", text);
         await command.ExecuteNonQueryAsync(token).ConfigureAwait(false);
+        await transaction.CommitAsync(token).ConfigureAwait(false);
     }
 
     private static ProjectSyncRecord Read(NpgsqlDataReader reader) => new()

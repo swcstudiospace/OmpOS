@@ -30,7 +30,7 @@ public sealed class LedgerSinkTests
         var ledger = provider.GetRequiredService<IAuditLedger>();
         ledger.ShouldBeOfType<NullAuditLedger>();
         var store = provider.GetRequiredService<ILedgerOutboxStore>();
-        await ledger.RecordAsync(Sample(), transaction: null, TestContext.Current.CancellationToken);
+        await ledger.RecordAsync(Sample(), transaction: null, AccountId, TestContext.Current.CancellationToken);
         store.Depth.ShouldBe(0, "Enabled=false leaves ledger_outbox empty");
     }
 
@@ -51,7 +51,7 @@ public sealed class LedgerSinkTests
         var ledger = provider.GetRequiredService<IAuditLedger>();
         var store = provider.GetRequiredService<ILedgerOutboxStore>();
         var pump = provider.GetRequiredService<LedgerOutboxPump>();
-        await ledger.RecordAsync(Sample(), transaction: null, TestContext.Current.CancellationToken);
+        await ledger.RecordAsync(Sample(), transaction: null, AccountId, TestContext.Current.CancellationToken);
         store.Depth.ShouldBe(1);
 
         await pump.DrainOnceAsync(TestContext.Current.CancellationToken);
@@ -79,7 +79,7 @@ public sealed class LedgerSinkTests
         var pump = provider.GetRequiredService<LedgerOutboxPump>();
         for (var row = 0; row < 5; row++)
         {
-            await ledger.RecordAsync(Sample(), transaction: null, TestContext.Current.CancellationToken);
+            await ledger.RecordAsync(Sample(), transaction: null, AccountId, TestContext.Current.CancellationToken);
         }
 
         await pump.DrainOnceAsync(TestContext.Current.CancellationToken);
@@ -110,7 +110,7 @@ public sealed class LedgerSinkTests
         await using var provider = Build(enabled: true, handler, TimeProvider.System);
         var ledger = provider.GetRequiredService<IAuditLedger>();
         var pump = provider.GetRequiredService<LedgerOutboxPump>();
-        await ledger.RecordAsync(Sample(), transaction: null, TestContext.Current.CancellationToken);
+        await ledger.RecordAsync(Sample(), transaction: null, AccountId, TestContext.Current.CancellationToken);
         await pump.StartAsync(CancellationToken.None);
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         var stop = pump.StopAsync(TestContext.Current.CancellationToken);
@@ -147,7 +147,7 @@ public sealed class LedgerSinkTests
         await using var provider = Build(enabled: true, handler, TimeProvider.System);
         var ledger = provider.GetRequiredService<IAuditLedger>();
         var pump = provider.GetRequiredService<LedgerOutboxPump>();
-        await ledger.RecordAsync(Sample(), transaction: null, TestContext.Current.CancellationToken);
+        await ledger.RecordAsync(Sample(), transaction: null, AccountId, TestContext.Current.CancellationToken);
         await pump.StartAsync(CancellationToken.None);
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         var stop = Task.Run(() => pump.StopAsync(TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
@@ -185,6 +185,8 @@ public sealed class LedgerSinkTests
         host.Dispose();
         host.Dispose();
     }
+
+    private const string AccountId = "acct-ledger-sink";
 
     private static AuditLedgerEvent Sample() => new()
     {

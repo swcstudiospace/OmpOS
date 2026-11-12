@@ -2,6 +2,7 @@ using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Sessions.Postgres.Migrations;
+using Npgsql;
 using Shouldly;
 using Xunit;
 using static Autonogrammer.Sessions.Postgres.Tests.SessionSamples;
@@ -28,6 +29,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
             var writer = schema.CreateRepository();
             var reader = schema.CreateRepository();
             await schema.MigrateAsync(ct).ConfigureAwait(true);
+            await ProvisionAsync(schema.CreateDataSource(), ct, "dev").ConfigureAwait(true);
 
             await writer.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
             await AppendDeltasAsync(writer, "s-1", 0, 3, ct).ConfigureAwait(true);
@@ -58,6 +60,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         {
             var repositories = Enumerable.Range(0, 4).Select(_ => schema.CreateRepository()).ToArray();
             await schema.MigrateAsync(ct).ConfigureAwait(true);
+            await ProvisionAsync(schema.CreateDataSource(), ct, "dev").ConfigureAwait(true);
             await repositories[0].SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
 
             await Task.WhenAll(repositories.Select((repository, index) => AppendDeltasAsync(repository, "s-1", index * 25, 25, ct))).ConfigureAwait(true);
@@ -83,6 +86,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
 
             await Task.WhenAll(dataSources.Select(dataSource => new MigrationRunner(dataSource, schema.SchemaName).MigrateAsync(ct))).ConfigureAwait(true);
             (await new MigrationRunner(dataSources[0], schema.SchemaName).MigrateAsync(ct).ConfigureAwait(true)).ShouldBeEmpty();
+            await ProvisionAsync(schema.CreateDataSource(), ct, "dev").ConfigureAwait(true);
 
             var repository = new PostgresSessionRepository(dataSources[1], schema.Connection);
             await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
@@ -240,6 +244,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         try
         {
             await schema.MigrateAsync(ct).ConfigureAwait(true);
+            await ProvisionAsync(schema.CreateDataSource(), ct, "dev").ConfigureAwait(true);
             var repository = schema.CreateRepository();
             await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
             await AppendDeltasAsync(repository, "s-1", 0, 3, ct).ConfigureAwait(true);
@@ -278,6 +283,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         try
         {
             await schema.MigrateAsync(ct).ConfigureAwait(true);
+            await ProvisionAsync(schema.CreateDataSource(), ct, "dev").ConfigureAwait(true);
             var repository = schema.CreateRepository();
             await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
             await AppendDeltasAsync(repository, "s-1", 0, 2, ct).ConfigureAwait(true);
@@ -317,6 +323,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         try
         {
             await schema.MigrateAsync(ct).ConfigureAwait(true);
+            await ProvisionAsync(schema.CreateDataSource(), ct, "dev").ConfigureAwait(true);
             var first = schema.CreateRepository();
             var second = schema.CreateRepository();
             await first.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
@@ -353,6 +360,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         try
         {
             await schema.MigrateAsync(ct).ConfigureAwait(true);
+            await ProvisionAsync(schema.CreateDataSource(), ct, "dev").ConfigureAwait(true);
             var repository = schema.CreateRepository();
             await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
 
@@ -400,6 +408,22 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         finally
         {
             await schema.DisposeAsync().ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>Provisions accounts as the provisioning step does: one lifecycle row each, committed before the account's first write.</summary>
+    private static async Task ProvisionAsync(NpgsqlDataSource dataSource, CancellationToken cancellationToken, params string[] accountIds)
+    {
+        var connection = await dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            foreach (var accountId in accountIds)
+            {
+                using var command = connection.CreateCommand();
+                command.CommandText = "INSERT INTO account_lifecycle (account_id) VALUES (@account_id) ON CONFLICT (account_id) DO NOTHING";
+                command.Parameters.AddWithValue("account_id", accountId);
+                _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            }
         }
     }
 }

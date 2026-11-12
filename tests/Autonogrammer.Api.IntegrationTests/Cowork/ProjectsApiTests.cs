@@ -205,6 +205,7 @@ internal sealed class CoworkModuleHost : IAsyncDisposable
             admin = NpgsqlDataSource.Create(connection);
             await new MigrationRunner(admin, schema).MigrateAsync(CancellationToken.None).ConfigureAwait(false);
             dataSource = NpgsqlDataSource.Create(new NpgsqlConnectionStringBuilder(connection) { SearchPath = schema + ",public" }.ConnectionString);
+            await AccountLifecycleProvisioning.ProvisionAsync(dataSource, ["alice", "bob"], CancellationToken.None).ConfigureAwait(false);
             builder.Services.AddSingleton(dataSource);
         }
 

@@ -35,7 +35,8 @@ public sealed class CoworkPersistenceTests : IAsyncLifetime
             CREATE ROLE "{_role}" LOGIN PASSWORD '{_password}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
             GRANT USAGE ON SCHEMA "{_schema}" TO "{_role}";
             GRANT SELECT, INSERT, UPDATE, DELETE ON "{_schema}".cowork_projects, "{_schema}".cowork_instructions,
-                "{_schema}".cowork_memory_entries, "{_schema}".cowork_memory_settings, "{_schema}".cowork_memory_idempotency TO "{_role}";
+                "{_schema}".cowork_memory_entries, "{_schema}".cowork_memory_settings, "{_schema}".cowork_memory_idempotency,
+                "{_schema}".account_lifecycle TO "{_role}";
             """);
         await using (grants.ConfigureAwait(true))
         {
@@ -52,6 +53,7 @@ public sealed class CoworkPersistenceTests : IAsyncLifetime
         _otherApp = NpgsqlDataSource.Create(appConnection);
         await AssertAppRoleAsync(_app).ConfigureAwait(true);
         await AssertAppRoleAsync(_otherApp).ConfigureAwait(true);
+        await AccountLifecycleProvisioning.ProvisionAsync(_app, ["alice", "bob"], CancellationToken.None).ConfigureAwait(true);
     }
 
     private static async Task AssertAppRoleAsync(NpgsqlDataSource source)

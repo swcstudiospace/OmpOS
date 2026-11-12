@@ -12,16 +12,16 @@ public abstract class ArtifactStoreContract
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    /// <summary>Creates a store scoped to one account.</summary>
+    /// <summary>Creates a store scoped to one account. The account is provisioned before the store is returned.</summary>
     /// <returns>The store.</returns>
-    protected abstract IArtifactStore CreateStore();
+    protected abstract ValueTask<IArtifactStore> CreateStoreAsync();
 
     /// <summary>Create, update, same-hash retry, stale base, copy and delete all hold.</summary>
     /// <returns>A task that completes when the contract has run.</returns>
     [Fact]
     public async Task Create_update_idempotent_stale_copy_and_delete()
     {
-        var service = new ArtifactService(CreateStore(), TimeProvider.System, Options.Create(new ArtifactOptions()));
+        var service = new ArtifactService(await CreateStoreAsync().ConfigureAwait(true), TimeProvider.System, Options.Create(new ArtifactOptions()));
         var created = await service.CreateAsync(ArtifactKind.Markdown, "Notes", "one"u8.ToArray(), "session", null, null, null, ArtifactAuthor.Agent, Token).ConfigureAwait(true);
         created.IsSuccess.ShouldBeTrue();
         var id = created.Value!.ArtifactId;

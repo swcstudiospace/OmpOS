@@ -52,6 +52,7 @@ public sealed class PostgresRoleTests(PostgresServerFixture server)
             await using (adminSource.ConfigureAwait(true))
             {
                 await AssertCatalogAsync(adminSource, databaseName, ct).ConfigureAwait(true);
+                await ProvisionAsync(adminSource, ct, "dev").ConfigureAwait(true);
                 await AssertRuntimeRoleAsync(RoleConnectionString("autonogrammer_app", secrets.App, databaseName), ct).ConfigureAwait(true);
                 await AssertSupportRoleAsync(RoleConnectionString("autonogrammer_ro", secrets.ReadOnly, databaseName), ct).ConfigureAwait(true);
             }
@@ -292,6 +293,22 @@ public sealed class PostgresRoleTests(PostgresServerFixture server)
         (await repository.GetAsync("role-1", cancellationToken).ConfigureAwait(false))!.Events.Count.ShouldBe(2);
         (await repository.ListByOwnerAsync("dev", SessionSurface.Cowork, false, 10, null, cancellationToken).ConfigureAwait(false)).Count.ShouldBe(1);
         (await repository.SetClosedAsync("role-1", true, cancellationToken).ConfigureAwait(false)).ShouldBeTrue();
+    }
+
+    /// <summary>Provisions accounts as the provisioning step does: one lifecycle row each, committed before the account's first write.</summary>
+    private static async Task ProvisionAsync(NpgsqlDataSource dataSource, CancellationToken cancellationToken, params string[] accountIds)
+    {
+        var connection = await dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            foreach (var accountId in accountIds)
+            {
+                using var command = connection.CreateCommand();
+                command.CommandText = "INSERT INTO account_lifecycle (account_id) VALUES (@account_id) ON CONFLICT (account_id) DO NOTHING";
+                command.Parameters.AddWithValue("account_id", accountId);
+                _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
     }
 
     private static async Task AssertAuditIsAppendOnlyAsync(NpgsqlDataSource appSource, CancellationToken cancellationToken)

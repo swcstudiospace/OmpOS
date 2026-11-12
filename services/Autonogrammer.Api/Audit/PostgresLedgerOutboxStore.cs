@@ -1,4 +1,5 @@
 using System.Globalization;
+using Autonogrammer.Sessions.Postgres;
 using Npgsql;
 
 namespace Autonogrammer.Api.Audit;
@@ -27,7 +28,7 @@ internal sealed class PostgresLedgerOutboxStore : ILedgerOutboxStore
     public long Depth => Volatile.Read(ref _depth);
 
     /// <inheritdoc />
-    public async ValueTask EnqueueAsync(AuditLedgerEvent audit, NpgsqlTransaction? transaction, CancellationToken cancellationToken)
+    public async ValueTask EnqueueAsync(AuditLedgerEvent audit, NpgsqlTransaction? transaction, string accountId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(audit);
         if (transaction is null)
@@ -38,6 +39,7 @@ internal sealed class PostgresLedgerOutboxStore : ILedgerOutboxStore
                 var own = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
                 await using (own.ConfigureAwait(false))
                 {
+                    await AdmitAsync(own, accountId, cancellationToken).ConfigureAwait(false);
                     if (await InsertAsync(own, audit, cancellationToken).ConfigureAwait(false))
                     {
                         await own.CommitAsync(cancellationToken).ConfigureAwait(false);
@@ -48,6 +50,7 @@ internal sealed class PostgresLedgerOutboxStore : ILedgerOutboxStore
             return;
         }
 
+        await AdmitAsync(transaction, accountId, cancellationToken).ConfigureAwait(false);
         _ = await InsertAsync(transaction, audit, cancellationToken).ConfigureAwait(false);
     }
 
@@ -118,6 +121,12 @@ internal sealed class PostgresLedgerOutboxStore : ILedgerOutboxStore
     /// <inheritdoc />
     public ValueTask ScheduleAsync(long id, int attempts, DateTimeOffset nextAttemptAt, CancellationToken cancellationToken) =>
         new(ScheduleSqlAsync(id, attempts, nextAttemptAt, cancellationToken));
+
+    private static async Task AdmitAsync(NpgsqlTransaction transaction, string accountId, CancellationToken cancellationToken)
+    {
+        var connection = transaction.Connection ?? throw new InvalidOperationException("The audit transaction has no connection.");
+        await AccountAdmission.AdmitSharedAsync(connection, transaction, accountId, cancellationToken).ConfigureAwait(false);
+    }
 
     private async Task<bool> InsertAsync(NpgsqlTransaction transaction, AuditLedgerEvent audit, CancellationToken cancellationToken)
     {

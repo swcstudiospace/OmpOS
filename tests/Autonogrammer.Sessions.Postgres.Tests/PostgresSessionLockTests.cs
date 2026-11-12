@@ -29,6 +29,7 @@ public sealed class PostgresSessionLockTests(PostgresServerFixture server)
             try
             {
                 await new MigrationRunner(dataSource, schema.SchemaName).MigrateAsync(ct).ConfigureAwait(true);
+                await ProvisionAsync(dataSource, ct, "dev").ConfigureAwait(true);
                 var repository = new PostgresSessionRepository(dataSource, schema.Connection);
                 await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
 
@@ -117,6 +118,22 @@ public sealed class PostgresSessionLockTests(PostgresServerFixture server)
         finally
         {
             await probe.DisposeAsync().ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>Provisions accounts as the provisioning step does: one lifecycle row each, committed before the account's first write.</summary>
+    private static async Task ProvisionAsync(NpgsqlDataSource dataSource, CancellationToken cancellationToken, params string[] accountIds)
+    {
+        var connection = await dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            foreach (var accountId in accountIds)
+            {
+                using var command = connection.CreateCommand();
+                command.CommandText = "INSERT INTO account_lifecycle (account_id) VALUES (@account_id) ON CONFLICT (account_id) DO NOTHING";
+                command.Parameters.AddWithValue("account_id", accountId);
+                _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            }
         }
     }
 }

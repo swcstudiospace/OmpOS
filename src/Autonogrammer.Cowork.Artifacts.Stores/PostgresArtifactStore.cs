@@ -3,6 +3,7 @@ using System.Text.Json;
 using Autonogrammer.Contracts.Artifacts;
 
 using Autonogrammer.Cowork.Artifacts.Model;
+using Autonogrammer.Sessions.Postgres;
 using Npgsql;
 using NpgsqlTypes;
 using ArtifactGrantBinding = Autonogrammer.Cowork.Artifacts.Stores.ArtifactWireContract.Grant;
@@ -49,6 +50,7 @@ public sealed class PostgresArtifactStore : IArtifactStore, IDisposable
                 var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
                 try
                 {
+                    await AccountAdmission.AdmitSharedAsync(connection, transaction, _accountId, cancellationToken).ConfigureAwait(false);
                     var session = await LoadAsync(connection, cancellationToken).ConfigureAwait(false);
                     var result = mutation(session);
                     foreach (var change in session.Changes)
@@ -120,9 +122,12 @@ public sealed class PostgresArtifactStore : IArtifactStore, IDisposable
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            using var command = new NpgsqlCommand("INSERT INTO artifact_grants (artifact_id, version, account_id, content_sha256, origins, scope, device, granted_at) VALUES (@artifact_id, @version, @account_id, @content_sha256, @origins::jsonb, @scope, @device, @granted_at)", connection);
+            using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await AccountAdmission.AdmitSharedAsync(connection, transaction, _accountId, cancellationToken).ConfigureAwait(false);
+            using var command = new NpgsqlCommand("INSERT INTO artifact_grants (artifact_id, version, account_id, content_sha256, origins, scope, device, granted_at) VALUES (@artifact_id, @version, @account_id, @content_sha256, @origins::jsonb, @scope, @device, @granted_at)", connection, transaction);
             AddGrant(command, grant, _accountId);
             _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {

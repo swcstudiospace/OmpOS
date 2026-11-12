@@ -8,7 +8,7 @@ namespace Autonogrammer.Api.Audit;
 internal sealed class NullAuditLedger : IAuditLedger
 {
     /// <inheritdoc />
-    public ValueTask RecordAsync(AuditLedgerEvent audit, NpgsqlTransaction? transaction, CancellationToken cancellationToken)
+    public ValueTask RecordAsync(AuditLedgerEvent audit, NpgsqlTransaction? transaction, string accountId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(audit);
         cancellationToken.ThrowIfCancellationRequested();

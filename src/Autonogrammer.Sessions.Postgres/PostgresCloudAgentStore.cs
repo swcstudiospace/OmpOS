@@ -107,6 +107,7 @@ public sealed class PostgresCloudAgentStore : ICloudAgentStore
                     return new CloudAgentCreateResult(CloudAgentCreateOutcome.ActiveLimitReached, null);
                 }
 
+                await AccountAdmission.AdmitSharedAsync(connection, transaction, record.OwnerId, cancellationToken).ConfigureAwait(false);
                 using var insert = PostgresSql.Create(connection, transaction);
                 insert.CommandText = InsertSql;
                 insert.Parameters.AddWithValue("id", record.Id);
@@ -228,6 +229,7 @@ public sealed class PostgresCloudAgentStore : ICloudAgentStore
                     throw new InvalidOperationException("A cloud agent update must not change the identifier, the owner or the session.");
                 }
 
+                await AccountAdmission.AdmitSharedAsync(connection, transaction, current.OwnerId, cancellationToken).ConfigureAwait(false);
                 await WriteAsync(connection, transaction, updated, cancellationToken).ConfigureAwait(false);
                 await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
                 return updated;
@@ -287,6 +289,7 @@ public sealed class PostgresCloudAgentStore : ICloudAgentStore
                 }
 
                 var moved = CloudAgentStatusRules.Activate(current, now);
+                await AccountAdmission.AdmitSharedAsync(connection, transaction, owner, cancellationToken).ConfigureAwait(false);
                 await WriteAsync(connection, transaction, moved, cancellationToken).ConfigureAwait(false);
                 await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
                 return new CloudAgentActivation(CloudAgentActivationOutcome.Activated, moved);
@@ -308,10 +311,30 @@ public sealed class PostgresCloudAgentStore : ICloudAgentStore
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
-            using var command = PostgresSql.Create(connection, null);
-            command.CommandText = DeleteSql;
-            command.Parameters.AddWithValue("id", id);
-            return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) > 0;
+            var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await using (transaction.ConfigureAwait(false))
+            {
+                string? owner;
+                using (var ownerCommand = PostgresSql.Create(connection, transaction))
+                {
+                    ownerCommand.CommandText = SelectOwnerOfSql;
+                    ownerCommand.Parameters.AddWithValue("id", id);
+                    owner = await ownerCommand.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) as string;
+                }
+
+                if (owner is null)
+                {
+                    return false;
+                }
+
+                await AccountAdmission.AdmitSharedAsync(connection, transaction, owner, cancellationToken).ConfigureAwait(false);
+                using var command = PostgresSql.Create(connection, transaction);
+                command.CommandText = DeleteSql;
+                command.Parameters.AddWithValue("id", id);
+                var deleted = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) > 0;
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                return deleted;
+            }
         }
     }
 

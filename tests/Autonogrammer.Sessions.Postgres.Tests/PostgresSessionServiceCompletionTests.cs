@@ -1,6 +1,7 @@
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Harness.Abstractions;
+using Npgsql;
 using Shouldly;
 using Xunit;
 
@@ -22,6 +23,7 @@ public sealed class PostgresSessionServiceCompletionTests(PostgresServerFixture 
         try
         {
             await schema.MigrateAsync(ct).ConfigureAwait(true);
+            await ProvisionAsync(schema.CreateDataSource(), ct, "dev").ConfigureAwait(true);
             var repository = schema.CreateRepository();
             var service = new SessionService(repository, TimeProvider.System);
             var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
@@ -52,6 +54,7 @@ public sealed class PostgresSessionServiceCompletionTests(PostgresServerFixture 
         try
         {
             await schema.MigrateAsync(ct).ConfigureAwait(true);
+            await ProvisionAsync(schema.CreateDataSource(), ct, "dev").ConfigureAwait(true);
             var repository = schema.CreateRepository();
             var service = new SessionService(repository, TimeProvider.System);
             var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
@@ -83,6 +86,7 @@ public sealed class PostgresSessionServiceCompletionTests(PostgresServerFixture 
         try
         {
             await schema.MigrateAsync(ct).ConfigureAwait(true);
+            await ProvisionAsync(schema.CreateDataSource(), ct, "dev").ConfigureAwait(true);
             var repository = schema.CreateRepository();
             var service = new SessionService(repository, TimeProvider.System);
             var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
@@ -101,6 +105,22 @@ public sealed class PostgresSessionServiceCompletionTests(PostgresServerFixture 
         finally
         {
             await schema.DisposeAsync().ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>Provisions accounts as the provisioning step does: one lifecycle row each, committed before the account's first write.</summary>
+    private static async Task ProvisionAsync(NpgsqlDataSource dataSource, CancellationToken cancellationToken, params string[] accountIds)
+    {
+        var connection = await dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            foreach (var accountId in accountIds)
+            {
+                using var command = connection.CreateCommand();
+                command.CommandText = "INSERT INTO account_lifecycle (account_id) VALUES (@account_id) ON CONFLICT (account_id) DO NOTHING";
+                command.Parameters.AddWithValue("account_id", accountId);
+                _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            }
         }
     }
 }

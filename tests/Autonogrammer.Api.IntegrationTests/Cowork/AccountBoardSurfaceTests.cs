@@ -1,10 +1,12 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Autonogrammer.Api.Security;
 using Autonogrammer.Contracts.Cowork;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Sessions;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using Shouldly;
 using Xunit;
 
@@ -45,6 +47,8 @@ public sealed class AccountBoardSurfaceTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var factory = new ApiFactory(PostgresSessionConfig());
+        var dataSource = factory.Services.GetRequiredService<NpgsqlDataSource>();
+        await AccountLifecycleProvisioning.ProvisionAsync(dataSource, [SingleDevPrincipal.DevName], ct).ConfigureAwait(true);
         using var client = factory.CreateClient();
         var code = Guid.NewGuid().ToString("N");
         var now = DateTimeOffset.Parse("2026-10-30T12:00:00Z", System.Globalization.CultureInfo.InvariantCulture);

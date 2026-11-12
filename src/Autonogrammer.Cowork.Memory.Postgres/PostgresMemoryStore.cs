@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Autonogrammer.Contracts.Cowork.Memory;
+using Autonogrammer.Sessions.Postgres;
 using Npgsql;
 using NpgsqlTypes;
 
@@ -75,6 +76,7 @@ public sealed class PostgresMemoryStore : IMemoryStore, IMemoryIdempotentStore
         var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         await using var transactionDisposal = transaction.ConfigureAwait(false);
         await LockAccountAsync(accountId, connection, transaction, cancellationToken).ConfigureAwait(false);
+        await AccountAdmission.AdmitSharedAsync(connection, transaction, accountId, cancellationToken).ConfigureAwait(false);
         var command = new NpgsqlCommand(
             """
             INSERT INTO cowork_memory_settings (account_id, enabled, paused, include_sensitive)
@@ -138,6 +140,7 @@ public sealed class PostgresMemoryStore : IMemoryStore, IMemoryIdempotentStore
         NpgsqlConnection connection, NpgsqlTransaction transaction, CancellationToken cancellationToken)
     {
         await LockAccountAsync(scope.AccountId, connection, transaction, cancellationToken).ConfigureAwait(false);
+        await AccountAdmission.AdmitSharedAsync(connection, transaction, scope.AccountId, cancellationToken).ConfigureAwait(false);
         var settings = await ReadSettingsAsync(scope.AccountId, connection, transaction, cancellationToken).ConfigureAwait(false);
         if (settings.Paused)
         {
@@ -386,7 +389,12 @@ public sealed class PostgresMemoryStore : IMemoryStore, IMemoryIdempotentStore
             return Notice(MemoryCodes.MemoryPaused, "Memory is paused. Entries are kept, and nothing was read or written.");
         }
 
-        var command = _dataSource.CreateCommand(
+        var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using var connectionDisposal = connection.ConfigureAwait(false);
+        var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        await using var transactionDisposal = transaction.ConfigureAwait(false);
+        await AccountAdmission.AdmitSharedAsync(connection, transaction, scope.AccountId, cancellationToken).ConfigureAwait(false);
+        var command = new NpgsqlCommand(
             """
             DELETE FROM cowork_memory_entries
             WHERE account_id = @account_id AND id = @id
@@ -395,7 +403,7 @@ public sealed class PostgresMemoryStore : IMemoryStore, IMemoryIdempotentStore
                     OR project_id = @project_id
                     OR (@use_account AND @project_id IS NOT NULL AND project_id IS NULL)
                   )
-            """);
+            """, connection, transaction);
         await using (command.ConfigureAwait(false))
         {
             command.Parameters.Add(Account(scope.AccountId));
@@ -403,6 +411,7 @@ public sealed class PostgresMemoryStore : IMemoryStore, IMemoryIdempotentStore
             command.Parameters.Add(NullableText("project_id", scope.ProjectId));
             command.Parameters.Add(new NpgsqlParameter("use_account", NpgsqlDbType.Boolean) { Value = scope.UseAccountMemory });
             var deleted = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             return deleted == 1
                 ? new MemoryMutation(true, MemoryCodes.Ok, null, null)
                 : new MemoryMutation(false, MemoryCodes.MemoryNotFound, "That memory entry was not found.", null);
@@ -413,11 +422,17 @@ public sealed class PostgresMemoryStore : IMemoryStore, IMemoryIdempotentStore
     public async Task<MemoryMutation> ResetAsync(string accountId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(accountId);
-        var command = _dataSource.CreateCommand("DELETE FROM cowork_memory_entries WHERE account_id = @account_id");
+        var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using var connectionDisposal = connection.ConfigureAwait(false);
+        var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        await using var transactionDisposal = transaction.ConfigureAwait(false);
+        await AccountAdmission.AdmitSharedAsync(connection, transaction, accountId, cancellationToken).ConfigureAwait(false);
+        var command = new NpgsqlCommand("DELETE FROM cowork_memory_entries WHERE account_id = @account_id", connection, transaction);
         await using (command.ConfigureAwait(false))
         {
             command.Parameters.Add(Account(accountId));
             _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             return new MemoryMutation(true, MemoryCodes.Ok, null, null);
         }
     }
@@ -480,6 +495,7 @@ public sealed class PostgresMemoryStore : IMemoryStore, IMemoryIdempotentStore
         await using var connectionDisposal = connection.ConfigureAwait(false);
         var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         await using var transactionDisposal = transaction.ConfigureAwait(false);
+        await AccountAdmission.AdmitSharedAsync(connection, transaction, scope.AccountId, cancellationToken).ConfigureAwait(false);
         var refused = await CheckWriteScopeAsync(scope, connection, transaction, cancellationToken).ConfigureAwait(false);
         if (refused is not null)
         {

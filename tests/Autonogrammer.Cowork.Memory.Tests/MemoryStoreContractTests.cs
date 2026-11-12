@@ -156,6 +156,12 @@ public abstract class MemoryStoreContractTests
             await new MigrationRunner(_admin, _schema).MigrateAsync(CancellationToken.None).ConfigureAwait(true);
             var builder = new NpgsqlConnectionStringBuilder(configured) { SearchPath = _schema + ",public" };
             _app = NpgsqlDataSource.Create(builder.ConnectionString);
+            foreach (var account in new[] { "acct", "left", "right" })
+            {
+                using var provision = _app.CreateCommand("INSERT INTO account_lifecycle (account_id) VALUES (@id) ON CONFLICT (account_id) DO NOTHING");
+                provision.Parameters.AddWithValue("id", account);
+                _ = await provision.ExecuteNonQueryAsync(CancellationToken.None).ConfigureAwait(true);
+            }
         }
 
         /// <inheritdoc />

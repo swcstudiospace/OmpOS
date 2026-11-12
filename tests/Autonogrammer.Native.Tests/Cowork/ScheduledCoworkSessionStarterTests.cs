@@ -1,4 +1,3 @@
-#pragma warning disable CA2007
 
 using Autonogrammer.Cowork;
 using Autonogrammer.Cowork.Abstractions;
@@ -88,4 +87,3 @@ public sealed class ScheduledCoworkSessionStarterTests
     }
 }
 
-#pragma warning restore CA2007
