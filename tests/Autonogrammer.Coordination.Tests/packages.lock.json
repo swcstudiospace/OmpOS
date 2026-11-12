@@ -240,8 +240,8 @@
       "autonogrammer.coordination.dragonfly": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Coordination": "[0.15.0, )",
-          "Autonogrammer.Resilience": "[0.15.0, )",
+          "Autonogrammer.Coordination": "[0.16.0, )",
+          "Autonogrammer.Resilience": "[0.16.0, )",
           "StackExchange.Redis": "[3.4.5, )"
         }
       },

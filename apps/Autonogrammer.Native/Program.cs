@@ -27,10 +27,65 @@ internal static class Program
     public static int Main(string[] args) => BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
 
     /// <summary>
-    /// Builds the application with the windowing platform detected at run time. The head of the Agent Panel (the engines of N sessions,
-    /// the registry and the panel) is composed when the main window opens, from the process environment, with the services' log output
-    /// going to <see cref="System.Diagnostics.Trace"/>, so the stderr listener installed at startup receives it (ADR-0011).
+    /// Builds the application with the windowing backend the process selects. The default is the platform detection the head has always
+    /// used. The native Wayland backend is an explicit opt-in through <see cref="BackendSelection"/>. The head of the Agent Panel (the engines
+    /// of N sessions, the registry and the panel) is composed when the main window opens, from the process environment, with the services' log
+    /// output going to <see cref="System.Diagnostics.Trace"/>, so the stderr listener installed at startup receives it (ADR-0011).
     /// </summary>
     /// <returns>The configured application builder.</returns>
-    public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure(() => new App()).UsePlatformDetect();
+    public static AppBuilder BuildAvaloniaApp()
+    {
+        var builder = AppBuilder.Configure(() => new App());
+        return BackendSelection.Select(Environment.GetEnvironmentVariable(BackendSelection.Variable), OperatingSystem.IsLinux()) switch
+        {
+            NativeBackend.Wayland => builder.UseWayland().UseSkia().UseHarfBuzz(),
+            _ => builder.UsePlatformDetect(),
+        };
+    }
+
+    /// <summary>The windowing backend the head starts on.</summary>
+    internal enum NativeBackend
+    {
+        /// <summary>The platform detection the head has always used (X11 on Linux, which runs through Xwayland on a Wayland session).</summary>
+        Default,
+
+        /// <summary>The native Wayland backend of <c>Avalonia.Wayland</c>. It has no AT-SPI, so it has no screen-reader support on Linux.</summary>
+        Wayland,
+    }
+
+    /// <summary>
+    /// Chooses the windowing backend from <c>AUTONOGRAMMER_NATIVE_BACKEND</c>. Unset or empty selects the default. <c>wayland</c> (any case)
+    /// selects the native Wayland backend, and only on Linux. Any other value is refused, so a typo never starts the wrong backend silently.
+    /// </summary>
+    internal static class BackendSelection
+    {
+        /// <summary>The variable that names the windowing backend.</summary>
+        internal const string Variable = "AUTONOGRAMMER_NATIVE_BACKEND";
+
+        /// <summary>Selects the backend from the value of <see cref="Variable"/>.</summary>
+        /// <param name="value">The variable's value, or null when it is unset.</param>
+        /// <param name="isLinux">Whether the head runs on Linux, the only platform the Wayland backend is built for.</param>
+        /// <returns>The selected backend.</returns>
+        /// <exception cref="InvalidOperationException">The value names an unknown backend, or Wayland is named off Linux.</exception>
+        internal static NativeBackend Select(string? value, bool isLinux)
+        {
+            var name = value?.Trim();
+            if (string.IsNullOrEmpty(name))
+            {
+                return NativeBackend.Default;
+            }
+
+            if (!string.Equals(name, "wayland", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"{Variable} names an unknown backend. The only value is 'wayland'; unset it for the default backend.");
+            }
+
+            if (!isLinux)
+            {
+                throw new InvalidOperationException($"{Variable}=wayland applies to Linux only.");
+            }
+
+            return NativeBackend.Wayland;
+        }
+    }
 }

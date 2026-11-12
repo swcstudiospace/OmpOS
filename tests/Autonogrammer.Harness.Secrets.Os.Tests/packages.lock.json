@@ -207,7 +207,7 @@
       "autonogrammer.harness.secrets.os": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.16.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
           "System.Security.Cryptography.ProtectedData": "[10.0.13, )"
         }

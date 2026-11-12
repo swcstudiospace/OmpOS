@@ -216,37 +216,37 @@
       "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.0, )"
         }
       },
       "autonogrammer.sandbox.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.0, )"
         }
       },
       "autonogrammer.sessionruns": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Sandbox.Abstractions": "[0.15.0, )",
-          "Autonogrammer.Sessions": "[0.15.0, )",
-          "Autonogrammer.Workflows": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Sandbox.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Sessions": "[0.16.0, )",
+          "Autonogrammer.Workflows": "[0.16.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.sessions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.0, )"
         }
       },
       "autonogrammer.workflows": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.16.0, )"
         }
       },
       "Microsoft.Extensions.Configuration": {

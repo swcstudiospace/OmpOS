@@ -204,17 +204,17 @@
       "autonogrammer.accounts": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.16.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.accounts.desktop": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Accounts": "[0.15.0, )",
-          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
-          "Autonogrammer.Harness.Secrets.Os": "[0.15.0, )",
+          "Autonogrammer.Accounts": "[0.16.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.16.0, )",
+          "Autonogrammer.Harness.Secrets.Os": "[0.16.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
@@ -227,7 +227,7 @@
       "autonogrammer.harness.secrets.os": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.16.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
           "System.Security.Cryptography.ProtectedData": "[10.0.13, )"
         }
