@@ -1095,3 +1095,13 @@ Pending pause (GREY, this packet): (1) uplift scope: audit first, fix phases now
 - Local checks run before this record: ArchitectureTests fails only on SEC-77-01; Sessions.Postgres.Tests passes (117/117) with M0010 restored (commit 9753b314).
 - Milestone status: partial. Phase 66 gate not passed (full suite blocked by SEC-77-01). Phases 66.1 to 77 remain unverified (0 of 17 verified). Do not mark complete.
 - Default applied for undefined planning options: quality work limited to files phases touch; archived-phase TODOs classified, not implemented; pause once at audit.
+
+## Pause record 2026-11-12: phase 68 at 68-09 human approval (SEC-77-07)
+
+- Status: phase 68 paused, not verified. Plans 68-01 to 68-08 are summarised; 68-09, 68-10, 68-11 are not.
+- 68-09 (architecture and authority for SEC-77-07) states it alone authorises no source edit, migration, test, commit or change to shared STATE/ROADMAP. It needs human approval.
+- 68-10 proceeds only "after the 68-09 human approval"; 68-11 depends on 68-10.
+- Open gap: SEC-77-07 (High, open). Account erasure uses separate family transactions, requires external quiescence, and has no complete cross-writer fence. Accepting High risk is out of scope for the run.
+- Decision needed from owner: approve the 68-09 architecture (all-writer fence design and reserved migration version, M0012 conditional on review), or defer phase 68 with the SEC-77-07 gap recorded.
+- Dependent phases: 74.1 human review and 75-12 hold remain in force.
+- No code changed in this pass.
