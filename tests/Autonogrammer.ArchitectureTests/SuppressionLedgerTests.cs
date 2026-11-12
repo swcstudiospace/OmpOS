@@ -28,6 +28,10 @@ public sealed class SuppressionLedgerTests
         unlisted.ShouldBeEmpty("every suppression needs one kept SUP row (file, rule, justification, owner) in docs/open-questions.md, or must be fixed at the cause:" + Environment.NewLine + string.Join(Environment.NewLine, unlisted));
     }
 
+    // Reconciliation of the CA1031 rows for src/Autonogrammer.Cowork/Tools/CoworkToolHost.cs (SUP-680 to SUP-685):
+    // all six are marked fixed, and the file has no CA1031 suppression (no pragma or SuppressMessage under
+    // src/Autonogrammer.Cowork). Its four general catch clauses carry exception filters. ReadKeptRows ignores fixed rows,
+    // so no kept row exists for that file and rule and FindOrphanRows reports nothing. Test data and expectation are unchanged.
     [Fact]
     public void NoKeptSuppressionRowIsOrphaned()
     {
