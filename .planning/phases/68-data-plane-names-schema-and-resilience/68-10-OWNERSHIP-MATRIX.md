@@ -213,3 +213,25 @@ Files with **no** mutating route (grep over the directories returned no `Map(Pos
 | F. UNRESOLVED list | 14 | n/a | 14 |
 
 Requested items 1 to 10 status: 1 RESOLVED (file-backed automation store, `AutomationServiceRegistration.cs:38-41`). 2 RESOLVED (approval/close/header writers and their locks, B-01 to B-05). 3 RESOLVED (`LockAccountAsync` callers: memory `:77,140,535`; project `:44` from `ProjectsEndpoints.cs:111`). 4 RESOLVED (dispatch enqueue, device-row locks, `LockAccountAsync` `:843`, `LockFeedAsync` `:885`). 5 RESOLVED (not under owner lock, B-09). 6 RESOLVED (dispatch store not registered; in-memory Development only). 7 RESOLVED (provider writes are host-wide omp configuration, not SQL). 8 RESOLVED (multi-line grep: every multi-line SQL statement keeps its table name on the verb line). 9 RESOLVED (AutomationScheduler and AutomationRunner → file store and cloud rows; CoworkSessionSync → HTTP → sessions). 10 RESOLVED for `apps/Autonogrammer.Native` (D-11); other apps UNRESOLVED (U-10).
+
+## Section F resolution (2026-11-12, read-only scouts)
+
+- U-01 RESOLVED: SessionService.RecordCompletionAsync (CatalogEndpoints.cs:244; SessionService.cs:255-297): sessions, session_events, tool approvals under the session lock (:685-695); lease in Dragonfly (PromptRunner.cs:115).
+- U-02 RESOLVED: PostgresArtifactStore.SaveGrantAsync (:116-131) has no production caller (test only, PostgresArtifactStoreTests.cs:83). Live PUT grants write the in-memory ArtifactGrants (ArtifactEndpoints.cs:312). No SQL grant write is reachable.
+- U-03 RESOLVED: ArtifactAccountDirectory.DeleteAsync (:175-181) -> PostgresArtifactStore delete (:453-471), one transaction; existence check at :169 is unlocked.
+- U-04 RESOLVED: ChangeDecisionStore is in-process memory (ChangeDecisionStore.cs:14,21-27). Accept/reject writes files under the workspace root (WorkspaceChangeApplier.cs:51,67,71), gated by session owner. No SQL. Not account-keyed.
+- U-05 RESOLVED: IAuditLedger.RecordAsync has no production caller (tests only, LedgerSinkTests.cs). ledger_outbox and dispatch_audit enqueues are unreachable in a composed host.
+- U-06 RESOLVED: ArtifactAudit.WriteAsync callers (ArtifactEndpoints.cs:227,232,294,314,380) pass user.Name; writes cowork_events (ArtifactAudit.cs:60-86). Erased set.
+- U-07 RESOLVED: call site at PostgresMemoryStore.cs:168, inside SaveIdempotentInTransactionAsync after the advisory lock (:140). The matrix range :164-181 was off.
+- U-08 RESOLVED: PostgresLedgerOutboxStore.EnqueueAsync (:30-52) -> InsertAsync (:122-180, CTE :131-138, SAVEPOINT :130); MarkSentSqlAsync (:182-195); ScheduleSqlAsync (:197-212).
+- U-09 PARTIAL: API host writers resolved (AutomationServiceRegistration.cs:41,46 file stores; WorkspaceChangeApplier). Nine library writers and several Native writers are not account-keyed server state; AcpAgentSession, CodeWorkspaceFile, BrowserDownloadQuarantine, MacOSBackend, ComputerAuditLog, CheckpointBlobs callers are still untraced.
+- U-10 RESOLVED: apps/ file writers are Native desktop state only (SessionExtrasStore, FileComputerUseSettingsStore, FileSettingsStore). Android and Web have none. Not account-keyed server data.
+- U-11 RESOLVED: PostgresDispatchStore has no production composition. It is referenced only by its declaration and tests. IDispatchStore is unregistered in every non-Development host (DispatchModule.cs:40-45; DispatchOptionsValidator.cs:78).
+- U-12 RESOLVED: SessionConfigEndpoints.cs:161,175 engine write, then in-memory LiveSessionTracker (:148), then session_events INSERT via PostgresSessionRepository.AppendAsync (:213). No session lock; owner checked at :119.
+- U-13 RESOLVED: CloudRunTracker.TryCancel (in-process, no write). PR creation writes GitHub then cloud_agents UPDATE (CloudAgentService / PullRequestService.cs:170) with no owner lock; external write precedes it.
+- U-14 RESOLVED: ledger_outbox DDL (M0007_LedgerOutbox.cs:11-18) has no account column.
+
+Findings that change the fence scope:
+1. Several dispatch and artifact SQL writers are unreachable in production (PostgresDispatchStore, PostgresArtifactStore grants). The fence must still admit them, but they cannot be exercised by the live API.
+2. Live artifact grants and change decisions are in memory; a restart clears them. This is outside the erased set and is recorded as a known gap, not closed by M0012.
+3. Desktop-local files (Native) are per-user state, not server account data; they are out of the server fence.
