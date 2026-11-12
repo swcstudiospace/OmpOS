@@ -1086,3 +1086,12 @@ Pending pause (GREY, this packet): (1) uplift scope: audit first, fix phases now
  Recommended: full gate + live surface + human visual/AT + verifier run. Web surfaces not yet mounted from Cowork view (69/70). OQ-400 owner legal decision on Mermaid bundle.
  Phase 71 SOTA updated.
 77-03 complete 2026-11-10T13:39:18Z
+
+## Decision record 2026-11-12: SEC-77-01 (owner Option B)
+
+- Decision: SEC-77-01 (High, browser/tool policy, docs/quality/v0.16.0-security-review.md) is recorded as a blocker in the phase 66 audit. It is not fixed in this milestone run. The milestone stays partial.
+- Reason: production browser composition hard-codes Skip mode, a denying approval broker, and a swallowing audit sink (apps/Autonogrammer.Native/Cowork/BrowserUseComposition.cs). A real fix needs per-session approval in the head and a persisted audit store, which is phase 72 and 77 product work.
+- Scope: current milestone only; other open milestones are deferred pending owner approval. Repository: the working directory repo with the root .planning tree.
+- Local checks run before this record: ArchitectureTests fails only on SEC-77-01; Sessions.Postgres.Tests passes (117/117) with M0010 restored (commit 9753b314).
+- Milestone status: partial. Phase 66 gate not passed (full suite blocked by SEC-77-01). Phases 66.1 to 77 remain unverified (0 of 17 verified). Do not mark complete.
+- Default applied for undefined planning options: quality work limited to files phases touch; archived-phase TODOs classified, not implemented; pause once at audit.
