@@ -14,7 +14,7 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
 {
     private static readonly string[] ExpectedTables =
     [
-        "accounts", "artifact_grants", "artifact_versions", "artifacts", "cloud_agents", "cowork_events", "cowork_instructions", "cowork_memory_entries", "cowork_memory_idempotency",
+        "accounts", "account_lifecycle", "artifact_grants", "artifact_versions", "artifacts", "cloud_agents", "cowork_events", "cowork_instructions", "cowork_memory_entries", "cowork_memory_idempotency",
         "cowork_memory_settings", "cowork_projects", "dispatch_audit", "dispatch_commands", "dispatch_devices", "dispatch_events", "ledger_outbox",
         "schema_migrations", "session_events", "session_tool_approvals", "sessions",
     ];
@@ -139,9 +139,9 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
                 await seed.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
             }
             var runner = new MigrationRunner(dataSource, schema.SchemaName);
-            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([11]);
+            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([11, 12]);
             (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBeEmpty();
-            (await runner.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(11);
+            (await runner.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(12);
             var applied = await runner.ListAppliedAsync(ct).ConfigureAwait(true);
             applied.Single(static step => step.Version == 11).Checksum.ShouldBe(MigrationRunner.ChecksumOf(MigrationRegistry.All.Single(static step => step.Version == 11)));
             using (var claim = dataSource.CreateCommand("""
@@ -150,13 +150,13 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
             {
                 await claim.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
             }
-            (await runner.DownAsync(10, ct).ConfigureAwait(true)).ShouldBe([11]);
+            (await runner.DownAsync(10, ct).ConfigureAwait(true)).ShouldBe([12, 11]);
             (await ExistsAsync(dataSource, schema.SchemaName + ".cowork_memory_idempotency", ct).ConfigureAwait(true)).ShouldBeFalse();
             using (var preserved = dataSource.CreateCommand("SELECT p.name || ':' || m.content FROM cowork_projects p JOIN cowork_memory_entries m ON m.project_id = p.id"))
             {
                 (await preserved.ExecuteScalarAsync(ct).ConfigureAwait(true)).ShouldBe("project:kept");
             }
-            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([11]);
+            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([11, 12]);
             using var count = dataSource.CreateCommand("SELECT count(*) FROM cowork_memory_idempotency");
             (await count.ExecuteScalarAsync(ct).ConfigureAwait(true)).ShouldBe(0L);
         }

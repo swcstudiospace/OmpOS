@@ -22,6 +22,7 @@ public static class MigrationRegistry
         new M0009_CoworkProjectsMemory(),
         new M0010_DispatchDeviceState(),
         new M0011_MemoryIdempotency(),
+        new M0012_AccountLifecycle(),
     ];
     /// <summary>Gets the version of the last step: the schema version this build expects.</summary>
     public static int Head => All[^1].Version;
