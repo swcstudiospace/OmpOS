@@ -45,6 +45,9 @@ internal sealed class BrowserUseCompositionRequest
     /// <summary>Gets the artifact tool provider added beside the browser provider. Null leaves the tool host as it was without it.</summary>
     public ICoworkToolProvider? Artifacts { get; init; }
 
+    /// <summary>Gets the Computer Use tool provider added beside the browser and artifact providers. Null leaves the tool host as it was without it.</summary>
+    public ICoworkToolProvider? Computer { get; init; }
+
     /// <summary>Gets the permission mode the call gate reads. Manual asks on every call that no grant covers. The desktop composition never offers Skip.</summary>
     public Autonogrammer.Cowork.Tools.CoworkPermissionMode Mode { get; init; } = Autonogrammer.Cowork.Tools.CoworkPermissionMode.Manual;
 
@@ -250,16 +253,7 @@ internal static class BrowserUseComposition
                 readiness: new CoworkProviderState(CoworkProviderAvailability.Available, null));
         }
 
-        var providers = new List<ICoworkToolProvider>();
-        if (provider is not null)
-        {
-            providers.Add(provider);
-        }
-
-        if (request.Artifacts is not null)
-        {
-            providers.Add(request.Artifacts);
-        }
+        var providers = ProviderList(provider, request);
 
         var host = new CoworkToolHost(
             providers,
@@ -282,6 +276,31 @@ internal static class BrowserUseComposition
             pane.Dispose();
             throw;
         }
+    }
+
+    /// <summary>Builds the tool providers the host receives: the browser tool when offered, then the artifact and computer providers when passed.</summary>
+    /// <param name="provider">The browser provider, or null when no tools are offered.</param>
+    /// <param name="request">The composition request that carries the optional providers.</param>
+    /// <returns>The providers in host order.</returns>
+    private static List<ICoworkToolProvider> ProviderList(BrowserToolProvider? provider, BrowserUseCompositionRequest request)
+    {
+        var providers = new List<ICoworkToolProvider>();
+        if (provider is not null)
+        {
+            providers.Add(provider);
+        }
+
+        if (request.Artifacts is not null)
+        {
+            providers.Add(request.Artifacts);
+        }
+
+        if (request.Computer is not null)
+        {
+            providers.Add(request.Computer);
+        }
+
+        return providers;
     }
 
     /// <summary>Opens the file-backed grant store and tool audit under the local owner. The caller owns both.</summary>

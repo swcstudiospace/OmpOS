@@ -3,8 +3,12 @@ using Autonogrammer.Cowork;
 using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
+using Autonogrammer.Harness.ComputerUse;
+using Autonogrammer.Harness.ComputerUse.Abstractions;
 using Autonogrammer.Harness.Mcp.Catalog;
 using Autonogrammer.Native.Agents;
+using Autonogrammer.Native.Composition.ComputerUse;
+using Autonogrammer.Native.Cowork.ComputerUse;
 using Autonogrammer.Native.Logging;
 using Autonogrammer.Native.Settings.Models;
 using Microsoft.Extensions.Logging;
@@ -118,6 +122,62 @@ internal sealed class CoworkHead : IAsyncDisposable
             CleanupFailureReporter.Report(failure, completed, loggerFactory?.CreateLogger("Autonogrammer.Native.Cowork"));
         }
     }
+
+    /// <summary>
+    /// Builds the Computer Use tool provider the desktop head offers beside the browser and artifact providers. The provider
+    /// offers no tool unless the session passes Computer Use's own gate. Approvals are refused as unavailable until a
+    /// conversation card reads this broker, so no computer action runs without a local choice.
+    /// </summary>
+    /// <param name="stateRoot">The head state root. Computer Use keeps its settings under it.</param>
+    /// <param name="topLevel">Returns the window whose clipboard the head uses, or null.</param>
+    /// <param name="clock">The clock.</param>
+    /// <param name="gate">The account gate the access facts read.</param>
+    /// <param name="cancellationToken">Cancels the catalogue load.</param>
+    /// <returns>The provider to add to the tool host.</returns>
+    /// <exception cref="InvalidOperationException">The Computer Use options are invalid. The message names keys, never values.</exception>
+    [SuppressMessage("Reliability", "CA2000", Justification = "The settings store and platform backend are retained for the head's life by the tool host and the action catalogue; no head-level owner is attached yet.")]
+    internal static async Task<ICoworkToolProvider> CreateComputerProviderAsync(
+        string stateRoot,
+        Func<Avalonia.Controls.TopLevel?> topLevel,
+        TimeProvider clock,
+        ICoworkAccountGate gate,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(stateRoot);
+        ArgumentNullException.ThrowIfNull(topLevel);
+        ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(gate);
+        ComputerPlatform platform = HeadPlatform();
+        IComputerUseBackend backend = ComputerUseHeadComposition.ChooseBackend(platform);
+        IComputerUseSettingsStore settings = new FileComputerUseSettingsStore(stateRoot);
+        CoworkApprovalBroker broker = new(clock: clock, windowAvailable: false);
+        IComputerUseAccessFacts access = new ComputerAccessFactsAdapter(gate);
+        ComputerUseCore core = await ComputerUseComposition.CreateAsync(new ComputerUseCompositionOptions
+        {
+            GetVariable = static name => Environment.GetEnvironmentVariable(name),
+            Settings = settings,
+            Backend = backend,
+            Clipboard = new ProductionClipboardTextPort(topLevel),
+            Prompt = new ProductionApprovalPrompt(broker),
+            Hotkey = new ProductionGlobalHotkeyRegistrar(platform),
+            Access = access,
+            Time = clock,
+            StateDirectory = stateRoot,
+        }, cancellationToken).ConfigureAwait(true);
+        return ComputerUseToolsComposition.AddTools(core, new ComputerUseToolsOptions
+        {
+            Time = clock,
+            Backend = backend,
+            Broker = broker,
+            Access = access,
+        }).Provider;
+    }
+
+    private static ComputerPlatform HeadPlatform() =>
+        OperatingSystem.IsWindows() ? ComputerPlatform.Windows
+        : OperatingSystem.IsMacOS() ? ComputerPlatform.MacOS
+        : OperatingSystem.IsLinux() ? ComputerPlatform.X11
+        : ComputerPlatform.Unsupported;
 
     /// <inheritdoc />
     public ValueTask DisposeAsync()

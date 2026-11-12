@@ -93,7 +93,7 @@ internal sealed class AgentHead : IAsyncDisposable
 
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
     [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: each owner is nulled once transferred to its composed holder; the finally disposes any owner still held directly.")]
-    private static async Task<AgentHead> CreateProductionCoreAsync(Autonogrammer.Native.Composition.HeadServices? services)
+    private static async Task<AgentHead> CreateProductionCoreAsync(Autonogrammer.Native.Composition.HeadServices? services, Func<Avalonia.Controls.TopLevel?> topLevel)
     {
         var loop = AgentLoopEnvironment.Resolve();
         var store = new FileSettingsStore(loop.StateRoot);
@@ -104,7 +104,8 @@ internal sealed class AgentHead : IAsyncDisposable
         var completed = false;
         try
         {
-            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = services?.Artifacts.ToolProvider });
+            ICoworkToolProvider computer = await CoworkHead.CreateComputerProviderAsync(loop.StateRoot, topLevel, TimeProvider.System, new SignedOutCoworkGate(), CancellationToken.None).ConfigureAwait(true);
+            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = services?.Artifacts.ToolProvider, Computer = computer });
             // The Models page and the provider keys omp is started with are built together, so a key saved on the page reaches every omp the head starts.
             models = ModelsSettingsComposition.Create(new ModelsSettingsCompositionOptions { StateRoot = loop.StateRoot });
             var modelSource = models.Source;
@@ -190,7 +191,7 @@ internal sealed class AgentHead : IAsyncDisposable
                     LoggerFactory = DesktopLogging.Factory,
                 },
                 cancellationToken).ConfigureAwait(true);
-            var head = await CreateProductionCoreAsync(services).ConfigureAwait(true);
+            var head = await CreateProductionCoreAsync(services, topLevel).ConfigureAwait(true);
             services = null;
             return head;
         }
@@ -575,6 +576,7 @@ internal sealed class AgentHead : IAsyncDisposable
             // A local automation starts its run in a session of this head, through the panel's own models.
             // Supplied services stay borrowed through registration; only the returned head owns them.
             services?.Automations.Attach(new HeadAutomationSessions(host, dispatch));
+            services?.Automations.AttachCowork(cowork.Sessions);
             loading = panel.BeginInitialising();
             retainedBrowser = browser.Retain();
             var head = CompleteHead(host, catalog, panel, board, settings, cowork, loading, retainedBrowser, options, dispatch, selectMostRecent, detailsInterval, services);
