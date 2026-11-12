@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using Autonogrammer.Contracts.Artifacts;
 using Autonogrammer.Presentation.Cowork.Artifacts;
 using Avalonia.Automation;
@@ -11,15 +12,17 @@ namespace Autonogrammer.Native.Views.Cowork.Artifacts;
 /// The artifact panel (D-36). It shows the labelled region, the status line, the Access banner, the toolbar, the polite live
 /// region, the diff, and the generated content inside a frame titled "Generated content: title (kind), sandboxed". Surface kinds
 /// (Html, Svg, Mermaid) load through the attached <see cref="NativeWebViewArtifactSurface"/>; when the surface is unavailable
-/// the source is shown with the reason. Toolbar, Access and Return commands are raised as events; the host runs them against
-/// the models, so the view holds no state the models do not hold.
+/// the source is shown with the reason. Toolbar and Return commands are raised as events. Access opens the review from the panel
+/// model, and its answer applies through that model, so the view holds no grant state of its own.
 /// </summary>
 public partial class ArtifactPanelView : UserControl
 {
+    private static readonly TimeSpan AccessReviewTimeout = TimeSpan.FromMinutes(2);
     private ArtifactPanelModel? _model;
     private PropertyChangedEventHandler? _modelChanged;
     private ArtifactContent? _content;
     private NativeWebViewArtifactSurface? _surface;
+    private ArtifactPanelModel? _reviewModel;
 
     /// <summary>Creates the view.</summary>
     public ArtifactPanelView()
@@ -30,10 +33,10 @@ public partial class ArtifactPanelView : UserControl
         CopyButton.Click += (_, _) => Raise(ArtifactCommand.Copy);
         ExportButton.Click += (_, _) => Raise(ArtifactCommand.Export);
         EditButton.Click += (_, _) => Raise(ArtifactCommand.Edit);
-        AccessButton.Click += (_, _) => Raise(ArtifactCommand.Access);
+        AccessButton.Click += (_, _) => ShowAccessReview(TimeProvider.System, AccessReviewTimeout);
         StopButton.Click += (_, _) => Raise(ArtifactCommand.Stop);
         CloseButton.Click += (_, _) => Raise(ArtifactCommand.Close);
-        ReviewAccessButton.Click += (_, _) => Raise(ArtifactCommand.Access);
+        ReviewAccessButton.Click += (_, _) => ShowAccessReview(TimeProvider.System, AccessReviewTimeout);
         SkipLink.Click += (_, _) => ReturnButton.Focus();
         ReturnButton.Click += (_, _) => ReturnToChatRequested?.Invoke(this, EventArgs.Empty);
     }
@@ -43,9 +46,6 @@ public partial class ArtifactPanelView : UserControl
 
     /// <summary>Occurs when the user returns focus to the chat.</summary>
     public event EventHandler? ReturnToChatRequested;
-
-    /// <summary>Occurs when the user answers the Access review shown by <see cref="ShowAccessReview"/>.</summary>
-    public event EventHandler<ArtifactAccessDecisionEventArgs>? AccessDecisionMade;
 
     /// <summary>Gets the labelled heading control.</summary>
     public TextBlock HeadingLabel => HeadingText;
@@ -121,16 +121,29 @@ public partial class ArtifactPanelView : UserControl
         DiffPanel.IsVisible = false;
     }
 
-    /// <summary>Shows the Access review for a version. The review's answer is raised as <see cref="AccessDecisionMade"/>.</summary>
-    /// <param name="review">The review.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="review"/> is null.</exception>
-    public void ShowAccessReview(ArtifactAccessReviewModel review)
+    /// <summary>
+    /// Opens the Access review for the shown version, built by the panel model. The answer applies through
+    /// <see cref="ArtifactPanelModel.ApplyAsync"/>. Nothing opens when the shown version declares no origin.
+    /// </summary>
+    /// <param name="clock">The clock the review uses for its timeout.</param>
+    /// <param name="timeout">How long the review waits before it denies.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="clock"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">The view has no panel model.</exception>
+    public void ShowAccessReview(TimeProvider clock, TimeSpan timeout)
     {
-        ArgumentNullException.ThrowIfNull(review);
+        ArgumentNullException.ThrowIfNull(clock);
+        var model = _model ?? throw new InvalidOperationException("The artifact panel has no model to review access for.");
+        var review = model.CreateAccessReview(clock, timeout);
+        if (review is null)
+        {
+            return;
+        }
+
         HideAccessReview();
         var view = new ArtifactAccessReviewView { DataContext = review };
         view.DecisionMade += OnDecisionMade;
         AccessHost.Content = view;
+        _reviewModel = model;
     }
 
     /// <summary>Removes the Access review without an answer.</summary>
@@ -142,6 +155,7 @@ public partial class ArtifactPanelView : UserControl
         }
 
         AccessHost.Content = null;
+        _reviewModel = null;
     }
 
     /// <summary>Returns the button of one toolbar command.</summary>
@@ -215,8 +229,18 @@ public partial class ArtifactPanelView : UserControl
 
     private void OnDecisionMade(object? sender, ArtifactAccessDecisionEventArgs e)
     {
+        var model = _reviewModel;
         HideAccessReview();
-        AccessDecisionMade?.Invoke(this, e);
+        if (model is null || !ReferenceEquals(model, _model))
+        {
+            return;
+        }
+
+        _ = model.ApplyAsync(e.Decision, CancellationToken.None).AsTask().ContinueWith(
+            faulted => Trace.TraceError($"Autonogrammer could not apply the artifact access decision: {faulted.Exception!.GetBaseException()}"),
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted,
+            TaskScheduler.Default);
     }
 
     private void Refresh()
