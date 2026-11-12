@@ -1,4 +1,5 @@
 using Autonogrammer.Harness.ComputerUse.Abstractions;
+using Autonogrammer.Harness.ComputerUse.Audit;
 using Autonogrammer.Harness.ComputerUse.Executor;
 using Autonogrammer.Harness.ComputerUse.Policy;
 
@@ -68,7 +69,8 @@ public static class ComputerUseComposition
         AppCatalogue catalogue = await AppCatalogue.LoadAsync(options.Settings, cancellationToken).ConfigureAwait(false);
         GrantStore grants = new(options.Time);
         RateLimiter limiter = new(options.Time, merged.RatePerMinute, merged.RateBurst, merged.StepLimit, merged.StepContinueGrant, merged.FailurePause);
-        KillSwitchCoordinator killSwitch = new(options.Hotkey, options.Backend, new NoopKillSwitchAudit());
+        ComputerAuditLog tripAudit = new(options.StateDirectory, options.Time, merged.AuditThumbnails);
+        KillSwitchCoordinator killSwitch = new(options.Hotkey, options.Backend, new KillSwitchTripAudit(tripAudit));
         IComputerObservation observation = options.Backend as IComputerObservation ?? new BackendObservation(options.Backend);
         ComputerActionGate gate = new(merged, options.Access, observation, grants, catalogue, limiter, killSwitch, options.Prompt, new AcceptingAudit(), options.Time);
         ComputerActionExecutor executor = new(options.Backend, gate, killSwitch, options.Time, merged.TakeoverPx);
@@ -89,11 +91,20 @@ public static class ComputerUseComposition
         };
     }
 
-    private sealed class NoopKillSwitchAudit : IKillSwitchAudit
+    /// <summary>Writes one redacted trip line. The trip has already released input and cancelled turns, so a failed append cannot undo it.</summary>
+    private sealed class KillSwitchTripAudit(ComputerAuditLog log) : IKillSwitchAudit
     {
-        public void WriteTrip()
+        public void WriteTrip() => _ = log.TryAppend(new ComputerAuditWrite
         {
-        }
+            SessionId = string.Empty,
+            Tool = "kill-switch",
+            Summary = "kill-switch trip",
+            AppIdentity = string.Empty,
+            Title = string.Empty,
+            Decision = "trip",
+            ApprovalOrigin = ComputerActionOrigin.Local.ToString(),
+            Outcome = "tripped",
+        });
     }
 
     private sealed class AcceptingAudit : IComputerUseAuditSink
