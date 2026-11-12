@@ -1,4 +1,6 @@
 using Autonogrammer.Harness.Automations.Hosted;
+using Autonogrammer.Harness.Automations.Scheduling;
+using Autonogrammer.Native.Cowork;
 using Autonogrammer.Presentation.Automations;
 using Autonogrammer.Presentation.Cloud;
 using Autonogrammer.Workspace;
@@ -26,6 +28,7 @@ internal sealed class AutomationsHost : IAsyncDisposable
     private readonly CancellationTokenSource _stop = new();
     private readonly System.Threading.Lock _gate = new();
     private IAutomationSessions? _sessions;
+    private CoworkSessionHost? _cowork;
     private Task _loop = Task.CompletedTask;
     private int _started;
     private int _disposed;
@@ -62,7 +65,7 @@ internal sealed class AutomationsHost : IAsyncDisposable
             targets.Add(new CloudHostAutomationTarget(cloud));
         }
 
-        _runner = new AutomationRunner(_store, targets, clock);
+        _runner = new AutomationRunner(_store, targets, clock, [new DeferredCoworkStarter(() => Volatile.Read(ref _cowork), clock)]);
         Scheduler = new AutomationScheduler(_store, _runner, clock);
         Manager = new LocalAutomationsManager(new AutomationService(_store, new InMemoryAutomationSecretStore(), clock), _store, _runner, clock, localAvailable, CloudAvailable);
     }
@@ -95,6 +98,15 @@ internal sealed class AutomationsHost : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(sessions);
         Volatile.Write(ref _sessions, sessions);
+    }
+
+    /// <summary>Gives the host the Cowork sessions its scheduled Cowork runs start in. The head calls it once its Cowork host exists; a Cowork run that fires earlier fails with a message and is recorded.</summary>
+    /// <param name="sessions">The Cowork session host. The caller owns and disposes it.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="sessions"/> is null.</exception>
+    public void AttachCowork(CoworkSessionHost sessions)
+    {
+        ArgumentNullException.ThrowIfNull(sessions);
+        Volatile.Write(ref _cowork, sessions);
     }
 
     /// <summary>
@@ -162,6 +174,31 @@ internal sealed class AutomationsHost : IAsyncDisposable
         catch (OperationCanceledException)
         {
             // The application is closing.
+        }
+    }
+
+    /// <summary>
+    /// The Cowork starter the runner holds from construction. It resolves the Cowork sessions when a run fires, so a head that attaches after the runner exists still receives the run.
+    /// </summary>
+    private sealed class DeferredCoworkStarter(Func<CoworkSessionHost?> sessions, TimeProvider clock) : IScheduledSessionStarter
+    {
+        /// <inheritdoc />
+        public ScheduledSessionSurface Surface => ScheduledSessionSurface.Cowork;
+
+        /// <inheritdoc />
+        public Task<ScheduledSessionStart> StartAsync(
+            ScheduledSessionSurface surface,
+            string? projectId,
+            IReadOnlyList<string> trustedFolders,
+            SessionApprovalMode approvalMode,
+            string? model,
+            string prompt,
+            CancellationToken cancellationToken)
+        {
+            CoworkSessionHost? host = sessions();
+            return host is null
+                ? Task.FromResult(new ScheduledSessionStart(false, null, "The scheduled Cowork session could not start: the Cowork sessions are not available yet."))
+                : new ScheduledCoworkSessionStarter(host, clock).StartAsync(surface, projectId, trustedFolders, approvalMode, model, prompt, cancellationToken);
         }
     }
 }
