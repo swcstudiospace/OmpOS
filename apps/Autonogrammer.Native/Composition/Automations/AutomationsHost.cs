@@ -109,6 +109,9 @@ internal sealed class AutomationsHost : IAsyncDisposable
         Volatile.Write(ref _cowork, sessions);
     }
 
+    /// <summary>Stops giving the host a Cowork session host. The head calls it before it disposes the host it attached, so a scheduled Cowork run that fires later fails with a message and is recorded.</summary>
+    public void DetachCowork() => Volatile.Write(ref _cowork, null);
+
     /// <summary>
     /// Starts the scheduler: runs left running by an earlier process are marked failed, then the cron triggers are checked every <see cref="AutomationScheduler.TickInterval"/> until <see cref="DisposeAsync"/>.
     /// Calling it again does nothing. It never throws; a failure to read the files is logged and retried.

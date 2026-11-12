@@ -33,11 +33,12 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
 
     /// <summary>Creates the host. It opens the registry on the first create or reload.</summary>
     /// <param name="options">The seams.</param>
-    public CoworkSessionHost(CoworkSessionHostOptions options)
+    /// <param name="broker">The approval broker the conversation cards read. The desktop head passes the one it shares with the Computer Use provider; null builds one from the options.</param>
+    public CoworkSessionHost(CoworkSessionHostOptions options, CoworkApprovalBroker? broker = null)
     {
         ArgumentNullException.ThrowIfNull(options);
         _options = options;
-        Broker = new CoworkApprovalBroker(options.ToolOptions, options.Clock, options.WindowAvailable);
+        Broker = broker ?? new CoworkApprovalBroker(options.ToolOptions, options.Clock, options.WindowAvailable);
     }
 
     /// <summary>Gets how many times <see cref="CoworkSessionRegistry.RecoverAfterRestart"/> ran.</summary>
