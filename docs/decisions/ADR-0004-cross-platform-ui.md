@@ -1,6 +1,7 @@
 # ADR-0004: Cross-platform UI: Avalonia for native heads, Blazor WebAssembly for the web head
 
 - Status: Accepted 2026-10-21, amended (web stays Blazor WebAssembly)
+- Status note 2026-11-12: G-WEB re-measured on Avalonia.Browser 12.1.5 and 12.1.6. Both failed (roleNodes 4, no named textbox, button or transcript region). The web head stays Blazor WebAssembly. Evidence: `docs/runbooks/evidence/gweb-remeasure-2026-11-12-avalonia-12.1.5/` and `docs/runbooks/evidence/gweb-remeasure-2026-11-12-avalonia-12.1.6/`.
 - Date: 2026-10-21
 - Deciders: autonogrammer-maintainers
 - Scope: UI stack for Windows, macOS, Linux, iOS, Android and the web head. Supersedes the UI stack decisions in ADR-0002.

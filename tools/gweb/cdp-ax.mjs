@@ -84,6 +84,8 @@ async function main() {
   const summary = nodes.filter((node) => !node.ignored && (roleOf(node) !== "" || nameOf(node) !== ""));
   const textboxNodes = nodes.filter((node) => !node.ignored && roleOf(node) === "textbox");
   const namedTextboxNodes = textboxNodes.filter((node) => nameOf(node) !== "");
+  const namedButtonNodes = nodes.filter((node) => !node.ignored && roleOf(node) === "button" && nameOf(node) !== "");
+  const namedRegionNodes = nodes.filter((node) => !node.ignored && ["region", "log", "feed"].includes(roleOf(node)) && nameOf(node) !== "");
   const roleCounts = {};
   for (const node of roleNodes) {
     roleCounts[roleOf(node)] = (roleCounts[roleOf(node)] ?? 0) + 1;
@@ -98,6 +100,8 @@ async function main() {
   console.log(`roleNodes=${roleNodes.length}`);
   console.log(`textboxNodes=${textboxNodes.length}`);
   console.log(`namedTextboxNodes=${namedTextboxNodes.length}`);
+  console.log(`namedButtonNodes=${namedButtonNodes.length}`);
+  console.log(`namedRegionNodes=${namedRegionNodes.length}`);
   console.log(`roleCounts=${JSON.stringify(roleCounts)}`);
   for (const node of summary) {
     console.log(`node ${node.nodeId}: role=${roleOf(node)} name=${JSON.stringify(nameOf(node))}`);
