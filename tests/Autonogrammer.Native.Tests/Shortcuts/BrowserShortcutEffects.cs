@@ -27,6 +27,7 @@ internal static class BrowserShortcutEffects
             StateDirectory = root,
             ForceAvailable = true,
             Pages = pages,
+            Broker = new ApprovingBroker(),
             Configure = static options => options.Enabled = true,
         });
         var window = new Window { Content = composed.Panel.View, Width = 480, Height = 320 };
@@ -85,5 +86,12 @@ internal static class BrowserShortcutEffects
 
             throw new InvalidOperationException("The scripted page was not cancelled.");
         }
+    }
+
+    /// <summary>Stands in for the user approving this one call on the desktop.</summary>
+    private sealed class ApprovingBroker : ICoworkApprovalBroker
+    {
+        public ValueTask<CoworkApprovalDecision> RequestAsync(CoworkApprovalRequest request, CancellationToken cancellationToken) =>
+            ValueTask.FromResult(new CoworkApprovalDecision(CoworkApprovalOutcome.Allowed));
     }
 }

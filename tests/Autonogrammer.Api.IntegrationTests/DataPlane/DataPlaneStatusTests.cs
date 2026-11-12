@@ -149,7 +149,7 @@ public sealed class DataPlaneStatusTests
     public async Task SchemaProbe_RequiresEveryRegisteredVersionAndChecksum()
     {
         var token = TestContext.Current.CancellationToken;
-        var current = MigrationRegistry.All;
+        var current = MigrationRegistry.All.Where(static step => step.Version != 10).ToArray();
         var ten = (IMigrationStep)Activator.CreateInstance(
             typeof(MigrationRunner).Assembly.GetType("Autonogrammer.Sessions.Postgres.Migrations.M0010_DispatchDeviceState", throwOnError: true)!,
             nonPublic: true)!;

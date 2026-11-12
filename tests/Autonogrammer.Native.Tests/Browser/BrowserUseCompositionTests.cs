@@ -1,4 +1,7 @@
+using System.Text.Json;
+using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Cowork.Chat;
+using Autonogrammer.Cowork.Tools;
 using Autonogrammer.Harness.BrowserUse.Vision;
 using Autonogrammer.Native.Agents;
 using Autonogrammer.Native.Cowork;
@@ -130,6 +133,58 @@ public sealed class BrowserUseCompositionTests
         shell.Panels.Select(static panel => panel.Id).ShouldBe(["artifacts", "browser"]);
         chrome.Entries.ShouldContain(entry => entry.Id == BrowserUseComposition.IndicatorId && entry.KeyboardShortcut == "Ctrl+Shift+.");
     }
+
+    /// <summary>SEC-77-01: the production host never runs an actuating tool without approval, and records the attempt.</summary>
+    [Fact]
+    public async Task ProductionHostRefusesAnUnapprovedActuatingToolAndAuditsTheAttempt()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "bu-sec-77-01-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var invoked = false;
+            var fake = new FakeCoworkToolProvider
+            {
+                DescribeScript = static () =>
+                [
+                    new CoworkToolDescriptor
+                    {
+                        Name = "probe_write",
+                        ProviderId = "fake",
+                        Description = "An actuating fake action that needs approval.",
+                        InputSchema = JsonDocument.Parse("""{"type":"object"}""").RootElement,
+                        Effect = CoworkToolEffect.Actuating,
+                        Approval = CoworkApprovalRequirement.ByPolicy,
+                    },
+                ],
+                InvokeScript = (_, _, _) =>
+                {
+                    invoked = true;
+                    return ValueTask.FromResult(CoworkToolResult.Text("ran"));
+                },
+            };
+            using var composed = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = root, Artifacts = fake });
+            await using var lease = composed.Host.BeginSession(RegressionSession("sec-77-01"));
+
+            var result = await composed.Host.InvokeAsync("sec-77-01", "probe_write", JsonDocument.Parse("{}").RootElement, CancellationToken.None);
+
+            result.IsError.ShouldBeTrue();
+            invoked.ShouldBeFalse();
+            Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories).ShouldContain(path => path.Contains("tool-audit", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static CoworkSessionContext RegressionSession(string sessionId) => new()
+    {
+        SessionId = sessionId,
+        WorkingDirectory = Path.GetTempPath(),
+        TrustedFolders = [Path.GetTempPath()],
+        ModelReadsImages = false,
+    };
 
     private sealed class ArtifactPanel : IDockPanel
     {

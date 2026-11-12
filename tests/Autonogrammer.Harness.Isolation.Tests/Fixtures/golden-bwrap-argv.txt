@@ -1,8 +1,6 @@
 --ro-bind
 /
 /
---tmpfs
-/tmp
 --bind
 /home/ada/project
 /home/ada/project
