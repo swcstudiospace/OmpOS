@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Security.Claims;
 using Autonogrammer.AgentWorker.Configuration;
 using Autonogrammer.AgentWorker.Hooks;
 using Autonogrammer.AgentWorker.Security;
@@ -9,9 +10,9 @@ namespace Autonogrammer.AgentWorker.Bridge;
 
 /// <summary>
 /// The <c>GET /acp</c> endpoint: authenticates the upgrade request with the worker bearer token, claims the session named by the token
-/// subject, starts <c>omp acp</c> in the session directory, and bridges its stdio protocol to the WebSocket. Failures before the upgrade
-/// are plain HTTP statuses: 401 missing or invalid token, 403 the subject is not a session this worker serves, 400 not a WebSocket request,
-/// 409 the session already has an attached connection, 503 omp could not be started.
+/// subject, starts <c>omp acp</c> in the session's owner directory, and bridges its stdio protocol to the WebSocket. Failures before the upgrade
+/// are plain HTTP statuses: 401 missing or invalid token, 403 the subject is not a session this worker serves or its owner_dir claim is missing or malformed,
+/// 400 not a WebSocket request, 409 the session already has an attached connection, 503 omp could not be started.
 /// </summary>
 internal static class AcpBridgeEndpoint
 {
@@ -45,7 +46,7 @@ internal static class AcpBridgeEndpoint
         ILoggerFactory loggerFactory)
     {
         var logger = loggerFactory.CreateLogger("Autonogrammer.AgentWorker.AcpBridge");
-        if (!validator.TryGetSessionId(context.User, out var sessionId))
+        if (!validator.TryGetSessionId(context.User, out var sessionId) || OwnerDirectoryClaim(context.User) is not { } ownerDir)
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             return;
@@ -59,7 +60,7 @@ internal static class AcpBridgeEndpoint
 
         var hooks = options.Value.Hooks;
         var consent = hooks.Enabled ? HooksConsentSnapshotReader.Read(context.User, hooks.MaxSnapshotHashes) : HooksConsentRead.Absent;
-        var attachment = host.TryAttach(sessionId, BearerToken(context.Request), consent);
+        var attachment = host.TryAttach(sessionId, ownerDir, BearerToken(context.Request), consent);
         if (attachment is null)
         {
             Refused(logger, sessionId, null);
@@ -96,6 +97,15 @@ internal static class AcpBridgeEndpoint
         {
             await attachment.DisposeAsync().ConfigureAwait(false);
         }
+    }
+
+    /// <summary>Reads the owner directory from the token's <c>owner_dir</c> claim. It is accepted only when there is exactly one claim and it is well formed.</summary>
+    /// <param name="principal">The authenticated principal of the connection.</param>
+    /// <returns>The owner directory name, or <see langword="null"/> when the claim is absent, repeated or malformed.</returns>
+    private static string? OwnerDirectoryClaim(ClaimsPrincipal principal)
+    {
+        var claims = principal.FindAll(OwnerDirectory.ClaimType).ToArray();
+        return claims is [{ Value: var value }] && OwnerDirectory.IsValid(value) ? value : null;
     }
 
     private static string BearerToken(HttpRequest request) =>

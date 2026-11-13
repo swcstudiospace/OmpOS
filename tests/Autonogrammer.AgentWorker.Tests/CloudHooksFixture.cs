@@ -70,7 +70,7 @@ internal sealed class CloudHooksFixture : IDisposable
     /// <returns>The checkout directory.</returns>
     public static string WriteCheckout(string workspaceRoot, string session, string? hooksJson)
     {
-        var repository = Path.Combine(workspaceRoot, session, "repo");
+        var repository = Path.Combine(workspaceRoot, WorkerTokenFactory.DefaultOwnerDir, session, "repo");
         System.IO.Directory.CreateDirectory(Path.Combine(repository, ".git"));
         if (hooksJson is not null)
         {

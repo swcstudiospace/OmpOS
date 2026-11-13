@@ -33,7 +33,7 @@ public sealed class OmpProcessLifecycleTests
 
             var reported = (await File.ReadAllTextAsync(cwdFile, timeout.Token).ConfigureAwait(true)).Trim();
 
-            reported.ShouldBe(Path.Combine(host.WorkspaceRoot, Session));
+            reported.ShouldBe(Path.Combine(host.WorkspaceRoot, WorkerTokenFactory.DefaultOwnerDir, Session));
             Directory.Exists(reported).ShouldBeTrue();
         }
         finally

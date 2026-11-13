@@ -1,8 +1,9 @@
+using Autonogrammer.Api.Services;
 using Autonogrammer.Contracts.Cloud;
 
 namespace Autonogrammer.Api.Cloud;
 
-/// <summary>Where an agent's repositories live on its worker: <c>&lt;workspace root&gt;/&lt;session id&gt;/&lt;directory&gt;</c>. The worker creates the session directory; its bootstrap checks each repository out under it.</summary>
+/// <summary>Where an agent's repositories live on its worker: <c>&lt;workspace root&gt;/&lt;owner directory&gt;/&lt;session id&gt;/&lt;directory&gt;</c>, the owner directory being the account's <see cref="AccountWorkspace"/> name. The worker creates the session directory; its bootstrap checks each repository out under it.</summary>
 internal static class CloudWorkerLayout
 {
     /// <summary>Gives each repository of an agent a directory name: the repository name, or <c>owner-name</c> when two repositories share a name.</summary>
@@ -44,6 +45,7 @@ internal static class CloudWorkerLayout
         ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRoot);
         ArgumentNullException.ThrowIfNull(agent);
         var assigned = Assign(agent.Repositories, allowedHosts);
-        return workspaceRoot.TrimEnd('/') + "/" + agent.SessionId + "/" + assigned[0].Directory;
+        var ownerDirectory = AccountWorkspace.DirectoryName(agent.OwnerId);
+        return workspaceRoot.TrimEnd('/') + "/" + ownerDirectory + "/" + agent.SessionId + "/" + assigned[0].Directory;
     }
 }

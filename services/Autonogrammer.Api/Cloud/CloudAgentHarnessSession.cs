@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Autonogrammer.Api.Services;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 
@@ -216,13 +217,14 @@ internal sealed partial class CloudAgentHarnessSession : IOmpSession, IOmpSessio
     {
         var tokens = _tokens;
         var sessionId = _sessionId;
+        var ownerDir = AccountWorkspace.DirectoryName(attachment.Agent.OwnerId);
         var loggers = _loggers;
         var client = new OmpAcpClient(
             acpOptions => new AcpWebSocketTransport(
                 new AcpWebSocketTransportOptions
                 {
                     Endpoint = attachment.Endpoint,
-                    BearerTokenProvider = _ => ValueTask.FromResult(tokens.Issue(sessionId)),
+                    BearerTokenProvider = _ => ValueTask.FromResult(tokens.Issue(sessionId, ownerDir)),
                 },
                 loggers.CreateLogger<AcpWebSocketTransport>()),
             _resolver,

@@ -69,10 +69,12 @@ internal sealed class WorkerTokenIssuer : IDisposable
 
     /// <summary>Signs a token for one session.</summary>
     /// <param name="sessionId">The session identifier; the worker serves only this subject.</param>
+    /// <param name="ownerDir">The account's workspace directory name: the lowercase hex SHA-256 of the owner id, carried as the <c>owner_dir</c> claim.</param>
     /// <returns>The compact JWT. It is a credential: never log it.</returns>
-    public string Issue(string sessionId)
+    public string Issue(string sessionId, string ownerDir)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(ownerDir);
         var now = _time.GetUtcNow();
         var descriptor = new SecurityTokenDescriptor
         {
@@ -81,6 +83,7 @@ internal sealed class WorkerTokenIssuer : IDisposable
                 [JwtRegisteredClaimNames.Iss] = _issuer,
                 [JwtRegisteredClaimNames.Aud] = Audience,
                 [JwtRegisteredClaimNames.Sub] = sessionId,
+                ["owner_dir"] = ownerDir,
                 [JwtRegisteredClaimNames.Jti] = Guid.NewGuid().ToString("N"),
                 [JwtRegisteredClaimNames.Iat] = now.ToUnixTimeSeconds(),
                 [JwtRegisteredClaimNames.Exp] = (now + _lifetime).ToUnixTimeSeconds(),

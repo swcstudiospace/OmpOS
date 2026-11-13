@@ -30,6 +30,7 @@ internal static class HooksTokenMinter
             ["iat"] = seconds,
             ["nbf"] = seconds,
             ["exp"] = seconds + 300,
+            ["owner_dir"] = WorkerTokenFactory.DefaultOwnerDir,
         };
         if (consent is not null)
         {

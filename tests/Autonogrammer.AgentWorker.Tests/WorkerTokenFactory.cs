@@ -13,6 +13,9 @@ internal sealed class WorkerTokenFactory : IDisposable
 {
     private readonly ECDsa _key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
 
+    /// <summary>The <c>owner_dir</c> claim every test token carries: the lowercase hex SHA-256 of the owner id <c>alice</c>.</summary>
+    public static readonly string DefaultOwnerDir = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes("alice")));
+
     /// <summary>Gets the public key as the PEM the worker's <c>Worker:Auth:PublicKeysPem</c> holds.</summary>
     public string PublicKeyPem => _key.ExportSubjectPublicKeyInfoPem();
 
@@ -28,6 +31,8 @@ internal sealed class WorkerTokenFactory : IDisposable
     /// <param name="audience">The <c>aud</c> claim; null omits it.</param>
     /// <param name="includeIssuedAt">Whether to write <c>iat</c>.</param>
     /// <param name="includeExpiry">Whether to write <c>exp</c>.</param>
+    /// <param name="ownerDir">The <c>owner_dir</c> claim; null writes <see cref="DefaultOwnerDir"/>.</param>
+    /// <param name="includeOwnerDir">Whether to write the <c>owner_dir</c> claim at all.</param>
     /// <returns>The compact serialized token.</returns>
     public string Mint(
         string subject,
@@ -37,11 +42,13 @@ internal sealed class WorkerTokenFactory : IDisposable
         string? issuer = Autonogrammer.AgentWorker.LegacyBrandNames.WorkerIssuer,
         string? audience = Autonogrammer.AgentWorker.LegacyBrandNames.WorkerAudience,
         bool includeIssuedAt = true,
-        bool includeExpiry = true)
+        bool includeExpiry = true,
+        string? ownerDir = null,
+        bool includeOwnerDir = true)
     {
         var descriptor = new SecurityTokenDescriptor
         {
-            Claims = BuildClaims(subject, now, lifetime, issuedAgo, issuer, audience, includeIssuedAt, includeExpiry),
+            Claims = BuildClaims(subject, now, lifetime, issuedAgo, issuer, audience, includeIssuedAt, includeExpiry, includeOwnerDir ? ownerDir ?? DefaultOwnerDir : null),
             SigningCredentials = new SigningCredentials(new ECDsaSecurityKey(_key), SecurityAlgorithms.EcdsaSha256),
         };
         return new JsonWebTokenHandler().CreateToken(descriptor);
@@ -55,7 +62,7 @@ internal sealed class WorkerTokenFactory : IDisposable
     {
         var descriptor = new SecurityTokenDescriptor
         {
-            Claims = BuildClaims(subject, now, null, null, Autonogrammer.AgentWorker.LegacyBrandNames.WorkerIssuer, Autonogrammer.AgentWorker.LegacyBrandNames.WorkerAudience, true, true),
+            Claims = BuildClaims(subject, now, null, null, Autonogrammer.AgentWorker.LegacyBrandNames.WorkerIssuer, Autonogrammer.AgentWorker.LegacyBrandNames.WorkerAudience, true, true, DefaultOwnerDir),
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(PublicKeyPem)), SecurityAlgorithms.HmacSha256),
         };
         return new JsonWebTokenHandler().CreateToken(descriptor);
@@ -72,7 +79,8 @@ internal sealed class WorkerTokenFactory : IDisposable
         string? issuer,
         string? audience,
         bool includeIssuedAt,
-        bool includeExpiry)
+        bool includeExpiry,
+        string? ownerDir)
     {
         var issuedAt = now - (issuedAgo ?? TimeSpan.Zero);
         var claims = new Dictionary<string, object>(StringComparer.Ordinal) { ["sub"] = subject };
@@ -96,6 +104,11 @@ internal sealed class WorkerTokenFactory : IDisposable
         if (includeExpiry)
         {
             claims["exp"] = (issuedAt + (lifetime ?? TimeSpan.FromMinutes(5))).ToUnixTimeSeconds();
+        }
+
+        if (ownerDir is not null)
+        {
+            claims["owner_dir"] = ownerDir;
         }
 
         return claims;

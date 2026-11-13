@@ -187,7 +187,7 @@ public sealed class WorkerAuthenticationTests
         status.ShouldBe(HttpStatusCode.Forbidden);
     }
 
-    private static async Task<HttpStatusCode> StatusAsync(WorkerHost host, string? token, CancellationToken cancellationToken)
+    internal static async Task<HttpStatusCode> StatusAsync(WorkerHost host, string? token, CancellationToken cancellationToken)
     {
         using var client = new HttpClient { BaseAddress = host.Address };
         using var request = new HttpRequestMessage(HttpMethod.Get, "/acp");

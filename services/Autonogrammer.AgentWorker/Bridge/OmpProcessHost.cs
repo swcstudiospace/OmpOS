@@ -42,19 +42,26 @@ internal sealed class OmpProcessHost
 
     /// <summary>Claims a session subject and prepares its omp child. The child is not started until <see cref="OmpAttachment.StartAsync"/>.</summary>
     /// <param name="sessionId">The validated session subject.</param>
+    /// <param name="ownerDir">The owner directory name from the token's <c>owner_dir</c> claim; the session runs under it.</param>
     /// <param name="bearerToken">The connection's bearer token, redacted from the child's stderr lines while attached.</param>
     /// <param name="consent">What the token carried about hook consent, or null for a token without it. Only used when the worker runs hooks.</param>
     /// <returns>The attachment, or <see langword="null"/> when the session already has an attached connection.</returns>
-    public OmpAttachment? TryAttach(string sessionId, string bearerToken, HooksConsentRead? consent = null)
+    /// <exception cref="ArgumentException"><paramref name="ownerDir"/> is not a well-formed owner directory name.</exception>
+    public OmpAttachment? TryAttach(string sessionId, string ownerDir, string bearerToken, HooksConsentRead? consent = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
         ArgumentNullException.ThrowIfNull(bearerToken);
+        if (!OwnerDirectory.IsValid(ownerDir))
+        {
+            throw new ArgumentException("The owner directory must be 64 lowercase hex characters.", nameof(ownerDir));
+        }
+
         if (!_attached.TryAdd(sessionId, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)))
         {
             return null;
         }
 
-        var workingDirectory = Path.Combine(_options.WorkspaceRoot, sessionId);
+        var workingDirectory = Path.Combine(_options.WorkspaceRoot, ownerDir, sessionId);
         var hooks = _hooks.Create(sessionId, workingDirectory, consent ?? HooksConsentRead.Absent);
         return new OmpAttachment(this, sessionId, workingDirectory, launch => CreateTransport(workingDirectory, launch), hooks, _redactor.Track(bearerToken), _redactor, _loggerFactory.CreateLogger<OmpAttachment>());
     }

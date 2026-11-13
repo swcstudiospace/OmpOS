@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using Autonogrammer.Api.Cloud;
 using Autonogrammer.Api.Cloud.Options;
+using Autonogrammer.Api.Services;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Shouldly;
@@ -12,6 +13,7 @@ namespace Autonogrammer.Api.IntegrationTests.Cloud;
 public sealed class WorkerTokenIssuerTests
 {
     private static readonly DateTimeOffset Start = new(2026, 10, 27, 9, 0, 0, TimeSpan.Zero);
+    private const string Owner = "alice";
 
     /// <summary>A token carries exactly the claims the worker validates and verifies with the public half of the key.</summary>
     [Fact]
@@ -21,13 +23,14 @@ public sealed class WorkerTokenIssuerTests
         var clock = new ManualClock(Start);
         using var issuer = Create(keys.SigningKeyPem, TimeSpan.FromMinutes(5), clock);
 
-        var token = issuer.Issue("cloud-session-1");
+        var token = issuer.Issue("cloud-session-1", AccountWorkspace.DirectoryName(Owner));
 
         var parsed = new JsonWebTokenHandler().ReadJsonWebToken(token);
         parsed.Alg.ShouldBe("ES256");
         parsed.Issuer.ShouldBe(Autonogrammer.Api.LegacyBrandNames.WorkerIssuer);
         parsed.Audiences.ShouldHaveSingleItem().ShouldBe(Autonogrammer.Api.LegacyBrandNames.WorkerAudience);
         parsed.Subject.ShouldBe("cloud-session-1");
+        parsed.GetPayloadValue<string>("owner_dir").ShouldBe(AccountWorkspace.DirectoryName(Owner));
         new DateTimeOffset(parsed.IssuedAt).ShouldBe(Start);
         new DateTimeOffset(parsed.ValidTo).ShouldBe(Start + TimeSpan.FromMinutes(5));
         var validated = await new JsonWebTokenHandler().ValidateTokenAsync(
@@ -52,10 +55,10 @@ public sealed class WorkerTokenIssuerTests
         using var issuer = Create(keys.SigningKeyPem, TimeSpan.FromMinutes(15), clock);
         var handler = new JsonWebTokenHandler();
 
-        var first = issuer.Issue("s");
-        var same = issuer.Issue("s");
+        var first = issuer.Issue("s", AccountWorkspace.DirectoryName(Owner));
+        var same = issuer.Issue("s", AccountWorkspace.DirectoryName(Owner));
         clock.Advance(TimeSpan.FromHours(1));
-        var later = issuer.Issue("s");
+        var later = issuer.Issue("s", AccountWorkspace.DirectoryName(Owner));
 
         string.Equals(first, same, StringComparison.Ordinal).ShouldBeFalse("two tokens issued at one instant must still differ");
         new DateTimeOffset(handler.ReadJsonWebToken(first).ValidTo).ShouldBe(Start + TimeSpan.FromMinutes(15));
@@ -112,7 +115,7 @@ public sealed class WorkerTokenIssuerTests
         var clock = new ManualClock(Start);
         using var issuer = Create(keys.SigningKeyPem.Replace("\n", "\\n", StringComparison.Ordinal), TimeSpan.FromMinutes(5), clock);
 
-        new JsonWebTokenHandler().ReadJsonWebToken(issuer.Issue("s")).Alg.ShouldBe("ES256");
+        new JsonWebTokenHandler().ReadJsonWebToken(issuer.Issue("s", AccountWorkspace.DirectoryName(Owner))).Alg.ShouldBe("ES256");
     }
 
     /// <summary>The issuer never prints its key.</summary>
