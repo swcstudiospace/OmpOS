@@ -101,6 +101,33 @@ public sealed class AccountErasureFenceTests(PostgresServerFixture server)
         }
     }
 
+    /// <summary>A write that reaches admission while the account is erasing is refused with <see cref="AccountErasingException"/> and writes no row.</summary>
+    [Fact]
+    public async Task WriteIsRefusedWhileTheAccountIsErasing()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var schema = await PostgresTestSchema.CreateMigratedAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
+        try
+        {
+            var dataSource = schema.CreateDataSource();
+            var alice = NewAccount();
+            await ProvisionAsync(dataSource, alice, ct).ConfigureAwait(true);
+            await SeedAsync(dataSource, alice, ct).ConfigureAwait(true);
+            await SetStateAsync(dataSource, alice, "erasing", ct).ConfigureAwait(true);
+
+            var store = new PostgresCloudAgentStore(dataSource);
+            await Should.ThrowAsync<AccountErasingException>(
+                () => store.CreateAsync(Record("during-erasure", alice), new CloudAgentLimits(10, 10), ct)).ConfigureAwait(true);
+
+            (await CloudAgentCountAsync(dataSource, alice, ct).ConfigureAwait(true)).ShouldBe(0L);
+            (await StateAsync(dataSource, alice, ct).ConfigureAwait(true)).ShouldBe("erasing");
+        }
+        finally
+        {
+            await schema.DisposeAsync().ConfigureAwait(true);
+        }
+    }
+
     /// <summary>After another account is erased, a write for an untouched account still succeeds.</summary>
     [Fact]
     public async Task WriteForAnotherAccountSucceedsAfterErasure()
@@ -226,6 +253,40 @@ public sealed class AccountErasureFenceTests(PostgresServerFixture server)
             await transaction.CommitAsync(ct).ConfigureAwait(true);
 
             (await StateAsync(dataSource, alice, ct).ConfigureAwait(true)).ShouldNotBe("erased", StringComparer.Ordinal);
+            (await RowCountAsync(dataSource, alice, ct).ConfigureAwait(true)).ShouldBe(4L);
+        }
+        finally
+        {
+            await schema.DisposeAsync().ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>
+    /// Erasure that cannot take the lifecycle lock within the lock timeout throws <see cref="AccountErasureLockTimeoutException"/> itself and changes nothing.
+    /// The client deadline is raised above the 30 s server lock timeout, so the server's refusal is the one that ends the call.
+    /// </summary>
+    [Fact]
+    public async Task ErasureThrowsLockTimeoutExceptionWhenAWriterHoldsTheLockPastTheTimeout()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var schema = await PostgresTestSchema.CreateMigratedAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
+        try
+        {
+            var dataSource = schema.CreateDataSource();
+            var resilience = PostgresResilience.Create(new PostgresResilienceOptions { BackgroundCommandSeconds = 60 });
+            var alice = NewAccount();
+            await ProvisionAsync(dataSource, alice, ct).ConfigureAwait(true);
+            await SeedAsync(dataSource, alice, ct).ConfigureAwait(true);
+
+            using var writer = await dataSource.OpenConnectionAsync(ct).ConfigureAwait(true);
+            using var transaction = await writer.BeginTransactionAsync(ct).ConfigureAwait(true);
+            await AccountAdmission.AdmitSharedAsync(writer, transaction, alice, ct).ConfigureAwait(true);
+
+            await Should.ThrowAsync<AccountErasureLockTimeoutException>(
+                () => new PostgresAccountErasure(dataSource, resilience).EraseAsync(alice, HashOf(alice), NoTenantKeys, ct)).ConfigureAwait(true);
+
+            await transaction.CommitAsync(ct).ConfigureAwait(true);
+            (await StateAsync(dataSource, alice, ct).ConfigureAwait(true)).ShouldBe("active");
             (await RowCountAsync(dataSource, alice, ct).ConfigureAwait(true)).ShouldBe(4L);
         }
         finally
