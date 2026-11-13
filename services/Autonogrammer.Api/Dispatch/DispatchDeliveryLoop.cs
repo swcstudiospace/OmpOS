@@ -1,5 +1,6 @@
 using System.Net.WebSockets;
 using Autonogrammer.Contracts.Dispatch;
+using Autonogrammer.Sessions.Postgres;
 
 namespace Autonogrammer.Api.Dispatch;
 
@@ -58,6 +59,10 @@ internal sealed class DispatchDeliveryLoop
         catch (WebSocketException)
         {
             // The socket closed under the loop. The session ends.
+        }
+        catch (AccountErasingException)
+        {
+            // The account is being erased and its writes are refused, so delivery stops. The socket ends with its own close.
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

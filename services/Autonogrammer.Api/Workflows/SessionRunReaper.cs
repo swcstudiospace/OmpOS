@@ -3,6 +3,7 @@ using Autonogrammer.Api.Sse;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Coordination;
 using Autonogrammer.Sessions;
+using Autonogrammer.Sessions.Postgres;
 using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Workflows;
@@ -138,6 +139,11 @@ internal sealed class SessionRunReaper : BackgroundService
         catch (SessionException)
         {
             // Another writer settled or advanced the session after it was read; there is nothing left to reap.
+            return false;
+        }
+        catch (AccountErasingException)
+        {
+            // The account is being erased and its writes are refused. Its session is left to erasure; the sweep continues.
             return false;
         }
 

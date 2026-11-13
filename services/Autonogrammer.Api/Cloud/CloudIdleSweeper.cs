@@ -2,6 +2,7 @@ using Autonogrammer.Api.Cloud.Options;
 using Autonogrammer.Contracts.Cloud;
 using Autonogrammer.Sandbox;
 using Autonogrammer.Sessions;
+using Autonogrammer.Sessions.Postgres;
 using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Cloud;
@@ -73,22 +74,36 @@ internal sealed class CloudIdleSweeper : BackgroundService
         var timedOut = 0;
         foreach (var agent in await _store.ListByStatusAsync([CloudAgentStatus.Provisioning, CloudAgentStatus.Starting], cancellationToken).ConfigureAwait(false))
         {
-            if (now - agent.UpdatedAt >= settings.Sweeper.ProvisioningTimeout)
+            try
             {
-                await _lifecycle.FailAsync(
-                    agent.Id,
-                    agent.Status,
-                    new CloudAgentError { Code = "provisioning_timeout", Message = "The agent did not finish starting in time. Wake it to try again." }).ConfigureAwait(false);
-                timedOut++;
+                if (now - agent.UpdatedAt >= settings.Sweeper.ProvisioningTimeout)
+                {
+                    await _lifecycle.FailAsync(
+                        agent.Id,
+                        agent.Status,
+                        new CloudAgentError { Code = "provisioning_timeout", Message = "The agent did not finish starting in time. Wake it to try again." }).ConfigureAwait(false);
+                    timedOut++;
+                }
+            }
+            catch (AccountErasingException)
+            {
+                // The owner's account is being erased and its writes are refused: this agent is left alone.
             }
         }
 
         var deleted = 0;
         foreach (var agent in await _store.ListByStatusAsync([CloudAgentStatus.Deleting], cancellationToken).ConfigureAwait(false))
         {
-            if (await FinishDeletionAsync(agent, cancellationToken).ConfigureAwait(false))
+            try
             {
-                deleted++;
+                if (await FinishDeletionAsync(agent, cancellationToken).ConfigureAwait(false))
+                {
+                    deleted++;
+                }
+            }
+            catch (AccountErasingException)
+            {
+                // The owner's account is being erased and its writes are refused: this agent is left alone.
             }
         }
 
@@ -131,26 +146,33 @@ internal sealed class CloudIdleSweeper : BackgroundService
         var limitStopped = 0;
         foreach (var agent in await _store.ListByStatusAsync([CloudAgentStatus.Running], cancellationToken).ConfigureAwait(false))
         {
-            if (settings.Limits.MaxComputeSecondsPerAgent > 0
-                && agent.ComputeSeconds + (agent.ActiveSince is { } since ? Math.Max(0, (now - since).TotalSeconds) : 0) >= settings.Limits.MaxComputeSecondsPerAgent)
+            try
             {
-                _ = _runs.TryCancel(agent.SessionId);
-                if (await _lifecycle.GoIdleAsync(agent, "limit", CloudAgentStatus.LimitReached, cancellationToken).ConfigureAwait(false))
+                if (settings.Limits.MaxComputeSecondsPerAgent > 0
+                    && agent.ComputeSeconds + (agent.ActiveSince is { } since ? Math.Max(0, (now - since).TotalSeconds) : 0) >= settings.Limits.MaxComputeSecondsPerAgent)
                 {
-                    limitStopped++;
+                    _ = _runs.TryCancel(agent.SessionId);
+                    if (await _lifecycle.GoIdleAsync(agent, "limit", CloudAgentStatus.LimitReached, cancellationToken).ConfigureAwait(false))
+                    {
+                        limitStopped++;
+                    }
+
+                    continue;
                 }
 
-                continue;
-            }
+                if (now - agent.LastActivityAt < TimeSpan.FromMinutes(agent.IdleMinutes) || await IsRunningAsync(agent, cancellationToken).ConfigureAwait(false))
+                {
+                    continue;
+                }
 
-            if (now - agent.LastActivityAt < TimeSpan.FromMinutes(agent.IdleMinutes) || await IsRunningAsync(agent, cancellationToken).ConfigureAwait(false))
-            {
-                continue;
+                if (await _lifecycle.GoIdleAsync(agent, "sweep", CloudAgentStatus.Idle, cancellationToken).ConfigureAwait(false))
+                {
+                    idled++;
+                }
             }
-
-            if (await _lifecycle.GoIdleAsync(agent, "sweep", CloudAgentStatus.Idle, cancellationToken).ConfigureAwait(false))
+            catch (AccountErasingException)
             {
-                idled++;
+                // The owner's account is being erased and its writes are refused: this agent is left alone and the other accounts are swept.
             }
         }
 

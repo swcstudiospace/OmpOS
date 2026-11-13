@@ -232,6 +232,7 @@ app.UseHostingRequestTimeouts();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<DataPlaneProblemMiddleware>();
+app.UseMiddleware<AccountUnavailableProblemMiddleware>();
 app.UseCors(ConfigureCorsOptions.PolicyName);
 app.UseApiAuthentication();
 
