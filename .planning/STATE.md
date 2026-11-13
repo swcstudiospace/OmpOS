@@ -5,10 +5,10 @@ milestone_name: "Autonogrammer: accounts, Cowork and Dispatch (planned, added 20
 current_phase: "74.1"
 current_phase_name: Durable account-scoped memory idempotency migration and atomic replay
 status: blocked
-stopped_at: "Phase 74.1 plan 03 awaiting independent human runbook review; 75-12 held"
+stopped_at: "Phase 74.1 plan 03 human runbook review recorded 13/11/2026; phase 74.1 awaits its own verification; 75-12 hold released by user"
 last_updated: "2026-11-10T15:16:20.720Z"
 last_activity: 2026-11-10
-last_activity_desc: "Phase 74.1 local checks passed but human runbook review remains pending. Independent account-default, Cowork notice and Chromium pipe fixes received focused verification; guarded browsing and release gates remain open."
+last_activity_desc: "Phase 74.1 plan 03 human runbook review recorded 13/11/2026; phase 74.1 awaits its own verification. Independent account-default, Cowork notice and Chromium pipe fixes received focused verification; guarded browsing and release gates remain open."
 state_head: bcbb5658e2d68ab32e1d48e51ca1ba1b26b062b8
 progress:
   total_phases: 17
@@ -29,13 +29,14 @@ current_plan: 3
 - Still not authorised: nothing beyond these. Cleanup target list is not yet written; cleanup stays blocked until a list is recorded here.
 - Resume point: phase 68 (68-10, then 68-11) for SEC-77-07, under the approved design in 68-09. Then the remaining v0.16.0 phases in ROADMAP order.
 - Run mode: unattended to closeout, pausing only at defined gates (default; not contradicted by the user).
+- 2026-11-13 (user-supplied runbook review, recorded here): Phase 74.1 plan 03 independent human runbook review by SomeRandmGuyy, dated 13/11/2026. Results: pass for cleanup SQL and scheduling, privileges and lag, writer quiescence, version and checksum readiness, separate production approval, backup and restore, and replay-history loss. The 75-12 integration hold is released by the user; 75-12 is not marked complete. Caveats: the writer-versus-erasure race stays unresolved (74.1-03-SUMMARY.md), and the writer-quiescence pass is a checklist decision, not a tested concurrent safety claim. Phase 74.1 is not passed by this record and awaits its own verification. No production migration, cleanup, rollback, deployment or commit occurred.
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-10-21)
 
 **Core value:** A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
-**Current focus:** v0.16.0 in `/root/src/repos/autonogrammer` on `feat/autonogrammer-integration`. Phase 74.1 is implementing durable memory idempotency; 75-12 is held until its verification. Phase 72's locked browser restrictions and the final security and integration gates remain open. Generated frontmatter counts summarize artifact inventory, not verified phase completion; the current-tree completion count is not established.
+**Current focus:** v0.16.0 in `/root/src/repos/autonogrammer` on `feat/autonogrammer-integration`. Phase 74.1 awaits its own verification after the recorded human runbook review; the 75-12 integration hold was released by the user on 2026-11-13, and 75-12 is not marked complete. Phase 72's locked browser restrictions and the final security and integration gates remain open. Generated frontmatter counts summarize artifact inventory, not verified phase completion; the current-tree completion count is not established.
 
 ### Historical focus (v0.15.0; retained provenance, not current-tree proof)
 
@@ -44,10 +45,10 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 ## Current Position
 
 Phase: 74.1 (Durable account-scoped memory idempotency migration and atomic replay)
-Plan: 03 awaiting independent human runbook review; 01, 02 and 04 passed focused and integrated local checks
+Plan: 03 human runbook review recorded 13/11/2026 (reviewer SomeRandmGuyy; all listed checks pass; see 74.1-03-SUMMARY.md). Phase 74.1 awaits its own verification; 01, 02 and 04 passed focused and integrated local checks
 Status: blocked; no production migration or release authorized
 
-Current gap-closure work: The owner chose strict Phase 66 baseline equality; the historical comparison remains failed and its scan inputs unauthenticated, although a fresh-baseline snapshot and focused branding tests pass. Phase 71's sync-off grants-field repair passes focused local and current-API tests, but artifact-access plans remain blocked on non-lossy sync rollout, verified device/session identity and browser destination enforcement. The owner chose to keep the affected Phase 74 production path disabled and leave the ambiguous legacy-row policy undecided. Phase 68's erasure writer-drain and composition boundary remain unresolved. None of these decisions releases the Phase 74.1 human-review hold or the 75-12 hold.
+Current gap-closure work: The owner chose strict Phase 66 baseline equality; the historical comparison remains failed and its scan inputs unauthenticated, although a fresh-baseline snapshot and focused branding tests pass. Phase 71's sync-off grants-field repair passes focused local and current-API tests, but artifact-access plans remain blocked on non-lossy sync rollout, verified device/session identity and browser destination enforcement. The owner chose to keep the affected Phase 74 production path disabled and leave the ambiguous legacy-row policy undecided. Phase 68's erasure writer-drain and composition boundary remain unresolved. None of these decisions affects Phase 74.1 or the 75-12 hold.
 
 Phase 76: the Bubblewrap namespace probe was corrected and its unit class passed 6/6. A protected live positive-control run exposed malformed session bind arguments and failed; isolation remains unverified pending a mount design that preserves deny precedence, socket masking and nested grant boundaries. SEC-77-08 is open at High because probe success is currently promoted to `FilesystemIsolated` before the session policy is exercised.
 
