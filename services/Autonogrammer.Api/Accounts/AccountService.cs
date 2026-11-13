@@ -101,6 +101,11 @@ internal sealed class PostgresAccountStore : IAccountStore
     public async Task TouchAsync(string id, DateTimeOffset seenAt, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(id);
+        using (var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false))
+        {
+            await AccountAdmission.EnsureRowAsync(connection, id, cancellationToken).ConfigureAwait(false);
+        }
+
         var command = _dataSource.CreateCommand(TouchSql);
         try
         {
@@ -111,10 +116,6 @@ internal sealed class PostgresAccountStore : IAccountStore
         finally
         {
             await command.DisposeAsync().ConfigureAwait(false);
-        }
-        using (var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false))
-        {
-            await AccountAdmission.EnsureRowAsync(connection, id, cancellationToken).ConfigureAwait(false);
         }
     }
 

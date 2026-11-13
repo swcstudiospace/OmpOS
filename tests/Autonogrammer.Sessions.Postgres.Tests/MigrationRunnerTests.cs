@@ -139,9 +139,13 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
                 await seed.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
             }
             var runner = new MigrationRunner(dataSource, schema.SchemaName);
-            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([11, 12, 13]);
+            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([11, 12, 13, 14]);
             (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBeEmpty();
-            (await runner.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(13);
+            (await runner.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(14);
+            using (var provision = dataSource.CreateCommand("INSERT INTO account_lifecycle (account_id) VALUES ('a') ON CONFLICT (account_id) DO NOTHING"))
+            {
+                await provision.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
+            }
             var applied = await runner.ListAppliedAsync(ct).ConfigureAwait(true);
             applied.Single(static step => step.Version == 11).Checksum.ShouldBe(MigrationRunner.ChecksumOf(MigrationRegistry.All.Single(static step => step.Version == 11)));
             using (var claim = dataSource.CreateCommand("""
@@ -150,13 +154,13 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
             {
                 await claim.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
             }
-            (await runner.DownAsync(10, ct).ConfigureAwait(true)).ShouldBe([13, 12, 11]);
+            (await runner.DownAsync(10, ct).ConfigureAwait(true)).ShouldBe([14, 13, 12, 11]);
             (await ExistsAsync(dataSource, schema.SchemaName + ".cowork_memory_idempotency", ct).ConfigureAwait(true)).ShouldBeFalse();
             using (var preserved = dataSource.CreateCommand("SELECT p.name || ':' || m.content FROM cowork_projects p JOIN cowork_memory_entries m ON m.project_id = p.id"))
             {
                 (await preserved.ExecuteScalarAsync(ct).ConfigureAwait(true)).ShouldBe("project:kept");
             }
-            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([11, 12, 13]);
+            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([11, 12, 13, 14]);
             using var count = dataSource.CreateCommand("SELECT count(*) FROM cowork_memory_idempotency");
             (await count.ExecuteScalarAsync(ct).ConfigureAwait(true)).ShouldBe(0L);
         }
@@ -213,6 +217,10 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
             var appConnection = new NpgsqlConnectionStringBuilder(schema.ConnectionString) { Username = role, Password = password };
             var app = NpgsqlDataSource.Create(appConnection.ConnectionString);
             await using var appDisposal = app.ConfigureAwait(true);
+            using (var provision = source.CreateCommand("INSERT INTO account_lifecycle (account_id) VALUES ('a') ON CONFLICT (account_id) DO NOTHING"))
+            {
+                await provision.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
+            }
             using (var dml = app.CreateCommand("""
                 SET lock_timeout = '2s';
                 INSERT INTO cowork_memory_idempotency VALUES ('a', 'create', 'key', 1, decode(repeat('00', 32), 'hex'), 'm', now(), now());
@@ -611,6 +619,7 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
         var schema = await PostgresTestSchema.CreateMigratedAsync(server.AdminConnectionString, cancellationToken).ConfigureAwait(false);
         using var seed = schema.CreateDataSource().CreateCommand(
             """
+            INSERT INTO account_lifecycle (account_id) VALUES ('a1') ON CONFLICT (account_id) DO NOTHING;
             INSERT INTO dispatch_devices (id, account_id, name, platform, public_key, created_at) VALUES ('d1', 'a1', 'n', 'p', 'k', now());
             INSERT INTO dispatch_commands (id, device_id, account_id, seq, op, state, idempotency_key, expires_at, created_at, updated_at)
                 VALUES ('c1', 'd1', 'a1', 1, 'op', 'queued', 'key-1', now(), now(), now());

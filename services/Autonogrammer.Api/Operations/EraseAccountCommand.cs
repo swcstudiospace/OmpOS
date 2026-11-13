@@ -1,0 +1,265 @@
+using System.Security.Cryptography;
+using System.Text;
+using Autonogrammer.Api.DataPlane;
+using Autonogrammer.Api.Options;
+using Autonogrammer.Coordination;
+using Autonogrammer.Coordination.Dragonfly;
+using Autonogrammer.Resilience;
+using Autonogrammer.Sessions.Postgres;
+using Npgsql;
+using StackExchange.Redis;
+
+namespace Autonogrammer.Api.Operations;
+
+/// <summary>
+/// The <c>erase-account</c> verb of the API entry point: <c>dotnet Autonogrammer.Api.dll erase-account &lt;account-id&gt;</c> erases everything one account owns
+/// through <see cref="PostgresAccountErasure"/> (runtime role), then the account's tenant keys in Dragonfly when <c>Coordination:Store</c> is Dragonfly.
+/// It is operator-only: it runs before the web host exists and no HTTP route reaches it. The operator token is read from the environment variable
+/// <c>AUTONOGRAMMER_OPERATOR_TOKEN</c>; its SHA-256 must equal the digest configured at <c>Api:Operator:TokenSha256</c> (environment form
+/// <c>AUTONOGRAMMER_OPERATOR_TOKEN_SHA256</c>). The check runs before any connection is opened.
+/// The exit code is 0 when the account was erased, 1 when the erasure failed or a required setting is absent, 2 for a usage error and 3 when the operator token
+/// is absent or does not match. Output names keys and exception types only; neither the token, the digest nor a connection string reaches it.
+/// </summary>
+internal static class EraseAccountCommand
+{
+    /// <summary>Gets the verb.</summary>
+    public const string Verb = "erase-account";
+
+    /// <summary>Gets the environment variable that carries the operator token.</summary>
+    public const string TokenEnvironmentVariable = "AUTONOGRAMMER_OPERATOR_TOKEN";
+
+    /// <summary>Gets the environment variable that carries the SHA-256 digest of the operator token. It is bound to <see cref="TokenSha256Key"/>.</summary>
+    public const string TokenSha256EnvironmentVariable = "AUTONOGRAMMER_OPERATOR_TOKEN_SHA256";
+
+    /// <summary>Gets the configuration key of the SHA-256 digest of the operator token.</summary>
+    public const string TokenSha256Key = "Api:Operator:TokenSha256";
+
+    /// <summary>Gets the exit code of a run that erased the account.</summary>
+    public const int Succeeded = 0;
+
+    /// <summary>Gets the exit code of a run that failed.</summary>
+    public const int Failed = 1;
+
+    /// <summary>Gets the exit code of a usage error.</summary>
+    public const int Usage = 2;
+
+    /// <summary>Gets the exit code of a run whose operator token is absent or does not match the configured digest.</summary>
+    public const int Refused = 3;
+
+    /// <summary>Returns whether <paramref name="args"/> start with the erase-account verb.</summary>
+    /// <param name="args">The command-line arguments of the process.</param>
+    /// <returns><see langword="true"/> when the first argument is <c>erase-account</c>.</returns>
+    public static bool IsEraseAccount(string[] args)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+        return args.Length > 0 && string.Equals(args[0], Verb, StringComparison.Ordinal);
+    }
+
+    /// <summary>Runs the verb: checks the operator token, then erases the account.</summary>
+    /// <param name="args">The command-line arguments: the verb and the account identifier.</param>
+    /// <param name="output">Receives the progress lines.</param>
+    /// <param name="error">Receives the failure lines.</param>
+    /// <param name="cancellationToken">Cancels the run.</param>
+    /// <returns>The exit code.</returns>
+    public static async Task<int> RunAsync(string[] args, TextWriter output, TextWriter error, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(output);
+        ArgumentNullException.ThrowIfNull(error);
+
+        if (args.Length != 2 || string.IsNullOrWhiteSpace(args[1]))
+        {
+            await error.WriteLineAsync($"Usage: {Verb} <account-id>").ConfigureAwait(false);
+            return Usage;
+        }
+
+        var configuration = BuildConfiguration();
+        var refusal = RefusalFor(Environment.GetEnvironmentVariable(TokenEnvironmentVariable), configuration[TokenSha256Key]);
+        if (refusal is not null)
+        {
+            await error.WriteLineAsync(refusal).ConfigureAwait(false);
+            return Refused;
+        }
+
+        return await EraseAsync(configuration, args[1], output, error, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Returns why the operator token is refused, or <see langword="null"/> when its SHA-256 equals the configured digest.</summary>
+    /// <param name="token">The operator token from the environment, or null when it is absent.</param>
+    /// <param name="digestText">The configured digest as 64 hexadecimal characters, or null when it is absent.</param>
+    /// <returns>The refusal message, or <see langword="null"/> when the token is accepted.</returns>
+    internal static string? RefusalFor(string? token, string? digestText)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return $"Refused: {TokenEnvironmentVariable} is not set.";
+        }
+
+        if (string.IsNullOrWhiteSpace(digestText))
+        {
+            return $"Refused: {TokenSha256Key} is not configured (environment {TokenSha256EnvironmentVariable}).";
+        }
+
+        if (!TryDecodeDigest(digestText.Trim(), out var expected))
+        {
+            return $"Refused: {TokenSha256Key} is not a SHA-256 digest (64 hexadecimal characters).";
+        }
+
+        var actual = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+        return CryptographicOperations.FixedTimeEquals(actual, expected)
+            ? null
+            : "Refused: the operator token does not match the configured digest.";
+    }
+
+    private static bool TryDecodeDigest(string text, out byte[] digest)
+    {
+        digest = [];
+        if (text.Length != SHA256.HashSizeInBytes * 2)
+        {
+            return false;
+        }
+
+        try
+        {
+            digest = Convert.FromHexString(text);
+            return true;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
+    private static IConfiguration BuildConfiguration()
+    {
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production";
+        var overrides = new List<KeyValuePair<string, string?>>();
+        var digest = Environment.GetEnvironmentVariable(TokenSha256EnvironmentVariable);
+        if (!string.IsNullOrWhiteSpace(digest))
+        {
+            overrides.Add(new KeyValuePair<string, string?>(TokenSha256Key, digest));
+        }
+
+        return new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: true)
+            .AddJsonFile($"appsettings.{environment}.json", optional: true)
+            .AddEnvironmentVariables()
+            .AddInMemoryCollection(overrides)
+            .Build();
+    }
+
+    private static async Task<int> EraseAsync(IConfiguration configuration, string accountId, TextWriter output, TextWriter error, CancellationToken cancellationToken)
+    {
+        var connectionString = configuration[Autonogrammer.Sessions.Postgres.ServiceCollectionExtensions.ConnectionStringKey];
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            await error.WriteLineAsync($"{Autonogrammer.Sessions.Postgres.ServiceCollectionExtensions.ConnectionStringKey} is required for the {Verb} verb.").ConfigureAwait(false);
+            return Failed;
+        }
+
+        var dragonfly = CoordinationOptions.IsDragonflyStore(configuration[$"{CoordinationOptions.SectionName}:Store"]);
+        var dragonflyConnectionString = configuration[CoordinationOptions.DragonflyConnectionStringKey];
+        if (dragonfly && string.IsNullOrWhiteSpace(dragonflyConnectionString))
+        {
+            await error.WriteLineAsync($"{CoordinationOptions.DragonflyConnectionStringKey} is required for the {Verb} verb when Coordination:Store is Dragonfly.").ConfigureAwait(false);
+            return Failed;
+        }
+
+        var pepper = configuration[DataPlaneOptions.TenantHashPepperKey];
+        if (string.IsNullOrWhiteSpace(pepper))
+        {
+            if (dragonfly)
+            {
+                await error.WriteLineAsync($"{DataPlaneOptions.TenantHashPepperKey} is required for the {Verb} verb when Coordination:Store is Dragonfly.").ConfigureAwait(false);
+                return Failed;
+            }
+
+            // The in-memory store holds no tenant-keyed state across processes, so any pepper yields a well-formed segment.
+            pepper = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32));
+        }
+
+        var tenantHash = new TenantHasher(new TenantHasherOptions { Pepper = pepper }).HashTenant(accountId);
+        var resilienceOptions = configuration.GetSection(PostgresResilienceOptions.SectionName).Get<PostgresResilienceOptions>() ?? new PostgresResilienceOptions();
+        var dragonflyResilience = DragonflyResilience.Create(configuration.GetSection(DragonflyResilienceOptions.SectionName).Get<DragonflyResilienceOptions>());
+        var request = new ErasureRequest(connectionString, accountId, tenantHash, dragonfly, dragonflyConnectionString, resilienceOptions, dragonflyResilience);
+        return await RunErasureAsync(request, output, error, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<int> RunErasureAsync(ErasureRequest request, TextWriter output, TextWriter error, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await EraseDataAsync(request, cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync("Erased the account and its tenant keys.").ConfigureAwait(false);
+            return Succeeded;
+        }
+        catch (OperationCanceledException)
+        {
+            await error.WriteLineAsync($"The {Verb} verb was cancelled.").ConfigureAwait(false);
+            return Failed;
+        }
+        catch (PostgresException ex)
+        {
+            return await ReportFailureAsync(error, ex).ConfigureAwait(false);
+        }
+        catch (NpgsqlException ex)
+        {
+            return await ReportFailureAsync(error, ex).ConfigureAwait(false);
+        }
+        catch (AccountErasureLockTimeoutException ex)
+        {
+            return await ReportFailureAsync(error, ex).ConfigureAwait(false);
+        }
+        catch (DataPlaneTimeoutException ex)
+        {
+            return await ReportFailureAsync(error, ex).ConfigureAwait(false);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return await ReportFailureAsync(error, ex).ConfigureAwait(false);
+        }
+        catch (IOException ex)
+        {
+            return await ReportFailureAsync(error, ex).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task EraseDataAsync(ErasureRequest request, CancellationToken cancellationToken)
+    {
+        var dataSource = new PostgresSessionConnection(request.ConnectionString).CreateDataSource(PostgresRole.Runtime, request.ResilienceOptions);
+        await using (dataSource.ConfigureAwait(false))
+        {
+            var erasure = new PostgresAccountErasure(dataSource, PostgresResilience.Create(request.ResilienceOptions));
+            if (request.Dragonfly)
+            {
+                using var multiplexer = ConnectDragonfly(request.DragonflyConnectionString!, request.DragonflyResilience);
+                var keys = new DragonflyTenantErasure(multiplexer, request.DragonflyResilience);
+                await erasure.EraseAsync(request.AccountId, request.TenantHash, keys.DeleteTenantKeysAsync, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                var keys = new NoOpTenantKeyEraser();
+                await erasure.EraseAsync(request.AccountId, request.TenantHash, keys.DeleteTenantKeysAsync, cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private static async Task<int> ReportFailureAsync(TextWriter error, Exception exception)
+    {
+        await error.WriteLineAsync($"The {Verb} verb failed: {exception.GetType().Name}.").ConfigureAwait(false);
+        return Failed;
+    }
+
+
+    private static ConnectionMultiplexer ConnectDragonfly(string connectionString, DragonflyResilience resilience)
+    {
+        var options = ConfigurationOptions.Parse(connectionString);
+        options.AsyncTimeout = resilience.Options.OpMs;
+        options.ConnectTimeout = resilience.Options.ConnectSeconds * 1000;
+        return ConnectionMultiplexer.Connect(options);
+    }
+
+    /// <summary>The inputs of one erasure run.</summary>
+    private sealed record ErasureRequest(string ConnectionString, string AccountId, string TenantHash, bool Dragonfly, string? DragonflyConnectionString, PostgresResilienceOptions ResilienceOptions, DragonflyResilience DragonflyResilience);
+}

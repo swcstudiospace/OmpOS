@@ -154,18 +154,18 @@ public sealed class DataPlaneStatusTests
             typeof(MigrationRunner).Assembly.GetType("Autonogrammer.Sessions.Postgres.Migrations.M0010_DispatchDeviceState", throwOnError: true)!,
             nonPublic: true)!;
         var future = current.Append(ten).OrderBy(static step => step.Version).ToArray();
-        var ledger = current.Where(static step => step.Version != 11).Select(Applied).Append(new AppliedMigration(14, "future", "future")).ToList();
+        var ledger = current.Where(static step => step.Version != 11).Select(Applied).Append(new AppliedMigration(15, "future", "future")).ToList();
         var probe = new SchemaHeadProbe(_ => Task.FromResult<IReadOnlyList<AppliedMigration>>(ledger.ToArray()), current, true, Clock);
 
         (await probe.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Behind);
-        ledger.RemoveAll(static row => row.Version == 14);
+        ledger.RemoveAll(static row => row.Version == 15);
         ledger.Add(Applied(current.Single(static step => step.Version == 11)));
         (await probe.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Current);
         var futureProbe = new SchemaHeadProbe(_ => Task.FromResult<IReadOnlyList<AppliedMigration>>(ledger.ToArray()), future, true, Clock);
         (await futureProbe.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Behind);
         ledger.Add(Applied(ten));
         (await futureProbe.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Current);
-        ledger.Add(new AppliedMigration(14, "future", "future"));
+        ledger.Add(new AppliedMigration(15, "future", "future"));
         (await futureProbe.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Ahead);
         var index = ledger.FindIndex(static row => row.Version == 11);
         ledger[index] = ledger[index] with { Checksum = "wrong" };

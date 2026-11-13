@@ -24,6 +24,7 @@ public static class MigrationRegistry
         new M0011_MemoryIdempotency(),
         new M0012_AccountLifecycle(),
         new M0013_AccountLifecycleBackfill(),
+        new M0014_AccountLifecycleTriggers(),
     ];
     /// <summary>Gets the version of the last step: the schema version this build expects.</summary>
     public static int Head => All[^1].Version;

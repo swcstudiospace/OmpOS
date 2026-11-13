@@ -92,16 +92,16 @@ public sealed class DataPlaneStartupGateTests
         (await current.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Behind);
         await AssertWaitExpiresAsync(current, token).ConfigureAwait(true);
 
-        await schema.ExecuteAsync("INSERT INTO schema_migrations(version, name, checksum) VALUES (14, 'future', 'future')", token).ConfigureAwait(true);
+        await schema.ExecuteAsync("INSERT INTO schema_migrations(version, name, checksum) VALUES (15, 'future', 'future')", token).ConfigureAwait(true);
         (await current.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Behind);
-        await schema.ExecuteAsync("DELETE FROM schema_migrations WHERE version = 14", token).ConfigureAwait(true);
+        await schema.ExecuteAsync("DELETE FROM schema_migrations WHERE version = 15", token).ConfigureAwait(true);
 
         await schema.RunAsync(MigrationRegistry.All, token).ConfigureAwait(true);
         (await current.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Current);
 
-        await schema.ExecuteAsync("INSERT INTO schema_migrations(version, name, checksum) VALUES (14, 'future', 'future')", token).ConfigureAwait(true);
+        await schema.ExecuteAsync("INSERT INTO schema_migrations(version, name, checksum) VALUES (15, 'future', 'future')", token).ConfigureAwait(true);
         (await current.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Ahead);
-        await schema.ExecuteAsync("DELETE FROM schema_migrations WHERE version = 14", token).ConfigureAwait(true);
+        await schema.ExecuteAsync("DELETE FROM schema_migrations WHERE version = 15", token).ConfigureAwait(true);
 
         await schema.ExecuteAsync("UPDATE schema_migrations SET checksum = 'wrong' WHERE version = 11", token).ConfigureAwait(true);
         (await current.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Behind);

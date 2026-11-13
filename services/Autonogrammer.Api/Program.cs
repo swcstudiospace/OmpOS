@@ -14,6 +14,7 @@ using Autonogrammer.Api.Hosting;
 using Autonogrammer.Api.Metrics;
 using Autonogrammer.Api.Middleware;
 using Autonogrammer.Api.OpenApi;
+using Autonogrammer.Api.Operations;
 using Autonogrammer.Api.Options;
 using Autonogrammer.Api.Persistence;
 using Autonogrammer.Api.Security;
@@ -44,6 +45,12 @@ using Scalar.AspNetCore;
 if (MigrateCommand.IsMigrate(args))
 {
     return await MigrateCommand.RunAsync(args, Console.Out, Console.Error, CancellationToken.None).ConfigureAwait(false);
+}
+
+// The erase-account verb is operator-only: it runs before the web host exists and no HTTP route reaches it.
+if (EraseAccountCommand.IsEraseAccount(args))
+{
+    return await EraseAccountCommand.RunAsync(args, Console.Out, Console.Error, CancellationToken.None).ConfigureAwait(false);
 }
 
 var builder = WebApplication.CreateBuilder(args);
