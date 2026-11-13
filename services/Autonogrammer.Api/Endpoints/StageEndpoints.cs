@@ -93,7 +93,7 @@ internal static class StageEndpoints
             return SessionEndpoints.SessionNotFound(id);
         }
 
-        var lookup = await TaskContextLookup.ReadAsync(context.RequestServices, id, hub.GraphIdOf(id), workspace, worktrees.Value, cancellationToken).ConfigureAwait(false);
+        var lookup = await TaskContextLookup.ReadAsync(context.RequestServices, id, hub.GraphIdOf(id), workspace.RootFor(user.Name), worktrees.Value, cancellationToken).ConfigureAwait(false);
         return TypedResults.Ok(new SessionContextResponse
         {
             SessionId = id,

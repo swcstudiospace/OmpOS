@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Autonogrammer.Api.Services;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Sessions;
@@ -273,7 +274,7 @@ public sealed class CatalogEndpointTests
             body.RootElement.GetProperty("graphId").GetString().ShouldBe("graph-7");
             body.RootElement.GetProperty("lessonsCount").GetInt32().ShouldBe(2);
             source.LastScope.ShouldNotBeNull().SessionId.ShouldBe(id);
-            source.LastScope.WorkspaceRoot.ShouldBe(Path.TrimEndingDirectorySeparator(root));
+            source.LastScope.WorkspaceRoot.ShouldBe(Path.Combine(Path.TrimEndingDirectorySeparator(root), AccountWorkspace.DirectoryName("local-dev")));
         }
         finally
         {

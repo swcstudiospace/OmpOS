@@ -17,6 +17,14 @@ internal sealed class WorkspaceLocator
         _workspace = workspace;
         _worktrees = worktrees;
     }
+    /// <summary>Gets the account's own workspace folder under the base root, or null when no base root is configured.</summary>
+    /// <param name="accountId">The account identifier (the session owner).</param>
+    /// <returns>The account folder, or null.</returns>
+    public string? RootFor(string accountId)
+    {
+        var root = Root;
+        return root is null ? null : AccountWorkspace.Resolve(root, accountId);
+    }
 
     /// <summary>Gets the absolute workspace root, or null when none is configured or the configured value is not an absolute path.</summary>
     public string? Root

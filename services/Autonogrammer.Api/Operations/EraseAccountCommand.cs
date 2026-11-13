@@ -13,7 +13,7 @@ namespace Autonogrammer.Api.Operations;
 
 /// <summary>
 /// The <c>erase-account</c> verb of the API entry point: <c>dotnet Autonogrammer.Api.dll erase-account &lt;account-id&gt;</c> erases everything one account owns
-/// through <see cref="PostgresAccountErasure"/> (runtime role), then the account's tenant keys in Dragonfly when <c>Coordination:Store</c> is Dragonfly.
+/// through <see cref="PostgresAccountErasure"/> (runtime role), then the account's tenant keys in Dragonfly when <c>Coordination:Store</c> is Dragonfly, then its workspace folder under <c>Api:Workspace:Root</c>.
 /// It is operator-only: it runs before the web host exists and no HTTP route reaches it. The operator token is read from the environment variable
 /// <c>AUTONOGRAMMER_OPERATOR_TOKEN</c>; its SHA-256 must equal the digest configured at <c>Api:Operator:TokenSha256</c> (environment form
 /// <c>AUTONOGRAMMER_OPERATOR_TOKEN_SHA256</c>). The check runs before any connection is opened.
@@ -182,7 +182,8 @@ internal static class EraseAccountCommand
         var tenantHash = new TenantHasher(new TenantHasherOptions { Pepper = pepper }).HashTenant(accountId);
         var resilienceOptions = configuration.GetSection(PostgresResilienceOptions.SectionName).Get<PostgresResilienceOptions>() ?? new PostgresResilienceOptions();
         var dragonflyResilience = DragonflyResilience.Create(configuration.GetSection(DragonflyResilienceOptions.SectionName).Get<DragonflyResilienceOptions>());
-        var request = new ErasureRequest(connectionString, accountId, tenantHash, dragonfly, dragonflyConnectionString, resilienceOptions, dragonflyResilience);
+        var workspaceRoot = configuration[$"{Autonogrammer.Api.Services.SessionWorkspaceOptions.SectionName}:Root"];
+        var request = new ErasureRequest(connectionString, accountId, tenantHash, dragonfly, dragonflyConnectionString, resilienceOptions, dragonflyResilience, workspaceRoot);
         return await RunErasureAsync(request, output, error, cancellationToken).ConfigureAwait(false);
     }
 
@@ -223,6 +224,10 @@ internal static class EraseAccountCommand
         {
             return await ReportFailureAsync(error, ex).ConfigureAwait(false);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return await ReportFailureAsync(error, ex).ConfigureAwait(false);
+        }
     }
 
     private static async Task EraseDataAsync(ErasureRequest request, CancellationToken cancellationToken)
@@ -235,15 +240,22 @@ internal static class EraseAccountCommand
             {
                 using var multiplexer = ConnectDragonfly(request.DragonflyConnectionString!, request.DragonflyResilience);
                 var keys = new DragonflyTenantErasure(multiplexer, request.DragonflyResilience);
-                await erasure.EraseAsync(request.AccountId, request.TenantHash, keys.DeleteTenantKeysAsync, cancellationToken).ConfigureAwait(false);
+                await EraseAccountAsync(erasure, request, keys.DeleteTenantKeysAsync, cancellationToken).ConfigureAwait(false);
             }
             else
             {
                 var keys = new NoOpTenantKeyEraser();
-                await erasure.EraseAsync(request.AccountId, request.TenantHash, keys.DeleteTenantKeysAsync, cancellationToken).ConfigureAwait(false);
+                await EraseAccountAsync(erasure, request, keys.DeleteTenantKeysAsync, cancellationToken).ConfigureAwait(false);
             }
         }
     }
+
+    private static Task EraseAccountAsync(PostgresAccountErasure erasure, ErasureRequest request, Func<string, CancellationToken, Task> eraseTenantKeys, CancellationToken cancellationToken) =>
+        erasure.EraseAsync(request.AccountId, request.TenantHash, async (tenantHash, token) =>
+        {
+            await eraseTenantKeys(tenantHash, token).ConfigureAwait(false);
+            await AccountWorkspaceEraser.DeleteAsync(request.WorkspaceRoot, request.AccountId, token).ConfigureAwait(false);
+        }, cancellationToken);
 
     private static async Task<int> ReportFailureAsync(TextWriter error, Exception exception)
     {
@@ -261,5 +273,5 @@ internal static class EraseAccountCommand
     }
 
     /// <summary>The inputs of one erasure run.</summary>
-    private sealed record ErasureRequest(string ConnectionString, string AccountId, string TenantHash, bool Dragonfly, string? DragonflyConnectionString, PostgresResilienceOptions ResilienceOptions, DragonflyResilience DragonflyResilience);
+    private sealed record ErasureRequest(string ConnectionString, string AccountId, string TenantHash, bool Dragonfly, string? DragonflyConnectionString, PostgresResilienceOptions ResilienceOptions, DragonflyResilience DragonflyResilience, string? WorkspaceRoot);
 }

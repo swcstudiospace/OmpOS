@@ -129,7 +129,7 @@ internal static class CatalogEndpoints
             return SessionEndpoints.SessionNotFound(id);
         }
 
-        var lookup = await TaskContextLookup.ReadAsync(context.RequestServices, session.Id, stages.GraphIdOf(session.Id), workspace, worktrees.Value, cancellationToken).ConfigureAwait(false);
+        var lookup = await TaskContextLookup.ReadAsync(context.RequestServices, session.Id, stages.GraphIdOf(session.Id), workspace.RootFor(user.Name), worktrees.Value, cancellationToken).ConfigureAwait(false);
         if (lookup.Context is null)
         {
             return TypedResults.Ok(new CardDetailsResponse { SessionId = id, Available = false, Reason = lookup.Reason });

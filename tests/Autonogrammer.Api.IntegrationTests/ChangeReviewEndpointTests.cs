@@ -1,4 +1,5 @@
 using System.Net;
+using Autonogrammer.Api.Security;
 using Autonogrammer.Api.Services;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Contracts.Ui;
@@ -61,7 +62,7 @@ public sealed class ChangeReviewEndpointTests : IDisposable
         using var factory = Factory();
         using var client = factory.CreateClient();
         var id = await SessionClient.CreateSessionAsync(client, ct).ConfigureAwait(true);
-        var file = Write("src/a.txt", "before");
+        var file = Write(SingleDevPrincipal.DevName, "src/a.txt", "before");
         await EditAsync(factory, id, "src/a.txt", "before", "after", ct).ConfigureAwait(true);
 
         using (var response = await PostAsync(client, id, "src/a.txt", "accept", ct).ConfigureAwait(true))
@@ -87,8 +88,8 @@ public sealed class ChangeReviewEndpointTests : IDisposable
         using var factory = Factory();
         using var client = factory.CreateClient();
         var id = await SessionClient.CreateSessionAsync(client, ct).ConfigureAwait(true);
-        var edited = Write("src/a.txt", "after");
-        var created = Write("src/new.txt", "fresh");
+        var edited = Write(SingleDevPrincipal.DevName, "src/a.txt", "after");
+        var created = Write(SingleDevPrincipal.DevName, "src/new.txt", "fresh");
         await EditAsync(factory, id, "src/a.txt", "before", "after", ct).ConfigureAwait(true);
         await EditAsync(factory, id, "src/new.txt", null, "fresh", ct).ConfigureAwait(true);
 
@@ -115,7 +116,7 @@ public sealed class ChangeReviewEndpointTests : IDisposable
         using var factory = Factory();
         using var client = factory.CreateClient();
         var id = await SessionClient.CreateSessionAsync(client, ct).ConfigureAwait(true);
-        var file = Write("src/a.txt", "the user edited this");
+        var file = Write(SingleDevPrincipal.DevName, "src/a.txt", "the user edited this");
         await EditAsync(factory, id, "src/a.txt", "before", "after", ct).ConfigureAwait(true);
 
         using var accept = await PostAsync(client, id, "src/a.txt", "accept", ct).ConfigureAwait(true);
@@ -243,7 +244,7 @@ public sealed class ChangeReviewEndpointTests : IDisposable
         using var alice = WebAppTestHost.AsPrincipal(factory, "alice");
         using var bob = WebAppTestHost.AsPrincipal(factory, "bob");
         var id = await SessionClient.CreateSessionAsync(alice, ct).ConfigureAwait(true);
-        var file = Write("src/a.txt", "before");
+        var file = Write("alice", "src/a.txt", "before");
         await EditAsync(factory, id, "src/a.txt", "before", "after", ct).ConfigureAwait(true);
 
         using var list = await bob.GetAsync(new Uri($"/sessions/{id}/changes", UriKind.Relative), ct).ConfigureAwait(true);
@@ -261,9 +262,9 @@ public sealed class ChangeReviewEndpointTests : IDisposable
     private ApiFactory Factory() =>
         WebAppTestHost.Dev(config: new Dictionary<string, string?>(StringComparer.Ordinal) { ["Api:Workspace:Root"] = _root });
 
-    private string Write(string relative, string text)
+    private string Write(string owner, string relative, string text)
     {
-        var full = Path.Combine(_root, relative);
+        var full = Path.Combine(_root, AccountWorkspace.DirectoryName(owner), relative);
         _ = Directory.CreateDirectory(Path.GetDirectoryName(full)!);
         File.WriteAllText(full, text);
         return full;

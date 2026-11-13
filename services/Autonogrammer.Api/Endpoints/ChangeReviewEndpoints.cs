@@ -93,7 +93,7 @@ internal static class ChangeReviewEndpoints
                 NewText = change.NewText,
             })
             .ToArray();
-        return TypedResults.Ok(new SessionChangesResponse { SessionId = id, WorkspaceAvailable = workspace.Root is not null, Changes = changes });
+        return TypedResults.Ok(new SessionChangesResponse { SessionId = id, WorkspaceAvailable = workspace.RootFor(user.Name) is not null, Changes = changes });
     }
 
     private static async Task<Results<Ok<ChangeDecisionResponse>, ProblemHttpResult>> DecideAsync(
@@ -123,7 +123,7 @@ internal static class ChangeReviewEndpoints
             return WebProblems.Of(404, "change_not_found", "Change not found.", "The session reported no edit of that path.");
         }
 
-        var outcome = await WorkspaceChangeApplier.ApplyAsync(workspace.Root, change, accept, cancellationToken).ConfigureAwait(false);
+        var outcome = await WorkspaceChangeApplier.ApplyAsync(workspace.RootFor(user.Name), change, accept, cancellationToken).ConfigureAwait(false);
         switch (outcome.Kind)
         {
             case ApplyKind.Outside:
