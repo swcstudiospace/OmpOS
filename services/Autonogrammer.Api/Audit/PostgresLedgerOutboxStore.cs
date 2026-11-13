@@ -11,6 +11,12 @@ namespace Autonogrammer.Api.Audit;
 /// </summary>
 internal sealed class PostgresLedgerOutboxStore : ILedgerOutboxStore
 {
+    private const string UnboundTenantMessage = "The ledger row's tenant has no account binding; the write was refused.";
+    private const string NoTenantMessage = "The ledger row has no tenant; the write was refused.";
+
+    private const string MarkSentSql = "UPDATE ledger_outbox SET sent_at = now() WHERE id = @id";
+    private const string ScheduleSql = "UPDATE ledger_outbox SET attempts = @attempts, next_attempt_at = @next WHERE id = @id";
+
     private readonly NpgsqlDataSource _dataSource;
     private readonly Lock _gate = new();
     private readonly Dictionary<long, AuditLedgerEvent> _pending = [];
@@ -188,35 +194,65 @@ internal sealed class PostgresLedgerOutboxStore : ILedgerOutboxStore
         return true;
     }
 
-    private async Task MarkSentSqlAsync(long id, CancellationToken cancellationToken)
+    private Task MarkSentSqlAsync(long id, CancellationToken cancellationToken) =>
+        FencedUpdateAsync(id, static command => command.CommandText = MarkSentSql, cancellationToken);
+
+    private Task ScheduleSqlAsync(long id, int attempts, DateTimeOffset nextAttemptAt, CancellationToken cancellationToken) =>
+        FencedUpdateAsync(
+            id,
+            command =>
+            {
+                command.CommandText = ScheduleSql;
+                command.Parameters.Add(new NpgsqlParameter("attempts", attempts));
+                command.Parameters.Add(new NpgsqlParameter("next", nextAttemptAt));
+            },
+            cancellationToken);
+
+    private async Task FencedUpdateAsync(long id, Action<NpgsqlCommand> configure, CancellationToken cancellationToken)
     {
         var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
-            var command = connection.CreateCommand();
-            await using (command.ConfigureAwait(false))
+            var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await using (transaction.ConfigureAwait(false))
             {
-                command.CommandText = "UPDATE ledger_outbox SET sent_at = now() WHERE id = @id";
-                command.Parameters.AddWithValue("id", id);
-                _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                var tenantHash = await RowTenantHashAsync(connection, transaction, id, cancellationToken).ConfigureAwait(false);
+                if (tenantHash is null)
+                {
+                    throw new AccountErasingException(NoTenantMessage);
+                }
+
+                var accountId = await AccountTenantBindings.ResolveAccountIdAsync(connection, transaction, tenantHash, cancellationToken).ConfigureAwait(false);
+                if (accountId is null)
+                {
+                    throw new AccountErasingException(UnboundTenantMessage);
+                }
+
+                await AccountAdmission.AdmitSharedAsync(connection, transaction, accountId, cancellationToken).ConfigureAwait(false);
+                var command = connection.CreateCommand();
+                await using (command.ConfigureAwait(false))
+                {
+                    command.Transaction = transaction;
+                    command.Parameters.AddWithValue("id", id);
+                    configure(command);
+                    _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             }
         }
     }
 
-    private async Task ScheduleSqlAsync(long id, int attempts, DateTimeOffset nextAttemptAt, CancellationToken cancellationToken)
+    private static async Task<string?> RowTenantHashAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, long id, CancellationToken cancellationToken)
     {
-        var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-        await using (connection.ConfigureAwait(false))
+        var command = connection.CreateCommand();
+        await using (command.ConfigureAwait(false))
         {
-            var command = connection.CreateCommand();
-            await using (command.ConfigureAwait(false))
-            {
-                command.CommandText = "UPDATE ledger_outbox SET attempts = @attempts, next_attempt_at = @next WHERE id = @id";
-                command.Parameters.AddWithValue("id", id);
-                command.Parameters.AddWithValue("attempts", attempts);
-                command.Parameters.AddWithValue("next", nextAttemptAt);
-                _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-            }
+            command.Transaction = transaction;
+            command.CommandText = "SELECT a.account_id_hash FROM ledger_outbox o JOIN dispatch_audit a ON a.id = o.audit_id WHERE o.id = @id";
+            command.Parameters.AddWithValue("id", id);
+            var value = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+            return value as string;
         }
     }
 

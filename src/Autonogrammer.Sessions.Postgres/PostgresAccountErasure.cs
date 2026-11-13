@@ -9,8 +9,8 @@ namespace Autonogrammer.Sessions.Postgres;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Erasure is lifecycle-first. In one committed transaction it takes the account's <c>account_lifecycle</c> row exclusively and marks the account
-/// <c>erasing</c>. That transaction waits for every writer that holds the shared admission (<see cref="AccountAdmission"/>) to commit, and every writer that
+/// Erasure is lifecycle-first. In one committed transaction it takes the account's <c>account_lifecycle</c> row exclusively, marks the account
+/// <c>erasing</c>, deletes the account's automation runs and automations, and deletes the account's tenant binding (<see cref="AccountTenantBindings"/>), so the keyed tenant hash no longer resolves to the account. That transaction waits for every writer that holds the shared admission (<see cref="AccountAdmission"/>) to commit, and every writer that
 /// starts after it is refused. Only then are the families deleted, each in one transaction keyed by the owner: the dispatch tables (commands, feed events,
 /// devices); <c>cowork_events</c>; the memory family (entries, settings, instructions, projects); the artifacts (grants, versions, artifacts); the session
 /// content (events and tool approvals through the owner's session ids, then the sessions); <c>cloud_agents</c>; and the <c>accounts</c> row. The deletes are
@@ -62,6 +62,9 @@ public sealed class PostgresAccountErasure
     private const string DeleteSessionsSql = "DELETE FROM sessions WHERE owner_id = @account_id";
 
     private const string DeleteCloudAgentsSql = "DELETE FROM cloud_agents WHERE owner_id = @account_id";
+
+    private const string DeleteAutomationRunsSql = "DELETE FROM automation_runs WHERE owner_id = @account_id";
+    private const string DeleteAutomationsSql = "DELETE FROM automations WHERE owner_id = @account_id";
 
     private const string DeleteAccountSql = "DELETE FROM accounts WHERE id = @account_id";
 
@@ -153,15 +156,25 @@ public sealed class PostgresAccountErasure
         lifecycle.CommandText = LockLifecycleRowSql;
         var state = await lifecycle.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) as string
             ?? throw new InvalidOperationException($"Account '{accountId}' has no lifecycle row after it was ensured.");
+        await AccountTenantBindings.DeleteAsync(connection, transaction, accountId, cancellationToken).ConfigureAwait(false);
         var needsErasure = !string.Equals(state, ErasedState, StringComparison.Ordinal);
         if (needsErasure)
         {
             lifecycle.CommandText = BeginErasureSql;
             await lifecycle.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            await EraseAutomationsAsync(lifecycle, cancellationToken).ConfigureAwait(false);
         }
 
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         return needsErasure;
+    }
+
+    private static async Task EraseAutomationsAsync(NpgsqlCommand command, CancellationToken cancellationToken)
+    {
+        command.CommandText = DeleteAutomationRunsSql;
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        command.CommandText = DeleteAutomationsSql;
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task EraseDispatchAsync(NpgsqlCommand command, CancellationToken cancellationToken)

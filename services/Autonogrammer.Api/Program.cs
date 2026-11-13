@@ -304,6 +304,8 @@ try
 {
     app.Start();
     started = true;
+    // The migrations of this process ran in app.Start(); the backfill waits for the schema to reach the head, so a migrator elsewhere is awaited too.
+    await TenantBindingBackfill.RunAsync(app.Services, app.Lifetime.ApplicationStopping).ConfigureAwait(false);
     await app.WaitForShutdownAsync().ConfigureAwait(false);
 }
 finally

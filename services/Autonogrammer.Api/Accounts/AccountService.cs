@@ -9,6 +9,7 @@ using Autonogrammer.Contracts.Accounts;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Contracts.Catalog;
 using Autonogrammer.Contracts.Sessions;
+using Autonogrammer.Coordination;
 using Autonogrammer.Sessions;
 using Autonogrammer.Sessions.Postgres;
 using Microsoft.Extensions.Options;
@@ -88,35 +89,37 @@ internal sealed class PostgresAccountStore : IAccountStore
 
     private const string CountSql = "SELECT COUNT(*) FROM accounts";
 
+    private const string LifecycleStateSql = "SELECT state FROM account_lifecycle WHERE account_id = @id FOR SHARE";
+
     private readonly NpgsqlDataSource _dataSource;
+    private readonly ITenantHasher _tenants;
 
     /// <summary>Initializes a new instance of the <see cref="PostgresAccountStore"/> class.</summary>
     /// <param name="dataSource">The session-store data source. Its search path resolves <c>accounts</c>.</param>
-    public PostgresAccountStore(NpgsqlDataSource dataSource)
+    /// <param name="tenants">Hashes an account id into the tenant segment that its binding records.</param>
+    public PostgresAccountStore(NpgsqlDataSource dataSource, ITenantHasher tenants)
     {
         _dataSource = dataSource;
+        _tenants = tenants;
     }
 
     /// <inheritdoc />
     public async Task TouchAsync(string id, DateTimeOffset seenAt, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(id);
-        using (var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false))
+        using var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await AccountAdmission.EnsureRowAsync(connection, id, cancellationToken).ConfigureAwait(false);
+        using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        var active = await IsActiveAsync(connection, transaction, id, cancellationToken).ConfigureAwait(false);
+        using var command = new NpgsqlCommand(TouchSql, connection, transaction);
+        command.Parameters.AddWithValue("id", id);
+        command.Parameters.AddWithValue("seen", seenAt);
+        _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        if (active)
         {
-            await AccountAdmission.EnsureRowAsync(connection, id, cancellationToken).ConfigureAwait(false);
+            await AccountTenantBindings.EnsureAsync(connection, transaction, id, _tenants.HashTenant(id), cancellationToken).ConfigureAwait(false);
         }
-
-        var command = _dataSource.CreateCommand(TouchSql);
-        try
-        {
-            command.Parameters.AddWithValue("id", id);
-            command.Parameters.AddWithValue("seen", seenAt);
-            _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-        finally
-        {
-            await command.DisposeAsync().ConfigureAwait(false);
-        }
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -163,6 +166,18 @@ internal sealed class PostgresAccountStore : IAccountStore
         {
             await command.DisposeAsync().ConfigureAwait(false);
         }
+    }
+
+    private static async Task<bool> IsActiveAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string id,
+        CancellationToken cancellationToken)
+    {
+        using var command = new NpgsqlCommand(LifecycleStateSql, connection, transaction);
+        command.Parameters.AddWithValue("id", id);
+        var state = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) as string;
+        return string.Equals(state, "active", StringComparison.Ordinal);
     }
 }
 
@@ -289,7 +304,7 @@ internal static class AccountStoreRegistration
         services.AddSingleton<InMemoryAccountStore>();
         services.AddSingleton<IAccountStore>(static provider =>
             SessionsOptions.IsPostgresStore(provider.GetRequiredService<IOptions<SessionsOptions>>().Value.Store)
-                ? new PostgresAccountStore(provider.GetRequiredService<NpgsqlDataSource>())
+                ? new PostgresAccountStore(provider.GetRequiredService<NpgsqlDataSource>(), provider.GetRequiredService<ITenantHasher>())
                 : provider.GetRequiredService<InMemoryAccountStore>());
     }
 }

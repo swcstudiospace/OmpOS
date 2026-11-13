@@ -1,11 +1,14 @@
 using Autonogrammer.Api.Cloud;
 using Autonogrammer.Api.Cloud.Options;
+using Autonogrammer.Api.Options;
 using Autonogrammer.Api.Services.WorkspaceSettings;
 using Autonogrammer.Contracts.Automations;
 using Autonogrammer.Harness.Automations.Hosted;
+using Autonogrammer.Sessions.Postgres;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using Npgsql;
 
 namespace Autonogrammer.Api.Automations;
 
@@ -35,11 +38,9 @@ internal static class AutomationServiceRegistration
         services.AddHttpContextAccessor();
         services.AddSingleton<AutomationEndpointsMapped>();
 
-        services.TryAddSingleton<IAutomationStore>(static provider =>
-        {
-            var path = provider.GetRequiredService<IOptions<AutomationOptions>>().Value.StorePath;
-            return path.Length == 0 ? new InMemoryAutomationStore() : new FileAutomationStore(path);
-        });
+        // The automation store follows the session store: PostgreSQL when Sessions:Store is Postgres, so every replica shares one table; otherwise the file or memory store.
+        // The PostgreSQL store is built in SelectAutomationStore only when Sessions:Store is Postgres, at resolution time, so file and memory hosts never need its data source.
+        services.TryAddSingleton<IAutomationStore>(SelectAutomationStore);
         services.TryAddSingleton<IAutomationSecretStore>(static provider =>
         {
             var path = provider.GetRequiredService<IOptions<AutomationOptions>>().Value.SecretStorePath;
@@ -80,5 +81,21 @@ internal static class AutomationServiceRegistration
                 provider.GetRequiredKeyedService<IRateLimiterPolicy<string>>(AutomationApiRateLimiterPolicy.PolicyName));
         });
         return services;
+    }
+
+    /// <summary>Selects the automation store: PostgreSQL when the session store is Postgres, otherwise the file store, or memory when no store path is configured.</summary>
+    /// <param name="provider">The service provider.</param>
+    /// <returns>The automation store.</returns>
+    private static IAutomationStore SelectAutomationStore(IServiceProvider provider)
+    {
+        if (SessionsOptions.IsPostgresStore(provider.GetRequiredService<IOptions<SessionsOptions>>().Value.Store))
+        {
+            return new PostgresAutomationStore(
+                provider.GetRequiredService<NpgsqlDataSource>(),
+                provider.GetRequiredService<PostgresResilience>());
+        }
+
+        var path = provider.GetRequiredService<IOptions<AutomationOptions>>().Value.StorePath;
+        return path.Length == 0 ? new InMemoryAutomationStore() : new FileAutomationStore(path);
     }
 }

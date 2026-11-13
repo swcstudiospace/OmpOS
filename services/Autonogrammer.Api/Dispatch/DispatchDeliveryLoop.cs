@@ -49,8 +49,13 @@ internal sealed class DispatchDeliveryLoop
                     }
 
                     var frame = _signer.Sign(session.Owner, command, command.BodyJson, DispatchHandshake.NewNonce());
+                    var transition = await _store.TryTransitionAsync(session.Owner, command.CommandId, DispatchCommandState.Queued, DispatchCommandState.Delivered, null, cancellationToken).ConfigureAwait(false);
+                    if (transition.Status != DispatchTransitionStatus.Applied)
+                    {
+                        continue;
+                    }
+
                     await session.SendAsync(frame, DispatchJsonContext.Default.DispatchCmdFrame, cancellationToken).ConfigureAwait(false);
-                    _ = await _store.TryTransitionAsync(session.Owner, command.CommandId, DispatchCommandState.Queued, DispatchCommandState.Delivered, null, cancellationToken).ConfigureAwait(false);
                 }
 
                 await session.WaitForWorkAsync(Poll, cancellationToken).ConfigureAwait(false);
