@@ -8,6 +8,7 @@ using Autonogrammer.Api.Services;
 using Autonogrammer.Coordination;
 using Autonogrammer.Coordination.Dragonfly;
 using Autonogrammer.Resilience;
+using Autonogrammer.Sandbox;
 using Autonogrammer.Sessions.Postgres;
 using Npgsql;
 using StackExchange.Redis;
@@ -17,7 +18,7 @@ namespace Autonogrammer.Api.Operations;
 /// <summary>
 /// The <c>erase-account</c> verb of the API entry point: <c>dotnet Autonogrammer.Api.dll erase-account &lt;account-id&gt;</c> erases everything one account owns
 /// through <see cref="PostgresAccountErasure"/> (runtime role), then the account's tenant keys in Dragonfly when <c>Coordination:Store</c> is Dragonfly, then its workspace folder under <c>Api:Workspace:Root</c>,
-/// then the account's workspace folder on every worker of <c>Cloud:Environment:StaticPool:Workers</c>, each purged with a signed purge token.
+/// then the account's workspace folder on every worker of <c>Cloud:Environment:StaticPool:Workers</c> and, when <c>Cloud:Environment:Provider</c> is Railway, on every worker service Railway lists, each purged with a signed purge token.
 /// It is operator-only: it runs before the web host exists and no HTTP route reaches it. The operator token is read from the environment variable
 /// <c>AUTONOGRAMMER_OPERATOR_TOKEN</c>; its SHA-256 must equal the digest configured at <c>Api:Operator:TokenSha256</c> (environment form
 /// <c>AUTONOGRAMMER_OPERATOR_TOKEN_SHA256</c>). The check runs before any connection is opened.
@@ -200,11 +201,16 @@ internal static class EraseAccountCommand
         try
         {
             await EraseDataAsync(request, cancellationToken).ConfigureAwait(false);
-            var purged = await PurgeWorkersAsync(request, cancellationToken).ConfigureAwait(false);
-            await output.WriteLineAsync("Erased the account and its tenant keys.").ConfigureAwait(false);
-            if (purged > 0)
+            var purged = await PurgeWorkersAsync(request, error, cancellationToken).ConfigureAwait(false);
+            if (purged is null)
             {
-                await output.WriteLineAsync($"Purged the account's workspace from {purged} worker(s).").ConfigureAwait(false);
+                return Failed;
+            }
+
+            await output.WriteLineAsync("Erased the account and its tenant keys.").ConfigureAwait(false);
+            if (purged.Value > 0)
+            {
+                await output.WriteLineAsync($"Purged the account's workspace from {purged.Value} worker(s).").ConfigureAwait(false);
             }
 
             return Succeeded;
@@ -272,10 +278,11 @@ internal static class EraseAccountCommand
         }
     }
 
-    private static async Task<int> PurgeWorkersAsync(ErasureRequest request, CancellationToken cancellationToken)
+    private static async Task<int?> PurgeWorkersAsync(ErasureRequest request, TextWriter error, CancellationToken cancellationToken)
     {
         var workers = request.Cloud.Environment.StaticPool.Workers;
-        if (workers.Count == 0)
+        var railway = IsRailway(request.Cloud);
+        if (workers.Count == 0 && !railway)
         {
             return 0;
         }
@@ -289,7 +296,91 @@ internal static class EraseAccountCommand
             _ = await client.PurgeAsync(WorkerBaseUri(worker.BaseUri), ownerDir, cancellationToken).ConfigureAwait(false);
         }
 
-        return workers.Count;
+        if (!railway)
+        {
+            return workers.Count;
+        }
+
+        var discovered = await PurgeRailwayWorkersAsync(token => DiscoverRailwayWorkersAsync(request.Cloud, token), client, ownerDir, error, cancellationToken).ConfigureAwait(false);
+        return discovered is null ? (int?)null : workers.Count + discovered.Value;
+    }
+
+    private static bool IsRailway(CloudOptions cloud) =>
+        string.Equals(cloud.Environment.Provider, CloudOptions.EnvironmentSettings.RailwayProvider, StringComparison.OrdinalIgnoreCase);
+
+    private static async Task<IReadOnlyList<Uri>> DiscoverRailwayWorkersAsync(CloudOptions cloud, CancellationToken cancellationToken)
+    {
+        using var graphQl = new HttpClient { Timeout = PurgeTimeout };
+        using var probe = new HttpClient { Timeout = PurgeTimeout };
+        var client = new RailwayCloudEnvironmentClient(graphQl, probe, RailwayAccess(cloud.Environment.Railway), TimeProvider.System);
+        return await client.ListWorkerBaseUrisAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private static RailwayCloudEnvironmentOptions RailwayAccess(CloudOptions.RailwaySettings railway)
+    {
+        var options = new RailwayCloudEnvironmentOptions
+        {
+            ApiToken = railway.ApiToken,
+            ProjectId = railway.ProjectId,
+            EnvironmentId = railway.EnvironmentId,
+            Image = railway.Image,
+        };
+        if (!string.IsNullOrWhiteSpace(railway.Endpoint))
+        {
+            options.Endpoint = new Uri(railway.Endpoint);
+        }
+
+        return options;
+    }
+
+    /// <summary>
+    /// Purges the account's folder on every Railway worker that <paramref name="discover"/> returns. Every worker is tried; a worker that fails is named by its
+    /// authority and counted, so erasure fails when discovery or any purge failed and a re-run retries it.
+    /// </summary>
+    /// <param name="discover">Lists the worker base addresses.</param>
+    /// <param name="client">Sends each purge.</param>
+    /// <param name="ownerDir">The account's workspace directory name.</param>
+    /// <param name="error">Receives one line per failure; it names the host and exception type only.</param>
+    /// <param name="cancellationToken">Cancels the run.</param>
+    /// <returns>The number of workers purged, or null when discovery or any purge failed.</returns>
+    internal static async Task<int?> PurgeRailwayWorkersAsync(
+        Func<CancellationToken, Task<IReadOnlyList<Uri>>> discover,
+        WorkerPurgeClient client,
+        string ownerDir,
+        TextWriter error,
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyList<Uri> workers;
+        try
+        {
+            workers = await discover(cancellationToken).ConfigureAwait(false);
+        }
+        catch (CloudEnvironmentException ex)
+        {
+            await error.WriteLineAsync($"The {Verb} verb could not list the Railway workers: {ex.Failure}.").ConfigureAwait(false);
+            return null;
+        }
+        catch (Exception ex) when (ex is ArgumentException or FormatException)
+        {
+            await error.WriteLineAsync($"The {Verb} verb could not build the Railway client from Cloud:Environment:Railway: {ex.GetType().Name}.").ConfigureAwait(false);
+            return null;
+        }
+
+        var failed = 0;
+        foreach (var worker in workers)
+        {
+            try
+            {
+                _ = await client.PurgeAsync(worker, ownerDir, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is WorkerPurgeException or HttpRequestException)
+            {
+                failed++;
+                await error.WriteLineAsync($"The {Verb} verb could not purge the account's workspace on worker {worker.Authority}: {ex.GetType().Name}.").ConfigureAwait(false);
+            }
+        }
+
+        return failed == 0 ? workers.Count : (int?)null;
     }
 
     private static Uri WorkerBaseUri(string baseUri) =>

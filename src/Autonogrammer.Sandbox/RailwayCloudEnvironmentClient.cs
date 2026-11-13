@@ -114,6 +114,33 @@ public sealed class RailwayCloudEnvironmentClient : ICloudEnvironmentClient
         return state.Report(serviceId, sessionId, phase, WorkerBaseUri(label));
     }
 
+    /// <summary>
+    /// Lists the base address of every platform worker service in the project: each service whose name starts with
+    /// <see cref="RailwayCloudEnvironmentOptions.ServiceNamePrefix"/>. The address is the private-network address
+    /// <see cref="WorkerBaseUri"/> derives for the worker, so it is reachable only inside the Railway project.
+    /// </summary>
+    /// <remarks>
+    /// Uses the verified <c>projectServices</c> query, which is project-wide and not filtered by environment, the same as
+    /// <see cref="FindContainerAsync"/>.
+    /// </remarks>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The base address of each platform worker; empty when the project has none.</returns>
+    /// <exception cref="CloudEnvironmentException">The services could not be listed; see <see cref="CloudEnvironmentException.Failure"/>.</exception>
+    public async Task<IReadOnlyList<Uri>> ListWorkerBaseUrisAsync(CancellationToken cancellationToken = default)
+    {
+        var prefix = _options.ServiceNamePrefix;
+        var uris = new List<Uri>();
+        foreach (var node in await ListServicesAsync(cancellationToken).ConfigureAwait(false))
+        {
+            if (node.Name is { Length: > 0 } name && name.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                uris.Add(WorkerBaseUri(name));
+            }
+        }
+
+        return uris;
+    }
+
     /// <inheritdoc />
     /// <remarks>
     /// Idempotent by label. A new service is created from the image, gets its variables (with deploys skipped), its instance
