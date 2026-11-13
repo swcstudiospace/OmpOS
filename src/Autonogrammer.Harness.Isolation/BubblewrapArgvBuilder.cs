@@ -1,14 +1,16 @@
 namespace Autonogrammer.Harness.Isolation;
 
 /// <summary>
-/// Builds the bubblewrap argument vector. Mount order carries the precedence: the read-only root first, then the explicit
-/// binds (read-write grants, scratch, state, then read-only grants), then the deny masks, so a deny nested under a grant
-/// wins. An explicit bind nested under a deny target is emitted after that mask, so only an explicit grant reopens a
-/// denied path. The root is never overlaid with a writable tmpfs, so a write outside a grant, scratch or state directory
-/// is refused. A deny target that is a file (the docker socket paths) is masked with a read-only <c>/dev/null</c> bind
-/// because tmpfs needs a directory. Every bind is a complete source and destination pair; a grant that cannot be
-/// expressed as one is rejected with <see cref="MalformedArgvException"/>, never emitted. It does not start a process.
-/// The environment scrub lives here so both OS wrappers apply the same names after the engine environment policy.
+/// Builds the bubblewrap argument vector. Mount order carries the precedence: the read-only root, then a fresh
+/// <c>/dev</c> and <c>/proc</c>, then a fresh writable <c>/tmp</c> tmpfs (never the host <c>/tmp</c>), then the explicit binds sorted by destination depth so an ancestor always mounts before
+/// its descendant (a read-only ancestor before a writable descendant, and the reverse), then the deny masks, and last the
+/// explicit binds that sit under a deny, so only an explicit grant reopens a denied path. The root is never overlaid with
+/// a writable tmpfs except <c>/tmp</c>, so a write outside a grant, scratch, state directory or <c>/tmp</c> is refused. A deny target that is a file (the
+/// docker socket paths) is masked with a read-only <c>/dev/null</c> bind because tmpfs needs a directory. Every bind is a
+/// complete source and destination pair; a grant that cannot be expressed as one, or that names the root, <c>/home</c>,
+/// an ancestor of the home directory, or a system mount, is rejected with <see cref="MalformedArgvException"/>, never
+/// emitted. It does not start a process. The environment scrub lives here so both OS wrappers apply the same names after
+/// the engine environment policy.
 /// </summary>
 public static class BubblewrapArgvBuilder
 {
@@ -24,11 +26,16 @@ public static class BubblewrapArgvBuilder
     /// <summary>The null device bound read-only over socket file targets the child must not reach.</summary>
     public const string SocketMaskSource = "/dev/null";
 
+    private static readonly string[] SystemMountRoots = ["/dev", "/proc", "/sys"];
+
+    /// <summary>The sandbox's writable tmpfs. It is always a fresh tmpfs, never a bind of the host directory.</summary>
+    private const string TmpPath = "/tmp";
+
     /// <summary>Builds the canonical confinement arguments for <paramref name="policy"/>, without the intended command.</summary>
-    /// <param name="policy">The session policy. Read-only grants are re-bound read-only after read-write binds.</param>
+    /// <param name="policy">The session policy. Binds are sorted by depth; a deny mask follows every bind outside the deny.</param>
     /// <returns>The argument vector, one element each, in the golden order.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="policy"/> is null.</exception>
-    /// <exception cref="MalformedArgvException">A grant, scratch, state or home path is not a complete absolute path.</exception>
+    /// <exception cref="MalformedArgvException">A grant, scratch, state or home path is not a complete absolute path, or names a forbidden mount.</exception>
     public static IReadOnlyList<string> Build(IsolationPolicy policy)
     {
         ArgumentNullException.ThrowIfNull(policy);
@@ -37,14 +44,14 @@ public static class BubblewrapArgvBuilder
         var argv = new List<string>
         {
             "--ro-bind", "/", "/",
+            "--dev", "/dev",
+            "--proc", "/proc",
+            "--tmpfs", TmpPath,
         };
 
-        foreach (var bind in binds)
+        foreach (var bind in ByDepth(binds.Where(candidate => !IsUnderAny(candidate.Target, denies))))
         {
-            if (!IsUnderAny(bind.Target, denies))
-            {
-                AddBind(argv, bind);
-            }
+            AddBind(argv, bind);
         }
 
         foreach (var denied in denies)
@@ -53,18 +60,11 @@ public static class BubblewrapArgvBuilder
             argv.Add(denied);
         }
 
-        foreach (var bind in binds)
+        foreach (var bind in ByDepth(binds.Where(candidate => IsUnderAny(candidate.Target, denies))))
         {
-            if (IsUnderAny(bind.Target, denies))
-            {
-                AddBind(argv, bind);
-            }
+            AddBind(argv, bind);
         }
 
-        argv.Add("--dev");
-        argv.Add("/dev");
-        argv.Add("--proc");
-        argv.Add("/proc");
         argv.Add("--unshare-pid");
         argv.Add("--unshare-ipc");
         argv.Add("--unshare-uts");
@@ -74,17 +74,28 @@ public static class BubblewrapArgvBuilder
     }
 
     /// <summary>
-    /// Verifies that the canonical argument vector for <paramref name="policy"/> is complete and keeps its precedence:
-    /// every read-write grant has a complete bind pair, every deny target and socket is masked, and each bind and mask
-    /// that nest are ordered so the later argument wins. It checks argument shape only and does not look at the host.
+    /// Verifies that the argument vector that will launch for <paramref name="policy"/> is complete and keeps its
+    /// precedence. The vector checked is <see cref="AdaptToHost(IsolationPolicy, IReadOnlyList{string})"/> applied to
+    /// <see cref="Build"/>, computed without creating any missing state directory, so the check has no side effect and
+    /// the launched vector is the same one. Every read-write grant has a complete bind pair; every deny target present on
+    /// this host is masked; each ancestor bind precedes its descendants; and no bind that sits under a deny precedes it.
     /// </summary>
     /// <param name="policy">The session policy to verify.</param>
     /// <exception cref="ArgumentNullException"><paramref name="policy"/> is null.</exception>
-    /// <exception cref="MalformedArgvException">The policy does not produce a complete, correctly ordered argument vector.</exception>
+    /// <exception cref="MalformedArgvException">The policy does not produce a complete, correctly ordered argument vector on this host.</exception>
     public static void Verify(IsolationPolicy policy)
     {
         ArgumentNullException.ThrowIfNull(policy);
-        var mounts = ParseMounts(Build(policy));
+        VerifyAdapted(policy, AdaptForVerification(policy));
+    }
+
+    /// <summary>Verifies one argument vector already adapted to the host for <paramref name="policy"/>. This is the vector a launch passes to bubblewrap.</summary>
+    /// <param name="policy">The session policy the vector was adapted from.</param>
+    /// <param name="adapted">The host-adapted argument vector.</param>
+    /// <exception cref="MalformedArgvException">The vector omits a grant or mask, or orders a bind against its ancestor or its deny.</exception>
+    internal static void VerifyAdapted(IsolationPolicy policy, IReadOnlyList<string> adapted)
+    {
+        var mounts = ParseMounts(adapted);
         foreach (var grant in policy.Grants)
         {
             if (grant.ReadWrite)
@@ -95,11 +106,22 @@ public static class BubblewrapArgvBuilder
 
         foreach (var denied in DenyTargets(policy))
         {
-            RequireMount(mounts, "--tmpfs", denied);
+            if (IsPresent(denied))
+            {
+                RequireMask(mounts, ResolveHostPath(denied));
+            }
         }
 
+        RequireAncestorOrder(mounts);
         RequireDenyPrecedence(mounts);
+        RequireTmpfsTmp(mounts);
+        RequireNoHostTmpBind(policy, mounts);
     }
+
+    /// <summary>The deny targets for <paramref name="policy"/> in canonical order, for the session canary to check from inside the sandbox.</summary>
+    /// <param name="policy">The session policy.</param>
+    /// <returns>Absolute paths, one per deny target.</returns>
+    internal static IReadOnlyList<string> MaskTargets(IsolationPolicy policy) => DenyTargets(policy);
 
     /// <summary>
     /// Resolves a symlinked parent directory on this host (for example <c>/var/run</c> to <c>/run</c>), so a mask names
@@ -121,20 +143,54 @@ public static class BubblewrapArgvBuilder
 
     /// <summary>
     /// Adapts the canonical argv to one host at launch time. Deny targets that do not exist are skipped (nothing to
-    /// hide), a deny target that is a file becomes a <see cref="SocketMaskSource"/> bind (tmpfs needs a directory),
-    /// and a read-only grant that does not exist is skipped because the read-only root already shows nothing. A
-    /// read-write grant or scratch source that does not exist fails closed: the session cannot satisfy its own policy.
-    /// A missing omp state directory (<c>~/.omp</c>, <c>PI_CODING_AGENT_DIR</c>) is created first, as omp itself does on its first run.
+    /// hide), a directory deny becomes a tmpfs on its resolved path, a deny target that is a file becomes a
+    /// <see cref="SocketMaskSource"/> bind (tmpfs needs a directory), and a read-only grant that does not exist is skipped
+    /// because the read-only root already shows nothing. A read-write grant or scratch source that does not exist fails
+    /// closed. A missing omp state directory (<c>~/.omp</c>, <c>PI_CODING_AGENT_DIR</c>) is created first, as omp itself does on its first run.
     /// </summary>
     /// <param name="policy">The same session policy <see cref="Build"/> received.</param>
     /// <param name="argv">The canonical argv to adapt.</param>
     /// <returns>A new argv list. The input is not modified.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="policy"/> or <paramref name="argv"/> is null.</exception>
     /// <exception cref="MalformedArgvException">An option is unknown, or a bind or mask lacks a complete absolute operand.</exception>
+    /// <exception cref="InvalidOperationException">A read-write bind source is missing on this host.</exception>
     public static IReadOnlyList<string> AdaptToHost(IsolationPolicy policy, IReadOnlyList<string> argv)
     {
         ArgumentNullException.ThrowIfNull(policy);
         ArgumentNullException.ThrowIfNull(argv);
+        return Adapt(policy, argv, createStateDirectories: true);
+    }
+
+    /// <summary>Copies <paramref name="environment"/> and sets the scrubbed names to null so the transport unsets them.</summary>
+    /// <param name="environment">The environment the engine policy already applied.</param>
+    /// <returns>A new dictionary. The input is not modified.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="environment"/> is null.</exception>
+    public static IReadOnlyDictionary<string, string?> Scrub(IReadOnlyDictionary<string, string?> environment)
+    {
+        ArgumentNullException.ThrowIfNull(environment);
+        var scrubbed = new Dictionary<string, string?>(environment, StringComparer.Ordinal);
+        foreach (var name in ScrubbedNames)
+        {
+            scrubbed[name] = null;
+        }
+
+        return scrubbed;
+    }
+
+    private static List<string> AdaptForVerification(IsolationPolicy policy)
+    {
+        try
+        {
+            return Adapt(policy, Build(policy), createStateDirectories: false);
+        }
+        catch (InvalidOperationException exception) when (exception is not MalformedArgvException)
+        {
+            throw new MalformedArgvException(exception.Message, exception);
+        }
+    }
+
+    private static List<string> Adapt(IsolationPolicy policy, IReadOnlyList<string> argv, bool createStateDirectories)
+    {
         _ = ParseMounts(argv);
         var adapted = new List<string>(argv.Count);
         for (var i = 0; i < argv.Count; i++)
@@ -142,29 +198,14 @@ public static class BubblewrapArgvBuilder
             switch (argv[i])
             {
                 case "--tmpfs":
-                    {
-                        var target = argv[++i];
-                        if (Directory.Exists(target))
-                        {
-                            adapted.Add("--tmpfs");
-                            adapted.Add(target);
-                        }
-                        else if (File.Exists(target))
-                        {
-                            adapted.Add("--ro-bind");
-                            adapted.Add(SocketMaskSource);
-                            adapted.Add(ResolveHostPath(target));
-                        }
-
-                        break;
-                    }
+                    AdaptDenyMask(adapted, argv[++i]);
+                    break;
 
                 case "--bind":
                     {
                         var source = argv[++i];
                         var destination = argv[++i];
-                        EnsureStateDirectory(policy, source);
-                        AdaptBind(adapted, source, destination);
+                        AdaptBind(policy, adapted, source, destination, createStateDirectories);
                         break;
                     }
 
@@ -191,21 +232,46 @@ public static class BubblewrapArgvBuilder
         return adapted;
     }
 
-    /// <summary>Copies <paramref name="environment"/> and sets the scrubbed names to null so the transport unsets them.</summary>
-    /// <param name="environment">The environment the engine policy already applied.</param>
-    /// <returns>A new dictionary. The input is not modified.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="environment"/> is null.</exception>
-    public static IReadOnlyDictionary<string, string?> Scrub(IReadOnlyDictionary<string, string?> environment)
+    private static void AdaptDenyMask(List<string> adapted, string target)
     {
-        ArgumentNullException.ThrowIfNull(environment);
-        var scrubbed = new Dictionary<string, string?>(environment, StringComparer.Ordinal);
-        foreach (var name in ScrubbedNames)
+        if (Directory.Exists(target))
         {
-            scrubbed[name] = null;
+            adapted.Add("--tmpfs");
+            adapted.Add(ResolveHostPath(target));
+        }
+        else if (File.Exists(target))
+        {
+            adapted.Add("--ro-bind");
+            adapted.Add(SocketMaskSource);
+            adapted.Add(ResolveHostPath(target));
+        }
+    }
+
+    private static void AdaptBind(IsolationPolicy policy, List<string> adapted, string source, string destination, bool createStateDirectories)
+    {
+        if (!Directory.Exists(source))
+        {
+            if (!IsStateDirectory(policy, source))
+            {
+                throw new InvalidOperationException(
+                    $"Isolation policy requires an existing directory for the write bind, but '{source}' does not exist on this host.");
+            }
+
+            if (createStateDirectories)
+            {
+                Directory.CreateDirectory(source);
+            }
         }
 
-        return scrubbed;
+        adapted.Add("--bind");
+        adapted.Add(source);
+        adapted.Add(destination);
     }
+
+    private static bool IsStateDirectory(IsolationPolicy policy, string source) =>
+        policy.StateDirectories().Contains(source, StringComparer.Ordinal);
+
+    private static bool IsPresent(string path) => Directory.Exists(path) || File.Exists(path);
 
     private static List<ExplicitBind> ExplicitBinds(IsolationPolicy policy)
     {
@@ -214,25 +280,25 @@ public static class BubblewrapArgvBuilder
         {
             if (grant.ReadWrite)
             {
-                binds.Add(new ExplicitBind("--bind", RequireAbsolute(grant.Path, "read-write grant")));
+                binds.Add(new ExplicitBind("--bind", RequireBindable(policy, grant.Path, "read-write grant")));
             }
         }
 
         if (!string.IsNullOrWhiteSpace(policy.ScratchDirectory))
         {
-            binds.Add(new ExplicitBind("--bind", RequireAbsolute(policy.ScratchDirectory, "scratch directory")));
+            binds.Add(new ExplicitBind("--bind", RequireBindable(policy, policy.ScratchDirectory, "scratch directory")));
         }
 
         foreach (var state in policy.StateDirectories())
         {
-            binds.Add(new ExplicitBind("--bind", RequireAbsolute(state, "state directory")));
+            binds.Add(new ExplicitBind("--bind", RequireBindable(policy, state, "state directory")));
         }
 
         foreach (var grant in policy.Grants)
         {
             if (!grant.ReadWrite)
             {
-                binds.Add(new ExplicitBind("--ro-bind", RequireAbsolute(grant.Path, "read-only grant")));
+                binds.Add(new ExplicitBind("--ro-bind", RequireBindable(policy, grant.Path, "read-only grant")));
             }
         }
 
@@ -249,6 +315,27 @@ public static class BubblewrapArgvBuilder
 
         denies.AddRange(IsolationDeniedDirectories.SocketLocations);
         return denies;
+    }
+
+    private static IEnumerable<ExplicitBind> ByDepth(IEnumerable<ExplicitBind> binds) =>
+        binds.OrderBy(bind => Depth(bind.Target));
+
+    private static int Depth(string path) => path.TrimEnd('/').Count(character => character == '/');
+
+    private static string RequireBindable(IsolationPolicy policy, string? path, string role)
+    {
+        var absolute = RequireAbsolute(path, role);
+        var normalized = absolute.TrimEnd('/');
+        var isRoot = normalized.Length == 0;
+        var isHome = string.Equals(normalized, "/home", StringComparison.Ordinal);
+        var isHomeAncestor = !string.IsNullOrWhiteSpace(policy.HomeDirectory) && IsStrictlyWithin(policy.HomeDirectory, absolute);
+        if (isRoot || isHome || isHomeAncestor || IsUnderAny(absolute, SystemMountRoots))
+        {
+            throw new MalformedArgvException(
+                $"The {role} '{absolute}' is the root, /home, an ancestor of the home directory, or a system mount and cannot be bound; the session cannot be confined as its policy states.");
+        }
+
+        return absolute;
     }
 
     private static string RequireAbsolute(string? path, string role)
@@ -271,27 +358,6 @@ public static class BubblewrapArgvBuilder
         argv.Add(bind.Option);
         argv.Add(bind.Target);
         argv.Add(bind.Target);
-    }
-
-    private static void EnsureStateDirectory(IsolationPolicy policy, string source)
-    {
-        if (!Directory.Exists(source) && policy.StateDirectories().Contains(source, StringComparer.Ordinal))
-        {
-            Directory.CreateDirectory(source);
-        }
-    }
-
-    private static void AdaptBind(List<string> adapted, string source, string destination)
-    {
-        if (!Directory.Exists(source))
-        {
-            throw new InvalidOperationException(
-                $"Isolation policy requires an existing directory for the write bind, but '{source}' does not exist on this host.");
-        }
-
-        adapted.Add("--bind");
-        adapted.Add(source);
-        adapted.Add(destination);
     }
 
     private static List<ParsedMount> ParseMounts(IReadOnlyList<string> argv)
@@ -345,6 +411,11 @@ public static class BubblewrapArgvBuilder
         return argv[index];
     }
 
+    private static bool IsMask(ParsedMount mount) =>
+        string.Equals(mount.Option, "--tmpfs", StringComparison.Ordinal)
+        || (string.Equals(mount.Option, "--ro-bind", StringComparison.Ordinal)
+            && string.Equals(mount.Source, SocketMaskSource, StringComparison.Ordinal));
+
     private static void RequireMount(IReadOnlyList<ParsedMount> mounts, string option, string path)
     {
         var found = mounts.Any(mount =>
@@ -357,11 +428,39 @@ public static class BubblewrapArgvBuilder
         }
     }
 
+    private static void RequireMask(IReadOnlyList<ParsedMount> mounts, string destination)
+    {
+        var found = mounts.Any(mount =>
+            IsMask(mount) && string.Equals(mount.Destination, destination, StringComparison.Ordinal));
+        if (!found)
+        {
+            throw new MalformedArgvException(
+                $"'{destination}' is not masked by a --tmpfs directory or a read-only /dev/null bind in the argument vector.");
+        }
+    }
+
+    private static void RequireAncestorOrder(IReadOnlyList<ParsedMount> mounts)
+    {
+        var binds = mounts.Where(mount => !IsMask(mount)).ToList();
+        foreach (var ancestor in binds)
+        {
+            foreach (var descendant in binds)
+            {
+                if (IsStrictlyWithin(descendant.Destination, ancestor.Destination) && descendant.Index < ancestor.Index)
+                {
+                    throw new MalformedArgvException(
+                        $"Bind '{descendant.Destination}' is ordered before its ancestor bind '{ancestor.Destination}', so the ancestor would hide the descendant.");
+                }
+            }
+        }
+    }
+
     private static void RequireDenyPrecedence(IReadOnlyList<ParsedMount> mounts)
     {
-        foreach (var mask in mounts.Where(mount => string.Equals(mount.Option, "--tmpfs", StringComparison.Ordinal)))
+        var binds = mounts.Where(mount => !IsMask(mount)).ToList();
+        foreach (var mask in mounts.Where(IsMask))
         {
-            foreach (var bind in mounts.Where(mount => !string.Equals(mount.Option, "--tmpfs", StringComparison.Ordinal)))
+            foreach (var bind in binds)
             {
                 if (IsWithin(bind.Destination, mask.Destination) && bind.Index < mask.Index)
                 {
@@ -376,6 +475,46 @@ public static class BubblewrapArgvBuilder
                 }
             }
         }
+    }
+
+    private static void RequireTmpfsTmp(IReadOnlyList<ParsedMount> mounts)
+    {
+        var count = mounts.Count(mount =>
+            string.Equals(mount.Option, "--tmpfs", StringComparison.Ordinal)
+            && string.Equals(mount.Destination, TmpPath, StringComparison.Ordinal));
+        if (count != 1)
+        {
+            throw new MalformedArgvException(
+                $"'{TmpPath}' must be mounted by exactly one fresh --tmpfs in the argument vector; found {count}.");
+        }
+    }
+
+    private static void RequireNoHostTmpBind(IsolationPolicy policy, IReadOnlyList<ParsedMount> mounts)
+    {
+        var named = NamedBindPaths(policy);
+        foreach (var bind in mounts.Where(candidate => !IsMask(candidate)))
+        {
+            var touchesTmp = IsWithin(bind.Source, TmpPath) || IsWithin(bind.Destination, TmpPath);
+            var isNamedGrant = string.Equals(bind.Source, bind.Destination, StringComparison.Ordinal)
+                && named.Contains(bind.Source, StringComparer.Ordinal);
+            if (touchesTmp && !isNamedGrant)
+            {
+                throw new MalformedArgvException(
+                    $"Bind '{bind.Source}' to '{bind.Destination}' touches {TmpPath}, which may only be the fresh tmpfs or an explicit grant the policy names; the host {TmpPath} must not be bound.");
+            }
+        }
+    }
+
+    private static List<string> NamedBindPaths(IsolationPolicy policy)
+    {
+        var paths = policy.Grants.Select(grant => grant.Path).ToList();
+        if (!string.IsNullOrWhiteSpace(policy.ScratchDirectory))
+        {
+            paths.Add(policy.ScratchDirectory);
+        }
+
+        paths.AddRange(policy.StateDirectories());
+        return paths;
     }
 
     private static bool IsUnderAny(string path, IReadOnlyList<string> roots)

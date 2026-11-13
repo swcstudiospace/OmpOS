@@ -1,3 +1,4 @@
+using Autonogrammer.Harness.Isolation.Tests.Support;
 using Shouldly;
 using Xunit;
 
@@ -7,7 +8,7 @@ namespace Autonogrammer.Harness.Isolation.Tests;
 public sealed class BubblewrapArgvBuilderTests
 {
     /// <summary>One read-write grant plus scratch produces the golden vector, a read-only grant is re-bound after the
-    /// read-write binds, and no writable tmpfs overlays /tmp, so a write outside a grant is refused.</summary>
+    /// read-write binds, and /tmp is a fresh writable tmpfs, so a write outside a grant, scratch, state directory or /tmp is refused.</summary>
     [Fact]
     public void GoldenArgvMatchesTheFixture()
     {
@@ -23,14 +24,32 @@ public sealed class BubblewrapArgvBuilderTests
 
         var firstBind = OrdinalIndexOf(argv, "--bind");
         firstBind.ShouldBeGreaterThanOrEqualTo(0);
-        argv.ShouldNotContain("/tmp", StringComparer.Ordinal);
-        OrdinalIndexOf(argv, "--tmpfs").ShouldBeGreaterThan(firstBind);
+        MountIndex(argv, "--tmpfs", "/tmp").ShouldBeGreaterThanOrEqualTo(0);
+        MountIndex(argv, "--tmpfs", "/tmp").ShouldBeLessThan(firstBind);
+        MountIndex(argv, "--tmpfs", "/home/ada/.ssh").ShouldBeGreaterThan(firstBind);
 
         var readOnlyGrant = OrdinalIndexOf(argv, "/home/ada/notes");
         var lastReadWriteBind = OrdinalLastIndexOf(argv, "/opt/pi-agent");
         readOnlyGrant.ShouldBeGreaterThanOrEqualTo(0);
         readOnlyGrant.ShouldBeGreaterThan(lastReadWriteBind);
         argv[readOnlyGrant - 1].ShouldBe("--ro-bind", StringComparer.Ordinal);
+    }
+
+    /// <summary>The argv mounts a fresh writable tmpfs on /tmp, and no bind takes the host /tmp as its source.</summary>
+    [Fact]
+    public void TmpIsAFreshTmpfsAndTheHostTmpIsNeverBound()
+    {
+        var argv = BubblewrapArgvBuilder.Build(GoldenPolicy());
+
+        MountIndex(argv, "--tmpfs", "/tmp").ShouldBeGreaterThanOrEqualTo(0);
+        for (var i = 0; i + 1 < argv.Count; i++)
+        {
+            if (string.Equals(argv[i], "--bind", StringComparison.Ordinal)
+                || string.Equals(argv[i], "--ro-bind", StringComparison.Ordinal))
+            {
+                argv[i + 1].ShouldNotBe("/tmp", StringComparer.Ordinal);
+            }
+        }
     }
 
     /// <summary>Absent deny targets are dropped, an existing deny target is kept, and a file deny target becomes a
@@ -214,6 +233,7 @@ public sealed class BubblewrapArgvBuilderTests
         using var fixture = new TempIsolationFixture();
         var sshMask = Path.Combine(fixture.Home, ".ssh");
         var nested = Path.Combine(sshMask, "work");
+        Directory.CreateDirectory(nested);
         var policy = IsolationPolicy.ForCowork(fixture.Home, fixture.ScratchPath, [new IsolationGrant(nested, true)]);
 
         var argv = BubblewrapArgvBuilder.Build(policy);
@@ -287,6 +307,135 @@ public sealed class BubblewrapArgvBuilderTests
             .ShouldBe(new IsolationProbeOutcome(IsolationLevel.None, IsolationProbeOutcome.PolicyUnverified));
         IsolationProbeOutcome.Succeeded.ForVerifiedPolicy(true).ShouldBe(IsolationProbeOutcome.Succeeded);
         degraded.ForVerifiedPolicy(true).ShouldBe(degraded);
+    }
+
+    /// <summary>A read-write grant equal to a denied path is reopened after its mask, as an explicit grant.</summary>
+    [Fact]
+    public void EqualWriteGrantUnderADenyIsReopenedAfterTheMask()
+    {
+        using var fixture = new TempIsolationFixture();
+        var sshMask = Path.Combine(fixture.Home, ".ssh");
+        var policy = IsolationPolicy.ForCowork(fixture.Home, fixture.ScratchPath, [new IsolationGrant(sshMask, true)]);
+
+        var argv = BubblewrapArgvBuilder.Build(policy);
+
+        var mask = MountIndex(argv, "--tmpfs", sshMask);
+        mask.ShouldBeGreaterThanOrEqualTo(0);
+        MountIndex(argv, "--bind", sshMask).ShouldBeGreaterThan(mask);
+        BubblewrapArgvBuilder.Verify(policy);
+    }
+
+    /// <summary>An ancestor bind mounts before its descendant whatever their kinds: a read-only ancestor before a writable child, and a writable parent before a read-only child.</summary>
+    [Fact]
+    public void BindsMountAncestorsBeforeDescendantsWhateverTheirKind()
+    {
+        using var fixture = new TempIsolationFixture();
+        var ancestor = Path.Combine(fixture.Root, "tree");
+        var writableChild = Path.Combine(ancestor, "out");
+        var readOnlyChild = Path.Combine(ancestor, "ro");
+        var readOnlyAncestor = IsolationPolicy.ForCowork(
+            fixture.Home,
+            fixture.ScratchPath,
+            [new IsolationGrant(writableChild, true), new IsolationGrant(ancestor, false)]);
+        var writableAncestor = IsolationPolicy.ForCowork(
+            fixture.Home,
+            fixture.ScratchPath,
+            [new IsolationGrant(ancestor, true), new IsolationGrant(readOnlyChild, false)]);
+
+        var roArgv = BubblewrapArgvBuilder.Build(readOnlyAncestor);
+        var rwArgv = BubblewrapArgvBuilder.Build(writableAncestor);
+
+        MountIndex(roArgv, "--bind", writableChild).ShouldBeGreaterThan(MountIndex(roArgv, "--ro-bind", ancestor));
+        MountIndex(rwArgv, "--ro-bind", readOnlyChild).ShouldBeGreaterThan(MountIndex(rwArgv, "--bind", ancestor));
+    }
+
+    /// <summary>The root, /home, and any ancestor of the home directory are refused as grants.</summary>
+    [Fact]
+    public void GrantsOfRootHomeOrHomeAncestorsAreRefused()
+    {
+        using var fixture = new TempIsolationFixture();
+        foreach (var grant in new[] { "/", "/home", fixture.Root })
+        {
+            var policy = IsolationPolicy.ForCowork(fixture.Home, fixture.ScratchPath, [new IsolationGrant(grant, true)]);
+
+            Should.Throw<MalformedArgvException>(() => BubblewrapArgvBuilder.Build(policy));
+            Should.Throw<MalformedArgvException>(() => BubblewrapArgvBuilder.Verify(policy));
+        }
+    }
+
+    /// <summary>A grant under a system mount that --dev or --proc replaces is refused.</summary>
+    [Fact]
+    public void SystemMountGrantsAreRefused()
+    {
+        using var fixture = new TempIsolationFixture();
+        var policy = IsolationPolicy.ForCowork(fixture.Home, fixture.ScratchPath, [new IsolationGrant("/dev/shm/autonogrammer", true)]);
+
+        var error = Should.Throw<MalformedArgvException>(() => BubblewrapArgvBuilder.Build(policy));
+
+        error.Message.ShouldContain("/dev/shm/autonogrammer");
+    }
+
+    /// <summary>Verification checks the vector that launches: a vector missing a deny mask fails, and the adapted vector passes.</summary>
+    [Fact]
+    public void VerifyChecksTheLaunchedVectorNotTheCanonicalOne()
+    {
+        using var fixture = new TempIsolationFixture();
+        var policy = fixture.CoworkPolicy();
+        var sshMask = Path.Combine(fixture.Home, ".ssh");
+        var adapted = BubblewrapArgvBuilder.AdaptToHost(policy, BubblewrapArgvBuilder.Build(policy)).ToList();
+        var mask = MountIndex(adapted, "--tmpfs", sshMask);
+        mask.ShouldBeGreaterThanOrEqualTo(0);
+        adapted.RemoveRange(mask, 2);
+
+        Should.Throw<MalformedArgvException>(() => BubblewrapArgvBuilder.VerifyAdapted(policy, adapted));
+        BubblewrapArgvBuilder.VerifyAdapted(policy, BubblewrapArgvBuilder.AdaptToHost(policy, BubblewrapArgvBuilder.Build(policy)));
+        BubblewrapArgvBuilder.Verify(policy);
+    }
+
+    /// <summary>A session canary that fails leaves the session at level None with session_policy_unenforced, and the planner asks for consent.</summary>
+    [Fact]
+    public async Task FailedSessionCanaryDegradesToUnenforcedAndNeedsConsent()
+    {
+        using var fixture = new TempIsolationFixture();
+        var policy = fixture.CoworkPolicy();
+        var runner = new FakeProcessRunner
+        {
+            Handler = (_, arguments, _) => Task.FromResult(
+                arguments.Contains("/bin/sh", StringComparer.Ordinal)
+                    ? new IsolationProcessRun(1, string.Empty, false, false)
+                    : new IsolationProcessRun(0, "bwrap 0.9.0", false, false)),
+        };
+        var probe = new IsolationProbe(runner, "linux-x64", TimeSpan.FromSeconds(5));
+
+        var outcome = await probe.ProbeSessionAsync(policy, CancellationToken.None).ConfigureAwait(true);
+        var decision = IsolationPlanner.Decide(policy, outcome, false);
+
+        outcome.AchievedLevel.ShouldBe(IsolationLevel.None);
+        outcome.DegradedCode.ShouldBe(IsolationProbeOutcome.SessionPolicyUnenforced);
+        decision.Level.ShouldBe(IsolationLevel.None);
+        decision.Wrapper.ShouldBeNull();
+        decision.NeedsConsent.ShouldBeTrue();
+        decision.DegradedCode.ShouldBe(IsolationProbeOutcome.SessionPolicyUnenforced);
+        runner.Calls.Count.ShouldBe(3);
+        runner.Calls[2].Arguments.ShouldContain(fixture.ScratchPath, StringComparer.Ordinal);
+    }
+
+    /// <summary>A session canary that runs the launched vector and exits 0 is the only path to filesystem isolation.</summary>
+    [Fact]
+    public async Task PassingSessionCanaryReachesFilesystemIsolation()
+    {
+        using var fixture = new TempIsolationFixture();
+        var policy = fixture.CoworkPolicy();
+        var runner = new FakeProcessRunner();
+        var probe = new IsolationProbe(runner, "linux-x64", TimeSpan.FromSeconds(5));
+
+        var outcome = await probe.ProbeSessionAsync(policy, CancellationToken.None).ConfigureAwait(true);
+        var decision = IsolationPlanner.Decide(policy, outcome, false);
+
+        outcome.ReachedFilesystemIsolation.ShouldBeTrue();
+        decision.Level.ShouldBe(IsolationLevel.FilesystemIsolated);
+        decision.Wrapper.ShouldBeOfType<BubblewrapIsolator>();
+        runner.Calls.Count.ShouldBe(3);
     }
 
     internal static IsolationPolicy GoldenPolicy() =>

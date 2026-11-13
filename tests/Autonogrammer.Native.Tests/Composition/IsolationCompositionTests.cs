@@ -18,10 +18,11 @@ public sealed class IsolationCompositionTests
     [Fact]
     public async Task CoworkOptionsCarryTheWrapperAndCodeOptionsCarryNull()
     {
+        using var tree = new TempCoworkTree();
         var runner = new ScriptedRunner(IsolationProbeOutcome.Succeeded);
         var composition = new IsolationComposition(runner, "linux-x64");
-        var cowork = await composition.PrepareAsync(true, "/home/user", "/tmp/scratch", [], false, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        var code = await composition.PrepareAsync(false, "/home/user", "/tmp/scratch", [], false, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        var cowork = await composition.PrepareAsync(true, tree.Home, tree.Scratch, [], false, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        var code = await composition.PrepareAsync(false, tree.Home, tree.Scratch, [], false, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         cowork.ProcessWrapper.ShouldNotBeNull();
         cowork.FilesystemIsolated.ShouldBeTrue();
@@ -35,13 +36,14 @@ public sealed class IsolationCompositionTests
     [Fact]
     public async Task AFailedProbeAsksAndStartsNothingUntilConsent()
     {
+        using var tree = new TempCoworkTree();
         var composition = new IsolationComposition(new ScriptedRunner(new IsolationProbeOutcome(IsolationLevel.None, IsolationProbeOutcome.BwrapMissing)), "linux-x64");
-        var blocked = await composition.PrepareAsync(true, "/home/user", "/tmp/scratch", [], false, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        var blocked = await composition.PrepareAsync(true, tree.Home, tree.Scratch, [], false, TestContext.Current.CancellationToken).ConfigureAwait(true);
         blocked.SessionMayStart.ShouldBeFalse();
         blocked.ProcessWrapper.ShouldBeNull();
         blocked.Chip.NeedsConsent.ShouldBeTrue();
 
-        var consented = await composition.PrepareAsync(true, "/home/user", "/tmp/scratch", [], true, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        var consented = await composition.PrepareAsync(true, tree.Home, tree.Scratch, [], true, TestContext.Current.CancellationToken).ConfigureAwait(true);
         consented.SessionMayStart.ShouldBeTrue();
         consented.ProcessWrapper.ShouldBeNull();
         consented.FilesystemIsolated.ShouldBeFalse();
@@ -51,16 +53,50 @@ public sealed class IsolationCompositionTests
     [Fact]
     public async Task AReadOnlyGrantGetsNoBindAndAReadWriteGrantGetsOne()
     {
+        using var tree = new TempCoworkTree();
+        var read = Path.Combine(tree.Root, "read");
+        var write = Path.Combine(tree.Root, "write");
+        Directory.CreateDirectory(read);
+        Directory.CreateDirectory(write);
         var grants = new CoworkFolderGrant[]
         {
-            new("/tmp/read", CoworkFolderAccess.ReadOnly, CoworkFolderScope.Global),
-            new("/tmp/write", CoworkFolderAccess.ReadWrite, CoworkFolderScope.Global),
+            new(read, CoworkFolderAccess.ReadOnly, CoworkFolderScope.Global),
+            new(write, CoworkFolderAccess.ReadWrite, CoworkFolderScope.Global),
         };
         var composition = new IsolationComposition(new ScriptedRunner(IsolationProbeOutcome.Succeeded), "linux-x64");
-        var start = await composition.PrepareAsync(true, "/home/user", "/tmp/scratch", grants, false, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        var start = await composition.PrepareAsync(true, tree.Home, tree.Scratch, grants, false, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
-        start.Grants.Single(grant => grant.Path == "/tmp/read").ReadWrite.ShouldBeFalse();
-        start.Grants.Single(grant => grant.Path == "/tmp/write").ReadWrite.ShouldBeTrue();
+        start.Grants.Single(grant => grant.Path == read).ReadWrite.ShouldBeFalse();
+        start.Grants.Single(grant => grant.Path == write).ReadWrite.ShouldBeTrue();
+    }
+
+    private sealed class TempCoworkTree : IDisposable
+    {
+        public TempCoworkTree()
+        {
+            Root = Path.Combine(Path.GetTempPath(), "autonogrammer-native-isolation-" + Guid.NewGuid().ToString("N"));
+            Home = Path.Combine(Root, "home");
+            Scratch = Path.Combine(Root, "scratch");
+            Directory.CreateDirectory(Path.Combine(Home, ".omp"));
+            Directory.CreateDirectory(Scratch);
+        }
+
+        public string Root { get; }
+
+        public string Home { get; }
+
+        public string Scratch { get; }
+
+        public void Dispose()
+        {
+            try
+            {
+                Directory.Delete(Root, recursive: true);
+            }
+            catch (DirectoryNotFoundException)
+            {
+            }
+        }
     }
 
     private static async Task<AcpClientOptions> LaunchAsync(IProcessLaunchWrapper? wrapper)

@@ -4,10 +4,11 @@ namespace Autonogrammer.Harness.Isolation;
 
 /// <summary>
 /// Decides the wrapper for one session. Code needs no probe and gets no wrapper. A failed Cowork probe needs consent
-/// before the session continues unconfined. A successful probe returns the platform wrapper and filesystem isolation
-/// only when the session policy verifies: a policy whose argument vector is incomplete or out of precedence degrades to
-/// <see cref="IsolationProbeOutcome.PolicyUnverified"/>. Windows stays unconfined: the job object is type-only until a
-/// post-start hook exists.
+/// before the session continues unconfined. Filesystem isolation is reported only when the session canary passed
+/// (<see cref="IsolationProbe.ProbeSessionAsync"/>) and the session policy verifies. A policy whose argument vector is
+/// incomplete or out of precedence degrades to <see cref="IsolationProbeOutcome.PolicyUnverified"/>; a probe that
+/// reached no canary degrades to <see cref="IsolationProbeOutcome.SessionPolicyUnenforced"/>. Windows stays unconfined:
+/// the job object is type-only until a post-start hook exists.
 /// </summary>
 public static class IsolationPlanner
 {
@@ -40,6 +41,11 @@ public static class IsolationPlanner
         if (outcome.DegradedCode is not null)
         {
             return Unconfined(outcome.DegradedCode, continueWithoutIsolation);
+        }
+
+        if (!outcome.ReachedFilesystemIsolation)
+        {
+            return Unconfined(IsolationProbeOutcome.SessionPolicyUnenforced, continueWithoutIsolation);
         }
 
         IProcessLaunchWrapper wrapper = policy.Platform == IsolationPlatform.MacOs

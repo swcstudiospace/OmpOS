@@ -50,7 +50,7 @@ internal sealed class IsolationComposition
             ? IsolationPolicy.ForCowork(homeDirectory, scratchDirectory, source.IsolationGrants(), platform: PlatformOf(_runtimeIdentifier))
             : IsolationPolicy.ForCode();
         IsolationProbeOutcome probe = policy.Enabled
-            ? await new IsolationProbe(_runner, _runtimeIdentifier, _timeout).ProbeAsync(cancellationToken).ConfigureAwait(false)
+            ? await new IsolationProbe(_runner, _runtimeIdentifier, _timeout).ProbeSessionAsync(policy, cancellationToken).ConfigureAwait(false)
             : IsolationProbeOutcome.Succeeded;
         var decision = IsolationPlanner.Decide(policy, probe, continueWithoutIsolation);
         var chip = new IsolationChipModel(decision.Level.ToString(), decision.DegradedCode, decision.NeedsConsent);

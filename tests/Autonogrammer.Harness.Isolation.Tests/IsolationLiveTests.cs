@@ -1,15 +1,29 @@
+using Autonogrammer.Harness.Abstractions;
 using Shouldly;
 using Xunit;
 
 namespace Autonogrammer.Harness.Isolation.Tests;
 
-/// <summary>A real bubblewrap run. It skips unless <c>AUTONOGRAMMER_LIVE_ISOLATION</c> is 1, and a skip is not a failure.</summary>
+/// <summary>
+/// A real bubblewrap run on a synthetic fixture home, never the user's profile. It skips unless <c>AUTONOGRAMMER_LIVE_ISOLATION</c>
+/// is 1, and a skip is not a failure.
+/// </summary>
 [Trait("Category", "Live")]
 public sealed class IsolationLiveTests
 {
-    /// <summary>The probe passes and a write outside a grant is refused.</summary>
+    private const string ProbeScript = """
+        touch "$1/allowed" || exit 11
+        touch "$2/denied" 2>/dev/null && exit 12
+        (echo x > "$3/file") 2>/dev/null && exit 13
+        [ -f "$3/readme" ] || exit 14
+        touch "$4/new" || exit 15
+        [ ! -S /run/docker.sock ] || exit 16
+        exit 0
+        """;
+
+    /// <summary>The session canary passes on the launched vector, and the sandbox writes only inside read-write grants, scratch and state.</summary>
     [Fact]
-    public async Task ProbePassesAndWriteOutsideGrantIsRefused()
+    public async Task SessionCanaryPassesAndWritesStayInsideGrants()
     {
         if (!string.Equals(Environment.GetEnvironmentVariable("AUTONOGRAMMER_LIVE_ISOLATION"), "1", StringComparison.Ordinal))
         {
@@ -17,37 +31,38 @@ public sealed class IsolationLiveTests
         }
 
         var ct = TestContext.Current.CancellationToken;
-        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var root = Path.Combine(Path.GetTempPath(), "autonogrammer-isolation-live-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(root);
-        var grant = Path.Combine(root, "grant");
-        var scratch = Path.Combine(root, "scratch");
-        var ungranted = Path.Combine(root, "ungranted");
-        Directory.CreateDirectory(grant);
-        Directory.CreateDirectory(scratch);
+        using var fixture = new TempIsolationFixture();
+        var ungranted = Path.Combine(fixture.Root, "ungranted");
+        var readOnlyGrant = Path.Combine(fixture.Root, "readonly");
+        var writableUnderReadOnly = Path.Combine(readOnlyGrant, "out");
         Directory.CreateDirectory(ungranted);
-        try
-        {
-            var runner = new SystemIsolationProcessRunner();
-            var probe = new IsolationProbe(runner, "linux-x64", TimeSpan.FromSeconds(15));
-            var outcome = await probe.ProbeAsync(ct).ConfigureAwait(true);
-            outcome.ReachedFilesystemIsolation.ShouldBeTrue(outcome.DegradedCode);
+        Directory.CreateDirectory(writableUnderReadOnly);
+        await File.WriteAllTextAsync(Path.Combine(readOnlyGrant, "readme"), "ro", ct).ConfigureAwait(true);
+        var policy = IsolationPolicy.ForCowork(
+            fixture.Home,
+            fixture.ScratchPath,
+            [
+                new IsolationGrant(fixture.GrantPath, true),
+                new IsolationGrant(readOnlyGrant, false),
+                new IsolationGrant(writableUnderReadOnly, true),
+            ]);
+        var runner = new SystemIsolationProcessRunner();
+        var probe = new IsolationProbe(runner, "linux-x64", TimeSpan.FromSeconds(15));
 
-            var policy = IsolationPolicy.ForCowork(home, scratch, [new IsolationGrant(grant, true)]);
-            var wrapped = new BubblewrapIsolator(policy).Wrap(new Autonogrammer.Harness.Abstractions.ProcessLaunch(
-                "/bin/sh",
-                ["-c", "touch \"$1/allowed\" || exit 11; touch \"$2/denied\" && exit 12; exit 0", "sh", grant, ungranted],
-                grant,
-                new Dictionary<string, string?>(StringComparer.Ordinal)));
-            var run = await runner.RunAsync(wrapped.FileName, wrapped.Arguments, TimeSpan.FromSeconds(15), ct).ConfigureAwait(true);
-            run.TimedOut.ShouldBeFalse();
-            run.ExitCode.ShouldBe(0, run.Output);
-            File.Exists(Path.Combine(grant, "allowed")).ShouldBeTrue();
-            File.Exists(Path.Combine(ungranted, "denied")).ShouldBeFalse();
-        }
-        finally
-        {
-            Directory.Delete(root, recursive: true);
-        }
+        var outcome = await probe.ProbeSessionAsync(policy, ct).ConfigureAwait(true);
+        outcome.ReachedFilesystemIsolation.ShouldBeTrue(outcome.DegradedCode);
+
+        var wrapped = new BubblewrapIsolator(policy).Wrap(new ProcessLaunch(
+            "/bin/sh",
+            ["-c", ProbeScript, "sh", fixture.GrantPath, ungranted, readOnlyGrant, writableUnderReadOnly],
+            fixture.GrantPath,
+            new Dictionary<string, string?>(StringComparer.Ordinal)));
+        var run = await runner.RunAsync(wrapped.FileName, wrapped.Arguments, TimeSpan.FromSeconds(15), ct).ConfigureAwait(true);
+        run.TimedOut.ShouldBeFalse();
+        run.ExitCode.ShouldBe(0, run.Output);
+        File.Exists(Path.Combine(fixture.GrantPath, "allowed")).ShouldBeTrue();
+        File.Exists(Path.Combine(ungranted, "denied")).ShouldBeFalse();
+        File.Exists(Path.Combine(readOnlyGrant, "file")).ShouldBeFalse();
+        File.Exists(Path.Combine(writableUnderReadOnly, "new")).ShouldBeTrue();
     }
 }

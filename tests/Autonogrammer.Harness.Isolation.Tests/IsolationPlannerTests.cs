@@ -1,4 +1,5 @@
 using Autonogrammer.Harness.Abstractions;
+using Autonogrammer.Harness.Isolation.Tests.Support;
 using Shouldly;
 using Xunit;
 
@@ -51,11 +52,16 @@ public sealed class IsolationPlannerTests
         decision.DegradedCode.ShouldBe(IsolationProbeOutcome.UsernsDisabled);
     }
 
-    /// <summary>A successful probe returns the wrapper and the achieved level.</summary>
+    /// <summary>A passing session canary over a verified policy returns the wrapper and the achieved level.</summary>
     [Fact]
-    public void SuccessfulProbeReturnsTheWrapper()
+    public async Task SuccessfulProbeReturnsTheWrapper()
     {
-        var decision = IsolationPlanner.Decide(Cowork(), IsolationProbeOutcome.Succeeded, false);
+        using var fixture = new TempIsolationFixture();
+        var policy = fixture.CoworkPolicy();
+        var probe = new IsolationProbe(new FakeProcessRunner(), "linux-x64", TimeSpan.FromSeconds(5));
+
+        var outcome = await probe.ProbeSessionAsync(policy, CancellationToken.None).ConfigureAwait(true);
+        var decision = IsolationPlanner.Decide(policy, outcome, false);
 
         decision.NeedsConsent.ShouldBeFalse();
         decision.Level.ShouldBe(IsolationLevel.FilesystemIsolated);

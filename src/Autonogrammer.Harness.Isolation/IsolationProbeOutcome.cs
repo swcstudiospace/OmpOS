@@ -1,11 +1,12 @@
 namespace Autonogrammer.Harness.Isolation;
 
 /// <summary>
-/// What the probe achieved, and the degraded-state code when it did not reach filesystem isolation. A successful probe
-/// only shows that bubblewrap can start its namespaces. It never names a session level by itself: the level comes from
-/// <see cref="ForVerifiedPolicy"/>, which the planner calls only after the session policy verifies.
+/// What the probe achieved, and the degraded-state code when it did not reach filesystem isolation. A passing namespace
+/// self-test only shows that bubblewrap can start its namespaces; it never names a session level. Filesystem isolation
+/// is reported only by a session canary that ran the exact launched argument vector and passed, and by a policy that
+/// verifies. <see cref="ForVerifiedPolicy"/> is the planner's gate for both.
 /// </summary>
-/// <param name="AchievedLevel">The level the outcome reports. Filesystem isolation only after policy verification.</param>
+/// <param name="AchievedLevel">The level the outcome reports. Filesystem isolation only after a passing session canary.</param>
 /// <param name="DegradedCode">The named degraded state, or null when the outcome is not degraded.</param>
 public sealed record IsolationProbeOutcome(IsolationLevel AchievedLevel, string? DegradedCode)
 {
@@ -25,10 +26,23 @@ public sealed record IsolationProbeOutcome(IsolationLevel AchievedLevel, string?
     public const string PolicyUnverified = "policy_unverified";
 
     /// <summary>
-    /// Gets the namespace probe's success. It is not a session level: <see cref="ForVerifiedPolicy"/> decides the level
-    /// once the session policy verifies.
+    /// The session canary did not pass: the launched argument vector ran, but the policy was not enforced inside the
+    /// sandbox (a deny is reachable, a socket is connectable, the scratch directory is not writable, or the sandbox
+    /// does not start). The session needs consent to continue unconfined.
     /// </summary>
-    public static IsolationProbeOutcome Succeeded { get; } = new(IsolationLevel.FilesystemIsolated, null);
+    public const string SessionPolicyUnenforced = "session_policy_unenforced";
+
+    /// <summary>
+    /// Gets the namespace probe's success. It names no session level: the namespaces start, but no filesystem policy has
+    /// been checked. The planner treats it as <see cref="SessionPolicyUnenforced"/> until a session canary passes.
+    /// </summary>
+    public static IsolationProbeOutcome Succeeded { get; } = new(IsolationLevel.None, null);
+
+    /// <summary>Gets the outcome of a session canary that ran the exact launched argument vector and every check passed.</summary>
+    public static IsolationProbeOutcome SessionCanaryPassed { get; } = new(IsolationLevel.FilesystemIsolated, null);
+
+    /// <summary>Gets the outcome of a session canary that failed, timed out, or could not start the launched vector.</summary>
+    public static IsolationProbeOutcome SessionCanaryFailed { get; } = new(IsolationLevel.None, SessionPolicyUnenforced);
 
     /// <summary>Gets a value indicating whether the outcome reports filesystem isolation with no degraded code.</summary>
     public bool ReachedFilesystemIsolation =>
@@ -37,8 +51,8 @@ public sealed record IsolationProbeOutcome(IsolationLevel AchievedLevel, string?
     /// <summary>Gets the level this outcome reports for a session, given whether its policy verified.</summary>
     /// <param name="policyVerified">True when <see cref="BubblewrapArgvBuilder.Verify"/> accepted the session policy.</param>
     /// <returns>
-    /// This outcome when it already degraded. Otherwise filesystem isolation when the policy verified, and
-    /// <see cref="IsolationLevel.None"/> with <see cref="PolicyUnverified"/> when it did not.
+    /// This outcome when it already degraded, and otherwise this outcome unchanged when the policy verified. A policy
+    /// that did not verify returns <see cref="IsolationLevel.None"/> with <see cref="PolicyUnverified"/>.
     /// </returns>
     public IsolationProbeOutcome ForVerifiedPolicy(bool policyVerified)
     {
@@ -47,8 +61,6 @@ public sealed record IsolationProbeOutcome(IsolationLevel AchievedLevel, string?
             return this;
         }
 
-        return policyVerified
-            ? this with { AchievedLevel = IsolationLevel.FilesystemIsolated }
-            : new IsolationProbeOutcome(IsolationLevel.None, PolicyUnverified);
+        return policyVerified ? this : new IsolationProbeOutcome(IsolationLevel.None, PolicyUnverified);
     }
 }
