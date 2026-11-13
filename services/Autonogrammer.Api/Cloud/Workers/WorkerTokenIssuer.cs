@@ -17,6 +17,15 @@ internal sealed class WorkerTokenIssuer : IDisposable
     /// <summary>The audience claim every worker requires.</summary>
     public const string Audience = LegacyBrandNames.WorkerAudience;
 
+    /// <summary>The audience claim of a purge token. A worker accepts it only on <c>DELETE /accounts/{ownerDir}</c>.</summary>
+    public const string PurgeAudience = "autonogrammer-worker-purge";
+
+    /// <summary>The <c>purpose</c> claim a purge token carries. A session token has none.</summary>
+    public const string PurgePurpose = "purge";
+
+    /// <summary>How long a purge token lives.</summary>
+    public static readonly TimeSpan PurgeLifetime = TimeSpan.FromMinutes(5);
+
     private readonly ECDsa _key;
     private readonly SigningCredentials _credentials;
     private readonly string _issuer;
@@ -75,19 +84,37 @@ internal sealed class WorkerTokenIssuer : IDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerDir);
+        return Sign(Audience, _lifetime, new Dictionary<string, object>(StringComparer.Ordinal)
+        {
+            [JwtRegisteredClaimNames.Sub] = sessionId,
+            ["owner_dir"] = ownerDir,
+        });
+    }
+
+    /// <summary>Signs the token that asks a worker to purge one account's workspace (<c>DELETE /accounts/{ownerDir}</c>). It carries the purge audience, the purpose <c>purge</c>, the owner directory and a five-minute lifetime; a session token carries no purpose and does not authorise a purge.</summary>
+    /// <param name="ownerDir">The account's workspace directory name, carried as the <c>owner_dir</c> claim.</param>
+    /// <returns>The compact JWT. It is a credential: never log it.</returns>
+    public string IssuePurge(string ownerDir)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(ownerDir);
+        return Sign(PurgeAudience, PurgeLifetime, new Dictionary<string, object>(StringComparer.Ordinal)
+        {
+            ["purpose"] = PurgePurpose,
+            ["owner_dir"] = ownerDir,
+        });
+    }
+
+    private string Sign(string audience, TimeSpan lifetime, Dictionary<string, object> claims)
+    {
         var now = _time.GetUtcNow();
+        claims[JwtRegisteredClaimNames.Iss] = _issuer;
+        claims[JwtRegisteredClaimNames.Aud] = audience;
+        claims[JwtRegisteredClaimNames.Jti] = Guid.NewGuid().ToString("N");
+        claims[JwtRegisteredClaimNames.Iat] = now.ToUnixTimeSeconds();
+        claims[JwtRegisteredClaimNames.Exp] = (now + lifetime).ToUnixTimeSeconds();
         var descriptor = new SecurityTokenDescriptor
         {
-            Claims = new Dictionary<string, object>(StringComparer.Ordinal)
-            {
-                [JwtRegisteredClaimNames.Iss] = _issuer,
-                [JwtRegisteredClaimNames.Aud] = Audience,
-                [JwtRegisteredClaimNames.Sub] = sessionId,
-                ["owner_dir"] = ownerDir,
-                [JwtRegisteredClaimNames.Jti] = Guid.NewGuid().ToString("N"),
-                [JwtRegisteredClaimNames.Iat] = now.ToUnixTimeSeconds(),
-                [JwtRegisteredClaimNames.Exp] = (now + _lifetime).ToUnixTimeSeconds(),
-            },
+            Claims = claims,
             NotBefore = now.UtcDateTime,
             SigningCredentials = _credentials,
         };

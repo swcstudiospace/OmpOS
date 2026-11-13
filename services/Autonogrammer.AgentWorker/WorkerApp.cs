@@ -55,6 +55,7 @@ internal static class WorkerApp
         app.UseAuthorization();
         app.MapWorkerHealth();
         app.MapAcpBridge();
+        app.MapAccountPurge();
         return app;
     }
 }

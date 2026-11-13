@@ -1,7 +1,10 @@
 using System.Security.Cryptography;
 using System.Text;
+using Autonogrammer.Api.Cloud;
+using Autonogrammer.Api.Cloud.Options;
 using Autonogrammer.Api.DataPlane;
 using Autonogrammer.Api.Options;
+using Autonogrammer.Api.Services;
 using Autonogrammer.Coordination;
 using Autonogrammer.Coordination.Dragonfly;
 using Autonogrammer.Resilience;
@@ -13,7 +16,8 @@ namespace Autonogrammer.Api.Operations;
 
 /// <summary>
 /// The <c>erase-account</c> verb of the API entry point: <c>dotnet Autonogrammer.Api.dll erase-account &lt;account-id&gt;</c> erases everything one account owns
-/// through <see cref="PostgresAccountErasure"/> (runtime role), then the account's tenant keys in Dragonfly when <c>Coordination:Store</c> is Dragonfly, then its workspace folder under <c>Api:Workspace:Root</c>.
+/// through <see cref="PostgresAccountErasure"/> (runtime role), then the account's tenant keys in Dragonfly when <c>Coordination:Store</c> is Dragonfly, then its workspace folder under <c>Api:Workspace:Root</c>,
+/// then the account's workspace folder on every worker of <c>Cloud:Environment:StaticPool:Workers</c>, each purged with a signed purge token.
 /// It is operator-only: it runs before the web host exists and no HTTP route reaches it. The operator token is read from the environment variable
 /// <c>AUTONOGRAMMER_OPERATOR_TOKEN</c>; its SHA-256 must equal the digest configured at <c>Api:Operator:TokenSha256</c> (environment form
 /// <c>AUTONOGRAMMER_OPERATOR_TOKEN_SHA256</c>). The check runs before any connection is opened.
@@ -45,6 +49,9 @@ internal static class EraseAccountCommand
 
     /// <summary>Gets the exit code of a run whose operator token is absent or does not match the configured digest.</summary>
     public const int Refused = 3;
+
+    /// <summary>Gets how long one purge request to a worker may take.</summary>
+    private static readonly TimeSpan PurgeTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>Returns whether <paramref name="args"/> start with the erase-account verb.</summary>
     /// <param name="args">The command-line arguments of the process.</param>
@@ -183,7 +190,8 @@ internal static class EraseAccountCommand
         var resilienceOptions = configuration.GetSection(PostgresResilienceOptions.SectionName).Get<PostgresResilienceOptions>() ?? new PostgresResilienceOptions();
         var dragonflyResilience = DragonflyResilience.Create(configuration.GetSection(DragonflyResilienceOptions.SectionName).Get<DragonflyResilienceOptions>());
         var workspaceRoot = configuration[$"{Autonogrammer.Api.Services.SessionWorkspaceOptions.SectionName}:Root"];
-        var request = new ErasureRequest(connectionString, accountId, tenantHash, dragonfly, dragonflyConnectionString, resilienceOptions, dragonflyResilience, workspaceRoot);
+        var cloud = configuration.GetSection(CloudOptions.SectionName).Get<CloudOptions>() ?? new CloudOptions();
+        var request = new ErasureRequest(connectionString, accountId, tenantHash, dragonfly, dragonflyConnectionString, resilienceOptions, dragonflyResilience, workspaceRoot, cloud);
         return await RunErasureAsync(request, output, error, cancellationToken).ConfigureAwait(false);
     }
 
@@ -192,7 +200,13 @@ internal static class EraseAccountCommand
         try
         {
             await EraseDataAsync(request, cancellationToken).ConfigureAwait(false);
+            var purged = await PurgeWorkersAsync(request, cancellationToken).ConfigureAwait(false);
             await output.WriteLineAsync("Erased the account and its tenant keys.").ConfigureAwait(false);
+            if (purged > 0)
+            {
+                await output.WriteLineAsync($"Purged the account's workspace from {purged} worker(s).").ConfigureAwait(false);
+            }
+
             return Succeeded;
         }
         catch (OperationCanceledException)
@@ -228,6 +242,14 @@ internal static class EraseAccountCommand
         {
             return await ReportFailureAsync(error, ex).ConfigureAwait(false);
         }
+        catch (WorkerPurgeException ex)
+        {
+            return await ReportFailureAsync(error, ex).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex)
+        {
+            return await ReportFailureAsync(error, ex).ConfigureAwait(false);
+        }
     }
 
     private static async Task EraseDataAsync(ErasureRequest request, CancellationToken cancellationToken)
@@ -249,6 +271,31 @@ internal static class EraseAccountCommand
             }
         }
     }
+
+    private static async Task<int> PurgeWorkersAsync(ErasureRequest request, CancellationToken cancellationToken)
+    {
+        var workers = request.Cloud.Environment.StaticPool.Workers;
+        if (workers.Count == 0)
+        {
+            return 0;
+        }
+
+        var ownerDir = AccountWorkspace.DirectoryName(request.AccountId);
+        using var issuer = new WorkerTokenIssuer(Microsoft.Extensions.Options.Options.Create(request.Cloud), TimeProvider.System);
+        using var http = new HttpClient { Timeout = PurgeTimeout };
+        var client = new WorkerPurgeClient(http, issuer);
+        foreach (var worker in workers)
+        {
+            _ = await client.PurgeAsync(WorkerBaseUri(worker.BaseUri), ownerDir, cancellationToken).ConfigureAwait(false);
+        }
+
+        return workers.Count;
+    }
+
+    private static Uri WorkerBaseUri(string baseUri) =>
+        Uri.TryCreate(baseUri, UriKind.Absolute, out var uri) && (uri.Scheme is "http" or "https")
+            ? uri
+            : throw new InvalidOperationException("Cloud:Environment:StaticPool:Workers BaseUri must be an absolute http or https URI.");
 
     private static Task EraseAccountAsync(PostgresAccountErasure erasure, ErasureRequest request, Func<string, CancellationToken, Task> eraseTenantKeys, CancellationToken cancellationToken) =>
         erasure.EraseAsync(request.AccountId, request.TenantHash, async (tenantHash, token) =>
@@ -273,5 +320,5 @@ internal static class EraseAccountCommand
     }
 
     /// <summary>The inputs of one erasure run.</summary>
-    private sealed record ErasureRequest(string ConnectionString, string AccountId, string TenantHash, bool Dragonfly, string? DragonflyConnectionString, PostgresResilienceOptions ResilienceOptions, DragonflyResilience DragonflyResilience, string? WorkspaceRoot);
+    private sealed record ErasureRequest(string ConnectionString, string AccountId, string TenantHash, bool Dragonfly, string? DragonflyConnectionString, PostgresResilienceOptions ResilienceOptions, DragonflyResilience DragonflyResilience, string? WorkspaceRoot, CloudOptions Cloud);
 }
