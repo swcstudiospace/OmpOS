@@ -1,5 +1,5 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using Autonogrammer.Harness.Automations.Hosted;
 using Autonogrammer.Resilience;
 using Autonogrammer.Sessions.Postgres;
@@ -43,14 +43,6 @@ internal sealed class PostgresAutomationStore : IAutomationStore
         "DELETE FROM automation_runs AS r WHERE r.automation_id = @id AND r.seq <= " +
         "(SELECT s.seq FROM automation_runs AS s WHERE s.automation_id = @id ORDER BY s.seq DESC OFFSET @keep LIMIT 1)";
 
-    private static readonly JsonSerializerOptions Json = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-        Converters = { new JsonStringEnumConverter() },
-    };
-
     private readonly NpgsqlDataSource _dataSource;
     private readonly ResiliencePipeline _pipeline;
 
@@ -71,7 +63,7 @@ internal sealed class PostgresAutomationStore : IAutomationStore
         var texts = await ReadAsync(
             (connection, transaction, token) => ReadTextsAsync(new NpgsqlCommand(SelectAllSql, connection, transaction), null, token),
             cancellationToken).ConfigureAwait(false);
-        return texts.Select(static text => Deserialize<UserAutomation>(text)).ToArray();
+        return texts.Select(static text => Deserialize(text, PostgresAutomationJsonContext.Default.UserAutomation)).ToArray();
     }
 
     /// <inheritdoc />
@@ -81,14 +73,14 @@ internal sealed class PostgresAutomationStore : IAutomationStore
         var texts = await ReadAsync(
             (connection, transaction, token) => ReadTextsAsync(new NpgsqlCommand(SelectByIdSql, connection, transaction), id, token),
             cancellationToken).ConfigureAwait(false);
-        return texts.Count == 0 ? null : Deserialize<UserAutomation>(texts[0]);
+        return texts.Count == 0 ? null : Deserialize(texts[0], PostgresAutomationJsonContext.Default.UserAutomation);
     }
 
     /// <inheritdoc />
     public async ValueTask SaveAsync(UserAutomation automation, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(automation);
-        var record = Serialize(automation);
+        var record = Serialize(automation, PostgresAutomationJsonContext.Default.UserAutomation);
         _ = await WriteAsync(
             async (connection, transaction, token) =>
             {
@@ -158,7 +150,7 @@ internal sealed class PostgresAutomationStore : IAutomationStore
         var texts = await ReadAsync(
             (connection, transaction, token) => ReadTextsAsync(new NpgsqlCommand(SelectHistorySql, connection, transaction), id, token),
             cancellationToken).ConfigureAwait(false);
-        return texts.Select(static text => Deserialize<AutomationRunEntry>(text)).ToArray();
+        return texts.Select(static text => Deserialize(text, PostgresAutomationJsonContext.Default.AutomationRunEntry)).ToArray();
     }
 
     /// <inheritdoc />
@@ -166,7 +158,7 @@ internal sealed class PostgresAutomationStore : IAutomationStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         ArgumentNullException.ThrowIfNull(entry);
-        var record = Serialize(entry);
+        var record = Serialize(entry, PostgresAutomationJsonContext.Default.AutomationRunEntry);
         _ = await WriteAsync(
             async (connection, transaction, token) =>
             {
@@ -275,8 +267,8 @@ internal sealed class PostgresAutomationStore : IAutomationStore
         }
     }
 
-    private static string Serialize<T>(T value) => JsonSerializer.Serialize(value, Json);
+    private static string Serialize<T>(T value, JsonTypeInfo<T> typeInfo) => JsonSerializer.Serialize(value, typeInfo);
 
-    private static T Deserialize<T>(string text) =>
-        JsonSerializer.Deserialize<T>(text, Json) ?? throw new InvalidDataException("A stored automation record is empty and was not read.");
+    private static T Deserialize<T>(string text, JsonTypeInfo<T> typeInfo) =>
+        JsonSerializer.Deserialize(text, typeInfo) ?? throw new InvalidDataException("A stored automation record is empty and was not read.");
 }
