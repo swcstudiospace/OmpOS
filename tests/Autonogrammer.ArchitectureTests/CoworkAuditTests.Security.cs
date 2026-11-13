@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Shouldly;
 using Xunit;
 
@@ -66,7 +67,7 @@ public sealed partial class CoworkAuditTests
 | id | phase | area | severity | finding | evidence | status | owner action |
 | T-77-03 | 67 | Accounts tokens/keyring | high | open token leak | none | open | fix |
 ";
-        var ex = Record.Exception(() => ValidateNoOpenOrAcceptedCriticalHigh(ParseFindingsTable(badTable)));
+        var ex = Record.Exception(() => ValidateNoOpenOrAcceptedCriticalHigh(ParseFindingsTable(badTable), badTable));
         ex.ShouldNotBeNull("fixture with open High must fail");
         ex!.Message.ShouldContain("T-77-03");
     }
@@ -78,7 +79,7 @@ public sealed partial class CoworkAuditTests
 | id | phase | area | severity | finding | evidence | status | owner action |
 | T-77-CRIT | 68 | data-plane | Critical | accepted crit | none | accepted | OQ-xxx |
 ";
-        var ex = Record.Exception(() => ValidateNoOpenOrAcceptedCriticalHigh(ParseFindingsTable(badTable)));
+        var ex = Record.Exception(() => ValidateNoOpenOrAcceptedCriticalHigh(ParseFindingsTable(badTable), badTable));
         ex.ShouldNotBeNull("accepted Critical must fail");
     }
 
@@ -109,13 +110,89 @@ public sealed partial class CoworkAuditTests
         areas.Count.ShouldBeGreaterThanOrEqualTo(6, "scope table must cover all threat-model areas from brief with evidence");
     }
 
-    private static void ValidateNoOpenOrAcceptedCriticalHigh(List<FindingRow> findings)
+    private const string OpenHighRow = @"
+| id | phase | area | severity | finding | evidence | status | owner action |
+| T-77-HI | 67 | Accounts tokens/keyring | High | fixture | none | open | fix |
+";
+
+    private const string CriticalOpenRow = @"
+| id | phase | area | severity | finding | evidence | status | owner action |
+| T-77-HI | 67 | Accounts tokens/keyring | Critical | fixture | none | open | fix |
+";
+
+    private const string CompleteD16ExceptionForT77Hi = @"
+### D-16 owner exception: T-77-HI
+
+- Granted by: repository owner (fixture)
+- Scope: fixture scope
+- Residual risk: fixture risk
+- Expiry: fixture expiry
+- Regression evidence: fixture evidence
+";
+
+    [Fact]
+    public void HighOpenWithCompleteNamedD16ExceptionPasses()
     {
-        var bad = findings.FirstOrDefault(f =>
-            (f.Severity.Equals("Critical", StringComparison.OrdinalIgnoreCase) || f.Severity.Equals("High", StringComparison.OrdinalIgnoreCase))
-            && (f.Status.Equals("open", StringComparison.OrdinalIgnoreCase) || f.Status.Equals("accepted", StringComparison.OrdinalIgnoreCase)));
-        if (bad is not null)
-            throw new InvalidOperationException($"Critical/High finding {bad.Id} is {bad.Status}; must be fixed with regression test");
+        var md = OpenHighRow + CompleteD16ExceptionForT77Hi;
+        Record.Exception(() => ValidateNoOpenOrAcceptedCriticalHigh(ParseFindingsTable(md), md)).ShouldBeNull("complete named D-16 exception must admit a High");
+    }
+
+    [Fact]
+    public void HighOpenWithIncompleteD16ExceptionFailsNamingTheRowId()
+    {
+        var md = OpenHighRow + CompleteD16ExceptionForT77Hi.Replace("- Expiry: fixture expiry", "", StringComparison.Ordinal);
+        var ex = Record.Exception(() => ValidateNoOpenOrAcceptedCriticalHigh(ParseFindingsTable(md), md));
+        ex.ShouldNotBeNull("D-16 exception without an expiry field must not admit a High");
+        ex!.Message.ShouldContain("T-77-HI");
+    }
+
+    [Fact]
+    public void HighOpenWithD16ExceptionForAnotherIdFailsNamingTheRowId()
+    {
+        var md = OpenHighRow + CompleteD16ExceptionForT77Hi.Replace("T-77-HI", "T-77-OTHER", StringComparison.Ordinal);
+        var ex = Record.Exception(() => ValidateNoOpenOrAcceptedCriticalHigh(ParseFindingsTable(md), md));
+        ex.ShouldNotBeNull("D-16 exception naming another finding must not admit this High");
+        ex!.Message.ShouldContain("T-77-HI");
+    }
+
+    [Fact]
+    public void OpenCriticalWithCompleteD16ExceptionStillFails()
+    {
+        var md = CriticalOpenRow + CompleteD16ExceptionForT77Hi;
+        var ex = Record.Exception(() => ValidateNoOpenOrAcceptedCriticalHigh(ParseFindingsTable(md), md));
+        ex.ShouldNotBeNull("D-16 exceptions never apply to Critical findings");
+        ex!.Message.ShouldContain("T-77-HI");
+    }
+
+    private static readonly string[] D16ExceptionFields = ["Granted by", "Scope", "Residual risk", "Expiry", "Regression evidence"];
+
+    // Critical is never excepted. A High whose status is exactly open or accepted passes only when the
+    // document holds a complete "D-16 owner exception: <ID>" block naming that finding.
+    private static void ValidateNoOpenOrAcceptedCriticalHigh(List<FindingRow> findings, string md)
+    {
+        foreach (var f in findings)
+        {
+            var critical = f.Severity.Equals("Critical", StringComparison.OrdinalIgnoreCase);
+            var high = f.Severity.Equals("High", StringComparison.OrdinalIgnoreCase);
+            var openOrAccepted = f.Status.Equals("open", StringComparison.OrdinalIgnoreCase)
+                || f.Status.Equals("accepted", StringComparison.OrdinalIgnoreCase);
+            if (!(critical || high) || !openOrAccepted) continue;
+            if (critical)
+                throw new InvalidOperationException($"Critical finding {f.Id} is {f.Status}; D-16 forbids shipping an open or accepted Critical");
+            if (f.Status is "open" or "accepted" && HasCompleteD16Exception(md, f.Id)) continue;
+            throw new InvalidOperationException($"High finding {f.Id} is {f.Status}; D-16 allows it only under a complete 'D-16 owner exception: {f.Id}' block with fields granted by, scope, residual risk, expiry and regression evidence");
+        }
+    }
+
+    private static bool HasCompleteD16Exception(string md, string findingId)
+    {
+        var heading = Regex.Match(md, $@"(?m)^#{{1,6}}\s*D-16 owner exception:\s*{Regex.Escape(findingId)}\b", RegexOptions.None, TimeSpan.FromSeconds(2));
+        if (!heading.Success) return false;
+        var afterHeading = md[(heading.Index + heading.Length)..];
+        var nextHeading = Regex.Match(afterHeading, @"(?m)^#{1,6}\s", RegexOptions.None, TimeSpan.FromSeconds(2));
+        var block = nextHeading.Success ? afterHeading[..nextHeading.Index] : afterHeading;
+        return D16ExceptionFields.All(field =>
+            Regex.IsMatch(block, $@"(?im)^\s*(?:[-*]\s*)?{Regex.Escape(field)}\s*:\s*\S", RegexOptions.None, TimeSpan.FromSeconds(2)));
     }
 
     private static void ValidateAcceptedMediumHasOQ(List<FindingRow> findings)
@@ -137,7 +214,7 @@ public sealed partial class CoworkAuditTests
         File.Exists(path).ShouldBeTrue("review md must exist");
         var md = File.ReadAllText(path);
         var findings = ParseFindingsTable(md);
-        ValidateNoOpenOrAcceptedCriticalHigh(findings);
+        ValidateNoOpenOrAcceptedCriticalHigh(findings, md);
         var areas = ParseScopeAreas(md);
         // per plan, 6 areas + cross
         areas.Count.ShouldBeGreaterThanOrEqualTo(6, "every threat-model area must have a scope row");
