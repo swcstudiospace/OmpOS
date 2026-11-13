@@ -324,6 +324,7 @@ internal static class EraseAccountCommand
             ProjectId = railway.ProjectId,
             EnvironmentId = railway.EnvironmentId,
             Image = railway.Image,
+            ServiceNamePrefix = railway.WorkerNamePrefix,
         };
         if (!string.IsNullOrWhiteSpace(railway.Endpoint))
         {

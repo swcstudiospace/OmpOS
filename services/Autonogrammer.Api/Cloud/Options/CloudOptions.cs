@@ -82,6 +82,12 @@ internal sealed class CloudOptions
         /// <summary>Gets or sets the worker image, for example <c>ghcr.io/swcstudiospace/autonogrammer-agent-worker:1.2.3</c>.</summary>
         public string Image { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Gets or sets the prefix of every worker service name. Discovery lists the services whose name starts with it, and creation names each
+        /// session's service as this prefix plus the session label. Lowercase letters, digits and hyphens, at most 40 characters. Defaults to <c>autonogrammer-agent-</c>.
+        /// </summary>
+        public string WorkerNamePrefix { get; set; } = "autonogrammer-agent-";
+
         /// <summary>Gets or sets the public key PEMs the worker verifies tokens with. They go to the worker as <c>Worker__Auth__PublicKeysPem__N</c>.</summary>
         public List<string> WorkerPublicKeysPem { get; set; } = [];
     }

@@ -48,6 +48,8 @@ internal sealed class CloudOptionsValidator : IValidateOptions<CloudOptions>
             {
                 failures.Add("Cloud:Environment:Railway:Endpoint must be an absolute https URI when set.");
             }
+
+            ValidateWorkerNamePrefix(environment.Railway.WorkerNamePrefix, failures);
         }
         else if (string.Equals(provider, CloudOptions.EnvironmentSettings.StaticPoolProvider, StringComparison.OrdinalIgnoreCase))
         {
@@ -197,6 +199,24 @@ internal sealed class CloudOptionsValidator : IValidateOptions<CloudOptions>
         if (string.IsNullOrWhiteSpace(value))
         {
             failures.Add(key + " is required when Cloud:Enabled is true.");
+        }
+    }
+
+    /// <summary>
+    /// Checks the worker service name prefix against the rule the Railway client enforces when it is constructed: lowercase letters, digits and
+    /// hyphens, at most 40 characters. The 40 mirrors the client's label budget; a longer prefix would leave no room for the session label.
+    /// </summary>
+    /// <param name="prefix">The configured prefix.</param>
+    /// <param name="failures">Receives the failure when the prefix is not usable.</param>
+    private static void ValidateWorkerNamePrefix(string prefix, List<string> failures)
+    {
+        const int maxLength = 40;
+        if (prefix.Length is 0 or > maxLength || !prefix.All(static c => c is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-'))
+        {
+            failures.Add(
+                "Cloud:Environment:Railway:WorkerNamePrefix must be 1 to "
+                + maxLength.ToString(CultureInfo.InvariantCulture)
+                + " lowercase letters, digits and hyphens.");
         }
     }
 

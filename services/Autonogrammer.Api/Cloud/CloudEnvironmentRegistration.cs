@@ -80,6 +80,7 @@ internal static class CloudEnvironmentRegistration
             ProjectId = railway.ProjectId,
             EnvironmentId = railway.EnvironmentId,
             Image = railway.Image,
+            ServiceNamePrefix = railway.WorkerNamePrefix,
             Variables = fixedVariables,
             SecretVariablesProvider = (sessionId, cancellationToken) => variables.ResolveAsync(sessionId, cancellationToken),
             VolumeMountPath = options.Environment.VolumeMountPath,
