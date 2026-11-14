@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Autonogrammer.Contracts.Agents;
+using Autonogrammer.Harness.Abstractions;
 
 namespace Autonogrammer.Harness.AgentLoop.Launch;
 
@@ -45,6 +46,27 @@ public sealed record OmpLaunchPlan
     /// when the plan was made without a <see cref="HookBridgeEndpoint"/> or the extension is missing or unhealthy.
     /// </summary>
     public bool HooksBridgeLoaded { get; init; }
+
+    /// <summary>
+    /// Gets the overlay entries the launch contributors added, in contributor order. The caller renders them, with the rest of its overlay, into the one
+    /// file that <see cref="ConfigOverlayPath"/> names. Empty when no contributor adds any.
+    /// </summary>
+    public IReadOnlyList<string> OverlayEntries { get; init; } = [];
+
+    /// <summary>Gets the system-prompt paragraphs the launch contributors added, in contributor order. Each is within the contributor paragraph budget.</summary>
+    public IReadOnlyList<string> SystemPromptParagraphs { get; init; } = [];
+
+    /// <summary>Gets the first-prompt blocks the launch contributors added, in contributor order. The session's first prompt delivers them.</summary>
+    public IReadOnlyList<string> FirstPromptBlocks { get; init; } = [];
+
+    /// <summary>
+    /// Gets the environment variables the launch contributors remove. They are not in <see cref="Environment"/>. A caller whose child inherits the parent's
+    /// environment must keep each of them out of the child, for example by leaving the name out of an allow-list.
+    /// </summary>
+    public IReadOnlyList<string> EnvironmentRemovals { get; init; } = [];
+
+    /// <summary>Gets the process wrapper a launch contributor supplied, or null for a direct launch.</summary>
+    public IProcessLaunchWrapper? ProcessWrapper { get; init; }
 
     /// <summary>
     /// Derives the launch of an interactive omp (a terminal session) from the plan: the same plugin arguments, environment,

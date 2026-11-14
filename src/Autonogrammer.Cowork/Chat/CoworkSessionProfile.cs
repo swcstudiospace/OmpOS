@@ -15,6 +15,7 @@ public sealed class CoworkSessionProfile
 
     private const string ProviderPrefix = "AUTONOGRAMMER_PROVIDER_";
     private const string ProviderSuffix = "_KEY";
+    private const string DefaultSessionId = "cowork-session";
 
     private readonly string _sessionDirectory;
     private readonly string _workingDirectory;
@@ -23,6 +24,7 @@ public sealed class CoworkSessionProfile
     private readonly IReadOnlyDictionary<string, string> _providerKeys;
     private readonly Uri? _gatewayUrl;
     private readonly string? _gatewayBearer;
+    private readonly string _sessionId;
 
     /// <summary>Initializes a new instance of the <see cref="CoworkSessionProfile"/> class.</summary>
     /// <param name="sessionDirectory">The session directory the prompt file is written into.</param>
@@ -34,6 +36,7 @@ public sealed class CoworkSessionProfile
     /// <param name="gatewayBearer">The bearer for the cowork gateway. Required when <paramref name="gatewayUrl"/> is set.</param>
     /// <param name="filesystemIsolated">Whether the folder boundary is FilesystemIsolated. The resolver reads this; the launch flags do not.</param>
     /// <param name="skipAcknowledged">Whether the user acknowledged Skip for this session.</param>
+    /// <param name="sessionId">The session identifier the launch plan names. It is the real session when the caller has one, and "cowork-session" when null.</param>
     public CoworkSessionProfile(
         string sessionDirectory,
         string workingDirectory,
@@ -43,7 +46,8 @@ public sealed class CoworkSessionProfile
         Uri? gatewayUrl = null,
         string? gatewayBearer = null,
         bool filesystemIsolated = false,
-        bool skipAcknowledged = false)
+        bool skipAcknowledged = false,
+        string? sessionId = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionDirectory);
         ArgumentException.ThrowIfNullOrWhiteSpace(workingDirectory);
@@ -57,6 +61,7 @@ public sealed class CoworkSessionProfile
         _gatewayBearer = gatewayBearer;
         FilesystemIsolated = filesystemIsolated;
         SkipAcknowledged = skipAcknowledged;
+        _sessionId = sessionId ?? DefaultSessionId;
     }
 
     /// <summary>Gets whether the folder boundary is FilesystemIsolated.</summary>
@@ -115,18 +120,20 @@ public sealed class CoworkSessionProfile
     }
 
     /// <summary>
-    /// Writes the prompt file and returns the launch. The start is refused when the prompt cannot be written.
-    /// Contributors (if any) are passed to OmpLaunchPlanner so the seam is applied generically before Cowork specifics are added.
+    /// Plans the launch once, then writes the prompt file and the one effective overlay, and returns the launch. The contributors go through
+    /// <see cref="OmpLaunchPlanner"/>, so their paragraphs, first-prompt blocks, overlay entries, environment, arguments and wrapper reach the launch unchanged.
+    /// The prompt carries the contributed paragraphs. The overlay merges the Cowork browser and computer settings with the contributed entries, at the single
+    /// path that <c>--config</c> names. The start is refused when the prompt cannot be written.
     /// </summary>
-    /// <param name="standingContext">The standing-context paragraph, or null.</param>
+    /// <param name="contributors">Launch contributors, applied by the planner as the surface "cowork".</param>
     /// <param name="browserGuidance">Browser guidance, or null.</param>
     /// <param name="computerGuidance">Computer guidance, or null.</param>
-    /// <param name="contributors">Launch contributors to apply generically via the planner (surface will be "cowork").</param>
     /// <returns>The launch plan.</returns>
     /// <exception cref="CoworkPromptUnavailableException">The prompt file cannot be written.</exception>
     /// <exception cref="CoworkEnvironmentRefusedException">The environment holds a name that is not a provider key.</exception>
     /// <exception cref="ArgumentException">A gateway URL is set without a bearer, or a bearer without a URL.</exception>
-    public OmpLaunchPlan Create(string? standingContext = null, string? browserGuidance = null, string? computerGuidance = null, IReadOnlyList<ILaunchContributor>? contributors = null)
+    /// <exception cref="InvalidOperationException">Two contributions conflict, or two overlay entries set one top-level key.</exception>
+    public OmpLaunchPlan Create(IReadOnlyList<ILaunchContributor>? contributors = null, string? browserGuidance = null, string? computerGuidance = null)
     {
         var environment = FilterProviderKeys(_providerKeys);
         if ((_gatewayUrl is null) != string.IsNullOrEmpty(_gatewayBearer))
@@ -134,20 +141,45 @@ public sealed class CoworkSessionProfile
             throw new InvalidOperationException("The cowork gateway needs both a URL and a bearer, or neither.");
         }
 
-        var promptPath = CoworkSystemPrompt.Write(_sessionDirectory, standingContext, browserGuidance, computerGuidance);
-        var overlayPath = SessionStateLayout.ConfigOverlayFile(Path.GetFullPath(_sessionDirectory));
-
-        // The planner applies contributed arguments and environment; overlay and prompt contribution delivery remains incomplete.
+        var workingDirectory = Path.GetFullPath(_workingDirectory);
+        var sessionDirectory = Path.GetFullPath(_sessionDirectory);
         var basePlan = OmpLaunchPlanner.Plan(
             new AgentLoopSettings { PluginsRoot = string.Empty, StateRoot = _sessionDirectory },
             Array.Empty<ResolvedPlugin>(),
-            "ignored-for-profile",
-            Path.GetFullPath(_workingDirectory),
+            _sessionId,
+            workingDirectory,
             null,
             contributors: contributors,
             surface: "cowork",
             includeSessionEnvironment: false);
 
+        // Contributors cannot expand the provider-only Cowork environment. The names are checked before anything is written.
+        var contributedEnvironment = FilterProviderKeys(basePlan.Environment);
+        var promptPath = CoworkSystemPrompt.Write(sessionDirectory, JoinParagraphs(basePlan.SystemPromptParagraphs), browserGuidance, computerGuidance);
+        var overlayPath = SessionStateLayout.ConfigOverlayFile(sessionDirectory);
+        ConfigOverlayWriter.WriteYaml(sessionDirectory, ConfigOverlayWriter.Merge([OverlayYaml, .. basePlan.OverlayEntries]));
+
+        return new OmpLaunchPlan
+        {
+            ExtraArguments = LaunchArguments(basePlan, promptPath, overlayPath),
+            Environment = LaunchEnvironment(contributedEnvironment, environment),
+            McpServers = Servers(),
+            WorkingDirectory = workingDirectory,
+            ConfigOverlayPath = overlayPath,
+            AdditionalDirectories = _trustedFolders.Select(Path.GetFullPath).ToArray(),
+            PlanningEvents = basePlan.PlanningEvents,
+            LoadedPluginIds = basePlan.LoadedPluginIds,
+            HooksBridgeLoaded = basePlan.HooksBridgeLoaded,
+            SystemPromptParagraphs = basePlan.SystemPromptParagraphs,
+            FirstPromptBlocks = basePlan.FirstPromptBlocks,
+            OverlayEntries = basePlan.OverlayEntries,
+            EnvironmentRemovals = basePlan.EnvironmentRemovals,
+            ProcessWrapper = basePlan.ProcessWrapper,
+        };
+    }
+
+    private List<string> LaunchArguments(OmpLaunchPlan basePlan, string promptPath, string overlayPath)
+    {
         var arguments = new List<string>(basePlan.ExtraArguments);
         arguments.Add("--approval-mode");
         arguments.Add(CoworkPermissionMode.ApprovalModeArgument(_mode));
@@ -161,27 +193,21 @@ public sealed class CoworkSessionProfile
         arguments.Add(promptPath);
         arguments.Add("--config");
         arguments.Add(overlayPath);
+        return arguments;
+    }
 
-        // Contributors cannot expand the provider-only Cowork environment; configured provider keys take precedence.
-        var finalEnv = new Dictionary<string, string>(FilterProviderKeys(basePlan.Environment), StringComparer.Ordinal);
-        foreach (var kv in environment)
+    private static Dictionary<string, string> LaunchEnvironment(IReadOnlyDictionary<string, string> contributed, IReadOnlyDictionary<string, string> provider)
+    {
+        var environment = new Dictionary<string, string>(contributed, StringComparer.Ordinal);
+        foreach (var kv in provider)
         {
-            finalEnv[kv.Key] = kv.Value;
+            environment[kv.Key] = kv.Value;
         }
 
-        return new OmpLaunchPlan
-        {
-            ExtraArguments = arguments,
-            Environment = finalEnv,
-            McpServers = Servers(),
-            WorkingDirectory = Path.GetFullPath(_workingDirectory),
-            ConfigOverlayPath = overlayPath,
-            AdditionalDirectories = _trustedFolders.Select(Path.GetFullPath).ToArray(),
-            PlanningEvents = basePlan.PlanningEvents,
-            LoadedPluginIds = basePlan.LoadedPluginIds,
-            HooksBridgeLoaded = basePlan.HooksBridgeLoaded,
-        };
+        return environment;
     }
+
+    private static string? JoinParagraphs(IReadOnlyList<string> paragraphs) => paragraphs.Count == 0 ? null : string.Join('\n', paragraphs);
 
     private IReadOnlyList<AgentMcpServerSpec> Servers()
     {

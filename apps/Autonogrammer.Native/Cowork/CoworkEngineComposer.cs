@@ -1,4 +1,5 @@
 using Autonogrammer.Cowork.Chat;
+using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.AgentLoop.Launch;
 using Autonogrammer.Harness.AgentLoop.Safety;
@@ -33,9 +34,9 @@ internal static class CoworkEngineComposer
             request.Mode,
             keys,
             gateway?.Url,
-            gateway?.Bearer);
-        ConfigOverlayWriter.WriteYaml(request.SessionDirectory, CoworkSessionProfile.OverlayYaml);
-        var plan = profile.Create(request.StandingContext);
+            gateway?.Bearer,
+            sessionId: request.SessionId);
+        var plan = profile.Create(contributors: [new StandingContextContributor(request.Standing)]);
         var notices = new List<string>();
         var extra = CatalogServers(request, notices);
         // Cowork always wires LiveSteering unconditionally (unlike Code's LiveSteering option guard) so that
@@ -45,8 +46,8 @@ internal static class CoworkEngineComposer
         {
             ExtraMcpServers = extra,
             EnvironmentMode = EngineEnvironmentMode.Allowlist,
-            EnvironmentAllowList = OperatingSystem.IsWindows() ? WindowsExtras : [],
-            ProcessWrapper = request.ProcessWrapper,
+            EnvironmentAllowList = AllowList(plan),
+            ProcessWrapper = WrapperFor(request, plan),
             PermissionResolverFactory = pending => new CoworkPermissionResolver(
                 pending,
                 request.Boundary,
@@ -67,6 +68,28 @@ internal static class CoworkEngineComposer
             request.ResumeSessionId,
             options);
         return new CoworkEngineComposition(engine, notices, plan);
+    }
+
+    // The inherited variables a Cowork child may keep. A variable that a contribution removes is left out, so the child never inherits it.
+    private static IReadOnlyList<string> AllowList(OmpLaunchPlan plan)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return [];
+        }
+
+        return [.. WindowsExtras.Where(name => !plan.EnvironmentRemovals.Contains(name, StringComparer.OrdinalIgnoreCase))];
+    }
+
+    // One wrapper per launch. A request wrapper and a contributed wrapper must be the same instance; two different ones are refused.
+    private static IProcessLaunchWrapper? WrapperFor(CoworkEngineRequest request, OmpLaunchPlan plan)
+    {
+        if (request.ProcessWrapper is { } wrapper && plan.ProcessWrapper is { } contributed && !ReferenceEquals(wrapper, contributed))
+        {
+            throw new InvalidOperationException("Two process wrappers were supplied for one Cowork launch, so the launch refuses both.");
+        }
+
+        return request.ProcessWrapper ?? plan.ProcessWrapper;
     }
 
     /// <summary>The Windows allow-list extras, named for tests that cannot run on Windows.</summary>

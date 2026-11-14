@@ -115,13 +115,30 @@ public static class StandingContextBuilder
             return InstructionsTruncated;
         }
 
-        var kept = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(text).AsSpan(0, Math.Min(budget, Encoding.UTF8.GetByteCount(text))));
-        while (Encoding.UTF8.GetByteCount(kept) > budget && kept.Length > 0)
+        return KeepWholeCharacters(text, budget) + suffix;
+    }
+
+    // Keeps the longest prefix whose UTF-8 size fits the budget. A surrogate pair is kept or dropped whole, never split into a replacement character.
+    private static string KeepWholeCharacters(string text, int budget)
+    {
+        var used = 0;
+        var end = 0;
+        var index = 0;
+        while (index < text.Length)
         {
-            kept = kept[..^1];
+            var length = char.IsSurrogatePair(text, index) ? 2 : 1;
+            var size = Encoding.UTF8.GetByteCount(text.AsSpan(index, length));
+            if (used + size > budget)
+            {
+                break;
+            }
+
+            used += size;
+            index += length;
+            end = index;
         }
 
-        return kept + suffix;
+        return text[..end];
     }
 }
 

@@ -101,23 +101,14 @@ public static class OmpLaunchPlanner
             WorkingDirectory = workspaceRoot,
             TrustedFolders = extraDirectories
         };
-        var addEnv = ApplyContributors(contributors, req, arguments, sessionDirectory, ref overlayPath);
+        var contributed = ApplyContributors(contributors, req);
+        arguments.AddRange(contributed.Arguments);
+        ConfigOverlayWriter.RequireUniqueKeys(contributed.OverlayEntries);
 
         var baseEnv = includeSessionEnvironment
             ? BuildEnvironment(settings, sessionDirectory, substrateActive ? substrate.BaseAddress : null, hooksLoaded ? hookBridge : null)
             : new Dictionary<string, string>(StringComparer.Ordinal);
-        var finalEnv = new Dictionary<string, string>(baseEnv, System.StringComparer.Ordinal);
-        foreach (var kv in addEnv)
-        {
-            if (kv.Value is null)
-            {
-                finalEnv.Remove(kv.Key);
-            }
-            else
-            {
-                finalEnv[kv.Key] = kv.Value;
-            }
-        }
+        var finalEnv = OverlayEnvironment(baseEnv, contributed.Environment, out var removals);
 
         return new OmpLaunchPlan
         {
@@ -130,7 +121,33 @@ public static class OmpLaunchPlanner
             LoadedPluginIds = loaded,
             PlanningEvents = events,
             HooksBridgeLoaded = hooksLoaded,
+            OverlayEntries = contributed.OverlayEntries,
+            SystemPromptParagraphs = contributed.SystemPromptParagraphs,
+            FirstPromptBlocks = contributed.FirstPromptBlocks,
+            EnvironmentRemovals = removals,
+            ProcessWrapper = contributed.ProcessWrapper,
         };
+    }
+
+    // A contributed value sets the variable; a null value removes it from the child and is reported, so the launch can keep the parent's copy out.
+    private static Dictionary<string, string> OverlayEnvironment(Dictionary<string, string> baseEnv, IReadOnlyDictionary<string, string?> contributed, out List<string> removals)
+    {
+        var finalEnv = new Dictionary<string, string>(baseEnv, StringComparer.Ordinal);
+        removals = [];
+        foreach (var kv in contributed)
+        {
+            if (kv.Value is null)
+            {
+                finalEnv.Remove(kv.Key);
+                removals.Add(kv.Key);
+            }
+            else
+            {
+                finalEnv[kv.Key] = kv.Value;
+            }
+        }
+
+        return finalEnv;
     }
 
     private static bool AddPlugins(
@@ -178,48 +195,83 @@ public static class OmpLaunchPlanner
         return substrateActive;
     }
 
-    private static Dictionary<string, string?> ApplyContributors(
-        IReadOnlyList<ILaunchContributor>? contributors,
-        LaunchRequest req,
-        List<string> arguments,
-        string sessionDirectory,
-        ref string? overlayPath)
+    private static ContributedLaunch ApplyContributors(IReadOnlyList<ILaunchContributor>? contributors, LaunchRequest req)
     {
-        var contribs = contributors ?? System.Array.Empty<ILaunchContributor>();
-        var addArgs = new List<string>();
-        var addEnv = new Dictionary<string, string?>(System.StringComparer.Ordinal);
-        var addOverlay = new List<string>();
-        string? para = null;
-        foreach (var c in contribs)
+        var contribs = contributors ?? Array.Empty<ILaunchContributor>();
+        var arguments = new List<string>();
+        var environment = new Dictionary<string, string?>(StringComparer.Ordinal);
+        var overlay = new List<string>();
+        var paragraphs = new List<string>();
+        var blocks = new List<string>();
+        IProcessLaunchWrapper? wrapper = null;
+        foreach (var contributor in contribs)
         {
-            var ct = c.Contribute(req, System.Threading.CancellationToken.None);
-            addArgs.AddRange(ct.Arguments);
-            foreach (var kvp in ct.Environment)
+            var contribution = contributor.Contribute(req, System.Threading.CancellationToken.None);
+            arguments.AddRange(contribution.Arguments);
+            MergeEnvironment(environment, contribution.Environment);
+            overlay.AddRange(contribution.OverlayEntries.Where(entry => !string.IsNullOrWhiteSpace(entry)));
+            if (!string.IsNullOrEmpty(contribution.SystemPromptParagraph))
             {
-                addEnv[kvp.Key] = kvp.Value;
+                RequireParagraphBudget(contribution.SystemPromptParagraph);
+                paragraphs.Add(contribution.SystemPromptParagraph);
             }
-            addOverlay.AddRange(ct.OverlayEntries);
-            if (!string.IsNullOrEmpty(ct.SystemPromptParagraph))
+
+            if (!string.IsNullOrEmpty(contribution.FirstPromptBlock))
             {
-                var b = System.Text.Encoding.UTF8.GetByteCount(ct.SystemPromptParagraph);
-                if (b > ContributorParagraphBudgetBytes)
-                {
-                    throw new System.ArgumentOutOfRangeException(nameof(contributors), $"The contributed paragraph is {b} bytes over the {ContributorParagraphBudgetBytes} byte budget.");
-                }
-                para = ct.SystemPromptParagraph;
+                blocks.Add(contribution.FirstPromptBlock);
             }
-            // FirstPromptBlock carried for Cowork profile / starter consumption (task 2)
-        }
-        arguments.AddRange(addArgs);
-        if (addOverlay.Count > 0 && string.IsNullOrEmpty(overlayPath))
-        {
-            overlayPath = SessionStateLayout.ConfigOverlayFile(sessionDirectory);
-            arguments.Add("--config");
-            arguments.Add(overlayPath);
+
+            wrapper = MergeWrapper(wrapper, contribution.ProcessWrapper);
         }
 
-        return addEnv;
+        return new ContributedLaunch(arguments, environment, overlay, paragraphs, blocks, wrapper);
     }
+
+    // Two contributions may set one variable only to the same value; a conflict is refused, never resolved by order. A null value removes the variable.
+    private static void MergeEnvironment(Dictionary<string, string?> target, IReadOnlyDictionary<string, string?> source)
+    {
+        foreach (var (name, value) in source)
+        {
+            if (target.TryGetValue(name, out var previous) && !string.Equals(previous, value, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"Two launch contributions set {name} to different values, so the launch refuses both.");
+            }
+
+            target[name] = value;
+        }
+    }
+
+    private static IProcessLaunchWrapper? MergeWrapper(IProcessLaunchWrapper? current, IProcessLaunchWrapper? next)
+    {
+        if (next is null || ReferenceEquals(current, next))
+        {
+            return current;
+        }
+
+        if (current is null)
+        {
+            return next;
+        }
+
+        throw new InvalidOperationException("Two launch contributions supply different process wrappers, so the launch refuses both.");
+    }
+
+    private static void RequireParagraphBudget(string paragraph)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetByteCount(paragraph);
+        if (bytes > ContributorParagraphBudgetBytes)
+        {
+            throw new ArgumentOutOfRangeException(nameof(paragraph), $"The contributed paragraph is {bytes} bytes over the {ContributorParagraphBudgetBytes} byte budget.");
+        }
+    }
+
+    private sealed record ContributedLaunch(
+        IReadOnlyList<string> Arguments,
+        IReadOnlyDictionary<string, string?> Environment,
+        IReadOnlyList<string> OverlayEntries,
+        IReadOnlyList<string> SystemPromptParagraphs,
+        IReadOnlyList<string> FirstPromptBlocks,
+        IProcessLaunchWrapper? ProcessWrapper);
 
     private static void AddEntryPaths(ResolvedPlugin plugin, List<string> arguments)
     {

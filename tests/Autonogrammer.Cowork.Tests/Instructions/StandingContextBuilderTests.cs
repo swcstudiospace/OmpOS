@@ -67,4 +67,61 @@ public sealed class StandingContextBuilderTests
         InstructionLimits.MemoryBriefBytes.ShouldBe(4 * 1024);
         InstructionLimits.SystemPromptFileBytes.ShouldBe(8 * 1024);
     }
+
+    [Fact]
+    public void MultiByteGlobalInstructionsAreCutToEightKiBWithoutSplittingCharacters()
+    {
+        var built = StandingContextBuilder.Build(Repeat("é", 8192), null, null, null);
+
+        built.Notices.ShouldContain(StandingContextBuilder.InstructionsTruncated, StringComparer.Ordinal);
+        var global = Section(built.Text, "global\n", "\nproject\n");
+        Bytes(global).ShouldBeLessThanOrEqualTo(InstructionLimits.GlobalInstructionsBytes);
+        global.EndsWith(StandingContextBuilder.InstructionsTruncated, StringComparison.Ordinal).ShouldBeTrue();
+        built.Text.AsSpan().IndexOf('\uFFFD').ShouldBe(-1);
+    }
+
+    [Fact]
+    public void MultiByteProjectInstructionsAreCutToSixteenKiBWithoutSplittingCharacters()
+    {
+        var built = StandingContextBuilder.Build(null, Repeat("日", 6000), null, null);
+
+        built.Notices.ShouldContain(StandingContextBuilder.InstructionsTruncated, StringComparer.Ordinal);
+        var project = Section(built.Text, "\nproject\n", "\nfolder\n");
+        Bytes(project).ShouldBeLessThanOrEqualTo(InstructionLimits.ProjectInstructionsBytes);
+        built.Text.AsSpan().IndexOf('\uFFFD').ShouldBe(-1);
+    }
+
+    [Fact]
+    public void SurrogatePairBriefIsCutToFourKiBWithoutSplittingPairs()
+    {
+        var built = StandingContextBuilder.Build(null, null, null, Repeat("😀", 2048));
+
+        built.Notices.ShouldContain(StandingContextBuilder.InstructionsTruncated, StringComparer.Ordinal);
+        var brief = Section(built.Text, "<untrusted>\n", "\n</untrusted>");
+        Bytes(brief).ShouldBeLessThanOrEqualTo(InstructionLimits.MemoryBriefBytes);
+        brief.EndsWith(StandingContextBuilder.InstructionsTruncated, StringComparison.Ordinal).ShouldBeTrue();
+        built.Text.AsSpan().IndexOf('\uFFFD').ShouldBe(-1);
+    }
+
+    [Fact]
+    public void TheBlockNeverExceedsTwentyEightKiBAndTheBriefIsDroppedFirst()
+    {
+        var built = StandingContextBuilder.Build(new string('a', 9000), new string('b', 17000), null, new string('c', 5000));
+
+        built.Notices.ShouldContain(StandingContextBuilder.StandingContextOverBudget, StringComparer.Ordinal);
+        Bytes(built.Text).ShouldBeLessThanOrEqualTo(InstructionLimits.StandingContextBytes);
+        built.Text.Contains(new string('c', 100), StringComparison.Ordinal).ShouldBeFalse();
+        built.Text.Contains(StandingContextBuilder.StandingContextOverBudget, StringComparison.Ordinal).ShouldBeTrue();
+    }
+
+    private static string Repeat(string unit, int count) => new System.Text.StringBuilder().Insert(0, unit, count).ToString();
+
+    private static string Section(string text, string start, string end)
+    {
+        var from = text.IndexOf(start, StringComparison.Ordinal) + start.Length;
+        var to = text.IndexOf(end, from, StringComparison.Ordinal);
+        return text[from..to];
+    }
+
+    private static int Bytes(string text) => System.Text.Encoding.UTF8.GetByteCount(text);
 }

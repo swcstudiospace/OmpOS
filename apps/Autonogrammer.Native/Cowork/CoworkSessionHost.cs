@@ -5,6 +5,7 @@ using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Cowork;
 using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Cowork.Chat;
+using Autonogrammer.Cowork.Instructions;
 using Autonogrammer.Cowork.Sessions;
 using Autonogrammer.EngineHost;
 using Autonogrammer.Harness.Abstractions;
@@ -109,6 +110,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
     /// <returns>A snapshot that later changes do not affect.</returns>
     public IReadOnlyList<Contracts.Cowork.CoworkSessionSummary> TaskSummaries()
     {
+        RetireStaleSessions();
         var accountKey = SignedInKeyOrNull();
         if (accountKey is null)
         {
@@ -197,70 +199,81 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         throw new NotSupportedException("Cowork has no terminal sessions.");
 
     /// <inheritdoc />
-    [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
     public async Task<AgentSessionViewModel> OpenSessionAsync(AgentRow row, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(row);
+        await RetireStaleSessionsAsync().ConfigureAwait(false);
         var completion = QueueOperation(out var previous);
         Slot? slot = null;
-        var completed = false;
         try
         {
             await previous.ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
-            lock (_gate)
+            if (OpenedViewModelOrNull(row.Id) is { } opened)
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
-                if (_slots.TryGetValue(row.Id, out var existing))
-                {
-                    completed = true;
-                    return existing.Runtime.ViewModel;
-                }
+                return opened;
             }
 
-            slot = await OpenCoreAsync(row, cancellationToken).ConfigureAwait(false);
+            // slot is owned here until it is stored in _slots; the finally disposes it when it never was.
+            slot = await OpenCoreAsync(row, SignedInKeyOrNull(), cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             var viewModel = slot.Runtime.ViewModel;
             lock (_gate)
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
+                ThrowIfAccountChanged(slot);
                 _slots.Add(row.Id, slot);
                 slot = null;
                 Volatile.Write(ref _enginesStopped, 0);
             }
 
-            completed = true;
             return viewModel;
         }
         finally
         {
             ExceptionDispatchInfo? failure = null;
-            try
+            if (slot is not null)
             {
-                if (slot is not null)
+                try
                 {
                     await slot.DisposeAsync().ConfigureAwait(false);
                 }
-            }
-            catch (Exception exception) when (exception is not OutOfMemoryException)
-            {
-                failure = ExceptionDispatchInfo.Capture(exception);
-            }
+                catch (Exception exception) when (exception is not OutOfMemoryException)
+                {
+                    failure = ExceptionDispatchInfo.Capture(exception);
+                }
 
-            try
-            {
-                if (slot is not null)
+                try
                 {
                     _options.Tools?.CloseSession(row.Id);
                 }
-            }
-            catch (Exception exception) when (exception is not OutOfMemoryException)
-            {
-                failure ??= ExceptionDispatchInfo.Capture(exception);
+                catch (Exception exception) when (exception is not OutOfMemoryException)
+                {
+                    failure ??= ExceptionDispatchInfo.Capture(exception);
+                }
             }
 
             completion.SetResult();
-            CleanupFailureReporter.Report(failure, completed, _options.LoggerFactory?.CreateLogger("Autonogrammer.Native.Cowork"));
+            CleanupFailureReporter.Report(failure, completed: false, _options.LoggerFactory?.CreateLogger("Autonogrammer.Native.Cowork"));
+        }
+    }
+
+    // The view model of a session already open, or null. A disposed host refuses.
+    private AgentSessionViewModel? OpenedViewModelOrNull(string sessionId)
+    {
+        lock (_gate)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return _slots.TryGetValue(sessionId, out var existing) ? existing.Runtime.ViewModel : null;
+        }
+    }
+
+    // A slot whose account is no longer signed in is refused. The caller still owns it and disposes it.
+    private void ThrowIfAccountChanged(Slot slot)
+    {
+        if (!string.Equals(SignedInKeyOrNull(), slot.AccountKey, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("The account changed while the session was opening, so the session was not opened.");
         }
     }
 
@@ -326,6 +339,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
     /// <inheritdoc />
     public async Task ReloadAsync(CancellationToken cancellationToken)
     {
+        await RetireStaleSessionsAsync().ConfigureAwait(false);
         _ = EnsureRegistry(cancellationToken);
         await Task.CompletedTask.ConfigureAwait(false);
     }
@@ -348,7 +362,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         OnUiThreadAsync(async () =>
         {
             // A run still going cannot be retried: the retry would replay the last prompt into the turn that is answering it.
-            if (SlotOf(sessionId).Runtime.Runs.IsRunActive)
+            if (LiveSlotOf(sessionId).Runtime.Runs.IsRunActive)
             {
                 throw new InvalidOperationException("The turn is still running, so it cannot be retried. Wait for it to finish.");
             }
@@ -368,7 +382,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             ArgumentNullException.ThrowIfNull(text);
             cancellationToken.ThrowIfCancellationRequested();
             SetOrigin(sessionId);
-            await SendOrSteerAsync(SlotOf(sessionId), text, cancellationToken).ConfigureAwait(true);
+            await SendOrSteerAsync(LiveSlotOf(sessionId), text, cancellationToken).ConfigureAwait(true);
         });
 
     /// <summary>Stops engines after confirmation. Rows stay in the registry.</summary>
@@ -469,7 +483,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         await StopSessionsAsync().ConfigureAwait(false);
     }
 
-    private Task StopSessionsAsync()
+    private async Task StopSessionsAsync()
     {
         Slot[] slots;
         lock (_gate)
@@ -478,7 +492,84 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             _slots.Clear();
         }
 
-        return DisposeSlotsAsync(slots);
+        try
+        {
+            await DisposeSlotsAsync(slots).ConfigureAwait(false);
+        }
+        finally
+        {
+            Volatile.Write(ref _enginesStopped, 1);
+        }
+    }
+
+    // Stops the open sessions whose account is no longer the signed-in one. The stop is queued behind the operations already running, so it never races a start.
+    private void RetireStaleSessions()
+    {
+        if (HasStaleSessions())
+        {
+            _ = RetireStaleSessionsAsync();
+        }
+    }
+
+    private bool HasStaleSessions()
+    {
+        lock (_gate)
+        {
+            var current = SignedInKeyOrNull();
+            return _slots.Values.Any(slot => !string.Equals(slot.AccountKey, current, StringComparison.Ordinal));
+        }
+    }
+
+    private async Task RetireStaleSessionsAsync()
+    {
+        var completion = TryQueueOperation(out var previous);
+        if (completion is null)
+        {
+            return;
+        }
+
+        ExceptionDispatchInfo? failure = null;
+        var completed = false;
+        try
+        {
+            await previous.ConfigureAwait(false);
+            List<Slot> stale = [];
+            lock (_gate)
+            {
+                var current = SignedInKeyOrNull();
+                foreach (var (key, slot) in _slots.Where(pair => !string.Equals(pair.Value.AccountKey, current, StringComparison.Ordinal)).ToArray())
+                {
+                    _ = _slots.Remove(key);
+                    stale.Add(slot);
+                }
+            }
+
+            await DisposeSlotsAsync([.. stale]).ConfigureAwait(false);
+            completed = true;
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            failure = ExceptionDispatchInfo.Capture(exception);
+        }
+        finally
+        {
+            completion.SetResult();
+        }
+
+        CleanupFailureReporter.Report(failure, completed, _options.LoggerFactory?.CreateLogger("Autonogrammer.Native.Cowork"));
+    }
+
+    // The slot of a session whose account is still the signed-in one. A session of a retired account is refused, and its teardown is scheduled.
+    private Slot LiveSlotOf(string sessionId)
+    {
+        var slot = SlotOf(sessionId);
+        if (string.Equals(slot.AccountKey, SignedInKeyOrNull(), StringComparison.Ordinal))
+        {
+            return slot;
+        }
+
+        RetireStaleSessions();
+        throw new InvalidOperationException("The account of this session is no longer signed in, so the session was stopped.");
     }
 
     private Task TurnAsync(string sessionId, string prompt, CancellationToken cancellationToken) =>
@@ -487,7 +578,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
     private async Task TurnOnUiThreadAsync(string sessionId, string prompt, CancellationToken cancellationToken)
     {
         SetOrigin(sessionId);
-        var slot = SlotOf(sessionId);
+        var slot = LiveSlotOf(sessionId);
         slot.LastPrompt = prompt;
         cancellationToken.ThrowIfCancellationRequested();
         await SendOrSteerAsync(slot, prompt, cancellationToken).ConfigureAwait(true);
@@ -512,12 +603,11 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             }
         }
 
-        Volatile.Write(ref _enginesStopped, 1);
         failure?.Throw();
     }
 
     private void SetOrigin(string sessionId) =>
-        SlotOf(sessionId).Lease.SetTurnOrigin(CoworkTurnOrigin.Local);
+        LiveSlotOf(sessionId).Lease.SetTurnOrigin(CoworkTurnOrigin.Local);
 
     private string PromptOf(string sessionId) => SlotOf(sessionId).LastPrompt ?? string.Empty;
 
@@ -620,7 +710,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
 
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
     [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: each owner is nulled once transferred to its composed holder; the finally disposes any owner still held directly.")]
-    private async Task<Slot> OpenCoreAsync(AgentRow row, CancellationToken cancellationToken)
+    private async Task<Slot> OpenCoreAsync(AgentRow row, string? accountKey, CancellationToken cancellationToken)
     {
         var directory = Path.Combine(_options.StateRoot, "cowork-sessions", row.Id);
         HostLease? lease = null;
@@ -630,10 +720,11 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         try
         {
             lease = new HostLease();
-            engine = await ComposeEngineAsync(row, directory, lease, cancellationToken).ConfigureAwait(false);
+            var composed = await ComposeEngineAsync(row, directory, lease, accountKey, cancellationToken).ConfigureAwait(false);
+            engine = composed.Engine;
             runtime = new AgentSessionRuntime(RuntimeOptions(row, directory, engine));
             cancellationToken.ThrowIfCancellationRequested();
-            var slot = new Slot(runtime, lease, engine);
+            var slot = new Slot(runtime, lease, engine, accountKey, string.Join("\n", composed.Plan.FirstPromptBlocks));
             runtime = null;
             engine = null;
             lease = null;
@@ -695,7 +786,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         }
     }
 
-    private async Task<EngineComposition> ComposeEngineAsync(AgentRow row, string directory, HostLease lease, CancellationToken cancellationToken)
+    private async Task<CoworkEngineComposition> ComposeEngineAsync(AgentRow row, string directory, HostLease lease, string? accountKey, CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(directory);
         string? notice = null;
@@ -707,13 +798,16 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             notice = opened.Notice;
         }
 
-        EngineComposition? engine = null;
+        var start = await StartContextAsync(row.Id, accountKey, cancellationToken).ConfigureAwait(false);
+        CoworkEngineComposition? composed = null;
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
             var boundary = new CoworkPathBoundary(_options.StateRoot);
-            var composed = CoworkEngineComposer.Compose(new CoworkEngineRequest(directory, _options.WorkingDirectory, [_options.WorkingDirectory], boundary, () => lease.IsTainted)
+            var request = new CoworkEngineRequest(directory, _options.WorkingDirectory, SessionTrustedFolders(row.Id, accountKey), boundary, () => lease.IsTainted)
             {
+                SessionId = row.Id,
+                Standing = start.Standing,
                 ProviderKeys = _options.ProviderKeys,
                 Gateway = gateway,
                 Catalog = _options.Catalog,
@@ -722,25 +816,91 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
                 LoggerFactory = _options.LoggerFactory,
                 OmpPath = _options.OmpPath,
                 ResumeSessionId = row.Summary.GraphId,
-            });
-            engine = composed.Engine;
+            };
+            composed = CoworkEngineComposer.Compose(request);
             var notices = new List<string>(composed.Notices);
+            notices.AddRange(start.Notices);
             if (notice is not null)
             {
                 notices.Add(notice);
             }
+
             Notices = notices;
-            var result = engine;
-            engine = null;
+            var result = composed;
+            composed = null;
             return result;
         }
         finally
         {
-            if (engine is not null)
+            if (composed is not null)
             {
-                await engine.Host.DisposeAsync().ConfigureAwait(false);
-                engine = null;
+                await composed.Engine.Host.DisposeAsync().ConfigureAwait(false);
             }
+        }
+    }
+
+    // The session's standing context, read now from the account it belongs to. A snapshot of another account, or one read after a switch, refuses the start.
+    private async Task<(StandingContext? Standing, IReadOnlyList<string> Notices)> StartContextAsync(string sessionId, string? accountKey, CancellationToken cancellationToken)
+    {
+        var account = _options.AccountContext;
+        if (account is null)
+        {
+            return (null, Array.Empty<string>());
+        }
+
+        var snapshot = await account.SnapshotAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        if (!account.IsCurrent(snapshot) || !string.Equals(SignedInKeyOrNull(), accountKey, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("The account changed while the session was opening, so the session was not opened.");
+        }
+
+        var context = StandingContextBuilder.Build(snapshot.GlobalInstructions, snapshot.ProjectInstructions, null, snapshot.MemoryBrief);
+        return (context, NoticesFor(context.Notices));
+    }
+
+    // Shown without the text that was cut: the notice says that something was shortened or left out, never what it said.
+    private static List<string> NoticesFor(IReadOnlyList<string> codes)
+    {
+        var notices = new List<string>(codes.Count);
+        foreach (var code in codes)
+        {
+            notices.Add(string.Equals(code, StandingContextBuilder.StandingContextOverBudget, StringComparison.Ordinal)
+                ? "The memory notes were left out of this session because the standing context is over its budget."
+                : "Part of the standing context was shortened to fit this session.");
+        }
+
+        return notices;
+    }
+
+    // The folders a session trusts: its working directory, then the folders its record stored when it was linked to a project. Paths stay local.
+    private List<string> SessionTrustedFolders(string sessionId, string? accountKey)
+    {
+        var folders = new List<string> { _options.WorkingDirectory };
+        if (accountKey is null)
+        {
+            return folders;
+        }
+
+        foreach (var folder in ReadMeta(accountKey, sessionId)?.TrustedFolders ?? Array.Empty<string>())
+        {
+            if (!string.IsNullOrWhiteSpace(folder) && !folders.Contains(folder, StringComparer.Ordinal))
+            {
+                folders.Add(folder);
+            }
+        }
+
+        return folders;
+    }
+
+    private CoworkSessionMeta? ReadMeta(string accountKey, string sessionId)
+    {
+        try
+        {
+            return new CoworkSessionMetaStore(_options.StateRoot, accountKey).Get(sessionId);
+        }
+        catch (InvalidDataException)
+        {
+            return null;
         }
     }
 
@@ -811,13 +971,17 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
-    private sealed class Slot(AgentSessionRuntime runtime, HostLease lease, EngineComposition engine) : IAsyncDisposable
+    private sealed class Slot(AgentSessionRuntime runtime, HostLease lease, EngineComposition engine, string? accountKey, string firstPromptBlock) : IAsyncDisposable
     {
         public AgentSessionRuntime Runtime { get; } = runtime;
 
         public HostLease Lease { get; } = lease;
 
         public EngineComposition Engine { get; } = engine;
+
+        public string? AccountKey { get; } = accountKey;
+
+        public string FirstPromptBlock { get; } = firstPromptBlock;
 
         public string? LastPrompt { get; set; }
 

@@ -1,4 +1,5 @@
 using Autonogrammer.Cowork.Chat;
+using Autonogrammer.Cowork.Instructions;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.Mcp.Catalog;
@@ -20,6 +21,9 @@ internal sealed record CoworkEngineRequest(
     CoworkPathBoundary Boundary,
     Func<bool> IsTainted)
 {
+    /// <summary>Gets the task identifier the launch plan names.</summary>
+    public required string SessionId { get; init; }
+
     /// <summary>Gets the permission mode.</summary>
     public Autonogrammer.Cowork.Tools.CoworkPermissionMode Mode { get; init; } = Autonogrammer.Cowork.Tools.CoworkPermissionMode.Manual;
 
@@ -47,8 +51,8 @@ internal sealed record CoworkEngineRequest(
     /// <summary>Gets the omp session to resume.</summary>
     public string? ResumeSessionId { get; init; }
 
-    /// <summary>Gets the standing context paragraph.</summary>
-    public string? StandingContext { get; init; }
+    /// <summary>Gets the standing context the session took at its start, or null when the head has no account data.</summary>
+    public StandingContext? Standing { get; init; }
 
     /// <summary>Gets the storage folder.</summary>
     public string? StorageFolder { get; init; }

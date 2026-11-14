@@ -85,6 +85,65 @@ public sealed class ConfigOverlayWriter : IDisposable
         return new ConfigOverlayWriter(path);
     }
 
+    /// <summary>
+    /// Joins YAML blocks into one overlay document, in order. Two blocks that set the same top-level key are refused, so no block silently wins.
+    /// </summary>
+    /// <param name="blocks">The YAML blocks. Blank blocks are skipped.</param>
+    /// <returns>The merged YAML.</returns>
+    /// <exception cref="InvalidOperationException">Two blocks set the same top-level key.</exception>
+    public static string Merge(IEnumerable<string> blocks)
+    {
+        ArgumentNullException.ThrowIfNull(blocks);
+        var kept = blocks.Where(block => !string.IsNullOrWhiteSpace(block)).ToList();
+        RequireUniqueKeys(kept);
+        var builder = new StringBuilder();
+        foreach (var block in kept)
+        {
+            builder.Append(block);
+            if (block[^1] != '\n')
+            {
+                builder.Append('\n');
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    /// <summary>Refuses two blocks that set the same top-level YAML key. The message names the key, never a value.</summary>
+    /// <param name="blocks">The YAML blocks to check.</param>
+    /// <exception cref="InvalidOperationException">Two blocks set the same top-level key.</exception>
+    internal static void RequireUniqueKeys(IEnumerable<string> blocks)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var block in blocks)
+        {
+            foreach (var key in TopLevelKeys(block))
+            {
+                if (!seen.Add(key))
+                {
+                    throw new InvalidOperationException($"Two overlay entries both set the top-level key '{key}', so the overlay refuses the conflict.");
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<string> TopLevelKeys(string block)
+    {
+        foreach (var line in block.Split('\n'))
+        {
+            if (line.Length == 0 || char.IsWhiteSpace(line[0]) || line[0] == '#')
+            {
+                continue;
+            }
+
+            var colon = line.AsSpan().IndexOf(':');
+            if (colon > 0)
+            {
+                yield return line[..colon].Trim();
+            }
+        }
+    }
+
     private static void WriteOwnerFile(string path, byte[] content)
     {
         var options = new FileStreamOptions
