@@ -54,6 +54,9 @@ internal sealed record CoworkEngineRequest(
     /// <summary>Gets the standing context the session took at its start, or null when the head has no account data.</summary>
     public StandingContext? Standing { get; init; }
 
+    /// <summary>Gets the sink that keeps the history the agent replays when the session is loaded, or null when no first-prompt record is kept.</summary>
+    public IAcpLoadReplaySink? LoadReplaySink { get; init; }
+
     /// <summary>Gets the storage folder.</summary>
     public string? StorageFolder { get; init; }
 

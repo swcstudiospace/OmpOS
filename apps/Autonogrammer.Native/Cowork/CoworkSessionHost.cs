@@ -85,6 +85,11 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
     // The memory mode a linked task is created with. Memory then follows the account's settings; the task's own flag is stored and read back as set.
     private const bool LinkedTaskMemoryOff = false;
 
+    // The first-prompt sentences. Each says what was not sent and what the user can do; none quotes the task context.
+    private const string FirstPromptUnconfirmedMessage = "The task context may not have reached omp, so this message was not sent. Resend the task context or start without it first.";
+    private const string FirstPromptSlashMessage = "The first message of a Cowork task cannot start with '/'. The task context goes before the message, and omp runs a slash command only when it is the first text. Send a message that does not start with '/'.";
+    private const string FirstPromptUnconfirmedNotice = "The task context may not have reached omp. Sending is paused until you resend it or start without it.";
+
     /// <summary>
     /// Creates the task the rail asked for. No project creates an unlinked task, exactly as <see cref="CreateSessionAsync"/> does. A project creates a task
     /// linked to it: the project, its trusted folders and the task's memory mode are stored before the identifier is returned. Nothing is opened.
@@ -342,6 +347,38 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         await RetireStaleSessionsAsync().ConfigureAwait(false);
         _ = EnsureRegistry(cancellationToken);
         await Task.CompletedTask.ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Sends the task's standing block again with its next message. The user chooses this after an unknown outcome, so omp may end up holding the block twice.
+    /// </summary>
+    /// <param name="sessionId">The task.</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <returns>The task.</returns>
+    public async Task ResendFirstPromptAsync(string sessionId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
+        cancellationToken.ThrowIfCancellationRequested();
+        FirstPromptStoreOrThrow().Resend(sessionId);
+        await Task.CompletedTask.ConfigureAwait(false);
+    }
+
+    /// <summary>Starts the task without its standing block after an unknown outcome. The block is not sent again.</summary>
+    /// <param name="sessionId">The task.</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <returns>The task.</returns>
+    public async Task AbandonFirstPromptAsync(string sessionId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
+        cancellationToken.ThrowIfCancellationRequested();
+        FirstPromptStoreOrThrow().Abandon(sessionId);
+        await Task.CompletedTask.ConfigureAwait(false);
+    }
+
+    private CoworkFirstPromptStore FirstPromptStoreOrThrow()
+    {
+        var accountKey = SignedInKeyOrNull() ?? throw new InvalidOperationException("Sign in to change the task context.");
+        return new CoworkFirstPromptStore(_options.StateRoot, accountKey);
     }
 
     /// <summary>Sends a prompt after setting the local turn origin. A model argument named origin is ignored.</summary>
@@ -720,11 +757,11 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         try
         {
             lease = new HostLease();
-            var composed = await ComposeEngineAsync(row, directory, lease, accountKey, cancellationToken).ConfigureAwait(false);
+            var (composed, firstPrompt) = await ComposeEngineAsync(row, directory, lease, accountKey, cancellationToken).ConfigureAwait(false);
             engine = composed.Engine;
-            runtime = new AgentSessionRuntime(RuntimeOptions(row, directory, engine));
+            runtime = new AgentSessionRuntime(RuntimeOptions(row, directory, engine, firstPrompt));
             cancellationToken.ThrowIfCancellationRequested();
-            var slot = new Slot(runtime, lease, engine, accountKey, string.Join("\n", composed.Plan.FirstPromptBlocks));
+            var slot = new Slot(runtime, lease, engine, accountKey);
             runtime = null;
             engine = null;
             lease = null;
@@ -786,7 +823,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         }
     }
 
-    private async Task<CoworkEngineComposition> ComposeEngineAsync(AgentRow row, string directory, HostLease lease, string? accountKey, CancellationToken cancellationToken)
+    private async Task<(CoworkEngineComposition Composed, FirstPromptSend? FirstPrompt)> ComposeEngineAsync(AgentRow row, string directory, HostLease lease, string? accountKey, CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(directory);
         string? notice = null;
@@ -799,6 +836,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         }
 
         var start = await StartContextAsync(row.Id, accountKey, cancellationToken).ConfigureAwait(false);
+        var firstPrompt = FirstPromptOf(row.Id, accountKey, start.Standing);
         CoworkEngineComposition? composed = null;
         try
         {
@@ -816,10 +854,16 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
                 LoggerFactory = _options.LoggerFactory,
                 OmpPath = _options.OmpPath,
                 ResumeSessionId = row.Summary.GraphId,
+                LoadReplaySink = firstPrompt?.ReplaySink,
             };
             composed = CoworkEngineComposer.Compose(request);
             var notices = new List<string>(composed.Notices);
             notices.AddRange(start.Notices);
+            if (firstPrompt?.Notice is { } firstPromptNotice)
+            {
+                notices.Add(firstPromptNotice);
+            }
+
             if (notice is not null)
             {
                 notices.Add(notice);
@@ -828,7 +872,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             Notices = notices;
             var result = composed;
             composed = null;
-            return result;
+            return (result, firstPrompt);
         }
         finally
         {
@@ -837,6 +881,19 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
                 await composed.Engine.Host.DisposeAsync().ConfigureAwait(false);
             }
         }
+    }
+
+    // The task's standing block, taken at its first start and kept: a restart before the first send reuses it. Null when the task has none to take.
+    private FirstPromptSend? FirstPromptOf(string sessionId, string? accountKey, StandingContext? standing)
+    {
+        if (accountKey is null)
+        {
+            return null;
+        }
+
+        var store = new CoworkFirstPromptStore(_options.StateRoot, accountKey);
+        var record = store.Ensure(sessionId, standing?.Text);
+        return record is null ? null : new FirstPromptSend(store, sessionId, record.State);
     }
 
     // The session's standing context, read now from the account it belongs to. A snapshot of another account, or one read after a switch, refuses the start.
@@ -905,10 +962,10 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
     }
 
 
-    private AgentSessionRuntimeOptions RuntimeOptions(AgentRow row, string directory, EngineComposition engine) => new()
+    private AgentSessionRuntimeOptions RuntimeOptions(AgentRow row, string directory, EngineComposition engine, FirstPromptSend? firstPrompt) => new()
     {
         Row = row,
-        Prompts = new CoworkPromptChannel(engine),
+        Prompts = new CoworkPromptChannel(engine, firstPrompt),
         Steering = null, // Cowork steers exclusively through the native LiveSteering channel (set below as NativeSteering); the ISteeringChannel path is for terminals and fallback when omp does not support live steering. Unconditional like NativeSteering to match Code parity at SessionEngineSet:287 and ensure steer text reaches runtime.
         NativeSteering = engine.Host.LiveSteering,
         Approvals = new CoworkApprovalBridge(Broker),
@@ -950,8 +1007,8 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         }
     }
 
-    // The send path of a Cowork session: it forwards to the engine the slot composed, as the Code surface's slot channel does.
-    private sealed class CoworkPromptChannel(EngineComposition engine) : IPromptChannel
+    // The send path of a Cowork session: it forwards to the engine the slot composed. A task's first send goes through its first-prompt path first.
+    private sealed class CoworkPromptChannel(EngineComposition engine, FirstPromptSend? firstPrompt) : IPromptChannel
     {
         public IAsyncEnumerable<HarnessEvent> SubmitAsync(string prompt, CancellationToken cancellationToken) =>
             SubmitAsync(prompt, new PromptOptions(), cancellationToken);
@@ -961,7 +1018,9 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             ArgumentNullException.ThrowIfNull(prompt);
             ArgumentNullException.ThrowIfNull(options);
             IEngineHost host = engine.Reconnecting is { } reconnecting ? reconnecting : engine.Host;
-            return host.SubmitPromptAsync(prompt, options, cancellationToken);
+            return firstPrompt is null
+                ? host.SubmitPromptAsync(prompt, options, cancellationToken)
+                : firstPrompt.SubmitAsync(host, prompt, options, cancellationToken);
         }
 
         public Task CancelAsync(CancellationToken cancellationToken) =>
@@ -971,7 +1030,144 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
-    private sealed class Slot(AgentSessionRuntime runtime, HostLease lease, EngineComposition engine, string? accountKey, string firstPromptBlock) : IAsyncDisposable
+    // One task's first-send path. A pending block goes out in front of the message, once. Its outcome is recorded: acknowledged only when the transmitted
+    // request completed; an unknown outcome stops sends until the user resends or abandons the block. Nothing is written here that the block text could leak into.
+    private sealed class FirstPromptSend
+    {
+        private readonly CoworkFirstPromptStore _store;
+        private readonly string _sessionId;
+
+        public FirstPromptSend(CoworkFirstPromptStore store, string sessionId, CoworkFirstPromptState state)
+        {
+            _store = store;
+            _sessionId = sessionId;
+            ReplaySink = new FirstPromptReplay(store, sessionId);
+            Notice = state is CoworkFirstPromptState.InFlight or CoworkFirstPromptState.Unconfirmed ? FirstPromptUnconfirmedNotice : null;
+        }
+
+        /// <summary>Gets the sink that records the block when omp replays it on load.</summary>
+        public IAcpLoadReplaySink ReplaySink { get; }
+
+        /// <summary>Gets the sentence to show when the task opens with an unknown outcome, or null.</summary>
+        public string? Notice { get; }
+
+        public async IAsyncEnumerable<HarnessEvent> SubmitAsync(
+            IEngineHost host,
+            string prompt,
+            PromptOptions options,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            var record = _store.Read(_sessionId);
+            if (record is null || record.State is CoworkFirstPromptState.Acknowledged or CoworkFirstPromptState.Abandoned)
+            {
+                await foreach (var passed in host.SubmitPromptAsync(prompt, options, cancellationToken).ConfigureAwait(false))
+                {
+                    yield return passed;
+                }
+
+                yield break;
+            }
+
+            if (record.State is not CoworkFirstPromptState.Pending)
+            {
+                throw new InvalidOperationException(FirstPromptUnconfirmedMessage);
+            }
+
+            // omp runs a leading slash command from the first text block, and the block must come before the text: the two cannot both hold.
+            if (prompt.TrimStart().StartsWith('/'))
+            {
+                throw new InvalidOperationException(FirstPromptSlashMessage);
+            }
+
+            var transmission = new Transmission();
+            var completed = false;
+            try
+            {
+                _store.MarkInFlight(_sessionId);
+                var carried = options with
+                {
+                    Resources = [StandingResource(record), .. options.Resources],
+                    RequireEmbeddedContext = true,
+                    Transmitted = transmission.Mark,
+                };
+                await foreach (var harnessEvent in host.SubmitPromptAsync(prompt, carried, cancellationToken).ConfigureAwait(false))
+                {
+                    completed |= harnessEvent is CompletedEvent;
+                    yield return harnessEvent;
+                }
+            }
+            finally
+            {
+                _store.Settle(_sessionId, transmission.Sent, completed);
+            }
+        }
+
+        private static PromptResource StandingResource(CoworkFirstPromptRecord record) => new(
+            record.Uri,
+            record.MimeType,
+            record.Text,
+            "Task context",
+            System.Text.Encoding.UTF8.GetByteCount(record.Text),
+            false);
+    }
+
+    // Records the block omp replays when the task is loaded. A replayed user message that carries the block acknowledges it.
+    private sealed class FirstPromptReplay(CoworkFirstPromptStore store, string sessionId) : IAcpLoadReplaySink
+    {
+        public void LoadReplayed(AcpLoadReplay replay)
+        {
+            ArgumentNullException.ThrowIfNull(replay);
+            var uri = CoworkFirstPromptStore.ResourceUriFor(sessionId);
+            foreach (var update in replay.Updates)
+            {
+                if (ReplayedBlockOf(update, uri) is { } text)
+                {
+                    store.RecordReplay(sessionId, uri, text);
+                }
+            }
+        }
+
+        // The text of a replayed user message that carries the block, exactly as it arrived. Anything else is not the block.
+        private static string? ReplayedBlockOf(JsonElement update, Uri uri)
+        {
+            if (StringOf(update, "sessionUpdate") is not "user_message_chunk")
+            {
+                return null;
+            }
+
+            var content = ObjectOf(update, "content");
+            if (StringOf(content, "type") is not "resource")
+            {
+                return null;
+            }
+
+            var resource = ObjectOf(content, "resource");
+            return string.Equals(StringOf(resource, "uri"), uri.AbsoluteUri, StringComparison.Ordinal) ? StringOf(resource, "text") : null;
+        }
+
+        private static JsonElement ObjectOf(JsonElement element, string name) =>
+            element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) ? value : default;
+
+        private static string? StringOf(JsonElement element, string name) =>
+            element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
+    }
+
+    // Set by the transport once the prompt request is written. Read after the turn ends, possibly from another thread.
+    private sealed class Transmission
+    {
+        private int _sent;
+
+        public bool Sent => Volatile.Read(ref _sent) != 0;
+
+        public void Mark()
+        {
+            _ = Interlocked.Exchange(ref _sent, 1);
+        }
+    }
+
+    private sealed class Slot(AgentSessionRuntime runtime, HostLease lease, EngineComposition engine, string? accountKey) : IAsyncDisposable
     {
         public AgentSessionRuntime Runtime { get; } = runtime;
 
@@ -980,8 +1176,6 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         public EngineComposition Engine { get; } = engine;
 
         public string? AccountKey { get; } = accountKey;
-
-        public string FirstPromptBlock { get; } = firstPromptBlock;
 
         public string? LastPrompt { get; set; }
 

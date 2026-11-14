@@ -3,9 +3,11 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Cowork;
 using Autonogrammer.Cowork.Abstractions;
+using Autonogrammer.Cowork.Sessions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.AgentLoop.Launch;
 using Autonogrammer.Native.Cowork;
@@ -513,6 +515,188 @@ public sealed class CoworkSessionHostTests
         tools.GatewayClosed.ShouldBeFalse();
         (await GatewayStatusAsync(tools, id, ct).ConfigureAwait(true)).ShouldBe(HttpStatusCode.NotFound);
         await Should.ThrowAsync<ObjectDisposedException>(() => host.OpenSessionAsync(Row(id), ct)).ConfigureAwait(true);
+    }
+
+    [Fact]
+    public async Task APendingBlockGoesOutFirstOnceAndIsAcknowledgedByItsSend()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var root = new TempDir();
+        PendingBlock(root.Path, "task-p");
+        var omp = new ScriptedOmp();
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var host = Host(root.Path, omp);
+            try
+            {
+                await host.OpenSessionAsync(Row("task-p"), ct).ConfigureAwait(true);
+                await host.SendAsync("task-p", "hello cowork", null, ct).ConfigureAwait(true);
+
+                var first = (await PromptsAsync(omp, 1, ct).ConfigureAwait(true))[0];
+                var blocks = first["params"]!["prompt"]!.AsArray();
+                blocks[0]!["type"]!.GetValue<string>().ShouldBe("resource");
+                blocks[0]!["resource"]!["uri"]!.GetValue<string>().ShouldBe(CoworkFirstPromptStore.ResourceUriFor("task-p").AbsoluteUri);
+                blocks[0]!["resource"]!["text"]!.GetValue<string>().ShouldBe("task context block");
+                blocks[1]!["text"]!.GetValue<string>().ShouldBe("hello cowork");
+                await WaitForStateAsync(root.Path, "task-p", CoworkFirstPromptState.Acknowledged, ct).ConfigureAwait(true);
+
+                await host.SendAsync("task-p", "again", null, ct).ConfigureAwait(true);
+                var second = (await PromptsAsync(omp, 2, ct).ConfigureAwait(true))[1];
+                second["params"]!["prompt"]!.AsArray().Count.ShouldBe(1);
+                second["params"]!["prompt"]![0]!["text"]!.GetValue<string>().ShouldBe("again");
+            }
+            finally
+            {
+                await host.DisposeAsync().ConfigureAwait(true);
+            }
+        }, ct).ConfigureAwait(true);
+    }
+
+    [Fact]
+    public async Task AnUnconfirmedBlockPausesSendsUntilTheUserResendsIt()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var root = new TempDir();
+        UnconfirmedBlock(root.Path, "task-u");
+        var omp = new ScriptedOmp();
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var host = Host(root.Path, omp);
+            try
+            {
+                var view = await host.OpenSessionAsync(Row("task-u"), ct).ConfigureAwait(true);
+                host.Notices.ShouldContain(notice => notice.Contains("Sending is paused", StringComparison.Ordinal));
+
+                await host.SendAsync("task-u", "first words", null, ct).ConfigureAwait(true);
+                await UntilTurnEndsAsync(view, ct).ConfigureAwait(true);
+                omp.Requests("session/prompt").ShouldBeEmpty();
+                new CoworkFirstPromptStore(root.Path, "acct").Read("task-u")!.State.ShouldBe(CoworkFirstPromptState.Unconfirmed);
+
+                await host.ResendFirstPromptAsync("task-u", ct).ConfigureAwait(true);
+                await host.SendAsync("task-u", "first words", null, ct).ConfigureAwait(true);
+
+                var blocks = (await PromptsAsync(omp, 1, ct).ConfigureAwait(true))[0]["params"]!["prompt"]!.AsArray();
+                blocks[0]!["type"]!.GetValue<string>().ShouldBe("resource");
+                blocks[1]!["text"]!.GetValue<string>().ShouldBe("first words");
+            }
+            finally
+            {
+                await host.DisposeAsync().ConfigureAwait(true);
+            }
+        }, ct).ConfigureAwait(true);
+    }
+
+    [Fact]
+    public async Task AnAbandonedBlockIsNeverSentAndTheTextGoesOutAlone()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var root = new TempDir();
+        UnconfirmedBlock(root.Path, "task-a");
+        var omp = new ScriptedOmp();
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var host = Host(root.Path, omp);
+            try
+            {
+                await host.OpenSessionAsync(Row("task-a"), ct).ConfigureAwait(true);
+                await host.AbandonFirstPromptAsync("task-a", ct).ConfigureAwait(true);
+                await host.SendAsync("task-a", "plain", null, ct).ConfigureAwait(true);
+
+                var blocks = (await PromptsAsync(omp, 1, ct).ConfigureAwait(true))[0]["params"]!["prompt"]!.AsArray();
+                blocks.Count.ShouldBe(1);
+                blocks[0]!["type"]!.GetValue<string>().ShouldBe("text");
+                blocks[0]!["text"]!.GetValue<string>().ShouldBe("plain");
+            }
+            finally
+            {
+                await host.DisposeAsync().ConfigureAwait(true);
+            }
+        }, ct).ConfigureAwait(true);
+    }
+
+    [Fact]
+    public async Task AFirstSlashMessageIsRefusedBeforeAnythingIsSentAndTheBlockStaysPending()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var root = new TempDir();
+        PendingBlock(root.Path, "task-s");
+        var omp = new ScriptedOmp();
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var host = Host(root.Path, omp);
+            try
+            {
+                var view = await host.OpenSessionAsync(Row("task-s"), ct).ConfigureAwait(true);
+                await host.SendAsync("task-s", "/help", null, ct).ConfigureAwait(true);
+                await UntilTurnEndsAsync(view, ct).ConfigureAwait(true);
+
+                omp.Requests("session/prompt").ShouldBeEmpty();
+                new CoworkFirstPromptStore(root.Path, "acct").Read("task-s")!.State.ShouldBe(CoworkFirstPromptState.Pending);
+            }
+            finally
+            {
+                await host.DisposeAsync().ConfigureAwait(true);
+            }
+        }, ct).ConfigureAwait(true);
+    }
+
+    // A task whose standing block is stored and not yet sent: the state a fresh task starts in.
+    private static void PendingBlock(string root, string id) =>
+        new CoworkFirstPromptStore(root, "acct").Ensure(id, "task context block");
+
+    // A task whose block was written but whose outcome is unknown: the state a lost response leaves behind.
+    private static void UnconfirmedBlock(string root, string id)
+    {
+        var store = new CoworkFirstPromptStore(root, "acct");
+        _ = store.Ensure(id, "task context block");
+        store.MarkInFlight(id);
+        store.Settle(id, transmitted: true, completed: false);
+    }
+
+    // Waits, without failing, until the turn a send started has ended. A refused first send ends its turn with a fault the view shows; SendAsync does not throw for it.
+    private static async Task UntilTurnEndsAsync(AgentSessionViewModel view, CancellationToken cancellationToken)
+    {
+        var runtime = AgentSessionRuntime.For(view).ShouldNotBeNull();
+        for (var attempt = 0; attempt < 500 && runtime.Runs.IsRunActive; attempt++)
+        {
+            await Task.Delay(10, cancellationToken).ConfigureAwait(true);
+        }
+    }
+
+    private static async Task<List<JsonObject>> PromptsAsync(ScriptedOmp omp, int count, CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; attempt < 500; attempt++)
+        {
+            var requests = omp.Requests("session/prompt");
+            if (requests.Count >= count)
+            {
+                return [.. requests.Take(count)];
+            }
+
+            await Task.Delay(10, cancellationToken).ConfigureAwait(true);
+        }
+
+        throw new TimeoutException($"The fake omp never received prompt {count}.");
+    }
+
+    private static async Task WaitForStateAsync(string root, string id, CoworkFirstPromptState state, CancellationToken cancellationToken)
+    {
+        var store = new CoworkFirstPromptStore(root, "acct");
+        for (var attempt = 0; attempt < 500; attempt++)
+        {
+            if (store.Read(id)?.State == state)
+            {
+                return;
+            }
+
+            await Task.Delay(10, cancellationToken).ConfigureAwait(true);
+        }
+
+        throw new TimeoutException($"The first-prompt record never reached {state}.");
     }
 
     private static CoworkSessionHost Host(string root, ScriptedOmp omp, CoworkToolServer? tools = null) =>

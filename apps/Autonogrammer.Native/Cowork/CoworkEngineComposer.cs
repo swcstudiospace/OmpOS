@@ -45,6 +45,7 @@ internal static class CoworkEngineComposer
         var options = new EngineCompositionOptions
         {
             ExtraMcpServers = extra,
+            LoadReplaySink = request.LoadReplaySink,
             EnvironmentMode = EngineEnvironmentMode.Allowlist,
             EnvironmentAllowList = AllowList(plan),
             ProcessWrapper = WrapperFor(request, plan),

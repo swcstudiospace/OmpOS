@@ -102,6 +102,7 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
             EnvironmentMode = options.EnvironmentMode,
             EnvironmentAllowList = options.EnvironmentAllowList,
             HookGate = options.HookGate,
+            LoadReplaySink = options.LoadReplaySink,
             McpServers = MergeServers(plan, options.ExtraMcpServers),
             ProcessWrapper = options.ProcessWrapper,
         };

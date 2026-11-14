@@ -43,6 +43,12 @@ public sealed record AcpClientOptions
     public IAcpHookGate? HookGate { get; init; }
 
     /// <summary>
+    /// Gets the sink that receives the history the agent replays when a session is loaded. Null (the default) keeps no replay. A session with a sink
+    /// captures the replay of its <c>session/load</c> and hands it over once the load has answered.
+    /// </summary>
+    public IAcpLoadReplaySink? LoadReplaySink { get; init; }
+
+    /// <summary>
     /// Gets the ACP authentication method id sent in <c>authenticate</c> when the agent advertises
     /// <c>authMethods</c> in its <c>initialize</c> result. <see langword="null"/> (the default) means no
     /// method is configured: a handshake that requires authentication then fails instead of guessing a method.

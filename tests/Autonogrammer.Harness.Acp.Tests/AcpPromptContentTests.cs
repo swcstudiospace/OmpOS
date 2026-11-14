@@ -130,4 +130,22 @@ public sealed class AcpPromptContentTests
         Should.Throw<ArgumentException>(() => AcpPromptContent.Build("t", [new AcpPromptResource(" ", "text/plain", "x", "n", 1, false)]));
         AcpPromptContent.Build(string.Empty, [Res("a.txt", "x")]).Count.ShouldBe(1);
     }
+
+    /// <summary>A standing block keeps its own URI, stays first and is not cut at the default budgets, even when a large mention follows it.</summary>
+    [Fact]
+    public void AStandingBlockIsFirstByteExactAndUncutAtTheDefaultBudgets()
+    {
+        var standing = new string('s', 28 * 1024);
+        var uri = "autonogrammer://cowork/standing-context/task-1";
+        var blocks = AcpPromptContent.Build(
+            "look",
+            [new AcpPromptResource(uri, "text/plain", standing, "Task context", standing.Length, false), Res("big.txt", new string('m', 300 * 1024))]);
+
+        blocks[0].Type.ShouldBe("resource");
+        blocks[0].Resource!.Location.ShouldBe(uri);
+        blocks[0].Resource!.Text.ShouldBe(standing);
+        blocks[1].Type.ShouldBe("resource");
+        blocks[^1].Type.ShouldBe("text");
+        blocks[^1].Text.ShouldBe("look");
+    }
 }

@@ -89,6 +89,13 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
     private bool _optionChanging;
     private bool _steeringSupported;
     private bool? _supportsImages;
+    private bool? _supportsEmbeddedContext;
+
+    /// <summary>The most replayed updates one session/load keeps. Past it the replay is incomplete.</summary>
+    private const int MaxLoadReplayUpdates = 8192;
+
+    private List<JsonElement>? _loadReplay;
+    private bool _loadReplayComplete;
     private bool _openFailed;
     private OmpSessionOption[] _sessionOptions = [];
     private IReadOnlyList<AcpAvailableCommand> _availableCommands = [];
@@ -258,6 +265,18 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         }
     }
 
+    /// <summary>Gets whether omp advertised <c>agentCapabilities.promptCapabilities.embeddedContext</c> as true in its <c>initialize</c> result, <see langword="null"/> before the handshake. A prompt that requires embedded context is refused unless this is true.</summary>
+    public bool? SupportsEmbeddedContext
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _supportsEmbeddedContext;
+            }
+        }
+    }
+
     /// <inheritdoc />
     public HarnessState State
     {
@@ -303,7 +322,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         var finished = false;
         try
         {
-            await StartPromptAsync(turn, hookedPrompt, options.Resources, options.Images, cancellationToken).ConfigureAwait(false);
+            await StartPromptAsync(turn, hookedPrompt, options.Resources, options.Images, options.Transmitted, cancellationToken).ConfigureAwait(false);
             while (true)
             {
                 var held = new HeldTerminalEvent(_hookGate is not null);
@@ -325,7 +344,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
                     }
 
                     turn = BeginTurn();
-                    await StartPromptAsync(turn, followUp, [], [], cancellationToken).ConfigureAwait(false);
+                    await StartPromptAsync(turn, followUp, [], [], null, cancellationToken).ConfigureAwait(false);
                     continue;
                 }
 
@@ -1063,6 +1082,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
             AdvertisedCapabilities = AcpWireMapping.Flatten(result.AgentCapabilities);
             _steeringSupported = ReadSteeringSupported(result.Meta);
             _supportsImages = result.AgentCapabilities.PromptCapabilities?.Image ?? false;
+            _supportsEmbeddedContext = result.AgentCapabilities.PromptCapabilities?.EmbeddedContext ?? false;
         }
 
         if (result.AuthMethods is { Count: > 0 } authMethods)
@@ -1137,13 +1157,30 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
             return;
         }
 
-        var loaded = await CallAsync(
-            "session/load",
-            new AcpFrames.LoadSessionParams(resumeSessionId, cwd, _mcpServers),
-            AcpJsonContext.Default.RequestLoadSessionParams,
-            _options.RequestTimeout,
-            cancellationToken).ConfigureAwait(false);
+        BeginLoadReplay();
+        AcpFrames.Inbound loaded;
+        try
+        {
+            loaded = await CallAsync(
+                "session/load",
+                new AcpFrames.LoadSessionParams(resumeSessionId, cwd, _mcpServers),
+                AcpJsonContext.Default.RequestLoadSessionParams,
+                _options.RequestTimeout,
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            _ = TakeLoadReplay(resumeSessionId);
+            throw;
+        }
+
+        var replay = TakeLoadReplay(resumeSessionId);
         SetSessionId(resumeSessionId);
+        if (replay is not null)
+        {
+            // The replay is the agent's own history. The consumer that asked for it receives it before the session takes a prompt.
+            _options.LoadReplaySink?.LoadReplayed(replay);
+        }
 
         // A load answer may carry no result at all; the options are then learned from the agent's own config_option_update.
         ApplyConfigOptions(loaded.Result is { ValueKind: JsonValueKind.Object } result && result.TryGetProperty("configOptions", out var options) ? options : null);
@@ -1316,7 +1353,8 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         var turn = ActiveTurn();
         if (turn is null)
         {
-            // Updates outside a prompt (for example history replay during session/load) have no consumer.
+            // Updates outside a prompt are the history a session/load replays: they are kept for the load's sink, never discarded.
+            CaptureLoadReplay(inbound);
             return;
         }
 
@@ -1343,6 +1381,65 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         catch (JsonException)
         {
             WriteTurnEvent(turn, new DiagnosticEvent("omp acp sent a session/update that could not be decoded."));
+        }
+    }
+
+    // Keeps one update the agent replays for an open session/load. Runs on the pump. Past the cap the replay is marked incomplete rather than cut silently.
+    private void CaptureLoadReplay(AcpFrames.Inbound inbound)
+    {
+        lock (_gate)
+        {
+            if (_loadReplay is null)
+            {
+                return;
+            }
+
+            if (_loadReplay.Count >= MaxLoadReplayUpdates)
+            {
+                _loadReplayComplete = false;
+                return;
+            }
+        }
+
+        try
+        {
+            var notification = inbound.Params?.Deserialize(AcpJsonContext.Default.SessionNotification);
+            if (notification is not null && notification.Update.ValueKind == JsonValueKind.Object)
+            {
+                var update = notification.Update.Clone();
+                lock (_gate)
+                {
+                    _loadReplay.Add(update);
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // A replayed update that cannot be decoded makes the replay incomplete: the consumer must not treat it as the whole history.
+            lock (_gate)
+            {
+                _loadReplayComplete = false;
+            }
+        }
+    }
+
+    // Opens a replay capture for the session/load about to be sent. With no sink there is nothing to keep, so no capture is opened.
+    private void BeginLoadReplay()
+    {
+        lock (_gate)
+        {
+            _loadReplay = _options.LoadReplaySink is null ? null : new List<JsonElement>();
+            _loadReplayComplete = true;
+        }
+    }
+
+    private AcpLoadReplay? TakeLoadReplay(string sessionId)
+    {
+        lock (_gate)
+        {
+            var captured = _loadReplay;
+            _loadReplay = null;
+            return captured is null ? null : new AcpLoadReplay(sessionId, captured, _loadReplayComplete);
         }
     }
 
@@ -1894,7 +1991,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         }
     }
 
-    private async Task StartPromptAsync(PromptTurn turn, string prompt, IReadOnlyList<PromptResource> resources, IReadOnlyList<PromptImage> images, CancellationToken cancellationToken)
+    private async Task StartPromptAsync(PromptTurn turn, string prompt, IReadOnlyList<PromptResource> resources, IReadOnlyList<PromptImage> images, Action? transmitted, CancellationToken cancellationToken)
     {
         var sent = false;
         try
@@ -1933,6 +2030,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
                     cancellationToken).ConfigureAwait(false);
             }
             sent = true;
+            transmitted?.Invoke();
         }
         finally
         {
@@ -2274,6 +2372,12 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         if (options.Images.Count > 0 && SupportsImages == false)
         {
             throw new NotSupportedException("omp does not accept images in a prompt: its initialize result says promptCapabilities.image is false.");
+        }
+
+        // A caller that needs embedded context is refused before anything is sent. Ordinary mentions keep their behaviour.
+        if (options.RequireEmbeddedContext && options.Resources.Count > 0 && SupportsEmbeddedContext is not true)
+        {
+            throw new NotSupportedException("omp does not accept embedded context in a prompt: its initialize result does not say promptCapabilities.embeddedContext is true.");
         }
     }
 

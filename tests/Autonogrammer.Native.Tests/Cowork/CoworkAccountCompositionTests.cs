@@ -1,7 +1,9 @@
 using System.Net;
 using System.Text;
+using System.Text.Json.Nodes;
 using Autonogrammer.Accounts;
 using Autonogrammer.Contracts.Accounts;
+using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Cowork;
 using Autonogrammer.Cowork.Memory;
 using Autonogrammer.Cowork.Projects;
@@ -11,6 +13,7 @@ using Autonogrammer.Native.Agents;
 using Autonogrammer.Native.Composition;
 using Autonogrammer.Native.Cowork;
 using Autonogrammer.Native.Tests.AgentLoop;
+using Autonogrammer.Presentation.AgentPanel;
 using Shouldly;
 using Xunit;
 
@@ -281,6 +284,108 @@ public sealed class CoworkAccountCompositionTests
             recall.ShouldContain("\"projectId\":\"" + linkedProject + "\"");
         }
     }
+
+    /// <summary>
+    /// The first send of a project-linked task carries the account's standing block as the first embedded resource, byte-exact with the stored snapshot,
+    /// before the user text. The block is acknowledged by the send, so the next send does not repeat it.
+    /// </summary>
+    [Fact]
+    public async Task TheFirstCoworkPromptCarriesTheStandingBlockBeforeTheUserText()
+    {
+        var ct = Token;
+        await using var ui = TestAppBuilder.StartSession();
+        await ui.RunAsync(() => FirstPromptBodyAsync(ct), ct).ConfigureAwait(true);
+    }
+
+    // The send path marshals onto the UI thread, so the body runs inside the UI session the test starts.
+    private static async Task FirstPromptBodyAsync(CancellationToken ct)
+    {
+        using var tree = new TempTree();
+        var session = new ControllableAccountSession();
+        session.SignIn("user-a", "token-a");
+        using var api = new ScriptedApi(static (bearer, route) => Respond(Tag(bearer), route, new RouteOptions()));
+        var variables = ApiVariables();
+        var services = await HeadServices.CreateAsync(HeadOptions(tree, session, api, variables), ct).ConfigureAwait(true);
+        var omp = new ScriptedOmp();
+        var head = await AgentHead.CreateAsync(AgentLoopFixtures.Options(tree, omp, variables, services: services)).ConfigureAwait(true);
+        await using (head.ConfigureAwait(false))
+        {
+            var cowork = head.Cowork.ShouldNotBeNull();
+            var accountKey = CoworkAccountFolder.KeyFromSubject("user-a");
+            var id = await cowork.Sessions.CreateSessionAsync(ct).ConfigureAwait(true);
+            new CoworkSessionMetaStore(tree.State, accountKey).Upsert(id, new CoworkSessionMeta { ProjectId = ProjectId });
+            await cowork.Sessions.OpenSessionAsync(Row(id), ct).ConfigureAwait(true);
+
+            await cowork.Sessions.SendAsync(id, "hello cowork", null, ct).ConfigureAwait(true);
+            var first = (await PromptsAsync(omp, 1, ct).ConfigureAwait(true))[0].AsObject();
+            var blocks = first["params"]!["prompt"]!.AsArray();
+            var stored = new CoworkFirstPromptStore(tree.State, accountKey).Read(id).ShouldNotBeNull();
+            blocks[0]!["type"]!.GetValue<string>().ShouldBe("resource");
+            blocks[0]!["resource"]!["uri"]!.GetValue<string>().ShouldBe(CoworkFirstPromptStore.ResourceUriFor(id).AbsoluteUri);
+            blocks[0]!["resource"]!["text"]!.GetValue<string>().ShouldBe(stored.Text);
+            stored.Text.ShouldContain("global-a", (Case)StringComparison.Ordinal);
+            stored.Text.ShouldContain("project-a", (Case)StringComparison.Ordinal);
+            stored.Text.ShouldContain("memory-a", (Case)StringComparison.Ordinal);
+            blocks[1]!["type"]!.GetValue<string>().ShouldBe("text");
+            blocks[1]!["text"]!.GetValue<string>().ShouldBe("hello cowork");
+            await WaitForStateAsync(tree.State, accountKey, id, CoworkFirstPromptState.Acknowledged, ct).ConfigureAwait(true);
+
+            await cowork.Sessions.SendAsync(id, "second words", null, ct).ConfigureAwait(true);
+            var second = (await PromptsAsync(omp, 2, ct).ConfigureAwait(true))[1].AsObject();
+            var secondBlocks = second["params"]!["prompt"]!.AsArray();
+            secondBlocks.Count.ShouldBe(1);
+            secondBlocks[0]!["type"]!.GetValue<string>().ShouldBe("text");
+            secondBlocks[0]!["text"]!.GetValue<string>().ShouldBe("second words");
+        }
+    }
+
+    private static async Task<List<JsonNode>> PromptsAsync(ScriptedOmp omp, int count, CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; attempt < 500; attempt++)
+        {
+            var requests = omp.Requests("session/prompt");
+            if (requests.Count >= count)
+            {
+                return [.. requests.Take(count)];
+            }
+
+            await Task.Delay(10, cancellationToken).ConfigureAwait(true);
+        }
+
+        throw new TimeoutException($"The fake omp never received prompt {count}.");
+    }
+
+    private static async Task WaitForStateAsync(string stateRoot, string accountKey, string id, CoworkFirstPromptState state, CancellationToken cancellationToken)
+    {
+        var store = new CoworkFirstPromptStore(stateRoot, accountKey);
+        for (var attempt = 0; attempt < 500; attempt++)
+        {
+            if (store.Read(id)?.State == state)
+            {
+                return;
+            }
+
+            await Task.Delay(10, cancellationToken).ConfigureAwait(true);
+        }
+
+        throw new TimeoutException($"The first-prompt record never reached {state}.");
+    }
+
+    private static AgentRow Row(string id) => new()
+    {
+        Id = id,
+        Title = "task",
+        Summary = new SessionSummary { Id = id, Title = "task", Lifecycle = SessionLifecycle.Created, CreatedAt = DateTimeOffset.UnixEpoch, LastActivity = DateTimeOffset.UnixEpoch },
+        Status = AgentRowStatus.Ready,
+        Group = AgentRowGroup.Idle,
+        StatusText = "Ready",
+        IconKey = "ready",
+        LastActivityText = "now",
+        IsLongRunning = false,
+        IsStale = false,
+        IsLost = false,
+        AccessibleName = "task",
+    };
 
     private static HeadServicesOptions HeadOptions(TempTree tree, IAccountSession session, HttpMessageHandler api, Func<string, string?> variables) => new()
     {

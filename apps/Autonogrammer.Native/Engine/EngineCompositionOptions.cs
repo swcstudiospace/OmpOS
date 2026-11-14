@@ -20,6 +20,9 @@ internal sealed record EngineCompositionOptions
     /// <summary>Gets the gate through which hooks see the session's traffic, or null when hooks are off for the session.</summary>
     public IAcpHookGate? HookGate { get; init; }
 
+    /// <summary>Gets the sink that receives the history the agent replays when this session is loaded, or null when nothing keeps the replay.</summary>
+    public IAcpLoadReplaySink? LoadReplaySink { get; init; }
+
     /// <summary>
     /// Gets the run mode policy in force, read for every permission request, or null for a session without run modes. When it is set, the resolver that asks the user is wrapped in
     /// <see cref="RunModePermissionResolver"/>, and in <see cref="RunMode.RunEverything"/> the approval policy admits every tool kind.
