@@ -2,6 +2,7 @@ using Autonogrammer.Contracts.Cowork;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Cowork;
+using Autonogrammer.Presentation.Cowork.Projects;
 
 namespace Autonogrammer.Native.Views.Shell;
 
@@ -34,4 +35,13 @@ public sealed record CoworkSurfaceServices
 
     /// <summary>Gets the conversation model for a selected session, or null for the empty state. The value is a presentation model.</summary>
     public Func<string, object?>? OpenConversation { get; init; }
+
+    /// <summary>Gets the project list the rail's project picker reads. It is bound to the signed-in account, or null when there is no account.</summary>
+    public ProjectListModel? Projects { get; init; }
+
+    /// <summary>
+    /// Gets the new-task action, or null when Cowork cannot create tasks. The argument is the project the task is linked to, or null for an unlinked task.
+    /// The result is the new task's identifier and a notice to show, or null.
+    /// </summary>
+    public Func<string?, CancellationToken, Task<(string Id, string? Notice)>>? CreateTask { get; init; }
 }

@@ -44,6 +44,7 @@ public sealed class SurfaceHost : UserControl, IDisposable
 
         Cowork = new CoworkView();
         Cowork.Attach(services.Shell);
+        Cowork.BindConversation(services.Shell, services);
         CoworkHost.Content = Cowork;
         _activity = new SurfaceActivityModel(
             Switch,

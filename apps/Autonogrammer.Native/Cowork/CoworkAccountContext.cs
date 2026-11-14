@@ -17,6 +17,21 @@ internal sealed class CoworkAccountContext : IDisposable
     /// <summary>How many entries a session recalls for its brief. The brief is cut to 4 KiB after the recall.</summary>
     public const int RecallCount = 50;
 
+    /// <summary>
+    /// The active account's projects after a sync. <see cref="AccountKey"/> names the account the rows belong to; an unavailable read carries no rows.
+    /// </summary>
+    /// <param name="AccountKey">The folder key of the account, or null when the read is unavailable.</param>
+    /// <param name="SyncState">The <see cref="ProjectSyncState"/> of the sync that preceded the read.</param>
+    /// <param name="IsReadOnly">Whether the rows are the last synced copy and are read-only.</param>
+    /// <param name="Projects">The local projects, archived ones included.</param>
+    internal sealed record ProjectsRead(string? AccountKey, string SyncState, bool IsReadOnly, IReadOnlyList<global::Autonogrammer.Cowork.Projects.CoworkProject> Projects)
+    {
+        /// <summary>Returns the read for a request that has no account: signed out, switched during the call, or refused by the sync.</summary>
+        /// <param name="state">The sync state that explains why.</param>
+        /// <returns>A read with no account and no rows.</returns>
+        public static ProjectsRead Unavailable(string state) => new(null, state, true, []);
+    }
+
     private readonly Lock _lock = new();
     private readonly ICoworkAccountGate _gate;
     private readonly IAccountSession _session;
@@ -116,6 +131,39 @@ internal sealed class CoworkAccountContext : IDisposable
         {
             // The account was retired during the call. The caller gets nothing from the account that was active before.
             return CoworkAccountSnapshot.Unavailable(ProjectSyncState.SignedOut);
+        }
+    }
+
+    /// <summary>
+    /// Syncs the active account and returns its projects. The read is refused when no account is signed in, and a read that finishes after the
+    /// account changed is replaced by an unavailable one, so the caller never gets another account's projects.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the sync.</param>
+    /// <returns>The read.</returns>
+    /// <exception cref="ObjectDisposedException">The context is disposed.</exception>
+    public async Task<ProjectsRead> ListProjectsAsync(CancellationToken cancellationToken)
+    {
+        var scope = CurrentScope();
+        if (scope is null)
+        {
+            return ProjectsRead.Unavailable(ProjectSyncState.SignedOut);
+        }
+
+        using var linked = scope.Link(cancellationToken);
+        if (linked is null)
+        {
+            return ProjectsRead.Unavailable(ProjectSyncState.SignedOut);
+        }
+
+        try
+        {
+            var read = await scope.ListProjectsAsync(linked.Token).ConfigureAwait(false);
+            return IsCurrentScope(scope) ? read : ProjectsRead.Unavailable(ProjectSyncState.SignedOut);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            // The account was retired during the call.
+            return ProjectsRead.Unavailable(ProjectSyncState.SignedOut);
         }
     }
 
@@ -258,6 +306,20 @@ internal sealed class CoworkAccountContext : IDisposable
                 project?.Instructions,
                 memoryState,
                 brief);
+        }
+
+        /// <summary>Syncs the account, then returns its local projects, archived ones included.</summary>
+        /// <param name="cancellationToken">Cancels the sync.</param>
+        /// <returns>The read, with the account it belongs to.</returns>
+        public async Task<ProjectsRead> ListProjectsAsync(CancellationToken cancellationToken)
+        {
+            var state = await _sync.SyncAsync(cancellationToken).ConfigureAwait(false);
+            if (string.Equals(state, ProjectSyncState.SignedOut, StringComparison.Ordinal))
+            {
+                return ProjectsRead.Unavailable(state);
+            }
+
+            return new ProjectsRead(Key, state, _sync.IsReadOnly, _projects.List(includeArchived: true));
         }
 
         private (CoworkSessionMeta? Meta, bool Unreadable) ReadSession(string sessionId)

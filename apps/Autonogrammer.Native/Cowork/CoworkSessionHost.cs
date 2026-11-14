@@ -14,6 +14,7 @@ using Autonogrammer.Native.Logging;
 using Autonogrammer.Native.Views.Sessions;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Composer.Attachments;
+using Autonogrammer.Presentation.Cowork.Instructions;
 using Avalonia.Threading;
 
 namespace Autonogrammer.Native.Cowork;
@@ -25,6 +26,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
     private readonly Lock _gate = new();
     private readonly Dictionary<string, Slot> _slots = new(StringComparer.Ordinal);
     private CoworkSessionRegistry? _registry;
+    private string? _registryAccountKey;
     // The tail always completes successfully, even when an operation fails. Shutdown drains it before closing tools.
     private Task _operations = Task.CompletedTask;
     private Task? _disposeTask;
@@ -77,6 +79,117 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         var id = EnsureRegistry(cancellationToken).Create(null).Id;
         await Task.CompletedTask.ConfigureAwait(false);
         return id;
+    }
+
+    // The memory mode a linked task is created with. Memory then follows the account's settings; the task's own flag is stored and read back as set.
+    private const bool LinkedTaskMemoryOff = false;
+
+    /// <summary>
+    /// Creates the task the rail asked for. No project creates an unlinked task, exactly as <see cref="CreateSessionAsync"/> does. A project creates a task
+    /// linked to it: the project, its trusted folders and the task's memory mode are stored before the identifier is returned. Nothing is opened.
+    /// </summary>
+    /// <param name="projectId">The project, or null for an unlinked task.</param>
+    /// <param name="cancellationToken">Cancels the create.</param>
+    /// <returns>
+    /// The task identifier, and a sentence to show, or null. The sentence says a project folder is missing on this device; the task is still created.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">Signed out, or the project is not an active project of the signed-in account.</exception>
+    public async Task<(string Id, string? Notice)> CreateTaskAsync(string? projectId, CancellationToken cancellationToken)
+    {
+        if (projectId is null)
+        {
+            var unlinked = await CreateSessionAsync(cancellationToken).ConfigureAwait(false);
+            return (unlinked, null);
+        }
+
+        return CreateLinkedTask(projectId, cancellationToken);
+    }
+
+    /// <summary>Returns the account's tasks in registry order, each with the project it is linked to. Signed out, there are none.</summary>
+    /// <returns>A snapshot that later changes do not affect.</returns>
+    public IReadOnlyList<Contracts.Cowork.CoworkSessionSummary> TaskSummaries()
+    {
+        var accountKey = SignedInKeyOrNull();
+        if (accountKey is null)
+        {
+            return [];
+        }
+
+        var rows = EnsureRegistry(CancellationToken.None).List();
+        var meta = new CoworkSessionMetaStore(_options.StateRoot, accountKey);
+        return [.. rows.Select(row => new Contracts.Cowork.CoworkSessionSummary
+        {
+            Id = row.Id,
+            Title = row.Title,
+            Status = row.Status,
+            CreatedAt = DateTimeOffset.UnixEpoch,
+            UpdatedAt = DateTimeOffset.UnixEpoch,
+            ProjectId = ProjectIdOf(meta, row.Id),
+        })];
+    }
+
+    /// <summary>
+    /// Reads what a task takes at its start now: its project, the project's instructions, the global instructions and the memory brief.
+    /// The project comes from the task's stored link, so reopening a task reads its own project, not the one selected in the rail.
+    /// </summary>
+    /// <param name="sessionId">The task.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The account snapshot, or null when the head has no account data.</returns>
+    public async Task<CoworkAccountSnapshot?> ResolveTaskContextAsync(string sessionId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
+        if (_options.AccountContext is null)
+        {
+            return null;
+        }
+
+        return await _options.AccountContext.SnapshotAsync(sessionId, cancellationToken).ConfigureAwait(false);
+    }
+
+    private (string Id, string? Notice) CreateLinkedTask(string projectId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(projectId);
+        cancellationToken.ThrowIfCancellationRequested();
+        var accountKey = SignedInKeyOrNull() ?? throw new InvalidOperationException("Sign in to create a Cowork task.");
+        // The project, its folders and the mode are read from the account's local copy before anything is written.
+        var project = ActiveProjectOf(accountKey, projectId);
+        var meta = new CoworkSessionMeta
+        {
+            ProjectId = project.Id,
+            TrustedFolders = TrustedFoldersOf(accountKey, project),
+            MemoryOff = LinkedTaskMemoryOff,
+        };
+        var notice = CoworkDegradedSentences.TryFor(Autonogrammer.Cowork.Projects.CoworkProjectStore.Workspace(project).Notice);
+        var registry = EnsureRegistry(cancellationToken);
+        var id = registry.Create(null).Id;
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            new CoworkSessionMetaStore(_options.StateRoot, accountKey).Upsert(id, meta);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // A task whose link was not stored must not open as an unlinked task. It is marked Failed; the original error keeps propagating.
+            MarkFailed(registry, id);
+            throw;
+        }
+
+        return (id, notice);
+    }
+
+    private void MarkFailed(CoworkSessionRegistry registry, string id)
+    {
+        ExceptionDispatchInfo? failure = null;
+        try
+        {
+            _ = registry.SetStatus(id, Contracts.Cowork.CoworkSessionStatus.Failed);
+        }
+        catch (Exception cleanup) when (cleanup is not OutOfMemoryException)
+        {
+            failure = ExceptionDispatchInfo.Capture(cleanup);
+        }
+
+        CleanupFailureReporter.Report(failure, completed: false, _options.LoggerFactory?.CreateLogger("Autonogrammer.Native.Cowork"));
     }
 
     /// <inheritdoc />
@@ -422,6 +535,14 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
+            var accountKey = SignedInKeyOrNull();
+            if (_registry is not null && !string.Equals(_registryAccountKey, accountKey, StringComparison.Ordinal))
+            {
+                // The account changed. The registry of the previous account is never used for the new one.
+                _registry = null;
+                _registryAccountKey = null;
+            }
+
             if (_registry is null)
             {
                 var registry = CoworkSessionRegistry.Open(
@@ -432,9 +553,68 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
                 _ = registry.RecoverAfterRestart();
                 Recoveries++;
                 _registry = registry;
+                _registryAccountKey = accountKey;
             }
 
             return _registry;
+        }
+    }
+
+    private string? SignedInKeyOrNull()
+    {
+        var key = _options.Gate.IsSignedIn ? _options.Gate.AccountFolderKey : null;
+        return string.IsNullOrWhiteSpace(key) ? null : key;
+    }
+
+    private Autonogrammer.Cowork.Projects.CoworkProject ActiveProjectOf(string accountKey, string projectId)
+    {
+        var project = new Autonogrammer.Cowork.Projects.CoworkProjectStore(_options.StateRoot, accountKey).List(includeArchived: true)
+            .FirstOrDefault(candidate => string.Equals(candidate.Id, projectId, StringComparison.Ordinal));
+        if (project is null)
+        {
+            throw new InvalidOperationException("The project is not on this device for the signed-in account. The task was not created.");
+        }
+
+        if (project.ArchivedAt is not null)
+        {
+            throw new InvalidOperationException("The project is archived. The task was not created.");
+        }
+
+        return project;
+    }
+
+    // The folders a linked task trusts: the project's folders that exist on this device, then the device's folder grants. Paths stay local.
+    private List<string> TrustedFoldersOf(string accountKey, Autonogrammer.Cowork.Projects.CoworkProject project)
+    {
+        var folders = new List<string>();
+        foreach (var folder in project.Folders)
+        {
+            if (!string.IsNullOrWhiteSpace(folder) && Directory.Exists(folder) && !folders.Contains(folder, StringComparer.Ordinal))
+            {
+                folders.Add(folder);
+            }
+        }
+
+        foreach (var grant in new CoworkFolderGrantStore(_options.StateRoot, accountKey).List())
+        {
+            if (!string.IsNullOrWhiteSpace(grant.Path) && !folders.Contains(grant.Path, StringComparer.Ordinal))
+            {
+                folders.Add(grant.Path);
+            }
+        }
+
+        return folders;
+    }
+
+    private static string? ProjectIdOf(CoworkSessionMetaStore meta, string sessionId)
+    {
+        try
+        {
+            return meta.Get(sessionId)?.ProjectId;
+        }
+        catch (InvalidDataException)
+        {
+            return null;
         }
     }
 

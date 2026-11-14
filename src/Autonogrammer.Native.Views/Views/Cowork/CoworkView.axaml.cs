@@ -60,6 +60,7 @@ public partial class CoworkView : UserControl
     {
         ArgumentNullException.ThrowIfNull(shell);
         ArgumentNullException.ThrowIfNull(services);
+        Rail.BindTasks(services.Projects, services.CreateTask);
         void Refresh()
         {
             var id = shell.Rail.SelectedId;

@@ -20,6 +20,18 @@
               MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
               AutomationProperties.Name="New task" />
     </Grid>
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource Autonogrammer.Gap.Xs}" Margin="0,0,0,8">
+      <ComboBox x:Name="ProjectPicker"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                HorizontalAlignment="Stretch"
+                AutomationProperties.Name="Project for new task" />
+      <Button x:Name="NoProjectButton"
+              Grid.Column="1"
+              Content="No project"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              AutomationProperties.Name="No project for new task" />
+    </Grid>
     <Button x:Name="ProjectsButton"
             DockPanel.Dock="Top"
             Content="Projects"
@@ -32,6 +44,11 @@
                     IsVisible="False"
                     AutomationProperties.Name="Project editor" />
     <TextBlock x:Name="LimitText"
+               DockPanel.Dock="Bottom"
+               IsVisible="False"
+               TextWrapping="Wrap"
+               AutomationProperties.LiveSetting="Polite" />
+    <TextBlock x:Name="NoticeText"
                DockPanel.Dock="Bottom"
                IsVisible="False"
                TextWrapping="Wrap"
