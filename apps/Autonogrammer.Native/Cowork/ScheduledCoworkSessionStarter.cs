@@ -5,9 +5,12 @@ using Autonogrammer.Presentation.AgentPanel;
 namespace Autonogrammer.Native.Cowork;
 
 /// <summary>
-/// Starts a scheduled run as a Cowork session through <see cref="CoworkSessionHost"/>: create, open, then send the prompt. It accepts only
-/// the Cowork surface. The host has no project, model, trusted-folder or Skip setting, so a run that asks for one is refused rather than
-/// run without it. A failure, including one after the session was created, is returned as a not-started result; a partial session is closed first.
+/// Starts a scheduled run as a Cowork task through <see cref="CoworkSessionHost"/>: create the task, open it, then send the prompt. It accepts only
+/// the Cowork surface. The task is linked to the run's project and trusts the run's folders, which the host checks against the folder boundary and
+/// this device before anything is written. Approval is always the Manual mode: a scheduled run has no one to ask, Manual asks for every action, so an
+/// action that needs approval waits and the runner cancels it. Auto is run as Manual because its read-only shell and allow-rule approvals would act
+/// unattended. Skip is refused, because the host cannot prove the folder boundary is filesystem-isolated. A model choice is refused, because a Cowork
+/// session has no model selection yet. A failure, including one after the task was created, is returned as a not-started result; a partial task is closed first.
 /// </summary>
 internal sealed class ScheduledCoworkSessionStarter : IScheduledSessionStarter
 {
@@ -47,7 +50,7 @@ internal sealed class ScheduledCoworkSessionStarter : IScheduledSessionStarter
             return NotStarted("This starter runs only Cowork sessions.");
         }
 
-        if (Unsupported(projectId, trustedFolders, approvalMode, model) is { } refusal)
+        if (Unsupported(approvalMode, model) is { } refusal)
         {
             return NotStarted(refusal);
         }
@@ -55,10 +58,17 @@ internal sealed class ScheduledCoworkSessionStarter : IScheduledSessionStarter
         string? sessionId = null;
         try
         {
-            sessionId = await _sessions.CreateSessionAsync(cancellationToken).ConfigureAwait(false);
-            _ = await _sessions.OpenSessionAsync(RowFor(sessionId), cancellationToken).ConfigureAwait(false);
-            await _sessions.SendAsync(sessionId, prompt, null, cancellationToken).ConfigureAwait(false);
-            return new ScheduledSessionStart(true, sessionId, null);
+            var project = string.IsNullOrWhiteSpace(projectId) ? null : projectId;
+            var (id, _) = await _sessions.CreateScheduledTaskAsync(project, trustedFolders, cancellationToken).ConfigureAwait(false);
+            sessionId = id;
+            _ = await _sessions.OpenSessionAsync(RowFor(id), cancellationToken).ConfigureAwait(false);
+            await _sessions.SendAsync(id, prompt, null, cancellationToken).ConfigureAwait(false);
+            return new ScheduledSessionStart(true, id, null);
+        }
+        catch (InvalidOperationException exception) when (sessionId is null && exception is not ObjectDisposedException)
+        {
+            // Raised before any task was written. Each such sentence is written by the host and names no secret or path.
+            return NotStarted(exception.Message);
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
@@ -72,21 +82,11 @@ internal sealed class ScheduledCoworkSessionStarter : IScheduledSessionStarter
         }
     }
 
-    private static string? Unsupported(string? projectId, IReadOnlyList<string> trustedFolders, SessionApprovalMode approvalMode, string? model)
+    private static string? Unsupported(SessionApprovalMode approvalMode, string? model)
     {
         if (approvalMode == SessionApprovalMode.Skip)
         {
             return "Skip is not available for scheduled Cowork runs yet. The run was not started.";
-        }
-
-        if (!string.IsNullOrWhiteSpace(projectId))
-        {
-            return "Scheduled Cowork runs cannot use a project yet. The run was not started.";
-        }
-
-        if (trustedFolders.Count > 0)
-        {
-            return "Scheduled Cowork runs cannot add trusted folders yet. The run was not started.";
         }
 
         return string.IsNullOrWhiteSpace(model) ? null : "Scheduled Cowork runs cannot choose a model yet. The run was not started.";

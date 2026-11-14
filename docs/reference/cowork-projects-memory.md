@@ -123,13 +123,13 @@ Target `session` (Cowork or Code) + preset + approvalMode + optional project/fol
 
 **Skip refuse:** unless FilesystemIsolated.
 
-**Starter:** Cowork → `CoworkSessionHost`; Code keeps `HeadAutomationSessions`.
+**Starter:** Cowork → `ScheduledCoworkSessionStarter` → `CoworkSessionHost`. The run creates a task linked to its project (the project's folders, then the run's folders), opens it and sends the prompt. The run is `Launched` only after the prompt is sent. A run folder must exist on this device and pass the folder boundary; a refused or missing folder, an unknown or archived project, or a signed-out run that names a project or folder starts nothing and is recorded as failed. A run with neither starts an unlinked task, as before. Memory follows the account settings, as for a rail task. Approval is Manual for every accepted run: Auto runs as Manual unattended, because Auto's read-only approvals would act with no one present. Skip is refused because the host cannot prove filesystem isolation. A model choice is refused because a Cowork session has no model selection yet. Code keeps `HeadAutomationSessions`.
 
 **Awake only:** scheduler runs while desktop open. Device-off deferred.
 
 **Degraded:** `ScheduleLate`, `ScheduleSkippedTooOld`, `WaitingForApproval`, `ApprovalTimedOut`, `SkipRefusedNoIsolation`.
 
-**Tests:** SessionTargetTests, MissedRunTests (manual TimeProvider), UnattendedApprovalTests, ScheduledCoworkSessionStarterTests.
+**Tests:** SessionTargetTests, MissedRunTests (manual TimeProvider), UnattendedApprovalTests, ScheduledCoworkSessionStarterTests (includes a runner-level case that drives `AutomationRunner` into the real host). No scheduler tick is exercised, and no test run is recorded in this reference. Live omp approval behaviour, OQ-440 and OQ-441 remain unverified.
 
 ## Surfaces and web (AG-75-10, D-28,29)
 

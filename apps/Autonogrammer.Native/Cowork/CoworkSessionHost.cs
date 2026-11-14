@@ -111,6 +111,55 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         return CreateLinkedTask(projectId, cancellationToken);
     }
 
+    /// <summary>
+    /// Creates the task a scheduled run starts in. A run with a project is linked to it, exactly as <see cref="CreateTaskAsync"/> links a rail task, and its trusted folders
+    /// follow the project's own. A run with neither a project nor a folder is an unlinked task, as <see cref="CreateSessionAsync"/> creates it. Every folder the run names
+    /// must exist on this device and pass the folder boundary; a folder that fails either stops the create before anything is written. Nothing is opened.
+    /// </summary>
+    /// <param name="projectId">The project, or null for none.</param>
+    /// <param name="trustedFolders">The trusted folders of the run, on this device.</param>
+    /// <param name="cancellationToken">Cancels the create.</param>
+    /// <returns>The task identifier, and a sentence to show, or null. The sentence says a project folder is missing on this device; the task is still created.</returns>
+    /// <exception cref="InvalidOperationException">Signed out with a project or folder, the project is not an active project of the signed-in account, or a folder is refused or missing.</exception>
+    public async Task<(string Id, string? Notice)> CreateScheduledTaskAsync(string? projectId, IReadOnlyList<string> trustedFolders, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(trustedFolders);
+        if (projectId is null && trustedFolders.Count == 0)
+        {
+            return await CreateTaskAsync(null, cancellationToken).ConfigureAwait(false);
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        var accountKey = SignedInKeyOrNull() ?? throw new InvalidOperationException("Sign in to create a Cowork task.");
+        var boundary = new CoworkPathBoundary(_options.StateRoot);
+        foreach (var folder in trustedFolders)
+        {
+            if (boundary.TrustedFolderRefusal(folder) is not null)
+            {
+                throw new InvalidOperationException("A trusted folder of this scheduled run is refused. The run was not started.");
+            }
+
+            if (!Directory.Exists(folder))
+            {
+                throw new InvalidOperationException("A trusted folder of this scheduled run is not on this device. The run was not started.");
+            }
+        }
+
+        Autonogrammer.Cowork.Projects.CoworkProject? project = projectId is null ? null : ActiveProjectOf(accountKey, projectId);
+        var folders = project is null ? new List<string>() : TrustedFoldersOf(accountKey, project);
+        foreach (var folder in trustedFolders)
+        {
+            if (!folders.Contains(folder, StringComparer.Ordinal))
+            {
+                folders.Add(folder);
+            }
+        }
+
+        var notice = project is null ? null : CoworkDegradedSentences.TryFor(Autonogrammer.Cowork.Projects.CoworkProjectStore.Workspace(project).Notice);
+        var meta = new CoworkSessionMeta { ProjectId = project?.Id, TrustedFolders = folders, MemoryOff = LinkedTaskMemoryOff };
+        return StoreNewTask(accountKey, meta, notice, cancellationToken);
+    }
+
     /// <summary>Returns the account's tasks in registry order, each with the project it is linked to. Signed out, there are none.</summary>
     /// <returns>A snapshot that later changes do not affect.</returns>
     public IReadOnlyList<Contracts.Cowork.CoworkSessionSummary> TaskSummaries()
@@ -167,6 +216,12 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             MemoryOff = LinkedTaskMemoryOff,
         };
         var notice = CoworkDegradedSentences.TryFor(Autonogrammer.Cowork.Projects.CoworkProjectStore.Workspace(project).Notice);
+        return StoreNewTask(accountKey, meta, notice, cancellationToken);
+    }
+
+    // Creates the registry row and stores its metadata. A task whose metadata was not stored must not open as an unlinked task: it is marked Failed, and the original error keeps propagating.
+    private (string Id, string? Notice) StoreNewTask(string accountKey, CoworkSessionMeta meta, string? notice, CancellationToken cancellationToken)
+    {
         var registry = EnsureRegistry(cancellationToken);
         var id = registry.Create(null).Id;
         try
@@ -176,7 +231,6 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            // A task whose link was not stored must not open as an unlinked task. It is marked Failed; the original error keeps propagating.
             MarkFailed(registry, id);
             throw;
         }
