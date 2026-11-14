@@ -26,6 +26,9 @@ internal static class JwtTestHost
     /// <summary>Gets the environment variable that holds the PostgreSQL connection string for Production-shaped hosts. Its name matches the PostgreSQL test fixture.</summary>
     public const string PostgresConnectionEnvironmentVariable = "AUTONOGRAMMER_TEST_POSTGRES_CONNECTION";
 
+    /// <summary>Gets the tenant-hash pepper that PostgreSQL-store test hosts configure. It is a test value, never a deployment secret.</summary>
+    public const string TestTenantHashPepper = "jwt-test-tenant-hash-pepper";
+
     private const string KeyId = "autonogrammer-api-test-key";
     private const string HmacKeyId = "autonogrammer-api-test-hmac-key";
 
@@ -61,6 +64,7 @@ internal static class JwtTestHost
             ["Api:Auth:ValidIssuer"] = Issuer,
             ["Sessions:Store"] = "Postgres",
             ["Sessions:Postgres:ConnectionString"] = PostgresConnectionString(),
+            ["DataPlane:TenantHashPepper"] = TestTenantHashPepper,
         };
     }
 

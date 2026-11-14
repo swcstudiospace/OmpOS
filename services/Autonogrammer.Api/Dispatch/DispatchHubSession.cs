@@ -65,16 +65,19 @@ internal sealed class DispatchHubSession : IDisposable
     /// <param name="type">The source-generated type information for the frame.</param>
     /// <param name="cancellationToken">Cancels the send.</param>
     /// <returns>A task that completes when the frame is written.</returns>
+    /// <exception cref="WebSocketException">The socket is not open.</exception>
     public async Task SendAsync<T>(T frame, JsonTypeInfo<T> type, CancellationToken cancellationToken)
     {
         var bytes = JsonSerializer.SerializeToUtf8Bytes(frame, type);
         await _sendGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (IsOpen)
+            if (!IsOpen)
             {
-                await _socket.SendAsync(bytes, WebSocketMessageType.Text, endOfMessage: true, cancellationToken).ConfigureAwait(false);
+                throw new WebSocketException(WebSocketError.InvalidState, "The socket is not open.");
             }
+
+            await _socket.SendAsync(bytes, WebSocketMessageType.Text, endOfMessage: true, cancellationToken).ConfigureAwait(false);
         }
         finally
         {

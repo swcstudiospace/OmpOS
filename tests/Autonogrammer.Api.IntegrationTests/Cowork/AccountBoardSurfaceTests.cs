@@ -93,6 +93,7 @@ public sealed class AccountBoardSurfaceTests
             ["Accounts:Enabled"] = "true",
             ["Sessions:Store"] = "Postgres",
             ["Sessions:Postgres:ConnectionString"] = JwtTestHost.PostgresConnectionString(),
+            ["DataPlane:TenantHashPepper"] = JwtTestHost.TestTenantHashPepper,
             ["Harness:Adapter"] = "InMemory",
         };
 

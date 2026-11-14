@@ -19,6 +19,7 @@ public sealed class DispatchTransitionTests
             (DispatchCommandState.Delivered, DispatchCommandState.Received),
             (DispatchCommandState.Delivered, DispatchCommandState.Expired),
             (DispatchCommandState.Delivered, DispatchCommandState.Cancelled),
+            (DispatchCommandState.Delivered, DispatchCommandState.Queued),
             (DispatchCommandState.Received, DispatchCommandState.AwaitingApproval),
             (DispatchCommandState.Received, DispatchCommandState.Accepted),
             (DispatchCommandState.Received, DispatchCommandState.Failed),
@@ -43,5 +44,6 @@ public sealed class DispatchTransitionTests
         DispatchTransitions.Allows(DispatchCommandState.Completed, DispatchCommandState.Running).ShouldBeFalse();
         DispatchTransitions.HubMayApply(DispatchCommandState.Running, DispatchCommandState.Completed).ShouldBeFalse();
         DispatchTransitions.HubMayApply(DispatchCommandState.Queued, DispatchCommandState.Delivered).ShouldBeTrue();
+        DispatchTransitions.HubMayApply(DispatchCommandState.Delivered, DispatchCommandState.Queued).ShouldBeFalse();
     }
 }

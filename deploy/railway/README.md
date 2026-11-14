@@ -82,7 +82,7 @@ Config keys use `:` in code and `__` in the environment. Mark every variable mar
 | `Sessions__Postgres__MigratorConnectionString` | yes | Unset on the API | `src/Autonogrammer.Sessions.Postgres/ServiceCollectionExtensions.cs` | Unset on `autonogrammer-api`. The `autonogrammer_migrator` secret belongs only to the operator one-shot `autonogrammer-migrate` |
 | `Sessions__Postgres__AutoMigrate` | no | `false` | `Persistence/SessionStoreStartup.cs` | `false`. Production refuses `true` |
 | `DataPlane__Postgres__SchemaWaitSeconds` | no | `120` | data-plane options | `120`, equal to `deploy.healthcheckTimeout` |
-| `DataPlane__TenantHashPepper` | yes | `<pepper>` | data-plane options | Unset. Required when `Coordination__Store=Dragonfly`. Value never committed |
+| `DataPlane__TenantHashPepper` | yes | `<pepper>` | data-plane options | Unset. Required when `Coordination__Store=Dragonfly` or `Sessions__Store=Postgres`. Set it once to a stable secret before the first start and keep it unchanged: startup refuses to run while it is unset, and a changed value is not detected at startup. Value never committed |
 | `DataPlane__Ledger__Enabled` | no | `false` | data-plane options | `false` |
 | `Coordination__Store` | no | `Dragonfly` | `Options/CoordinationOptions.cs`, `Coordination/CoordinationStartup.cs` | `InMemory` in `appsettings.json`; allowed in Production with a warning (not shared between instances). Set `Dragonfly` |
 | `Coordination__Dragonfly__ConnectionString` | yes | `dragonfly.railway.internal:6379,password=${{Dragonfly.DFLY_requirepass}},abortConnect=false` | `Options/CoordinationDragonflyOptions.cs` | None; start fails naming the key |

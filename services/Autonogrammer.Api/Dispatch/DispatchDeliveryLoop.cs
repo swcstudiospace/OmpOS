@@ -6,7 +6,7 @@ namespace Autonogrammer.Api.Dispatch;
 
 /// <summary>
 /// Delivers a device's queued commands in sequence order over its socket. It wakes on the hub's signals and falls back to a 200 ms poll (D-21,
-/// D-22). It marks each command delivered after the frame is written, and it never delivers an expired or purged command (D-26).
+/// D-22). It marks each command delivered before its frame is written, and returns it to the queue if the write fails. It never delivers an expired or purged command (D-26).
 /// </summary>
 internal sealed class DispatchDeliveryLoop
 {
@@ -55,7 +55,17 @@ internal sealed class DispatchDeliveryLoop
                         continue;
                     }
 
-                    await session.SendAsync(frame, DispatchJsonContext.Default.DispatchCmdFrame, cancellationToken).ConfigureAwait(false);
+                    try
+                    {
+                        await session.SendAsync(frame, DispatchJsonContext.Default.DispatchCmdFrame, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (Exception exception) when (exception is WebSocketException or IOException or OperationCanceledException)
+                    {
+                        // The frame may not have gone out, so the command is queued again. The compensation runs without the loop's token, so a
+                        // cancelled session still returns the command to the queue. Another state means the row moved first and stays as it is.
+                        _ = await _store.TryTransitionAsync(session.Owner, command.CommandId, DispatchCommandState.Delivered, DispatchCommandState.Queued, null, CancellationToken.None).ConfigureAwait(false);
+                        throw;
+                    }
                 }
 
                 await session.WaitForWorkAsync(Poll, cancellationToken).ConfigureAwait(false);

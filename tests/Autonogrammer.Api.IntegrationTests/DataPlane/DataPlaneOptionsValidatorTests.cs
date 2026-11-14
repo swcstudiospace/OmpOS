@@ -128,6 +128,7 @@ public sealed class DataPlaneOptionsValidatorTests
         PostgresResilienceOptions? postgres = null)
     {
         var validator = new DataPlaneOptionsValidator(
+            MsOptions.Create(new SessionsOptions { Store = SessionsOptions.InMemoryStore }),
             MsOptions.Create(new CoordinationOptions { Store = store }),
             MsOptions.Create(new HostingOptions { RequestTimeoutSeconds = requestTimeoutSeconds }),
             MsOptions.Create(postgres ?? new PostgresResilienceOptions()),

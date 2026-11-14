@@ -138,6 +138,7 @@ public sealed class AutomationStoreFenceTests
         {
             ["Sessions:Store"] = "Postgres",
             ["Sessions:Postgres:ConnectionString"] = database.ConnectionString,
+            ["DataPlane:TenantHashPepper"] = JwtTestHost.TestTenantHashPepper,
         };
         return new ApiFactory(config, services => services.AddSingleton(dataSource));
     }

@@ -117,7 +117,7 @@ Reference variables use the shape `${{SERVICE.VARIABLE}}`, resolved by Railway a
 | `Sessions__Postgres__MigratorConnectionString` | Unset on the API | No on the API | Secret of the `autonogrammer-migrate` one-shot service only. Never set on `autonogrammer-api`. The value never goes in this file. |
 | `Sessions__Postgres__AutoMigrate` | `false` | No | Production refuses `true`. Development and tests may set `true`. |
 | `DataPlane__Postgres__SchemaWaitSeconds` | `120` | No | Must equal Railway `healthcheckTimeout` (120). See [Data plane](data-plane.md). |
-| `DataPlane__TenantHashPepper` | Unset in git | Yes, secret | Required when `Coordination__Store=Dragonfly`. Name only; the value never goes in this file. |
+| `DataPlane__TenantHashPepper` | Unset in git | Yes, secret | Required when `Coordination__Store=Dragonfly` or `Sessions__Store=Postgres`. Set it once, before the first start, to a stable secret and keep it unchanged: startup refuses to run while it is unset, and a changed value is not detected at startup. Name only; the value never goes in this file. |
 | `DataPlane__Ledger__Enabled` | `false` | No | Default off. The API does not wait on the ledger. |
 
 Removed: every `Workflows__*` variable (`Workflows__Enabled`, `Workflows__Address`, `Workflows__Namespace`, `Workflows__TaskQueue`, `Workflows__ApiKey`, `Workflows__Tls`). The Temporal configuration is gone. Do not set any of them.

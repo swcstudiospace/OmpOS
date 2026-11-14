@@ -12,6 +12,7 @@ namespace Autonogrammer.Api.DataPlane;
 /// </summary>
 internal sealed class DataPlaneOptionsValidator : IValidateOptions<DataPlaneOptions>
 {
+    private readonly IOptions<SessionsOptions> _sessions;
     private readonly IOptions<CoordinationOptions> _coordination;
     private readonly IOptions<HostingOptions> _hosting;
     private readonly IOptions<PostgresResilienceOptions> _postgres;
@@ -19,18 +20,21 @@ internal sealed class DataPlaneOptionsValidator : IValidateOptions<DataPlaneOpti
     private readonly IOptions<LedgerResilienceOptions> _ledger;
 
     /// <summary>Initializes a new instance of the <see cref="DataPlaneOptionsValidator"/> class.</summary>
+    /// <param name="sessions">The session-store options: the tenant-hash pepper is required when the store is PostgreSQL.</param>
     /// <param name="coordination">The coordination options: the tenant-hash pepper is required when the store is Dragonfly.</param>
     /// <param name="hosting">The hosting options: the PostgreSQL budget must stay below the request timeout.</param>
     /// <param name="postgres">The PostgreSQL resilience options.</param>
     /// <param name="dragonfly">The Dragonfly resilience options.</param>
     /// <param name="ledger">The ledger resilience options.</param>
     public DataPlaneOptionsValidator(
+        IOptions<SessionsOptions> sessions,
         IOptions<CoordinationOptions> coordination,
         IOptions<HostingOptions> hosting,
         IOptions<PostgresResilienceOptions> postgres,
         IOptions<DragonflyResilienceOptions> dragonfly,
         IOptions<LedgerResilienceOptions> ledger)
     {
+        _sessions = sessions;
         _coordination = coordination;
         _hosting = hosting;
         _postgres = postgres;
@@ -47,6 +51,11 @@ internal sealed class DataPlaneOptionsValidator : IValidateOptions<DataPlaneOpti
         if (CoordinationOptions.IsDragonflyStore(_coordination.Value.Store) && string.IsNullOrWhiteSpace(options.TenantHashPepper))
         {
             failures.Add($"{DataPlaneOptions.TenantHashPepperKey} is required when Coordination:Store is Dragonfly.");
+        }
+
+        if (SessionsOptions.IsPostgresStore(_sessions.Value.Store) && string.IsNullOrWhiteSpace(options.TenantHashPepper))
+        {
+            failures.Add($"{DataPlaneOptions.TenantHashPepperKey} is required when Sessions:Store is Postgres.");
         }
 
         var wait = options.Postgres.SchemaWaitSeconds;

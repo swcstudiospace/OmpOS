@@ -31,12 +31,10 @@ public sealed class DispatchSendOrderTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var rig = new Rig(refusal: null);
-        using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var running = rig.Loop.RunAsync(rig.Session, 0, stop.Token);
+        using var bound = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        bound.CancelAfter(TimeSpan.FromSeconds(10));
 
-        await rig.Stream.WaitForFirstWriteAsync(TimeSpan.FromSeconds(10), ct).ConfigureAwait(true);
-        await stop.CancelAsync().ConfigureAwait(true);
-        await running.ConfigureAwait(true);
+        await rig.Loop.RunAsync(rig.Session, 0, bound.Token).ConfigureAwait(true);
 
         var order = rig.Events.ToArray();
         order.ShouldContain(Send, StringComparer.Ordinal, "the signed frame is written");
@@ -61,6 +59,34 @@ public sealed class DispatchSendOrderTests
         order.ShouldNotContain(Send, StringComparer.Ordinal, "no frame is written after the refusal");
         rig.Stream.Sent().ShouldBeEmpty("the refused command is not on the wire");
         rig.Store.StateOf(CommandId).ShouldBe(DispatchCommandState.Queued, "the refused command stays queued");
+    }
+
+    /// <summary>When the write fails after the transition, the command goes back to queued and the next session delivers it.</summary>
+    [Fact]
+    public async Task FailedWriteAfterTransition_RequeuesCommand_AndNextSessionDeliversIt()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var rig = new Rig(refusal: null);
+        rig.Stream.FailWrites = true;
+        using var bound = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        bound.CancelAfter(TimeSpan.FromSeconds(10));
+
+        await rig.Loop.RunAsync(rig.Session, 0, bound.Token).ConfigureAwait(true);
+
+        rig.Store.StateOf(CommandId).ShouldBe(DispatchCommandState.Queued, "the failed write returns the command to the queue");
+        rig.Events.ToArray().ShouldNotContain(Send, StringComparer.Ordinal, "no frame reaches the wire from the failed write");
+        rig.Stream.Sent().ShouldBeEmpty("nothing was written by the failed session");
+
+        rig.Stream.FailWrites = false;
+        using var socket = WebSocket.CreateFromStream(rig.Stream, new WebSocketCreationOptions { IsServer = true, KeepAliveInterval = Timeout.InfiniteTimeSpan });
+        using var session = new DispatchHubSession(AccountId, DeviceId, "holder", socket);
+        using var redelivery = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        redelivery.CancelAfter(TimeSpan.FromSeconds(10));
+
+        await rig.Loop.RunAsync(session, 0, redelivery.Token).ConfigureAwait(true);
+
+        rig.Store.StateOf(CommandId).ShouldBe(DispatchCommandState.Delivered, "the redelivered command is recorded as delivered");
+        Encoding.UTF8.GetString(rig.Stream.Sent()).ShouldContain(CommandId, Case.Sensitive, "the next session writes the queued command");
     }
 
     /// <summary>
@@ -234,14 +260,13 @@ public sealed class DispatchSendOrderTests
     }
 
     /// <summary>
-    /// The stream under a server-side socket. Every write is recorded into the shared log and into the bytes the socket sent. The first write completes
-    /// the wait in <see cref="WaitForFirstWriteAsync"/>. A read reports end of stream, because the loop never receives.
+    /// The stream under a server-side socket. Every write is recorded into the shared log and into the bytes the socket sent. A read reports end of stream,
+    /// because the loop never receives.
     /// </summary>
     private sealed class RecordingStream : Stream
     {
         private readonly ConcurrentQueue<string> _events;
         private readonly MemoryStream _sent = new();
-        private readonly TaskCompletionSource<bool> _firstWrite = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly Lock _gate = new();
 
         /// <summary>Initializes a new instance of the <see cref="RecordingStream"/> class.</summary>
@@ -251,11 +276,8 @@ public sealed class DispatchSendOrderTests
             _events = events;
         }
 
-        /// <summary>Waits for the first byte written to the socket.</summary>
-        /// <param name="timeout">The longest wait for the first write.</param>
-        /// <param name="cancellationToken">Cancels the wait.</param>
-        /// <returns>A task that completes at the first write, or fails when the wait ends first.</returns>
-        public Task<bool> WaitForFirstWriteAsync(TimeSpan timeout, CancellationToken cancellationToken) => _firstWrite.Task.WaitAsync(timeout, cancellationToken);
+        /// <summary>Gets or sets whether writes fail. A failing write records nothing and throws.</summary>
+        public bool FailWrites { get; set; }
 
         /// <summary>Returns a copy of every byte the socket has written.</summary>
         /// <returns>The written bytes.</returns>
@@ -315,13 +337,15 @@ public sealed class DispatchSendOrderTests
 
         private void Record(ReadOnlySpan<byte> bytes)
         {
+            if (FailWrites)
+            {
+                throw new IOException("The transport is down.");
+            }
             _events.Enqueue(Send);
             lock (_gate)
             {
                 _sent.Write(bytes);
             }
-
-            _ = _firstWrite.TrySetResult(true);
         }
     }
 }

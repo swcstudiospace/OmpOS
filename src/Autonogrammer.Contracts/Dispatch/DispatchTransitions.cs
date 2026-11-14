@@ -5,6 +5,7 @@ namespace Autonogrammer.Contracts.Dispatch;
 /// The hub must use <see cref="HubMayApply"/>: it never marks <see cref="DispatchCommandState.Completed"/> itself.
 /// <see cref="DispatchCommandState.Received"/> to <see cref="DispatchCommandState.AwaitingApproval"/> is the device
 /// <c>approval_pending</c> edge; without it that state cannot be reached.
+/// Delivered to queued is the delivery loop's compensation for a frame write that failed after delivery was recorded. The hub never requests it.
 /// </summary>
 public static class DispatchTransitions
 {
@@ -20,6 +21,7 @@ public static class DispatchTransitions
         (DispatchCommandState.Delivered, DispatchCommandState.Received) => true,
         (DispatchCommandState.Delivered, DispatchCommandState.Expired) => true,
         (DispatchCommandState.Delivered, DispatchCommandState.Cancelled) => true,
+        (DispatchCommandState.Delivered, DispatchCommandState.Queued) => true,
         (DispatchCommandState.Received, DispatchCommandState.AwaitingApproval) => true,
         (DispatchCommandState.Received, DispatchCommandState.Accepted) => true,
         (DispatchCommandState.Received, DispatchCommandState.Failed) => true,
@@ -35,11 +37,11 @@ public static class DispatchTransitions
     };
 
     /// <summary>
-    /// Reports whether the hub itself may apply the edge. Completion is device-reported, so this is false whenever the next state is completed.
+    /// Reports whether the hub itself may apply the edge. Completion is device-reported and queuing belongs to the delivery loop, so both are false here.
     /// </summary>
     /// <param name="from">The state the row must currently have.</param>
     /// <param name="to">The state the hub wants to write.</param>
     /// <returns><see langword="true"/> when the hub may apply the edge.</returns>
     public static bool HubMayApply(DispatchCommandState from, DispatchCommandState to) =>
-        to != DispatchCommandState.Completed && Allows(from, to);
+        to is not DispatchCommandState.Completed and not DispatchCommandState.Queued && Allows(from, to);
 }

@@ -32,7 +32,7 @@ internal static class DataPlaneServiceCollectionExtensions
         services.AddOptions<TenantHasherOptions>().Configure<IConfiguration>(static (options, configuration) =>
             options.Pepper = configuration[DataPlaneOptions.TenantHashPepperKey] ?? string.Empty);
         services.TryAddSingleton<ITenantHasher>(static provider =>
-            CoordinationOptions.IsDragonflyStore(provider.GetRequiredService<IOptions<CoordinationOptions>>().Value.Store)
+            RequiresConfiguredPepper(provider)
                 ? new TenantHasher(provider.GetRequiredService<IOptions<TenantHasherOptions>>().Value)
                 : new TenantHasher(new TenantHasherOptions { Pepper = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32)) }));
         services.TryAddSingleton<ITenantKeyEraser, NoOpTenantKeyEraser>();
@@ -54,4 +54,14 @@ internal static class DataPlaneServiceCollectionExtensions
         Autonogrammer.Api.Audit.LedgerSinkServiceCollectionExtensions.AddLedgerSink(services);
         return services;
     }
+
+    /// <summary>
+    /// Returns whether the tenant hash keys on the configured pepper. A PostgreSQL session store or a Dragonfly coordination store needs it to survive a restart,
+    /// and the options validator refuses to start without it. Only the other stores fall back to a random per-process pepper.
+    /// </summary>
+    /// <param name="provider">The service provider.</param>
+    /// <returns>True when the configured pepper is required.</returns>
+    private static bool RequiresConfiguredPepper(IServiceProvider provider) =>
+        SessionsOptions.IsPostgresStore(provider.GetRequiredService<IOptions<SessionsOptions>>().Value.Store)
+        || CoordinationOptions.IsDragonflyStore(provider.GetRequiredService<IOptions<CoordinationOptions>>().Value.Store);
 }

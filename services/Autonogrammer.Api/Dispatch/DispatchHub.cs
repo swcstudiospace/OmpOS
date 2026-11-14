@@ -126,7 +126,16 @@ internal sealed class DispatchHub : IDispatchConnectHandler
             var device = await _store.GetDeviceAsync(session.Owner, session.DeviceId, cancellationToken).ConfigureAwait(false);
             if (device is null || device.RevokedAt is not null)
             {
-                await session.SendAsync(new DispatchRevokeFrame { V = 1, T = DispatchFrameTypes.Revoke, Reason = "revoked" }, DispatchJsonContext.Default.DispatchRevokeFrame, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await session.SendAsync(new DispatchRevokeFrame { V = 1, T = DispatchFrameTypes.Revoke, Reason = "revoked" }, DispatchJsonContext.Default.DispatchRevokeFrame, cancellationToken).ConfigureAwait(false);
+                }
+                catch (WebSocketException)
+                {
+                    // The socket is no longer open, so this session cannot take the revoke. Skip it and continue with the next session.
+                    continue;
+                }
+
                 await session.CloseAsync(DispatchCloseCodes.DeviceRevoked, "revoked", cancellationToken).ConfigureAwait(false);
                 continue;
             }
