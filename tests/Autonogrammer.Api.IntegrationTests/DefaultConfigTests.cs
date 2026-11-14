@@ -23,6 +23,9 @@ public sealed class DefaultConfigTests
         "/source",
     ];
 
+    private const string CredentialKeyRefusal = "Dispatch:Credentials:SigningKeyPem must be a PKCS#8 PEM private key on the P-256 curve.";
+    private const string CommandKeyRefusal = "Dispatch:CommandSigning:KeyPem must be a PKCS#8 PEM private key on the P-256 curve.";
+
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -82,37 +85,68 @@ public sealed class DefaultConfigTests
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
+    /// <summary>Production settings with dispatch enabled, two distinct valid P-256 keys and an https hub origin. Each unsafe test varies one setting from it.</summary>
+    private static Dictionary<string, string?> EnabledDispatchBaseline()
+    {
+        using var credential = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        using var command = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var config = JwtTestHost.ProductionConfig();
+        config["Dispatch:Enabled"] = "true";
+        config["Dispatch:Credentials:SigningKeyPem"] = credential.ExportPkcs8PrivateKeyPem();
+        config["Dispatch:CommandSigning:KeyPem"] = command.ExportPkcs8PrivateKeyPem();
+        config["Dispatch:HubOrigin"] = "https://hub.example.test";
+        return config;
+    }
+
+    [Fact]
+    public void EnabledDispatchWithValidKeysStillRefusesTheInMemoryStoreInProduction()
+    {
+        var failure = StartupFailureTextFor(EnabledDispatchBaseline());
+
+        failure.ShouldContain("Dispatch:Enabled refuses the in-memory IDispatchStore outside Development.", Case.Sensitive);
+        failure.ShouldNotContain(CredentialKeyRefusal, Case.Sensitive);
+        failure.ShouldNotContain(CommandKeyRefusal, Case.Sensitive);
+        failure.ShouldNotContain("Dispatch:HubOrigin", Case.Sensitive);
+    }
+
     [Fact]
     public void EnabledDispatchWithMultiReplicaInMemoryCoordinationFailsStartup()
     {
-        var config = JwtTestHost.ProductionConfig();
-        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-        config["Dispatch:Enabled"] = "true";
+        var config = EnabledDispatchBaseline();
         config["Dispatch:ReplicaMode"] = "Multi";
         config["Coordination:Store"] = "InMemory";
-        config["Dispatch:Credentials:SigningKeyPem"] = key.ExportPkcs8PrivateKeyPem();
-        config["Dispatch:CommandSigning:KeyPem"] = key.ExportPkcs8PrivateKeyPem();
-        config["Dispatch:HubOrigin"] = "https://hub.example.test";
 
         var failure = StartupFailureTextFor(config);
 
-        failure.ShouldContain("Dispatch:ReplicaMode");
-        failure.ShouldContain("Coordination:Store");
+        failure.ShouldContain("Dispatch:ReplicaMode=Multi requires Coordination:Store=Dragonfly", Case.Sensitive);
+        failure.ShouldNotContain(CredentialKeyRefusal, Case.Sensitive);
+        failure.ShouldNotContain(CommandKeyRefusal, Case.Sensitive);
     }
 
     [Fact]
     public void EnabledDispatchWithoutCredentialSigningKeyFailsStartup()
     {
-        var config = JwtTestHost.ProductionConfig();
-        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-        config["Dispatch:Enabled"] = "true";
+        var config = EnabledDispatchBaseline();
         config["Dispatch:Credentials:SigningKeyPem"] = string.Empty;
-        config["Dispatch:CommandSigning:KeyPem"] = key.ExportPkcs8PrivateKeyPem();
-        config["Dispatch:HubOrigin"] = "https://hub.example.test";
 
         var failure = StartupFailureTextFor(config);
 
-        failure.ShouldContain("Dispatch:Credentials:SigningKeyPem");
+        failure.ShouldContain(CredentialKeyRefusal, Case.Sensitive);
+        failure.ShouldNotContain(CommandKeyRefusal, Case.Sensitive);
+        failure.ShouldNotContain("Dispatch:ReplicaMode=Multi", Case.Sensitive);
+    }
+
+    [Fact]
+    public void EnabledDispatchWithoutCommandSigningKeyFailsStartup()
+    {
+        var config = EnabledDispatchBaseline();
+        config["Dispatch:CommandSigning:KeyPem"] = string.Empty;
+
+        var failure = StartupFailureTextFor(config);
+
+        failure.ShouldContain(CommandKeyRefusal, Case.Sensitive);
+        failure.ShouldNotContain(CredentialKeyRefusal, Case.Sensitive);
+        failure.ShouldNotContain("Dispatch:ReplicaMode=Multi", Case.Sensitive);
     }
 
     [Fact]
