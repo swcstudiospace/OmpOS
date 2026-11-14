@@ -47,4 +47,7 @@ internal sealed class CoworkSessionHostOptions
 
     /// <summary>Gets the tool host options.</summary>
     public Autonogrammer.Cowork.Tools.CoworkToolHostOptions? ToolOptions { get; init; }
+
+    /// <summary>Gets the account data a session takes at its start, or null when the head has no account services.</summary>
+    public CoworkAccountContext? AccountContext { get; init; }
 }

@@ -118,6 +118,32 @@ public sealed class ProjectAccountSyncTests
         SessionMetaStore.CodeSessionsReceiveStandingContext.ShouldBeFalse();
     }
 
+    [Fact]
+    public async Task GlobalInstructionsAreKeptInTheAccountFolderForAnOfflineStart()
+    {
+        using var directory = new TempState();
+        var key = global::Autonogrammer.Cowork.CoworkAccountFolder.KeyFromSubject("cache");
+        var store = new CoworkProjectStore(directory.Path, key);
+        store.Upsert(new CoworkProject { Id = "p-1", Name = "Cached" });
+        using (var online = new ScriptedHandler())
+        {
+            online.Enqueue(HttpStatusCode.OK, """[]""");
+            online.Enqueue(HttpStatusCode.OK, """{"instructions":"global-cached"}""");
+            using var http = new HttpClient(online) { BaseAddress = new Uri("https://api.test") };
+            var sync = new ProjectAccountSync(new HttpProjectApi(http, static () => "token"), store, new GlobalInstructionsCache(directory.Path, key));
+            (await sync.SyncAsync(CancellationToken.None)).ShouldBe(ProjectSyncState.Synced);
+        }
+
+        using var offline = new ScriptedHandler { Throw = true };
+        using var offlineHttp = new HttpClient(offline) { BaseAddress = new Uri("https://api.test") };
+        var restarted = new ProjectAccountSync(new HttpProjectApi(offlineHttp, static () => "token"), store, new GlobalInstructionsCache(directory.Path, key));
+        restarted.GlobalInstructions.ShouldBe("global-cached");
+        (await restarted.SyncAsync(CancellationToken.None)).ShouldBe(ProjectSyncState.Offline);
+        restarted.GlobalInstructions.ShouldBe("global-cached");
+        restarted.IsReadOnly.ShouldBeTrue();
+        new GlobalInstructionsCache(directory.Path, global::Autonogrammer.Cowork.CoworkAccountFolder.KeyFromSubject("other")).Read().ShouldBeNull();
+    }
+
     private sealed class ScriptedHandler : HttpMessageHandler
     {
         private readonly Queue<HttpResponseMessage> _responses = new();

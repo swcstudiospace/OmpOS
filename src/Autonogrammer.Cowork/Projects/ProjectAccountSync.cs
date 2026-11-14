@@ -10,18 +10,30 @@ public sealed class ProjectAccountSync
 {
     private readonly IProjectApi _api;
     private readonly CoworkProjectStore _store;
+    private readonly GlobalInstructionsCache? _instructionsCache;
     private readonly List<ProjectSyncRecord> _lastRemote = [];
     private string? _lastGlobalInstructions;
 
-    /// <summary>Initializes a new instance of the <see cref="ProjectAccountSync"/> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="ProjectAccountSync"/> class. The last global instructions are kept in memory only.</summary>
     /// <param name="api">The account API.</param>
     /// <param name="store">The local store. Folders live here only.</param>
     public ProjectAccountSync(IProjectApi api, CoworkProjectStore store)
+        : this(api, store, instructionsCache: null)
+    {
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="ProjectAccountSync"/> class over the account's own cache.</summary>
+    /// <param name="api">The account API.</param>
+    /// <param name="store">The local store. Folders live here only.</param>
+    /// <param name="instructionsCache">The account-private copy of the global instructions. A start while offline serves it, read-only. Null keeps memory only.</param>
+    public ProjectAccountSync(IProjectApi api, CoworkProjectStore store, GlobalInstructionsCache? instructionsCache)
     {
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(store);
         _api = api;
         _store = store;
+        _instructionsCache = instructionsCache;
+        _lastGlobalInstructions = instructionsCache?.Read();
     }
 
     /// <summary>Gets whether the last copy is read-only. True until a fresh 200 sync.</summary>
@@ -53,6 +65,7 @@ public sealed class ProjectAccountSync
         if (global.Succeeded)
         {
             _lastGlobalInstructions = global.Value;
+            _ = _instructionsCache?.Write(global.Value);
         }
 
         IsReadOnly = false;

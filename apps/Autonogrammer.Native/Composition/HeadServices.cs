@@ -67,6 +67,7 @@ internal sealed class HeadServices : IAsyncDisposable
     private readonly DesktopAccountHost _account;
     private readonly Func<CancellationToken, ValueTask<string?>> _readToken;
     private readonly ArtifactsComposition _artifacts;
+    private readonly CoworkAccountContext _coworkAccount;
     private readonly ILogger? _logger;
     private int _disposed;
 
@@ -102,6 +103,7 @@ internal sealed class HeadServices : IAsyncDisposable
         ContainerEnvironments = containers.Environments;
         ContainerLister = containers.Lister;
         _artifacts = new ArtifactsComposition(new NativeCoworkAccountGate(account.Session), options.StateRoot, apiClient, readToken, account.Session);
+        _coworkAccount = new CoworkAccountContext(new NativeCoworkAccountGate(account.Session), account.Session, options.StateRoot, apiClient);
         StateRoot = options.StateRoot;
         PluginsRoot = options.PluginsRoot;
         WorkspaceRoot = options.WorkspaceRoot;
@@ -235,6 +237,9 @@ internal sealed class HeadServices : IAsyncDisposable
     /// <summary>Gets the artifact composition of the signed-in account: its store, its tool provider and its panel. The head builds it once and disposes it with the head.</summary>
     internal ArtifactsComposition Artifacts => _artifacts;
 
+    /// <summary>Gets the account data of the signed-in account for Cowork sessions: the global instructions, the session's project and the memory brief. The head builds it once and disposes it with the head.</summary>
+    internal CoworkAccountContext CoworkAccount => _coworkAccount;
+
     /// <summary>Returns the bearer the cloud host sends: the signed-in account token, or the environment token only when signed out.</summary>
     /// <param name="cancellationToken">Cancels the account token read.</param>
     /// <returns>The token, or null when neither is available.</returns>
@@ -337,7 +342,7 @@ internal sealed class HeadServices : IAsyncDisposable
     {
         var variable = options.GetVariable ?? (static name => Environment.GetEnvironmentVariable(name));
         var address = ApiAddress(variable);
-        var client = address is null ? null : CreateApiClient(options.ApiHandler);
+        var client = address is null ? null : CreateApiClient(options.ApiHandler, address);
         DesktopAccountHost? account = null;
         try
         {
@@ -457,8 +462,12 @@ internal sealed class HeadServices : IAsyncDisposable
             },
             cancellationToken);
 
-    private static HttpClient CreateApiClient(HttpMessageHandler? handler) =>
-        handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+    private static HttpClient CreateApiClient(HttpMessageHandler? handler, Uri address)
+    {
+        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        client.BaseAddress = address;
+        return client;
+    }
 
     /// <summary>
     /// Returns the locator context the MCP catalog reads its files with: the workspace roots (primary first), the user's home directory and the process environment, for the expansion of <c>${VAR}</c> in the files.
@@ -503,6 +512,7 @@ internal sealed class HeadServices : IAsyncDisposable
         // The automations stop first: a run in flight uses the cloud host and the sessions.
         await Automations.DisposeAsync().ConfigureAwait(false);
         _artifacts.Dispose();
+        _coworkAccount.Dispose();
         await _account.DisposeAsync().ConfigureAwait(false);
         _cloudDisposable?.Dispose();
         _apiClient?.Dispose();

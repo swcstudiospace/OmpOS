@@ -43,6 +43,7 @@
     <ProjectReference Include="../../src/Autonogrammer.Accounts.Desktop/Autonogrammer.Accounts.Desktop.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Secrets.Os/Autonogrammer.Harness.Secrets.Os.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Cowork/Autonogrammer.Cowork.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Cowork.Memory/Autonogrammer.Cowork.Memory.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Dispatch.Client/Autonogrammer.Dispatch.Client.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Dispatch.Desktop/Autonogrammer.Dispatch.Desktop.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.BrowserUse/Autonogrammer.Harness.BrowserUse.csproj" />

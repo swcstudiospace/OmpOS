@@ -108,7 +108,7 @@ internal sealed class AgentHead : IAsyncDisposable
             // One broker backs the conversation cards and the Computer Use provider, so a computer ask shows as a card the user answers.
             // The main window opens after the head is built, so the broker is built for a window that will exist when a card is raised.
             var broker = new CoworkApprovalBroker(clock: TimeProvider.System, windowAvailable: true);
-            var computer = await CoworkHead.CreateComputerProviderAsync(loop.StateRoot, topLevel, TimeProvider.System, new SignedOutCoworkGate(), broker, CancellationToken.None).ConfigureAwait(true);
+            var computer = await CoworkHead.CreateComputerProviderAsync(loop.StateRoot, topLevel, TimeProvider.System, CoworkGate(services), broker, CancellationToken.None).ConfigureAwait(true);
             computerOwner = computer.Owner;
             browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = services?.Artifacts.ToolProvider, Computer = computer.Provider });
             // The Models page and the provider keys omp is started with are built together, so a key saved on the page reaches every omp the head starts.
@@ -585,7 +585,7 @@ internal sealed class AgentHead : IAsyncDisposable
         CoworkHead.CreateAsync(
             options.Loop.StateRoot,
             options.Loop.WorkspaceRoot,
-            new SignedOutCoworkGate(),
+            CoworkGate(services),
             options.TransportFactory,
             options.LoggerFactory,
             options.OmpPath,
@@ -594,7 +594,23 @@ internal sealed class AgentHead : IAsyncDisposable
             services?.Mcp,
             coworkTools,
             broker,
-            computer);
+            computer,
+            services?.CoworkAccount);
+
+    /// <summary>
+    /// The account gate the head's Cowork sessions and Computer Use read. With services it is the head's own account session; a head built without services has no account and is signed out.
+    /// </summary>
+    /// <param name="services">The head's services, or null.</param>
+    /// <returns>The gate.</returns>
+    internal static Autonogrammer.Cowork.ICoworkAccountGate CoworkGate(Autonogrammer.Native.Composition.HeadServices? services)
+    {
+        if (services is null)
+        {
+            return new SignedOutCoworkGate();
+        }
+
+        return new NativeCoworkAccountGate(services.AccountHost.Session);
+    }
 
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
     private static async Task<AgentHead> BuildModelsAsync(SessionEngineSet host, HeadSettings settings, CoworkHead cowork, SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, Autonogrammer.Native.Composition.HeadServices? services, BrowserUseCompositionResult browser)

@@ -22,15 +22,17 @@ internal sealed class CoworkHead : IAsyncDisposable
     private readonly CoworkSessionHost _sessions;
     private readonly CoworkToolServer _tools;
     private readonly ComputerUseOwnership? _computer;
+    private readonly CoworkAccountContext? _accountContext;
     private readonly Lock _gate = new();
     private Task? _disposeTask;
     private int _disposed;
 
-    private CoworkHead(CoworkSessionHost sessions, CoworkToolServer tools, ComputerUseOwnership? computer)
+    private CoworkHead(CoworkSessionHost sessions, CoworkToolServer tools, ComputerUseOwnership? computer, CoworkAccountContext? accountContext)
     {
         _sessions = sessions;
         _tools = tools;
         _computer = computer;
+        _accountContext = accountContext;
     }
 
     /// <summary>Gets the session host.</summary>
@@ -45,6 +47,9 @@ internal sealed class CoworkHead : IAsyncDisposable
     /// <summary>Gets whether engines were stopped.</summary>
     public bool EnginesStopped => _sessions.EnginesStopped;
 
+    /// <summary>Gets the account data the head's sessions take at their start, or null when the head has no account services.</summary>
+    public CoworkAccountContext? AccountContext => _accountContext;
+
     /// <summary>Builds the head from the same pieces <see cref="SessionEngineSet"/> receives.</summary>
     /// <param name="stateRoot">The state root.</param>
     /// <param name="workingDirectory">The workspace.</param>
@@ -58,6 +63,7 @@ internal sealed class CoworkHead : IAsyncDisposable
     /// <param name="coworkTools">The Cowork tool host the gateway serves, or null for registry tools only.</param>
     /// <param name="broker">The approval broker the session host reads. The head passes the one it shares with the Computer Use provider; null lets the session host build its own.</param>
     /// <param name="computer">The Computer Use owner the head takes on entry, or null. The head disposes it with itself, or at once when its build fails.</param>
+    /// <param name="accountContext">The account data the sessions take at their start, or null when the head has no account services. The head does not dispose it.</param>
     /// <returns>The head. The gateway starts on the first session.</returns>
     [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: each owner is nulled once transferred to its composed holder; the finally disposes any owner still held directly.")]
     public static async Task<CoworkHead> CreateAsync(
@@ -72,7 +78,8 @@ internal sealed class CoworkHead : IAsyncDisposable
         McpServerCatalog? catalog,
         ICoworkToolHost? coworkTools = null,
         CoworkApprovalBroker? broker = null,
-        ComputerUseOwnership? computer = null)
+        ComputerUseOwnership? computer = null,
+        CoworkAccountContext? accountContext = null)
     {
         CoworkToolServer? tools = null;
         CoworkSessionHost? sessions = null;
@@ -93,8 +100,9 @@ internal sealed class CoworkHead : IAsyncDisposable
                 ProviderKeys = providerKeys,
                 Catalog = catalog,
                 Tools = tools,
+                AccountContext = accountContext,
             }, broker);
-            var head = new CoworkHead(sessions, tools, owned);
+            var head = new CoworkHead(sessions, tools, owned, accountContext);
             sessions = null;
             tools = null;
             owned = null;

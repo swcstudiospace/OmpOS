@@ -323,6 +323,13 @@
           "Npgsql": "[10.0.3, )"
         }
       },
+      "autonogrammer.cowork.memory": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.16.0, )"
+        }
+      },
       "autonogrammer.dispatch.client": {
         "type": "Project",
         "dependencies": {
