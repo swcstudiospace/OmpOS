@@ -11,9 +11,10 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 ### Added
 - Phase 75 Cowork parity A has a launch-contributor seam and a parity inventory. Production standing-context, memory-tool registration and scheduled-session integration remain incomplete.
 - Enabled Cowork project, instruction and memory APIs use PostgreSQL; project-scoped memory writes verify ownership and serialize concurrent limit checks. Durable cross-instance idempotency remains open.
+- Scheduled Cowork runs create a task linked to their project and trusting their folders, then open it and send the prompt through the Cowork host; a run is recorded as launched only after its prompt is sent. Approval is Manual, Skip and a model choice are refused, and Code keeps its existing scheduled path. Live omp behaviour is not verified and no test run is recorded for this bullet.
 
 ### Fixed
-- The Linux Bubblewrap probe now runs its executable from a read-only root instead of misreporting an empty filesystem as disabled user namespaces. The session wrapper still fails its protected live launch test and is not verified.
+- The Linux Bubblewrap probe now runs its executable from a read-only root instead of misreporting an empty filesystem as disabled user namespaces. The session wrapper still fails its protected live launch test and is not verified. That test must run in an outer Bubblewrap with a disposable `/etc`; no passing run is recorded.
 - Artifact sync-off metadata no longer includes a grants field; the current API accepts the reduced payload without changing existing grants. Compatibility with older deployed receivers has not been verified.
 - Account endpoints default off; existing installations requiring account and Code board routes must set `Accounts__Enabled=true` before upgrading. Anonymous requests remain unauthorized. The transition has not been deployed or live-verified.
 - Restored host-observed facts and a single deny timer in the Computer Use approval model.

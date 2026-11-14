@@ -6,7 +6,9 @@ namespace Autonogrammer.Harness.Isolation.Tests;
 
 /// <summary>
 /// A real bubblewrap run on a synthetic fixture home, never the user's profile. It skips unless <c>AUTONOGRAMMER_LIVE_ISOLATION</c>
-/// is 1, and a skip is not a failure.
+/// is 1, and a skip is not a failure. Run it inside an outer Bubblewrap that gives the run a disposable <c>/etc</c> (see
+/// <c>docs/runbooks/cowork-isolation.md</c>). It passes only when one child writes its grant and fails to write an ungranted
+/// directory; a launch failure is not a pass.
 /// </summary>
 [Trait("Category", "Live")]
 public sealed class IsolationLiveTests

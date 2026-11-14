@@ -213,7 +213,7 @@ public static class BubblewrapArgvBuilder
                     {
                         var source = argv[++i];
                         var destination = argv[++i];
-                        if (string.Equals(source, SocketMaskSource, StringComparison.Ordinal) || Directory.Exists(source))
+                        if (string.Equals(source, SocketMaskSource, StringComparison.Ordinal) || IsPresent(source))
                         {
                             adapted.Add("--ro-bind");
                             adapted.Add(source);
