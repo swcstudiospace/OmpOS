@@ -160,6 +160,23 @@ public sealed class BrowserToolProviderTests
         harness.Pages.Navigations.ShouldBe(1);
     }
 
+    [Fact]
+    public async Task Navigate_AttachesTheGate_BeforeTheFirstPageNavigate()
+    {
+        await using var harness = Harness.Create(enabled: true);
+        harness.Pages.FinalUrl = "https://app.example/start";
+        var result = await harness.Provider.InvokeAsync(harness.Session, Invoke("browser_navigate", """{"url":"https://app.example/start"}"""), CancellationToken.None).ConfigureAwait(true);
+        result.IsError.ShouldBeFalse();
+        var attach = harness.Pages.Calls.IndexOf("Fetch.enable");
+        attach.ShouldBeGreaterThanOrEqualTo(0);
+        harness.Pages.Calls.IndexOf("Page.navigate").ShouldBeGreaterThan(attach);
+        harness.Pages.Calls.Count(call => string.Equals(call, "Page.navigate", StringComparison.Ordinal)).ShouldBe(1);
+
+        var waited = await harness.Provider.InvokeAsync(harness.Session, Invoke("browser_wait", "{}"), CancellationToken.None).ConfigureAwait(true);
+        waited.IsError.ShouldBeFalse();
+        harness.Pages.Calls.Count(call => string.Equals(call, "Fetch.enable", StringComparison.Ordinal)).ShouldBe(harness.Pages.Opens);
+    }
+
     public static IEnumerable<object[]> RefusedSchemes =>
     [
         new object[] { new Uri("file:///etc/hostname") },
@@ -284,6 +301,8 @@ public sealed class BrowserToolProviderTests
     {
         public int Opens { get; private set; }
 
+        public List<string> Calls { get; } = [];
+
         public int Navigations { get; private set; }
 
         public string FinalUrl { get; set; } = "https://app.example/start";
@@ -302,7 +321,7 @@ public sealed class BrowserToolProviderTests
                 await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
             }
 
-            return new ScriptedSession(FinalUrl, () => Navigations++);
+            return new ScriptedSession(FinalUrl, () => Navigations++, Calls);
         }
     }
 
@@ -310,11 +329,13 @@ public sealed class BrowserToolProviderTests
     {
         private readonly string _finalUrl;
         private readonly Action _onNavigate;
+        private readonly List<string> _calls;
 
-        public ScriptedSession(string finalUrl, Action onNavigate)
+        public ScriptedSession(string finalUrl, Action onNavigate, List<string> calls)
         {
             _finalUrl = finalUrl;
             _onNavigate = onNavigate;
+            _calls = calls;
         }
 
         public ILoggerFactory LoggerFactory => Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance;
@@ -339,12 +360,14 @@ public sealed class BrowserToolProviderTests
 
         public Task<T> SendAsync<T>(string method, object? args = null, CommandOptions? options = null)
         {
+            _calls.Add(method);
             _ = (method, args, options);
             return Task.FromResult<T>(default!);
         }
 
         public Task<JsonElement?> SendAsync(string method, object? args = null, bool waitForCallback = true, CommandOptions? options = null)
         {
+            _calls.Add(method);
             _ = (args, waitForCallback, options);
             if (string.Equals(method, "Page.navigate", StringComparison.Ordinal))
             {

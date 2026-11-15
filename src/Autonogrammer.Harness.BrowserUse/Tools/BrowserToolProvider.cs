@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Harness.BrowserUse.Content;
@@ -29,6 +30,8 @@ public sealed class BrowserToolProvider : ICoworkToolProvider
     private readonly string? _profileDirectory;
     private readonly int _frameWidth = ScreenshotPipeline.ViewportWidth;
     private readonly int _frameHeight = ScreenshotPipeline.ViewportHeight;
+    private readonly ConditionalWeakTable<ICDPSession, PageGate> _gates = new();
+    private volatile ActiveCall? _active;
 
     /// <summary>Initializes the provider.</summary>
     /// <param name="options">The options.</param>
@@ -169,19 +172,21 @@ public sealed class BrowserToolProvider : ICoworkToolProvider
         }
 
         var page = await _pages.OpenAsync(session.SessionId, linked.Token).ConfigureAwait(false);
-        return invocation.ToolName switch
+        var dispatchGate = await AttachGateAsync(page, invocation.Origin, linked.Token).ConfigureAwait(false);
+        if (invocation.Origin == CoworkTurnOrigin.Dispatch && !dispatchGate)
         {
-            BrowserNavigateTool.Name => await NavigateAsync(session, invocation, page, linked.Token).ConfigureAwait(false),
-            BrowserClickTool.Name => await ClickAsync(session, invocation, page, linked.Token).ConfigureAwait(false),
-            BrowserTypeTool.Name => await TypeAsync(session, invocation, page, linked.Token).ConfigureAwait(false),
-            BrowserScrollTool.Name => await ScrollAsync(page, linked.Token).ConfigureAwait(false),
-            BrowserReadTool.Name => await ReadAsync(invocation, page, linked.Token).ConfigureAwait(false),
-            BrowserScreenshotTool.Name => await ShotAsync(session, invocation, page, linked.Token).ConfigureAwait(false),
-            BrowserWaitTool.Name => Wait(invocation),
-            BrowserBackTool.Name => await BackAsync(page, linked.Token).ConfigureAwait(false),
-            BrowserCloseTool.Name => await CloseAsync(page, linked.Token).ConfigureAwait(false),
-            _ => CoworkToolResult.Failure("The tool is not offered."),
-        };
+            return CoworkToolResult.Failure("DispatchBlocked");
+        }
+
+        _active = new ActiveCall(session.SessionId, invocation.CallId, invocation.ToolName, invocation.Origin, RequestedUrl(invocation), linked.Token);
+        try
+        {
+            return await RouteAsync(session, invocation, page, linked.Token).ConfigureAwait(false);
+        }
+        finally
+        {
+            _active = null;
+        }
     }
 
     /// <inheritdoc />
@@ -205,6 +210,69 @@ public sealed class BrowserToolProvider : ICoworkToolProvider
         {
             Directory.Delete(_profileDirectory, recursive: true);
         }
+    }
+
+    /// <summary>Attaches NavigationGate once per page, before the call that opened it can navigate. Returns whether that gate was attached for a dispatch turn.</summary>
+    /// <param name="page">The page.</param>
+    /// <param name="origin">The turn origin of the call that opened the page.</param>
+    /// <param name="cancellationToken">Cancels the attach.</param>
+    /// <returns>True when the gate was attached for a dispatch turn.</returns>
+    private async Task<bool> AttachGateAsync(ICDPSession page, CoworkTurnOrigin origin, CancellationToken cancellationToken)
+    {
+        if (_gates.TryGetValue(page, out var attached))
+        {
+            return attached.DispatchTurn;
+        }
+
+        var dispatchTurn = origin == CoworkTurnOrigin.Dispatch;
+        var gate = new NavigationGate(_options, _originGrants, null, ApproveCardAsync, dispatchTurn);
+        await gate.AttachAsync(page, cancellationToken).ConfigureAwait(false);
+        _gates.AddOrUpdate(page, new PageGate(dispatchTurn));
+        return dispatchTurn;
+    }
+
+    /// <summary>
+    /// Answers one gate card for the call in flight. The navigate target's origin passes without a card, as stage 1.
+    /// Any other card takes the stage-2 redirect ask. With no call in flight the card is refused.
+    /// </summary>
+    /// <param name="card">The card the gate built.</param>
+    /// <returns>True when the request may continue.</returns>
+    private async Task<bool> ApproveCardAsync(CoworkCallPreview card)
+    {
+        var active = _active;
+        if (active is null || card.Target is null || !Uri.TryCreate(card.Target, UriKind.Absolute, out var observed))
+        {
+            return false;
+        }
+
+        if (active.Requested is { } requested && SameOrigin(requested, observed))
+        {
+            return true;
+        }
+
+        return await _stage2.AskRedirectAsync(active.SessionId, active.CallId, active.ToolName, observed, _limits.EffectivePolicy(active.Origin), active.Origin, active.Cancellation).ConfigureAwait(false);
+    }
+
+    private static Uri? RequestedUrl(CoworkToolInvocation invocation) =>
+        string.Equals(invocation.ToolName, BrowserNavigateTool.Name, StringComparison.Ordinal) && BrowserNavigateTool.TryReadUrl(invocation.Arguments, out var url)
+            ? url
+            : null;
+
+    private async Task<CoworkToolResult> RouteAsync(CoworkSessionContext session, CoworkToolInvocation invocation, ICDPSession page, CancellationToken cancellationToken)
+    {
+        return invocation.ToolName switch
+        {
+            BrowserNavigateTool.Name => await NavigateAsync(session, invocation, page, cancellationToken).ConfigureAwait(false),
+            BrowserClickTool.Name => await ClickAsync(session, invocation, page, cancellationToken).ConfigureAwait(false),
+            BrowserTypeTool.Name => await TypeAsync(session, invocation, page, cancellationToken).ConfigureAwait(false),
+            BrowserScrollTool.Name => await ScrollAsync(page, cancellationToken).ConfigureAwait(false),
+            BrowserReadTool.Name => await ReadAsync(invocation, page, cancellationToken).ConfigureAwait(false),
+            BrowserScreenshotTool.Name => await ShotAsync(session, invocation, page, cancellationToken).ConfigureAwait(false),
+            BrowserWaitTool.Name => Wait(invocation),
+            BrowserBackTool.Name => await BackAsync(page, cancellationToken).ConfigureAwait(false),
+            BrowserCloseTool.Name => await CloseAsync(page, cancellationToken).ConfigureAwait(false),
+            _ => CoworkToolResult.Failure("The tool is not offered."),
+        };
     }
 
     /// <summary>Applies download, permission, dialog, popup and file-chooser guards.</summary>
@@ -373,5 +441,9 @@ public sealed class BrowserToolProvider : ICoworkToolProvider
 
     private static bool SameOrigin(Uri left, Uri right) =>
         string.Equals(left.GetLeftPart(UriPartial.Authority), right.GetLeftPart(UriPartial.Authority), StringComparison.OrdinalIgnoreCase);
+
+    private sealed record PageGate(bool DispatchTurn);
+
+    private sealed record ActiveCall(string SessionId, string CallId, string ToolName, CoworkTurnOrigin Origin, Uri? Requested, CancellationToken Cancellation);
 }
 
