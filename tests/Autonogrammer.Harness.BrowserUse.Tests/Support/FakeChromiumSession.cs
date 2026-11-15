@@ -1,4 +1,5 @@
 using Autonogrammer.Harness.BrowserUse.Chromium;
+using PuppeteerSharp;
 
 namespace Autonogrammer.Harness.BrowserUse.Tests.Support;
 
@@ -26,6 +27,9 @@ internal sealed class FakeChromiumSession : IChromiumSession
     /// <inheritdoc />
     public int TabCount { get; private set; }
 
+    /// <summary>Gets the page a scripted open returns. Null makes the open fail.</summary>
+    internal Func<ICDPSession>? PageFactory { get; init; }
+
     /// <summary>Gets the close order. CDP is 1 when it ran first.</summary>
     public int CdpOrder { get; private set; }
 
@@ -38,6 +42,19 @@ internal sealed class FakeChromiumSession : IChromiumSession
         cancellationToken.ThrowIfCancellationRequested();
         TabCount++;
         return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task<ICDPSession> OpenPageAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (PageFactory is null)
+        {
+            throw new InvalidOperationException("No scripted page is configured.");
+        }
+
+        TabCount++;
+        return Task.FromResult(PageFactory());
     }
 
     /// <inheritdoc />

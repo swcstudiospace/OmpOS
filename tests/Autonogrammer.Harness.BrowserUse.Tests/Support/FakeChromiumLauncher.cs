@@ -1,4 +1,5 @@
 using Autonogrammer.Harness.BrowserUse.Chromium;
+using PuppeteerSharp;
 
 namespace Autonogrammer.Harness.BrowserUse.Tests.Support;
 
@@ -7,6 +8,12 @@ internal sealed class FakeChromiumLauncher : IChromiumLauncher
 {
     private readonly List<ChromiumLaunchRequest> _requests = [];
     private readonly List<FakeChromiumSession> _sessions = [];
+
+    /// <summary>Gets or sets the page factory handed to every session this launcher creates. Null makes page opens fail.</summary>
+    internal Func<ICDPSession>? PageFactory { get; set; }
+
+    /// <summary>Gets how many launches were requested.</summary>
+    internal int Launches => _requests.Count;
 
     /// <summary>Gets a recorded request.</summary>
     internal ChromiumLaunchRequest RequestAt(int index)
@@ -26,7 +33,7 @@ internal sealed class FakeChromiumLauncher : IChromiumLauncher
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
         _requests.Add(request);
-        var session = new FakeChromiumSession(request.ProfileDirectory);
+        var session = new FakeChromiumSession(request.ProfileDirectory) { PageFactory = PageFactory };
         _sessions.Add(session);
         return Task.FromResult<IChromiumSession>(session);
     }

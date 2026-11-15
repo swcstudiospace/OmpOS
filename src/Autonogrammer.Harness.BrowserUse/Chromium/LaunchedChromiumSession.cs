@@ -45,6 +45,16 @@ public sealed class LaunchedChromiumSession : IChromiumSession
     }
 
     /// <inheritdoc />
+    public async Task<ICDPSession> OpenPageAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var page = await _browser.NewPageAsync().ConfigureAwait(false);
+        var session = await page.CreateCDPSessionAsync().ConfigureAwait(false);
+        _tabs++;
+        return session;
+    }
+
+    /// <inheritdoc />
     public async Task<string> GetVersionAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

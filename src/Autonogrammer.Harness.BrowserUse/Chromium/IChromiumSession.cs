@@ -1,3 +1,5 @@
+using PuppeteerSharp;
+
 namespace Autonogrammer.Harness.BrowserUse.Chromium;
 
 /// <summary>One host-owned Chromium process. Disposal is the host's job after CDP close and a process-tree kill.</summary>
@@ -19,6 +21,11 @@ public interface IChromiumSession : IAsyncDisposable
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A task that completes when the tab is open.</returns>
     Task OpenTabAsync(CancellationToken cancellationToken);
+
+    /// <summary>Opens one tab and returns its raw CDP page session.</summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The page session of the new tab.</returns>
+    Task<ICDPSession> OpenPageAsync(CancellationToken cancellationToken);
 
     /// <summary>Closes the browser through the DevTools protocol.</summary>
     /// <param name="cancellationToken">The cancellation token.</param>
