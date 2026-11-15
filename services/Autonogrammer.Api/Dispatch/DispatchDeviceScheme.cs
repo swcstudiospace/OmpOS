@@ -3,7 +3,6 @@ using System.Text.Encodings.Web;
 using Autonogrammer.Api.Dispatch.Devices;
 using Autonogrammer.Api.Security;
 using Autonogrammer.Api.Services;
-using Autonogrammer.Contracts.Dispatch;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
@@ -28,20 +27,24 @@ internal static class DispatchDeviceScheme
     internal sealed class DispatchDeviceAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
         private readonly IOptions<DispatchOptions> _dispatch;
+        private readonly IHostEnvironment _environment;
 
         /// <summary>Initializes a new instance of the <see cref="DispatchDeviceAuthenticationHandler"/> class.</summary>
         /// <param name="options">The scheme options.</param>
         /// <param name="logger">The logger factory.</param>
         /// <param name="encoder">The URL encoder.</param>
         /// <param name="dispatch">The dispatch options. The validator is resolved per request, so a missing device store is an answer, not a startup failure.</param>
+        /// <param name="environment">The host environment. Outside Development a disabled dispatch refuses the credential before any store is read.</param>
         public DispatchDeviceAuthenticationHandler(
             IOptionsMonitor<AuthenticationSchemeOptions> options,
             ILoggerFactory logger,
             UrlEncoder encoder,
-            IOptions<DispatchOptions> dispatch)
+            IOptions<DispatchOptions> dispatch,
+            IHostEnvironment environment)
             : base(options, logger, encoder)
         {
             _dispatch = dispatch;
+            _environment = environment;
         }
 
         /// <inheritdoc />
@@ -59,10 +62,10 @@ internal static class DispatchDeviceScheme
                 return AuthenticateResult.NoResult();
             }
 
-            if (!_dispatch.Value.Enabled && Context.RequestServices.GetService<IDispatchStore>() is null)
+            if (!_dispatch.Value.Enabled && !_environment.IsDevelopment())
             {
-                // Outside Development no device store is registered. With dispatch off the credential cannot be checked, so the request is refused
-                // as unauthenticated instead of failing while the handler is built.
+                // Outside Development, with dispatch off, the credential is refused before any store or key is read, so the handler
+                // never builds a validator without a key. Development keeps its registered in-memory store and its request path.
                 return AuthenticateResult.Fail("The device credential cannot be checked while dispatch is off.");
             }
 

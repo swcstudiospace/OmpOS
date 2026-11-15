@@ -103,7 +103,7 @@ public sealed class DefaultConfigTests
     {
         var failure = StartupFailureTextFor(EnabledDispatchBaseline());
 
-        failure.ShouldContain("Dispatch:Enabled refuses the in-memory IDispatchStore outside Development.", Case.Sensitive);
+        failure.ShouldContain("Dispatch:Store must be Postgres outside Development.", Case.Sensitive);
         failure.ShouldNotContain(CredentialKeyRefusal, Case.Sensitive);
         failure.ShouldNotContain(CommandKeyRefusal, Case.Sensitive);
         failure.ShouldNotContain("Dispatch:HubOrigin", Case.Sensitive);

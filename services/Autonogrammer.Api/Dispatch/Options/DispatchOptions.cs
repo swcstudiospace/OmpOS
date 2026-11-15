@@ -11,6 +11,12 @@ internal sealed class DispatchOptions
     /// <summary>Gets or sets whether dispatch routes answer. Default false.</summary>
     public bool Enabled { get; set; }
 
+    /// <summary>Gets or sets whether dispatch may start outside Development. Default false. Required outside Development.</summary>
+    public bool AllowProduction { get; set; }
+
+    /// <summary>Gets or sets the store that holds dispatch state. Default InMemory. Outside Development it must be Postgres.</summary>
+    public DispatchStoreKind Store { get; set; } = DispatchStoreKind.InMemory;
+
     /// <summary>Gets or sets pairing freshness.</summary>
     public PairingSettings Pairing { get; set; } = new();
 
@@ -113,5 +119,15 @@ internal sealed class DispatchOptions
 
         /// <summary>More than one replica. Requires Dragonfly coordination and the Postgres store.</summary>
         Multi = 1,
+    }
+
+    /// <summary>The store that holds dispatch state.</summary>
+    internal enum DispatchStoreKind
+    {
+        /// <summary>Process-local. Development only.</summary>
+        InMemory = 0,
+
+        /// <summary>The PostgreSQL store that shares the session data source.</summary>
+        Postgres = 1,
     }
 }

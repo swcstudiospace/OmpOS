@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Autonogrammer.Api.Cloud.Options;
+using Autonogrammer.Api.DataPlane;
 using Autonogrammer.Api.Options;
 using Autonogrammer.Sessions.Postgres;
 using Microsoft.Extensions.Options;
@@ -8,7 +9,8 @@ namespace Autonogrammer.Api.Dispatch;
 
 /// <summary>
 /// Validates <see cref="DispatchOptions"/> on start. Nothing else is checked while dispatch is off, so design-time OpenAPI generation
-/// with the defaults succeeds. Failures name keys and never a secret.
+/// with the defaults succeeds. Outside Development an enabled dispatch also needs every durable dependency and an explicit
+/// <c>Dispatch:AllowProduction</c>. Failures name keys and never a secret.
 /// </summary>
 internal sealed class DispatchOptionsValidator : IValidateOptions<DispatchOptions>
 {
@@ -58,41 +60,17 @@ internal sealed class DispatchOptionsValidator : IValidateOptions<DispatchOption
         }
 
         AddBoundChecks(options, failures);
-
-        if (!Enum.IsDefined(options.ReplicaMode))
-        {
-            failures.Add("Dispatch:ReplicaMode must be Single or Multi.");
-        }
-        else if (options.ReplicaMode == DispatchOptions.DispatchReplicaMode.Multi && !HasDurableCoordination())
-        {
-            failures.Add("Dispatch:ReplicaMode=Multi requires Coordination:Store=Dragonfly with Coordination:Dragonfly:ConnectionString and Sessions:Store=Postgres with Sessions:Postgres:ConnectionString.");
-        }
-
-        if (!_environment.IsDevelopment() && IsInMemoryCoordination())
-        {
-            failures.Add("Dispatch:Enabled refuses Coordination:Store=InMemory outside Development.");
-        }
-
-        if (!_environment.IsDevelopment())
-        {
-            failures.Add("Dispatch:Enabled refuses the in-memory IDispatchStore outside Development.");
-        }
-
-        if (!_environment.IsDevelopment() && string.IsNullOrWhiteSpace(options.HubOrigin))
-        {
-            failures.Add("Dispatch:HubOrigin is required outside Development. The origin comes from configuration, never from a request header.");
-        }
-
+        AddReplicaChecks(options, failures);
+        AddStoreChecks(options, failures);
+        AddProductionChecks(options, failures);
         if (!string.IsNullOrWhiteSpace(options.HubOrigin) && !IsHubOrigin(options.HubOrigin, !_environment.IsDevelopment()))
         {
             failures.Add("Dispatch:HubOrigin must be an absolute origin with a scheme and host and no path; https outside Development.");
         }
 
-        RequirePrivateKey(options.Credentials.SigningKeyPem, "Dispatch:Credentials:SigningKeyPem", failures);
-        RequirePrivateKey(options.CommandSigning.KeyPem, "Dispatch:CommandSigning:KeyPem", failures);
+        AddKeyChecks(options, failures);
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
-
 
     private static void AddBoundChecks(DispatchOptions options, List<string> failures)
     {
@@ -132,17 +110,123 @@ internal sealed class DispatchOptionsValidator : IValidateOptions<DispatchOption
         }
     }
 
+    private void AddReplicaChecks(DispatchOptions options, List<string> failures)
+    {
+        if (!Enum.IsDefined(options.ReplicaMode))
+        {
+            failures.Add("Dispatch:ReplicaMode must be Single or Multi.");
+        }
+        else if (options.ReplicaMode == DispatchOptions.DispatchReplicaMode.Multi && !HasDurableCoordination())
+        {
+            failures.Add("Dispatch:ReplicaMode=Multi requires Coordination:Store=Dragonfly with Coordination:Dragonfly:ConnectionString and Sessions:Store=Postgres with Sessions:Postgres:ConnectionString.");
+        }
+    }
+
+    private void AddStoreChecks(DispatchOptions options, List<string> failures)
+    {
+        if (!Enum.IsDefined(options.Store))
+        {
+            failures.Add("Dispatch:Store must be InMemory or Postgres.");
+        }
+        else if (options.Store == DispatchOptions.DispatchStoreKind.Postgres && !HasSessionsConnectionString())
+        {
+            failures.Add("Dispatch:Store=Postgres requires Sessions:Postgres:ConnectionString.");
+        }
+    }
+
+    /// <summary>Adds the checks that apply only outside Development: the explicit opt-in, the durable store, the replica mode and the hub origin.</summary>
+    private void AddProductionChecks(DispatchOptions options, List<string> failures)
+    {
+        if (_environment.IsDevelopment())
+        {
+            return;
+        }
+
+        if (!options.AllowProduction)
+        {
+            failures.Add("Dispatch:AllowProduction must be true outside Development to start dispatch.");
+        }
+
+        if (options.Store != DispatchOptions.DispatchStoreKind.Postgres)
+        {
+            failures.Add("Dispatch:Store must be Postgres outside Development.");
+        }
+
+        if (options.ReplicaMode != DispatchOptions.DispatchReplicaMode.Single)
+        {
+            failures.Add("Dispatch:ReplicaMode must be Single outside Development.");
+        }
+
+        if (string.IsNullOrWhiteSpace(options.HubOrigin))
+        {
+            failures.Add("Dispatch:HubOrigin is required outside Development. The origin comes from configuration, never from a request header.");
+        }
+
+        AddDurableDependencyChecks(failures);
+    }
+
+    /// <summary>Adds the durable session, coordination and tenant-pepper requirements that apply outside Development.</summary>
+    private void AddDurableDependencyChecks(List<string> failures)
+    {
+        if (!SessionsOptions.IsPostgresStore(_configuration[$"{SessionsOptions.SectionName}:Store"]))
+        {
+            failures.Add("Dispatch:Enabled requires Sessions:Store=Postgres outside Development.");
+        }
+
+        if (!HasSessionsConnectionString())
+        {
+            failures.Add("Dispatch:Enabled requires Sessions:Postgres:ConnectionString outside Development.");
+        }
+
+        if (IsInMemoryCoordination())
+        {
+            failures.Add("Dispatch:Enabled refuses Coordination:Store=InMemory outside Development.");
+        }
+        else if (!HasDragonflyConnectionString())
+        {
+            failures.Add("Dispatch:Enabled requires Coordination:Dragonfly:ConnectionString outside Development.");
+        }
+
+        if (string.IsNullOrWhiteSpace(_configuration[DataPlaneOptions.TenantHashPepperKey]))
+        {
+            failures.Add("DataPlane:TenantHashPepper is required outside Development.");
+        }
+    }
+
+    /// <summary>Requires both signing keys to be P-256 private keys and to be distinct. Compares the private scalars in constant time, never the PEM text.</summary>
+    private static void AddKeyChecks(DispatchOptions options, List<string> failures)
+    {
+        var credential = ReadP256PrivateScalar(options.Credentials.SigningKeyPem);
+        var command = ReadP256PrivateScalar(options.CommandSigning.KeyPem);
+        if (credential is null)
+        {
+            failures.Add("Dispatch:Credentials:SigningKeyPem must be a PKCS#8 PEM private key on the P-256 curve.");
+        }
+
+        if (command is null)
+        {
+            failures.Add("Dispatch:CommandSigning:KeyPem must be a PKCS#8 PEM private key on the P-256 curve.");
+        }
+
+        if (credential is not null && command is not null && CryptographicOperations.FixedTimeEquals(credential, command))
+        {
+            failures.Add("Dispatch:Credentials:SigningKeyPem and Dispatch:CommandSigning:KeyPem must be distinct keys.");
+        }
+    }
+
     private bool HasDurableCoordination()
     {
         var store = _configuration[$"{CoordinationOptions.SectionName}:Store"];
-        var dragonfly = _configuration[CoordinationOptions.DragonflyConnectionStringKey];
-        var sessions = _configuration["Sessions:Store"];
-        var postgres = _configuration[ServiceCollectionExtensions.ConnectionStringKey];
+        var sessions = _configuration[$"{SessionsOptions.SectionName}:Store"];
         return CoordinationOptions.IsDragonflyStore(store)
-            && !string.IsNullOrWhiteSpace(dragonfly)
-            && string.Equals(sessions, "Postgres", StringComparison.OrdinalIgnoreCase)
-            && !string.IsNullOrWhiteSpace(postgres);
+            && HasDragonflyConnectionString()
+            && SessionsOptions.IsPostgresStore(sessions)
+            && HasSessionsConnectionString();
     }
+
+    private bool HasSessionsConnectionString() => !string.IsNullOrWhiteSpace(_configuration[ServiceCollectionExtensions.ConnectionStringKey]);
+
+    private bool HasDragonflyConnectionString() => !string.IsNullOrWhiteSpace(_configuration[CoordinationOptions.DragonflyConnectionStringKey]);
 
     private static bool IsHubOrigin(string value, bool requireHttps)
     {
@@ -166,25 +250,26 @@ internal sealed class DispatchOptionsValidator : IValidateOptions<DispatchOption
             || string.Equals(store, CoordinationOptions.InMemoryStore, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static void RequirePrivateKey(string pem, string key, List<string> failures)
+    /// <summary>Reads the private scalar of a P-256 PKCS#8 PEM key, or returns null when the key is not one.</summary>
+    /// <param name="pem">The PEM text.</param>
+    /// <returns>The private scalar, or null when the PEM is blank, is not a private P-256 key, or does not parse.</returns>
+    private static byte[]? ReadP256PrivateScalar(string pem)
     {
-        if (string.IsNullOrWhiteSpace(pem) || !IsP256PrivateKey(pem))
+        if (string.IsNullOrWhiteSpace(pem))
         {
-            failures.Add(key + " must be a PKCS#8 PEM private key on the P-256 curve.");
+            return null;
         }
-    }
 
-    private static bool IsP256PrivateKey(string pem)
-    {
         using var key = ECDsa.Create();
         try
         {
             key.ImportFromPem(CloudOptionsValidator.NormalizePem(pem));
-            return key.KeySize == 256 && key.ExportParameters(includePrivateParameters: true).D is { Length: > 0 };
+            var scalar = key.ExportParameters(includePrivateParameters: true).D;
+            return key.KeySize == 256 && scalar is { Length: > 0 } ? scalar : null;
         }
         catch (Exception ex) when (ex is CryptographicException or ArgumentException)
         {
-            return false;
+            return null;
         }
     }
 }

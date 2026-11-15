@@ -87,7 +87,96 @@ public sealed class DispatchOptionsValidatorTests
         var result = Validator(Environments.Production).Validate(null, Enabled());
 
         result.Failures!.ShouldContain(item => item.Contains("Coordination:Store", StringComparison.Ordinal));
-        result.Failures!.ShouldContain(item => item.Contains("Dispatch:Enabled", StringComparison.Ordinal) && item.Contains("IDispatchStore", StringComparison.Ordinal));
+        result.Failures!.ShouldContain("Dispatch:Store must be Postgres outside Development.", StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void Outside_Development_without_AllowProduction_is_refused()
+    {
+        var options = ProductionReady();
+        options.AllowProduction = false;
+
+        var result = Validator(Environments.Production, settings: ProductionConfig()).Validate(null, options);
+
+        result.Failures!.ShouldContain("Dispatch:AllowProduction must be true outside Development to start dispatch.", StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void Outside_Development_an_in_memory_dispatch_store_is_refused()
+    {
+        var options = ProductionReady();
+        options.Store = DispatchOptions.DispatchStoreKind.InMemory;
+
+        var result = Validator(Environments.Production, settings: ProductionConfig()).Validate(null, options);
+
+        result.Failures!.ShouldContain("Dispatch:Store must be Postgres outside Development.", StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void Outside_Development_a_non_Postgres_session_store_is_refused()
+    {
+        var config = ProductionConfig();
+        config["Sessions:Store"] = "InMemory";
+
+        var result = Validator(Environments.Production, settings: config).Validate(null, ProductionReady());
+
+        result.Failures!.ShouldContain("Dispatch:Enabled requires Sessions:Store=Postgres outside Development.", StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void Outside_Development_a_missing_Dragonfly_connection_string_is_refused()
+    {
+        var config = ProductionConfig();
+        config.Remove("Coordination:Dragonfly:ConnectionString");
+
+        var result = Validator(Environments.Production, settings: config).Validate(null, ProductionReady());
+
+        result.Failures!.ShouldContain("Dispatch:Enabled requires Coordination:Dragonfly:ConnectionString outside Development.", StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void Outside_Development_a_missing_tenant_hash_pepper_is_refused()
+    {
+        var config = ProductionConfig();
+        config.Remove("DataPlane:TenantHashPepper");
+
+        var result = Validator(Environments.Production, settings: config).Validate(null, ProductionReady());
+
+        result.Failures!.ShouldContain("DataPlane:TenantHashPepper is required outside Development.", StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void Outside_Development_a_non_Single_replica_mode_is_refused()
+    {
+        var options = ProductionReady();
+        options.ReplicaMode = DispatchOptions.DispatchReplicaMode.Multi;
+
+        var result = Validator(Environments.Production, settings: ProductionConfig()).Validate(null, options);
+
+        result.Failures!.ShouldContain("Dispatch:ReplicaMode must be Single outside Development.", StringComparer.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("Development")]
+    [InlineData("Production")]
+    public void Identical_signing_keys_are_refused_in_every_environment(string environment)
+    {
+        var pem = Pem();
+        var options = Enabled();
+        options.Credentials.SigningKeyPem = pem;
+        options.CommandSigning.KeyPem = pem;
+
+        var result = Validator(environment, settings: ProductionConfig()).Validate(null, options);
+
+        result.Failures!.ShouldContain("Dispatch:Credentials:SigningKeyPem and Dispatch:CommandSigning:KeyPem must be distinct keys.", StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void A_production_shaped_dispatch_with_every_requirement_present_passes_validation()
+    {
+        var result = Validator(Environments.Production, settings: ProductionConfig()).Validate(null, ProductionReady());
+
+        result.Succeeded.ShouldBeTrue();
     }
 
     [Fact]
@@ -220,9 +309,36 @@ public sealed class DispatchOptionsValidatorTests
         return key.ExportPkcs8PrivateKeyPem();
     }
 
-    private static DispatchOptionsValidator Validator(string environment, ApiAuthMode mode = ApiAuthMode.Oidc)
+    private static DispatchOptions ProductionReady()
     {
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>(StringComparer.Ordinal) { ["Coordination:Store"] = "InMemory" }).Build();
+        var options = Enabled();
+        options.AllowProduction = true;
+        options.Store = DispatchOptions.DispatchStoreKind.Postgres;
+        options.HubOrigin = "https://hub.example";
+        return options;
+    }
+
+    private static Dictionary<string, string?> ProductionConfig() => new(StringComparer.Ordinal)
+    {
+        ["Coordination:Store"] = "Dragonfly",
+        ["Coordination:Dragonfly:ConnectionString"] = "dragonfly.example:6379",
+        ["Sessions:Store"] = "Postgres",
+        ["Sessions:Postgres:ConnectionString"] = "Host=postgres.example;Database=autonogrammer",
+        ["DataPlane:TenantHashPepper"] = "test-pepper",
+    };
+
+    private static DispatchOptionsValidator Validator(string environment, ApiAuthMode mode = ApiAuthMode.Oidc, Dictionary<string, string?>? settings = null)
+    {
+        var values = new Dictionary<string, string?>(StringComparer.Ordinal) { ["Coordination:Store"] = "InMemory" };
+        if (settings is not null)
+        {
+            foreach (var pair in settings)
+            {
+                values[pair.Key] = pair.Value;
+            }
+        }
+
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
         return new DispatchOptionsValidator(new TestEnvironment(environment), configuration, Microsoft.Extensions.Options.Options.Create(new ApiAuthOptions { Mode = mode }));
     }
 

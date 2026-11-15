@@ -127,11 +127,14 @@ Before deploying this changed default to an existing installation that uses acco
 
 | Variable | Secret | Example placeholder | Read in | Safe default |
 |----------|--------|---------------------|---------|--------------|
-| `Dispatch__Enabled` | no | `false` | `Dispatch/Options/DispatchOptions.cs` | `false`. `true` requires `Api__Auth__Mode=Oidc` and `Hosting__ForwardedHeaders__Mode` so connect limits see the client address |
-| `Dispatch__Credentials__SigningKeyPem` | yes | `<PKCS#8 P-256 PEM>` | `Dispatch/Devices/DeviceCredentialIssuer.cs` | Unset while dispatch is off. Distinct from the command-signing key |
-| `Dispatch__CommandSigning__KeyPem` | yes | `<PKCS#8 P-256 PEM>` | `Dispatch/Devices/DeviceCredentialIssuer.cs` | Unset while dispatch is off |
+| `Dispatch__Enabled` | no | `false` | `Dispatch/Options/DispatchOptions.cs` | `false`. `true` requires `Api__Auth__Mode=Oidc` and `Hosting__ForwardedHeaders__Mode` so connect limits see the client address. Outside Development it also needs every requirement in `docs/runbooks/dispatch.md`; leave `false` unless all of them hold |
+| `Dispatch__Credentials__SigningKeyPem` | yes | `<PKCS#8 P-256 PEM>` | `Dispatch/Devices/DeviceCredentialIssuer.cs` | Unset while dispatch is off. Must differ from the command-signing key; equal keys are refused in every environment |
+| `Dispatch__CommandSigning__KeyPem` | yes | `<PKCS#8 P-256 PEM>` | `Dispatch/Devices/DeviceCredentialIssuer.cs` | Unset while dispatch is off. Must differ from the credential key |
 | `Dispatch__Credentials__Issuer` | no | `autonogrammer-dispatch` | `Dispatch/Options/DispatchOptions.cs` | `autonogrammer-dispatch` |
-| `Dispatch__ReplicaMode` | no | `Single` | `Dispatch/Options/DispatchOptionsValidator.cs` | `Single`. `Multi` also requires Dragonfly coordination and the Postgres session store |
+| `Dispatch__ReplicaMode` | no | `Single` | `Dispatch/Options/DispatchOptionsValidator.cs` | `Single`. Must be `Single` outside Development. `Multi` is refused outside Development and, in Development, also requires Dragonfly coordination and the Postgres session store |
+| `Dispatch__AllowProduction` | no | `false` | `Dispatch/Options/DispatchOptions.cs`, `Dispatch/Options/DispatchOptionsValidator.cs` | `false`. Must be `true` outside Development before `Dispatch__Enabled=true` starts |
+| `Dispatch__Store` | no | `Postgres` | `Dispatch/Options/DispatchOptions.cs`, `Dispatch/DispatchModule.cs` | `InMemory`, Development only. Outside Development must be `Postgres`, which needs `Sessions__Store=Postgres` and `Sessions__Postgres__ConnectionString` |
+| `Dispatch__HubOrigin` | no | `https://<hub origin>` | `Dispatch/Options/DispatchOptions.cs`, `Dispatch/Options/DispatchOptionsValidator.cs` | Empty, which uses the request host. Required outside Development: an absolute https origin with no path, set here and never taken from a request header |
 
 ### HTTP surface and hosting
 
