@@ -110,7 +110,7 @@ internal sealed class AgentHead : IAsyncDisposable
             var broker = new CoworkApprovalBroker(clock: TimeProvider.System, windowAvailable: true);
             var computer = await CoworkHead.CreateComputerProviderAsync(loop.StateRoot, topLevel, TimeProvider.System, CoworkGate(services), broker, CancellationToken.None).ConfigureAwait(true);
             computerOwner = computer.Owner;
-            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = services?.Artifacts.ToolProvider, Computer = computer.Provider });
+            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = services?.Artifacts.ToolProvider, Computer = computer.Provider, ProductionPages = true });
             // The Models page and the provider keys omp is started with are built together, so a key saved on the page reaches every omp the head starts.
             models = ModelsSettingsComposition.Create(new ModelsSettingsCompositionOptions { StateRoot = loop.StateRoot });
             var modelSource = models.Source;
@@ -242,7 +242,7 @@ internal sealed class AgentHead : IAsyncDisposable
         BrowserUseCompositionResult? browser = null;
         try
         {
-            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = options.Services?.Artifacts.ToolProvider });
+            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = options.Services?.Artifacts.ToolProvider, ProductionPages = true });
             var broker = new CoworkApprovalBroker(clock: options.TimeProvider ?? TimeProvider.System, windowAvailable: true);
             return await BuildAsync(
                 new SessionEngineSetOptions

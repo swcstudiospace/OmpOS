@@ -118,15 +118,15 @@ public sealed class ProductionBrowserPageSourceTests
 
             opened.ShouldBeSameAs(page);
             var enable = page.Commands.Single(static command => string.Equals(command.Method, "Fetch.enable", StringComparison.Ordinal));
-            Field(enable.Args, "handleAuthRequests").ShouldBe(true);
+            Params(enable.Args).GetProperty("handleAuthRequests").GetBoolean().ShouldBeTrue();
 
             page.Raise("Fetch.authRequired", Challenge("auth-1", "Proxy"));
-            var answered = (Dictionary<string, object>)await page.ArgsAsync("Fetch.continueWithAuth", 1).ConfigureAwait(true);
-            answered["requestId"].ShouldBe("auth-1");
-            var response = (Dictionary<string, object>)answered["authChallengeResponse"];
-            response["response"].ShouldBe("ProvideCredentials");
-            var user = (string)response["username"];
-            var password = (string)response["password"];
+            var answered = Params(await page.ArgsAsync("Fetch.continueWithAuth", 1).ConfigureAwait(true));
+            answered.GetProperty("requestId").GetString().ShouldBe("auth-1");
+            var response = answered.GetProperty("authChallengeResponse");
+            response.GetProperty("response").GetString().ShouldBe("ProvideCredentials");
+            var user = response.GetProperty("username").GetString() ?? string.Empty;
+            var password = response.GetProperty("password").GetString() ?? string.Empty;
 
             // The proxy accepts the answered credential (it reaches the policy and refuses the target with 403), and
             // refuses any other value with 407, so the answer is the session's own credential and nothing else.
@@ -152,7 +152,7 @@ public sealed class ProductionBrowserPageSourceTests
 
             page.Raise("Fetch.requestPaused", "{\"requestId\":\"req-1\",\"resourceType\":\"Document\",\"request\":{\"url\":\"http://127.0.0.1:9/\"}}");
 
-            Field(await page.ArgsAsync("Fetch.continueRequest", 1).ConfigureAwait(true), "requestId").ShouldBe("req-1");
+            Params(await page.ArgsAsync("Fetch.continueRequest", 1).ConfigureAwait(true)).GetProperty("requestId").GetString().ShouldBe("req-1");
             page.Commands.Any(static command => string.Equals(command.Method, "Fetch.continueWithAuth", StringComparison.Ordinal)).ShouldBeFalse();
         }
         finally
@@ -172,19 +172,19 @@ public sealed class ProductionBrowserPageSourceTests
             _ = await NewSource(host).OpenAsync("s", Token).ConfigureAwait(true);
 
             page.Raise("Fetch.authRequired", Challenge("site-1", "Server"));
-            var site = (Dictionary<string, object>)await page.ArgsAsync("Fetch.continueWithAuth", 1).ConfigureAwait(true);
-            var siteResponse = (Dictionary<string, object>)site["authChallengeResponse"];
-            siteResponse["response"].ShouldBe("CancelAuth");
-            siteResponse.ContainsKey("username").ShouldBeFalse();
-            siteResponse.ContainsKey("password").ShouldBeFalse();
+            var site = Params(await page.ArgsAsync("Fetch.continueWithAuth", 1).ConfigureAwait(true));
+            var siteResponse = site.GetProperty("authChallengeResponse");
+            siteResponse.GetProperty("response").GetString().ShouldBe("CancelAuth");
+            siteResponse.TryGetProperty("username", out _).ShouldBeFalse();
+            siteResponse.TryGetProperty("password", out _).ShouldBeFalse();
 
             page.Raise("Fetch.authRequired", Challenge("proxy-1", "Proxy"));
-            var first = (Dictionary<string, object>)await page.ArgsAsync("Fetch.continueWithAuth", 2).ConfigureAwait(true);
-            ((Dictionary<string, object>)first["authChallengeResponse"])["response"].ShouldBe("ProvideCredentials");
+            var first = Params(await page.ArgsAsync("Fetch.continueWithAuth", 2).ConfigureAwait(true));
+            first.GetProperty("authChallengeResponse").GetProperty("response").GetString().ShouldBe("ProvideCredentials");
 
             page.Raise("Fetch.authRequired", Challenge("proxy-1", "Proxy"));
-            var repeat = (Dictionary<string, object>)await page.ArgsAsync("Fetch.continueWithAuth", 3).ConfigureAwait(true);
-            ((Dictionary<string, object>)repeat["authChallengeResponse"])["response"].ShouldBe("CancelAuth");
+            var repeat = Params(await page.ArgsAsync("Fetch.continueWithAuth", 3).ConfigureAwait(true));
+            repeat.GetProperty("authChallengeResponse").GetProperty("response").GetString().ShouldBe("CancelAuth");
         }
         finally
         {
@@ -204,7 +204,8 @@ public sealed class ProductionBrowserPageSourceTests
     private static string Challenge(string requestId, string source) =>
         "{\"requestId\":\"" + requestId + "\",\"authChallenge\":{\"source\":\"" + source + "\",\"origin\":\"http://127.0.0.1:9\",\"scheme\":\"basic\",\"realm\":\"proxy\"}}";
 
-    private static object? Field(object? args, string name) => args?.GetType().GetProperty(name)?.GetValue(args);
+    private static JsonElement Params(object? args) =>
+        args is JsonElement element ? element : throw new InvalidOperationException("The command carried no JSON params.");
 
     private static async Task<bool> AcceptsConnectionAsync(int port)
     {

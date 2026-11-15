@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Autonogrammer.Harness.BrowserUse.Chromium;
 using Autonogrammer.Harness.BrowserUse.Content;
 using PuppeteerSharp;
 
@@ -24,7 +25,7 @@ public static class BrowserReadTool
         var method = string.Equals(view, "console", StringComparison.Ordinal)
             ? "Runtime.evaluate"
             : string.Equals(view, "tree", StringComparison.Ordinal) ? "Accessibility.getFullAXTree" : "DOMSnapshot.captureSnapshot";
-        var payload = await session.SendAsync(method, new { }, waitForCallback: true, options: null).ConfigureAwait(false);
+        var payload = await session.SendAsync(method, CdpParams.Parse("{}"), waitForCallback: true, options: null).ConfigureAwait(false);
         return marker.Wrap(PageContentExtractor.Extract(ReadNodes(payload)));
     }
 

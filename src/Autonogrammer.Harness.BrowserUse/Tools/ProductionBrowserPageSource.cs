@@ -106,11 +106,7 @@ public sealed class ProductionBrowserPageSource : IBrowserPageSource
                 _ = AnswerAuthAsync(page, proxy, attempted, args.MessageData);
             }
         };
-        _ = await page.SendAsync(
-            "Fetch.enable",
-            new { handleAuthRequests = true, patterns = new[] { new { urlPattern = "*" } } },
-            waitForCallback: true,
-            options: null).ConfigureAwait(false);
+        _ = await page.SendAsync("Fetch.enable", EnableParams(), waitForCallback: true, options: null).ConfigureAwait(false);
     }
 
     private static async Task ContinueRequestAsync(ICDPSession page, JsonElement data)
@@ -121,7 +117,7 @@ public sealed class ProductionBrowserPageSource : IBrowserPageSource
             return;
         }
 
-        _ = await page.SendAsync("Fetch.continueRequest", new { requestId }, waitForCallback: true, options: null).ConfigureAwait(false);
+        _ = await page.SendAsync("Fetch.continueRequest", RequestIdParams(requestId), waitForCallback: true, options: null).ConfigureAwait(false);
     }
 
     private static async Task AnswerAuthAsync(ICDPSession page, EgressGuardProxy proxy, HashSet<string> attempted, JsonElement data)
@@ -135,22 +131,10 @@ public sealed class ProductionBrowserPageSource : IBrowserPageSource
         // Only the proxy's own challenge receives the proxy credential; a website challenge is cancelled so the
         // credential never leaves for an origin. A second proxy challenge for the same request is cancelled too, so a
         // refused credential cannot loop. The decision is made before the first await, on the event thread.
-        var answer = new Dictionary<string, object>(StringComparer.Ordinal) { ["response"] = "CancelAuth" };
-        if (IsProxyChallenge(data) && attempted.Add(requestId))
-        {
-            answer = new Dictionary<string, object>(StringComparer.Ordinal)
-            {
-                ["response"] = "ProvideCredentials",
-                ["username"] = proxy.UserName,
-                ["password"] = proxy.Password,
-            };
-        }
-
-        _ = await page.SendAsync(
-            "Fetch.continueWithAuth",
-            new Dictionary<string, object>(StringComparer.Ordinal) { ["requestId"] = requestId, ["authChallengeResponse"] = answer },
-            waitForCallback: true,
-            options: null).ConfigureAwait(false);
+        var authParams = IsProxyChallenge(data) && attempted.Add(requestId)
+            ? ProvideCredentialsParams(requestId, proxy)
+            : CancelAuthParams(requestId);
+        _ = await page.SendAsync("Fetch.continueWithAuth", authParams, waitForCallback: true, options: null).ConfigureAwait(false);
     }
 
     private static bool IsProxyChallenge(JsonElement data) =>
@@ -160,6 +144,31 @@ public sealed class ProductionBrowserPageSource : IBrowserPageSource
 
     private static string? ReadString(JsonElement element, string name) =>
         element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+
+    // CDP params are raw JSON, never anonymous types or dictionaries: the repo disables reflection-based JSON, so
+    // PuppeteerSharp cannot serialize those shapes. Values are escaped with JsonEncodedText before they are spliced in.
+    private static JsonElement EnableParams() =>
+        ParseParams("{\"handleAuthRequests\":true,\"patterns\":[{\"urlPattern\":\"*\"}]}");
+
+    private static JsonElement RequestIdParams(string requestId) =>
+        ParseParams("{\"requestId\":\"" + EncodeText(requestId) + "\"}");
+
+    private static JsonElement CancelAuthParams(string requestId) =>
+        ParseParams("{\"requestId\":\"" + EncodeText(requestId) + "\",\"authChallengeResponse\":{\"response\":\"CancelAuth\"}}");
+
+    private static JsonElement ProvideCredentialsParams(string requestId, EgressGuardProxy proxy) =>
+        ParseParams(
+            "{\"requestId\":\"" + EncodeText(requestId)
+            + "\",\"authChallengeResponse\":{\"response\":\"ProvideCredentials\",\"username\":\"" + EncodeText(proxy.UserName)
+            + "\",\"password\":\"" + EncodeText(proxy.Password) + "\"}}");
+
+    private static string EncodeText(string value) => JsonEncodedText.Encode(value).Value;
+
+    private static JsonElement ParseParams(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
+    }
 
     private static IEnumerable<KeyValuePair<string, string?>> ParentEnvironment() =>
         Environment.GetEnvironmentVariables().Cast<DictionaryEntry>()

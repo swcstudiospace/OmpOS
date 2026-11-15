@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Autonogrammer.Cowork.Abstractions;
+using Autonogrammer.Harness.BrowserUse.Chromium;
 using Autonogrammer.Harness.BrowserUse.Content;
 using Autonogrammer.Harness.BrowserUse.Options;
 using Autonogrammer.Harness.BrowserUse.Policy;
@@ -287,13 +288,13 @@ public sealed class BrowserToolProvider : ICoworkToolProvider
         var downloadPath = _options.DownloadMode == DownloadMode.Quarantine && _profileDirectory is not null
             ? BrowserDownloadQuarantine.EnsureDirectory(_profileDirectory)
             : string.Empty;
-        _ = await session.SendAsync("Browser.setDownloadBehavior", new { behavior, downloadPath, eventsEnabled = true }, waitForCallback: true, options: null).ConfigureAwait(false);
+        _ = await session.SendAsync("Browser.setDownloadBehavior", CdpParams.Parse($"{{\"behavior\":{CdpParams.Quoted(behavior)},\"downloadPath\":{CdpParams.Quoted(downloadPath)},\"eventsEnabled\":true}}"), waitForCallback: true, options: null).ConfigureAwait(false);
         foreach (var name in new[] { "camera", "microphone", "geolocation", "notifications", "clipboard" })
         {
-            _ = await session.SendAsync("Browser.setPermission", new { permission = new { name }, setting = "denied" }, waitForCallback: true, options: null).ConfigureAwait(false);
+            _ = await session.SendAsync("Browser.setPermission", CdpParams.Parse($"{{\"permission\":{{\"name\":{CdpParams.Quoted(name)}}},\"setting\":\"denied\"}}"), waitForCallback: true, options: null).ConfigureAwait(false);
         }
 
-        _ = await session.SendAsync("Page.setInterceptFileChooserDialog", new { enabled = true }, waitForCallback: true, options: null).ConfigureAwait(false);
+        _ = await session.SendAsync("Page.setInterceptFileChooserDialog", CdpParams.Parse("{\"enabled\":true}"), waitForCallback: true, options: null).ConfigureAwait(false);
     }
 
     private async Task<CoworkToolResult> NavigateAsync(CoworkSessionContext session, CoworkToolInvocation invocation, ICDPSession page, CancellationToken cancellationToken)

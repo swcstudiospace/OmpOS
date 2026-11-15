@@ -1,3 +1,4 @@
+using Autonogrammer.Harness.BrowserUse.Chromium;
 using PuppeteerSharp;
 
 namespace Autonogrammer.Harness.BrowserUse.Tools;
@@ -17,6 +18,7 @@ public static class BrowserScrollTool
     {
         ArgumentNullException.ThrowIfNull(session);
         cancellationToken.ThrowIfCancellationRequested();
-        _ = await session.SendAsync("Input.dispatchMouseEvent", new { type = "mouseWheel", x = 0, y = 0, deltaX = 0, deltaY }, waitForCallback: true, options: null).ConfigureAwait(false);
+        var json = FormattableString.Invariant($$"""{"type":{{CdpParams.Quoted("mouseWheel")}},"x":0,"y":0,"deltaX":0,"deltaY":{{deltaY}}}""");
+        _ = await session.SendAsync("Input.dispatchMouseEvent", CdpParams.Parse(json), waitForCallback: true, options: null).ConfigureAwait(false);
     }
 }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Autonogrammer.Harness.BrowserUse.Chromium;
 using PuppeteerSharp;
 
 namespace Autonogrammer.Harness.BrowserUse.Tools;
@@ -34,7 +35,8 @@ public static class BrowserNavigateTool
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(url);
         cancellationToken.ThrowIfCancellationRequested();
-        var final = await session.SendAsync("Page.navigate", new { url = url.AbsoluteUri }, waitForCallback: true, options: null).ConfigureAwait(false);
+        var parameters = CdpParams.Parse("{\"url\":" + CdpParams.Quoted(url.AbsoluteUri) + "}");
+        var final = await session.SendAsync("Page.navigate", parameters, waitForCallback: true, options: null).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         if (final is { } element && element.TryGetProperty("url", out var observed) && Uri.TryCreate(observed.GetString(), UriKind.Absolute, out var parsed))
         {

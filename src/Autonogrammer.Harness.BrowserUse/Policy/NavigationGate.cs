@@ -64,7 +64,7 @@ public sealed class NavigationGate
         };
         await session.SendAsync(
             "Fetch.enable",
-            new { patterns = new[] { new { resourceType = "Document" } } },
+            ParseParams("{\"patterns\":[{\"resourceType\":\"Document\"}]}"),
             waitForCallback: true,
             options: null).ConfigureAwait(false);
     }
@@ -207,11 +207,28 @@ public sealed class NavigationGate
 
     private static async Task ContinueAsync(ICDPSession session, string requestId)
     {
-        _ = await session.SendAsync("Fetch.continueRequest", new { requestId }, waitForCallback: true, options: null).ConfigureAwait(false);
+        _ = await session.SendAsync("Fetch.continueRequest", RequestParams(requestId, errorReason: null), waitForCallback: true, options: null).ConfigureAwait(false);
     }
 
     private static async Task FailAsync(ICDPSession session, string requestId)
     {
-        _ = await session.SendAsync("Fetch.failRequest", new { requestId, errorReason = "BlockedByClient" }, waitForCallback: true, options: null).ConfigureAwait(false);
+        _ = await session.SendAsync("Fetch.failRequest", RequestParams(requestId, errorReason: "BlockedByClient"), waitForCallback: true, options: null).ConfigureAwait(false);
+    }
+
+    private static JsonElement RequestParams(string requestId, string? errorReason)
+    {
+        var json = "{\"requestId\":\"" + JsonEncodedText.Encode(requestId).Value + "\"";
+        if (errorReason is not null)
+        {
+            json += ",\"errorReason\":\"" + JsonEncodedText.Encode(errorReason).Value + "\"";
+        }
+
+        return ParseParams(json + "}");
+    }
+
+    private static JsonElement ParseParams(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
     }
 }

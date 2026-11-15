@@ -1,3 +1,4 @@
+using Autonogrammer.Harness.BrowserUse.Chromium;
 using Autonogrammer.Harness.BrowserUse.Vision;
 using PuppeteerSharp;
 
@@ -25,7 +26,7 @@ public static class BrowserScreenshotTool
         var clip = Clip(step.Viewport, step.Scale);
         var payload = await session.SendAsync(
             "Page.captureScreenshot",
-            new { format = step.Format, quality = step.Quality, clip, fromSurface = true, captureBeyondViewport = false },
+            CdpParams.Parse(FormattableString.Invariant($$"""{"format":{{CdpParams.Quoted(step.Format)}},"quality":{{Json(step.Quality)}},"clip":{{clip}},"fromSurface":true,"captureBeyondViewport":false}""")),
             waitForCallback: true,
             options: null).ConfigureAwait(false);
         if (payload is { } element && element.TryGetProperty("data", out var data))
@@ -36,7 +37,7 @@ public static class BrowserScreenshotTool
         return [];
     }
 
-    private static object Clip(string viewport, double scale)
+    private static string Clip(string viewport, double scale)
     {
         var width = viewport switch
         {
@@ -44,6 +45,8 @@ public static class BrowserScreenshotTool
             "mobile" => 390,
             _ => ScreenshotPipeline.ViewportWidth,
         };
-        return new { x = 0, y = 0, width, height = ScreenshotPipeline.ViewportHeight, scale };
+        return FormattableString.Invariant($$"""{"x":0,"y":0,"width":{{width}},"height":{{ScreenshotPipeline.ViewportHeight}},"scale":{{scale}}}""");
     }
+
+    private static string Json(int? value) => value is { } number ? FormattableString.Invariant($"{number}") : "null";
 }

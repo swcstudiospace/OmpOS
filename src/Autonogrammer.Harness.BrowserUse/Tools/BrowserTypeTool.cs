@@ -1,3 +1,4 @@
+using Autonogrammer.Harness.BrowserUse.Chromium;
 using PuppeteerSharp;
 
 namespace Autonogrammer.Harness.BrowserUse.Tools;
@@ -18,11 +19,11 @@ public static class BrowserTypeTool
     {
         ArgumentNullException.ThrowIfNull(session);
         cancellationToken.ThrowIfCancellationRequested();
-        _ = await session.SendAsync("Input.insertText", new { text }, waitForCallback: true, options: null).ConfigureAwait(false);
+        _ = await session.SendAsync("Input.insertText", CdpParams.Parse(FormattableString.Invariant($$"""{"text":{{CdpParams.Quoted(text)}}}""")), waitForCallback: true, options: null).ConfigureAwait(false);
         if (submit)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            _ = await session.SendAsync("Input.dispatchKeyEvent", new { type = "keyDown", key = "Enter" }, waitForCallback: true, options: null).ConfigureAwait(false);
+            _ = await session.SendAsync("Input.dispatchKeyEvent", CdpParams.Parse(FormattableString.Invariant($$"""{"type":{{CdpParams.Quoted("keyDown")}},"key":{{CdpParams.Quoted("Enter")}}}""")), waitForCallback: true, options: null).ConfigureAwait(false);
         }
     }
 }

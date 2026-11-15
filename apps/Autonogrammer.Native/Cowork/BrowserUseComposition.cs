@@ -7,6 +7,7 @@ using Autonogrammer.Cowork.Tools;
 using Autonogrammer.Harness.BrowserUse;
 using Autonogrammer.Harness.BrowserUse.Chromium;
 using Autonogrammer.Harness.BrowserUse.Options;
+using Autonogrammer.Harness.BrowserUse.Policy;
 using Autonogrammer.Harness.BrowserUse.Tools;
 using Autonogrammer.Harness.BrowserUse.Viewer;
 using Autonogrammer.Harness.BrowserUse.Vision;
@@ -30,8 +31,11 @@ internal sealed class BrowserUseCompositionRequest
     /// <summary>Gets the section bind. Null leaves the defaults, including Enabled false.</summary>
     public Action<BrowserUseOptions>? Configure { get; init; }
 
-    /// <summary>Gets a scripted page source. Null never opens a page.</summary>
+    /// <summary>Gets a scripted page source. Null falls back to <see cref="ProductionPages"/>, and to no page when that is false.</summary>
     public IBrowserPageSource? Pages { get; init; }
+
+    /// <summary>Gets whether the desktop builds the production Chromium page source when <see cref="Pages"/> is null and a binary was located. Production sets it; tests keep the scripted source.</summary>
+    public bool ProductionPages { get; init; }
 
     /// <summary>Gets whether tools are offered even when locate finds no binary. Tests use this. Production is false.</summary>
     public bool ForceAvailable { get; init; }
@@ -239,6 +243,7 @@ internal static class BrowserUseComposition
         var located = new ChromiumLocator(new DiskChromiumProbe()).Locate(options, request.StateDirectory, ChromiumOsFamily.Linux);
         var offerTools = options.Enabled && (request.ForceAvailable || located.State == BrowserLocateState.Found);
         var (grants, audit) = OpenToolStores(request.StateDirectory);
+        var owned = new List<IDisposable> { grants, audit };
         var broker = request.Broker ?? new CoworkApprovalBroker(windowAvailable: request.Shell is not null);
         BrowserToolProvider? provider = null;
         if (offerTools)
@@ -247,7 +252,7 @@ internal static class BrowserUseComposition
                 options,
                 broker,
                 grants,
-                request.Pages ?? new ClosedPages(),
+                PagesFor(request, options, located, () => provider?.OriginGrants ?? throw new InvalidOperationException("The browser tools are not registered."), owned),
                 gate,
                 new ClosedPorts(),
                 readiness: new CoworkProviderState(CoworkProviderAvailability.Available, null));
@@ -267,7 +272,7 @@ internal static class BrowserUseComposition
             var panel = new BrowserPanePanel(pane);
             BindStopChord(panel.View, pane);
             request.Chrome?.Add(new SurfaceChromeEntry(IndicatorId, BrowserChromeCopy.AgentControlling, () => { _ = pane.StopAsync(); }, "Ctrl+Shift+."));
-            var result = new BrowserUseCompositionResult(options, settings, gate, control, provider, host, pane, panel, () => BrowserUseCapability.IsOffered(options), handler, [grants, audit]);
+            var result = new BrowserUseCompositionResult(options, settings, gate, control, provider, host, pane, panel, () => BrowserUseCapability.IsOffered(options), handler, owned.ToArray());
             request.Shell?.RegisterPanel(panel);
             return result;
         }
@@ -276,6 +281,30 @@ internal static class BrowserUseComposition
             pane.Dispose();
             throw;
         }
+    }
+
+    /// <summary>Returns the page source the provider opens pages through. A scripted source wins. The production source is built only when asked and a binary was located; otherwise no page opens.</summary>
+    /// <param name="request">The composition request.</param>
+    /// <param name="options">The bound options the production host runs with.</param>
+    /// <param name="located">The locate result. Its binary is used only when found.</param>
+    /// <param name="grants">Returns the origin grants the approval path writes to, so a granted origin reaches the proxy.</param>
+    /// <param name="owned">The composition's owned objects. The production host is added so release closes its browsers.</param>
+    /// <returns>The page source.</returns>
+    private static IBrowserPageSource PagesFor(BrowserUseCompositionRequest request, BrowserUseOptions options, ChromiumLocation located, Func<OriginGrants> grants, List<IDisposable> owned)
+    {
+        if (request.Pages is not null)
+        {
+            return request.Pages;
+        }
+
+        if (!request.ProductionPages || located.State != BrowserLocateState.Found || located.ExecutablePath is not { Length: > 0 } path)
+        {
+            return new ClosedPages();
+        }
+
+        var (pages, host) = ProductionBrowserPages.Create(options, path, _ => grants(), new ChromiumProcessLauncher());
+        owned.Add(new BrowserSessionHostCloser(host));
+        return pages;
     }
 
     /// <summary>Builds the tool providers the host receives: the browser tool when offered, then the artifact and computer providers when passed.</summary>

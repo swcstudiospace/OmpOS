@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Autonogrammer.Harness.BrowserUse.Chromium;
 using PuppeteerSharp;
 
 namespace Autonogrammer.Harness.BrowserUse.Tools;
@@ -18,8 +20,11 @@ public static class BrowserClickTool
     {
         ArgumentNullException.ThrowIfNull(session);
         cancellationToken.ThrowIfCancellationRequested();
-        _ = await session.SendAsync("Input.dispatchMouseEvent", new { type = "mousePressed", x, y, button = "left", clickCount = 1 }, waitForCallback: true, options: null).ConfigureAwait(false);
+        _ = await session.SendAsync("Input.dispatchMouseEvent", MouseEvent("mousePressed", x, y), waitForCallback: true, options: null).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
-        _ = await session.SendAsync("Input.dispatchMouseEvent", new { type = "mouseReleased", x, y, button = "left", clickCount = 1 }, waitForCallback: true, options: null).ConfigureAwait(false);
+        _ = await session.SendAsync("Input.dispatchMouseEvent", MouseEvent("mouseReleased", x, y), waitForCallback: true, options: null).ConfigureAwait(false);
     }
+
+    private static JsonElement MouseEvent(string type, double x, double y) =>
+        CdpParams.Parse(FormattableString.Invariant($$"""{"type":{{CdpParams.Quoted(type)}},"x":{{x}},"y":{{y}},"button":{{CdpParams.Quoted("left")}},"clickCount":1}"""));
 }

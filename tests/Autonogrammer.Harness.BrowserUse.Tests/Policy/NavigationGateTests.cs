@@ -28,10 +28,8 @@ public sealed class NavigationGateTests
         var gate = new NavigationGate(new BrowserUseOptions(), grants, requested);
         await gate.AttachAsync(session).ConfigureAwait(true);
         session.Commands[0].Method.ShouldBe("Fetch.enable");
-        var enable = session.Commands[0].Args!;
-        var patterns = (Array)enable.GetType().GetProperty("patterns")!.GetValue(enable)!;
-        var first = patterns.GetValue(0)!;
-        first.GetType().GetProperty("resourceType")!.GetValue(first).ShouldBe("Document");
+        var enable = (JsonElement)session.Commands[0].Args!;
+        enable.GetProperty("patterns")[0].GetProperty("resourceType").GetString().ShouldBe("Document");
 
         await session.PauseAsync("1", "Document", site.RedirectUrl("http://127.0.0.1:" + site.UngrantedPort + "/hit").AbsoluteUri).ConfigureAwait(true);
         session.Decisions.Any(decision => string.Equals(decision, "Fetch.continueRequest", StringComparison.Ordinal)).ShouldBeTrue();
@@ -102,8 +100,8 @@ public sealed class NavigationGateTests
         session.Decisions.Count(decision => string.Equals(decision, "Fetch.failRequest", StringComparison.Ordinal)).ShouldBe(1);
         session.Decisions.Any(decision => string.Equals(decision, "Fetch.continueRequest", StringComparison.Ordinal)).ShouldBeFalse();
         var fail = session.Commands.Single(command => string.Equals(command.Method, "Fetch.failRequest", StringComparison.Ordinal));
-        var args = fail.Args!;
-        args.GetType().GetProperty("errorReason")!.GetValue(args).ShouldBe("BlockedByClient");
+        var args = (JsonElement)fail.Args!;
+        args.GetProperty("errorReason").GetString().ShouldBe("BlockedByClient");
     }
 
     private sealed class ScriptedCdpSession : ICDPSession
@@ -186,7 +184,7 @@ public sealed class NavigationGateTests
             }
 
             _ = args;
-            var id = args.GetType().GetProperty("requestId")?.GetValue(args) as string ?? string.Empty;
+            var id = ((JsonElement)args).GetProperty("requestId").GetString() ?? string.Empty;
             if (!_urls.TryGetValue(id, out var url))
             {
                 return;

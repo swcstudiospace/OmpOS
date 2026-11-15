@@ -1,3 +1,4 @@
+using Autonogrammer.Harness.BrowserUse.Chromium;
 using PuppeteerSharp;
 
 namespace Autonogrammer.Harness.BrowserUse.Tools;
@@ -16,6 +17,6 @@ public static class BrowserCloseTool
     {
         ArgumentNullException.ThrowIfNull(session);
         cancellationToken.ThrowIfCancellationRequested();
-        _ = await session.SendAsync("Page.close", new { }, waitForCallback: true, options: null).ConfigureAwait(false);
+        _ = await session.SendAsync("Page.close", CdpParams.Parse("{}"), waitForCallback: true, options: null).ConfigureAwait(false);
     }
 }
