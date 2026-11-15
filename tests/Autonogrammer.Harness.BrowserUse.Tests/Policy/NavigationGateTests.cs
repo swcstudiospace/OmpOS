@@ -87,6 +87,25 @@ public sealed class NavigationGateTests
         session.Decisions.Any(decision => string.Equals(decision, "Fetch.continueRequest", StringComparison.Ordinal)).ShouldBeTrue();
     }
 
+    [Fact]
+    public async Task ThrowingApproval_FailsThePausedRequestOnce_WithBlockedByClient_AndNeverContinues()
+    {
+        var gate = new NavigationGate(
+            new BrowserUseOptions(),
+            new OriginGrants(),
+            new Uri("https://start.example/"),
+            _ => throw new InvalidOperationException("approval backend failed"));
+        var session = new ScriptedCdpSession();
+        await gate.AttachAsync(session).ConfigureAwait(true);
+        await session.PauseAsync("10", "Document", "https://other.example/page").ConfigureAwait(true);
+
+        session.Decisions.Count(decision => string.Equals(decision, "Fetch.failRequest", StringComparison.Ordinal)).ShouldBe(1);
+        session.Decisions.Any(decision => string.Equals(decision, "Fetch.continueRequest", StringComparison.Ordinal)).ShouldBeFalse();
+        var fail = session.Commands.Single(command => string.Equals(command.Method, "Fetch.failRequest", StringComparison.Ordinal));
+        var args = fail.Args!;
+        args.GetType().GetProperty("errorReason")!.GetValue(args).ShouldBe("BlockedByClient");
+    }
+
     private sealed class ScriptedCdpSession : ICDPSession
     {
         private readonly List<(string Method, object? Args)> _commands = [];

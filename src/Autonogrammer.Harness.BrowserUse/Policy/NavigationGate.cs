@@ -3,6 +3,7 @@ using System.Text.Json;
 using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Harness.BrowserUse.Egress;
 using Autonogrammer.Harness.BrowserUse.Options;
+using Microsoft.Extensions.Logging;
 using PuppeteerSharp;
 
 namespace Autonogrammer.Harness.BrowserUse.Policy;
@@ -13,6 +14,11 @@ namespace Autonogrammer.Harness.BrowserUse.Policy;
 /// </summary>
 public sealed class NavigationGate
 {
+    private static readonly Action<ILogger, Exception?> DecisionFailed = LoggerMessage.Define(
+        LogLevel.Warning,
+        new EventId(1, nameof(NavigationGate)),
+        "A navigation gate decision failed; the paused request was failed.");
+
     private readonly BrowserUseOptions _options;
     private readonly OriginGrants _grants;
     private readonly Uri? _requestedOrigin;
@@ -92,29 +98,51 @@ public sealed class NavigationGate
             return;
         }
 
-        if (!string.Equals(resourceType, "Document", StringComparison.Ordinal))
+        Exception? failure = null;
+        bool allowed;
+        try
+        {
+            allowed = await DecideAsync(resourceType, url).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            failure = exception;
+            allowed = false;
+        }
+
+        if (allowed)
         {
             await ContinueAsync(session, requestId).ConfigureAwait(false);
-            return;
+        }
+        else
+        {
+            await FailAsync(session, requestId).ConfigureAwait(false);
+        }
+
+        if (failure is not null)
+        {
+            DecisionFailed(session.LoggerFactory.CreateLogger<NavigationGate>(), failure);
+        }
+    }
+
+    private async Task<bool> DecideAsync(string? resourceType, string? url)
+    {
+        if (!string.Equals(resourceType, "Document", StringComparison.Ordinal))
+        {
+            return true;
         }
 
         if (!ShouldContinue(url, out var card))
         {
-            await FailAsync(session, requestId).ConfigureAwait(false);
-            return;
+            return false;
         }
 
-        if (card is not null)
+        if (card is null)
         {
-            var approved = _approve is not null && await _approve(card).ConfigureAwait(false);
-            if (!approved)
-            {
-                await FailAsync(session, requestId).ConfigureAwait(false);
-                return;
-            }
+            return true;
         }
 
-        await ContinueAsync(session, requestId).ConfigureAwait(false);
+        return _approve is not null && await _approve(card).ConfigureAwait(false);
     }
 
     private bool ShouldContinue(string? url, out CoworkCallPreview? card)

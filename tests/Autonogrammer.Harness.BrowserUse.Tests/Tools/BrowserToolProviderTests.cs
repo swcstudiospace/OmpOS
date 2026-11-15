@@ -137,6 +137,42 @@ public sealed class BrowserToolProviderTests
         Text(switched).ShouldContain("Choose a vision model");
     }
 
+    [Theory]
+    [MemberData(nameof(RefusedSchemes))]
+    public async Task DisallowedScheme_IsRefused_BeforePageNavigate(Uri url)
+    {
+        await using var harness = Harness.Create(enabled: true);
+        var result = await harness.Provider.InvokeAsync(harness.Session, Invoke("browser_navigate", "{\"url\":\"" + url.AbsoluteUri + "\"}"), CancellationToken.None).ConfigureAwait(true);
+        result.IsError.ShouldBeTrue();
+        Text(result).ShouldBe("The tool call was not approved.");
+        harness.Pages.Navigations.ShouldBe(0);
+    }
+
+    [Theory]
+    [MemberData(nameof(AllowedSchemes))]
+    public async Task AllowedScheme_StillNavigates(Uri url)
+    {
+        await using var harness = Harness.Create(enabled: true);
+        harness.Pages.FinalUrl = url.AbsoluteUri;
+        var result = await harness.Provider.InvokeAsync(harness.Session, Invoke("browser_navigate", "{\"url\":\"" + url.AbsoluteUri + "\"}"), CancellationToken.None).ConfigureAwait(true);
+        result.IsError.ShouldBeFalse();
+        Text(result).ShouldBe("navigated");
+        harness.Pages.Navigations.ShouldBe(1);
+    }
+
+    public static IEnumerable<object[]> RefusedSchemes =>
+    [
+        new object[] { new Uri("file:///etc/hostname") },
+        new object[] { new Uri("chrome://settings/") },
+        new object[] { new Uri("data:text/html,hello") },
+    ];
+
+    public static IEnumerable<object[]> AllowedSchemes =>
+    [
+        new object[] { new Uri("https://app.example/start") },
+        new object[] { new Uri("http://app.example/start") },
+    ];
+
     private static string Text(CoworkToolResult result) => ((CoworkTextBlock)result.Content[0]).Text;
 
     private static CoworkSessionContext Session(bool reads) => new()
@@ -248,6 +284,8 @@ public sealed class BrowserToolProviderTests
     {
         public int Opens { get; private set; }
 
+        public int Navigations { get; private set; }
+
         public string FinalUrl { get; set; } = "https://app.example/start";
 
         public bool Block { get; set; }
@@ -264,15 +302,20 @@ public sealed class BrowserToolProviderTests
                 await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
             }
 
-            return new ScriptedSession(FinalUrl);
+            return new ScriptedSession(FinalUrl, () => Navigations++);
         }
     }
 
     private sealed class ScriptedSession : ICDPSession
     {
         private readonly string _finalUrl;
+        private readonly Action _onNavigate;
 
-        public ScriptedSession(string finalUrl) => _finalUrl = finalUrl;
+        public ScriptedSession(string finalUrl, Action onNavigate)
+        {
+            _finalUrl = finalUrl;
+            _onNavigate = onNavigate;
+        }
 
         public ILoggerFactory LoggerFactory => Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance;
 
@@ -305,6 +348,7 @@ public sealed class BrowserToolProviderTests
             _ = (args, waitForCallback, options);
             if (string.Equals(method, "Page.navigate", StringComparison.Ordinal))
             {
+                _onNavigate();
                 using var document = JsonDocument.Parse("{\"url\":\"" + _finalUrl + "\"}");
                 return Task.FromResult<JsonElement?>(document.RootElement.Clone());
             }

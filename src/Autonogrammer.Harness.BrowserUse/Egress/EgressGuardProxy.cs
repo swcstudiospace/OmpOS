@@ -1,4 +1,6 @@
+using System.Buffers;
 using System.Globalization;
+using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -10,10 +12,26 @@ namespace Autonogrammer.Harness.BrowserUse.Egress;
 
 /// <summary>
 /// Session-owned loopback HTTP and CONNECT proxy. It resolves names itself, classifies every answer, and dials the
-/// pinned address. Chromium credential wiring via Page.AuthenticateAsync is [INFERENCE] and is not asserted here.
+/// pinned address. A plain-HTTP request keeps its method, end-to-end headers and bounded body; hop-by-hop headers and
+/// Proxy-Authorization are never forwarded. Chromium credential wiring via Page.AuthenticateAsync is [INFERENCE] and is not asserted here.
 /// </summary>
 public sealed class EgressGuardProxy : IAsyncDisposable
 {
+    private const int Ok = 200;
+    private const int MaxHeadBytes = 16384;
+    private const int MaxRequestBodyBytes = 10 * 1024 * 1024;
+    private const int MaxChunkLineBytes = 256;
+    private const int MaxTrailerLines = 32;
+    private static readonly byte[] HeadEnd = "\r\n\r\n"u8.ToArray();
+    private static readonly byte[] LineBreak = "\r\n"u8.ToArray();
+    private static readonly byte[] EmptyBody = [];
+    private static readonly char[] BareLineBreaks = ['\r', '\n'];
+    private static readonly HashSet<string> NotForwarded = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Connection", "Keep-Alive", "Proxy-Authenticate", "Proxy-Authorization", "Proxy-Connection", "TE", "Trailer",
+        "Transfer-Encoding", "Upgrade", "Host", "Content-Length", "Expect",
+    };
+
     private readonly BrowserUseOptions _options;
     private readonly OriginGrants _grants;
     private readonly IHostResolver _resolver;
@@ -157,66 +175,120 @@ public sealed class EgressGuardProxy : IAsyncDisposable
             }
 
             var stream = client.GetStream();
-            var headerBytes = await ReadHeadersAsync(stream, cancellationToken).ConfigureAwait(false);
-            if (headerBytes is null || !TryParse(Encoding.ASCII.GetString(headerBytes), out var method, out var target, out var headers))
+            var reader = PipeReader.Create(stream);
+            try
             {
-                await WriteStatusAsync(stream, 400, cancellationToken).ConfigureAwait(false);
-                return;
-            }
+                var headBytes = await ReadUntilAsync(reader, HeadEnd, MaxHeadBytes, cancellationToken).ConfigureAwait(false);
+                if (headBytes is null || !TryParse(Encoding.Latin1.GetString(headBytes), out var method, out var target, out var headers))
+                {
+                    await WriteStatusAsync(stream, 400, cancellationToken).ConfigureAwait(false);
+                    return;
+                }
 
-            if (!CredentialsMatch(headers))
+                if (!CredentialsMatch(headers))
+                {
+                    await WriteStatusAsync(stream, 407, cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+
+                if (method.Equals("CONNECT", StringComparison.OrdinalIgnoreCase))
+                {
+                    await ForwardConnectAsync(reader, stream, target, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    await ForwardPlainAsync(reader, stream, method, target, headers, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            finally
             {
-                await WriteStatusAsync(stream, 407, cancellationToken).ConfigureAwait(false);
-                return;
+                await reader.CompleteAsync().ConfigureAwait(false);
             }
-
-            await ForwardAsync(stream, method, target, cancellationToken).ConfigureAwait(false);
         }
     }
 
-    private async Task ForwardAsync(NetworkStream stream, string method, string target, CancellationToken cancellationToken)
+    private async Task ForwardConnectAsync(PipeReader reader, NetworkStream stream, string target, CancellationToken cancellationToken)
     {
-        if (!TryTarget(method, target, out var host, out var port, out var path))
+        if (!TryHostPort(target, out var host, out var port))
         {
             await WriteStatusAsync(stream, 403, cancellationToken).ConfigureAwait(false);
             return;
         }
 
-        Stream? upstream;
-        try
-        {
-            upstream = await DialAsync(host, port, cancellationToken).ConfigureAwait(false);
-        }
-        catch (EgressGuardUnavailableException)
-        {
-            await WriteStatusAsync(stream, 503, cancellationToken).ConfigureAwait(false);
-            return;
-        }
-
+        var (status, upstream) = await DialForwardAsync(host, port, cancellationToken).ConfigureAwait(false);
         if (upstream is null)
         {
-            await WriteStatusAsync(stream, 403, cancellationToken).ConfigureAwait(false);
+            await WriteStatusAsync(stream, status, cancellationToken).ConfigureAwait(false);
             return;
         }
 
         await using (upstream.ConfigureAwait(false))
         {
-            if (method.Equals("CONNECT", StringComparison.OrdinalIgnoreCase))
-            {
-                await WriteStatusAsync(stream, 200, cancellationToken).ConfigureAwait(false);
-                await RelayAsync(stream, upstream, cancellationToken).ConfigureAwait(false);
-                return;
-            }
+            await WriteStatusAsync(stream, Ok, cancellationToken).ConfigureAwait(false);
+            await FlushBufferedAsync(reader, upstream, cancellationToken).ConfigureAwait(false);
+            await RelayAsync(stream, upstream, cancellationToken).ConfigureAwait(false);
+        }
+    }
 
-            var rewritten = "GET " + path + " HTTP/1.1\r\nHost: " + host + ":" + port.ToString(CultureInfo.InvariantCulture) + "\r\nConnection: close\r\n\r\n";
-            await upstream.WriteAsync(Encoding.ASCII.GetBytes(rewritten), cancellationToken).ConfigureAwait(false);
+    private async Task ForwardPlainAsync(
+        PipeReader reader,
+        NetworkStream stream,
+        string method,
+        string target,
+        List<(string Name, string Value)> headers,
+        CancellationToken cancellationToken)
+    {
+        if (!TryTarget(target, out var host, out var port, out var path))
+        {
+            await WriteStatusAsync(stream, 403, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        var (bodyStatus, body) = await ReadRequestBodyAsync(reader, stream, headers, cancellationToken).ConfigureAwait(false);
+        if (bodyStatus != Ok)
+        {
+            await WriteStatusAsync(stream, bodyStatus, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        var (dialStatus, upstream) = await DialForwardAsync(host, port, cancellationToken).ConfigureAwait(false);
+        if (upstream is null)
+        {
+            await WriteStatusAsync(stream, dialStatus, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        await using (upstream.ConfigureAwait(false))
+        {
+            var head = BuildUpstreamHead(method, path, host, port, headers, body.Length);
+            await upstream.WriteAsync(Encoding.Latin1.GetBytes(head), cancellationToken).ConfigureAwait(false);
+            await upstream.WriteAsync(body, cancellationToken).ConfigureAwait(false);
             await upstream.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
         }
     }
 
-    private bool CredentialsMatch(Dictionary<string, string> headers)
+    private async Task<(int Status, Stream? Upstream)> DialForwardAsync(string host, int port, CancellationToken cancellationToken)
     {
-        if (!headers.TryGetValue("proxy-authorization", out var value) || !value.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase))
+        try
+        {
+            var upstream = await DialAsync(host, port, cancellationToken).ConfigureAwait(false);
+            if (upstream is null)
+            {
+                return (403, null);
+            }
+
+            return (Ok, upstream);
+        }
+        catch (EgressGuardUnavailableException)
+        {
+            return (503, null);
+        }
+    }
+
+    private bool CredentialsMatch(List<(string Name, string Value)> headers)
+    {
+        var values = ValuesOf(headers, "Proxy-Authorization");
+        if (values.Count != 1 || !values[0].StartsWith("Basic ", StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
@@ -224,7 +296,7 @@ public sealed class EgressGuardProxy : IAsyncDisposable
         string decoded;
         try
         {
-            decoded = Encoding.UTF8.GetString(Convert.FromBase64String(value["Basic ".Length..].Trim()));
+            decoded = Encoding.UTF8.GetString(Convert.FromBase64String(values[0]["Basic ".Length..].Trim()));
         }
         catch (FormatException)
         {
@@ -250,16 +322,11 @@ public sealed class EgressGuardProxy : IAsyncDisposable
             && CryptographicOperations.FixedTimeEquals(passwordBytes, expectedPassword);
     }
 
-    private static bool TryTarget(string method, string target, out string host, out int port, out string path)
+    private static bool TryTarget(string target, out string host, out int port, out string path)
     {
         host = string.Empty;
         port = 0;
         path = "/";
-        if (method.Equals("CONNECT", StringComparison.OrdinalIgnoreCase))
-        {
-            return TryHostPort(target, out host, out port);
-        }
-
         if (!Uri.TryCreate(target, UriKind.Absolute, out var uri) || !string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase))
         {
             return false;
@@ -290,19 +357,14 @@ public sealed class EgressGuardProxy : IAsyncDisposable
         return host.Length > 0;
     }
 
-    private static bool TryParse(string text, out string method, out string target, out Dictionary<string, string> headers)
+    private static bool TryParse(string text, out string method, out string target, out List<(string Name, string Value)> headers)
     {
         method = string.Empty;
         target = string.Empty;
-        headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        headers = [];
         var lines = text.Split("\r\n");
-        if (lines.Length == 0)
-        {
-            return false;
-        }
-
         var request = lines[0].Split(' ');
-        if (request.Length < 2)
+        if (request.Length < 2 || lines.Any(line => line.IndexOfAny(BareLineBreaks) >= 0))
         {
             return false;
         }
@@ -311,43 +373,244 @@ public sealed class EgressGuardProxy : IAsyncDisposable
         target = request[1];
         for (var i = 1; i < lines.Length; i++)
         {
-            if (lines[i].Length == 0)
+            var line = lines[i];
+            var colon = line.IndexOf(':', StringComparison.Ordinal);
+            if (line.Length == 0 || line[0] is ' ' or '\t' || colon <= 0)
             {
-                break;
+                return false;
             }
 
-            var colon = lines[i].IndexOf(':', StringComparison.Ordinal);
-            if (colon <= 0)
-            {
-                continue;
-            }
-
-            headers[lines[i][..colon].Trim()] = lines[i][(colon + 1)..].Trim();
+            headers.Add((line[..colon].Trim(), line[(colon + 1)..].Trim()));
         }
 
         return true;
     }
 
-    private static async Task<byte[]?> ReadHeadersAsync(Stream stream, CancellationToken cancellationToken)
+    private static async Task<(int Status, byte[] Body)> ReadRequestBodyAsync(
+        PipeReader reader,
+        Stream stream,
+        List<(string Name, string Value)> headers,
+        CancellationToken cancellationToken)
     {
-        using var buffer = new MemoryStream();
-        var window = new byte[1024];
-        while (buffer.Length < 16384)
+        var encodings = ValuesOf(headers, "Transfer-Encoding");
+        var lengths = ValuesOf(headers, "Content-Length");
+        if (encodings.Count == 0 && lengths.Count == 0)
         {
-            var read = await stream.ReadAsync(window, cancellationToken).ConfigureAwait(false);
-            if (read == 0)
+            return (Ok, EmptyBody);
+        }
+
+        if (lengths.Count > 1 || encodings.Count > 1 || (encodings.Count > 0 && lengths.Count > 0))
+        {
+            return (400, EmptyBody);
+        }
+
+        if (encodings.Count == 1)
+        {
+            if (!encodings[0].Equals("chunked", StringComparison.OrdinalIgnoreCase))
             {
-                return null;
+                return (400, EmptyBody);
             }
 
-            await buffer.WriteAsync(window.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
-            if (buffer.GetBuffer().AsSpan(0, (int)buffer.Length).IndexOf("\r\n\r\n"u8) >= 0)
+            await SendContinueIfExpectedAsync(stream, headers, cancellationToken).ConfigureAwait(false);
+            return await ReadChunkedBodyAsync(reader, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (!long.TryParse(lengths[0], NumberStyles.None, CultureInfo.InvariantCulture, out var length))
+        {
+            return (400, EmptyBody);
+        }
+
+        if (length > MaxRequestBodyBytes)
+        {
+            return (413, EmptyBody);
+        }
+
+        await SendContinueIfExpectedAsync(stream, headers, cancellationToken).ConfigureAwait(false);
+        var body = new byte[length];
+        return await ReadExactAsync(reader, body, cancellationToken).ConfigureAwait(false) ? (Ok, body) : (400, EmptyBody);
+    }
+
+    private static async Task<(int Status, byte[] Body)> ReadChunkedBodyAsync(PipeReader reader, CancellationToken cancellationToken)
+    {
+        using var body = new MemoryStream();
+        while (true)
+        {
+            var sizeLine = await ReadUntilAsync(reader, LineBreak, MaxChunkLineBytes, cancellationToken).ConfigureAwait(false);
+            if (sizeLine is null || !TryChunkSize(sizeLine, out var size))
             {
-                return buffer.ToArray();
+                return (400, EmptyBody);
+            }
+
+            if (size == 0)
+            {
+                var terminated = await DrainTrailersAsync(reader, cancellationToken).ConfigureAwait(false);
+                return terminated ? (Ok, body.ToArray()) : (400, EmptyBody);
+            }
+
+            if (size > MaxRequestBodyBytes - body.Length)
+            {
+                return (413, EmptyBody);
+            }
+
+            var chunk = new byte[size];
+            var terminator = new byte[2];
+            if (!await ReadExactAsync(reader, chunk, cancellationToken).ConfigureAwait(false)
+                || !await ReadExactAsync(reader, terminator, cancellationToken).ConfigureAwait(false)
+                || !terminator.AsSpan().SequenceEqual(LineBreak.AsSpan()))
+            {
+                return (400, EmptyBody);
+            }
+
+            await body.WriteAsync(chunk, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task<bool> DrainTrailersAsync(PipeReader reader, CancellationToken cancellationToken)
+    {
+        for (var i = 0; i < MaxTrailerLines; i++)
+        {
+            var line = await ReadUntilAsync(reader, LineBreak, MaxChunkLineBytes, cancellationToken).ConfigureAwait(false);
+            if (line is null)
+            {
+                return false;
+            }
+
+            if (line.Length == 0)
+            {
+                return true;
             }
         }
 
-        return null;
+        return false;
+    }
+
+    private static bool TryChunkSize(byte[] line, out long size)
+    {
+        var text = Encoding.Latin1.GetString(line);
+        var extension = text.IndexOf(';', StringComparison.Ordinal);
+        if (extension >= 0)
+        {
+            text = text[..extension];
+        }
+
+        return long.TryParse(text.Trim(), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out size);
+    }
+
+    private static async Task SendContinueIfExpectedAsync(Stream stream, List<(string Name, string Value)> headers, CancellationToken cancellationToken)
+    {
+        if (headers.Any(header => header.Name.Equals("Expect", StringComparison.OrdinalIgnoreCase)
+            && header.Value.Contains("100-continue", StringComparison.OrdinalIgnoreCase)))
+        {
+            await stream.WriteAsync(Encoding.Latin1.GetBytes("HTTP/1.1 100 Continue\r\n\r\n"), cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static string BuildUpstreamHead(string method, string path, string host, int port, List<(string Name, string Value)> headers, int bodyLength)
+    {
+        var builder = new StringBuilder();
+        builder.Append(method).Append(' ').Append(path).Append(" HTTP/1.1\r\n");
+        builder.Append("Host: ").Append(Authority(host, port)).Append("\r\n");
+        var connectionTokens = ConnectionTokens(headers);
+        foreach (var header in headers)
+        {
+            if (IsForwardable(header.Name, connectionTokens))
+            {
+                builder.Append(header.Name).Append(": ").Append(header.Value).Append("\r\n");
+            }
+        }
+
+        var bodyless = method.Equals("GET", StringComparison.OrdinalIgnoreCase) || method.Equals("HEAD", StringComparison.OrdinalIgnoreCase);
+        if (bodyLength > 0 || !bodyless)
+        {
+            builder.Append("Content-Length: ").Append(bodyLength.ToString(CultureInfo.InvariantCulture)).Append("\r\n");
+        }
+
+        builder.Append("Connection: close\r\n\r\n");
+        return builder.ToString();
+    }
+
+    private static string Authority(string host, int port)
+    {
+        var literal = host.AsSpan().Contains(':') && !host.StartsWith('[') ? "[" + host + "]" : host;
+        return literal + ":" + port.ToString(CultureInfo.InvariantCulture);
+    }
+
+    private static HashSet<string> ConnectionTokens(List<(string Name, string Value)> headers)
+    {
+        var tokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var value in ValuesOf(headers, "Connection"))
+        {
+            foreach (var token in value.Split(','))
+            {
+                tokens.Add(token.Trim());
+            }
+        }
+
+        return tokens;
+    }
+
+    private static bool IsForwardable(string name, HashSet<string> connectionTokens) =>
+        !NotForwarded.Contains(name) && !connectionTokens.Contains(name);
+
+    private static List<string> ValuesOf(List<(string Name, string Value)> headers, string name) =>
+        headers.Where(header => header.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).Select(header => header.Value).ToList();
+
+    private static async Task FlushBufferedAsync(PipeReader reader, Stream upstream, CancellationToken cancellationToken)
+    {
+        if (!reader.TryRead(out var result))
+        {
+            return;
+        }
+
+        var position = result.Buffer.Start;
+        while (result.Buffer.TryGet(ref position, out var memory))
+        {
+            await upstream.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
+        }
+
+        reader.AdvanceTo(result.Buffer.End);
+    }
+
+    private static async Task<byte[]?> ReadUntilAsync(PipeReader reader, byte[] delimiter, int maxBytes, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            var result = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            var buffer = result.Buffer;
+            var sequence = new SequenceReader<byte>(buffer);
+            if (sequence.TryReadTo(out ReadOnlySequence<byte> found, delimiter))
+            {
+                var bytes = found.ToArray();
+                reader.AdvanceTo(sequence.Position);
+                return bytes.Length <= maxBytes ? bytes : null;
+            }
+
+            reader.AdvanceTo(buffer.Start, buffer.End);
+            if (result.IsCompleted || buffer.Length > maxBytes)
+            {
+                return null;
+            }
+        }
+    }
+
+    private static async Task<bool> ReadExactAsync(PipeReader reader, byte[] destination, CancellationToken cancellationToken)
+    {
+        var filled = 0;
+        while (filled < destination.Length)
+        {
+            var result = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            var buffer = result.Buffer;
+            var take = (int)Math.Min(buffer.Length, destination.Length - filled);
+            buffer.Slice(0, take).CopyTo(destination.AsSpan(filled));
+            reader.AdvanceTo(buffer.GetPosition(take));
+            filled += take;
+            if (take == 0 && result.IsCompleted)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static async Task WriteStatusAsync(Stream stream, int status, CancellationToken cancellationToken)
@@ -355,11 +618,13 @@ public sealed class EgressGuardProxy : IAsyncDisposable
         var reason = status switch
         {
             200 => "Connection Established",
+            400 => "Bad Request",
             407 => "Proxy Authentication Required",
+            413 => "Payload Too Large",
             503 => EgressGuardUnavailableException.Token,
             _ => "Forbidden",
         };
-        var body = status == 200
+        var body = status == Ok
             ? "HTTP/1.1 200 Connection Established\r\n\r\n"
             : "HTTP/1.1 " + status.ToString(CultureInfo.InvariantCulture) + " " + reason + "\r\nContent-Length: 0\r\nProxy-Authenticate: Basic realm=\"egress\"\r\nConnection: close\r\n\r\n";
         await stream.WriteAsync(Encoding.ASCII.GetBytes(body), cancellationToken).ConfigureAwait(false);

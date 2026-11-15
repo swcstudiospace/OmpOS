@@ -235,6 +235,12 @@ public sealed class BrowserToolProvider : ICoworkToolProvider
             return CoworkToolResult.Failure("The tool arguments are not a JSON object within the size cap.");
         }
 
+        // Defense in depth. NavigationGate remains the boundary.
+        if (!BrowserUrlPolicy.IsTopLevelSchemeAllowed(url))
+        {
+            return CoworkToolResult.Failure("The tool call was not approved.");
+        }
+
         _issued.Add(new CoworkGrantKey("browser.origin", url.GetLeftPart(UriPartial.Authority)));
 
         var final = await BrowserNavigateTool.GoAsync(page, url, cancellationToken).ConfigureAwait(false);
