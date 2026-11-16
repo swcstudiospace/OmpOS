@@ -17,33 +17,32 @@ test("a second attempt that also landed on the boot shell is an error, not a pas
   assert.equal(outcome.id, "sequence-boot-shell");
 });
 
-test("initial navigation waits for a non-boot title and fails closed on timeout", async () => {
+test("initial navigation waits for a non-boot title and a rendered main heading, and fails closed on timeout", async () => {
   const findings = [];
   let expression;
-  const report = { add: (finding) => findings.push(finding) };
+  const report = { add: (finding) => findings.push(finding), count: () => {} };
   const page = { waitFor: async (condition) => { expression = condition; return false; } };
   assert.equal(await waitForInitialTitle(page, report), false);
   const ready = new Function("document", `return ${expression}`);
-  assert.equal(ready({ title: "Autonogrammer" }), false);
-  assert.equal(ready({ title: "" }), false);
-  assert.equal(ready({ title: "Agents - Autonogrammer" }), true);
+  const rendered = (title, { heading = true, loading = false } = {}) => ({
+    title,
+    querySelector: (selector) => (selector === "main h1" ? (heading ? {} : null) : selector === '[data-state="loading"]' ? (loading ? {} : null) : null),
+  });
+  assert.equal(ready(rendered("Autonogrammer")), false);
+  assert.equal(ready(rendered("")), false);
+  assert.equal(ready(rendered("Agents - Autonogrammer", { heading: false })), false);
+  assert.equal(ready(rendered("Agents - Autonogrammer", { loading: true })), false);
+  assert.equal(ready(rendered("Agents - Autonogrammer")), true);
   assert.equal(findings[0].id, "initial-title-not-ready");
   assert.equal(findings[0].severity, "error");
 });
 
-test("dynamic session readiness waits for the requested thread and its title", () => {
+test("dynamic session readiness waits for a rendered main heading and no loading state", () => {
   const ready = new Function("document", `return ${readyFor("/sessions/session%20one")}`);
-  const document = {
-    title: "Session - Autonogrammer",
-    querySelector: () => null,
-  };
-  assert.equal(!!ready(document), false);
-  document.querySelector = () => ({ getAttribute: () => "other" });
-  document.title = "Other - Autonogrammer";
-  assert.equal(ready(document), false);
-  document.querySelector = () => ({ getAttribute: () => "session one" });
-  document.title = "Session - Autonogrammer";
-  assert.equal(ready(document), false);
-  document.title = "Session one - Autonogrammer";
-  assert.equal(ready(document), true);
+  const document = (heading, loading) => ({
+    querySelector: (selector) => (selector === "main h1" ? (heading ? {} : null) : selector === '[data-state="loading"]' ? (loading ? {} : null) : null),
+  });
+  assert.equal(ready(document(false, false)), false);
+  assert.equal(ready(document(true, true)), false);
+  assert.equal(ready(document(true, false)), true);
 });
