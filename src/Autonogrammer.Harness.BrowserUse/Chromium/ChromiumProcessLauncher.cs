@@ -15,6 +15,7 @@ public sealed class ChromiumProcessLauncher : IChromiumLauncher
     public async Task<IChromiumSession> LaunchAsync(ChromiumLaunchRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
         var process = new Process();
         try
         {
@@ -40,7 +41,7 @@ public sealed class ChromiumProcessLauncher : IChromiumLauncher
                 {
                     BrowserWSEndpoint = "ws://127.0.0.1/devtools/browser/pipe",
                     TransportFactory = (_, _, _) => Task.FromResult<IConnectionTransport>(transport),
-                }).ConfigureAwait(false);
+                }).WaitAsync(cancellationToken).ConfigureAwait(false);
                 transport = null;
                 return new LaunchedChromiumSession(process, browser, request.ProfileDirectory);
             }
@@ -51,14 +52,30 @@ public sealed class ChromiumProcessLauncher : IChromiumLauncher
         }
         catch
         {
-            process.Dispose();
+            try
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // The process was not started or has already exited.
+            }
+            finally
+            {
+                process.Dispose();
+            }
             throw;
         }
     }
 
     private static PipeTransport CreatePipe(Stream write, Stream read)
     {
-        return new PipeTransport(write, read);
+        var transport = new PipeTransport(write, read);
+        transport.Start();
+        return transport;
     }
 
     private static void ConfigureUnix(Process process, ChromiumLaunchRequest request)

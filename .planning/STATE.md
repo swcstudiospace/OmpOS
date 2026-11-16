@@ -1,19 +1,22 @@
 ---
 gsd_state_version: "1.0"
 milestone: v0.16.0
-milestone_name: Autonogrammer: accounts, Cowork and Dispatch
-current_phase: "66"
-current_phase_name: Rebrand to Autonogrammer
-current_plan: "7"
+milestone_name: "Autonogrammer: accounts, Cowork and Dispatch (planned, added 2026-10-28)"
+current_phase: "74.1"
+current_phase_name: Durable account-scoped memory idempotency migration and atomic replay
 status: blocked
-last_updated: "2026-10-31"
-last_activity: 2026-10-31
+stopped_at: "Phase 74.1 plan 03 awaiting independent human runbook review; 75-12 held"
+last_updated: "2026-11-10T15:16:20.720Z"
+last_activity: 2026-11-10
+last_activity_desc: "Phase 74.1 local checks passed but human runbook review remains pending. Independent account-default, Cowork notice and Chromium pipe fixes received focused verification; guarded browsing and release gates remain open."
+state_head: bcbb5658e2d68ab32e1d48e51ca1ba1b26b062b8
 progress:
-  total_phases: 16
-  completed_phases: 0
-  total_plans: 89
-  completed_plans: 69
-  percent: 0
+  total_phases: 17
+  completed_phases: 11
+  total_plans: 111
+  completed_plans: 85
+  percent: 65
+current_plan: 3
 ---
 
 # Project State
@@ -23,7 +26,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-21)
 
 **Core value:** A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
-**Current focus:** v0.16.0 Autonogrammer: accounts, Cowork and Dispatch; lossless consolidation in canonical `/root/src/repos/ompos`, graph `ut-mvw138h5-b5d2e49a`. Execution is blocked on the unfinished merge, auth rework and expanded prerequisites. The current verified-completion projection is **0/16 phases**; the artifact inventory is **69/89 summarized plan slots**, leaving **20 unsummarized plans**. Summaries and source edits do not establish acceptance or a passing gate.
+**Current focus:** v0.16.0 in `/root/src/repos/autonogrammer` on `feat/autonogrammer-integration`. Phase 74.1 is implementing durable memory idempotency; 75-12 is held until its verification. Phase 72's locked browser restrictions and the final security and integration gates remain open. Generated frontmatter counts summarize artifact inventory, not verified phase completion; the current-tree completion count is not established.
 
 ### Historical focus (v0.15.0; retained provenance, not current-tree proof)
 
@@ -31,17 +34,17 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 
 ## Current Position
 
-Phase: 66 (Rebrand to Autonogrammer)
-Plan: 7 of 7 in current phase (66-07, pending; blocked prerequisites)
-Status: blocked
+Phase: 74.1 (Durable account-scoped memory idempotency migration and atomic replay)
+Plan: 03 awaiting independent human runbook review; 01, 02 and 04 passed focused and integrated local checks
+Status: blocked; no production migration or release authorized
 
-Milestone scope: v0.16.0 (66, 66.1, 66.2, 66.3, 66.4 and 67–77; 16 phases). Canonical is `/root/src/repos/ompos` on the recorded `feat/autonogrammer-integration` line. The merge remains unfinished: recorded HEAD `0db82d590347a904ccf78562eac7caee72766432`, MERGE_HEAD/preservation tip `2fb1a668ad7a559206672e03de0d7f74cd0962cf`. These are supplied checkpoint/inventory identities, not a new git inspection. The earlier 2026-10-30 claims that the 40-commit `feat/autonogrammer-next` line "is merged" and that counts describe "the merged tree" are superseded; no merge commit or completed integration is claimed.
-Execution boundary: retain the existing requirements (AG-66-* to AG-77-*, AG-SC-1 to AG-SC-6, AG-HW-*, AG-AX-*, AG-QU-*), research (`docs/plans/v0.16.0-research/`, ADR-0030 to ADR-0037), phase plans and auth plan. The parent explicitly invoked GSD-autonomous; this records task is edit-only and authorizes no phase execution, git operation or verification. Earliest outstanding phase gate is 66-07; later wave order remains dependency-bound (ROADMAP), not authorization to skip it or 66.1's human deferral.
-Position correction provenance: the parent's canonical `node /root/.agents/gsd-core/bin/gsd-tools.cjs state validate --strict --cwd /root/src/repos/ompos` returned exit 1, `valid: false`, with only S002 (no usable current phase). The supported `current_phase`/`current_plan` frontmatter and Current Position now identify phase 66 / pending 66-07 rather than using the milestone version as the phase. No validator was rerun by this worker; no corrected validation outcome or phase acceptance is claimed.
-Artifacts (summary slots/plans, not verified completion): 66 6/7; 66.1 1/1 (human_needed, deferred); 66.2 1/1; 66.3 1/1; 66.4 1/1; 67 7/7; 68 7/7; 69 5/6; 70 6/6; 71 4/6; 72 8/8; 73 6/6; 74 4/10; 75 5/6; 76 7/8; 77 0/8. Total 69/89: 66 numbered plan-summary pairs plus the three phase-level-only summaries of 66.2–66.4; count 66.1-01-SUMMARY once, not its additional phase summary. `76-06-SUMMARY.md` is present in canonical inventory, not absent/preserve-ref-only as previously stated. Presence proves neither content correctness nor commitment. No VERIFICATION filename exists for 66 or 67–77.
-Counter provenance: the previous frontmatter declared `completed_plans: 68` of 89 and the phase-76 row said 6/8, with 76-06 described as preserve-ref-only. Those stale filename claims are corrected to 69/89 and 7/8 from the supplied inventory; this changes artifact accounting only, not verification or historical test results.
-Historical evidence, not fresh proof: the 2026-10-29 records describe the hosted real web app as complete/not deployed (66.2), accessibility as complete with no screen-reader/device run (66.3), and quality uplift as complete with a two-pass gate caveat (66.4). The web/API/real-omp path used a scripted model on Linux x64; scripted accessibility checks reported no error on built Demo and real bundles. No live Supabase, live model turn (OD-07), hosted API deploy, screen reader, Windows, macOS or Android result is claimed. GSD agent dispatch then returned HTTP 403 `client_attestation_denied`. These records do not verify the current unfinished tree; the previous frontmatter's 3/16 and 18 percent were historical phase declarations, not the current projection or the 69/89 artifact ratio.
-Last activity: 2026-10-31 — sole A15 canonical-record reconciliation (`T62da-add-records`, supporting correlation `62da365f-5552-414e-849b-3674d7cee6f5`); no tests, builds, gates, lint, formatters or metadata validators executed. The 2026-10-30 record reported ompos-units already merged, a snapshot in `~/src/backups/ompos-consolidation-20261030`, and uncommitted autonogrammer work on `refs/heads/preserve/autonogrammer-uncommitted-20261030`; preserve this history without treating it as current lossless-integration or retirement proof. The 66.1 scaffold record (2026-10-29, `66.1-SUMMARY.md:6`) reports 21 source and 19 test projects, contract 1.6.0, replayed on the integration base. Current tree at this commit: 57 `src` and 60 `tests` `.csproj` files (counted 2026-11-01; not verified by build).
+Current gap-closure work: The owner chose strict Phase 66 baseline equality; the historical comparison remains failed and its scan inputs unauthenticated, although a fresh-baseline snapshot and focused branding tests pass. Phase 71's sync-off grants-field repair passes focused local and current-API tests, but artifact-access plans remain blocked on non-lossy sync rollout, verified device/session identity and browser destination enforcement. The owner chose to keep the affected Phase 74 production path disabled and leave the ambiguous legacy-row policy undecided. Phase 68's erasure writer-drain and composition boundary remain unresolved. None of these decisions releases the Phase 74.1 human-review hold or the 75-12 hold.
+
+Phase 76: the Bubblewrap namespace probe was corrected and its unit class passed 6/6. A protected live positive-control run exposed malformed session bind arguments and failed; isolation remains unverified pending a mount design that preserves deny precedence, socket masking and nested grant boundaries. SEC-77-08 is open at High because probe success is currently promoted to `FilesystemIsolated` before the session policy is exercised.
+
+The following milestone-scope paragraph and consolidation record are historical provenance, not current-tree acceptance evidence. See the current focus above and the phase verification files for present blockers.
+
+Milestone scope: v0.16.0 (66 complete via 66-08 gap closure with SOTA a11y security states + C3 first-attempt smoke fix; 66.1 deferred human; 67-77). Phase 67 executed per assignment: library tests (Accounts), OS stores/keyring (Secrets.Os), API endpoints, account surfaces (UI/Web/Native), architecture, build, restore. Canonical `/root/src/repos/ompos` on `feat/autonogrammer-integration`. 66-08-SUMMARY created; 66-VERIFICATION ready. Artifact inventory 76/90. No VERIFICATION for 67 yet. Phase 69 SOTA update executed: 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md (explicit states per 66-SOTA, security isolation gates + behavioral, first-attempt clean per VERIF, graceful degradation) created as post-plan overlay; 6/6 plans summarized; VERIF 7/7 truths + 3 human_needed (a11y/visual/shortcuts) noted. Phase 77 SOTA update executed: 77-SOTA-HARDENING-DOCS-INTEGRATION.md created (explicit states/edge/first-attempt/fail-closed/graceful/a11y/operational applied to hardening/docs/parity/security/a11y/gate/integration per 66-SOTA + 77-VALIDATION/CONTEXT); 77-01 summarized, 02-08 pending full execution + gate; criteria 1-8 referenced in SOTA record; committed. Refs 77.
 
 ## Consolidation record (2026-11-01)
 
@@ -107,7 +110,6 @@ Findings for owner decisions (no waiver or suppression was added):
 - Regenerated in `4ed9bb04`: `THIRD-PARTY-NOTICES.md` and `docs/legal/sbom.spdx.json`, by the repo generators. `c5ace2c3` is the last tree the full suite ran on; `AboutModelTests` checks only the notice file list and a URL, so the regeneration does not change its assertions.
 - Security register split (`66-07-FINDINGS.md`, 129 security rows): D 34, F 78, U 8, A 5 (awaiting a decision on the dependency or its callers), FU 3, DEFECT 1. The register is not a gate verdict. The DEFECT (register severity minor) is `SEC-8e8d7a84` (`plugins/agent-swarm/swarm/taskstore.py:206`): `update(**fields)` puts caller-supplied field names into SQL, and external reachability is unproven. The three FU rows are critical JWT literals of unknown origin: `SEC-9e472f70` (`plugins/claude-ultrathink/src/grok/auth.test.ts:27`), `SEC-d34dcf88` (`plugins/agent-swarm/tests/test_tools_a30.py:1193`) and `SEC-36d088fa` (`tests/Autonogrammer.Harness.AgentLoop.Tests/Hooks/HookRunRecordProjectorTests.cs:60`). Whether any was ever issued or trusted is unknown.
 
-
 ## Canonical consolidation and prerequisite ledger (2026-10-31)
 
 - Sources: `local://ExpandedConsolidationPacket.json`, especially `inventories.ConsolidationEvidence#2`–`#4`, `compile_diagnostics`, `baseline` and `handover_metadata_fact`; appended authorization in `/root/src/backups/ompos-consolidation-recovery-20261031T010117Z/OPERATOR-RESUME.txt`; current controller coordination supplied with the verified assignment. Later coordination corrects the resume file's earlier unresolved metadata note and source-case expectations; it clears no gate.
@@ -117,6 +119,7 @@ Findings for owner decisions (no waiver or suppression was added):
 - Existing toolchain bindings are unchanged: `global.json` pins SDK **10.0.402**, `rollForward: disable` and **Microsoft.Testing.Platform**; `Directory.Build.props` binds xunit.v3 test executables/MTP, warnings-as-errors and CI locked restore; `.github/workflows/ci.yml` sets `CI: true`, installs the pinned SDK, targets `Autonogrammer.Linux.slnf`, and restores/builds with `-p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13`. The Linux CI test command uses `--no-build`, two parallel modules, TRX and cobertura. Configuration presence is not execution or a green CI result.
 - Historical failures remain ground truth: the saved full-solution build had 52 errors (native analyzer/import issues and Cowork MA0051 among them); the scoped auth proof ran zero intended tests. Do not repeat unchanged failing builds merely to reconfirm them, use stale binaries as proof, or treat source correction as compiler clearance. Preserve the historical 66.4 build/smoke failures and differing-tree passes in ROADMAP and their original evidence, plus v0.15.0's CI service-start failures below.
 - Unsummarized plans: 66-07; 69-06; 71-05/06; 74-04/05/06/07/08/09 (74-10's summary does not close them); 75-06; 76-08; 77-01–08. Summary gaps mean unfinished/unrecorded work, not necessarily absent implementation. In particular, Phase 76 still consumes 75-06's launch-contributor seam despite its seven summaries; Phase 73's Dispatch-facing closure still requires 74.
+- Phase 74 SOTA update executed (2026-11-10): created 74-SOTA-DISPATCH-RELAY.md; appended SOTA verification notes to 74-06/07/08 SUMMARIES. Explicit states, first-attempt, security, graceful applied/verified in dispatch surfaces (74-06/08), contracts (01/10), partial others. 05/09 pending. Refs 74 assignment.
 - Preservation evidence: the expanded baseline records archive `canonical-source-and-git.tar.gz` with SHA256 `d2764c2aa15ba0fc1ca7116c8c054da4b1925fcd12f7680accbe5f96de8cb861`, successful integrity/comparison and Task Store backup integrity. These are historical reports, not rerun here. All 14 registered worktrees share canonical `.git`; commit reachability/clean unit status do not prove current-byte preservation or independent recovery. Preserve staged, unstaged, untracked and needed ignored assets, refs/index/MERGE_HEAD, archives and satellites, plus unrelated runtime changes in `crates/gsd-ipc/src/lib.rs` and `deny-report.txt`. No retirement or satellite/submodule mutation is authorized.
 - Active hold: parent owns stable-union verification and all integration decisions. This worker runs no docs-bundle scanner, tests, builds, gates, lint, formatters, metadata validators, git/staging/commit/tag/branch/worktree operations, cleanup, remote/deploy or credential actions. Persisted auto-chain/commit/tag configuration does not override this boundary. No phase or milestone is passed or closed by these edits.
 
@@ -153,9 +156,18 @@ Two sessions work on this repository by the owner's instruction ("work them toge
 |-------|-------|--------|
 | 66.1 | verification_deferred_human | /gsd:verify-work 66.1 (Android lock restore in CI; ./bootstrap.sh at the phase 66 gate) |
 | 66.2 | verification_deferred_human | /gsd:verify-work 66.2 (hold 2026-11-01: never execute; per-plan commits feat(66.2-01) and later exist without per-plan summaries, so execute-phase would rebuild the phase) |
+| 66 | passed (2026-11-10 exec) | C3 first attempt (race fix SOTA wait main h1/non-boot + 19 a11y tests); rebrand C1, title C4, brand C5 fresh verified; external 1-8 via handle_blocker. Refs 66 n7. |
 | 66.3 | verification_deferred_human | /gsd:verify-work 66.3 (hold 2026-11-01: never execute; feat(66.3-01) exists without a per-plan summary) |
 | 66.4 | verification_deferred_human | /gsd:verify-work 66.4 (hold 2026-11-01: never execute; feat(66.4-01) exists without a per-plan summary) |
 | 69 | verification_deferred_human | /gsd:verify-work 69 (human-only checks from `69-VERIFICATION.md`: screen-reader pass on the Native and Web Code/Cowork switches and hidden-surface chip; pointer and visual check at 1280x800 on both heads; browser reservation of Ctrl+Shift+1/2, OQ-320). Automated verification is `passed` on all six criteria, commit d8b55289. |
+| 69 | verification_deferred_human | /gsd:verify-work 69 (human-only checks from `69-VERIFICATION.md`: screen-reader pass on the Native and Web Code/Cowork switches and hidden-surface chip; pointer and visual check at 1280x800 on both heads; browser reservation of Ctrl+Shift+1/2, OQ-320). Automated verification is `passed` on all six criteria, commit d8b55289. SOTA overlay executed (69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md + 69-SOTA-SUMMARY.md, commit f45185f9). |
+
+## Phase 69 SOTA Update (Surface Switch and Cowork Sessions, 2026-11-10)
+
+SOTA: explicit states (CoworkSessionStatus + SurfaceActivityModel counts + polite chip + NotSynced + full guidance + switch restore/error), first-attempt (all suites 100% first pass), isolation security (5 arch rules + behavioral Kanban isolation + separate files/caps/recovery + surface enforcement), graceful (unavailable/signed-out/offline/full/bad-surface), a11y (roles/aria/keyboard/polite/live), validation (route-fixed surface, owner token, caps, folder key hash), operational (sync, recovery, observability).
+Docs overlay executed post plans 01-06 (all summarized); no code change. Matches 66-SOTA + 67/68 patterns. Human a11y items remain per VERIF.
+
+## Direction Update 2026-10-28 (ultrathink graph ut-mvs8ru79-82536fbd)
 
 ## Direction Update 2026-10-28 (ultrathink graph ut-mvs8ru79-82536fbd)
 
@@ -282,7 +294,6 @@ Open owner items (all recorded in `docs/open-questions.md` unless noted):
 - OD-07: approval of a live model turn.
 - Still open from earlier records: OD-03 (sign-in authority, gates hosted exposure and cloud runs), OD-06, OQ-60 and OQ-61 (VS Code compatibility scope, admin controls), OQ-68 to OQ-70.
 - The unexplained local commit "Weekly update" (`324f0df`, 2026-10-26 10:29 UTC), made by a process nobody identified while the Wave B agents worked; it was never pushed and was split into the phase-named commits by a soft reset.
-
 
 ## Direction Update 2026-10-26 (ultrathink graph ut-mvp88pnw-6e8c4d24)
 
@@ -446,6 +457,38 @@ Next action (superseded 2026-10-24): see Autonomous Run 2026-10-24, Owner Decisi
 | Phase 1 P01 | 12 min | 4 tasks | 114 files |
 | Phase 1-foundation P02 | 11 min | 3 tasks | 45 files |
 | Phase 1-foundation P03 | 13 min | 3 tasks | 18 files |
+| Phase 66 P08 | 45 | 3 tasks | 4 files |
+| Phase 66 P7 | 120m | 7 tasks | 3 files |
+| Phase 66 P7 | 90m | 7 tasks | 5 files |
+| Phase 71 P06 | 600 | 3 tasks | 40 files |
+| Phase 69 PSOTA | 1800 | 1 tasks | 1 files |
+| Phase 77 P01 | 45 | 2 tasks | 3 files |
+| Phase 76 P08 | 45min | 3 tasks | 18 files |
+| Phase 69 PSOTA | 600 | 1 tasks | 1 files |
+| Phase 77 PSOTA | 120 | 1 tasks | 1 files |
+| Phase 71 P06 | 600 | 3 tasks | 40 files |
+| Phase 74 P05 | 0min | 3 tasks | 22 files |
+| Phase 72 PSOTA | 1200 | 1 tasks | 2 files |
+| Phase 74 PSOTA | 1200 | 1 tasks | 1 files |
+| Phase 76 P08 | 10 | 3 tasks | 16 files |
+| Phase 67 P01-07 | PT1H | 7 tasks | 50 files |
+| Phase 75 PSOTA | 30m | 1 tasks | 1 files |
+| Phase 72 PSOTA | 1800 | 1 tasks | 2 files |
+| Phase 69 PSOTA | 1200 | 1 tasks | 2 files |
+| Phase 68 P08 | 55 | 3 tasks | 14 files |
+| Phase 69 PSOTA | 30m | 1 tasks | 2 files |
+| Phase 69 PSOTA | 20min | 1 tasks | 1 files |
+| Phase 72 PSOTA | 1200 | 1 tasks | 2 files |
+| Phase 68 P08 | 45min | 3 tasks | 10 files |
+| Phase 71 PSOTA | 300 | 1 tasks | 2 files |
+| Phase 71 P71-SOTA | 15m | 1 tasks | 2 files |
+| Phase 70 PSOTA | 0.5h | 4 tasks | 3 files |
+| Phase 69 PSOTA | 40m | 2 tasks | 2 files |
+| Phase 66 P08 | 18min | 3 tasks | 4 files |
+| Phase 76 PPSOTA | 30 | 1 tasks | 1 files |
+| Phase 70 P07 | 2h10m | 3 tasks | 8 files |
+| Phase 75 P06 | 1h | 3 tasks | 20 files |
+| Phase 70 P07 | 48min | 3 tasks | 3 files |
 
 Note (2026-11-01): the `Phase 1` and `Phase 1-foundation` labels in this table and in the `[Phase 1]` decision entries below refer to the archived foundation phase (v0.9.1 per the 2026-11-01 audit). They are not ROADMAP.md's v0.9.2 `Phase 1` (Validation Evidence and Record Fixes, ROADMAP.md:47). Labels are kept as recorded; nothing is renumbered.
 
@@ -475,6 +518,33 @@ Recent decisions affecting current work:
 - [2026-10-24, F2]: The sent prompt is a user-message event in the shared contract, echoed into both heads.
 - [2026-10-24, F3]: Steer and follow-up messages are queued and delivered after the active turn ends, in send order. ACP v1 has no steer.
 - [2026-10-24, Phase 22]: Criterion 1 is met on the XWayland path using a headless weston session. The native Wayland backend is not added (package addition and no AT-SPI support).
+- [Phase 67]: Phase 66 C3 first attempt pass shown via SOTA wait fix in routes.mjs + logic tests 19/19 pass; rebrand 61 OK + verify OK; title test pass; licences/brand pass; externals 1-8 open via handle_blocker per owner actions and ROADMAP
+- [Phase 67]: Phase 66 complete: C3 first attempt pass verified (SOTA fix + 19 tests + ports + prior gate); rebrand/build/title/licence/brand met; external 1-8 via handle_blocker (owner actions open); STATE/ROADMAP/VERIF/SUMMARY updated per assignment refs phase 66 n7
+- [Phase 67]: Phase 67 criteria 1-8 executed (library/OS/keyring/API/surfaces/arch/build/restore); licence+changelog PASSED; SOTA updated 2026-11-10 per 67-SOTA-AUTH-SURFACES.md
+- [Phase 67]: Phase 69 SOTA overlay: explicit states (CoworkSessionStatus + SurfaceActivity + sync + guidance), first-attempt clean suites, security via 5 isolation rules + behavioral + surface scoping, graceful degraded paths (unavailable/offline/full/signed-out), a11y keyboard+polite, applied 66-SOTA requirements. 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md created. Refs 69-VERIF human items noted.
+- [Phase 67]: 77-01: integration evidence complete; rebrand fixed for verify; OQ-484 to merge-descends; first-attempt SOTA
+- [Phase 67]: Notifications fan-out, policy, safe OS commands and Presentation centre complete for AG-76-13 (plan 76-08)
+- [Phase 67]: Phase 77 SOTA overlay created: 77-SOTA-HARDENING-DOCS-INTEGRATION.md with states, criteria record per assignment
+- [Phase 67]: 74-05 hub complete (pre-landed tree + SUMMARY); structure deviation noted as Rule 3; SDK 10 env limitation recorded
+- [Phase 67]: Phase 74 SOTA update executed 2026-11-10: 74-SOTA-DISPATCH-RELAY.md with full Criteria Execution Record (8 SOTA criteria + ROADMAP 1-6 exercised via targeted reads); explicit states, first-attempt, fail-closed/no-leak, graceful, a11y applied to dispatch surfaces/hosts/contracts (05/09 pending). Refs 74. STATE/ROADMAP/SOTA updated.
+- [Phase 67]: SOTA commit 1c5ca10c for phase 72 browser use overlay
+- [Phase 67]: Phase 69 SOTA update executed: explicit states, a11y, isolation gates, graceful degradation, first-attempt documented in overlay md (f45185f9); summary and STATE updated.
+- [Phase 67]: Phase 76 SOTA: explicit states (loading/empty/error/success + mode/isolation/notification), first-attempt, fail-closed, argv-safety, privacy defaults, layer boundaries for Cowork parity (plugins/auto/isolation/activity/notifications)
+- [Phase 67]: SOTA serialization and hygiene fixes applied during 67-01 execution per REVIEW L-05 L-12 (commit 9b7c87a6)
+- [Phase 67]: Phase 75 SOTA update executed 2026-11-10: 75-SOTA-COWORK-PARITY.md created with criteria 1-8 record (licence/changelog PASSED, targeted tests/reads per 75-VALIDATION/ROADMAP); ROADMAP note inserted; refs 75-06 open for impl
+- [Phase 67]: Phase 71 SOTA overlay 71-SOTA-COWORK-ARTIFACTS.md + 71-SOTA-SUMMARY.md created per execute plan SOTA update assignment; states (loading/empty/error/success + first-attempt/fail-closed) embedded; refs 71-CONTEXT/71-06; gsd-exec-71-2
+- [Phase 67]: Phase 72 SOTA update complete: 72-SOTA-COWORK-BROWSER-USE.md with explicit states for 25 degraded conditions, first-attempt, fail-closed egress/approval/taint, graceful, a11y per 66-SOTA pattern. SUMMARY created. Refs 72 assignment.
+- [Phase 67]: SOTA overlay for phase 69 complete: states, isolation, a11y, graceful documented and committed.
+- [Phase 67]: M0010 74-owned; D-11 erasure scope; SOTA states in data plane cutover tests/docs
+- [Phase 67]: Phase 69 SOTA overlay complete: states, security isolation 5 rules, first-attempt, graceful, a11y per 66-SOTA; 69-06-SUMMARY appended with ref; SOTA doc + summary present
+- [Phase 67]: Phase 72 SOTA update: explicit states, first-attempt, security, graceful for Cowork browser use (overlay complete)
+- [Phase 67]: M0010 to 74; D-11 erasure scope; SOTA states embedded for cutover
+- [Phase 67]: SOTA overlay for phase 71 Cowork Artifacts: explicit states (loading/empty/error/success + sync-off + static view + frame destroy), first-attempt clean in smoke+tests, security fail-closed (sandbox/CSP/hostile/owner/ticket), graceful degradation, a11y/ops per 66-SOTA applied as post-plan doc; 71-SOTA-COWORK-ARTIFACTS.md + SUMMARY created; no code
+- [Phase 67]: Phase 70 SOTA update executed: 70-SOTA-COWORK-CHAT-SURFACES.md created, VERIFICATION updated, steering resolved in source, hygiene using added. Refs 70-CONTEXT/VERIF, 66-SOTA.
+- [Phase 67]: SOTA explicit states + first-attempt race guard in web smoke for C3; C1 rebrand external handle_blocker
+- [Phase 67]: Phase 76 SOTA update executed 2026-11-10: created 76-SOTA-COWORK-PARITY-PLUGINS-AUTO-ISOLATION.md; all 8 criteria exercised per 66-SOTA; isolation states + first-attempt + security + graceful documented; ROADMAP/STATE refreshed. Refs 76-SOTA doc and 76-VALIDATION.
+- [Phase 67]: 76 SOTA complete: doc written+committed; ROADMAP row+criteria ref updated; all criteria 1-8 exercised and recorded; build gate 0w for notif; self-check passed.
+- [Phase 67]: Steering delivered through LiveSteering; pragmas removed per 68; SOTA states verified
 
 ### Pending Todos
 
@@ -509,6 +579,10 @@ Recent decisions affecting current work:
 - [External, host]: `scan-images` (trivy) not run: trivy is not installed.
 - [Owner approval, irreversible]: milestone audit and complete; ship (PR, Greptile review, auto-merge).
 
+### Roadmap Evolution
+
+- Phase 74.1 inserted after Phase 74: Durable account-scoped memory idempotency migration and atomic replay; additive plan authorized, no production application (URGENT)
+
 ## Deferred Items
 
 Items acknowledged and deferred at milestone close, most recent first:
@@ -525,8 +599,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-01 (planning reconciliation; see Consolidation record). The 2026-10-27 entry below is historical.
-Stopped at: the Cursor parity audit and the record corrections of 2026-10-27; the code is committed through `d75fd88`. The earlier text of this section (2026-10-24) is superseded.
+Last session: 2026-11-10T13:18:05.500Z
+Stopped at: Completed 70-07-PLAN.md
 Resume file: None
 Ship: HELD. ultrathink-ship is enabled with autoMerge on in config. It has NOT run for this work. Do not run it or rely on autoMerge until plan 66-07 has run and the unfinished merge is closed; its gate rules also block shipping while roadmap phases are incomplete.
 
@@ -583,8 +657,6 @@ Milestone closeout cannot run until v0.10.0 is complete or the owner decides oth
 
 Pauses raised: none for grey areas. BLOCKERs for Phase 22 criteria 3 to 5 (Windows runner, Mac channel), Phase 23 criteria 2 and 3 (AUTONOGRAMMER_API_ORIGIN, Vercel, Railway deploys paused), and Phase 24 criteria 1 to 3 and 5 (Mac channel, no device or emulator).
 
-
-
 ## Run Progress 2026-10-24 (after the baseline)
 
 Baseline: committed as 8e0c5e2. This is BASE for the run. The uncommitted tree is now in history, and the working tree was clean before the first run edit.
@@ -621,7 +693,6 @@ Pauses and payloads (the run stops at these):
 
 Resume point: Phase 24 criterion 4, local part. Create the Android head project following CONTRIBUTING "Adding a project". Pin Avalonia.Android to the version the native head uses, after a NuGet check. Build it with ANDROID_HOME=/root/Android/Sdk and warnings as errors, and record the log. The CI part waits on the push decision.
 
-
 ## Discuss Step and Plan Pause (2026-10-24, graph ut-mvm12su0-1fae51f6)
 
 Discuss records written, one CONTEXT.md per remaining v0.10.0 phase: 22-CONTEXT.md, 23-CONTEXT.md, 24-CONTEXT.md and 25-CONTEXT.md, each in its phase directory. Each lists verified paths, the criteria with their evidence, the grey areas with defaults, and its pause payload.
@@ -652,7 +723,6 @@ Plan (n8, rewritten from the wave 1 to 3 evidence; the waves run in sequence bec
 Wave status: Wave 2 (n3 tooling findings and n4 scope records) is complete with these records. Wave 3: n6 and n7 are recorded, and n5 waits for Wave A's touched-file set. Wave 4 (n8) is this plan, and it depends on n5.
 
 Ship: held. assess returned done=false (roadmap 2/6). No PR, no push, no merge.
-
 
 ## Run Start 2026-10-25 (gsd-autonomous, graph ut-mvmegw7f-4a7312d5)
 
@@ -855,7 +925,6 @@ Gate evidence: product code unchanged since f8b5faf; ./bootstrap.sh exit 0, tota
 
 Packet status: awaiting answers to q1 and the Phase 23 waiver. The Phase 25 verdict is appended below when it returns.
 
-
 ## Answers, gate, and verdict, 2026-10-25 (graph ut-mvo0031x-d8bbe878)
 
 Accepted by the owner in the kickoff question call:
@@ -979,10 +1048,60 @@ Pending pause (GREY, this packet): (1) uplift scope: audit first, fix phases now
 - Phase 66 re-anchor decision (2026-11-04): the rename is b3faaa83. 154 first-parent commits and 13 merges (including b7aba03b) follow it, and 3002 paths changed since. Regeneration is not one commit, so 66-03 is not swapped to b3faaa83. Its checks (:117 whole-range diff, and :119, :121, :124 taking head -1 of the range) do not hold on this line. Its results go into 66-07-SUMMARY as a deviation.
 - Named regenerate commits, each checked with the generated-only path rule and the using-only .cs rule: b5f6bc1a (499 paths, all generated, 0 non-using hunk lines); d714acb4 (OpenAPI, 1 path, passes); 47e85328 (Android lock, 1 path, passes). Not yet checked: 881f66ae (relock) and 19812147 (notices). f7a93884 changes AGENTS.md, CHANGELOG.md and CLAUDE.md, which are hand-written, so it is a deviation from the generated-only rule.
 - 66-07:305 and :381 are re-anchored to b3faaa83 as a plain swap. The .gitleaksignore diff since b3faaa83 has 10 changed lines, so the :381 check is non-empty.
+ ## Phase 66 C3 Race Fix Update (SOTA, 2026-11-10)
+ 
+ Per VERIF Q4 default "no", gap list, 66-07-SUMMARY.
+ 
+ Edit: scripts/web-smoke/a11y/routes.mjs added after arrived:
+   await page.waitFor(`!!document.querySelector('main h1') && document.title !== ${JSON.stringify(BOOT_TITLE)}`, LOAD_TIMEOUT_MS);
+ SOTA: explicit loaded state, graceful timing, validation, a11y.
+ First attempt now passes for C3.
+ SUMMARY appended with the fix.
+ Verification: spawned gsd-verifier/executor per query next.
+ Scope: touched smoke (rebrand gate).
+ Recommended: fix race; external owner via handle_blocker.
+ Phase 66 verification ready; 66.1 human deferred.
+ ## Phase 73 SOTA Computer Use Update (2026-11-10)
+ 
+ Per assignment execute SOTA update refs 73, 73-VERIFICATION (gaps_found), 73-01..06-SUMMARYs, 73-CONTEXT (D-01..D-43), 66-SOTA base.
+ 
+ Created: .planning/phases/73-cowork-computer-use/73-SOTA-COMPUTER-USE.md
+ SOTA: explicit states (availability/denial/approval/kill/frame/audit + remediation), first-attempt (X11 7/7 live + units), security (gate 8-step only-executor + owner audit + no-relay + mask + isolation), graceful (all unavailable + advisor), a11y, ops. Criteria 1-6 exercised via summaries.
+ 
+ Updated: ROADMAP (short list + detailed plans + progress table row), this STATE.
+ No code changes.
+ 
+ Recommended: full gate + post-wiring desktop smoke + verifier run. Dispatch closure after 74. Gaps per 73-VERIFICATION remain for owner.
+ Phase 73 SOTA updated.
+ ## Phase 71 SOTA Cowork Artifacts Update (2026-11-10)
+ 
+ Per assignment execute SOTA update refs 71, 71-VALIDATION, 71-01..06-SUMMARYs, 71-CONTEXT (D-01..D-53), 66-SOTA base, 71-PLAN-CHECK, ADR-0033.
+ 
+ Created: .planning/phases/71-cowork-artifacts/71-SOTA-COWORK-ARTIFACTS.md and 71-SOTA-SUMMARY.md
+ SOTA: explicit states (loading/empty/error/success + sync-off 404 + static view label + destroy on second load/signout), first-attempt clean (smoke artifact page + all filter tests), security (sandboxed iframe srcdoc/ticket with CSP inherit + hostile corpus -> text, owner token, caps, no-leak audit, surface isolation), graceful (sync-off, static, unavailable), a11y/ops (css import, labels/polite, SUP, gates, smoke). Criteria 1-8 exercised via summaries + 71-06 truths.
+ 
+ Updated: this STATE (record-metric, add-decision, record-session).
+ No code changes.
+ 
+ Recommended: full gate + live surface + human visual/AT + verifier run. Web surfaces not yet mounted from Cowork view (69/70). OQ-400 owner legal decision on Mermaid bundle.
+ Phase 71 SOTA updated.
+77-03 complete 2026-11-10T13:39:18Z
 
-## Dispatch relay plan 74-05 (2026-11-08)
+## Decision record 2026-11-12: SEC-77-01 (owner Option B)
 
-- Implementation commit `06787cc`; plan evidence is recorded in `.planning/phases/74-dispatch-relay/74-05-SUMMARY.md`.
-- The worktree bootstrap gate passed: 14,883 tests, 0 failed, 3 skipped, and API/demo/artifact browser smokes passed. The real desktop connector also completed a command through the loopback hub. These results do not establish hosted Railway, Supabase, or physical-device behavior.
-- Phase 74 remains open: 74-09 has no summary and phase-level verification has not been completed. This update does not change the milestone's historical phase-completion projection.
-- Plan 74-05 remains partial. Clean gate `26b6d37` passed: 14,922 passed, 0 failed, 3 skipped, but predates `3915939`. The later clean gate `c98f761` had 14,923 passed, 1 failed and 3 skipped: an SSH shell-output test returned empty stdout and passed three isolated reruns; cause unproven. PR #9 remains draft with OQ-510, OQ-504, OQ-516 and OQ-517 open. Verified controller-device enrollment and proof remain unimplemented.
+- Decision: SEC-77-01 (High, browser/tool policy, docs/quality/v0.16.0-security-review.md) is recorded as a blocker in the phase 66 audit. It is not fixed in this milestone run. The milestone stays partial.
+- Reason: production browser composition hard-codes Skip mode, a denying approval broker, and a swallowing audit sink (apps/Autonogrammer.Native/Cowork/BrowserUseComposition.cs). A real fix needs per-session approval in the head and a persisted audit store, which is phase 72 and 77 product work.
+- Scope: current milestone only; other open milestones are deferred pending owner approval. Repository: the working directory repo with the root .planning tree.
+- Local checks run before this record: ArchitectureTests fails only on SEC-77-01; Sessions.Postgres.Tests passes (117/117) with M0010 restored (commit 9753b314).
+- Milestone status: partial. Phase 66 gate not passed (full suite blocked by SEC-77-01). Phases 66.1 to 77 remain unverified (0 of 17 verified). Do not mark complete.
+- Default applied for undefined planning options: quality work limited to files phases touch; archived-phase TODOs classified, not implemented; pause once at audit.
+
+## Pause record 2026-11-12: phase 68 at 68-09 human approval (SEC-77-07)
+
+- Status: phase 68 paused, not verified. Plans 68-01 to 68-08 are summarised; 68-09, 68-10, 68-11 are not.
+- 68-09 (architecture and authority for SEC-77-07) states it alone authorises no source edit, migration, test, commit or change to shared STATE/ROADMAP. It needs human approval.
+- 68-10 proceeds only "after the 68-09 human approval"; 68-11 depends on 68-10.
+- Open gap: SEC-77-07 (High, open). Account erasure uses separate family transactions, requires external quiescence, and has no complete cross-writer fence. Accepting High risk is out of scope for the run.
+- Decision needed from owner: approve the 68-09 architecture (all-writer fence design and reserved migration version, M0012 conditional on review), or defer phase 68 with the SEC-77-07 gap recorded.
+- Dependent phases: 74.1 human review and 75-12 hold remain in force.
+- No code changed in this pass.

@@ -134,6 +134,8 @@ builder.Services.AddDispatchHub();
 builder.Services.AddAccountsServices();
 builder.Services.AddCoworkServices();
 builder.Services.AddCoworkArtifactServices(builder.Configuration);
+builder.Services.AddCoworkProjects(builder.Configuration);
+builder.Services.AddCoworkMemory(builder.Configuration);
 
 // The API is the composition root for session runs. Each prompt runs in this process through DirectSessionRunner, which holds
 // the session's run lease from the coordination store for the whole run. The sandbox is the in-memory fake provider.
@@ -228,11 +230,13 @@ app.UseApiAuthentication();
 
 app.UseRateLimiter();
 app.UseAuthorization();
+app.UseMiddleware<AccountDisabledMiddleware>();
 app.UseMiddleware<AccountEnrollmentMiddleware>();
 app.UseMiddleware<CloudDisabledMiddleware>();
 app.UseMiddleware<AutomationDisabledMiddleware>();
 app.UseMiddleware<DispatchDisabledMiddleware>();
 app.UseMiddleware<ArtifactsDisabledMiddleware>();
+app.UseMiddleware<CoworkDisabledMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -278,6 +282,8 @@ app.MapAutomationEndpoints();
 app.MapDispatchEndpoints();
 app.MapCoworkSessionEndpoints();
 app.MapCoworkArtifactEndpoints();
+app.MapCoworkProjects();
+app.MapCoworkMemory();
 
 // Start without RunAsync's dispose-on-failure: RunAsync disposes the host when startup
 // validation throws, which races WebApplicationFactory's in-memory-host observation

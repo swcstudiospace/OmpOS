@@ -78,3 +78,8 @@ The Dispatch section in the Native settings window (and the Android head that sh
 ## Notes for 74-09
 - The host properties (`DispatchRelayHost`, `DispatchRelayThisDevice`) are set on `SettingsWindowOptions` and read by the factory; 74-09 supplies them through `HeadSettings` and `HeadServices`.
 - The desktop toggles and Pause Dispatch are built (see the correction above). The heartbeat that reports `paused` belongs to the hub client in 74-05 (OQ-504).
+
+## SOTA Update (executed 2026-11-10, refs 74)
+
+- SOTA states verified in settings surfaces (per-phase status, toggles for capabilities/pause from host models); a11y (lock tests, targets); first-attempt gate.
+- Full details in created 74-SOTA-DISPATCH-RELAY.md.

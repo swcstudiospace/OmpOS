@@ -40,6 +40,8 @@ internal sealed class FakeGoTrueHandler : HttpMessageHandler
     private int _counter;
     private int _codeCounter = 41230000;
     private TaskCompletionSource? _refreshGate;
+    private TaskCompletionSource? _otpGate;
+    private TaskCompletionSource? _otpArrived;
 
     /// <summary>Creates a fake on a manual clock.</summary>
     /// <param name="time">The clock that decides code, link, token and reuse expiry.</param>
@@ -139,6 +141,31 @@ internal sealed class FakeGoTrueHandler : HttpMessageHandler
         {
             gate = _refreshGate;
             _refreshGate = null;
+        }
+
+        gate?.TrySetResult();
+    }
+
+    /// <summary>Holds OTP requests and returns a source completed when one arrives.</summary>
+    /// <returns>A source completed when an OTP request has been recorded.</returns>
+    public TaskCompletionSource HoldOtp()
+    {
+        lock (_gate)
+        {
+            _otpGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _otpArrived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            return _otpArrived;
+        }
+    }
+
+    /// <summary>Lets held OTP requests through.</summary>
+    public void ReleaseOtp()
+    {
+        TaskCompletionSource? gate;
+        lock (_gate)
+        {
+            gate = _otpGate;
+            _otpGate = null;
         }
 
         gate?.TrySetResult();
@@ -273,7 +300,13 @@ internal sealed class FakeGoTrueHandler : HttpMessageHandler
         {
             _requests.Add(seen);
             Scripted? scripted = _scripts.TryGetValue(route, out Queue<Scripted>? queue) && queue.Count > 0 ? queue.Dequeue() : null;
-            TaskCompletionSource? gate = string.Equals(route, "token:refresh", StringComparison.Ordinal) ? _refreshGate : null;
+            bool otp = string.Equals(route, "otp", StringComparison.Ordinal);
+            if (otp)
+            {
+                _otpArrived?.TrySetResult();
+            }
+
+            TaskCompletionSource? gate = otp ? _otpGate : string.Equals(route, "token:refresh", StringComparison.Ordinal) ? _refreshGate : null;
             return (scripted, gate);
         }
     }

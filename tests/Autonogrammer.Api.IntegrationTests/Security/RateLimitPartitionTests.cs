@@ -95,6 +95,7 @@ public sealed class RateLimitPartitionTests
     {
         var config = JwtTestHost.DevelopmentConfig();
         config["Accounts:RequestsPerMinute"] = "1";
+        config["Accounts:Enabled"] = "true";
         using var factory = new ApiFactory(config, JwtTestHost.InjectStaticMetadata);
         using var alice = AuthenticatedClient(factory, "alice");
         using var bob = AuthenticatedClient(factory, "bob");

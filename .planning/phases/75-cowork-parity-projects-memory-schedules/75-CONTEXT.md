@@ -109,3 +109,7 @@ Must NOT do: author any migration (no M0009 file, never M0010 or later: R2); add
 - OMITTED: uploaded project files, linked chat project, project sharing (no organisation tenancy, no chat projects; ADR-0037 D2 C8, D3). DEFERRED: device-off scheduled runs and cloud execution (C2, ADR-0037 D2 C10); syncing task definitions (OQ-444); keeping the machine awake (OQ-451); memory in Code sessions and global instructions in Code (OQ-445).
 - Open questions and defaults: OQ-440 omp keeps a 28 KiB first block (yes by source; cut the brief first if a check says no); OQ-441 `memory.backend: off` honoured (set it; live run confirms); OQ-442 memory kept until the user deletes (owner and legal confirm before launch); OQ-443 missed runs fold into one late run within 24 h; OQ-444 definitions device-local; OQ-445 no global instructions for Code; OQ-446 English-only detectors, limit shown on the Memory page.
 </deferred>
+
+## Idempotency dependency decision (2026-11-10)
+
+The user authorized a separate additive migration plan for atomic account-scoped memory idempotency, with rollback and tests, and explicitly did not authorize applying it to production. Phase 74.1 was inserted for that work. Phase 75 retains its no-migration ownership boundary and cannot claim durable idempotency until the prerequisite is implemented and verified.

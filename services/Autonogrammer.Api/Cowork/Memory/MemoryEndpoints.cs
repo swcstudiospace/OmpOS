@@ -13,8 +13,6 @@ namespace Autonogrammer.Api.Cowork.Memory;
 /// <summary>Per-account memory routes. The owner is always the token subject. Caps match the desktop store.</summary>
 internal static class MemoryEndpoints
 {
-    private const string IdempotencyScope = "memory";
-
     /// <summary>Maps the memory routes.</summary>
     /// <param name="endpoints">The route builder.</param>
     public static void Map(IEndpointRouteBuilder endpoints)
@@ -47,24 +45,17 @@ internal static class MemoryEndpoints
     private static async Task<IResult> SaveAsync(
         HttpContext context,
         IMemoryStore store,
-        CoworkIdempotencyCache idempotency,
         IOptions<MemoryOptions> options,
         IUserContext user,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(idempotency);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(user);
         if (!IdempotencyKeyHeader.TryRead(context.Request.Headers, out var key))
         {
             return InvalidKey();
-        }
-
-        if (key is not null && idempotency.TryGet(IdempotencyScope, user.Name, key, out var replay))
-        {
-            return Results.Text(replay.Body, "application/json", statusCode: replay.StatusCode);
         }
 
         var read = await CoworkBodies.ReadRequiredAsync(context, cancellationToken).ConfigureAwait(false);
@@ -92,21 +83,47 @@ internal static class MemoryEndpoints
         {
             return Paused();
         }
-
         var scope = new MemoryScope(user.Name, request.ProjectId, request.UseAccountMemory, request.SourceSession ?? "api");
-        var mutation = await store.SaveAsync(scope, new MemoryDraft(request.Topic, request.Content, request.Category), cancellationToken).ConfigureAwait(false);
+
+        var draft = new MemoryDraft(request.Topic, request.Content, request.Category);
+        if (key is not null)
+        {
+            return await SaveKeyedAsync(context, store, scope, draft, key, cancellationToken).ConfigureAwait(false);
+        }
+
+        var mutation = await store.SaveAsync(scope, draft, cancellationToken).ConfigureAwait(false);
+        return Saved(mutation);
+    }
+
+    private static async Task<IResult> SaveKeyedAsync(
+        HttpContext context, IMemoryStore store, MemoryScope scope, MemoryDraft draft, string key, CancellationToken cancellationToken)
+    {
+        if (store is not IMemoryIdempotentStore durable
+            || (store is InMemoryMemoryStore && context.RequestServices.GetRequiredService<IHostEnvironment>().IsProduction()))
+        {
+            return Unavailable();
+        }
+
+        var result = await durable.SaveIdempotentAsync(scope, draft, key, cancellationToken).ConfigureAwait(false);
+        return result.Status switch
+        {
+            MemoryIdempotentStatus.Conflict => WebProblems.Of(StatusCodes.Status409Conflict, "idempotency_conflict", "Idempotency conflict.", "The key was already used for a different request."),
+            MemoryIdempotentStatus.Gone => Results.StatusCode(StatusCodes.Status410Gone),
+            MemoryIdempotentStatus.Refused => result.Mutation is null ? Unavailable() : SaveFailure(result.Mutation),
+            MemoryIdempotentStatus.Created or MemoryIdempotentStatus.Replayed => result.Mutation is null ? Unavailable() : Saved(result.Mutation),
+            _ => Unavailable(),
+        };
+    }
+
+    private static IResult Saved(MemoryMutation mutation)
+    {
         if (!mutation.Succeeded || mutation.Entry is null)
         {
-            return Failure(mutation.Code, mutation.Sentence);
+            return SaveFailure(mutation);
         }
 
         var record = MemorySearch.ToRecord(mutation.Entry);
         var body = JsonSerializer.Serialize(record, MemoryJsonContext.Default.MemoryEntryRecord);
-        if (key is not null)
-        {
-            idempotency.Remember(IdempotencyScope, user.Name, key, StatusCodes.Status201Created, body);
-        }
-
         return Results.Text(body, "application/json", statusCode: StatusCodes.Status201Created);
     }
 
@@ -289,6 +306,13 @@ internal static class MemoryEndpoints
         return Results.Text(json, "application/json");
     }
 
+    private static IResult SaveFailure(MemoryMutation mutation) =>
+        string.Equals(mutation.Code, MemoryCodes.MemoryNotFound, StringComparison.Ordinal)
+            ? Results.Text(
+                "{\"type\":\"/problems/project_not_found\",\"title\":\"Project not found.\",\"status\":404,\"detail\":\"That project was not found.\"}",
+                "application/problem+json", statusCode: StatusCodes.Status404NotFound)
+            : Failure(mutation.Code, mutation.Sentence);
+
     private static IResult Failure(string code, string? sentence)
     {
         var status = string.Equals(code, MemoryCodes.MemoryQueryTooLong, StringComparison.Ordinal)
@@ -300,6 +324,9 @@ internal static class MemoryEndpoints
     }
 
     private static IResult Paused() => Failure(MemoryCodes.MemoryPaused, "Memory is paused. Entries are kept, and nothing was read or written.");
+
+    private static ProblemHttpResult Unavailable() =>
+        WebProblems.Of(StatusCodes.Status503ServiceUnavailable, "memory_unavailable", "Memory is unavailable.", "Retry the request with the same idempotency key.");
 
     private static ProblemHttpResult InvalidJson() =>
         WebProblems.Of(StatusCodes.Status400BadRequest, "invalid_json", "Invalid request body.", "The request body is not valid JSON.");

@@ -1,5 +1,4 @@
 #pragma warning disable MA0048 // The plan owns this file for the routes and the account store.
-using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Autonogrammer.Api.Idempotency;
@@ -20,12 +19,12 @@ internal static class ProjectsEndpoints
     public static void Map(IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
-        MapRoute(endpoints.MapGet("/cowork/projects", List), "ListCoworkProjects", "Lists the caller's projects.");
-        MapRoute(endpoints.MapGet("/cowork/projects/{id}", Get), "GetCoworkProject", "Reads one project the caller owns. Another account's id is 404.");
+        MapRoute(endpoints.MapGet("/cowork/projects", ListAsync), "ListCoworkProjects", "Lists the caller's projects.");
+        MapRoute(endpoints.MapGet("/cowork/projects/{id}", GetAsync), "GetCoworkProject", "Reads one project the caller owns. Another account's id is 404.");
         MapRoute(endpoints.MapPut("/cowork/projects/{id}", UpsertAsync), "PutCoworkProject", "Creates or replaces one project owned by the caller.");
         MapRoute(endpoints.MapPost("/cowork/projects/{id}/archive", ArchiveAsync), "ArchiveCoworkProject", "Archives one project the caller owns.");
-        MapRoute(endpoints.MapDelete("/cowork/projects/{id}", Delete), "DeleteCoworkProject", "Deletes one project the caller owns.");
-        MapRoute(endpoints.MapGet("/cowork/instructions/global", GetGlobal), "GetCoworkGlobalInstructions", "Reads the caller's global instructions.");
+        MapRoute(endpoints.MapDelete("/cowork/projects/{id}", DeleteAsync), "DeleteCoworkProject", "Deletes one project the caller owns.");
+        MapRoute(endpoints.MapGet("/cowork/instructions/global", GetGlobalAsync), "GetCoworkGlobalInstructions", "Reads the caller's global instructions.");
         MapRoute(endpoints.MapPut("/cowork/instructions/global", PutGlobalAsync), "PutCoworkGlobalInstructions", "Replaces the caller's global instructions.");
     }
 
@@ -41,26 +40,23 @@ internal static class ProjectsEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
-    private static IResult List(ProjectAccountStore store, IUserContext user)
+    private static async Task<IResult> ListAsync(PostgresProjectAccountStore store, IUserContext user, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(user);
-        var json = JsonSerializer.Serialize(store.List(user.Name).ToList(), ProjectsJsonContext.Default.ListProjectSyncRecord);
+        var projects = await store.ListAsync(user.Name, cancellationToken).ConfigureAwait(false);
+        var json = JsonSerializer.Serialize(projects.ToList(), ProjectsJsonContext.Default.ListProjectSyncRecord);
         return Results.Text(json, "application/json");
     }
 
-    private static IResult Get(string id, ProjectAccountStore store, IUserContext user)
+    private static async Task<IResult> GetAsync(string id, PostgresProjectAccountStore store, IUserContext user, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(user);
-        var project = store.Get(user.Name, id);
+        var project = await store.GetAsync(user.Name, id, cancellationToken).ConfigureAwait(false);
         return project is null ? Missing() : Json(project);
     }
 
     private static async Task<IResult> UpsertAsync(
         HttpContext context,
         string id,
-        ProjectAccountStore store,
+        PostgresProjectAccountStore store,
         CoworkIdempotencyCache idempotency,
         IUserContext user,
         TimeProvider time,
@@ -101,19 +97,37 @@ internal static class ProjectsEndpoints
         {
             return WebProblems.Of(StatusCodes.Status400BadRequest, "project_id_mismatch", "Project id mismatch.", "The project id in the body must match the route.");
         }
+        if (request.ContextUrls is null)
+        {
+            request = request with { ContextUrls = [] };
+        }
 
-        var errors = Validate(request, store.Count(user.Name, id));
+        var errors = Validate(request);
         if (errors.Count > 0)
         {
             return WebProblems.Of(StatusCodes.Status400BadRequest, "project_invalid", "Project is invalid.", errors[0]);
         }
 
-        var (record, created) = store.Upsert(user.Name, request, time.GetUtcNow());
+        var (record, created, capped) = await store.UpsertAsync(user.Name, request, time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        return UpsertResult(record, created, capped, idempotency, user.Name, key);
+    }
+
+    private static IResult UpsertResult(ProjectSyncRecord? record, bool created, bool capped, CoworkIdempotencyCache idempotency, string account, string? key)
+    {
+        if (capped)
+        {
+            return WebProblems.Of(StatusCodes.Status400BadRequest, "project_invalid", "Project is invalid.", "At most 200 projects per account.");
+        }
+
+        if (record is null)
+        {
+            return Missing();
+        }
         var status = created ? StatusCodes.Status201Created : StatusCodes.Status200OK;
         var body = JsonSerializer.Serialize(record, ProjectsJsonContext.Default.ProjectSyncRecord);
         if (key is not null)
         {
-            idempotency.Remember(IdempotencyScope, user.Name, key, status, body);
+            idempotency.Remember(IdempotencyScope, account, key, status, body);
         }
 
         return Results.Text(body, "application/json", statusCode: status);
@@ -122,7 +136,7 @@ internal static class ProjectsEndpoints
     private static async Task<IResult> ArchiveAsync(
         HttpContext context,
         string id,
-        ProjectAccountStore store,
+        PostgresProjectAccountStore store,
         IUserContext user,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -136,26 +150,23 @@ internal static class ProjectsEndpoints
             return read.Error;
         }
 
-        var archived = store.Archive(user.Name, id, time.GetUtcNow());
+        var archived = await store.ArchiveAsync(user.Name, id, time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
         return archived is null ? Missing() : Json(archived);
     }
 
-    private static IResult Delete(string id, ProjectAccountStore store, IUserContext user)
+    private static async Task<IResult> DeleteAsync(string id, PostgresProjectAccountStore store, IUserContext user, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(user);
-        return store.Delete(user.Name, id) ? Results.NoContent() : Missing();
+        return await store.DeleteAsync(user.Name, id, cancellationToken).ConfigureAwait(false) ? Results.NoContent() : Missing();
     }
 
-    private static IResult GetGlobal(ProjectAccountStore store, IUserContext user)
+    private static async Task<IResult> GetGlobalAsync(PostgresProjectAccountStore store, IUserContext user, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(user);
-        var json = JsonSerializer.Serialize(new GlobalInstructionsRecord { Instructions = store.GetInstructions(user.Name) }, ProjectsJsonContext.Default.GlobalInstructionsRecord);
+        var instructions = await store.GetInstructionsAsync(user.Name, cancellationToken).ConfigureAwait(false);
+        var json = JsonSerializer.Serialize(new GlobalInstructionsRecord { Instructions = instructions }, ProjectsJsonContext.Default.GlobalInstructionsRecord);
         return Results.Text(json, "application/json");
     }
 
-    private static async Task<IResult> PutGlobalAsync(HttpContext context, ProjectAccountStore store, IUserContext user, CancellationToken cancellationToken)
+    private static async Task<IResult> PutGlobalAsync(HttpContext context, PostgresProjectAccountStore store, IUserContext user, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(user);
@@ -181,12 +192,12 @@ internal static class ProjectsEndpoints
             return WebProblems.Of(StatusCodes.Status400BadRequest, "instructions_too_large", "Instructions too large.", "Global instructions must be at most 8 KiB.");
         }
 
-        store.SetInstructions(user.Name, instructions);
+        await store.SetInstructionsAsync(user.Name, instructions, cancellationToken).ConfigureAwait(false);
         var json = JsonSerializer.Serialize(new GlobalInstructionsRecord { Instructions = instructions }, ProjectsJsonContext.Default.GlobalInstructionsRecord);
         return Results.Text(json, "application/json");
     }
 
-    private static List<string> Validate(ProjectSyncRecord project, int existingCount)
+    private static List<string> Validate(ProjectSyncRecord project)
     {
         var errors = new List<string>();
         var nameLength = project.Name?.Length ?? 0;
@@ -215,10 +226,6 @@ internal static class ProjectsEndpoints
             }
         }
 
-        if (existingCount >= 200)
-        {
-            errors.Add(string.Create(CultureInfo.InvariantCulture, $"At most 200 projects per account."));
-        }
 
         return errors;
     }
@@ -311,135 +318,3 @@ internal static class ProjectsEndpoints
     private readonly record struct BodyRead(byte[] Bytes, IResult? Error);
 }
 
-/// <summary>In-process project rows keyed by the token subject. Another account's row is absent.</summary>
-internal sealed class ProjectAccountStore
-{
-    private readonly Lock _gate = new();
-    private readonly Dictionary<string, Dictionary<string, ProjectSyncRecord>> _projects = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, string> _instructions = new(StringComparer.Ordinal);
-
-    /// <summary>Lists one account's projects.</summary>
-    /// <param name="accountId">The token subject.</param>
-    /// <returns>The projects.</returns>
-    public IReadOnlyList<ProjectSyncRecord> List(string accountId)
-    {
-        lock (_gate)
-        {
-            return Rows(accountId).Values.ToArray();
-        }
-    }
-
-    /// <summary>Reads one project when the account owns it.</summary>
-    /// <param name="accountId">The token subject.</param>
-    /// <param name="id">The project id.</param>
-    /// <returns>The project, or null.</returns>
-    public ProjectSyncRecord? Get(string accountId, string id)
-    {
-        lock (_gate)
-        {
-            return Rows(accountId).TryGetValue(id, out var project) ? project : null;
-        }
-    }
-
-    /// <summary>Returns how many projects the account holds, ignoring an id that already exists.</summary>
-    /// <param name="accountId">The token subject.</param>
-    /// <param name="id">The id being written.</param>
-    /// <returns>The count used for the 200 cap.</returns>
-    public int Count(string accountId, string id)
-    {
-        lock (_gate)
-        {
-            var rows = Rows(accountId);
-            return rows.ContainsKey(id) ? rows.Count - 1 : rows.Count;
-        }
-    }
-
-    /// <summary>Creates or replaces one project. Archived time already stored is kept unless this write sets one.</summary>
-    /// <param name="accountId">The token subject.</param>
-    /// <param name="project">The project.</param>
-    /// <param name="now">The update time.</param>
-    /// <returns>The stored project and whether it was created.</returns>
-    public (ProjectSyncRecord Record, bool Created) Upsert(string accountId, ProjectSyncRecord project, DateTimeOffset now)
-    {
-        ArgumentNullException.ThrowIfNull(project);
-        lock (_gate)
-        {
-            var rows = Rows(accountId);
-            var created = !rows.TryGetValue(project.Id, out var existing);
-            var stored = project with
-            {
-                UpdatedAt = now,
-                ArchivedAt = project.ArchivedAt ?? existing?.ArchivedAt,
-            };
-            rows[project.Id] = stored;
-            return (stored, created);
-        }
-    }
-
-    /// <summary>Archives one owned project.</summary>
-    /// <param name="accountId">The token subject.</param>
-    /// <param name="id">The project id.</param>
-    /// <param name="now">The archive time.</param>
-    /// <returns>The archived project, or null.</returns>
-    public ProjectSyncRecord? Archive(string accountId, string id, DateTimeOffset now)
-    {
-        lock (_gate)
-        {
-            var rows = Rows(accountId);
-            if (!rows.TryGetValue(id, out var existing))
-            {
-                return null;
-            }
-
-            var archived = existing with { ArchivedAt = now, UpdatedAt = now };
-            rows[id] = archived;
-            return archived;
-        }
-    }
-
-    /// <summary>Deletes one owned project.</summary>
-    /// <param name="accountId">The token subject.</param>
-    /// <param name="id">The project id.</param>
-    /// <returns>True when a row was removed.</returns>
-    public bool Delete(string accountId, string id)
-    {
-        lock (_gate)
-        {
-            return Rows(accountId).Remove(id);
-        }
-    }
-
-    /// <summary>Reads global instructions. A missing document is empty.</summary>
-    /// <param name="accountId">The token subject.</param>
-    /// <returns>The instructions.</returns>
-    public string GetInstructions(string accountId)
-    {
-        lock (_gate)
-        {
-            return _instructions.TryGetValue(accountId, out var text) ? text : string.Empty;
-        }
-    }
-
-    /// <summary>Replaces global instructions.</summary>
-    /// <param name="accountId">The token subject.</param>
-    /// <param name="instructions">The text.</param>
-    public void SetInstructions(string accountId, string instructions)
-    {
-        ArgumentNullException.ThrowIfNull(instructions);
-        lock (_gate)
-        {
-            _instructions[accountId] = instructions;
-        }
-    }
-
-    private Dictionary<string, ProjectSyncRecord> Rows(string accountId)
-    {
-        if (!_projects.TryGetValue(accountId, out var rows))
-        {
-            rows = new Dictionary<string, ProjectSyncRecord>(StringComparer.Ordinal);
-            _projects[accountId] = rows;
-        }
-
-        return rows;
-    }
-}

@@ -66,6 +66,8 @@ public sealed class AccountRoutesTests
         using var account = await alice.GetAsync(new Uri("/account/sessions", UriKind.Relative), ct).ConfigureAwait(true);
         using var sessions = await alice.GetAsync(new Uri("/sessions", UriKind.Relative), ct).ConfigureAwait(true);
         using var board = await alice.GetAsync(new Uri("/account/board", UriKind.Relative), ct).ConfigureAwait(true);
+        account.StatusCode.ShouldBe(HttpStatusCode.OK);
+        board.StatusCode.ShouldBe(HttpStatusCode.OK);
         var accountText = await account.Content.ReadAsStringAsync(ct).ConfigureAwait(true);
         var sessionsText = await sessions.Content.ReadAsStringAsync(ct).ConfigureAwait(true);
         var boardText = await board.Content.ReadAsStringAsync(ct).ConfigureAwait(true);
@@ -74,6 +76,7 @@ public sealed class AccountRoutesTests
         accountText.ShouldContain(code);
         sessionsText.ShouldNotContain(cowork);
         boardText.ShouldNotContain(cowork);
+        boardText.ShouldContain(code);
 
         await factory.Services.GetRequiredService<Autonogrammer.Api.Services.CatalogChangeDetector>().ScanAsync(ct).ConfigureAwait(true);
         var stream = await SessionClient.ReadStreamAsync(alice, "/events", 1, ct, lastEventId: "0").ConfigureAwait(true);
@@ -93,7 +96,9 @@ public sealed class AccountRoutesTests
         features.ShouldBe(["cowork"]);
         body.RootElement.TryGetProperty("email", out _).ShouldBeFalse();
 
-        using var owner = OwnerTokenTestHost.CreateFactory();
+        var ownerConfig = OwnerTokenTestHost.Config();
+        ownerConfig["Accounts:Enabled"] = "true";
+        using var owner = OwnerTokenTestHost.CreateFactory(ownerConfig);
         using var ownerClient = owner.CreateClient();
         OwnerTokenTestHost.UseBearer(ownerClient, OwnerTokenTestHost.Token);
         using var ownerAccount = await ownerClient.GetAsync(new Uri("/account", UriKind.Relative), ct).ConfigureAwait(true);
@@ -103,6 +108,11 @@ public sealed class AccountRoutesTests
         ownerBody.RootElement.TryGetProperty("createdAt", out _).ShouldBeFalse();
         ownerBody.RootElement.TryGetProperty("lastSeenAt", out _).ShouldBeFalse();
         (await owner.Services.GetRequiredService<Autonogrammer.Api.Accounts.IAccountStore>().CountAsync(ct).ConfigureAwait(true)).ShouldBe(0);
+
+        var ownerSession = await SessionClient.CreateSessionAsync(ownerClient, ct).ConfigureAwait(true);
+        using var ownerBoard = await ownerClient.GetAsync(new Uri("/account/board", UriKind.Relative), ct).ConfigureAwait(true);
+        ownerBoard.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await ownerBoard.Content.ReadAsStringAsync(ct).ConfigureAwait(true)).ShouldContain(ownerSession);
 
         using var anonymous = oidc.CreateClient();
         foreach (var path in new[] { "/account", "/account/sessions", "/account/sessions/x", "/account/board" })

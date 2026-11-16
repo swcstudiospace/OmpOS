@@ -10,6 +10,12 @@ Last verified: 2026-10-29 (offline tests only)
 
 Applies to: [ADR-0030](../decisions/ADR-0030-accounts-supabase-passwordless.md), the library `Autonogrammer.Accounts` and the contract folder `Autonogrammer.Contracts.Accounts`.
 
+## Account endpoint deployment transition
+
+`Accounts:Enabled` defaults to `false`. Before deploying this default to an existing installation that uses account or Code board endpoints, explicitly set `Accounts__Enabled=true` in its API environment. This applies to both OIDC and OwnerToken deployments; it does not change their authentication settings. Without the setting, an authenticated request to `/account`, `/account/sessions`, `/account/sessions/{id}`, or `/account/board` receives a 404 `account_disabled` problem instead of account data. Anonymous requests remain unauthorized. An installation that has not made this transition loses those endpoints and is not compatible with clients that require them.
+
+The default-off behavior has focused local test coverage but has not been deployed or live-verified. SEC-77-06 and SEC-77-02 are recorded as fixed; the independently owned High findings SEC-77-01, SEC-77-07 and SEC-77-08 remain open, so the release gate remains blocked.
+
 ## What exists
 
 - `Autonogrammer.Accounts` holds the plain `HttpClient` calls to the shared Supabase auth host: the email code and link calls (`SendEmailOtpAsync`, `VerifyEmailOtpAsync`, `ExchangeCodeAsync`, `RefreshAsync`, `SignOutAsync(scope)`, `GetUserAsync`) and the wallet grant (`SignInWithWeb3Async`). The session manager (`AccountSessionManager`, behind `IAccountSession`) and the sign-in coordinator (`SignInCoordinator`) sit on top. There is no Supabase SDK.
@@ -50,6 +56,26 @@ Run this by hand after the API runs in `Oidc` mode: the switch is in `docs/runbo
 6. Restart the desktop head: expect `SignedIn` at once and `Online` after the background refresh, with no sign-in prompt. Disconnect the network and restart: expect `SignedIn` with the offline notice, never a sign-out.
 7. Sign out: expect `SignedOut` immediately. The local entry is cleared first and the service is told as a best effort; confirm the website session of the same account is still signed in (the scope is `local`). "Sign out everywhere" is the scope that ends the website session too.
 8. Delete the secret `autonogrammer.account.session` and restart: expect `SignedOut` and no error.
+
+## Account erasure
+
+Erasure removes everything an account owns from PostgreSQL and then the account's tenant keys from Dragonfly (`PostgresAccountErasure.EraseAsync`). It has no production entry point yet: there is no route, no operator command and no identity-provider session revocation, so nothing calls it outside the tests. This section describes the safety boundary the eventual entry point relies on; it does not authorize running an erasure, a migration or a rollback in production.
+
+**The fence.** Migration M0012 adds `account_erasure_fence`, one permanent row per account that was erased or is being erased, keyed by a SHA-256 digest of the identifier (never the identifier). A `BEFORE INSERT OR UPDATE` trigger on every table that holds account-owned rows (`accounts`, `sessions`, `session_events`, `session_tool_approvals`, `cloud_agents`, `dispatch_devices`, `dispatch_commands`, `dispatch_events`, `cowork_events`, `cowork_projects`, `cowork_instructions`, `cowork_memory_entries`, `cowork_memory_settings`, `artifacts`, `artifact_versions`, `artifact_grants`, and `cowork_memory_idempotency` through M0014) takes a shared, transaction-scoped advisory lock on the account and refuses the write when the fence holds a row. The gate is in the database, so it covers every writer: all stores, background jobs, an older binary and direct SQL. `dispatch_audit` and `ledger_outbox` are not gated: they hold the keyed tenant hash and payload digests only, are append-only and are retained by design.
+
+**Order of an erasure.**
+1. The eraser takes the account lock exclusively, so it waits for every writer that was already admitted to commit or roll back. It waits at most 20 seconds (`PostgresAccountErasure.DefaultLockTimeout`); past that it raises `AccountErasureBusyException`, nothing has changed and the call can be repeated.
+2. It inserts the fence row (`erasing`) and commits. From this point every write for the account is refused with SQLSTATE `AE001`. The stores that share the PostgreSQL pipeline raise `AccountErasingException`; the memory, project, artifact and account stores let the `PostgresException` through (`AccountErasureFence.IsRefusal` recognises both). A refusal is never retried.
+3. It deletes the families, each in its own transaction (dispatch, Cowork events, memory with its claims, artifacts, session content, cloud agents), and in a last transaction deletes the account row and moves the fence row to `erased`.
+4. It runs the tenant-key deletion for Dragonfly.
+
+**Failure and repeat.** A failure at any step leaves the fence in place and the writers refused; repeat the erasure with the same arguments. Every delete is idempotent and the fence row is inserted once. A call for an account that is already `erased` skips the SQL and only runs the tenant-key deletion, so a failed Dragonfly deletion is retried by the next call and the call completes only when the keys are deleted. A fence row can never be deleted or moved back to `erasing` (SQLSTATE `AE004`). The migration check also refuses a transaction that does not run at READ COMMITTED (`AE003`) and a row whose owner cannot be resolved (`AE002`).
+
+**Rollback.** `Autonogrammer.Api migrate --down` to a version below 12, or below 14 while the fence holds a row, is refused (SQLSTATE `AE005`) before anything is dropped, because it would reopen erased accounts. There is no supported way to remove an erasure record.
+
+**Deploying M0012.** M0012 is additive. Apply it with the migrator before the new binary. An older binary keeps working for accounts that were never erased and is refused for erased ones. A database that applied the unreleased integration build, where version 12 was the memory claim table, fails the checksum check for version 12 and must be rebuilt.
+
+**Not covered.** Dragonfly keys are outside the fence: they are coordination state with a lifetime of at most 24 hours, and the tenant-key deletion removes those that carry the tenant segment; a heartbeat that was already running can write one again. An erased subject can still authenticate (OIDC, device or owner token) until an entry point revokes the credentials or the identity-provider session; every write for it is refused, and the enrollment middleware logs the refusal and does not recreate the account row. See SEC-77-09 in [the security review](../quality/v0.16.0-security-review.md).
 
 ## Not verified
 

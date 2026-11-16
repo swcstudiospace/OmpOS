@@ -33,7 +33,9 @@ export function bootShellOutcome(secondAttempt) {
   return { check: "routes", id: "sequence-boot-shell", severity: "error", message: "the in-app sequence landed on the boot shell on both attempts, so the route steps were not checked", state: "in-app", viewport: "inapp" };
 }
 
-const DIRECT_ROUTES = [
+// The unknown path renders the NotFound page of apps/Autonogrammer.Web/Pages/NotFound.razor: a bare <main class="autonogrammer-notfound-page"> with the one h1 of
+// NotFoundView, and no rail, banner or navigation. It is checked as a "bare" layout (main only) once its heading is rendered.
+export const DIRECT_ROUTES = [
   { route: "/", layout: "shell", ready: "!!document.querySelector('main h1') && !document.querySelector('[data-state=\"loading\"]')" },
   { route: "/kanban", layout: "shell", ready: "!!document.querySelector('.autonogrammer-kanban')" },
   { route: "/cowork", layout: "shell", ready: "!!document.querySelector('.autonogrammer-cowork')" },
@@ -43,9 +45,14 @@ const DIRECT_ROUTES = [
   { route: "/does-not-exist-a11y", layout: "bare", ready: "!!document.querySelector('.autonogrammer-notfound-page h1')" },
 ];
 
-/** The ready state DIRECT_ROUTES checks for a route, or null when the route has none (session pages). */
-function readyFor(path) {
-  return DIRECT_ROUTES.find((spec) => spec.route === path)?.ready ?? null;
+// A rendered route has its main heading and nothing in the loading state. The session pages, whose id is not known in advance, are ready on exactly that.
+const RENDERED = "!!document.querySelector('main h1') && !document.querySelector('[data-state=\"loading\"]')";
+
+/** The ready state of a route: the one DIRECT_ROUTES checks for it, the rendered heading for a session page, or null when the route has none. */
+export function readyFor(path) {
+  const direct = DIRECT_ROUTES.find((spec) => spec.route === path)?.ready;
+  if (direct) return direct;
+  return path?.startsWith("/sessions/") ? RENDERED : null;
 }
 // runStep returns this when the target route did not render its ready state: the address moved and the render did not, so the sequence restarts.
 const NOT_READY = Symbol("not-ready");
@@ -111,6 +118,14 @@ function inAppSteps(kind) {
   return steps;
 }
 
+/** Does not start navigating while the page still shows the static boot title or has not rendered its main heading; an error when it does not within the load budget. */
+export async function waitForInitialTitle(page, report) {
+  const rendered = `document.title.trim() !== '' && document.title.trim() !== ${JSON.stringify(BOOT_TITLE)} && ${RENDERED}`;
+  if (await page.waitFor(rendered, LOAD_TIMEOUT_MS)) return true;
+  report.add({ check: "routes", id: "initial-title-not-ready", severity: "error", message: `the initial route did not replace the boot title and render its main heading within ${Math.round(LOAD_TIMEOUT_MS / 1000)} s`, state: "in-app", viewport: "inapp" });
+  return false;
+}
+
 /** In-app navigation with the keyboard (both bundles). */
 async function checkInAppNavigation(page, report, { baseUrl, kind }) {
   await page.setViewport(1440, 900);
@@ -120,12 +135,14 @@ async function checkInAppNavigation(page, report, { baseUrl, kind }) {
     if (params.type === "error") pageErrors.push(`console.error: ${(params.args ?? []).map((a) => a.value ?? a.description ?? "").join(" ")}`.slice(0, 240));
   });
   if (!(await loadApp(page, baseUrl, report, { group: "routes", viewport: "inapp" }))) return;
+  if (!(await waitForInitialTitle(page, report))) return;
   let entries = await runSequence(page, report, kind, 1);
   if (entries === null) {
     // A step landed on the boot shell. Retrying that one step would lose the history the later steps depend on (Back and Forward
     // would have nothing to go to, and a wordmark retry would start and end at the same address). The whole sequence restarts once.
     report.add({ check: "routes", id: "sequence-retried", severity: "warning", message: "a step landed on the boot shell; the whole in-app sequence restarted once after a reload", state: "in-app", viewport: "inapp" });
     if (!(await loadApp(page, baseUrl, report, { group: "routes", viewport: "inapp" }))) return;
+    if (!(await waitForInitialTitle(page, report))) return;
     entries = await runSequence(page, report, kind, 2);
     const outcome = bootShellOutcome(entries);
     if (outcome) report.add(outcome);
@@ -204,7 +221,9 @@ async function runStep(page, report, step, history, position, attempt) {
     return null;
   }
   // The address moves before the render does. Wait for the target route's own ready state, so no entry is recorded from a page still
-  // on the boot shell, within the budget a direct load gets. A route with no ready state (session pages) keeps the waits below.
+  // on the boot shell, within the budget a direct load gets. A session page, whose id is discovered from the address after the activation
+  // (and from the history on Back and Forward), is ready when its main heading is rendered.
+  expected ??= await page.evalValue("location.pathname");
   const ready = readyFor(expected);
   if (ready && !(await page.waitFor(ready, LOAD_TIMEOUT_MS))) {
     report.add(finding("routes", "route-not-ready", "warning", `${step.name}: the route did not render its ready state within ${Math.round(LOAD_TIMEOUT_MS / 1000)} s; the in-app sequence restarts`, { state: `in-app ${step.name}`, viewport: "inapp", target: `attempt-${attempt}`, detail: await notReadyDetail(page, expected, errorMark) }));

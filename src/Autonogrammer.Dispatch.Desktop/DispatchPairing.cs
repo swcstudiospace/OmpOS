@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using Autonogrammer.Harness.Secrets;
+using Autonogrammer.Harness.Secrets.Os;
 
 namespace Autonogrammer.Dispatch.Desktop;
 
@@ -23,10 +24,26 @@ public sealed class DispatchPairing
     /// <summary>Creates the pairing state.</summary>
     /// <param name="secrets">The operating-system secret store.</param>
     /// <param name="pairingPath">The non-secret pairing record.</param>
+    /// <exception cref="DispatchKeyStoreUnavailableException">The supplied store is not the operating-system store.</exception>
     public DispatchPairing(ISecretStore secrets, string pairingPath)
+        : this(secrets, pairingPath, allowTestStore: false)
     {
-        _secrets = secrets ?? throw new ArgumentNullException(nameof(secrets));
-        _pairingPath = pairingPath ?? throw new ArgumentNullException(nameof(pairingPath));
+    }
+
+    internal static DispatchPairing CreateForTesting(ISecretStore secrets, string pairingPath) =>
+        new(secrets, pairingPath, allowTestStore: true);
+
+    private DispatchPairing(ISecretStore secrets, string pairingPath, bool allowTestStore)
+    {
+        ArgumentNullException.ThrowIfNull(secrets);
+        ArgumentNullException.ThrowIfNull(pairingPath);
+        if (!allowTestStore && secrets is not OsSecretStore)
+        {
+            throw new DispatchKeyStoreUnavailableException();
+        }
+
+        _secrets = secrets;
+        _pairingPath = pairingPath;
     }
 
     /// <summary>Returns the secret name of a device's private key.</summary>

@@ -655,7 +655,6 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             {
                 notices.Add(notice);
             }
-
             Notices = notices;
             var result = engine;
             engine = null;
@@ -671,10 +670,12 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         }
     }
 
+
     private AgentSessionRuntimeOptions RuntimeOptions(AgentRow row, string directory, EngineComposition engine) => new()
     {
         Row = row,
         Prompts = new CoworkPromptChannel(engine),
+        Steering = null, // Cowork steers exclusively through the native LiveSteering channel (set below as NativeSteering); the ISteeringChannel path is for terminals and fallback when omp does not support live steering. Unconditional like NativeSteering to match Code parity at SessionEngineSet:287 and ensure steer text reaches runtime.
         NativeSteering = engine.Host.LiveSteering,
         Approvals = new CoworkApprovalBridge(Broker),
         Scope = new StageObservationScope { SessionId = row.Id, WorkspaceRoot = _options.WorkingDirectory, SessionStateDirectory = directory },
@@ -682,7 +683,6 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         Context = new IdleContext(),
         TimeProvider = _options.Clock,
     };
-
     // The runtime and its run input are UI-affine: the held-message queue has no lock, and change notifications
     // reach the views on the UI thread. Every send, steer and retry therefore runs there, whichever thread its caller is on.
     private static Task OnUiThreadAsync(Func<Task> work) => Dispatcher.UIThread.InvokeAsync(work);

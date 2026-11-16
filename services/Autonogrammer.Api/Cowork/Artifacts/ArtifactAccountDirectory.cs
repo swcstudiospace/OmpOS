@@ -207,6 +207,24 @@ internal sealed class ArtifactAccountDirectory
             return ArtifactPutOutcome.Missing;
         }
 
+        var latest = versions.Count == 0 ? 0 : versions[^1].Number;
+        if (existing is not null && number != latest + 1)
+        {
+            // A gap or a number below the head would break the parent chain that reads verify.
+            return ArtifactPutOutcome.Conflict;
+        }
+
+        // A later version keeps the kind the artifact was created with; the request header cannot widen its ceiling.
+        if (content.Length > Cap(limits, existing?.Kind ?? kind))
+        {
+            return ArtifactPutOutcome.TooLarge;
+        }
+
+        if (existing is not null && versions.Count >= limits.MaxVersions)
+        {
+            return ArtifactPutOutcome.Quota;
+        }
+
         var usage = mutation.Usage();
         if (existing is null && usage.ArtifactCount >= limits.MaxArtifacts)
         {

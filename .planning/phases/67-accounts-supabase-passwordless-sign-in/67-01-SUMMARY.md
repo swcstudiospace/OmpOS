@@ -18,8 +18,7 @@ Not run / not verified: any call to the real Supabase auth host; the three [INFE
 
 - `c2f48520 feat(67-01): GoTrue client, session manager and sign-in coordinator with offline suite`
 - `86f9471e fix(67-01): one type per file, no unneeded suppressions, last-stored-token adoption rule; SUP-670 row`
-
-## Public surface that later plans consume
+- `9b7c87a6 fix(67-01): serialize SendCode path + log-hygiene coverage for auth_code (REVIEW L-05 L-12; SOTA update)`
 
 Namespace `Autonogrammer.Accounts` (project `src/Autonogrammer.Accounts`, L2, web-safe, no file system, no process):
 
@@ -52,6 +51,7 @@ Edited: `src/Autonogrammer.Accounts/Autonogrammer.Accounts.csproj` (the one carv
 5. [Rule 2] Suppressions: one `#pragma warning disable CA1031` remains (the shared refresh task must always complete its waiters), recorded as SUP-670 in `docs/open-questions.md` (the ledger test `SuppressionLedgerTests` requires a row per suppression). The secret store paths catch `SecretStoreException` by type instead of suppressing.
 6. `AccountSessionManager.SignInAsync` and `StartAsync` are additions to the plan text's interface list (the plan names the interface `IAccountSession` with four members; the coordinator needs a way to hand the session over and the heads need a startup call). `IAccountSession` itself has exactly the four members.
 7. Not done because outside this plan: the CHANGELOG entry and the `docs/architecture.md` table row for the new project (the phase checklist assigns them to the closing unit; the plan's files_modified does not list them), and the relock of dependents (plan 67-04).
+8. [Rule 2 - security + REVIEW L-05/L-12] Added SemaphoreSlim serialization around SendCodeAsync check+send+record to prevent concurrent double email requests against the 2/h quota (double-click race); added the 24-char auth_code from CompleteLinkAsync to the LogHygieneTests secrets list so an opaque-string leak would now fail the regex. Commit 9b7c87a6.
 
 ## Known limits
 

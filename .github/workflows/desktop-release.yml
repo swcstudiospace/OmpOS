@@ -98,32 +98,7 @@ jobs:
             git submodule update --init --recursive plugins/agent-substrate
       - name: Resolve the version (tag rule as in release.yml)
         shell: bash
-        run: |
-          set -euo pipefail
-          prefix="$(sed -n 's:.*<VersionPrefix>\(.*\)</VersionPrefix>.*:\1:p' Directory.Build.props | head -n 1)"
-          if [ -z "$prefix" ]; then
-            echo "::error::Directory.Build.props has no <VersionPrefix>" >&2
-            exit 1
-          fi
-          version="$prefix"
-          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
-            tag="$GITHUB_REF_NAME"
-            if ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-              echo "::error::tag '$tag' is not vMAJOR.MINOR.PATCH[-prerelease]" >&2
-              exit 1
-            fi
-            version="${tag#v}"
-            base="${version%%-*}"
-            if [ "$prefix" != "$base" ]; then
-              echo "::error::tag $tag does not match VersionPrefix $prefix in Directory.Build.props" >&2
-              exit 1
-            fi
-            if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
-              echo "::error::the tagged commit is not reachable from origin/main" >&2
-              exit 1
-            fi
-          fi
-          echo "VERSION=$version" >> "$GITHUB_ENV"
+        run: bash scripts/ci/check-release-version.sh
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
@@ -137,14 +112,14 @@ jobs:
         run: |
           set -euo pipefail
           # Locked mode cannot accept one lock file for three different -r values (NU1004, exact RID-set compare).
-          dotnet restore apps/Autonogrammer.Native/Autonogrammer.Native.csproj -r "$RID" -p:RestoreLockedMode=false --force-evaluate -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.14
+          dotnet restore apps/Autonogrammer.Native/Autonogrammer.Native.csproj -r "$RID" -p:RestoreLockedMode=false --force-evaluate -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.15
       - name: Publish self-contained
         shell: bash
         env:
           RID: ${{ matrix.rid }}
         run: |
           set -euo pipefail
-          dotnet publish apps/Autonogrammer.Native/Autonogrammer.Native.csproj -c Release -r "$RID" --self-contained true --no-restore -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.14 -o "publish/$RID"
+          dotnet publish apps/Autonogrammer.Native/Autonogrammer.Native.csproj -c Release -r "$RID" --self-contained true --no-restore -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.15 -o "publish/$RID"
       - name: Bundle the plugins at their pinned commits (tag gate; see scripts/release/bundle-plugins.sh)
         shell: bash
         env:

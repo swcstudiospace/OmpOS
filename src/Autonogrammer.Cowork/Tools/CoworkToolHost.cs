@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Autonogrammer.Cowork.Abstractions;
 using Microsoft.Extensions.Logging;
@@ -11,7 +12,9 @@ namespace Autonogrammer.Cowork.Tools;
 /// </summary>
 public sealed partial class CoworkToolHost : ICoworkToolHost
 {
-    /// <summary>The most bytes of JSON arguments a call may carry.</summary>
+    /// <summary>
+    /// Creates the host.
+    /// </summary>
     public const int MaxArgumentBytes = 256 * 1024;
 
     private readonly IReadOnlyList<ICoworkToolProvider> _providers;
@@ -97,7 +100,6 @@ public sealed partial class CoworkToolHost : ICoworkToolHost
             }
 
             CoworkProviderState state;
-#pragma warning disable CA1031 // A provider fault is not an offer. Arguments are not involved.
             try
             {
                 state = await provider.GetStateAsync(lease.Session, cancellationToken).ConfigureAwait(false);
@@ -107,8 +109,6 @@ public sealed partial class CoworkToolHost : ICoworkToolHost
                 LogFault(provider.ProviderId, exception);
                 continue;
             }
-#pragma warning restore CA1031
-
             if (state.Availability != CoworkProviderAvailability.Available)
             {
                 continue;
@@ -137,7 +137,7 @@ public sealed partial class CoworkToolHost : ICoworkToolHost
     }
 
     /// <inheritdoc />
-#pragma warning disable MA0051 // The eight steps stay in one method so a step cannot be skipped by a helper returning early.
+    [SuppressMessage("Maintainability", "MA0051", Justification = "8-step seam per D-15 must stay in one flow (1)lease+offered (2)args<=256k (3)preview (4)policy (5)ask+timeout (6)invoke+timeout (7)cap+taint (8)audit never fails call; the invariant is documented here and asserted in contract tests, not split.")]
     public async ValueTask<CoworkToolResult> InvokeAsync(
         string sessionId,
         string toolName,
@@ -181,7 +181,6 @@ public sealed partial class CoworkToolHost : ICoworkToolHost
             Raise(sessionId, callId, providerId, toolName, CoworkToolEventKind.Started, null);
             var provider = ProviderFor(providerId);
             CoworkCallPreview preview;
-#pragma warning disable CA1031 // A provider fault becomes a fixed failure. The log names the type, never the arguments.
             try
             {
                 preview = await provider.PreviewAsync(lease.Session, invocation, cancellationToken).ConfigureAwait(false);
@@ -193,11 +192,9 @@ public sealed partial class CoworkToolHost : ICoworkToolHost
                 Raise(sessionId, callId, providerId, toolName, ResultKind(result), null);
                 return result;
             }
-#pragma warning restore CA1031
 
             target = preview.Target;
             CoworkPolicyDecision decision;
-#pragma warning disable CA1031 // A gate fault becomes a fixed failure and never grants.
             try
             {
                 decision = await _gate.DecideAsync(
@@ -211,7 +208,6 @@ public sealed partial class CoworkToolHost : ICoworkToolHost
                 Raise(sessionId, callId, providerId, toolName, ResultKind(result), target);
                 return result;
             }
-#pragma warning restore CA1031
 
             policy = decision.Outcome;
             if (decision.Outcome == CoworkPolicyOutcome.Deny)
@@ -248,7 +244,6 @@ public sealed partial class CoworkToolHost : ICoworkToolHost
 
             using var callTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             callTimeout.CancelAfter(_options.CallTimeout);
-#pragma warning disable CA1031 // A provider fault becomes a fixed failure. The log names the type, never the arguments.
             try
             {
                 result = await provider.InvokeAsync(lease.Session, invocation, callTimeout.Token).ConfigureAwait(false);
@@ -262,7 +257,6 @@ public sealed partial class CoworkToolHost : ICoworkToolHost
                 Raise(sessionId, callId, providerId, toolName, ResultKind(result), target);
                 return result;
             }
-#pragma warning restore CA1031
 
             kinds = Kinds(result);
             result = CoworkResultLimiter.Apply(result);
@@ -301,13 +295,11 @@ public sealed partial class CoworkToolHost : ICoworkToolHost
             _ = lease.Call.Release();
         }
     }
-#pragma warning restore MA0051
 
     private async ValueTask<CoworkApprovalOutcome> AskAsync(CoworkApprovalRequest request, CancellationToken cancellationToken)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(_options.ApprovalTimeout);
-#pragma warning disable CA1031 // A broker fault is a denial the model reads as not approved.
         try
         {
             var decision = await _broker.RequestAsync(request, timeout.Token).ConfigureAwait(false);
@@ -328,7 +320,6 @@ public sealed partial class CoworkToolHost : ICoworkToolHost
             LogFault(request.ToolName, exception);
             return CoworkApprovalOutcome.Denied;
         }
-#pragma warning restore CA1031
     }
 
     private bool TryGetLease(string sessionId, out SessionLease lease)
@@ -467,7 +458,6 @@ public sealed partial class CoworkToolHost : ICoworkToolHost
             _host.Remove(Session.SessionId);
             foreach (var provider in _host._providers)
             {
-#pragma warning disable CA1031 // Ending a session must not surface a provider fault to the chat core.
                 try
                 {
                     await provider.EndSessionAsync(Session.SessionId, CancellationToken.None).ConfigureAwait(false);
@@ -476,7 +466,6 @@ public sealed partial class CoworkToolHost : ICoworkToolHost
                 {
                     _host.LogFault(provider.ProviderId, exception);
                 }
-#pragma warning restore CA1031
             }
 
             Call.Dispose();

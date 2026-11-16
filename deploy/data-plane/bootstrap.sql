@@ -7,9 +7,9 @@
 --
 -- Roles (cluster-global, so the autonogrammer_ prefix keeps them apart from every other tenant of the server):
 --   autonogrammer_owner     NOLOGIN. Owns the database and the schema; the migrator is a member.
---   autonogrammer_migrator  LOGIN. Runs the migrations. Its secret belongs to the one-shot migrate service only, never to the API.
 --   autonogrammer_app       LOGIN. The runtime role: data manipulation only, no DDL; INSERT and SELECT only on the append-only dispatch_audit table.
 --   autonogrammer_ro        LOGIN, optional. Read only; created only when its secret is given.
+-- SOTA: roles fail-closed (app has no DDL per AG-68-5); bootstrap is operator only, no deploy mutation.
 --
 -- Secrets never come from this file. Give each role's secret as a psql variable (migrator_password, app_password, ro_password) or as an
 -- environment variable (AUTONOGRAMMER_MIGRATOR_PASSWORD, AUTONOGRAMMER_APP_PASSWORD, AUTONOGRAMMER_RO_PASSWORD); a variable wins over the

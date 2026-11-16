@@ -424,6 +424,7 @@ internal sealed class WebAccountSession : IApiTokenProvider, IAuthSession, IAcco
     {
         _manager.StateChanged -= OnManagerChanged;
         _self?.Dispose();
+        _coordinator.Dispose();
         _manager.Dispose();
         _authHttp?.Dispose();
     }

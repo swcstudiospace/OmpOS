@@ -1,4 +1,5 @@
 using Autonogrammer.Cowork.Chat;
+using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.AgentLoop.Launch;
 using Shouldly;
 using Xunit;
@@ -96,6 +97,38 @@ public sealed class CoworkSessionProfileTests
         refused.Message.ShouldNotContain("api-secret");
         refused.Message.ShouldNotContain("account-secret");
         refused.Message.ShouldNotContain("http://substrate.invalid");
+    }
+
+    [Fact]
+    public void ContributorCannotInjectNonProviderEnvironment()
+    {
+        using var fixture = new TempTree();
+        var folder = fixture.Directory("work");
+        var keys = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["AUTONOGRAMMER_PROVIDER_MINE_KEY"] = "provider-secret",
+        };
+        var profile = new CoworkSessionProfile(fixture.Directory("session"), folder, [folder], providerKeys: keys);
+
+        var refused = Should.Throw<CoworkEnvironmentRefusedException>(() => profile.Create(contributors: [new EnvironmentContributor()]));
+        refused.Message.ShouldNotContain("value");
+        refused.Message.ShouldNotContain("provider-secret");
+    }
+
+    private sealed class EnvironmentContributor : ILaunchContributor
+    {
+        public LaunchContribution Contribute(LaunchRequest request, CancellationToken cancellationToken) => new()
+        {
+            Arguments = ["--contributed"],
+            Environment = new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                ["CONTRIBUTED_VARIABLE"] = "value",
+                ["AUTONOGRAMMER_PROVIDER_MINE_KEY"] = "overridden",
+            },
+            OverlayEntries = [],
+            SystemPromptParagraph = string.Empty,
+            FirstPromptBlock = string.Empty,
+        };
     }
 
     [Fact]

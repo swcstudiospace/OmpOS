@@ -27,6 +27,8 @@ public sealed class PostgresAccountErasureTests(PostgresServerFixture server)
         INSERT INTO cowork_instructions (account_id, body, updated_at) VALUES (@a, 'be brief', now());
         INSERT INTO cowork_memory_entries (id, account_id, project_id, topic, content, created_at, updated_at)
             VALUES (@a || '-mem', @a, @a || '-proj', 'topic', 'content', now(), now());
+        INSERT INTO cowork_memory_idempotency (account_id, operation, key, fingerprint_version, fingerprint, entry_id, created_at, expires_at)
+            VALUES (@a, 'create', 'key-' || @a, 1, decode(repeat('ab', 32), 'hex'), @a || '-mem', now(), now() + interval '24 hours');
         INSERT INTO cowork_memory_settings (account_id, enabled) VALUES (@a, true);
         INSERT INTO artifacts (id, account_id, title, kind, latest_number, created_at, updated_at) VALUES (@a || '-art', @a, 'title', 'doc', 1, now(), now());
         INSERT INTO artifact_versions (artifact_id, version, session_id, account_id, content_sha256, size_bytes, media_type, author, created_at, content)
@@ -48,6 +50,7 @@ public sealed class PostgresAccountErasureTests(PostgresServerFixture server)
             (SELECT count(*) FROM cowork_events WHERE account_id = @a) AS cowork_events,
             (SELECT count(*) FROM cowork_projects WHERE account_id = @a) AS cowork_projects,
             (SELECT count(*) FROM cowork_instructions WHERE account_id = @a) AS cowork_instructions,
+            (SELECT count(*) FROM cowork_memory_idempotency WHERE account_id = @a) AS cowork_memory_idempotency,
             (SELECT count(*) FROM cowork_memory_entries WHERE account_id = @a) AS cowork_memory_entries,
             (SELECT count(*) FROM cowork_memory_settings WHERE account_id = @a) AS cowork_memory_settings,
             (SELECT count(*) FROM artifacts WHERE account_id = @a) AS artifacts,
@@ -72,6 +75,7 @@ public sealed class PostgresAccountErasureTests(PostgresServerFixture server)
             UNION ALL SELECT t::text FROM cowork_events t
             UNION ALL SELECT t::text FROM cowork_projects t
             UNION ALL SELECT t::text FROM cowork_instructions t
+            UNION ALL SELECT t::text FROM cowork_memory_idempotency t
             UNION ALL SELECT t::text FROM cowork_memory_entries t
             UNION ALL SELECT t::text FROM cowork_memory_settings t
             UNION ALL SELECT t::text FROM artifacts t
@@ -84,7 +88,7 @@ public sealed class PostgresAccountErasureTests(PostgresServerFixture server)
         ) scanned WHERE row_text LIKE '%' || @a || '%'
         """;
 
-    /// <summary>Every family of the erased account is gone, the tenant-key delegate ran once after the commit, and only the audit rows (by keyed hash) and other accounts remain.</summary>
+    /// <summary>With writers quiesced, every family of the erased account is gone and other accounts are untouched.</summary>
     [Fact]
     public async Task EraseDeletesEveryFamilyOfTheOwnerAndLeavesOnlyKeyedHashAuditRows()
     {
@@ -122,7 +126,7 @@ public sealed class PostgresAccountErasureTests(PostgresServerFixture server)
             after.Keys.Order(StringComparer.Ordinal).ToArray().ShouldBe(
             [
                 "accounts", "artifact_grants", "artifact_versions", "artifacts", "cloud_agents", "cowork_events", "cowork_instructions", "cowork_memory_entries",
-                "cowork_memory_settings", "cowork_projects", "dispatch_commands", "dispatch_devices", "dispatch_events", "session_events", "session_tool_approvals",
+                "cowork_memory_idempotency", "cowork_memory_settings", "cowork_projects", "dispatch_commands", "dispatch_devices", "dispatch_events", "session_events", "session_tool_approvals",
                 "sessions",
             ]);
             after.Values.ShouldAllBe(static count => count == 0L);
@@ -133,6 +137,39 @@ public sealed class PostgresAccountErasureTests(PostgresServerFixture server)
             (await CountsAsync(dataSource, bob, ct).ConfigureAwait(true)).Values.ShouldAllBe(static count => count == 1L);
             (await AuditCountAsync(dataSource, HashOf(bob), ct).ConfigureAwait(true)).ShouldBe(1L);
             (await TextScanAsync(dataSource, bob, ct).ConfigureAwait(true)).ShouldBeGreaterThan(0L);
+        }
+        finally
+        {
+            await schema.DisposeAsync().ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>A failure deleting memory rolls back claim deletion in the same family transaction.</summary>
+    [Fact]
+    public async Task MemoryFamilyFailureRollsBackClaimDeletion()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var schema = await PostgresTestSchema.CreateMigratedAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
+        try
+        {
+            var dataSource = schema.CreateDataSource();
+            var account = "acct-" + Guid.NewGuid().ToString("N");
+            await SeedAsync(dataSource, account, HashOf(account), ct).ConfigureAwait(true);
+            using (var setup = dataSource.CreateCommand("""
+                CREATE FUNCTION reject_memory_delete() RETURNS trigger LANGUAGE plpgsql AS $$
+                BEGIN RAISE EXCEPTION 'injected memory delete failure'; END $$;
+                CREATE TRIGGER reject_memory_delete BEFORE DELETE ON cowork_memory_entries
+                FOR EACH ROW EXECUTE FUNCTION reject_memory_delete()
+                """))
+            {
+                await setup.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
+            }
+            var erasure = new PostgresAccountErasure(dataSource);
+            await Should.ThrowAsync<PostgresException>(
+                () => erasure.EraseAsync(account, HashOf(account), static (_, _) => Task.CompletedTask, ct)).ConfigureAwait(true);
+            var counts = await CountsAsync(dataSource, account, ct).ConfigureAwait(true);
+            counts["cowork_memory_idempotency"].ShouldBe(1L);
+            counts["cowork_memory_entries"].ShouldBe(1L);
         }
         finally
         {

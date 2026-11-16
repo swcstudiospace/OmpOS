@@ -3,13 +3,13 @@
 #
 # Base image tags:
 #   SDK:     mcr.microsoft.com/dotnet/sdk:10.0.402-noble     (global.json pins SDK 10.0.402 exactly)
-#   Runtime: mcr.microsoft.com/dotnet/aspnet:10.0.14-noble   (shipped runtime; the 10.0.13 bundled with SDK 10.0.402 carries GHSA-p3jp-9v83-76w9, fixed in 10.0.14)
+#   Runtime: mcr.microsoft.com/dotnet/aspnet:10.0.15-noble   (shipped runtime; the 10.0.13 bundled with SDK 10.0.402 carries GHSA-p3jp-9v83-76w9, fixed in 10.0.14; 10.0.15 fixes CVE-2026-114146, CVE-2026-114147 and CVE-2026-114149)
 # The noble (Ubuntu 24.04) variant is used rather than chiseled because the entrypoint runs /bin/sh
 # to map the platform PORT variable onto ASPNETCORE_URLS. Chiseled images contain no shell.
 
 # Digests resolved from mcr.microsoft.com (manifest-list digest, HTTP Docker-Content-Digest header): SDK 2026-10-29, runtime 2026-11-08. Refresh with the tag bump.
 ARG SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:10.0.402-noble@sha256:747cbade5bfd918a175ac32f8f1d931edec2c7d0d5397a3de72eaef1ac1f66d2
-ARG RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:10.0.14-noble@sha256:1a48394b6f29d3a32c79d9edecd4abda0ecbe8776d567dbfc4590ed6979c740c
+ARG RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:10.0.15-noble@sha256:bfd912c83295ce66d4b706ebb8541b9f14259b0e76fbb88b2751f58ce2399d2e
 
 FROM ${SDK_IMAGE} AS build
 WORKDIR /src
@@ -121,7 +121,7 @@ RUN for d in /usr/share/dotnet /usr/lib/dotnet; do for f in LICENSE.txt ThirdPar
 #   podman build -f deploy/api.Containerfile --build-arg AUTONOGRAMMER_REVISION="$(git rev-parse HEAD)" -t autonogrammer-api:local .
 ARG AUTONOGRAMMER_SOURCE=https://github.com/swcstudiospace/OmpOS
 ARG AUTONOGRAMMER_REVISION=unknown
-ARG AUTONOGRAMMER_VERSION=0.15.0
+ARG AUTONOGRAMMER_VERSION=0.16.0
 # SourceInfoProvider reads GIT_SHA for GET /source (the AGPL-3.0 section 13 source offer).
 ENV GIT_SHA=${AUTONOGRAMMER_REVISION}
 LABEL org.opencontainers.image.licenses="AGPL-3.0-or-later" \

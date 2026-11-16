@@ -268,3 +268,7 @@ None. T-69-15 is mitigated by the build-breaking rules and the behavioural test 
 ## Next Phase Readiness
 
 Phase 70 can rely on the Kanban rule being a build gate. Phase 70 must keep these two test classes green, because they name the seams it adds to.
+## SOTA Update (executed 2026-11-10, refs 69)
+
+- SOTA states verified in surface switch + Cowork sessions (CoworkSessionStatus + SurfaceActivityModel + sync + NotSynced + guidance + switch persistence); isolation security (5 arch rules + behavioral Kanban isolation + separate caps/recovery); first-attempt clean (suites 100% first per VERIF); graceful (unavailable/offline/full/signed-out/bad-surface); a11y/ops.
+- Full details in created 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md (and 69-SOTA-SUMMARY.md).

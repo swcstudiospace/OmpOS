@@ -44,12 +44,19 @@ internal sealed class BrowserUseCompositionRequest
 
     /// <summary>Gets the artifact tool provider added beside the browser provider. Null leaves the tool host as it was without it.</summary>
     public ICoworkToolProvider? Artifacts { get; init; }
+
+    /// <summary>Gets the permission mode the call gate reads. Manual asks on every call that no grant covers. The desktop composition never offers Skip.</summary>
+    public Autonogrammer.Cowork.Tools.CoworkPermissionMode Mode { get; init; } = Autonogrammer.Cowork.Tools.CoworkPermissionMode.Manual;
+
+    /// <summary>Gets the approval broker. Null uses the desktop broker, which asks on screen and refuses when no window is shown.</summary>
+    public ICoworkApprovalBroker? Broker { get; init; }
 }
 
 /// <summary>The desktop browser composition: options, settings, gate, provider and pane.</summary>
 internal sealed class BrowserUseCompositionResult : IDisposable
 {
     private readonly HttpMessageHandler _handler;
+    private readonly IDisposable[] _owned;
     private int _disposed;
     private int _references = 1;
 
@@ -63,7 +70,8 @@ internal sealed class BrowserUseCompositionResult : IDisposable
         BrowserPaneViewModel pane,
         BrowserPanePanel panel,
         Func<bool> capability,
-        HttpMessageHandler handler)
+        HttpMessageHandler handler,
+        IDisposable[] owned)
     {
         Options = options;
         Settings = settings;
@@ -75,6 +83,7 @@ internal sealed class BrowserUseCompositionResult : IDisposable
         Panel = panel;
         Capability = capability;
         _handler = handler;
+        _owned = owned;
     }
 
     /// <summary>Gets the bound options.</summary>
@@ -150,7 +159,17 @@ internal sealed class BrowserUseCompositionResult : IDisposable
             }
             finally
             {
-                Pane.Dispose();
+                try
+                {
+                    Pane.Dispose();
+                }
+                finally
+                {
+                    foreach (var item in _owned)
+                    {
+                        item.Dispose();
+                    }
+                }
             }
         }
     }
@@ -164,6 +183,9 @@ internal static class BrowserUseComposition
 {
     /// <summary>The platform id passed to the empty embedded manifest.</summary>
     public const string PlatformId = "linux-x64";
+
+    /// <summary>The single local owner the desktop writes its grants and tool audit under. It matches the local automations owner.</summary>
+    public const string LocalOwnerId = "local";
 
     /// <summary>The indicator id in <see cref="SurfaceChromeModel"/>.</summary>
     public const string IndicatorId = "browser-use-indicator";
@@ -213,13 +235,15 @@ internal static class BrowserUseComposition
             ChromiumOsFamily.Linux);
         var located = new ChromiumLocator(new DiskChromiumProbe()).Locate(options, request.StateDirectory, ChromiumOsFamily.Linux);
         var offerTools = options.Enabled && (request.ForceAvailable || located.State == BrowserLocateState.Found);
+        var (grants, audit) = OpenToolStores(request.StateDirectory);
+        var broker = request.Broker ?? new CoworkApprovalBroker(windowAvailable: request.Shell is not null);
         BrowserToolProvider? provider = null;
         if (offerTools)
         {
             provider = new BrowserToolProvider(
                 options,
-                new DenyingBroker(),
-                new MemoryGrantStore(),
+                broker,
+                grants,
                 request.Pages ?? new ClosedPages(),
                 gate,
                 new ClosedPorts(),
@@ -239,23 +263,40 @@ internal static class BrowserUseComposition
 
         var host = new CoworkToolHost(
             providers,
-            new CoworkPolicyGate(new MemoryGrantStore(), static () => Autonogrammer.Cowork.Tools.CoworkPermissionMode.Skip),
-            new DenyingBroker(),
-            new MemoryGrantStore(),
-            new SwallowingAudit());
+            new CoworkPolicyGate(grants, () => request.Mode),
+            broker,
+            grants,
+            audit);
         var pane = new BrowserPaneViewModel(new FixedFeed(PaneState(options, located, request.ForceAvailable)), control);
         try
         {
             var panel = new BrowserPanePanel(pane);
             BindStopChord(panel.View, pane);
             request.Chrome?.Add(new SurfaceChromeEntry(IndicatorId, BrowserChromeCopy.AgentControlling, () => { _ = pane.StopAsync(); }, "Ctrl+Shift+."));
-            var result = new BrowserUseCompositionResult(options, settings, gate, control, provider, host, pane, panel, () => BrowserUseCapability.IsOffered(options), handler);
+            var result = new BrowserUseCompositionResult(options, settings, gate, control, provider, host, pane, panel, () => BrowserUseCapability.IsOffered(options), handler, [grants, audit]);
             request.Shell?.RegisterPanel(panel);
             return result;
         }
         catch
         {
             pane.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>Opens the file-backed grant store and tool audit under the local owner. The caller owns both.</summary>
+    /// <param name="stateRoot">The head state directory.</param>
+    /// <returns>The grant store and the audit.</returns>
+    private static (FileCoworkGrantStore Grants, FileCoworkToolAudit Audit) OpenToolStores(string stateRoot)
+    {
+        var grants = new FileCoworkGrantStore(stateRoot, LocalOwnerId);
+        try
+        {
+            return (grants, new FileCoworkToolAudit(stateRoot, LocalOwnerId));
+        }
+        catch
+        {
+            grants.Dispose();
             throw;
         }
     }
@@ -369,26 +410,6 @@ internal static class BrowserUseComposition
         public void Open(string host, int port)
         {
         }
-    }
-
-    private sealed class DenyingBroker : ICoworkApprovalBroker
-    {
-        public ValueTask<CoworkApprovalDecision> RequestAsync(CoworkApprovalRequest request, CancellationToken cancellationToken) =>
-            ValueTask.FromResult(new CoworkApprovalDecision(CoworkApprovalOutcome.Denied));
-    }
-
-    private sealed class MemoryGrantStore : ICoworkGrantStore
-    {
-        public ValueTask<bool> IsGrantedAsync(CoworkGrantKey key, CancellationToken cancellationToken) => ValueTask.FromResult(false);
-
-        public ValueTask GrantAsync(CoworkGrantKey key, CancellationToken cancellationToken) => ValueTask.CompletedTask;
-
-        public ValueTask RevokeAsync(CoworkGrantKey key, CancellationToken cancellationToken) => ValueTask.CompletedTask;
-    }
-
-    private sealed class SwallowingAudit : ICoworkToolAudit
-    {
-        public ValueTask RecordAsync(CoworkToolAuditEntry entry, CancellationToken cancellationToken) => ValueTask.CompletedTask;
     }
 
     private sealed class DiskChromiumProbe : IChromiumProbe

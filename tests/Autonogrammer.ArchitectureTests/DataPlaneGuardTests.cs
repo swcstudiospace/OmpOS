@@ -12,10 +12,11 @@ namespace Autonogrammer.ArchitectureTests;
 /// </summary>
 public sealed class DataPlaneGuardTests
 {
+    // Note: M0010 ownership is phase 74 (see MigrationRegistry and 68 docs); guard ensures no old 68 head claim here.
+
+    private const string SelfPath = "tests/Autonogrammer.ArchitectureTests/DataPlaneGuardTests.cs";
     private const string AllowListPrefix = "scripts/rebrand/";
 
-    // This file names the forbidden tokens in its own assertions and messages, so the source scan skips it.
-    private const string SelfPath = "tests/Autonogrammer.ArchitectureTests/DataPlaneGuardTests.cs";
 
     private static readonly string[] ScanRoots = ["src", "services", "tests", "scripts", "deploy"];
 
@@ -153,17 +154,19 @@ public sealed class DataPlaneGuardTests
     }
 
     /// <summary>
-    /// Fixture sites allowed to drop a schema. Each drops only the throwaway schema it generated, named <c>t_</c> plus a GUID. The line marker pins the
-    /// exact statement, so a second drop in the same file is still a violation.
+    /// Fixture sites allowed to drop only their own GUID-named throwaway schema. Exact statement matching and
+    /// occurrence counting prevent another drop, appended SQL, or a production schema from using the exemption.
     /// </summary>
-    private static readonly (string Path, string LineMarker)[] ThrowawaySchemaFixtures =
+    private static readonly (string Path, string Statement)[] ThrowawaySchemaFixtures =
     [
-        // Drops SchemaName through the autonogrammer.drop_schema session setting, which this fixture sets to SchemaName.
-        ("tests/Autonogrammer.Cowork.Artifacts.Stores.Tests/Support/PostgresArtifactFixture.cs", "current_setting('autonogrammer.drop_schema')"),
-        // Drops _schema, which this fixture sets to "t_" plus a GUID.
-        ("tests/Autonogrammer.Cowork.Memory.Postgres.Tests/PostgresMemoryStoreTests.cs", "_schema + \" CASCADE\""),
-        // Drops _schema, which this fixture sets to "t_" plus a GUID.
-        ("tests/Autonogrammer.Cowork.Memory.Tests/MemoryStoreContractTests.cs", "_schema + \" CASCADE\""),
+        ("tests/Autonogrammer.Cowork.Artifacts.Stores.Tests/Support/PostgresArtifactFixture.cs", "EXECUTE format('DROP SCHEMA IF EXISTS %I CASCADE', current_setting('autonogrammer.drop_schema'));"),
+        ("tests/Autonogrammer.Cowork.Memory.Postgres.Tests/PostgresMemoryStoreTests.cs", "await using var drop = new NpgsqlCommand(\"DROP SCHEMA IF EXISTS \" + _schema + \" CASCADE; DROP ROLE IF EXISTS \" + _role, connection);"),
+        ("tests/Autonogrammer.Cowork.Memory.Tests/MemoryStoreContractTests.cs", "await using var drop = new NpgsqlCommand(\"DROP SCHEMA IF EXISTS \" + _schema + \" CASCADE\", connection);"),
+        ("tests/Autonogrammer.Api.IntegrationTests/Cowork/CoworkPersistenceTests.cs", "var command = _admin.CreateCommand(\"DROP SCHEMA IF EXISTS \" + _schema + \" CASCADE; DROP ROLE IF EXISTS \" + _role);"),
+        ("tests/Autonogrammer.Api.IntegrationTests/Cowork/ProjectsApiTests.cs", "var command = _admin.CreateCommand(\"DROP SCHEMA IF EXISTS \" + _schema + \" CASCADE\");"),
+        ("tests/Autonogrammer.Api.IntegrationTests/DataPlane/DataPlaneStartupGateTests.cs", "await ExecuteAdminAsync($\"DROP SCHEMA IF EXISTS \\\"{_schema}\\\" CASCADE; DROP ROLE IF EXISTS \\\"{_role}\\\"\", CancellationToken.None).ConfigureAwait(false);"),
+        ("tests/Autonogrammer.Api.IntegrationTests/Artifacts/ArtifactDirectoryPostgresTests.cs", "DROP SCHEMA IF EXISTS \"{_schema}\" CASCADE;"),
+        ("tests/Autonogrammer.Sessions.Postgres.Tests/PostgresTestSchema.cs", "await ExecuteAdminAsync($\"DROP SCHEMA IF EXISTS \\\"{SchemaName}\\\" CASCADE\", CancellationToken.None).ConfigureAwait(false);"),
     ];
 
     [Fact]
@@ -173,6 +176,7 @@ public sealed class DataPlaneGuardTests
         var dropSchema = "DROP " + "SCHEMA";
         var extensionHits = new List<string>();
         var dropHits = new List<string>();
+        var seenFixtures = new HashSet<string>(StringComparer.Ordinal);
         foreach (var (relative, line) in SourceLines())
         {
             if (line.Contains(extension, StringComparison.Ordinal)
@@ -187,14 +191,8 @@ public sealed class DataPlaneGuardTests
                 continue;
             }
 
-            // Each fixture drops only the throwaway schema it generated (t_<guid>), never the product schema. A site outside the allow-list, or a
-            // statement that names the product schema, is a violation.
-            var allowedFixture = string.Equals(relative, "tests/Autonogrammer.Sessions.Postgres.Tests/PostgresTestSchema.cs", StringComparison.Ordinal)
-                && line.Contains("SchemaName", StringComparison.Ordinal)
-                && !line.Contains("autonogrammer", StringComparison.Ordinal);
-            var allowedThrowaway = ThrowawaySchemaFixtures.Any(fixture =>
-                string.Equals(relative, fixture.Path, StringComparison.Ordinal) && line.Contains(fixture.LineMarker, StringComparison.Ordinal));
-            if (!allowedFixture && !allowedThrowaway)
+            var allowedThrowaway = IsAllowedThrowaway(relative, line, seenFixtures);
+            if (!allowedThrowaway)
             {
                 dropHits.Add(relative + ": " + line.Trim());
             }
@@ -203,6 +201,23 @@ public sealed class DataPlaneGuardTests
         extensionHits.ShouldBeEmpty("CREATE EXTENSION belongs only in deploy/data-plane/bootstrap.sql");
         dropHits.ShouldBeEmpty();
     }
+
+    [Fact]
+    public void ThrowawaySchemaExemptionRejectsAlteredOrRepeatedStatements()
+    {
+        var (path, statement) = ThrowawaySchemaFixtures[0];
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        IsAllowedThrowaway(path, statement + " DROP SCHEMA autonogrammer;", seen).ShouldBeFalse();
+        IsAllowedThrowaway("src/production.cs", statement, seen).ShouldBeFalse();
+        IsAllowedThrowaway(path, statement, seen).ShouldBeTrue();
+        IsAllowedThrowaway(path, statement, seen).ShouldBeFalse();
+    }
+
+    private static bool IsAllowedThrowaway(string relative, string line, HashSet<string> seenFixtures) =>
+        ThrowawaySchemaFixtures.Any(fixture =>
+            string.Equals(relative, fixture.Path, StringComparison.Ordinal)
+            && string.Equals(line.Trim(), fixture.Statement, StringComparison.Ordinal))
+        && seenFixtures.Add(relative);
 
     [Fact]
     public void MigrationUpStepsAreAdditive()

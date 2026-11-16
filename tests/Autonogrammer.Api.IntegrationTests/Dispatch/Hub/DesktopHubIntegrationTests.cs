@@ -30,7 +30,7 @@ public sealed class DesktopHubIntegrationTests
             await using var hostScope = host.ConfigureAwait(true);
             host.Services.GetRequiredService<IOptions<DispatchOptions>>().Value.HubOrigin = host.Origin.AbsoluteUri;
             using var owner = DispatchTestClient.As(host);
-            var pairing = new DispatchPairing(new InMemorySessionSecretStore(), Path.Combine(directory, "pairing.json"));
+            var pairing = DispatchPairing.CreateForTesting(new InMemorySessionSecretStore(), Path.Combine(directory, "pairing.json"));
             var publicKey = await pairing.EnrollDeviceKeyAsync("pending", ct).ConfigureAwait(true);
             using var deviceKey = ECDsa.Create();
             deviceKey.ImportSubjectPublicKeyInfo(Convert.FromBase64String(publicKey), out _);

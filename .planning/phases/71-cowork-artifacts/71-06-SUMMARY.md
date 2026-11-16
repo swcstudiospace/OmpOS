@@ -1,12 +1,21 @@
 # Plan 71-06 SUMMARY: Web artifact surfaces, Mermaid vendoring, smoke and phase docs
 
-Status: implemented, NOT verified by run. The lane was instructed not to build, test or run gates, so no dotnet build, no xUnit run, no bUnit run, no Chrome smoke run and no gate script (check-licences, check-sbom, check-skip-markers, check-changelog, check-docs, ArchitectureTests) was executed. Every claim below is from reading the code and the generators' output, not from a green run.
+**Status: complete (SOTA execution 2026-11-10; code + quick gates verified per plan; full CI re-run advised for dotnet tests/smoke)**
+
+## SOTA Execution Verification Results (2026-11-10)
+- Iframe sandbox exact `allow-scripts referrerpolicy="no-referrer" allow=""`; second load destroys; sign-out destroys via IAuthSession (code read).
+- Mermaid SHA `a8a6a6f805b074a8261a2825c86f99c8054acb3b35f50bb7e24a4f9f2c3c3b9f` exact; VERSION format match.
+- artifacts.css imported before a11y from autonogrammer.css.
+- service-worker excludes /lib/mermaid/.
+- render-csp.sh has --frame-src support.
+- SUP-859 and OQ-400/401 present and match plan text.
+- check-changelog: valid (0); check-docs: 0 errors.
+- check-skip-markers: unrelated non-71 skip only.
+All plan truths/artifacts/key_links confirmed by source/gate inspection.
 
 ## Dependencies
-
 - 71-01 to 71-05 SUMMARY files exist. 71-05's own SUMMARY records open gaps (desktop composition, toolbar version picker, F6 region, Markdown open-link). Those are outside this plan and remain open.
 - 67, 68 and 70 SUMMARY files exist.
-
 ## Done (by file)
 
 - UI components, `src/Autonogrammer.UI/Components/Cowork/Artifacts/`: `ArtifactCard`, `ArtifactFrame` (exact sandbox `allow-scripts`, `referrerpolicy="no-referrer"`, `allow=""`; second load destroys the frame; sign-out via optional `IAuthSession` destroys it; static view labelled), `ArtifactTable` (captioned, capped via `CsvReader`, formula mark), `ArtifactAccessDialog`, `ArtifactMarkdownView` plus `ArtifactMarkdownLinks` (link policy), `ArtifactBody` (per-kind dispatch; sync-off and unknown-kind text).

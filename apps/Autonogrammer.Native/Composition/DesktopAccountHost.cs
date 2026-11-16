@@ -332,6 +332,7 @@ internal sealed class DesktopAccountHost : IAccountHost, IAsyncDisposable
         {
             await _flow.DisposeAsync().ConfigureAwait(false);
         }
+        _coordinator?.Dispose();
 
         _manager?.Dispose();
         _lifetime.Dispose();

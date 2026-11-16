@@ -315,7 +315,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
     private PlannedOmpTerminalStarter CreateTerminalStarter(SessionSlot slot)
     {
-        var backend = _options.TerminalBackend ?? new LinuxLocalPtyBackend();
+        var backend = _options.TerminalBackend ?? LocalPtyBackend.ForCurrentOperatingSystem();
         var launcher = _options.TerminalLocator is { } locator
             ? new OmpTerminalLauncher(backend, locator)
             : new OmpTerminalLauncher(backend, ResolveTerminalOmpAsync);

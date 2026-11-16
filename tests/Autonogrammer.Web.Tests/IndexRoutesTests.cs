@@ -17,7 +17,9 @@ public sealed class IndexRoutesTests : BunitContext
             .Cast<RouteAttribute>()
             .Select(static route => route.Template);
 
-        templates.ShouldBe(["/", "/kanban", "/about", "/sessions/{SessionId}", "/settings", "/settings/{SettingsPage}", "/cowork"], ignoreOrder: true);
+        templates.OrderBy(static route => route, StringComparer.Ordinal).ToArray().ShouldBe(
+            ["/", "/about", "/cowork", "/kanban", "/sessions/{SessionId}", "/settings", "/settings/{SettingsPage}"]);
+
     }
 
     /// <summary>A deep link to the Kanban view or to About renders that view, with its one heading, over the Demo.</summary>

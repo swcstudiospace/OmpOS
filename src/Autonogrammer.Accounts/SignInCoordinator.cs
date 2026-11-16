@@ -9,7 +9,7 @@ namespace Autonogrammer.Accounts;
 /// five-wrong-codes rule, checks a typed code or a link callback, and hands the resulting session to <see cref="AccountSessionManager"/>. Expected
 /// failures come back as an <see cref="AuthFailure"/> with one <see cref="AuthErrorKind"/>; nothing here retries a request.
 /// </summary>
-public sealed class SignInCoordinator
+public sealed class SignInCoordinator : IDisposable
 {
     /// <summary>How many wrong codes are accepted before a new email must be requested.</summary>
     public const int MaxWrongCodes = 5;
@@ -22,6 +22,9 @@ public sealed class SignInCoordinator
     private readonly ILogger<SignInCoordinator>? _logger;
     private readonly Lock _gate = new();
     private Attempt? _attempt;
+    private readonly SemaphoreSlim _sendGate = new(1, 1);
+    private int _activeSends;
+    private bool _disposed;
 
     /// <summary>Creates a coordinator.</summary>
     /// <param name="session">The manager that receives the session once a sign-in succeeds.</param>
@@ -98,45 +101,35 @@ public sealed class SignInCoordinator
             return AuthResult.Fail<SignInChallenge>(AuthErrorKind.MethodUnavailable);
         }
 
-        Attempt? current;
         lock (_gate)
         {
-            current = _attempt;
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            _activeSends++;
         }
 
-        bool resend = current is not null && string.Equals(current.Email, address, StringComparison.OrdinalIgnoreCase);
-        DateTimeOffset now = _timeProvider.GetUtcNow();
-        if (resend && now < current!.ResendAvailableAt)
+        try
         {
-            AccountLogMessages.Cooldown(_logger);
-            return AuthResult.Fail<SignInChallenge>(new AuthFailure(AuthErrorKind.TooManyRequests, current.ResendAvailableAt - now));
+            await _sendGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                return await SendCodeCoreAsync(client, address, linkRedirect, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                _sendGate.Release();
+            }
         }
-
-        Attempt next = resend ? current! : BeginAttempt(address, client.Options, linkRedirect);
-        string? challenge = next.Verifier is null ? null : Pkce.ComputeChallenge(next.Verifier);
-        AuthResult<AuthUnit> sent = await client.SendEmailOtpAsync(address, challenge, next.RedirectTo, cancellationToken).ConfigureAwait(false);
-        if (!sent.IsSuccess)
+        finally
         {
-            AccountLogMessages.CodeRequestRefused(_logger, sent.Failure.Kind);
-            return AuthResult.Fail<SignInChallenge>(sent.Failure);
+            lock (_gate)
+            {
+                _activeSends--;
+                if (_disposed && _activeSends == 0)
+                {
+                    _sendGate.Dispose();
+                }
+            }
         }
-
-        DateTimeOffset sentAt = _timeProvider.GetUtcNow();
-        next = next with
-        {
-            SentAt = sentAt,
-            ExpiresAt = sentAt + client.Options.EmailCodeExpiry,
-            ResendAvailableAt = sentAt + client.Options.ResendCooldown,
-            WrongCodes = 0,
-            ShowFirstTimeHint = !client.Options.SignupEmailHasCode,
-        };
-        lock (_gate)
-        {
-            _attempt = next;
-        }
-
-        AccountLogMessages.CodeRequested(_logger, resend, next.Verifier is not null);
-        return AuthResult.Success(next.ToChallenge());
     }
 
     /// <summary>
@@ -300,6 +293,71 @@ public sealed class SignInCoordinator
 
     /// <summary>Forgets the attempt in progress: "Change email" and Cancel. The verifier and nonce are dropped; the address is the head's to keep.</summary>
     public void Reset() => Reset(log: true);
+
+    /// <summary>Releases the send gate after any in-flight sends have finished.</summary>
+    public void Dispose()
+    {
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            if (_activeSends == 0)
+            {
+                _sendGate.Dispose();
+            }
+        }
+    }
+
+    private async Task<AuthResult<SignInChallenge>> SendCodeCoreAsync(
+        GoTrueClient client,
+        string address,
+        Func<string, Uri?>? linkRedirect,
+        CancellationToken cancellationToken)
+    {
+        Attempt? current;
+        lock (_gate)
+        {
+            current = _attempt;
+        }
+
+        bool resend = current is not null && string.Equals(current.Email, address, StringComparison.OrdinalIgnoreCase);
+        DateTimeOffset now = _timeProvider.GetUtcNow();
+        if (resend && now < current!.ResendAvailableAt)
+        {
+            AccountLogMessages.Cooldown(_logger);
+            return AuthResult.Fail<SignInChallenge>(new AuthFailure(AuthErrorKind.TooManyRequests, current.ResendAvailableAt - now));
+        }
+
+        Attempt next = resend ? current! : BeginAttempt(address, client.Options, linkRedirect);
+        string? challenge = next.Verifier is null ? null : Pkce.ComputeChallenge(next.Verifier);
+        AuthResult<AuthUnit> sent = await client.SendEmailOtpAsync(address, challenge, next.RedirectTo, cancellationToken).ConfigureAwait(false);
+        if (!sent.IsSuccess)
+        {
+            AccountLogMessages.CodeRequestRefused(_logger, sent.Failure.Kind);
+            return AuthResult.Fail<SignInChallenge>(sent.Failure);
+        }
+
+        DateTimeOffset sentAt = _timeProvider.GetUtcNow();
+        next = next with
+        {
+            SentAt = sentAt,
+            ExpiresAt = sentAt + client.Options.EmailCodeExpiry,
+            ResendAvailableAt = sentAt + client.Options.ResendCooldown,
+            WrongCodes = 0,
+            ShowFirstTimeHint = !client.Options.SignupEmailHasCode,
+        };
+        lock (_gate)
+        {
+            _attempt = next;
+        }
+
+        AccountLogMessages.CodeRequested(_logger, resend, next.Verifier is not null);
+        return AuthResult.Success(next.ToChallenge());
+    }
 
     private static string? NormalizeEmail(string email)
     {

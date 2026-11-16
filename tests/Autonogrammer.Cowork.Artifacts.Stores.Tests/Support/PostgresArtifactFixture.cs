@@ -33,11 +33,18 @@ internal sealed class PostgresArtifactFixture : IAsyncLifetime
 
     /// <summary>Creates a store whose data source search path is this schema.</summary>
     /// <param name="accountId">The account the store filters on.</param>
+    /// <param name="loggerFactory">An optional factory the driver logs commands to.</param>
     /// <returns>The store.</returns>
-    public PostgresArtifactStore CreateStore(string accountId)
+    public PostgresArtifactStore CreateStore(string accountId, Microsoft.Extensions.Logging.ILoggerFactory? loggerFactory = null)
     {
         var builder = new NpgsqlConnectionStringBuilder(_admin) { SearchPath = SchemaName + ",public" };
-        var source = NpgsqlDataSource.Create(builder.ConnectionString);
+        var sourceBuilder = new NpgsqlDataSourceBuilder(builder.ConnectionString);
+        if (loggerFactory is not null)
+        {
+            _ = sourceBuilder.UseLoggerFactory(loggerFactory);
+        }
+
+        var source = sourceBuilder.Build();
         _sources.Add(source);
         return new PostgresArtifactStore(source, accountId);
     }

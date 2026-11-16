@@ -66,6 +66,12 @@ public sealed record ResiliencePolicy
     /// </summary>
     public Func<Exception, bool> IsSerializationFailure { get; init; } = static _ => false;
 
+    /// <summary>
+    /// Gets the function that turns a failure the dependency answered into a typed exception, or <see langword="null"/> to leave failures as they are. The pipeline
+    /// applies it only to the failure that ends a call, after retries; it returns <see langword="null"/> for a failure it does not recognise.
+    /// </summary>
+    public Func<Exception, Exception?>? TranslateFailure { get; init; }
+
     /// <summary>The default transient classification: timeouts, I/O, socket and HTTP failures.</summary>
     /// <param name="exception">The failure to classify.</param>
     /// <returns><see langword="true"/> when the failure is transient.</returns>

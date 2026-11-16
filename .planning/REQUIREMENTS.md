@@ -686,47 +686,47 @@ Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.m
 
 ### Accounts (67) (AG-67)
 
-- [ ] **AG-67-1**: The desktop head signs in with an email one-time code (6 to 10 digits) through POST /otp and POST /verify with type email.
-- [ ] **AG-67-2**: The desktop head also signs in through a magic link with PKCE and a one-shot loopback listener on 127.0.0.1 with a path nonce, falling back cleanly to the code.
-- [ ] **AG-67-3**: First-time email users (F1, signup email without a code) see a specific hint and a working link-then-new-code path whichever owner actions are done.
-- [ ] **AG-67-4**: The web head signs in by code or by link, holds tokens and the PKCE verifier in memory only, and hands the returned code to the asking tab over a BroadcastChannel.
-- [ ] **AG-67-5**: A hand-written GoTrue client in `Autonogrammer.Accounts` has typed models, source-generated JSON and results (no exceptions) for expected failures, and uses no Supabase SDK.
-- [ ] **AG-67-6**: Refresh is single flight, writes the rotated refresh token to the store before publishing it, and adopts a token rotated by another process under a cross-process lock.
-- [ ] **AG-67-7**: Startup never waits on the network; a stored session starts SignedIn and refreshes in the background; Offline is a notice, not a sign-out.
-- [ ] **AG-67-8**: Sign-out clears local state first, then revokes with scope=local; sign out everywhere (global) and others are separate, confirmed actions.
-- [ ] **AG-67-9**: Every failure maps to one of the AuthErrorKind values with its own fixed message and never shows raw exception or server text.
-- [ ] **AG-67-10**: `Autonogrammer.Harness.Secrets.Os` implements ISecretStore with libsecret on Linux, Keychain Services on macOS and DPAPI on Windows, reporting typed Unavailable, Locked, Denied.
-- [ ] **AG-67-11**: When the OS store fails the session is memory-only with a visible notice; the owner-only file store is used for accounts only after an explicit consent setting, and never for a device private key.
-- [ ] **AG-67-12**: A first launch of a Code-only user makes no keyring call (setting `account.hasStoredSession`).
-- [ ] **AG-67-13**: The API validates Supabase tokens with ES256 pinned, issuer and audience authenticated, rejects is_anonymous and a role other than authenticated, and takes the owner from sub.
-- [ ] **AG-67-14**: GET /auth/config is anonymous and serves project URL, publishable key, enabled methods and timings; the validator refuses a secret key and a non-https URL.
-- [ ] **AG-67-15**: Every rate-limit policy partitions by sub; unauthenticated callers share one partition.
-- [ ] **AG-67-16**: With open sign-up, WorkspaceAccess denies every caller when Api:Workspace:Owners is empty unless the development principal is on.
-- [ ] **AG-67-17**: OpenAPI declares the bearer scheme, security [] on the anonymous operations (`/auth/config`, `/source`, the webhook receiver and `/cowork/artifact-render/{ticket}` with its own limiter partition), scheme `DispatchDevice` on `/dispatch/devices/{id}/connect`, and 401 and 403 responses.
-- [ ] **AG-67-18**: The `accounts` row (ADR-0031 M0004, no email stored; `AccountResponse.email` comes from the token's `email` claim) is created on the first authenticated request and `AccountEnrollmentMiddleware` upserts `last_seen_at` only, at most one write per sub per 10 minutes, and never blocks a request.
-- [ ] **AG-67-19**: GET /account, /account/sessions, /account/sessions/{id} and /account/board are owner-scoped; an item of another owner is the same 404 as an absent one.
-- [ ] **AG-67-20**: GET /board is replaced by GET /account/board and every caller moves in the same change.
-- [ ] **AG-67-21**: SessionRegistry and SessionLifecycleStore are deleted and their callers use the repository (brief 68), so a restart keeps the list.
-- [ ] **AG-67-22**: A Cowork session appears in /account/sessions and nowhere on the board, /sessions or the catalog event stream.
-- [ ] **AG-67-23**: Both heads draw exactly one of SignedOut, AwaitingLink (resend cooldown, expiry countdown, change email), SigningIn (cancelable), SignedIn (identity, devices, sign out) and Error, accessibly.
-- [ ] **AG-67-24**: The hosted web CSP gains a second validated connect-src origin for the auth host and the web head refuses a config whose project origin differs.
+- [x] **AG-67-1**: The desktop head signs in with an email one-time code (6 to 10 digits) through POST /otp and POST /verify with type email.
+- [x] **AG-67-2**: The desktop head also signs in through a magic link with PKCE and a one-shot loopback listener on 127.0.0.1 with a path nonce, falling back cleanly to the code.
+- [x] **AG-67-3**: First-time email users (F1, signup email without a code) see a specific hint and a working link-then-new-code path whichever owner actions are done.
+- [x] **AG-67-4**: The web head signs in by code or by link, holds tokens and the PKCE verifier in memory only, and hands the returned code to the asking tab over a BroadcastChannel.
+- [x] **AG-67-5**: A hand-written GoTrue client in `Autonogrammer.Accounts` has typed models, source-generated JSON and results (no exceptions) for expected failures, and uses no Supabase SDK.
+- [x] **AG-67-6**: Refresh is single flight, writes the rotated refresh token to the store before publishing it, and adopts a token rotated by another process under a cross-process lock.
+- [x] **AG-67-7**: Startup never waits on the network; a stored session starts SignedIn and refreshes in the background; Offline is a notice, not a sign-out.
+- [x] **AG-67-8**: Sign-out clears local state first, then revokes with scope=local; sign out everywhere (global) and others are separate, confirmed actions.
+- [x] **AG-67-9**: Every failure maps to one of the AuthErrorKind values with its own fixed message and never shows raw exception or server text.
+- [x] **AG-67-10**: `Autonogrammer.Harness.Secrets.Os` implements ISecretStore with libsecret on Linux, Keychain Services on macOS and DPAPI on Windows, reporting typed Unavailable, Locked, Denied.
+- [x] **AG-67-11**: When the OS store fails the session is memory-only with a visible notice; the owner-only file store is used for accounts only after an explicit consent setting, and never for a device private key.
+- [x] **AG-67-12**: A first launch of a Code-only user makes no keyring call (setting `account.hasStoredSession`).
+- [x] **AG-67-13**: The API validates Supabase tokens with ES256 pinned, issuer and audience authenticated, rejects is_anonymous and a role other than authenticated, and takes the owner from sub.
+- [x] **AG-67-14**: GET /auth/config is anonymous and serves project URL, publishable key, enabled methods and timings; the validator refuses a secret key and a non-https URL.
+- [x] **AG-67-15**: Every rate-limit policy partitions by sub; unauthenticated callers share one partition.
+- [x] **AG-67-16**: With open sign-up, WorkspaceAccess denies every caller when Api:Workspace:Owners is empty unless the development principal is on.
+- [x] **AG-67-17**: OpenAPI declares the bearer scheme, security [] on the anonymous operations (`/auth/config`, `/source`, the webhook receiver and `/cowork/artifact-render/{ticket}` with its own limiter partition), scheme `DispatchDevice` on `/dispatch/devices/{id}/connect`, and 401 and 403 responses.
+- [x] **AG-67-18**: The `accounts` row (ADR-0031 M0004, no email stored; `AccountResponse.email` comes from the token's `email` claim) is created on the first authenticated request and `AccountEnrollmentMiddleware` upserts `last_seen_at` only, at most one write per sub per 10 minutes, and never blocks a request.
+- [x] **AG-67-19**: GET /account, /account/sessions, /account/sessions/{id} and /account/board are owner-scoped; an item of another owner is the same 404 as an absent one.
+- [x] **AG-67-20**: GET /board is replaced by GET /account/board and every caller moves in the same change.
+- [x] **AG-67-21**: SessionRegistry and SessionLifecycleStore are deleted and their callers use the repository (brief 68), so a restart keeps the list.
+- [x] **AG-67-22**: A Cowork session appears in /account/sessions and nowhere on the board, /sessions or the catalog event stream.
+- [x] **AG-67-23**: Both heads draw exactly one of SignedOut, AwaitingLink (resend cooldown, expiry countdown, change email), SigningIn (cancelable), SignedIn (identity, devices, sign out) and Error, accessibly.
+- [x] **AG-67-24**: The hosted web CSP gains a second validated connect-src origin for the auth host and the web head refuses a config whose project origin differs.
 
 ### Data plane (68) (AG-68)
 
-- [ ] **AG-68-1**: Every Dragonfly key and channel is built by `DragonflyKeyspace` under the prefix `autonogrammer:v1:`, with a mandatory TTL of at most 24 h in the same command.
-- [ ] **AG-68-2**: Autonogrammer uses its own pinned Dragonfly service, with no ACL user as the isolation boundary and no eviction.
-- [ ] **AG-68-3**: The schema, database and test names are `autonogrammer`, `autonogrammer` and `autonogrammer_test`; no first-party source contains the old physical names.
-- [ ] **AG-68-4**: Migrations up to the compiled head (M0001 to M0010; phase 68 U3 authors M0001 to M0009, M0006 carries the artifact tables and M0009 the ADR-0037 projects, instructions and memory tables, and M0010 `dispatch_device_state` is authored and registered in the runner list by phase 74 U2) are numbered, checksummed, additive, each with a down step, run by `Autonogrammer.Api migrate` under one advisory lock with the migrator role only.
-- [ ] **AG-68-5**: The runtime role `autonogrammer_app` has DML only (INSERT and SELECT only on `dispatch_audit`); a role test proves it cannot run DDL or read another schema.
-- [ ] **AG-68-6**: `ISessionRepository.ListByOwnerAsync` and `SetClosedAsync`, `Session.Surface` and `Session.ClosedAt` exist in the in-memory and Postgres stores.
-- [ ] **AG-68-7**: Telemetry goes to GreptimeDB database `autonogrammer` with source `Autonogrammer.Api` and `autonogrammer.*` instruments, using only the pinned OpenTelemetry 1.20.0 packages.
-- [ ] **AG-68-8**: `Autonogrammer.Resilience` gives every Postgres, Dragonfly and ledger call a deadline, bounded jittered retry (idempotent calls only), circuit breaker and bulkhead, on an injected `TimeProvider`.
-- [ ] **AG-68-9**: Dragonfly outages fail closed (503 `data_plane_unavailable`, never a separate coordination problem type) for leases, idempotency and device nonces, and open for signals and presence; rate limits degrade to the in-process limiter.
-- [ ] **AG-68-10**: `GET /status/data-plane` and the 503 problem `data_plane_unavailable` expose only component, state and a closed reason enum.
-- [ ] **AG-68-11**: The ledger sink is off by default, outbox-fed, writes only through `SubstrateGateway.EmitEventAsync`, and sends only the closed field set (no personal data).
-- [ ] **AG-68-12**: No client build, head or log holds a data-plane credential, connection string or pepper; configuration errors name the key, never the value.
-- [ ] **AG-68-13**: Throwaway containers and variables are named `autonogrammer-test-*` and `AUTONOGRAMMER_TEST_*`; live tests are trait- and variable-gated; `GateParityTests` covers the test-services calls.
-- [ ] **AG-68-14**: Account erasure deletes owner rows from every user-content table (including `cowork_memory_entries`, `cowork_memory_settings`, `cowork_instructions`, `cowork_projects`) and the tenant's Dragonfly keys, and leaves only keyed-hash audit rows.
+- [x] **AG-68-1**: Every Dragonfly key and channel is built by `DragonflyKeyspace` under the prefix `autonogrammer:v1:`, with a mandatory TTL of at most 24 h in the same command.
+- [x] **AG-68-2**: Autonogrammer uses its own pinned Dragonfly service, with no ACL user as the isolation boundary and no eviction.
+- [x] **AG-68-3**: The schema, database and test names are `autonogrammer`, `autonogrammer` and `autonogrammer_test`; no first-party source contains the old physical names.
+- [x] **AG-68-4**: Migrations up to the compiled head (M0001 to M0010; phase 68 U3 authors M0001 to M0009, M0006 carries the artifact tables and M0009 the ADR-0037 projects, instructions and memory tables, and M0010 `dispatch_device_state` is authored and registered in the runner list by phase 74 U2) are numbered, checksummed, additive, each with a down step, run by `Autonogrammer.Api migrate` under one advisory lock with the migrator role only.
+- [x] **AG-68-5**: The runtime role `autonogrammer_app` has DML only (INSERT and SELECT only on `dispatch_audit`); a role test proves it cannot run DDL or read another schema.
+- [x] **AG-68-6**: `ISessionRepository.ListByOwnerAsync` and `SetClosedAsync`, `Session.Surface` and `Session.ClosedAt` exist in the in-memory and Postgres stores.
+- [x] **AG-68-7**: Telemetry goes to GreptimeDB database `autonogrammer` with source `Autonogrammer.Api` and `autonogrammer.*` instruments, using only the pinned OpenTelemetry 1.20.0 packages.
+- [x] **AG-68-8**: `Autonogrammer.Resilience` gives every Postgres, Dragonfly and ledger call a deadline, bounded jittered retry (idempotent calls only), circuit breaker and bulkhead, on an injected `TimeProvider`.
+- [x] **AG-68-9**: Dragonfly outages fail closed (503 `data_plane_unavailable`, never a separate coordination problem type) for leases, idempotency and device nonces, and open for signals and presence; rate limits degrade to the in-process limiter.
+- [x] **AG-68-10**: `GET /status/data-plane` and the 503 problem `data_plane_unavailable` expose only component, state and a closed reason enum.
+- [x] **AG-68-11**: The ledger sink is off by default, outbox-fed, writes only through `SubstrateGateway.EmitEventAsync`, and sends only the closed field set (no personal data).
+- [x] **AG-68-12**: No client build, head or log holds a data-plane credential, connection string or pepper; configuration errors name the key, never the value.
+- [x] **AG-68-13**: Throwaway containers and variables are named `autonogrammer-test-*` and `AUTONOGRAMMER_TEST_*`; live tests are trait- and variable-gated; `GateParityTests` covers the test-services calls.
+- [x] **AG-68-14**: Account erasure deletes owner rows from every user-content table (including `cowork_memory_entries`, `cowork_memory_settings`, `cowork_instructions`, `cowork_projects`) and the tenant's Dragonfly keys, and leaves only keyed-hash audit rows.
 
 ### Surface switch and Cowork sessions (69) (AG-69)
 
@@ -748,15 +748,15 @@ Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.m
 
 - [ ] **AG-70-1**: `CoworkSessionProfile` produces the omp launch of a Cowork session: `--no-extensions`, an approval mode from the Cowork permission mode, `--add-dir` per trusted folder, an absolute `--append-system-prompt` file path, and a `--config` overlay with `browser.enabled: false` and `computer.enabled: false`.
 - [ ] **AG-70-2**: `CoworkPermissionResolver` denies paths outside the trusted and Storage folders, always asks before a delete, allows `mcp__cowork_*` tools at the omp level, and follows Manual, Auto or Skip (`CoworkPermissionMode`; Auto is shown as "Auto (rules)") for the rest.
-- [ ] **AG-70-3**: `CoworkSessionHost` implements `IAgentPanelHost` over the Cowork registry and composes engines with `EngineComposition.Compose`, never through the Code planner.
-- [ ] **AG-70-4**: A Cowork conversation supports send, stop, retry, steer, resume from history (`session/load`), file attachments and image attachments, and refuses images with a specific message when the model reads none.
+- [x] **AG-70-3**: `CoworkSessionHost` implements `IAgentPanelHost` over the Cowork registry and composes engines with `EngineComposition.Compose`, never through the Code planner.
+- [x] **AG-70-4**: A Cowork conversation supports send, stop, retry, steer, resume from history (`session/load`), file attachments and image attachments, and refuses images with a specific message when the model reads none.
 - [ ] **AG-70-5**: Tool-call updates carry images: `ToolUpdateContent.Images`, an image block in the transcript fold, the views, the export and the web projection, with alt text.
 - [ ] **AG-70-6**: `Autonogrammer.Cowork.Abstractions` holds exactly the contract of ADR-0032 D5 and nothing else.
 - [ ] **AG-70-7**: `CoworkToolHost` runs the eight-step call sequence of D5 for every call and enforces the descriptor rules and result caps.
 - [ ] **AG-70-8**: `McpGatewayServer.Start(registry, invoker, coworkTools)` serves Cowork tools beside registry tools with disjoint names and maps results, images included, to `CallToolResult`.
 - [ ] **AG-70-9**: `CoworkPolicyGate`, `CoworkApprovalBroker`, the grant store and the audit hook implement D6; `EveryCallOnExecutingDevice` is never satisfied by a grant, a mode or a remote decision.
 - [ ] **AG-70-10**: `CoworkToolServer` starts one loopback gateway for Cowork, health-checks it before `session/new` and degrades with a visible notice, never by failing the session.
-- [ ] **AG-70-11**: Cowork conversation models and views (Native and Web) show the transcript, composer, approval cards, provider status chips and the dock host.
+- [x] **AG-70-11**: Cowork conversation models and views (Native and Web) show the transcript, composer, approval cards, provider status chips and the dock host.
 - [ ] **AG-70-12**: `FakeCoworkToolProvider` and a contract test base let ADR-0033, 0034 and 0035 prove their providers against the same rules.
 - [ ] **AG-70-13**: The host taints a session when a result carries untrusted content, raises `CoworkToolEvent`s (started, approval requested, completed, failed, denied), and in a tainted session Auto and Skip no longer apply to actuating calls or to `edit`, `delete`, `move` and `execute` (tests in units 1 and 3).
 - [ ] **AG-70-14**: `ConfigOverlayWriter.WriteYaml(sessionStateDirectory, yaml)` (new, `Autonogrammer.Harness.AgentLoop/Launch`, owner-only mode, deleted on dispose) writes the Cowork overlay; the Cowork environment holds provider keys only and `CoworkPathBoundary` refuses the secrets, `~/.omp`, `~/.ssh` and account folders as trusted folders (tests in units 3 and 4).
@@ -883,7 +883,7 @@ Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.m
 - [ ] **AG-76-10**: The omp child starts through a process wrapper from a launch contribution: bubblewrap on Linux, `sandbox-exec` on macOS, a job object on Windows, with a probe, a reported level and named degraded states.
 - [ ] **AG-76-11**: The sub-agent panel lists `task` tool calls from the ACP stream with status, elapsed time and the number running, accessibly.
 - [ ] **AG-76-12**: A usage meter sums `usage_update` and per-turn usage into per-session and per-day views and a local ledger; the export history is no longer empty.
-- [ ] **AG-76-13**: Notifications fan out to an in-app centre and OS sinks (Linux, macOS) with focus suppression, coalescing, Do-not-disturb and title-only privacy by default.
+- [x] **AG-76-13**: Notifications fan out to an in-app centre and OS sinks (Linux, macOS) with focus suppression, coalescing, Do-not-disturb and title-only privacy by default.
 - [ ] **AG-76-14**: The phase's rows of `docs/parity/cowork-parity.md` are graded with evidence.
 
 ### Hardening and integration (77) (AG-77)
@@ -897,7 +897,7 @@ Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.m
 - [ ] **AG-77-7**: `README.md`, `docs/architecture.md`, `docs/guides/{status-and-roadmap,desktop-app-guide,web-app-guide,settings-guide,troubleshooting-and-faq,glossary,concepts}.md`, `docs/reference/api.md`, `docs/settings-parity.md` describe the Cowork surface, accounts, the data plane and Dispatch with their real status (off by default, nothing run live). `docs/architecture.md` has one row per `src/*` and `services/*` project; a test fails on a project directory without a row.
 - [ ] **AG-77-8**: `docs/parity/cowork-parity.md` has rows C1 to C31 and K01 to K20 exactly once. A test fails on: an empty cell, a Status outside MET, MET-LIVE, PARTIAL, DEFERRED, NOT-STARTED, OMITTED-BY-DECISION; an empty Evidence cell; an empty Gap cell on any row that is not MET; a MET row whose Evidence names no test class that `grep` finds under `tests/`; a MET-LIVE row without a path to a recorded run; a counts block that differs from the counts regenerated by `scripts/docs/parity_counts.py --check`.
 - [ ] **AG-77-9**: The same test has fixture cases for each failure above (one bad file each) and passes on the real file; a row cannot be graded by hand against the script.
-- [ ] **AG-77-10**: `docs/quality/v0.16.0-security-review.md` has a scope table (one row per area of the Threat model section below, result and evidence) and a findings table: id, phase, area, severity (Critical, High, Medium, Low, Info), finding, evidence (file and test), status (open, fixed, accepted), owner action.
+- [x] **AG-77-10**: `docs/quality/v0.16.0-security-review.md` has a scope table (one row per area of the Threat model section below, result and evidence) and a findings table: id, phase, area, severity (Critical, High, Medium, Low, Info), finding, evidence (file and test), status (open, fixed, accepted), owner action.
 - [ ] **AG-77-11**: No finding of severity Critical or High is `open` or `accepted`: it is `fixed` with a named regression test. A Medium or Low `accepted` needs an OQ id. The test of AG-77-8 reads this table too. No phase PR merges while this is false.
 - [ ] **AG-77-12**: With the shipped default configuration the API boots, `Dispatch`, Cowork and Accounts routes answer their disabled problem type (`dispatch_disabled`, `cowork_disabled`, accounts disabled) or 404, and each options validator refuses the unsafe values its brief names (in-memory presence with two replicas, a missing signing key with the feature on, a file key store). One integration test per module.
 - [ ] **AG-77-13**: `docs/quality/v0.16.0-accessibility-pass.md` has a matrix of surface by check; every cell holds a result with the test or file that shows it, or "cannot be checked here" with the reason. Automated checks (names, roles, keyboard order, focus return, aria-live, reduced motion, contrast tokens) exist as tests for each surface of U5.

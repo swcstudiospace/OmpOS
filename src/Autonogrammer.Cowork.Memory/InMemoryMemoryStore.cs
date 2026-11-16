@@ -1,18 +1,22 @@
 #pragma warning disable MA0048 // MemorySearch shares this file so the plan's file list stays closed.
+using System.Buffers.Binary;
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Autonogrammer.Contracts.Cowork.Memory;
 
 namespace Autonogrammer.Cowork.Memory;
 
-/// <summary>The in-memory store. It is the fake the other stores are measured against.</summary>
-public sealed class InMemoryMemoryStore : IMemoryStore
+/// <summary>A process-local test store. Keyed replay is not durable or shared across instances.</summary>
+public sealed class InMemoryMemoryStore : IMemoryStore, IMemoryIdempotentStore
 {
     private readonly Lock _gate = new();
     private readonly TimeProvider _timeProvider;
     private readonly IMemoryNoticeSink? _notices;
     private readonly List<MemoryEntry> _entries = [];
     private readonly Dictionary<string, MemorySettings> _settings = new(StringComparer.Ordinal);
+    private readonly Dictionary<(string Account, string Key), (byte[] Fingerprint, string EntryId, DateTimeOffset Expires)> _claims = new();
 
     /// <summary>Initializes a new instance of the <see cref="InMemoryMemoryStore"/> class.</summary>
     /// <param name="time">The clock. The default is <see cref="TimeProvider.System"/>.</param>
@@ -56,28 +60,112 @@ public sealed class InMemoryMemoryStore : IMemoryStore
         ArgumentNullException.ThrowIfNull(draft);
         lock (_gate)
         {
-            var refused = RefuseWrite(scope, draft);
-            if (refused is not null)
+            return Task.FromResult(SaveCore(scope, draft));
+        }
+    }
+
+    private MemoryMutation SaveCore(MemoryScope scope, MemoryDraft draft)
+    {
+        var refused = RefuseWrite(scope, draft);
+        if (refused is not null)
+        {
+            return refused;
+        }
+
+        var now = _timeProvider.GetUtcNow();
+        var entry = new MemoryEntry
+        {
+            Id = Guid.NewGuid().ToString("n"),
+            AccountId = scope.AccountId,
+            ProjectId = scope.ProjectId,
+            Topic = draft.Topic,
+            Content = draft.Content,
+            Category = draft.Category,
+            SourceSession = scope.SessionId,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+        _entries.Add(entry);
+        return new MemoryMutation(true, MemoryCodes.Ok, null, entry);
+    }
+
+    /// <inheritdoc />
+    public Task<MemoryIdempotentResult> SaveIdempotentAsync(MemoryScope scope, MemoryDraft draft, string key, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentNullException.ThrowIfNull(draft);
+        ArgumentException.ThrowIfNullOrWhiteSpace(scope.AccountId, nameof(scope));
+        ArgumentNullException.ThrowIfNull(key);
+        if (key.Length is < 1 or > 128 || key.Any(static c => c < '!' || c > '~'))
+        {
+            throw new ArgumentException("The key must contain 1 to 128 visible ASCII characters.", nameof(key));
+        }
+
+        lock (_gate)
+        {
+            if (Settings(scope.AccountId).Paused)
             {
-                return Task.FromResult(refused);
+                return Task.FromResult(new MemoryIdempotentResult(MemoryIdempotentStatus.Refused, PausedWrite()));
             }
 
-            var now = _timeProvider.GetUtcNow();
-            var entry = new MemoryEntry
+            var fingerprint = Fingerprint(scope, draft);
+            var claimKey = (scope.AccountId, key);
+            var prior = FindClaim(scope.AccountId, key, fingerprint);
+            if (prior is not null)
             {
-                Id = Guid.NewGuid().ToString("n"),
-                AccountId = scope.AccountId,
-                ProjectId = scope.ProjectId,
-                Topic = draft.Topic,
-                Content = draft.Content,
-                Category = draft.Category,
-                SourceSession = scope.SessionId,
-                CreatedAt = now,
-                UpdatedAt = now,
-            };
-            _entries.Add(entry);
-            return Task.FromResult(new MemoryMutation(true, MemoryCodes.Ok, null, entry));
+                return Task.FromResult(prior);
+            }
+
+            var mutation = SaveCore(scope, draft);
+            if (!mutation.Succeeded || mutation.Entry is null)
+            {
+                return Task.FromResult(new MemoryIdempotentResult(MemoryIdempotentStatus.Refused, mutation));
+            }
+
+            _claims[claimKey] = (fingerprint, mutation.Entry.Id, _timeProvider.GetUtcNow().AddHours(24));
+            return Task.FromResult(new MemoryIdempotentResult(MemoryIdempotentStatus.Created, mutation));
         }
+    }
+
+    private MemoryIdempotentResult? FindClaim(string accountId, string key, byte[] fingerprint)
+    {
+        var claimKey = (accountId, key);
+        if (!_claims.TryGetValue(claimKey, out var claim))
+        {
+            return null;
+        }
+
+        if (claim.Expires <= _timeProvider.GetUtcNow())
+        {
+            _claims.Remove(claimKey);
+            return null;
+        }
+
+        if (!CryptographicOperations.FixedTimeEquals(claim.Fingerprint, fingerprint))
+        {
+            return new(MemoryIdempotentStatus.Conflict, null);
+        }
+
+        var entry = _entries.Find(item => string.Equals(item.AccountId, accountId, StringComparison.Ordinal) && string.Equals(item.Id, claim.EntryId, StringComparison.Ordinal));
+        return entry is null
+            ? new(MemoryIdempotentStatus.Gone, null)
+            : new(MemoryIdempotentStatus.Replayed, new MemoryMutation(true, MemoryCodes.Ok, null, entry));
+    }
+
+    private static byte[] Fingerprint(MemoryScope scope, MemoryDraft draft)
+    {
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        Span<byte> length = stackalloc byte[4];
+        foreach (var value in new[] { draft.Topic, draft.Content, draft.Category, scope.ProjectId, scope.UseAccountMemory ? "1" : "0", scope.SessionId })
+        {
+            var bytes = value is null ? null : Encoding.UTF8.GetBytes(value);
+            BinaryPrimitives.WriteInt32BigEndian(length, bytes?.Length ?? -1);
+            hash.AppendData(length);
+            if (bytes is not null) hash.AppendData(bytes);
+        }
+
+        return hash.GetHashAndReset();
     }
 
     /// <inheritdoc />

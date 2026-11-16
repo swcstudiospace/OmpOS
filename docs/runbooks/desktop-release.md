@@ -18,7 +18,7 @@ The workflow is `.github/workflows/desktop-release.yml` (name `desktop-release`)
 | Actions, `desktop-release`, Run workflow, pick a branch | Builds the six files and uploads them as workflow artifacts. The release job is skipped, so no `SHA256SUMS-desktop` is written. | No |
 | Push a tag `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-prerelease` | Builds the six files, writes `SHA256SUMS-desktop`, and attaches them to the GitHub Release for that tag. If `release.yml` already published the release, this job uploads the files and leaves the notes alone. If no release exists yet, this job creates a published release. | Yes. Published. |
 
-The tag rule is the one `release.yml` uses:
+The tag rule is `scripts/ci/check-release-version.sh`, which both `release.yml` and `desktop-release.yml` run:
 
 - The tag must match the `<VersionPrefix>` in `Directory.Build.props` once the leading `v` and any `-prerelease` suffix are removed. At the time of writing that prefix is `0.16.0`.
 - The tagged commit must be reachable from `origin/main`.

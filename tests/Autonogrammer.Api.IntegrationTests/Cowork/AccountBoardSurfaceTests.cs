@@ -17,7 +17,7 @@ public sealed class AccountBoardSurfaceTests
     public async Task InMemory_CoworkRow_LeavesTheBoardAndSessionListEmpty()
     {
         var ct = TestContext.Current.CancellationToken;
-        var host = await CoworkApiHost.StartAsync(cancellationToken: ct).ConfigureAwait(true);
+        var host = await CoworkApiHost.StartAsync(new Dictionary<string, string?>(StringComparer.Ordinal) { ["Accounts:Enabled"] = "true" }, ct).ConfigureAwait(true);
         await using var hostScope = host.ConfigureAwait(true);
         using var alice = host.Client();
         var cowork = Guid.NewGuid().ToString("N");
@@ -86,6 +86,7 @@ public sealed class AccountBoardSurfaceTests
     private static Dictionary<string, string?> PostgresSessionConfig() =>
         new(StringComparer.Ordinal)
         {
+            ["Accounts:Enabled"] = "true",
             ["Sessions:Store"] = "Postgres",
             ["Sessions:Postgres:ConnectionString"] = JwtTestHost.PostgresConnectionString(),
             ["Harness:Adapter"] = "InMemory",

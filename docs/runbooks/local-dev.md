@@ -30,6 +30,24 @@ export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH
 
 The Temporal dev server and its `workflows` profile were removed on 2026-10-21 ([decision](../handoff.md#temporal-removal-and-railway-topology-2026-10-21)). Session runs execute in-process in the API, so no local Temporal server is needed. `podman-compose --profile workflows` no longer applies.
 
+### Throwaway test services
+
+From the repository root, start the test TimescaleDB and Dragonfly containers and source the returned export file in the same shell:
+
+```sh
+export AUTONOGRAMMER_TEST_SERVICES_NAME=my-test-run
+TEST_SERVICES_ENV="$(./scripts/test-services.sh up)"
+. "$TEST_SERVICES_ENV"
+# Run tests that need the services.
+./scripts/test-services.sh down && rm -f "$TEST_SERVICES_ENV"
+```
+
+The file contains credentials and an exported `AUTONOGRAMMER_TEST_SERVICES_OWNER` token; keep it private. The sourced, exported owner token must remain in the environment for `down` to remove this run's containers. Alternatively, pass the file path as `TEST_SERVICES_ENV="$TEST_SERVICES_ENV" ./scripts/test-services.sh down`; the script reads the token without executing the file. Keep the same name suffix for `up` and `down`.
+
+The optional `up --with-greptime` also starts GreptimeDB. Each `up` refuses any existing container with one of its service names, including the optional GreptimeDB name, rather than replacing it. Use a distinct `AUTONOGRAMMER_TEST_SERVICES_NAME` for concurrent runs: 1–32 lowercase letters, digits or hyphens, starting with a letter or digit. Without it, the unsuffixed names are used.
+
+Do not remove a colliding container to make room: it may belong to another run or user. Choose a different suffix or ask its owner. Cleanup removes only containers bearing this run's ownership token; `down` refuses foreign containers. If cleanup fails, retain the export file and investigate ownership instead of forcing removal. After successful cleanup, delete the export file.
+
 The API and web runbook sections land with their phases:
 
 - API backend serving and SSE resume: added in Phase 2.

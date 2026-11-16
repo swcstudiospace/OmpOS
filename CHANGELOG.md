@@ -8,6 +8,41 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-11-16
+
+### Added
+- Phase 75 Cowork parity A has a launch-contributor seam and a parity inventory. Production standing-context, memory-tool registration and scheduled-session integration remain incomplete.
+- Enabled Cowork project, instruction and memory APIs use PostgreSQL; project-scoped memory writes verify ownership and serialize concurrent limit checks. Durable cross-instance idempotency remains open.
+
+### Fixed
+- The Linux Bubblewrap probe now runs its executable from a read-only root instead of misreporting an empty filesystem as disabled user namespaces. The session wrapper still fails its protected live launch test and is not verified.
+- Artifact sync-off metadata no longer includes a grants field; the current API accepts the reduced payload without changing existing grants. Compatibility with older deployed receivers has not been verified.
+- Account endpoints default off; existing installations requiring account and Code board routes must set `Accounts__Enabled=true` before upgrading. Anonymous requests remain unauthorized. The transition has not been deployed or live-verified.
+- Restored host-observed facts and a single deny timer in the Computer Use approval model.
+- Cowork dock tabs support roving keyboard navigation and correct F6 region cycling.
+- Cowork no longer reports a stale gateway-loading notice after startup and preserves the actionable gateway failure notice.
+- Cowork launches no longer inherit Code-session state paths and reject non-provider environment variables from contributors.
+- Artifact access dialogs capture focus, deny on Escape and request focus restoration when closed; the production opener remains unverified.
+- Multiple Dispatch approval panels now use distinct accessible heading references; integrated browser focus remains unverified.
+- Restored fail-closed browser stage-two approval; per-session policy, audit and egress integration remain open.
+- Chromium pipe connections start their receive loop, and cancellation terminates a stalled launched process. An isolated headless smoke passed with a test-only no-sandbox opt-in; guarded production browsing remains unverified.
+- Dispatch pairing rejects file-backed and other non-OS secret stores for device keys and credentials; native pairing and platform keyrings remain unverified.
+- PostgreSQL Dispatch store transaction handling covers duplicate devices, replay and retention; production Dispatch remains disabled pending migration registration and idempotency-key isolation.
+- Sign-in coordinator defers synchronization-resource disposal until registered sends finish.
+- Artifact version uploads apply the configured per-kind byte limit (a later version uses the stored kind) and `MaxVersions`, and require the next version number; a version that skips ahead is a `409` conflict instead of a history that fails its integrity check.
+- PostgreSQL artifact writes take a per-account database advisory lock before reading usage, so parallel uploads cannot exceed the account quota and concurrent writes of one version resolve to same-hash or conflict. A write reads usage with aggregate queries and loads only the artifact it changes.
+- A desktop refresh no longer overwrites or removes a newer sign-in another process stored, and no longer brings back a session another process signed out; sign-in and sign-out now take the cross-process refresh guard (sign-out waits at most 5 seconds for it). Two-process behaviour has only been exercised with two managers over one store.
+- Account enrollment no longer holds the request for the account write: only account routes wait (at most 2 seconds) for their caller's write, other routes continue at once, concurrent first requests share one pending write, pending writes are bounded, time out after 10 seconds and stop when the host begins stopping.
+
+### Changed
+
+- Merged `main` (0.16.1 to 0.16.3: desktop installers, split checksum filenames, managed Omp install, JavaScript interop stack logging, Dispatch relay) into the Phase 66 to 77 line; migration M0011 stays `dispatch_sweep_indexes` from `main`, M0012 is the account erasure fence, and the Cowork memory idempotency migration is now M0013 (its checksum is unchanged; its fence trigger is M0014). A database that applied the unreleased integration build with memory idempotency as version 12 must be rebuilt before it can migrate.
+
+### Security
+
+- The API and worker images move to runtime `10.0.15` and desktop packages are built on it, to address CVE-2026-114146, CVE-2026-114147 and CVE-2026-114149 (HIGH) reported by the image scan for runtime 10.0.14.
+- Account erasure is fenced in the database (SEC-77-07, migration M0012). The eraser takes the account lock exclusively, which waits for every writer that was already admitted, and commits a permanent `account_erasure_fence` row (a digest of the account, never the identifier) before it deletes anything. A trigger on every account-owned table (accounts, sessions and their events and approvals, cloud agents, Dispatch devices, commands and feed, Cowork events, projects, instructions, memory entries, settings and claims, artifacts, versions and grants) then refuses every insert and update for that account with SQLSTATE `AE001`, whichever store, job, older binary or direct SQL sends it; the stores that share the PostgreSQL pipeline raise `AccountErasingException`. The families are deleted behind the fence, the account row and the fence row move to `erased` in the same last transaction, and a repeated call resumes a failed erasure and re-runs the tenant-key deletion. Rollback of M0012 and M0014 is refused while the fence holds any row. Not covered: the Dragonfly coordination keys (at most 24 hours, no user content), a production entry point for erasure and identity-provider session revocation; see SEC-77-09 in `docs/quality/v0.16.0-security-review.md`.
+
 ## [0.16.3] - 2026-11-08
 
 ### Changed
@@ -379,7 +414,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.3...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.3...v0.17.0
 [0.16.3]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.0...v0.16.1

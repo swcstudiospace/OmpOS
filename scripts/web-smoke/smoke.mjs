@@ -32,6 +32,9 @@ const PROBE = "**bold** and [site](https://example.com/) and ![pic](https://evil
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const note = (message) => process.stderr.write(`${new Date().toISOString()} ${message}\n`);
 
+// The states a run reports on stderr (state=...), in the firstRender record and in the a11y report meta.
+const SMOKE_STATES = { LOADING: "loading", SUCCESS: "success", EMPTY: "empty", ERROR: "error" };
+
 // ---- CDP transport -------------------------------------------------------------------------
 
 const meta = await (await fetch(`http://127.0.0.1:${CDP_PORT}/json/version`)).json();
@@ -353,7 +356,7 @@ const assertions = {};
 
 try {
   // Step 1: first render (runbook "Browser smoke", step 1).
-  note("step 1: load app");
+  note(`state=${SMOKE_STATES.LOADING} step 1: load app`);
   await openPage(APP_URL);
   const shellReady = await waitFor(`!!document.querySelector(".autonogrammer-shell")`, 60000);
   await sleep(1000);
@@ -369,6 +372,11 @@ try {
     consoleErrorSample: consoleErrors.slice(0, 5),
     logErrorSample: logErrors.slice(0, 5),
   };
+  // First attempt: the shell rendered on the first load, with no error bar and no exception or console error on the way.
+  const firstAttempt = result.firstRender.rendered && !firstRender.errorBarVisible && exceptions.length === 0 && consoleErrors.length === 0;
+  result.firstRender.state = firstAttempt ? SMOKE_STATES.SUCCESS : SMOKE_STATES.ERROR;
+  result.firstRender.firstAttempt = firstAttempt;
+  note(`state=${result.firstRender.state} first render complete, first attempt=${firstAttempt}`);
   result.skipLinkInitial = await evalFn(pageSkipLink);
   result.shotInitial = await shot("web-first-render");
 
@@ -507,7 +515,7 @@ try {
 
   if (process.env.AUTONOGRAMMER_SMOKE_A11Y !== "0") {
     note("accessibility checks");
-    const a11y = await runA11yChecks({ cdpPort: CDP_PORT, baseUrl: APP_URL, kind: "api", axeJs: AXE_JS, reportDir: reportDirFromArgs(), log: note, meta: { commit: COMMIT, runDate: RUN_DATE } });
+    const a11y = await runA11yChecks({ cdpPort: CDP_PORT, baseUrl: APP_URL, kind: "api", axeJs: AXE_JS, reportDir: reportDirFromArgs(), log: note, meta: { commit: COMMIT, runDate: RUN_DATE, state: result.firstRender.state } });
     result.a11y = { summary: a11y.report.summary(), counters: Object.fromEntries(a11y.report.counters), skipped: a11y.report.skipped, failures: a11y.failures };
     Object.assign(assertions, a11y.assertions);
   }

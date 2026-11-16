@@ -205,7 +205,7 @@ public sealed class ReconnectTests : IDisposable
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var fixture = await Fixture.CreateAsync(_directory, new Uri("ws://127.0.0.1:1/acp"), Start.AddHours(1), new FixedJitterSource(0.5), cts.Token);
         _disposables.Add(fixture);
-        var unavailable = new DispatchPairing(new UnavailableSecretStore(), fixture.PairingPath);
+        var unavailable = DispatchPairing.CreateForTesting(new UnavailableSecretStore(), fixture.PairingPath);
         var connector = fixture.BuildConnector(unavailable);
 
         await connector.RunAsync(cts.Token);
@@ -705,7 +705,7 @@ public sealed class ReconnectTests : IDisposable
             _jitter = jitter;
             _clock = clock;
             PairingPath = Path.Combine(directory, "pairing.json");
-            Pairing = new DispatchPairing(secrets, PairingPath);
+            Pairing = DispatchPairing.CreateForTesting(secrets, PairingPath);
             _policy = new DispatchPolicyStore(Path.Combine(directory, "policy.json"));
             _dedupe = new DispatchDedupeStore(Path.Combine(directory, "dedupe.json"));
             _approvals = new DispatchApprovalFlow(new DenyingPrompt(), clock);
@@ -735,7 +735,7 @@ public sealed class ReconnectTests : IDisposable
             _ = Directory.CreateDirectory(directory);
             var secrets = new InMemorySessionSecretStore();
             var signer = new DispatchTestSigner();
-            var pairing = new DispatchPairing(secrets, Path.Combine(directory, "pairing.json"));
+            var pairing = DispatchPairing.CreateForTesting(secrets, Path.Combine(directory, "pairing.json"));
             var devicePublicKey = await pairing.EnrollDeviceKeyAsync(DispatchTestSigner.DeviceId, cancellationToken).ConfigureAwait(false);
             await pairing.CompleteAsync(
                 DispatchTestSigner.DeviceId,

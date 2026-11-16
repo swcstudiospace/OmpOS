@@ -117,8 +117,11 @@ Config keys use `:` in code and `__` in the environment. Mark every variable mar
 | `Api__Auth__Client__ProjectUrl`, `Api__Auth__Client__PublishableKey` | no (public by design) | `https://<project>.supabase.co`, `<publishable key>` | `Options/ApiAuthClientOptions.cs`, `Options/ApiAuthOptionsValidator.cs` | Only for `Oidc` mode. Unset. A secret key, a service-role token or a non-https URL stops startup; refused in `OwnerToken` mode |
 | `Api__Auth__AllowedSubjects__0`, `Api__Auth__AllowAnyAuthenticatedUser` | no | `<subject>`, `false` | `Options/ApiAuthOptions.cs`, `Security/AllowedSubjectAuthorizationHandler.cs` | Only for `Oidc` mode, where one of them is required outside Development. Open sign-up is deployed as `Api__Auth__AllowAnyAuthenticatedUser=true`, set on purpose |
 | `Api__Auth__AllowDevelopmentPrincipal` | no | not set | `Options/ApiAuthOptions.cs`, `Options/ApiAuthOptionsValidator.cs` | Unset. The validator refuses it outside Development |
+| `Accounts__Enabled` | no | `true` | `Accounts/AccountsOptions.cs` | `false`; authenticated account and Code board routes return 404 `account_disabled` unless explicitly enabled |
 
 The owner token itself is never a Railway variable. See `docs/runbooks/incident-response.md` for generating the token and its digest.
+
+Before deploying this changed default to an existing installation that uses account or Code board endpoints, set `Accounts__Enabled=true` in the API environment. This transition applies to OIDC and OwnerToken profiles. Without it the installation loses those endpoints; it is not compatible with clients that rely on them. Anonymous callers remain unauthorized. No deployment is implied by this instruction.
 
 ### Dispatch
 

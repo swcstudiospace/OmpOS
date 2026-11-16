@@ -24,7 +24,8 @@ internal static class CoworkApiExtensions
             .Bind(configuration.GetSection(ProjectsOptions.SectionName))
             .ValidateOnStart();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<ProjectsOptions>, ProjectsOptionsValidator>());
-        services.TryAddSingleton<ProjectAccountStore>();
+        services.TryAddSingleton<PostgresProjectAccountStore>(static provider =>
+            new PostgresProjectAccountStore(provider.GetRequiredService<Npgsql.NpgsqlDataSource>()));
         services.TryAddSingleton<CoworkIdempotencyCache>();
         services.AddRateLimiter(options => options.AddPolicy<string, CoworkProjectsRateLimiterPolicy>(CoworkProjectsRateLimiterPolicy.PolicyName));
         return services;
@@ -40,7 +41,7 @@ internal static class CoworkApiExtensions
         return endpoints;
     }
 
-    /// <summary>Registers memory options, an in-memory store when none is registered, and the per-user memory limiter.</summary>
+    /// <summary>Registers memory options, persistent storage, and the per-user memory limiter.</summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The configuration root.</param>
     /// <returns>The service collection.</returns>
@@ -52,7 +53,11 @@ internal static class CoworkApiExtensions
             .Bind(configuration.GetSection(MemoryOptions.SectionName))
             .ValidateOnStart();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<MemoryOptions>, MemoryOptionsValidator>());
-        services.TryAddSingleton<Autonogrammer.Cowork.Memory.IMemoryStore, Autonogrammer.Cowork.Memory.InMemoryMemoryStore>();
+        services.TryAddSingleton<Autonogrammer.Cowork.Memory.IMemoryStore>(static provider =>
+            new Autonogrammer.Cowork.Memory.Postgres.PostgresMemoryStore(
+                provider.GetRequiredService<Npgsql.NpgsqlDataSource>(),
+                provider.GetService<TimeProvider>(),
+                provider.GetService<Autonogrammer.Cowork.Memory.IMemoryNoticeSink>()));
         services.TryAddSingleton<CoworkIdempotencyCache>();
         services.AddRateLimiter(options => options.AddPolicy<string, CoworkMemoryRateLimiterPolicy>(CoworkMemoryRateLimiterPolicy.PolicyName));
         return services;

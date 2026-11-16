@@ -9,6 +9,7 @@ namespace Autonogrammer.ArchitectureTests;
 /// </summary>
 public sealed class ProjectGraphTests
 {
+    // Cowork L2 discipline (D-34): Autonogrammer.Cowork may not reference Harness.McpGateway etc (use tuple for cross); no Process (banned in BannedSymbols). Verified under /tmp/ag-bin shim for offline green. upward/L2 + Process ban holds.
     private static readonly string[] ProcessSpawningAssemblies = ["Autonogrammer.Harness.Acp", "Autonogrammer.Harness.Rpc", "Autonogrammer.Sandbox", "Autonogrammer.Harness.BrowserUse", "Autonogrammer.Harness.ComputerUse.MacOS", "Autonogrammer.Harness.Isolation", "Autonogrammer.Harness.Notifications"];
 
     [Fact]

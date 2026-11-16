@@ -1,0 +1,10 @@
+xvfb pid=236874 socket=up
+head pid=236924
+head alive: yes
+xdotool search exit: 0
+matches: 1
+NET_CLIENT_LIST: _NET_CLIENT_LIST:  not found.
+window 2097167 title: Autonogrammer
+socket after kill: gone
+head alive: no  xvfb alive: no
+DONE

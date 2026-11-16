@@ -167,3 +167,7 @@ Base: branch `feat/autonogrammer-next` = integration line `feat/autonogrammer-in
 
 ### Plan consequences (where each amendment lands)
 72-01: D-37 (AddBrowserUse, no new package), D-38 (environment tests), D-45 (launcher fake in the test project), D-49 (DownloadMode validator). 72-02: D-45, D-46, D-50 (depends on 72-01). 72-03: D-37(b) (test csproj and lock), D-39, D-44 (capability predicate), D-49 (Quarantine, local-origin card, beforeunload). 72-04: D-48 (IBrowserPaneControl and input records; no JSON context, no `ContractVersion` edit). 72-05: D-43 (CSS, web mount in CoworkWorkbench, regression suites), D-48, D-51 (F6). 72-06: D-40, D-47. 72-07: D-45, D-46. 72-08: D-37(c), D-41, D-42, D-43, D-44, D-46, D-47, D-48, D-51.
+
+### Browser policy decision (2026-11-10)
+
+The user chose to retain both D-12's PuppeteerSharp BlockList and D-13's Strict-mode Allowlist requirements. PuppeteerSharp 25.15.0 documents them as mutually exclusive. Phase 72 remains blocked until a compatible implementation is verified; do not replace either named boundary or claim Strict is complete by disabling it.

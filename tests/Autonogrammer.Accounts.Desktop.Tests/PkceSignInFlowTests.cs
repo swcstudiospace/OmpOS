@@ -174,6 +174,7 @@ public sealed class PkceSignInFlowTests
     {
         private readonly HttpClient _http;
         private readonly AccountSessionManager _manager;
+        private readonly SignInCoordinator _coordinator;
 
         public Rig(bool magicLink = true)
         {
@@ -184,7 +185,8 @@ public sealed class PkceSignInFlowTests
             var client = new GoTrueClient(_http, Host.Options, Time);
             Func<CancellationToken, ValueTask<GoTrueClient?>> provider = AccountSessionManager.FixedClient(client);
             _manager = new AccountSessionManager(Store, provider, Time);
-            Flow = new PkceSignInFlow(new SignInCoordinator(_manager, provider, Time), Time);
+            _coordinator = new SignInCoordinator(_manager, provider, Time);
+            Flow = new PkceSignInFlow(_coordinator, Time);
         }
 
         public ManualTimeProvider Time { get; }
@@ -200,6 +202,7 @@ public sealed class PkceSignInFlowTests
         public async ValueTask DisposeAsync()
         {
             await Flow.DisposeAsync().ConfigureAwait(false);
+            _coordinator.Dispose();
             _manager.Dispose();
             _http.Dispose();
             await Host.DisposeAsync().ConfigureAwait(false);

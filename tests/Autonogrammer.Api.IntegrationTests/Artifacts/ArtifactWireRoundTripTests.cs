@@ -1,7 +1,13 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Reflection;
+using Autonogrammer.Api.Cowork.Artifacts;
+using Autonogrammer.Contracts.Artifacts;
+using Autonogrammer.Cowork.Artifacts;
+using Autonogrammer.Cowork.Artifacts.Model;
 using Autonogrammer.Cowork.Artifacts.Stores;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 
@@ -34,6 +40,49 @@ public sealed class ArtifactWireRoundTripTests
         using var content = await probe.GetAsync(new Uri("/cowork/artifacts/" + id + "/versions/1/content", UriKind.Relative), TestContext.Current.CancellationToken).ConfigureAwait(true);
         content.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await content.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(bytes);
+    }
+
+    /// <summary>Sync-off metadata leaves an existing server grant unchanged.</summary>
+    [Fact]
+    public async Task SyncOffMetadataDoesNotChangeExistingGrant()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ag-wire-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            using var factory = new ApiFactory(ArtifactTestConfig.Enabled(), JwtTestHost.InjectStaticMetadata);
+            using var client = factory.CreateClient();
+            var token = JwtTestHost.IssueToken("alice");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var remote = new HttpArtifactRemote(client, _ => ValueTask.FromResult<string?>(token));
+            var store = new FileArtifactStore(root, "alice");
+            var service = new ArtifactService(store, TimeProvider.System, Microsoft.Extensions.Options.Options.Create(new ArtifactOptions()));
+            var bytes = "private-content"u8.ToArray();
+            var created = await service.CreateAsync(ArtifactKind.Markdown, "Notes", bytes, null, null, null, null, ArtifactAuthor.Agent, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            var id = created.Value!.ArtifactId;
+            var hash = ArtifactWireContract.Hash(bytes);
+            (await PushAsync(remote, id, 1, bytes, hash, "Markdown").ConfigureAwait(true)).ShouldBe("Accepted");
+            var grant = new ArtifactGrantDocument(id, 1, hash, ["https://docs.example"], "version", "web", DateTimeOffset.UnixEpoch);
+            using var granted = await client.PutAsJsonAsync("/cowork/artifacts/" + id + "/versions/1/grants", grant, ArtifactsJsonContext.Default.ArtifactGrantDocument, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            granted.StatusCode.ShouldBe(HttpStatusCode.OK);
+            var grants = factory.Services.GetRequiredService<ArtifactGrants>();
+            var before = grants.List("alice", id).ShouldHaveSingleItem();
+            before.Origins.ShouldBe(["https://docs.example"]);
+
+            var sync = new ArtifactSyncService(store, remote);
+            var method = typeof(ArtifactSyncService).GetMethod("PushAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+            var task = (Task)method!.Invoke(sync, [id, TestContext.Current.CancellationToken])!;
+            await task.ConfigureAwait(true);
+            var result = task.GetType().GetProperty("Result")!.GetValue(task);
+            result!.GetType().GetProperty("Status")!.GetValue(result)!.ToString().ShouldBe("SameHash");
+            grants.List("alice", id).ShouldHaveSingleItem().ShouldBe(before);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
     }
 
     private static async Task<string> PushAsync(HttpArtifactRemote remote, string id, int number, byte[] bytes, string hash, string kind)

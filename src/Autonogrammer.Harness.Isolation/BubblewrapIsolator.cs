@@ -25,7 +25,8 @@ public sealed class BubblewrapIsolator : IProcessLaunchWrapper
     public ProcessLaunch Wrap(ProcessLaunch intended)
     {
         ArgumentNullException.ThrowIfNull(intended);
-        var arguments = new List<string>(BubblewrapArgvBuilder.Build(_policy));
+        var arguments = new List<string>(
+            BubblewrapArgvBuilder.AdaptToHost(_policy, BubblewrapArgvBuilder.Build(_policy)));
         if (!string.IsNullOrEmpty(intended.WorkingDirectory))
         {
             arguments.Add("--chdir");

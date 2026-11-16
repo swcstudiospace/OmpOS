@@ -19,3 +19,4 @@ fi
 
 python3 scripts/docs/check_gitbook.py . "${args[@]}"
 python3 -m json.tool docs/api/openapi.json >/dev/null || { echo "error: docs/api/openapi.json is not valid JSON" >&2; exit 1; }
+python3 scripts/docs/parity_counts.py --check || { echo "error: parity counts block mismatch or MET-LIVE rows (see parity_counts.py --check)" >&2; exit 1; }

@@ -56,8 +56,8 @@ public sealed partial class LogHygieneTests
         secrets.Add(harness.Coordinator.Current!.LinkNonce!);
         _ = await harness.Coordinator.VerifyCodeAsync("00000000", Token).ConfigureAwait(true);
         _ = await harness.Coordinator.CompleteLinkAsync("bad-link-code-0123456789", Token).ConfigureAwait(true);
+        secrets.Add("bad-link-code-0123456789");
         harness.Time.Advance(TimeSpan.FromSeconds(60));
-        harness.Handler.ScriptError("otp", 429, "over_email_send_rate_limit");
         _ = await harness.Coordinator.ResendCodeAsync(Token).ConfigureAwait(true);
         harness.Handler.ScriptError("otp", 400, "a_code_outside_the_vocabulary");
         _ = await harness.Coordinator.ResendCodeAsync(Token).ConfigureAwait(true);

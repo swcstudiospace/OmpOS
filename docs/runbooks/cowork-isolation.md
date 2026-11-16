@@ -4,7 +4,7 @@ description: "Runbook for Cowork isolation levels, the probe, degraded states an
 
 # Cowork isolation
 
-Status: Partial (planner and composition are unit tested; live bubblewrap, macOS and Windows runs are owner actions)
+Status: Partial. The Linux namespace probe is fixed locally, but the real Bubblewrap wrapper fails its positive-control launch; do not treat it as verified filesystem isolation. macOS and Windows runs remain unverified.
 
 Last verified: 2026-10-30
 
@@ -12,7 +12,7 @@ Applies to: v0.16.0
 
 ## Levels
 
-Code is off and gets no wrapper. Cowork is on. A successful Linux or macOS probe reaches filesystem isolation. Windows stays unconfined and says process containment is not applied. Network is unrestricted at every level.
+Code is off and gets no wrapper. Cowork requests isolation. A successful probe alone does not prove that the session wrapper starts or enforces its mounts; the Linux wrapper currently fails the protected live launch test. Windows stays unconfined and says process containment is not applied. Network is unrestricted at every level.
 
 ## Probe
 
@@ -24,9 +24,9 @@ The chip shows the degraded-state sentence and `network: unrestricted`. `~/.omp`
 
 ## Owner actions
 
-These runs were not executed here:
+Outstanding checks:
 
-- Live isolation on a host with user namespaces: set `AUTONOGRAMMER_LIVE_ISOLATION=1` and run `IsolationLiveTests`.
+- Repair the Linux wrapper, then run `IsolationLiveTests` with `AUTONOGRAMMER_LIVE_ISOLATION=1` in a safe disposable environment. The test uses a uniquely owned temporary fixture for both writes and requires a successful allowed write and a denied outside write in the same child; a launch failure is not a pass.
 - macOS Seatbelt run.
 - Windows job-object run, which this phase does not apply.
 - `./bootstrap.sh` stays an owner action. It was not run by this plan.

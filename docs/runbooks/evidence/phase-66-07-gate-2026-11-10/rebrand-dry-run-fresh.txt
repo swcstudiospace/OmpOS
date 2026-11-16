@@ -1,0 +1,463 @@
+# Rebrand report (dry-run)
+
+Root `/tmp/autonogrammer-gate`; urls=False; engine-adapters=keep; generated 2026-11-10T10:56:19+00:00.
+
+## Headline
+| measure | value |
+| --- | --- |
+| entries | 8036 |
+| files | 8033 |
+| textFiles | 7808 |
+| binaryFiles | 225 |
+| symlinksSkipped | 0 |
+| gitlinksSkipped | 3 |
+| nonUtf8Skipped | 0 |
+| nulTextSkipped | 1 |
+| filesToRewrite | 0 |
+| brandTokensToRewrite | 0 |
+| distinctBrandIdentifiers | 0 |
+| productAbbreviationEdits | 0 |
+| engineAdapterEdits | 0 |
+| tokensInExcludedContent | 11874 |
+| urlProtectedTokens | 294 |
+| pathOps | 0 |
+| dirOps | 0 |
+| fileOps | 0 |
+| collisions | 0 |
+| caseOnlyRenames | 0 |
+| rejectedOmposWords | 250 |
+| rejectedOmposOccurrences | 6698 |
+| suspectRejectedWords | 0 |
+| otherOmpWords | 1621 |
+| otherOmpOccurrences | 40813 |
+| vetoedByKeepPatterns | 0 |
+| keepMarkerBlocks | 3 |
+| keepMarkerFiles | 2 |
+
+## Matched brand tokens (every distinct casing)
+| token | becomes | count | files | two examples |
+| --- | --- | --- | --- | --- |
+
+## Per-category counts
+
+Zones (rewritable content):
+| zone | files | tokens |
+| --- | --- | --- |
+
+Kinds of occurrence:
+| kind | tokens |
+| --- | --- |
+
+Tokens left untouched in excluded or frozen content:
+| class | files | tokens |
+| --- | --- | --- |
+| changelog-released | 1 | 12 |
+| evidence | 95 | 8711 |
+| gitleaksignore | 1 | 16 |
+| legacy-names | 2 | 4 |
+| milestones-archive | 62 | 1982 |
+| owner-kept | 15 | 99 |
+| post-rename-planning | 42 | 310 |
+| recorded-frames | 2 | 2 |
+| rename-docs | 5 | 738 |
+
+## Rejected near-matches of `ompos` (boundary proof)
+
+250 distinct words, 6698 occurrences contain `ompos` in any casing but are NOT brand tokens; 0 need review.
+
+| word | count | severity | examples | reason |
+| --- | --- | --- | --- | --- |
+| composer | 1334 | benign | .planning/REQUIREMENTS.md:194; .planning/REQUIREMENTS.md:432 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compose | 879 | benign | .env.example:76; .env.example:105 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| Composer | 655 | benign | .planning/REQUIREMENTS.md:59; .planning/milestones/v0.9.1-MILESTONE-AUDIT.md:108 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composition | 646 | benign | .planning/REQUIREMENTS.md:72; .planning/ROADMAP.md:32 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| Composition | 357 | benign | .planning/REQUIREMENTS.md:72; .planning/ROADMAP.md:32 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| Compose | 262 | benign | .planning/REQUIREMENTS.md:751; .planning/ROADMAP.md:552 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composed | 200 | benign | .planning/REQUIREMENTS.md:72; .planning/REQUIREMENTS.md:566 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerViewModel | 170 | benign | .planning/phases/20-avalonia-foundation/20-02-PLAN.md:7; .planning/phases/20-avalonia-foundation/20-02-PLAN.md:18 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| EngineComposition | 150 | benign | .planning/REQUIREMENTS.md:751; .planning/phases/21-parity-surface/21-01-PLAN.md:8 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerView | 114 | benign | .planning/ROADMAP.md:1011; .planning/STATE.md:335 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composes | 114 | benign | .planning/REQUIREMENTS.md:341; .planning/REQUIREMENTS.md:751 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| LocalPodmanComposeProvider | 111 | benign | .planning/REQUIREMENTS.md:38; .planning/REQUIREMENTS.md:39 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComputerUseHeadComposition | 65 | benign | .planning/phases/73-cowork-computer-use/73-02-PLAN.md:147; .planning/phases/73-cowork-computer-use/73-06-PLAN.md:32 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composite | 65 | benign | .planning/milestones/v0.9.1-phases/02-core/frames/rpc-out.ndjson:3; .planning/phases/46-agent-panel/46-UI-SPEC.md:893 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| EngineCompositionOptions | 57 | benign | .planning/phases/70-cowork-chat-core-and-tool-host/70-03-PLAN.md:79; .planning/phases/70-cowork-chat-core-and-tool-host/70-03-PLAN.md:90 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composeFile | 52 | benign | .planning/milestones/v0.9.1-phases/03-platform/03-REVIEW.md:56; .planning/milestones/v0.9.1-phases/03-platform/03-REVIEW.md:62 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| decompose | 42 | benign | .planning/milestones/v0.9.1-phases/02-core/frames/rpc-out.ndjson:3; .planning/milestones/v0.9.1-phases/02-core/frames/rpc-out.ndjson:5 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| BrowserUseComposition | 30 | benign | .planning/phases/72-cowork-browser-use/72-08-PLAN.md:8; .planning/phases/72-cowork-browser-use/72-08-PLAN.md:38 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| LocalPodmanComposeProviderContractTests | 29 | benign | .planning/REQUIREMENTS.md:88; .planning/milestones/v0.9.1-MILESTONE-AUDIT.md:43 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| COMPOSE | 28 | benign | .planning/REQUIREMENTS.md:72; .planning/milestones/v0.9.1-MILESTONE-AUDIT.md:52 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerHost | 28 | benign | .planning/phases/46-agent-panel/46-UI-SPEC.md:737; docs/plans/agent-loop/dossier-autonogrammer-seams.md:162 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compositeBackground | 27 | benign | src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:1; src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:592 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComputerUseComposition | 26 | benign | .planning/phases/73-cowork-computer-use/73-01-PLAN.md:120; .planning/phases/73-cowork-computer-use/73-02-PLAN.md:16 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compositeTitleBackground | 26 | benign | src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:1; src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:592 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| RealPodmanComposeConfig | 24 | benign | .planning/REQUIREMENTS.md:88; .planning/ROADMAP.md:303 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| BundleComposition | 23 | benign | .planning/phases/76-cowork-parity-plugins-auto-isolation/76-06-PLAN.md:17; .planning/phases/76-cowork-parity-plugins-auto-isolation/76-06-PLAN.md:87 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ParityComposerGapClosureTests | 23 | benign | .planning/phases/25-cutover/25-01-PLAN.md:12; .planning/phases/25-cutover/25-SUMMARY.md:11 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| CoworkEngineComposer | 22 | benign | .planning/phases/70-cowork-chat-core-and-tool-host/70-04-PLAN.md:13; .planning/phases/70-cowork-chat-core-and-tool-host/70-04-PLAN.md:57 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerAttachmentsModel | 21 | benign | docs/quality/cursor-parity-audit-2026-10-28.md:161; src/Autonogrammer.Native.Views/Sessions/AgentSessionRuntime.cs:105 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComputerUseToolsComposition | 21 | benign | .planning/phases/73-cowork-computer-use/73-02-PLAN.md:64; .planning/phases/73-cowork-computer-use/73-02-PLAN.md:147 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| MentionComposerModel | 21 | benign | apps/Autonogrammer.Native/Composition/Mentions/MentionSourceFactory.cs:5; src/Autonogrammer.Native.Views/Sessions/AgentSessionRuntime.cs:76 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| RenderComposer | 21 | benign | tests/Autonogrammer.UI.Tests/ComposerPanelTests.cs:53; tests/Autonogrammer.UI.Tests/ComposerPanelTests.cs:80 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerViewModelTests | 20 | benign | .planning/phases/20-avalonia-foundation/20-02-PLAN.md:7; .planning/phases/20-avalonia-foundation/20-02-PLAN.md:48 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ModelsSettingsComposition | 20 | benign | .planning/phases/40-settings-window-and-model-providers/40-CONTEXT.md:20; .planning/phases/70-cowork-chat-core-and-tool-host/70-CONTEXT.md:164 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compositeBorder | 20 | benign | src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:1 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compositor | 19 | benign | .planning/phases/50-cursor-visual-parity/50-SUMMARY.md:38; .planning/phases/50-cursor-visual-parity/50-VERIFICATION.md:48 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ArtifactsComposition | 18 | benign | .planning/phases/71-cowork-artifacts/71-05-PLAN.md:33; .planning/phases/71-cowork-artifacts/71-05-PLAN.md:97 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composing | 18 | benign | .planning/phases/66-rebrand-to-autonogrammer/66-06-PLAN.md:72; .planning/phases/67-accounts-supabase-passwordless-sign-in/67-07-PLAN.md:125 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| CoworkComposerView | 17 | benign | .planning/phases/70-cowork-chat-core-and-tool-host/70-06-PLAN.md:15; .planning/phases/70-cowork-chat-core-and-tool-host/70-06-PLAN.md:16 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| CoworkEngineComposerTests | 17 | benign | .planning/phases/70-cowork-chat-core-and-tool-host/70-04-PLAN.md:31; .planning/phases/70-cowork-chat-core-and-tool-host/70-04-PLAN.md:93 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| CompositeStageSource | 16 | benign | .planning/phases/45-agent-loop-stage-sources/45-01-PLAN.md:17; .planning/phases/45-agent-loop-stage-sources/45-CONTEXT.md:19 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| EngineCompositionOptionsTests | 16 | benign | .planning/phases/70-cowork-chat-core-and-tool-host/70-04-PLAN.md:29; .planning/phases/70-cowork-chat-core-and-tool-host/70-04-PLAN.md:93 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| IsolationComposition | 16 | benign | .planning/phases/76-cowork-parity-plugins-auto-isolation/76-06-PLAN.md:18; .planning/phases/76-cowork-parity-plugins-auto-isolation/76-06-PLAN.md:138 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compositionView | 16 | benign | src/Autonogrammer.UI/wwwroot/lib/xterm/xterm.mjs:47; src/Autonogrammer.UI/wwwroot/lib/xterm/xterm.mjs:51 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| globalCompositeOperation | 16 | benign | src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:636; src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:887 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerSlashTargets | 15 | benign | .planning/phases/56-slash-commands-and-convention-discovery/56-01-PLAN.md:16; src/Autonogrammer.Native.Views/Sessions/AgentSessionRuntime.cs:147 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| SlashPromptComposer | 15 | benign | .planning/phases/56-slash-commands-and-convention-discovery/56-01-PLAN.md:13; docs/quality/cursor-parity-audit-2026-10-28.md:210 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| BrowserUseCompositionTests | 14 | benign | .planning/phases/72-cowork-browser-use/72-08-PLAN.md:17; .planning/phases/72-cowork-browser-use/72-08-PLAN.md:71 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerAttachment | 14 | benign | src/Autonogrammer.Native.Views/Sessions/AgentSessionRuntime.cs:784; src/Autonogrammer.Native.Views/Views/ComposerView.Attachments.cs:160 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| isComposing | 14 | benign | scripts/web-smoke/surface-keys.test.mjs:28; scripts/web-smoke/surface-keys.test.mjs:46 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| BrowserUseCompositionResult | 13 | benign | apps/Autonogrammer.Native/Agents/AgentHead.cs:92; apps/Autonogrammer.Native/Agents/AgentHead.cs:102 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerDraftTests | 13 | benign | .planning/phases/20-avalonia-foundation/20-02-PLAN.md:49; .planning/phases/20-avalonia-foundation/20-02-SUMMARY.md:139 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComputerUseHeadCompositionTests | 13 | benign | .planning/phases/73-cowork-computer-use/73-06-PLAN.md:38; .planning/phases/73-cowork-computer-use/73-06-PLAN.md:166 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ScopeComposer | 13 | benign | src/Autonogrammer.Native.Views/Views/Shortcuts/ShortcutCatalogue.cs:33; src/Autonogrammer.Native.Views/Views/Shortcuts/ShortcutCatalogue.cs:34 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ActivityComposition | 12 | benign | .planning/phases/76-cowork-parity-plugins-auto-isolation/76-06-PLAN.md:20; .planning/phases/76-cowork-parity-plugins-auto-isolation/76-06-PLAN.md:138 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| BrowserUseCompositionRequest | 12 | benign | apps/Autonogrammer.Native/Agents/AgentHead.cs:107; apps/Autonogrammer.Native/Agents/AgentHead.cs:226 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| Decompose | 11 | benign | .planning/ROADMAP.md:1; .planning/milestones/v0.9.1-ROADMAP.md:1 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| DeleteComposeFile | 11 | benign | .planning/REQUIREMENTS.md:49; .planning/milestones/v0.9.1-MILESTONE-AUDIT.md:98 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerSlashPaletteViewTests | 10 | benign | .planning/ROADMAP.md:1146; .planning/phases/50-cursor-visual-parity/50-01-PLAN.md:33 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| DeletesComposeFileAndAttemptsDown | 10 | benign | .planning/milestones/v0.9.1-phases/03-platform/03-SECURITY.md:17; .planning/milestones/v0.9.1-phases/03-platform/03-SECURITY.md:44 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| IsolationCompositionTests | 10 | benign | .planning/phases/76-cowork-parity-plugins-auto-isolation/76-06-PLAN.md:61; .planning/phases/76-cowork-parity-plugins-auto-isolation/76-06-PLAN.md:138 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| BundleCompositionTests | 9 | benign | .planning/phases/76-cowork-parity-plugins-auto-isolation/76-06-PLAN.md:60; .planning/phases/76-cowork-parity-plugins-auto-isolation/76-06-PLAN.md:138 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerPanelTests | 9 | benign | .planning/ROADMAP.md:1118; .planning/phases/54-web-agent-panel-and-workspace-screens/54-01-PLAN.md:14 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| Composes | 9 | benign | apps/Autonogrammer.Native/Agents/SessionEngineSet.cs:580; apps/Autonogrammer.Native/Agents/SessionEngineSet.cs:707 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| CompositeStageSourceTests | 9 | benign | .planning/phases/45-agent-loop-stage-sources/45-01-PLAN.md:17; .planning/phases/45-agent-loop-stage-sources/45-CONTEXT.md:18 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComputerUseCompositionOptions | 9 | benign | .planning/phases/73-cowork-computer-use/73-02-PLAN.md:147; .planning/phases/73-cowork-computer-use/73-02-PLAN.md:195 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComputerUseCompositionTests | 9 | benign | .planning/phases/73-cowork-computer-use/73-02-PLAN.md:29; .planning/phases/73-cowork-computer-use/73-02-PLAN.md:145 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compositeOver | 9 | benign | scripts/web-smoke/a11y/page-lib.mjs:44; scripts/web-smoke/a11y/page-lib.mjs:111 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeFileOf | 8 | benign | tests/Autonogrammer.Sandbox.Tests/ComposeFileModeTests.cs:29; tests/Autonogrammer.Sandbox.Tests/ComposeFileModeTests.cs:63 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerHint | 8 | benign | docs/plans/ui-parity/cursor-agents-window-parity.md:826; src/Autonogrammer.Native.Views/Views/AgentPanel/AgentPanelViewText.cs:88 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerModelOf | 8 | benign | tests/Autonogrammer.Native.Tests/KeyboardFocusTests.cs:118; tests/Autonogrammer.Native.Tests/KeyboardFocusTests.cs:138 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerViewPanelTests | 8 | benign | .planning/phases/46-agent-panel/46-SUMMARY.md:13; .planning/phases/46-agent-panel/46-SUMMARY.md:15 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| CoworkComposer | 8 | benign | .planning/phases/70-cowork-chat-core-and-tool-host/70-06-PLAN.md:21; .planning/phases/70-cowork-chat-core-and-tool-host/70-06-PLAN.md:100 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| NoDockerfileOrComposeFileNamed | 8 | benign | .planning/milestones/v0.9.1-phases/01-foundation/01-VALIDATION.md:72; .planning/milestones/v0.9.1-phases/01-foundation/01-VALIDATION.md:98 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composerReady | 8 | benign | docs/runbooks/evidence/bootstrap-gate-2026-10-29-561a83b5-smoke/web-smoke-561a83b5-2026-10-29.json:52; docs/runbooks/evidence/quality-audit-2026-10-22/web-smoke-d965ba6-2026-10-22-attempt4.json:54 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compositionPosition | 8 | benign | src/Autonogrammer.UI/wwwroot/lib/xterm/xterm.mjs:47 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| COMPOSITION | 7 | benign | .planning/milestones/v0.9.1-phases/03-platform/03-VALIDATION.md:66; src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:2310 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeProductionEngine | 7 | benign | .planning/phases/21-parity-surface/21-01-PLAN.md:8; .planning/phases/21-parity-surface/21-CONTEXT.md:10 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerMentionViewTests | 7 | benign | .planning/ROADMAP.md:1236; .planning/phases/63-cursor-feature-completion/63-01-PLAN.md:13 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerPlaceholderIdle | 7 | benign | src/Autonogrammer.Native.Views/Views/ComposerView.axaml:52; src/Autonogrammer.Native.Views/Views/ComposerView.axaml.cs:678 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerStatusEventArgs | 7 | benign | src/Autonogrammer.Native.Views/Sessions/TerminalSteerView.axaml.cs:31; src/Autonogrammer.Native.Views/Sessions/TerminalSteerView.axaml.cs:112 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerWhitespaceDraftTests | 7 | benign | .planning/phases/20-avalonia-foundation/20-02-PLAN.md:49; .planning/phases/20-avalonia-foundation/20-02-SUMMARY.md:139 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| Composing | 7 | benign | src/Autonogrammer.UI/Components/Composer.razor:6; src/Autonogrammer.UI/Components/Composer/ModelPicker.razor:1 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| CoworkComposerModel | 7 | benign | src/Autonogrammer.Native.Views/ViewMapping.cs:71; src/Autonogrammer.Native.Views/Views/Cowork/CoworkComposerView.axaml.cs:17 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composeDocument | 7 | benign | src/Autonogrammer.Sandbox/LocalPodmanComposeProvider.cs:785; src/Autonogrammer.Sandbox/LocalPodmanComposeProvider.cs:789 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compositionHelper | 7 | benign | src/Autonogrammer.UI/wwwroot/lib/xterm/xterm.mjs:51 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ActivityCompositionTests | 6 | benign | .planning/phases/76-cowork-parity-plugins-auto-isolation/76-06-PLAN.md:63; .planning/phases/76-cowork-parity-plugins-auto-isolation/76-06-PLAN.md:138 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ArtifactCompositionTests | 6 | benign | .planning/phases/71-cowork-artifacts/71-05-PLAN.md:30; .planning/phases/71-cowork-artifacts/71-05-PLAN.md:97 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeEngineAsync | 6 | benign | apps/Autonogrammer.Native/Agents/SessionEngineSet.cs:588; apps/Autonogrammer.Native/Agents/SessionSlot.cs:193 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeFile | 6 | benign | src/Autonogrammer.Sandbox/LocalPodmanComposeProvider.cs:27; src/Autonogrammer.Sandbox/LocalPodmanComposeProvider.cs:272 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerIsBoundToThePresentationComposerViewModel | 6 | benign | .planning/phases/20-avalonia-foundation/20-VERIFICATION.md:21; docs/runbooks/phase-20-avalonia-foundation.md:27 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerMentionsTests | 6 | benign | .planning/ROADMAP.md:1236; .planning/phases/63-cursor-feature-completion/63-01-PLAN.md:11 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerPlaceholderRunning | 6 | benign | src/Autonogrammer.Native.Views/Views/ComposerView.axaml.cs:679; src/Autonogrammer.Presentation/AgentPanel/AgentPanelCopy.cs:61 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| Compositor | 6 | benign | .planning/phases/73-cowork-computer-use/73-RESEARCH.md:40; docs/plans/vision-research/pets-feasibility.md:24 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| MentionComposerModelTests | 6 | benign | .planning/ROADMAP.md:1236; .planning/phases/63-cursor-feature-completion/63-01-PLAN.md:11 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| SlashPromptComposerTests | 6 | benign | .planning/ROADMAP.md:1144; .planning/phases/56-slash-commands-and-convention-discovery/56-01-PLAN.md:13 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheFirstSendComposesTheEngineAndLaunchComposesNothing | 6 | benign | .planning/phases/21-parity-surface/21-01-PLAN.md:14; .planning/phases/21-parity-surface/21-CONTEXT.md:11 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composePath | 6 | benign | tests/Autonogrammer.Sandbox.Tests/LocalPodmanComposeProviderContractTests.cs:184; tests/Autonogrammer.Sandbox.Tests/LocalPodmanComposeProviderContractTests.cs:188 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composers | 6 | benign | .planning/phases/70-cowork-chat-core-and-tool-host/70-RESEARCH.md:56; .planning/phases/75-cowork-parity-projects-memory-schedules/75-06-PLAN.md:49 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| isSendingComposition | 6 | benign | src/Autonogrammer.UI/wwwroot/lib/xterm/xterm.mjs:47 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| AndroidDispatchComposition | 5 | benign | .planning/phases/74-dispatch-relay/74-09-PLAN.md:19; .planning/phases/74-dispatch-relay/74-09-PLAN.md:121 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeNetwork | 5 | benign | src/Autonogrammer.Sandbox/ComposeDocument.cs:20; src/Autonogrammer.Sandbox/ComposeNetwork.cs:8 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerMaxHeight | 5 | benign | docs/plans/ui-parity/cursor-agents-window-parity.md:279; docs/plans/ui-parity/cursor-agents-window-parity.md:693 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerMinHeight | 5 | benign | docs/plans/ui-parity/cursor-agents-window-parity.md:278; docs/plans/ui-parity/cursor-agents-window-parity.md:693 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerRunInputTests | 5 | benign | .planning/phases/25-cutover/25-VERIFICATION.md:36; .planning/phases/25-cutover/25-VERIFICATION.md:50 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerSlashPaletteTests | 5 | benign | .planning/phases/50-cursor-visual-parity/50-01-PLAN.md:33; .planning/phases/50-cursor-visual-parity/50-VERIFICATION.md:33 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerSurface | 5 | benign | src/Autonogrammer.Native.Views/Views/Cowork/CoworkComposerView.axaml.cs:78; src/Autonogrammer.Native.Views/Views/Cowork/CoworkConversationView.axaml.cs:42 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ModelsSettingsCompositionOptions | 5 | benign | apps/Autonogrammer.Native/Agents/AgentHead.cs:109; apps/Autonogrammer.Native/Settings/Models/ModelsSettingsComposition.cs:27 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheDefaultPanelHasNoRegionBesideRailThreadAndComposer | 5 | benign | .planning/phases/46-agent-panel/46-01-PLAN.md:20; .planning/phases/46-agent-panel/46-SUMMARY.md:11 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composeText | 5 | benign | tests/Autonogrammer.Sandbox.Tests/PerSandboxCredentialFlagTests.cs:59; tests/Autonogrammer.Sandbox.Tests/PerSandboxCredentialFlagTests.cs:60 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composerMode | 5 | benign | src/Autonogrammer.Harness.Plugins/Hooks/HookPayloads.cs:15; src/Autonogrammer.Harness.Plugins/Hooks/HookPayloads.cs:16 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeCleanupFailed | 4 | benign | src/Autonogrammer.Sandbox/LocalPodmanComposeProvider.cs:23; src/Autonogrammer.Sandbox/LocalPodmanComposeProvider.cs:26 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeDocument | 4 | benign | src/Autonogrammer.Sandbox/ComposeDocument.cs:8; src/Autonogrammer.Sandbox/LocalPodmanComposeProvider.cs:749 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeFileModeTests | 4 | benign | .planning/phases/25.6-secrets-and-local-files/25.6-01-PLAN.md:12; .planning/phases/25.6-secrets-and-local-files/25.6-01-SUMMARY.md:8 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposePrompt | 4 | benign | apps/Autonogrammer.Native/Cowork/BrowserUseComposition.cs:267; tests/Autonogrammer.Native.Tests/Browser/BrowserUseCompositionTests.cs:64 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeService | 4 | benign | src/Autonogrammer.Sandbox/ComposeDocument.cs:16; src/Autonogrammer.Sandbox/ComposeService.cs:8 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeSideChatEngine | 4 | benign | .planning/phases/70-cowork-chat-core-and-tool-host/70-04-PLAN.md:95; .planning/phases/70-cowork-chat-core-and-tool-host/70-RESEARCH.md:9 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerColumn | 4 | benign | src/Autonogrammer.Native.Views/Views/ComposerView.Attachments.cs:50; src/Autonogrammer.Native.Views/Views/ComposerView.Attachments.cs:51 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerName | 4 | benign | src/Autonogrammer.Presentation/Cowork/CoworkConversationModel.cs:33; src/Autonogrammer.UI/Components/Cowork/CoworkComposer.razor:4 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerPendingActiveLive | 4 | benign | src/Autonogrammer.Native.Views/Views/ComposerView.axaml.cs:702; src/Autonogrammer.Presentation/AgentPanel/AgentPanelCopy.cs:70 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerPlaceholderRunningLive | 4 | benign | src/Autonogrammer.Native.Views/Views/ComposerView.axaml.cs:679; src/Autonogrammer.Presentation/AgentPanel/AgentPanelCopy.cs:64 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerSendNowName | 4 | benign | src/Autonogrammer.Native.Views/Views/ComposerView.axaml.cs:674; src/Autonogrammer.Presentation/AgentPanel/AgentPanelCopy.cs:67 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerStyles | 4 | benign | docs/plans/v0.16.0-research/02-ui-architecture.md:76; src/Autonogrammer.Native.Views/Sessions/TerminalSteerView.axaml:8 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerWorkFaultedEventArgs | 4 | benign | src/Autonogrammer.Native.Views/Views/ComposerView.axaml.cs:114; src/Autonogrammer.Native.Views/Views/ComposerView.axaml.cs:635 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| DispatchRelayCompositionTests | 4 | benign | .planning/phases/74-dispatch-relay/74-09-PLAN.md:20; .planning/phases/74-dispatch-relay/74-09-PLAN.md:121 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| EngineCompositionAuthenticationTests | 4 | benign | .planning/phases/49-live-steering/49-CONTEXT.md:25; .planning/phases/49-live-steering/49-SUMMARY.md:23 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| GenerateComposeFile | 4 | benign | .planning/milestones/v0.9.1-phases/03-platform/03-REVIEW.md:188; .planning/milestones/v0.9.1-phases/03-platform/03-SECURITY.md:58 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composable | 4 | benign | .planning/PROJECT.md:89; .planning/research/ARCHITECTURE.md:65 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composeContent | 4 | benign | src/Autonogrammer.Sandbox/LocalPodmanComposeProvider.cs:502; src/Autonogrammer.Sandbox/LocalPodmanComposeProvider.cs:504 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| feComposite | 4 | benign | .planning/phases/71-cowork-artifacts/71-02-PLAN.md:130; docs/decisions/ADR-0033-cowork-artifacts.md:103 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| guardComposer | 4 | benign | src/Autonogrammer.UI/Components/Composer.razor:214; src/Autonogrammer.UI/wwwroot/scripts/autonogrammer-keys.js:5 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| updateCompositionElements | 4 | benign | src/Autonogrammer.UI/wwwroot/lib/xterm/xterm.mjs:47; src/Autonogrammer.UI/wwwroot/lib/xterm/xterm.mjs:51 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ASendSubmitsThePromptThroughTheComposedHostAndStreamsTheReply | 3 | benign | .planning/phases/21-parity-surface/21-01-PLAN.md:18; .planning/phases/21-parity-surface/21-CONTEXT.md:31 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| AnUnavailableChannelKeepsTheTextInTheComposer | 3 | benign | .planning/phases/46-agent-panel/46-SUMMARY.md:13; .planning/phases/49-live-steering/49-SUMMARY.md:15 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeUpFailed | 3 | benign | src/Autonogrammer.Sandbox/LocalPodmanComposeProvider.cs:28; src/Autonogrammer.Sandbox/LocalPodmanComposeProvider.cs:31 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeVolume | 3 | benign | src/Autonogrammer.Sandbox/ComposeService.cs:63; src/Autonogrammer.Sandbox/ComposeVolume.cs:8 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposedApprovalBridge | 3 | benign | .planning/phases/21-parity-surface/21-CONTEXT.md:11; docs/open-questions.md:96 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposedOver | 3 | benign | tests/Autonogrammer.Native.Tests/Parity/ParityComposerGapClosureTests.cs:56; tests/Autonogrammer.Native.Tests/Parity/ParityComposerGapClosureTests.cs:148 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerHintName | 3 | benign | src/Autonogrammer.Native.Views/Views/AgentPanel/AgentPanelViewText.cs:92; src/Autonogrammer.Native.Views/Views/ComposerView.axaml:142 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| Composite | 3 | benign | .planning/phases/74-dispatch-relay/74-02-PLAN.md:140; docs/plans/agent-loop/agent-loop-design.md:28 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| CoworkEngineComposition | 3 | benign | apps/Autonogrammer.Native/Cowork/CoworkEngineComposer.cs:24; apps/Autonogrammer.Native/Cowork/CoworkEngineComposer.cs:66 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| GeneratesComposeFileAndRunsUp | 3 | benign | .planning/milestones/v0.9.1-phases/03-platform/03-VALIDATION.md:29; .planning/milestones/v0.9.1-phases/03-platform/03-VERIFICATION.md:46 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| OnComposerChanged | 3 | benign | src/Autonogrammer.Native.Views/Views/ComposerView.axaml.cs:183; src/Autonogrammer.Native.Views/Views/ComposerView.axaml.cs:189 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| OpenGlCompositionInterop | 3 | benign | docs/plans/vision-research/pets-feasibility.md:40; docs/plans/vision-research/pets-feasibility.md:128 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| RunsPodmanComposeDown | 3 | benign | .planning/milestones/v0.9.1-phases/03-platform/03-VALIDATION.md:29; .planning/milestones/v0.9.1-phases/03-platform/03-VERIFICATION.md:46 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheComposerStopButtonCancelsTheStreamingTurn | 3 | benign | .planning/phases/25-cutover/25-VERIFICATION.md:53; docs/parity/session-chat-parity.md:63 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| WriteComposeFileAsync | 3 | benign | .planning/milestones/v0.9.1-phases/03-platform/03-SECURITY.md:58; src/Autonogrammer.Sandbox/LocalPodmanComposeProvider.cs:261 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| buildCompositeNode | 3 | benign | src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:1601 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compositionEnd | 3 | benign | src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:595; src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:2448 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compositionStart | 3 | benign | src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:595; src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:2442 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compositionend | 3 | benign | src/Autonogrammer.UI/wwwroot/lib/xterm/xterm.mjs:47; src/Autonogrammer.UI/wwwroot/lib/xterm/xterm.mjs:51 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compositionstart | 3 | benign | src/Autonogrammer.UI/wwwroot/lib/xterm/xterm.mjs:47; src/Autonogrammer.UI/wwwroot/lib/xterm/xterm.mjs:51 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compositionupdate | 3 | benign | src/Autonogrammer.UI/wwwroot/lib/xterm/xterm.mjs:47; src/Autonogrammer.UI/wwwroot/lib/xterm/xterm.mjs:51 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| finalizeComposition | 3 | benign | src/Autonogrammer.UI/wwwroot/lib/xterm/xterm.mjs:47 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| hasCompose | 3 | benign | src/Autonogrammer.Harness.Remote/Containers/DevContainerResolver.cs:249; src/Autonogrammer.Harness.Remote/Containers/DevContainerResolver.cs:263 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| pageSetComposer | 3 | benign | scripts/web-smoke/smoke-demo.mjs:164; scripts/web-smoke/smoke-demo.mjs:362 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| AComposedSessionsPumpFaultReachesATraceListenerAsAnError | 2 | benign | .planning/phases/25.5-failures-that-stay-silent/25.5-01-SUMMARY.md:22; tests/Autonogrammer.Native.Tests/Logging/DesktopLoggingTests.cs:75 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| AKeySavedAfterTheEngineWasComposedStillReachesTheOmpAcpThePromptStarts | 2 | benign | .planning/phases/40-settings-window-and-model-providers/40-CONTEXT.md:20; tests/Autonogrammer.Native.Tests/Settings/Models/ProviderKeyHeadTests.cs:28 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| BuiltInListsTheFourPluginsInCompositionOrder | 2 | benign | .planning/phases/44-plugin-submodules-launch-contract/44-SUMMARY.md:14; tests/Autonogrammer.Harness.AgentLoop.Tests/Plugins/OmpPluginCatalogTests.cs:14 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| COMPOSIT | 2 | benign | src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:2526 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeImageReference | 2 | benign | tests/Autonogrammer.ArchitectureTests/ImagePinTests.cs:18; tests/Autonogrammer.ArchitectureTests/ImagePinTests.cs:37 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeImageReferences | 2 | benign | .planning/phases/68-data-plane-names-schema-and-resilience/68-CONTEXT.md:226; tests/Autonogrammer.ArchitectureTests/ImagePinTests.cs:13 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeKey | 2 | benign | tests/Autonogrammer.Harness.Remote.Tests/Containers/DevContainerResolverTests.cs:14; tests/Autonogrammer.Harness.Remote.Tests/Containers/DevContainerResolverTests.cs:117 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeText | 2 | benign | .planning/milestones/v0.9.1-phases/03-platform/03-VALIDATION.md:31; tests/Autonogrammer.Sandbox.Tests/PodmanSandboxCredentialTests.cs:82 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeUnattendedEngine | 2 | benign | apps/Autonogrammer.Native/Agents/BestOfNCandidateRunner.cs:37; apps/Autonogrammer.Native/Agents/SessionEngineSet.cs:718 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposedEngineChannel | 2 | benign | tests/Autonogrammer.Native.Tests/Parity/ParityComposerGapClosureTests.cs:200; tests/Autonogrammer.Native.Tests/Parity/ParityComposerGapClosureTests.cs:207 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerBusyTests | 2 | benign | docs/runbooks/local-dev.md:105; tests/Autonogrammer.Web.Tests/ComposerBusyTests.cs:17 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerFooter | 2 | benign | docs/plans/ui-parity/cursor-agents-window-parity.md:695; src/Autonogrammer.Native.Views/Views/ComposerView.axaml:56 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerFrame | 2 | benign | docs/plans/ui-parity/cursor-agents-window-parity.md:690; src/Autonogrammer.Native.Views/Views/ComposerView.axaml:41 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerImageViewTests | 2 | benign | docs/quality/cursor-parity-audit-2026-10-28.md:161; tests/Autonogrammer.Native.Tests/Attachments/ComposerImageViewTests.cs:16 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerPlaceholderTerminal | 2 | benign | src/Autonogrammer.Native.Views/Sessions/TerminalSteerView.axaml:25; src/Autonogrammer.Presentation/AgentPanel/AgentPanelCopy.cs:37 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerSlashTargetsTests | 2 | benign | .planning/phases/56-slash-commands-and-convention-discovery/56-01-PLAN.md:16; tests/Autonogrammer.Native.Tests/SlashPalette/ComposerSlashTargetsTests.cs:9 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerStopButtonInvokesOnStop | 2 | benign | docs/parity/session-chat-parity.md:63; tests/Autonogrammer.UI.Tests/SessionChatParityGapTests.cs:138 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposesSessionComposerApprovalsAndProviderChips | 2 | benign | tests/Autonogrammer.Presentation.Tests/Cowork/CoworkConversationModelTests.cs:16 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposesTheLaunchTheOptionsAndTheTransportFactory | 2 | benign | tests/Autonogrammer.Harness.Remote.Tests/Containers/ContainerSessionResourcesTests.cs:33; tests/Autonogrammer.Harness.Remote.Tests/RemoteSessionResourcesTests.cs:28 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| CompositeCstNodeImpl | 2 | benign | src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:1601 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| CoworkComposition | 2 | benign | .planning/phases/72-cowork-browser-use/72-08-PLAN.md:67; .planning/phases/72-cowork-browser-use/72-CONTEXT.md:157 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| CreateComposer | 2 | benign | src/Autonogrammer.Native.Views/ViewMapping.cs:52; src/Autonogrammer.Native.Views/ViewMapping.cs:89 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| FindRepoComposeFile | 2 | benign | tests/Autonogrammer.Sandbox.Tests/LocalPodmanComposeProviderContractTests.cs:184; tests/Autonogrammer.Sandbox.Tests/LocalPodmanComposeProviderContractTests.cs:207 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| HandsTheRequestTimeoutToComposeUp | 2 | benign | .planning/phases/25.8-test-quality/25.8-01-SUMMARY.md:16; tests/Autonogrammer.Sandbox.Tests/LocalPodmanComposeProviderContractTests.cs:61 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| InCompositionOrder | 2 | benign | src/Autonogrammer.Harness.AgentLoop/Launch/OmpLaunchPlanner.cs:79; src/Autonogrammer.Harness.AgentLoop/Launch/OmpLaunchPlanner.cs:233 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| NeverAppearsInArgvComposeTextLabelsOrLogs | 2 | benign | .planning/milestones/v0.9.1-phases/03-platform/03-VALIDATION.md:31; tests/Autonogrammer.Sandbox.Tests/PodmanSandboxCredentialTests.cs:55 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| PluginsAreLoadedInCompositionOrderWhateverOrderTheyAreGiven | 2 | benign | .planning/phases/44-plugin-submodules-launch-contract/44-SUMMARY.md:15; tests/Autonogrammer.Harness.AgentLoop.Tests/Launch/OmpLaunchPlannerTests.cs:93 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| RemovesSecretAfterComposeDown | 2 | benign | .planning/milestones/v0.9.1-phases/03-platform/03-VALIDATION.md:31; tests/Autonogrammer.Sandbox.Tests/PodmanSandboxCredentialTests.cs:109 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| RunsNoSecretCommandAndWritesNoSecretsToCompose | 2 | benign | .planning/milestones/v0.9.1-phases/03-platform/03-VALIDATION.md:31; tests/Autonogrammer.Sandbox.Tests/PerSandboxCredentialFlagTests.cs:46 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| SelfTestIgnoresComposeAndCatchesAPlantedLiteral | 2 | benign | .planning/phases/66-rebrand-to-autonogrammer/66-07-SUMMARY.md:142; tests/Autonogrammer.ArchitectureTests/LegacyBrandLiteralGuardTests.cs:23 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheDefaultWindowShowsRailThreadPipelineStripAndComposer | 2 | benign | .planning/phases/46-agent-panel/46-SUMMARY.md:11; tests/Autonogrammer.Native.Tests/AgentPanel/Shell/AgentPanelLayoutTests.cs:16 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ThePlanListsExactlyTheLoadedPluginsInCompositionOrder | 2 | benign | .planning/phases/48-omp-terminals-with-the-four-plugins/48-SUMMARY.md:11; tests/Autonogrammer.Harness.AgentLoop.Tests/Launch/OmpTerminalCommandTests.cs:238 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheProductionEngineComposesOnTheFirstDecisionAndSettlesAParkedAdmittedRequestAsAllowed | 2 | benign | .planning/phases/21-parity-surface/21-CONTEXT.md:31; .planning/phases/21-parity-surface/21-CONTEXT.md:49 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TryGetCompositionGpuInterop | 2 | benign | docs/plans/vision-research/pets-feasibility.md:26; docs/plans/vision-research/pets-feasibility.md:40 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composerSurface | 2 | benign | src/Autonogrammer.Native.Views/ViewMapping.cs:71 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composerView | 2 | benign | tests/Autonogrammer.Native.Tests/PresentationBindingTests.cs:59; tests/Autonogrammer.Native.Tests/PresentationBindingTests.cs:62 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composit | 2 | benign | src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:2628; src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:2633 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| hadComposer | 2 | benign | src/Autonogrammer.Native.Views/MainView.axaml.cs:514; src/Autonogrammer.Native.Views/MainView.axaml.cs:516 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| isCompositeCstNode | 2 | benign | src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:1529 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| typeInComposer | 2 | benign | scripts/web-smoke/a11y/states.mjs:36; scripts/web-smoke/a11y/states.mjs:57 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| AClosedAgentHidesTheComposerAndOffersReopen | 1 | benign | tests/Autonogrammer.UI.Tests/ThreadViewTests.cs:183 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| AComposedEngineSignsInWithTheAgentMethod | 1 | benign | tests/Autonogrammer.Native.Tests/AgentLoop/EngineCompositionAuthenticationTests.cs:16 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| AHeadWithoutServicesComposesALocalEngineOnly | 1 | benign | tests/Autonogrammer.Native.Tests/Composition/RemoteTransportSelectionTests.cs:83 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| APromptStreamsTheScriptedReplyAndReleasesTheComposer | 1 | benign | tests/Autonogrammer.Web.Tests/WebWorkbenchTests.cs:78 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| BackendDependenciesStayWithinHarnessAndNativeComposition | 1 | benign | tests/Autonogrammer.ArchitectureTests/ComputerUseBoundaryTests.cs:76 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| CompletedTurnReleasesTheComposer | 1 | benign | tests/Autonogrammer.Web.Tests/ComposerBusyTests.cs:24 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeFailureClosesTheAcquiredGatewaySlotAndTheQueueRecovers | 1 | benign | tests/Autonogrammer.Native.Tests/Cowork/CoworkSessionHostTests.cs:389 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeFileIsOwnerOnlyInAPrivateDirectory | 1 | benign | tests/Autonogrammer.Sandbox.Tests/ComposeFileModeTests.cs:20 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposeJoinsServerAndToolWithTheSeparator | 1 | benign | tests/Autonogrammer.Harness.McpGateway.Tests/McpGatewayToolNamesTests.cs:11 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposedTextsAreComplete | 1 | benign | tests/Autonogrammer.Presentation.Tests/Settings/SettingsCopyTests.cs:46 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerAttachmentsTests | 1 | benign | tests/Autonogrammer.Presentation.Tests/Composer/ComposerAttachmentsTests.cs:9 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerSteersWithTheChosenMode | 1 | benign | tests/Autonogrammer.UI.Tests/TerminalViewTests.cs:162 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ComposerStreamingStateReachesThePicker | 1 | benign | tests/Autonogrammer.Presentation.Tests/Composer/ModelPickerModelTests.cs:240 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| CompositeWithoutChildrenCompletesImmediately | 1 | benign | tests/Autonogrammer.Harness.AgentLoop.Tests/Stages/CompositeStageSourceTests.cs:221 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| Composites | 1 | benign | scripts/web-smoke/a11y/page-lib.mjs:43 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| CompositionTests | 1 | benign | .planning/phases/76-cowork-parity-plugins-auto-isolation/76-06-PLAN.md:140 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| EveryPluginInPlaceIsFoundInCompositionOrder | 1 | benign | tests/Autonogrammer.Native.Tests/Settings/Head/PluginsSettingsSourceTests.cs:14 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| FailedProvisionRemovesTheComposeFileAndItsDirectory | 1 | benign | tests/Autonogrammer.Sandbox.Tests/ComposeFileModeTests.cs:52 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| GuidanceStaysInsideTheComposerBudget | 1 | benign | tests/Autonogrammer.Native.Tests/Browser/BrowserUseCompositionTests.cs:61 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| HooksComposition | 1 | benign | docs/plans/v0.15.0-research/08-hooks-design.md:246 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ICompositionGpuInterop | 1 | benign | docs/plans/vision-research/pets-feasibility.md:26 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| LocalPodmanCompose | 1 | benign | .planning/milestones/v0.9.1-phases/03-platform/03-01-PLAN.md:52 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| LocalPodmanComposeProviderTests | 1 | benign | .planning/milestones/v0.9.1-phases/03-platform/03-01-PLAN.md:24 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| PluginCompositionOrder | 1 | benign | docs/plans/agent-loop/dossier-autonogrammer-seams.md:258 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ProductionEngineComposesOnTheFirstDecisionAndDeniesEveryKind | 1 | benign | .planning/phases/21-parity-surface/21-01-PLAN.md:10 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| RefusedSendShowsErrorAndKeepsComposerIdle | 1 | benign | tests/Autonogrammer.Web.Tests/ComposerBusyTests.cs:54 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ReopeningAClosedSessionRestoresTheComposerAndFocusesThePrompt | 1 | benign | tests/Autonogrammer.Native.Tests/AgentPanel/Shell/AgentPanelSessionTests.cs:141 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| SideChatsAndSuggestionsOpenAroundTheComposer | 1 | benign | tests/Autonogrammer.Native.Tests/AgentPanel/Shell/AgentPanelToolsTests.cs:237 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TerminalSessionHasNoComposerControlsAndRefusesAPrompt | 1 | benign | tests/Autonogrammer.Web.Tests/WebWorkbenchTests.cs:275 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheAttachButtonShowsOnlyWhenTheSessionWiredTheComposer | 1 | benign | tests/Autonogrammer.Native.Tests/AgentPanel/Shell/AgentSessionRuntimeImageTests.cs:156 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheCombinedTargetsKeepTheHeadsAndAddTheComposers | 1 | benign | tests/Autonogrammer.Native.Tests/SlashPalette/ComposerSlashTargetsTests.cs:102 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheComposedEngineFillsTheModeAndThinkingChipsFromTheRealOmp | 1 | benign | tests/Autonogrammer.Native.Tests/OptionChips/LiveOmpOptionChipsTests.cs:26 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheComposerHintIsATooltipInATallAndAShortWindow | 1 | benign | tests/Autonogrammer.Native.Tests/AgentPanel/Shell/AgentPanelLayoutTests.cs:161 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheComposerHostsThePaletteAboveTheCard | 1 | benign | tests/Autonogrammer.Native.Tests/SlashPalette/SlashPaletteMarkupTests.cs:68 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheComposerIsNamedDescribedAndGuarded | 1 | benign | tests/Autonogrammer.UI.Tests/ComposerPanelTests.cs:467 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheComposerKeepsTheChipsInStepWithTheRun | 1 | benign | tests/Autonogrammer.Presentation.Tests/Composer/OptionChipModelTests.cs:231 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheComposerOfATerminalSteersAndQueuesThroughTheChannel | 1 | benign | tests/Autonogrammer.Native.Tests/AgentPanel/Shell/AgentPanelTerminalSessionTests.cs:90 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheComposerStatusRegionsStayInThePageWhileEmpty | 1 | benign | tests/Autonogrammer.UI.Tests/ComposerPanelTests.cs:262 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheInlineSuggestionsToggleShowsTheSuggestionsBoxInTheComposer | 1 | benign | tests/Autonogrammer.Native.Tests/Shell/ShellWave7Tests.cs:216 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheLegacyBuildAndComposePropertiesAreRecognised | 1 | benign | tests/Autonogrammer.Harness.Remote.Tests/Containers/DevContainerResolverTests.cs:112 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| ThePluginsKeepCompositionOrderWhateverOrderThePlannerWasGiven | 1 | benign | tests/Autonogrammer.Harness.AgentLoop.Tests/Launch/OmpTerminalCommandTests.cs:130 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| TheWslResourcesComposeTheSameWay | 1 | benign | tests/Autonogrammer.Harness.Remote.Tests/Containers/ContainerSessionResourcesTests.cs:138 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| WithoutASteeringServiceTheComposerSaysSo | 1 | benign | tests/Autonogrammer.UI.Tests/TerminalViewTests.cs:208 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| XComposite | 1 | benign | docs/plans/v0.16.0-research/07-browser-computer-use-feasibility.md:117 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compos | 1 | benign | .planning/phases/66-rebrand-to-autonogrammer/66-01-PLAN.md:83 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composeNode | 1 | benign | src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:568 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composedPath | 1 | benign | src/Autonogrammer.UI/wwwroot/lib/xterm/xterm.mjs:51 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compositTitleSize | 1 | benign | src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:1 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composited | 1 | benign | .planning/phases/25-cutover/25-SUMMARY.md:72 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| composites | 1 | benign | src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:2545 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| compositors | 1 | benign | docs/decisions/ADR-0035-cowork-computer-use.md:178 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| decomposition | 1 | benign | .planning/phases/74-dispatch-relay/74-CONTEXT.md:168 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| erComposeFile | 1 | benign | tests/Autonogrammer.Harness.Remote.Tests/Containers/DevContainerResolverTests.cs:14 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+| uncomposed | 1 | benign | .planning/phases/21-parity-surface/21-CONTEXT.md:56 | embedded in a longer word: letter before 'ompos' (compose/composer/composite/composition/decompose family) |
+
+Other `omp`-containing words (prompt, StringComparison, ...): 1621 distinct, 40813 occurrences; top 15:
+| word | count | examples |
+| --- | --- | --- |
+| prompt | 4284 | .planning/PROJECT.md:9; .planning/PROJECT.md:58 |
+| StringComparison | 4120 | .planning/phases/20-avalonia-foundation/20-RESEARCH.md:339; .planning/phases/25-cutover/25-REPAIR-NOTES.md:5 |
+| StringComparer | 2602 | .planning/milestones/v0.9.1-phases/01-foundation/01-03-SUMMARY.md:109; .planning/milestones/v0.9.1-phases/01-foundation/01-RESEARCH.md:544 |
+| ComputerUse | 1522 | .gitleaksignore:43; .planning/REQUIREMENTS.md:617 |
+| CompiledBinding | 1304 | .planning/phases/25.1-codebase-quality-audit/lens-5-accessibility.md:35; src/Autonogrammer.Native.Views/Views/AboutView.axaml:35 |
+| completed | 1227 | .planning/MILESTONES.md:5; .planning/MILESTONES.md:16 |
+| Components | 1035 | .planning/REQUIREMENTS.md:57; .planning/REQUIREMENTS.md:58 |
+| CompletedTask | 944 | .planning/milestones/v0.9.1-phases/02-core/02-REVIEW.md:288; .planning/milestones/v0.9.1-phases/03-platform/03-SECURITY.md:48 |
+| computer | 923 | .planning/REQUIREMENTS.md:749; .planning/REQUIREMENTS.md:817 |
+| completes | 897 | .planning/REQUIREMENTS.md:182; .planning/REQUIREMENTS.md:194 |
+| complete | 858 | .planning/PROJECT.md:107; .planning/REQUIREMENTS.md:472 |
+| components | 789 | .gitignore:259; .gitignore:261 |
+| Completed | 735 | .planning/ROADMAP.md:260; .planning/ROADMAP.md:836 |
+| component | 680 | .planning/PROJECT.md:62; .planning/REQUIREMENTS.md:177 |
+| Prompt | 658 | .planning/STATE.md:317; .planning/milestones/v0.9.1-MILESTONE-AUDIT.md:232 |
+
+## Engine tokens (kept) and product abbreviations (renamed)
+
+| kept token class (rewritable files) | occurrences |
+| --- | --- |
+| bare omp (engine) | 8430 |
+| Pascal Omp identifier (adapter) | 4995 |
+| camel omp identifier (adapter) | 342 |
+| OMP upper (engine) | 215 |
+| Omp as a word (engine, prose) | 116 |
+
+| keep pattern | matches (proof: unchanged by apply) |
+| --- | --- |
+| -hooks-omp plugin suffix | 81 |
+| .omp/ convention dir | 122 |
+| @oh-my-pi packages | 43 |
+| FAKE_OMP_* | 17 |
+| OMP_* variables | 81 |
+| PI_CODING_AGENT_DIR | 114 |
+| SUBSTRATE_*OMP* (submodule env) | 28 |
+| agent.db | 20 |
+| bare omp token | 8430 |
+| gsd-core-omp plugin | 150 |
+| models.yml | 353 |
+| oh-my-pi | 78 |
+| omp --mode rpc | 24 |
+| omp acp | 390 |
+| omp:// URLs | 110 |
+| omp_result wire field | 19 |
+| ~/.omp and $HOME/.omp | 123 |
+
+First-party engine-adapter identifiers kept in mode `keep`: 505 distinct, 5337 occurrences; top 25:
+| identifier | occurrences |
+| --- | --- |
+| OmpConfig | 194 |
+| OmpLauncher | 166 |
+| OmpPath | 147 |
+| ompPath | 125 |
+| ompProviderId | 125 |
+| OmpProviderApi | 89 |
+| ScriptedOmp | 88 |
+| OmpLaunchPlan | 86 |
+| ModelsFakeOmp | 84 |
+| OmpModelsFixtures | 77 |
+| OmpTerminalState | 76 |
+| OmpModelsWriteStatus | 75 |
+| FakeOmpEnvironment | 75 |
+| OmpAcpClient | 72 |
+| OmpProviderId | 66 |
+| OmpModelsEditor | 55 |
+| OmpTerminalViewModel | 55 |
+| OmpRpcSession | 53 |
+| OmpEvent | 53 |
+| OmpLocatorOptions | 53 |
+| OmpPluginCatalog | 51 |
+| OmpManagedProvider | 50 |
+| OmpLaunchPlanner | 49 |
+| OmpSteerOutcome | 49 |
+| OmpDelegated | 49 |
+
+| product abbreviation | becomes | count | examples |
+| --- | --- | --- | --- |
+| OmpApiFactory | ApiFactory | 0 |  |
+| OmpTelemetry | ApiTelemetry | 0 |  |
+| AddOmpOpenApi | AddAutonogrammerOpenApi | 0 |  |
+| AddOmpWebServices | AddAutonogrammerWebServices | 0 |  |
+| AddOmpWebDemoServices | AddAutonogrammerWebDemoServices | 0 |  |
+
+## Path rename plan
+
+0 moves (0 directories, 0 files), deepest first. Collision check: no collisions; case-only renames: 0.
+
+| type | from | to | how |
+| --- | --- | --- | --- |
+
+## Protected URLs and hostnames (294 places; 1072 more in frozen files)
+
+| where | text | rule |
+| --- | --- | --- |
+| .github/ISSUE_TEMPLATE/config.yml:4 | swcstudiospace/OmpOS | github repo slug swcstudiospace/OmpOS |
+| .github/ISSUE_TEMPLATE/config.yml:7 | swcstudiospace/OmpOS | github repo slug swcstudiospace/OmpOS |
+| .github/ISSUE_TEMPLATE/config.yml:10 | swcstudiospace/OmpOS | github repo slug swcstudiospace/OmpOS |
+| .planning/REQUIREMENTS.md:514 | swcstudiospace/OmpOS | github repo slug swcstudiospace/OmpOS |
+| .planning/REQUIREMENTS.md:530 | ompos-web.vercel.app | Vercel/Railway project or service name on a line that mentions Vercel or Railway |
+| .planning/REQUIREMENTS.md:578 | swcstudiospace/OmpOS | github repo slug swcstudiospace/OmpOS |
+| .planning/phases/44-plugin-submodules-launch-contract/44-VERIFICATION.md:16 | swcstudiospace/OmpOS | github repo slug swcstudiospace/OmpOS |
+| .planning/phases/51-brand-theme-and-licence/51-VERIFICATION.md:19 | ompos-web.vercel.app | Vercel/Railway project or service name on a line that mentions Vercel or Railway |
+| .planning/phases/52-repository-release-and-community-health/52-SUMMARY.md:7 | ompos-web.vercel.app | Vercel/Railway project or service name on a line that mentions Vercel or Railway |
+| .planning/phases/52-repository-release-and-community-health/52-SUMMARY.md:13 | ompos-web.vercel.app | Vercel/Railway project or service name on a line that mentions Vercel or Railway |
+| .planning/phases/52-repository-release-and-community-health/52-SUMMARY.md:15 | swcstudiospace/OmpOS | github repo slug swcstudiospace/OmpOS |
+| .planning/phases/52-repository-release-and-community-health/52-VERIFICATION.md:19 | swcstudiospace/OmpOS | github repo slug swcstudiospace/OmpOS |
+| .planning/phases/52-repository-release-and-community-health/52-VERIFICATION.md:22 | swcstudiospace/OmpOS | github repo slug swcstudiospace/OmpOS |
+| .planning/phases/55-showing-the-web-application/55-01-PLAN.md:15 | ompos-web | Vercel/Railway project or service name on a line that mentions Vercel or Railway |
+| .planning/phases/55-showing-the-web-application/55-01-PLAN.md:15 | ompos-web.vercel.app | Vercel/Railway project or service name on a line that mentions Vercel or Railway |
+... 279 more in rebrand-report.md
+
+## Keep-marker blocks left untouched: 3 in 2 files
+| file | blocks (lines, brand tokens kept) |
+| --- | --- |
+| CHANGELOG.md | 39-41 (2 tokens); 43-45 (1 tokens) |
+| docs/runbooks/desktop-release.md | 107-109 (1 tokens) |
+
+## Owner actions
+- URLs and hostnames protected until --urls (294 places in rewritable files, 1072 more in frozen files): rename the GitHub repo swcstudiospace/OmpOS, the Vercel project (ompos-web*.vercel.app), the Railway service/project names and register the new domain; then re-run with --urls.
+- Rename the GitHub repository, Vercel project and Railway service/project, then run apply --urls (or re-run after they move).
+- Set the renamed environment variables (AUTONOGRAMMER_*) in Vercel project settings, Railway service variables, repository secrets and developer .env files.
+- Recreate or migrate local containers, volumes, podman secrets and the PostgreSQL schema/Dragonfly keys that carried the old names; images and labels change name (hard cutover, no alias).
+- Regenerate generated files in order (see the runbook): relock, dotnet format, openapi, notices, brand assets.
+- After the rename commit exists, add gitleaks fingerprints for the relocated recorded frames (the old .gitleaksignore lines stay untouched).
+- Add the rename entry under [Unreleased] in CHANGELOG.md and review the NOTICE trademark wording.
+- Delete obj/ and bin/ before the first build (they cache the old paths).
+
+## Ambiguous items for the owner
+- Recorded protocol frames (tests/*/TestData/frames/**) are excluded from content rewriting because replay tests compare bytes; they hold a few real 'ompos' tokens (a /tmp/ompos-rpc-live path). Confirm they may stay.
+- All of docs/plans/v0.16.0-research/** except 01-rename-inventory.md, every ADR, .planning/phases/** and docs/plans/** are REWRITTEN (the owner decision overrides report 01's default 'frozen'). Only docs/runbooks/evidence/**, .planning/milestones/**, released CHANGELOG sections and generated files are frozen.
+- The Vercel/Railway project-name rule is textual: ompos-web/ompos-api are protected only on lines that also mention vercel or railway. ompos-api is also the default JWT issuer string in code and tests; those lines are renamed, so every deployed API and worker must switch issuer together (hard cutover).
+- NOTICE and docs/licensing.md carry the trademark clause ('no right to use the name OmpOS or its logo'): the tool rewrites the name, the owner must approve the legal wording.
+- ompos.dev (hooks schema $id) is treated as an owned domain and protected until --urls; it is not a Vercel/GitHub name, so say whether it should follow now.
+- Only five first-party Omp* identifiers are product abbreviations (config list). Every other first-party Omp*/omp* identifier is kept as engine integration; the report lists them (engine.adapterIdentifiers) for a reviewer pass.
+- Android ApplicationId com.swcstudiospace.ompos is renamed by the token rule (com.swcstudiospace.autonogrammer): this is a new store identity, previous installs will not upgrade.
+- Submodules plugins/agent-substrate, agent-swarm, claude-ultrathink are not in this tree; if they read OMPOS_* or .ompos they must be changed in their own repos (gate G9).
+- Hard cutover leaves the C# runtime reading only new names: see the runtime-migration list in docs/runbooks/rebrand-autonogrammer.md.
+- 1 extension-less or unknown files contain NUL bytes and were treated as binary: ['tests/Autonogrammer.Cowork.Artifacts.Tests/Fixtures/hostile/image/oversized-dims.bin']
+
+Reports: /tmp/ag-recon/rebrand-report-66-gate/rebrand-report.md and rebrand-report.json

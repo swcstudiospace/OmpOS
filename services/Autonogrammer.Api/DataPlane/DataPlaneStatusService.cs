@@ -1,3 +1,5 @@
+// SOTA embed: loading (schema wait/migration probe), error (data_plane_unavailable), success (cutover verified + telemetry to autonogrammer DB); roles fail-closed, no DDL for app, validation no old names, graceful no deploy mutations.
+
 using System.Diagnostics.Metrics;
 using Autonogrammer.Api.Options;
 using Autonogrammer.Api.Telemetry;

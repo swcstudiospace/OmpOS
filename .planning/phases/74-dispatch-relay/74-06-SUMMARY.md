@@ -76,3 +76,16 @@ Dispatch presentation for the web head and the Avalonia heads: the Devices and D
 
 ## Notes for 74-08
 - `IAccountFeature` is not a blocker. It exists at `services/Autonogrammer.Api/Accounts/IAccountFeature.cs`, and `DispatchFeature` is registered at `services/Autonogrammer.Api/Dispatch/DispatchModule.cs:33`. Clients read feature keys from `GET /account` (ADR-0030:139). An earlier note calling it missing was wrong.
+
+## SOTA Update (executed 2026-11-10, refs 74)
+
+**SOTA quality requirements** (from 66-SOTA-QUALITY-REQUIREMENTS.md + 74-SOTA-DISPATCH-RELAY.md) applied and verified for the dispatch surfaces in this plan:
+- Explicit states: DispatchPhase (Loading + 17 others covering empty NoDevices/Disabled/SignedOut, error Failed/Unreachable, success Completed/Queued etc); DevicesViewModel.Loading()/Loaded(devices)/Failed(failure) with Phase/StatusText/Rows (no spinner on answer state); DispatchPageModel.Failures/Problem; DispatchRelayModel updates; DispatchPhaseMap; per-phase copy in DispatchCopy/DispatchText.
+- First-attempt: gate b42dda7a clean (0 failed in *Dispatch* filters); deterministic fakes + TimeProvider; no timing reliance.
+- A11y: 32/44 targets, polite live region (announcement), keyboard cancel button, reduced motion honoured; focus/return OQ noted.
+- Graceful/no-leak: closed failure kinds, status per phase, no secrets in models.
+- Full phase SOTA (including pending 05/09 hub/client) documented in new 74-SOTA-DISPATCH-RELAY.md.
+
+## Notes for 74-05/09 (pending)
+- Hub will deliver data-plane degrade states (unknown/1013/503), shutdown 1001 within 10s, single-use challenge, signed delivery, 2s revoke.
+- Client hosts will deliver SSE resume + explicit 401/429/503 -> phases, first-attempt against fakes.

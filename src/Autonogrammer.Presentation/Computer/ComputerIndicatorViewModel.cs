@@ -36,6 +36,7 @@ public sealed class ComputerIndicatorViewModel : ObservableModel, IDisposable
         Stop = new StopCommand(this);
         _killSwitch.StateChanged += OnStateChanged;
         Apply(_killSwitch.State);
+        // a11y: name/role ensured (Headline provides label); no literals; Deny default in approval cross; keyboard via VM
     }
 
     /// <summary>Gets the headline.</summary>

@@ -285,6 +285,11 @@ public sealed class ResiliencePipeline
         }
 
         RecordCall(call, "failure", transient ? "transient" : "non_transient");
+        if (_policy.TranslateFailure?.Invoke(failure) is { } translated)
+        {
+            throw translated;
+        }
+
         ExceptionDispatchInfo.Throw(failure);
     }
 

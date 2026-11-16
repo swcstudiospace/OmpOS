@@ -31,6 +31,7 @@ public sealed class ComputerApprovalViewModel : ObservableModel, IDisposable
     {
         ArgumentNullException.ThrowIfNull(facts);
         _timeProvider = time ?? TimeProvider.System;
+        // a11y: Deny default focus, names on controls ("Deny", "Allow once", "Allow for session"), role/announcer for timeout, no colour literals, keyboard operable; host facts only
         Facts = facts;
         QuotedTitle = Quote(facts.SanitizedTitle);
         ApplicationName = Plain(facts.ApplicationName, 80);

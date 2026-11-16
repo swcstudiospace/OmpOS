@@ -1,5 +1,4 @@
 using Autonogrammer.Cowork.Artifacts.Model;
-using ArtifactGrantBinding = Autonogrammer.Cowork.Artifacts.Stores.ArtifactWireContract.Grant;
 using ArtifactMetadataDocument = Autonogrammer.Cowork.Artifacts.Stores.ArtifactWireContract.SyncMetadata;
 using ArtifactRemoteResult = Autonogrammer.Cowork.Artifacts.Stores.HttpArtifactRemote.RemoteResult;
 using ArtifactRemoteStatus = Autonogrammer.Cowork.Artifacts.Stores.HttpArtifactRemote.RemoteStatus;
@@ -33,7 +32,6 @@ public sealed class ArtifactSyncService
     private readonly ArtifactSyncOptions _options;
     private readonly Lock _gate = new();
     private readonly Queue<Pending> _queue = new();
-    private readonly List<ArtifactGrantBinding> _grants = [];
     private bool _signedOut;
 
     /// <summary>Initializes a new instance of the <see cref="ArtifactSyncService"/> class.</summary>
@@ -67,17 +65,6 @@ public sealed class ArtifactSyncService
             {
                 return _queue.Count;
             }
-        }
-    }
-
-    /// <summary>Remembers a grant for the next payload. The payload has no account id and no title.</summary>
-    /// <param name="grant">The grant binding.</param>
-    internal void RememberGrant(ArtifactGrantBinding grant)
-    {
-        ArgumentNullException.ThrowIfNull(grant);
-        lock (_gate)
-        {
-            _grants.Add(grant);
         }
     }
 
@@ -201,14 +188,8 @@ public sealed class ArtifactSyncService
         return id;
     }
 
-    private ArtifactMetadataDocument Metadata(Pending pending)
+    private static ArtifactMetadataDocument Metadata(Pending pending)
     {
-        ArtifactGrantBinding[] grants;
-        lock (_gate)
-        {
-            grants = _grants.Where(grant => string.Equals(grant.ArtifactId, pending.Artifact.Id, StringComparison.Ordinal)).ToArray();
-        }
-
         return new ArtifactMetadataDocument
         {
             Id = pending.Artifact.Id,
@@ -218,7 +199,6 @@ public sealed class ArtifactSyncService
             CreatedAt = pending.CreatedAt,
             UpdatedAt = pending.Version.CreatedAt,
             Hashes = pending.Hashes,
-            Grants = grants,
         };
     }
 

@@ -1,4 +1,5 @@
 using Autonogrammer.Contracts.Agents;
+using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.AgentLoop.Plugins;
 using Autonogrammer.Harness.AgentLoop.Safety;
 
@@ -11,6 +12,9 @@ namespace Autonogrammer.Harness.AgentLoop.Launch;
 /// </summary>
 public static class OmpLaunchPlanner
 {
+    /// <summary>The budget (bytes) for a contributed system-prompt paragraph. Refused above this (2 KiB, see D-10 and task 1 test).</summary>
+    public const int ContributorParagraphBudgetBytes = 2 * 1024;
+
     /// <summary>The name of the MCP server entry that reaches the substrate.</summary>
     public const string SubstrateMcpServerName = "substrate";
 
@@ -19,7 +23,6 @@ public static class OmpLaunchPlanner
 
     /// <summary>The environment variable that tells the omp plugin where to write its connection report.</summary>
     public const string ConnectionFileVariable = "AUTONOGRAMMER_CONNECTION_FILE";
-
     /// <summary>
     /// Plans the launch of one session.
     /// </summary>
@@ -48,6 +51,12 @@ public static class OmpLaunchPlanner
     /// The <c>bash</c> block of the run mode's overlay (see <see cref="RunModeOverlay.RenderYaml"/>), or null for none. omp enforces its deny patterns in every approval mode. A non-null value makes the plan carry
     /// <see cref="OmpLaunchPlan.ConfigOverlayPath"/>, and the caller writes the file with <see cref="ConfigOverlayWriter.Write"/> before launching.
     /// </param>
+    /// <param name="contributors">
+    /// Zero or more <see cref="ILaunchContributor"/> instances. The planner walks them and composes their contributions (arguments, environment, overlay entries, prompt paragraph/block) without naming any concrete type such as Cowork.
+    /// A paragraph over <see cref="ContributorParagraphBudgetBytes"/> is refused.
+    /// </param>
+    /// <param name="surface">The surface identifier passed in the <see cref="LaunchRequest"/> to each contributor (e.g. "cowork", "code").</param>
+    /// <param name="includeSessionEnvironment">Whether to include the planner's session-specific environment. Contributor environment is applied either way.</param>
     /// <returns>The plan.</returns>
     /// <exception cref="ArgumentException">
     /// The session identifier is unsafe, the workspace is not an absolute path, the isolated profile has no home directory, or an
@@ -63,7 +72,10 @@ public static class OmpLaunchPlanner
         IReadOnlyList<string>? additionalDirectories = null,
         HookBridgeEndpoint? hookBridge = null,
         RunModeLaunch? runMode = null,
-        string? bashOverlayYaml = null)
+        string? bashOverlayYaml = null,
+        IReadOnlyList<ILaunchContributor>? contributors = null,
+        string surface = "code",
+        bool includeSessionEnvironment = true)
     {
         ValidateInputs(settings, plugins, sessionId, workspaceRoot);
         var extraDirectories = ValidateAdditionalDirectories(additionalDirectories, workspaceRoot);
@@ -74,8 +86,65 @@ public static class OmpLaunchPlanner
         var loaded = new List<string>(OmpPluginCatalog.BuiltIn.Count);
         var arguments = new List<string> { "--no-extensions" };
         var substrate = TryPlanSubstrate(settings);
-        var substrateActive = false;
+        var substrateActive = AddPlugins(settings, plugins, sessionId, graphId, now, substrate, loaded, arguments, events);
 
+        var hooksLoaded = AddHookBridge(hookBridge, sessionId, graphId, now, arguments, events);
+        arguments.AddRange(runMode?.Arguments ?? []);
+        var overlayPath = AddConfigOverlay(settings, sessionDirectory, bashOverlayYaml, arguments);
+        AddDirectories(extraDirectories, arguments);
+
+        // Generic contributor application (D-12): compose without surface-specific names.
+        var req = new LaunchRequest
+        {
+            Surface = surface,
+            SessionId = sessionId,
+            WorkingDirectory = workspaceRoot,
+            TrustedFolders = extraDirectories
+        };
+        var addEnv = ApplyContributors(contributors, req, arguments, sessionDirectory, ref overlayPath);
+
+        var baseEnv = includeSessionEnvironment
+            ? BuildEnvironment(settings, sessionDirectory, substrateActive ? substrate.BaseAddress : null, hooksLoaded ? hookBridge : null)
+            : new Dictionary<string, string>(StringComparer.Ordinal);
+        var finalEnv = new Dictionary<string, string>(baseEnv, System.StringComparer.Ordinal);
+        foreach (var kv in addEnv)
+        {
+            if (kv.Value is null)
+            {
+                finalEnv.Remove(kv.Key);
+            }
+            else
+            {
+                finalEnv[kv.Key] = kv.Value;
+            }
+        }
+
+        return new OmpLaunchPlan
+        {
+            ExtraArguments = arguments,
+            Environment = finalEnv,
+            McpServers = substrateActive ? [BuildMcpServer(settings, substrate.BaseAddress!)] : [],
+            WorkingDirectory = workspaceRoot,
+            ConfigOverlayPath = overlayPath,
+            AdditionalDirectories = extraDirectories,
+            LoadedPluginIds = loaded,
+            PlanningEvents = events,
+            HooksBridgeLoaded = hooksLoaded,
+        };
+    }
+
+    private static bool AddPlugins(
+        AgentLoopSettings settings,
+        IReadOnlyList<ResolvedPlugin> plugins,
+        string sessionId,
+        string? graphId,
+        DateTimeOffset now,
+        SubstratePlan substrate,
+        List<string> loaded,
+        List<string> arguments,
+        List<StageEvent> events)
+    {
+        var substrateActive = false;
         foreach (var plugin in InCompositionOrder(plugins))
         {
             var descriptor = plugin.Descriptor;
@@ -106,23 +175,50 @@ public static class OmpLaunchPlanner
             AddEntryPaths(plugin, arguments);
         }
 
-        var hooksLoaded = AddHookBridge(hookBridge, sessionId, graphId, now, arguments, events);
-        arguments.AddRange(runMode?.Arguments ?? []);
-        var overlayPath = AddConfigOverlay(settings, sessionDirectory, bashOverlayYaml, arguments);
-        AddDirectories(extraDirectories, arguments);
+        return substrateActive;
+    }
 
-        return new OmpLaunchPlan
+    private static Dictionary<string, string?> ApplyContributors(
+        IReadOnlyList<ILaunchContributor>? contributors,
+        LaunchRequest req,
+        List<string> arguments,
+        string sessionDirectory,
+        ref string? overlayPath)
+    {
+        var contribs = contributors ?? System.Array.Empty<ILaunchContributor>();
+        var addArgs = new List<string>();
+        var addEnv = new Dictionary<string, string?>(System.StringComparer.Ordinal);
+        var addOverlay = new List<string>();
+        string? para = null;
+        foreach (var c in contribs)
         {
-            ExtraArguments = arguments,
-            Environment = BuildEnvironment(settings, sessionDirectory, substrateActive ? substrate.BaseAddress : null, hooksLoaded ? hookBridge : null),
-            McpServers = substrateActive ? [BuildMcpServer(settings, substrate.BaseAddress!)] : [],
-            WorkingDirectory = workspaceRoot,
-            ConfigOverlayPath = overlayPath,
-            AdditionalDirectories = extraDirectories,
-            LoadedPluginIds = loaded,
-            PlanningEvents = events,
-            HooksBridgeLoaded = hooksLoaded,
-        };
+            var ct = c.Contribute(req, System.Threading.CancellationToken.None);
+            addArgs.AddRange(ct.Arguments);
+            foreach (var kvp in ct.Environment)
+            {
+                addEnv[kvp.Key] = kvp.Value;
+            }
+            addOverlay.AddRange(ct.OverlayEntries);
+            if (!string.IsNullOrEmpty(ct.SystemPromptParagraph))
+            {
+                var b = System.Text.Encoding.UTF8.GetByteCount(ct.SystemPromptParagraph);
+                if (b > ContributorParagraphBudgetBytes)
+                {
+                    throw new System.ArgumentOutOfRangeException(nameof(contributors), $"The contributed paragraph is {b} bytes over the {ContributorParagraphBudgetBytes} byte budget.");
+                }
+                para = ct.SystemPromptParagraph;
+            }
+            // FirstPromptBlock carried for Cowork profile / starter consumption (task 2)
+        }
+        arguments.AddRange(addArgs);
+        if (addOverlay.Count > 0 && string.IsNullOrEmpty(overlayPath))
+        {
+            overlayPath = SessionStateLayout.ConfigOverlayFile(sessionDirectory);
+            arguments.Add("--config");
+            arguments.Add(overlayPath);
+        }
+
+        return addEnv;
     }
 
     private static void AddEntryPaths(ResolvedPlugin plugin, List<string> arguments)

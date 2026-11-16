@@ -74,6 +74,15 @@ internal sealed class AccountsHarness : IDisposable
     public static AccountsHarness Create(bool magicLink = false, bool configured = true, Func<Journal, IRefreshGuard>? guardFactory = null, RecordingSecretStore? store = null) =>
         new(magicLink, configured, guardFactory, store);
 
+    /// <summary>Creates another manager over the same store, fake service and clock, as a second app process would be.</summary>
+    /// <param name="guard">The refresh guard the managers of the test share.</param>
+    /// <returns>The manager; the caller disposes it.</returns>
+    public AccountSessionManager NewManager(IRefreshGuard guard) =>
+        new(Store, Provider, Time, guard, new CapturingLogger<AccountSessionManager>(Sink))
+        {
+            Jitter = static interval => interval,
+        };
+
     /// <summary>Writes the stored session of a person who signed in before, using a refresh token the fake knows.</summary>
     /// <param name="session">A session the fake issued.</param>
     /// <param name="issuer">The issuer to record, or null for the harness project.</param>
@@ -88,6 +97,7 @@ internal sealed class AccountsHarness : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
+        Coordinator.Dispose();
         Manager.Dispose();
         Http.Dispose();
         Handler.Dispose();

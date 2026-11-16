@@ -6,12 +6,12 @@ using Xunit;
 
 namespace Autonogrammer.Native.Tests.Branding;
 
-/// <summary>The desktop head's main window carries the product name. This is the headless route; the live-display route is recorded separately.</summary>
+/// <summary>Verifies the desktop window title on the headless route.</summary>
 public sealed class MainWindowTitleTests
 {
-    /// <summary>A headless main window is titled with the product name, not the legacy one.</summary>
+    /// <summary>The main window is titled with the product name.</summary>
     [Fact]
-    public async Task TheHeadlessMainWindowTitleIsTheProductName()
+    public async Task TheHeadlessMainWindowTitleIsTheProductName_FirstAttemptSuccess()
     {
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
