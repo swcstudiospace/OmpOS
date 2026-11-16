@@ -29,6 +29,8 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 - Dispatch pairing rejects file-backed and other non-OS secret stores for device keys and credentials; native pairing and platform keyrings remain unverified.
 - PostgreSQL Dispatch store transaction handling covers duplicate devices, replay and retention; production Dispatch remains disabled pending migration registration and idempotency-key isolation.
 - Sign-in coordinator defers synchronization-resource disposal until registered sends finish.
+- A desktop refresh no longer overwrites or removes a newer sign-in another process stored, and no longer brings back a session another process signed out; sign-in and sign-out now take the cross-process refresh guard (sign-out waits at most 5 seconds for it). Two-process behaviour has only been exercised with two managers over one store.
+- Account enrollment no longer holds the request for the account write: only account routes wait (at most 2 seconds) for their caller's write, other routes continue at once, concurrent first requests share one pending write, pending writes are bounded, time out after 10 seconds and stop when the host begins stopping.
 
 ### Changed
 
