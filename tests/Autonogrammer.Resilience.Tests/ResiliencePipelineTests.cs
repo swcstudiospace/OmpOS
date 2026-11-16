@@ -240,6 +240,40 @@ public sealed class ResiliencePipelineTests
     }
 
     [Fact]
+    public async Task AFailureTheDependencyAnsweredIsTranslatedOnceWhenTheCallEndsAndNeverRetried()
+    {
+        var policy = new PostgresResilienceOptions().ToPolicy(
+            static exception => exception is TransientFault,
+            static exception => exception is SerializationFault,
+            static exception => exception is InvalidOperationException { Message: "fenced" } ? new AccountErasingException("translated", exception) : null);
+        var pipeline = new ResiliencePipeline(policy, new ManualTimeProvider());
+        var calls = 0;
+        var original = new InvalidOperationException("fenced");
+
+        var translated = await Should.ThrowAsync<AccountErasingException>(pipeline.ExecuteAsync<int>(
+            OperationClass.Interactive,
+            idempotent: true,
+            _ =>
+            {
+                calls++;
+                throw original;
+            },
+            CancellationToken.None)).ConfigureAwait(true);
+
+        translated.InnerException.ShouldBeSameAs(original);
+        calls.ShouldBe(1);
+        pipeline.State.ShouldBe(DependencyState.Healthy);
+
+        var untouched = new InvalidOperationException("other");
+        var passed = await Should.ThrowAsync<InvalidOperationException>(pipeline.ExecuteAsync<int>(
+            OperationClass.Interactive,
+            idempotent: true,
+            _ => throw untouched,
+            CancellationToken.None)).ConfigureAwait(true);
+        passed.ShouldBeSameAs(untouched);
+    }
+
+    [Fact]
     public async Task ANonTransientFailureIsNeverRetriedAndPassesThroughUnchanged()
     {
         var pipeline = new ResiliencePipeline(TestPolicies.Postgres(), new ManualTimeProvider());

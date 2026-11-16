@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Autonogrammer.Dispatch.Desktop.Tests" />
+    <InternalsVisibleTo Include="Autonogrammer.Api.IntegrationTests" />
   </ItemGroup>
 
 </Project>

@@ -35,6 +35,7 @@ public sealed class AcpStdioTransport : IAcpTransport
     private readonly IReadOnlyDictionary<string, string> _environment;
     private readonly EngineEnvironmentPolicy _environmentPolicy;
     private readonly IProcessLaunchWrapper? _processWrapper;
+    private readonly int _maxLineLength;
     private readonly ILogger<AcpStdioTransport> _logger;
     private readonly SemaphoreSlim _writeGate = new(1, 1);
     private readonly System.Threading.Lock _gate = new();
@@ -105,6 +106,7 @@ public sealed class AcpStdioTransport : IAcpTransport
     /// <param name="environmentPolicy">Which parent environment variables the child inherits.</param>
     /// <param name="processWrapper">The optional launch wrapper. Null leaves the start info unchanged after the policy and working directory are applied.</param>
     /// <param name="logger">Receives stderr drain failures at Debug. Null discards them.</param>
+    /// <param name="maxLineLength">The longest line, in characters, read from the child's stdout. A longer line stops the child and fails the session with a malformed-frame error. Must be positive.</param>
     /// <exception cref="ArgumentException">An argument is null or an environment variable name is blank or contains <c>=</c> or NUL.</exception>
     public AcpStdioTransport(
         string ompPath,
@@ -113,10 +115,12 @@ public sealed class AcpStdioTransport : IAcpTransport
         IReadOnlyDictionary<string, string> environment,
         EngineEnvironmentPolicy environmentPolicy,
         IProcessLaunchWrapper? processWrapper,
-        ILogger<AcpStdioTransport>? logger)
+        ILogger<AcpStdioTransport>? logger,
+        int maxLineLength = BoundedLineReader.MaxLineLength)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ompPath);
         ArgumentNullException.ThrowIfNull(environmentPolicy);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxLineLength);
         ArgumentNullException.ThrowIfNull(arguments);
         ArgumentNullException.ThrowIfNull(environment);
         foreach (var argument in arguments)
@@ -141,6 +145,7 @@ public sealed class AcpStdioTransport : IAcpTransport
         _environment = environment;
         _environmentPolicy = environmentPolicy;
         _processWrapper = processWrapper;
+        _maxLineLength = maxLineLength;
     }
 
     /// <summary>Gets the most recent stderr lines written by the child process.</summary>
@@ -201,7 +206,7 @@ public sealed class AcpStdioTransport : IAcpTransport
         var process = ConnectedProcess();
         while (true)
         {
-            var line = await ReadLineAsync(process, cancellationToken).ConfigureAwait(false);
+            var line = await ReadLineAsync(process, _maxLineLength, cancellationToken).ConfigureAwait(false);
             if (line is null)
             {
                 break;
@@ -409,11 +414,18 @@ public sealed class AcpStdioTransport : IAcpTransport
         }
     }
 
-    private static async Task<string?> ReadLineAsync(Process process, CancellationToken cancellationToken)
+    private static async Task<string?> ReadLineAsync(Process process, int maxLineLength, CancellationToken cancellationToken)
     {
         try
         {
-            return await BoundedLineReader.ReadLineAsync(process.StandardOutput, cancellationToken).ConfigureAwait(false);
+            return await BoundedLineReader.ReadLineAsync(process.StandardOutput, maxLineLength, cancellationToken).ConfigureAwait(false);
+        }
+        catch (MalformedFrameHarnessException)
+        {
+            // A line past the cap cannot be resynchronised, so the child is stopped before the refusal reaches the session.
+            KillTree(process);
+            await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+            throw;
         }
         catch (Exception ex) when (ex is IOException or ObjectDisposedException)
         {

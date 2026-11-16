@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:copy="clr-namespace:Autonogrammer.Presentation.Landing;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Landing.CodeLandingView"
+             Focusable="False">
+
+  <!-- The Code landing: four environment cards, drawn when no session is selected. The four card frames are fixed here in the order the
+       cards are shown and tabbed to; the view fills each frame from the CodeLandingModel. Colours come from the theme tokens only. -->
+  <ScrollViewer Focusable="False"
+                IsTabStop="False"
+                HorizontalScrollBarVisibility="Disabled">
+    <StackPanel MaxWidth="480"
+                Margin="16"
+                HorizontalAlignment="Center"
+                Spacing="{DynamicResource Autonogrammer.Gap.Cozy}">
+
+      <TextBlock x:Name="LandingHeading"
+                 Classes="heading"
+                 Text="{x:Static copy:CodeLandingCopy.Heading}"
+                 TextWrapping="Wrap" />
+
+      <Border x:Name="LocalCard"
+              Classes="card"
+              Padding="{DynamicResource Autonogrammer.Space.Sm}">
+        <StackPanel x:Name="LocalBody"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+      </Border>
+
+      <Border x:Name="LinkedCard"
+              Classes="card"
+              Padding="{DynamicResource Autonogrammer.Space.Sm}">
+        <StackPanel x:Name="LinkedBody"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+      </Border>
+
+      <Border x:Name="CloudCard"
+              Classes="card"
+              Padding="{DynamicResource Autonogrammer.Space.Sm}">
+        <StackPanel x:Name="CloudBody"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+      </Border>
+
+      <Border x:Name="RemoteCard"
+              Classes="card"
+              Padding="{DynamicResource Autonogrammer.Space.Sm}">
+        <StackPanel x:Name="RemoteBody"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

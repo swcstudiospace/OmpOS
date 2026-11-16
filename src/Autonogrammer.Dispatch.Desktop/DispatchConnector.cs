@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Threading.Channels;
 using Autonogrammer.Contracts.Dispatch;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
@@ -20,14 +21,22 @@ public sealed class DispatchConnector
     private readonly DispatchDedupeStore _dedupe;
     private readonly DispatchApprovalFlow _approvals;
     private readonly IDispatchRevocationSink _revocation;
+    private readonly DispatchPolicyStore _policy;
     private readonly DispatchCommandRouter _router;
     private readonly TimeProvider _clock;
     private readonly DispatchReconnectLoop _reconnect;
     private readonly Lock _gate = new();
+    private readonly Lock _pendingGate = new();
+    private readonly Dictionary<string, DispatchPendingCommand> _pending = new(StringComparer.Ordinal);
+    private int _runActive;
     private DispatchConnectionState _state = DispatchConnectionState.Connecting;
     private DispatchVerifier? _verifier;
     private TimeSpan _clockOffset;
     private bool _welcomed;
+    private bool _helloSent;
+    private int _heartbeatSeconds;
+    private int _runningCount;
+    private string _deviceStatus = "idle";
 
     /// <summary>Creates the connector.</summary>
     /// <param name="options">The endpoint and the dialog and configuration values.</param>
@@ -57,7 +66,7 @@ public sealed class DispatchConnector
         _approvals = approvals ?? throw new ArgumentNullException(nameof(approvals));
         _revocation = revocation ?? throw new ArgumentNullException(nameof(revocation));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
-        ArgumentNullException.ThrowIfNull(policy);
+        _policy = policy ?? throw new ArgumentNullException(nameof(policy));
         _router = new DispatchCommandRouter([.. handlers], policy, approvals, options.ComputerUse, options.ControllerName);
         _reconnect = new DispatchReconnectLoop(clock, jitter ?? throw new ArgumentNullException(nameof(jitter)));
     }
@@ -87,16 +96,27 @@ public sealed class DispatchConnector
     {
         var paired = _pairing.LoadPairing() ?? throw new InvalidOperationException("The desktop is not paired with Dispatch.");
         using var ring = new DispatchKeyRing(paired.Keys);
-        _verifier = new DispatchVerifier(ring, paired.AccountId, paired.DeviceId, _clock);
+        var verifier = new DispatchVerifier(ring, paired.AccountId, paired.DeviceId, _clock);
+        if (Interlocked.Exchange(ref _runActive, 1) != 0)
+        {
+            throw new InvalidOperationException("The dispatch connector is already running.");
+        }
+
+        _verifier = verifier;
+        using var run = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var links = new DispatchLinkSlot();
+        var commands = Channel.CreateBounded<DispatchPendingCommand>(new BoundedChannelOptions(32) { SingleReader = true, SingleWriter = true });
+        var worker = ProcessCommandsAsync(commands.Reader, links, run.Cancel, run.Token);
         try
         {
             while (true)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                var decision = await AttemptAsync(paired.DeviceId, cancellationToken).ConfigureAwait(false);
+                run.Token.ThrowIfCancellationRequested();
+                var decision = await AttemptAsync(paired.DeviceId, commands.Writer, links, run.Cancel, run.Token).ConfigureAwait(false);
                 SetState(decision.State);
                 if (decision.State == DispatchConnectionState.DeviceRevoked)
                 {
+                    await run.CancelAsync().ConfigureAwait(false);
                     // Revocation ends what this desktop started for Dispatch and withdraws its grants.
                     _approvals.Withdraw();
                     await _revocation.EndDispatchedSessionsAsync(cancellationToken).ConfigureAwait(false);
@@ -108,19 +128,51 @@ public sealed class DispatchConnector
                 }
 
                 var delay = decision.Action == DispatchLinkAction.RetryWithJitter ? _reconnect.NextJitteredDelay() : decision.Delay;
-                await Task.Delay(delay, _clock, cancellationToken).ConfigureAwait(false);
+                await Task.Delay(delay, _clock, run.Token).ConfigureAwait(false);
             }
         }
         finally
         {
-            _verifier = null;
-            _welcomed = false;
+            try
+            {
+                commands.Writer.TryComplete();
+                await run.CancelAsync().ConfigureAwait(false);
+                try
+                {
+                    await worker.ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (run.IsCancellationRequested)
+                {
+                    // The connector is stopping.
+                }
+            }
+            finally
+            {
+                ResetRun();
+            }
         }
+    }
+
+    private void ResetRun()
+    {
+        lock (_pendingGate)
+        {
+            foreach (var pending in _pending.Values)
+            {
+                pending.Dispose();
+            }
+
+            _pending.Clear();
+        }
+
+        _verifier = null;
+        _welcomed = false;
+        Volatile.Write(ref _runActive, 0);
     }
 
     private static DispatchLinkDecision Stop(DispatchConnectionState state) => new(DispatchLinkAction.Stop, state, TimeSpan.Zero);
 
-    private async Task<DispatchLinkDecision> AttemptAsync(string deviceId, CancellationToken cancellationToken)
+    private async Task<DispatchLinkDecision> AttemptAsync(string deviceId, ChannelWriter<DispatchPendingCommand> commands, DispatchLinkSlot links, Action cancelRun, CancellationToken cancellationToken)
     {
         SetState(DispatchConnectionState.Connecting);
         SecretString? credential;
@@ -153,12 +205,14 @@ public sealed class DispatchConnector
         });
         await using (transport.ConfigureAwait(false))
         {
-            return await ServeLinkAsync(transport, expiry, cancellationToken).ConfigureAwait(false);
+            return await ServeLinkAsync(transport, expiry, commands, links, cancelRun, cancellationToken).ConfigureAwait(false);
         }
     }
 
-    private async Task<DispatchLinkDecision> ServeLinkAsync(AcpWebSocketTransport transport, DateTimeOffset? expiry, CancellationToken cancellationToken)
+    private async Task<DispatchLinkDecision> ServeLinkAsync(AcpWebSocketTransport transport, DateTimeOffset? expiry, ChannelWriter<DispatchPendingCommand> commands, DispatchLinkSlot links, Action cancelRun, CancellationToken cancellationToken)
     {
+        _helloSent = false;
+        _welcomed = false;
         try
         {
             await transport.ConnectAsync(cancellationToken).ConfigureAwait(false);
@@ -170,31 +224,80 @@ public sealed class DispatchConnector
 
         _reconnect.MarkConnected();
         SetState(DispatchConnectionState.Connected);
+        using var link = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         try
         {
-            await foreach (var frame in transport.ReceiveAsync(cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
+            return await ReadFramesAsync(transport, commands, links, cancelRun, link).ConfigureAwait(false);
+        }
+        catch (DisconnectedHarnessException ex)
+        {
+            return DispatchCloseStatus.ClassifyClose(ex.Message);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && link.IsCancellationRequested)
+        {
+            return DispatchCloseStatus.ClassifyClose(null);
+        }
+        finally
+        {
+            links.Detach(transport);
+            await link.CancelAsync().ConfigureAwait(false);
+            _reconnect.MarkDisconnected();
+        }
+    }
+
+    private async Task<DispatchLinkDecision> ReadFramesAsync(AcpWebSocketTransport transport, ChannelWriter<DispatchPendingCommand> commands, DispatchLinkSlot links, Action cancelRun, CancellationTokenSource link)
+    {
+        Task? heartbeat = null;
+        try
+        {
+            await foreach (var frame in transport.ReceiveAsync(link.Token).WithCancellation(link.Token).ConfigureAwait(false))
             {
-                var stop = await HandleFrameAsync(transport, frame, cancellationToken).ConfigureAwait(false);
+                var stop = await HandleFrameAsync(transport, frame, commands, links, cancelRun, link.Token).ConfigureAwait(false);
+                if (_welcomed && heartbeat is null)
+                {
+                    links.Publish(transport, link);
+                    heartbeat = SendHeartbeatsAsync(transport, link.Cancel, link.Token);
+                }
+
                 if (stop is { } decision)
                 {
                     return decision;
                 }
             }
 
-            // The stream ended without a close status: a network error.
             return DispatchCloseStatus.ClassifyClose(null);
-        }
-        catch (DisconnectedHarnessException ex)
-        {
-            return DispatchCloseStatus.ClassifyClose(ex.Message);
         }
         finally
         {
-            _reconnect.MarkDisconnected();
+            await link.CancelAsync().ConfigureAwait(false);
+            if (heartbeat is not null)
+            {
+                await StopHeartbeatAsync(transport, heartbeat, link.Token).ConfigureAwait(false);
+            }
         }
     }
 
-    private async Task<DispatchLinkDecision?> HandleFrameAsync(AcpWebSocketTransport transport, ReadOnlyMemory<byte> frame, CancellationToken cancellationToken)
+    internal static async Task StopHeartbeatAsync(AcpWebSocketTransport transport, Task heartbeat, CancellationToken cancellationToken)
+    {
+        try
+        {
+            try
+            {
+                await heartbeat.WaitAsync(TimeSpan.FromSeconds(1), CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+                transport.Abort();
+                await heartbeat.WaitAsync(Timeout.InfiniteTimeSpan, CancellationToken.None).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // The connection is ending.
+        }
+    }
+
+    private async Task<DispatchLinkDecision?> HandleFrameAsync(AcpWebSocketTransport transport, ReadOnlyMemory<byte> frame, ChannelWriter<DispatchPendingCommand> commands, DispatchLinkSlot links, Action cancelRun, CancellationToken cancellationToken)
     {
         if (!DispatchFrameGuard.TryAdmit(frame.Span, out var admission) || !admission.Accepted)
         {
@@ -203,17 +306,132 @@ public sealed class DispatchConnector
 
         switch (admission.Type)
         {
+            case DispatchFrameTypes.Challenge:
+                return await RespondToChallengeAsync(transport, frame, cancellationToken).ConfigureAwait(false);
             case DispatchFrameTypes.Welcome:
-                AdoptWelcome(frame);
+                if (_helloSent)
+                {
+                    AdoptWelcome(frame);
+                }
                 return null;
             case DispatchFrameTypes.Cmd:
-                await HandleCommandAsync(transport, frame, cancellationToken).ConfigureAwait(false);
-                return null;
+                return await AdmitFrameAsync(transport, frame, commands, links, cancellationToken).ConfigureAwait(false);
             case DispatchFrameTypes.Revoke:
+                cancelRun();
                 return Stop(DispatchConnectionState.DeviceRevoked);
             default:
                 return null;
         }
+    }
+
+    private async Task ProcessCommandsAsync(ChannelReader<DispatchPendingCommand> commands, DispatchLinkSlot links, Action cancelRun, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await foreach (var pending in commands.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+            {
+                var receipt = await pending.WaitForReceiptAsync(cancellationToken).ConfigureAwait(false);
+                if (receipt.Sent)
+                {
+                    pending.SentGeneration = receipt.Generation;
+                    pending.SentCount = 1;
+                }
+
+                await ExecuteCommandAsync(pending, links, cancellationToken).ConfigureAwait(false);
+                lock (_pendingGate)
+                {
+                    _pending.Remove(pending.Command.CommandId);
+                }
+                pending.Dispose();
+                links.ReconnectIfDeferred();
+            }
+        }
+        catch (DisconnectedHarnessException)
+        {
+            cancelRun();
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            cancelRun();
+            throw;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+        {
+            cancelRun();
+            throw;
+        }
+    }
+
+    private async Task<DispatchLinkDecision?> RespondToChallengeAsync(AcpWebSocketTransport transport, ReadOnlyMemory<byte> frame, CancellationToken cancellationToken)
+    {
+        if (_helloSent || _welcomed)
+        {
+            return Stop(DispatchConnectionState.AccountUnavailable);
+        }
+
+        DispatchChallengeFrame? challenge;
+        try
+        {
+            challenge = JsonSerializer.Deserialize(frame.Span, DispatchJsonContext.Default.DispatchChallengeFrame);
+        }
+        catch (JsonException)
+        {
+            return Stop(DispatchConnectionState.AccountUnavailable);
+        }
+
+        var paired = _pairing.LoadPairing();
+        var endpoint = _options.Endpoint;
+        if (paired is null || challenge is null || !MatchesHubOrigin(endpoint, challenge.Origin)
+            || challenge.Protocols is null || !challenge.Protocols.Contains("1", StringComparer.Ordinal))
+        {
+            return Stop(DispatchConnectionState.AccountUnavailable);
+        }
+
+        try
+        {
+            var sequence = _dedupe.HighWater;
+            var canonical = DispatchHelloCanonical.Build(challenge.Nonce, paired.DeviceId, challenge.Origin, sequence);
+            var signature = await _pairing.SignHelloAsync(paired.DeviceId, canonical, cancellationToken).ConfigureAwait(false);
+            var hello = new DispatchHelloFrame
+            {
+                V = 1,
+                T = DispatchFrameTypes.Hello,
+                DeviceId = paired.DeviceId,
+                Nonce = challenge.Nonce,
+                Origin = challenge.Origin,
+                LastAppliedSeq = sequence,
+                Running = OutstandingCommands(),
+                Signature = Convert.ToBase64String(signature).TrimEnd('=').Replace('+', '-').Replace('/', '_'),
+            };
+            await transport.SendAsync(JsonSerializer.SerializeToUtf8Bytes(hello, DispatchJsonContext.Default.DispatchHelloFrame), cancellationToken).ConfigureAwait(false);
+            _helloSent = true;
+            return null;
+        }
+        catch (DispatchKeyStoreUnavailableException)
+        {
+            return Stop(DispatchConnectionState.KeyStoreUnavailable);
+        }
+        catch (Exception ex) when (ex is ArgumentException or FormatException or System.Security.Cryptography.CryptographicException)
+        {
+            return Stop(DispatchConnectionState.AccountUnavailable);
+        }
+    }
+
+    private static bool MatchesHubOrigin(Uri endpoint, string? origin)
+    {
+        if (!Uri.TryCreate(origin, UriKind.Absolute, out var actual)
+            || !string.IsNullOrEmpty(actual.UserInfo)
+            || !string.Equals(actual.AbsolutePath, "/", StringComparison.Ordinal)
+            || !string.IsNullOrEmpty(actual.Query)
+            || !string.IsNullOrEmpty(actual.Fragment))
+        {
+            return false;
+        }
+
+        var scheme = string.Equals(endpoint.Scheme, "wss", StringComparison.OrdinalIgnoreCase) ? "https" : "http";
+        return string.Equals(actual.Scheme, scheme, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(actual.IdnHost, endpoint.IdnHost, StringComparison.OrdinalIgnoreCase)
+            && actual.Port == endpoint.Port;
     }
 
     private void AdoptWelcome(ReadOnlyMemory<byte> frame)
@@ -228,59 +446,348 @@ public sealed class DispatchConnector
             return;
         }
 
-        if (welcome is null)
+        if (welcome is null || welcome.HeartbeatSeconds <= 0 || _welcomed)
         {
             return;
         }
 
         _clockOffset = TimeSpan.FromSeconds(welcome.ServerTime - _clock.GetUtcNow().ToUnixTimeSeconds());
+        _heartbeatSeconds = welcome.HeartbeatSeconds;
         _welcomed = true;
     }
 
-    private async Task HandleCommandAsync(AcpWebSocketTransport transport, ReadOnlyMemory<byte> frame, CancellationToken cancellationToken)
+    private async Task<DispatchLinkDecision?> AdmitFrameAsync(AcpWebSocketTransport transport, ReadOnlyMemory<byte> frame, ChannelWriter<DispatchPendingCommand> commands, DispatchLinkSlot links, CancellationToken cancellationToken)
     {
-        // Commands before the hub's welcome carry no clock offset. The device refuses them rather than guess.
-        if (!_welcomed || _verifier is null)
+        if (!_welcomed || _verifier is null || links.Current(transport) is null)
         {
-            return;
+            return null;
         }
 
-        DispatchCmdFrame? cmd;
-        try
+        var cmd = ReadVerifiedCommand(frame, links.ShouldDefer(transport));
+        if (cmd is null)
         {
-            cmd = JsonSerializer.Deserialize(frame.Span, DispatchJsonContext.Default.DispatchCmdFrame);
-        }
-        catch (JsonException)
-        {
-            return;
-        }
-
-        if (cmd is null || !_verifier.Verify(cmd, _clockOffset).Accepted)
-        {
-            return;
+            return null;
         }
 
         if (!DispatchOpWire.TryParse(cmd.Op, out var op) || !DispatchCapabilityWire.TryParse(cmd.Capability, out var capability)
             || !DispatchBase64Url.TryDecode(cmd.Payload, out var payload))
         {
-            return;
+            return null;
+        }
+
+        if (op == DispatchOp.CommandCancel)
+        {
+            await HandleControlAsync(transport, cmd, payload, links, cancellationToken).ConfigureAwait(false);
+            return null;
+        }
+
+        if (links.ShouldDefer(transport))
+        {
+            return null;
+        }
+
+        // There is one writer, so no other producer can take a reserved channel slot.
+        var writable = commands.WaitToWriteAsync(cancellationToken);
+        if (!writable.IsCompletedSuccessfully || !writable.Result)
+        {
+            DeferUntilCapacity(transport, links);
+            return null;
+        }
+
+        if (!HasCapacity())
+        {
+            DeferUntilCapacity(transport, links);
+            return null;
         }
 
         switch (_dedupe.Admit(cmd.CommandId, cmd.Nonce, cmd.Seq))
         {
             case DispatchAdmission.Duplicate:
                 await SendAckAsync(transport, cmd.CommandId, "duplicate", cancellationToken).ConfigureAwait(false);
-                return;
+                return null;
             case DispatchAdmission.Replayed:
-                return;
+                return null;
             default:
                 break;
         }
 
-        // The command is persisted as applied; only now is it acknowledged and executed.
-        await SendAckAsync(transport, cmd.CommandId, DispatchCommandStateWire.ToWire(DispatchCommandState.Received), cancellationToken).ConfigureAwait(false);
-        var outcome = await _router.RouteAsync(new DispatchCommand(cmd.CommandId, capability, op, payload), cancellationToken).ConfigureAwait(false);
-        await SendResultAsync(transport, cmd.CommandId, outcome, cancellationToken).ConfigureAwait(false);
+        await QueuePendingAsync(transport, new DispatchCommand(cmd.CommandId, capability, op, payload), commands, links, cancellationToken).ConfigureAwait(false);
+
+        return null;
+    }
+
+    private DispatchCmdFrame? ReadVerifiedCommand(ReadOnlyMemory<byte> frame, bool deferred)
+    {
+        try
+        {
+            var command = JsonSerializer.Deserialize(frame.Span, DispatchJsonContext.Default.DispatchCmdFrame);
+            return command is not null
+                && (!deferred || string.Equals(command.Op, "command.cancel", StringComparison.Ordinal))
+                && _verifier!.Verify(command, _clockOffset).Accepted ? command : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private async Task HandleControlAsync(AcpWebSocketTransport transport, DispatchCmdFrame command, byte[] payload, DispatchLinkSlot links, CancellationToken cancellationToken)
+    {
+        var active = links.BeginControl(transport);
+        if (active is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await CancelCommandAsync(transport, command, payload, links.ShouldDefer(transport), cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            links.EndControl(active);
+            if (HasCapacity())
+            {
+                links.ReconnectIfDeferred();
+            }
+        }
+    }
+
+    private async Task CancelCommandAsync(AcpWebSocketTransport transport, DispatchCmdFrame frame, byte[] payload, bool outOfOrder, CancellationToken cancellationToken)
+    {
+        var target = ReadCancellationTarget(payload);
+        if (outOfOrder && target is not null)
+        {
+            lock (_pendingGate)
+            {
+                // The target may be among the ordinary frames deferred by a full inbox.
+                // Leave this control unacknowledged so both are redelivered in order.
+                if (!_pending.ContainsKey(target))
+                {
+                    return;
+                }
+            }
+        }
+
+        var admission = outOfOrder
+            ? _dedupe.AdmitOutOfOrder(frame.CommandId, frame.Nonce, frame.Seq)
+            : _dedupe.Admit(frame.CommandId, frame.Nonce, frame.Seq);
+        if (admission != DispatchAdmission.Execute)
+        {
+            if (admission == DispatchAdmission.Duplicate)
+            {
+                await SendAckAsync(transport, frame.CommandId, "duplicate", cancellationToken).ConfigureAwait(false);
+            }
+
+            return;
+        }
+
+        DispatchPendingCommand? pending = null;
+        if (target is not null)
+        {
+            lock (_pendingGate)
+            {
+                _pending.TryGetValue(target, out pending);
+            }
+
+            pending?.Cancel();
+        }
+
+        await SendAckAsync(transport, frame.CommandId, "received", cancellationToken).ConfigureAwait(false);
+        if (target is null)
+        {
+            await SendResultAsync(transport, frame.CommandId, DispatchOutcome.Failed(DispatchFailureReason.PayloadInvalid), cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        if (pending is null)
+        {
+            await SendResultAsync(transport, frame.CommandId, DispatchOutcome.Failed(DispatchFailureReason.ExecutionError), cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        await SendAckAsync(transport, frame.CommandId, "accepted", cancellationToken).ConfigureAwait(false);
+        await SendAckAsync(transport, frame.CommandId, "running", cancellationToken).ConfigureAwait(false);
+        await SendResultAsync(transport, frame.CommandId, DispatchOutcome.Completed(), cancellationToken).ConfigureAwait(false);
+    }
+
+    private static string? ReadCancellationTarget(byte[] payload)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(payload);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("commandId", out var id) || id.ValueKind != JsonValueKind.String)
+            {
+                return null;
+            }
+
+            var target = id.GetString();
+            return string.IsNullOrEmpty(target) ? null : target;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private void DeferUntilCapacity(AcpWebSocketTransport transport, DispatchLinkSlot links)
+    {
+        links.Defer(transport);
+        if (HasCapacity())
+        {
+            links.ReconnectIfDeferred();
+        }
+    }
+
+    private bool HasCapacity()
+    {
+        lock (_pendingGate)
+        {
+            return _pending.Count < 32;
+        }
+    }
+
+    private async Task QueuePendingAsync(AcpWebSocketTransport transport, DispatchCommand command, ChannelWriter<DispatchPendingCommand> commands, DispatchLinkSlot links, CancellationToken cancellationToken)
+    {
+        var pending = new DispatchPendingCommand(command);
+        lock (_pendingGate)
+        {
+            _pending.Add(command.CommandId, pending);
+        }
+
+        if (!commands.TryWrite(pending))
+        {
+            throw new InvalidOperationException("The reserved dispatch command slot became unavailable.");
+        }
+
+        var active = links.Current(transport);
+        var sent = false;
+        try
+        {
+            await SendAckAsync(transport, command.CommandId, DispatchCommandStateWire.ToWire(DispatchCommandState.Received), cancellationToken).ConfigureAwait(false);
+            sent = true;
+        }
+        finally
+        {
+            pending.FinishReceipt(active?.Generation ?? 0, sent);
+        }
+    }
+
+    private async Task ExecuteCommandAsync(DispatchPendingCommand pending, DispatchLinkSlot links, CancellationToken cancellationToken)
+    {
+        Volatile.Write(ref _runningCount, 1);
+        try
+        {
+            await FlushStatesAsync(pending, links, cancellationToken).ConfigureAwait(false);
+            using var commandCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, pending.Cancellation);
+            DispatchOutcome outcome;
+            try
+            {
+                commandCancellation.Token.ThrowIfCancellationRequested();
+                outcome = await _router.RouteAsync(
+                    pending.Command,
+                    (state, token) => ReportStateAsync(pending, links, state, token),
+                    commandCancellation.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (pending.Cancellation.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                outcome = pending.States.Contains(DispatchCommandState.Running)
+                    ? new DispatchOutcome(DispatchCommandState.Cancelled, DispatchFailureReason.CancelledByUser, null)
+                    : DispatchOutcome.Failed(DispatchFailureReason.CancelledByUser);
+            }
+            await SendResultWithRetryAsync(pending, outcome, links, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            Volatile.Write(ref _runningCount, 0);
+            Volatile.Write(ref _deviceStatus, "idle");
+        }
+    }
+
+    private async ValueTask ReportStateAsync(DispatchPendingCommand pending, DispatchLinkSlot links, DispatchCommandState state, CancellationToken cancellationToken)
+    {
+        pending.States.Add(state);
+        await FlushStatesAsync(pending, links, cancellationToken).ConfigureAwait(false);
+        Volatile.Write(ref _deviceStatus, state == DispatchCommandState.AwaitingApproval ? "approval_pending" : "busy");
+    }
+
+    private string[] OutstandingCommands()
+    {
+        lock (_pendingGate)
+        {
+            return [.. _pending.Keys];
+        }
+    }
+
+    private static async Task<DispatchLinkSlot.Link> FlushStatesAsync(DispatchPendingCommand pending, DispatchLinkSlot links, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            var link = await links.WaitAsync(cancellationToken).ConfigureAwait(false);
+            if (pending.SentGeneration != link.Generation)
+            {
+                pending.SentGeneration = link.Generation;
+                pending.SentCount = 0;
+            }
+
+            try
+            {
+                while (pending.SentCount < pending.States.Count)
+                {
+                    var state = pending.States[pending.SentCount];
+                    await SendAckAsync(link.Transport, pending.Command.CommandId, DispatchCommandStateWire.ToWire(state), cancellationToken).ConfigureAwait(false);
+                    pending.SentCount++;
+                }
+
+                return link;
+            }
+            catch (DisconnectedHarnessException)
+            {
+                links.Break(link);
+            }
+        }
+    }
+
+    private static async Task SendResultWithRetryAsync(DispatchPendingCommand pending, DispatchOutcome outcome, DispatchLinkSlot links, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            var link = await FlushStatesAsync(pending, links, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await SendResultAsync(link.Transport, pending.Command.CommandId, outcome, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+            catch (DisconnectedHarnessException)
+            {
+                links.Break(link);
+            }
+        }
+    }
+
+    private async Task SendHeartbeatsAsync(AcpWebSocketTransport transport, Action cancelLink, CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(_heartbeatSeconds), _clock);
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
+            {
+                var heartbeat = new DispatchHbFrame
+                {
+                    V = 1,
+                    T = DispatchFrameTypes.Hb,
+                    LastAppliedSeq = _dedupe.HighWater,
+                    RunningCount = Volatile.Read(ref _runningCount),
+                    Status = _policy.Current.Paused ? "paused" : Volatile.Read(ref _deviceStatus),
+                };
+                await transport.SendAsync(JsonSerializer.SerializeToUtf8Bytes(heartbeat, DispatchJsonContext.Default.DispatchHbFrame), cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (DisconnectedHarnessException)
+        {
+            cancelLink();
+        }
     }
 
     private static async Task SendAckAsync(AcpWebSocketTransport transport, string commandId, string state, CancellationToken cancellationToken)

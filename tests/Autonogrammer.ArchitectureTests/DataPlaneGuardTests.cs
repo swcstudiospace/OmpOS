@@ -165,6 +165,7 @@ public sealed class DataPlaneGuardTests
         ("tests/Autonogrammer.Api.IntegrationTests/Cowork/CoworkPersistenceTests.cs", "var command = _admin.CreateCommand(\"DROP SCHEMA IF EXISTS \" + _schema + \" CASCADE; DROP ROLE IF EXISTS \" + _role);"),
         ("tests/Autonogrammer.Api.IntegrationTests/Cowork/ProjectsApiTests.cs", "var command = _admin.CreateCommand(\"DROP SCHEMA IF EXISTS \" + _schema + \" CASCADE\");"),
         ("tests/Autonogrammer.Api.IntegrationTests/DataPlane/DataPlaneStartupGateTests.cs", "await ExecuteAdminAsync($\"DROP SCHEMA IF EXISTS \\\"{_schema}\\\" CASCADE; DROP ROLE IF EXISTS \\\"{_role}\\\"\", CancellationToken.None).ConfigureAwait(false);"),
+        ("tests/Autonogrammer.Api.IntegrationTests/Artifacts/ArtifactDirectoryPostgresTests.cs", "DROP SCHEMA IF EXISTS \"{_schema}\" CASCADE;"),
         ("tests/Autonogrammer.Sessions.Postgres.Tests/PostgresTestSchema.cs", "await ExecuteAdminAsync($\"DROP SCHEMA IF EXISTS \\\"{SchemaName}\\\" CASCADE\", CancellationToken.None).ConfigureAwait(false);"),
     ];
 

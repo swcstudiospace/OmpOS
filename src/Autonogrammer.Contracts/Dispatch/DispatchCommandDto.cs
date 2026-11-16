@@ -29,4 +29,7 @@ public sealed record DispatchCommandDto
 
     /// <summary>Failure reason, when the state carries one.</summary>
     public DispatchFailureReason? Reason { get; init; }
+
+    /// <summary>Redacted terminal result text, if supplied by the device.</summary>
+    public string? ResultText { get; init; }
 }

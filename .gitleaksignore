@@ -49,3 +49,14 @@ dba27a6a2ac5e4b07af6265435397e448e63c2a2:src/Autonogrammer.UI/wwwroot/lib/mermai
 # added in snapshot commit 0d1f6f37. It checks that Npgsql logs do not expose keyed values and is not a credential.
 # Owner-approved suppression (phase 66 gate, 2026-11-11). History is not rewritten.
 0d1f6f37f657fcc2aa0c3175f6a099f7348245e7:tests/Autonogrammer.Cowork.Memory.Postgres.Tests/PostgresMemoryStoreTests.cs:generic-api-key:721
+
+# Squash 1f27b917 reintroduced four generic-api-key hits under a new commit id. None is a credential:
+# a planning correlation id, the libsecret library soname, an xdotool key chord, and mermaid's keyCount
+# property in the vendored bundle. Allowlisted by fingerprint. History is not rewritten.
+1f27b91722cbc6b2a61357c4c3ecbd7afdb5b3f5:.planning/phases/66-rebrand-to-autonogrammer/66-07-FINDINGS.md:generic-api-key:3
+1f27b91722cbc6b2a61357c4c3ecbd7afdb5b3f5:src/Autonogrammer.Harness.Secrets.Os/LibsecretNativeMethods.cs:generic-api-key:12
+1f27b91722cbc6b2a61357c4c3ecbd7afdb5b3f5:tests/Autonogrammer.Harness.ComputerUse.X11.Tests/Live/X11BackendLiveTests.cs:generic-api-key:173
+1f27b91722cbc6b2a61357c4c3ecbd7afdb5b3f5:src/Autonogrammer.UI/wwwroot/lib/mermaid/mermaid.min.js:generic-api-key:636
+
+# RFC 6455 example WebSocket handshake nonce in a test, not a credential. Fingerprinted to the historical commit.
+06787cc4046bb8aea7978765d2e31cc2780a8609:tests/Autonogrammer.Api.IntegrationTests/Dispatch/Hub/ShutdownTests.cs:generic-api-key:55

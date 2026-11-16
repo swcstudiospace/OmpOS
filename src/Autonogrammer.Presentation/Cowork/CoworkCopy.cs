@@ -5,8 +5,11 @@ namespace Autonogrammer.Presentation.Cowork;
 /// </summary>
 public static class CoworkCopy
 {
-    /// <summary>The signed-out sentence. The sign-in action itself belongs to the account menu.</summary>
+    /// <summary>The signed-out sentence. The sign-in button beside it opens the sign-in window.</summary>
     public const string SignInToUseCowork = "Sign in to use Cowork";
+
+    /// <summary>The label of the button that opens the sign-in window from the signed-out Cowork panel.</summary>
+    public const string SignInButtonLabel = "Sign in";
 
     /// <summary>The quiet mark when a summary could not be synced.</summary>
     public const string NotSynced = "Not synced";

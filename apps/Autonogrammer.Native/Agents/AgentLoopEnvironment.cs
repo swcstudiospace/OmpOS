@@ -122,7 +122,7 @@ internal sealed class AgentLoopEnvironment
 
     /// <summary>Resolves an environment from injected process facts, so the precedence rules can be checked without touching the process.</summary>
     /// <param name="getVariable">Reads an environment variable, returning null when it is unset.</param>
-    /// <param name="baseDirectory">The directory of the running application. The search for the repository starts here.</param>
+    /// <param name="baseDirectory">The directory of the running application. A <c>plugins</c> directory beside it is used first; otherwise the search for the repository starts here.</param>
     /// <param name="currentDirectory">The current directory. It is the workspace root, the second search start and the base of relative paths.</param>
     /// <param name="homeDirectory">The user's home directory.</param>
     /// <returns>The resolved environment.</returns>
@@ -199,6 +199,12 @@ internal sealed class AgentLoopEnvironment
         if (configured is not null)
         {
             return Path.GetFullPath(configured, workspace);
+        }
+
+        // A packaged install ships the plugins beside the executable, so an existing plugins directory there is the root.
+        if (!string.IsNullOrWhiteSpace(baseDirectory) && Directory.Exists(Path.Combine(Path.GetFullPath(baseDirectory), "plugins")))
+        {
+            return Path.Combine(Path.GetFullPath(baseDirectory), "plugins");
         }
 
         foreach (var start in new[] { baseDirectory, workspace })

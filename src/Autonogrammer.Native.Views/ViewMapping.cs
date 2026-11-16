@@ -67,6 +67,7 @@ internal static class ViewMapping
             StageTimelineModel timeline => new PipelineStripView { DataContext = timeline },
             KanbanBoardModel board => new KanbanBoardView { DataContext = board },
             CoworkDockContent dock => new TextBlock { Text = dock.Label, Name = "DockPanelBody" },
+            CoworkSignedOutContent signedOut => CreateSignedOut(signedOut),
             CoworkConversationModel conversation => new CoworkConversationView { DataContext = conversation },
             CoworkComposerModel composerSurface => new CoworkComposerView { DataContext = composerSurface },
             CoworkApprovalCardModel approval => new CoworkApprovalCard { DataContext = approval },
@@ -92,6 +93,40 @@ internal static class ViewMapping
         view.FilePicker = new StorageProviderFilePicker(() => TopLevel.GetTopLevel(view));
         view.ClipboardImages = new AvaloniaClipboardImageSource(() => TopLevel.GetTopLevel(view));
         return view;
+    }
+
+    /// <summary>
+    /// Creates the signed-out panel body: the sentence, and the sign-in button when the head can sign in. The sentence keeps the dock body name the
+    /// shell tests read. The button is a plain <see cref="Button"/>, so Enter and Space activate it and the focus ring is the primary button style.
+    /// </summary>
+    /// <param name="content">The signed-out content.</param>
+    /// <returns>The panel body.</returns>
+    private static StackPanel CreateSignedOut(CoworkSignedOutContent content)
+    {
+        var body = new StackPanel { Spacing = 12 };
+        body.Children.Add(new TextBlock
+        {
+            Text = content.Sentence,
+            Name = "DockPanelBody",
+            TextWrapping = Avalonia.Media.TextWrapping.WrapWithOverflow,
+            Classes = { "settings-body" },
+        });
+        if (content.ButtonLabel is { } label)
+        {
+            var button = new Button
+            {
+                Name = "CoworkSignInButton",
+                Content = label,
+                Classes = { "primary" },
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left,
+                IsTabStop = true,
+            };
+            Avalonia.Automation.AutomationProperties.SetName(button, label);
+            button.Click += (_, _) => content.RequestSignIn();
+            body.Children.Add(button);
+        }
+
+        return body;
     }
 
     /// <summary>Creates the view for one transcript block.</summary>

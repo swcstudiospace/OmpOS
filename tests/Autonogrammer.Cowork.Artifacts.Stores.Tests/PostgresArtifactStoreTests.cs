@@ -89,4 +89,155 @@ public sealed class PostgresArtifactStoreTests : ArtifactStoreContract, IAsyncLi
         seen.Count.ShouldBe(1);
         seen[0].Device.ShouldBe("desk");
     }
+
+    /// <summary>Writers on separate store instances of one account serialize on the database lock, so a quota decision made from usage holds until commit.</summary>
+    [Fact]
+    public async Task Parallel_writers_on_separate_stores_share_one_account_quota()
+    {
+        var account = "quota-" + Guid.NewGuid().ToString("N");
+        const int limit = 2;
+        var stores = Enumerable.Range(0, 8).Select(_ => _fixture.CreateStore(account)).ToArray();
+        try
+        {
+            var results = await Task.WhenAll(stores.Select((store, index) => store.MutateAsync(
+                mutation =>
+                {
+                    if (mutation.Usage().ArtifactCount >= limit)
+                    {
+                        return false;
+                    }
+
+                    var id = "quota-" + index.ToString(System.Globalization.CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N");
+                    mutation.Insert(Header(id), Version(id, 1, "body", null));
+                    return true;
+                },
+                Token).AsTask())).ConfigureAwait(true);
+
+            results.Count(accepted => accepted).ShouldBe(limit);
+            (await stores[0].MutateAsync(mutation => mutation.Usage(), Token).ConfigureAwait(true)).ArtifactCount.ShouldBe(limit);
+        }
+        finally
+        {
+            foreach (var store in stores)
+            {
+                store.Dispose();
+            }
+        }
+    }
+
+    /// <summary>Two requests that write the same version number end with one winner and a decision for the loser, never a key violation.</summary>
+    [Fact]
+    public async Task Parallel_writes_of_one_version_never_reach_a_key_violation()
+    {
+        var account = "race-" + Guid.NewGuid().ToString("N");
+        var id = "race-" + Guid.NewGuid().ToString("N");
+        using (var seed = _fixture.CreateStore(account))
+        {
+            await seed.MutateAsync(
+                mutation =>
+                {
+                    mutation.Insert(Header(id), Version(id, 1, "one", null));
+                    return true;
+                },
+                Token).ConfigureAwait(true);
+        }
+
+        var stores = Enumerable.Range(0, 6).Select(_ => _fixture.CreateStore(account)).ToArray();
+        try
+        {
+            var outcomes = await Task.WhenAll(stores.Select((store, index) => store.MutateAsync(
+                mutation =>
+                {
+                    if (mutation.Versions(id).Any(row => row.Number == 2))
+                    {
+                        return "exists";
+                    }
+
+                    mutation.Append(Version(id, 2, "two-" + index.ToString(System.Globalization.CultureInfo.InvariantCulture), mutation.Versions(id)[^1]));
+                    return "created";
+                },
+                Token).AsTask())).ConfigureAwait(true);
+
+            outcomes.Count(outcome => string.Equals(outcome, "created", StringComparison.Ordinal)).ShouldBe(1);
+            outcomes.Count(outcome => string.Equals(outcome, "exists", StringComparison.Ordinal)).ShouldBe(5);
+            (await stores[0].GetVersionsAsync(id, Token).ConfigureAwait(true)).Count.ShouldBe(2);
+        }
+        finally
+        {
+            foreach (var store in stores)
+            {
+                store.Dispose();
+            }
+        }
+    }
+
+    /// <summary>A version that is not the next number is refused, so the parent chain every read verifies stays intact.</summary>
+    [Fact]
+    public async Task Append_requires_the_next_version_number()
+    {
+        using var store = _fixture.CreateStore("order-" + Guid.NewGuid().ToString("N"));
+        var id = "order-" + Guid.NewGuid().ToString("N");
+        await store.MutateAsync(
+            mutation =>
+            {
+                mutation.Insert(Header(id), Version(id, 1, "one", null));
+                return true;
+            },
+            Token).ConfigureAwait(true);
+
+        await Should.ThrowAsync<ArtifactIntegrityException>(() => store.MutateAsync(
+            mutation =>
+            {
+                mutation.Append(Version(id, 3, "three", mutation.Versions(id)[^1]));
+                return true;
+            },
+            Token).AsTask()).ConfigureAwait(true);
+
+        (await store.GetVersionsAsync(id, Token).ConfigureAwait(true)).Count.ShouldBe(1);
+    }
+
+    /// <summary>A write reads usage with aggregates and loads only the artifact it changes, never another artifact's bytes.</summary>
+    [Fact]
+    public async Task A_write_loads_only_the_artifact_it_changes()
+    {
+        var account = "scope-" + Guid.NewGuid().ToString("N");
+        using var logger = new CommandTextLoggerFactory();
+        using var store = _fixture.CreateStore(account, logger);
+        var other = "other-" + Guid.NewGuid().ToString("N");
+        var target = "target-" + Guid.NewGuid().ToString("N");
+        var big = new string('x', 100_000);
+        await store.MutateAsync(
+            mutation =>
+            {
+                mutation.Insert(Header(other), Version(other, 1, big, null));
+                mutation.Insert(Header(target), Version(target, 1, "one", null));
+                return true;
+            },
+            Token).ConfigureAwait(true);
+        logger.Clear();
+
+        var usage = await store.MutateAsync(
+            mutation =>
+            {
+                var before = mutation.Usage();
+                mutation.Append(Version(target, 2, "two", mutation.Versions(target)[^1]));
+                return (before, after: mutation.Usage());
+            },
+            Token).ConfigureAwait(true);
+
+        usage.before.ShouldBe(new ArtifactUsage(2, big.Length + 3));
+        usage.after.ShouldBe(new ArtifactUsage(2, big.Length + 3 + 3));
+        var statements = logger.Messages.Where(message => message.Contains("artifact_versions", StringComparison.Ordinal)).ToArray();
+        statements.ShouldNotBeEmpty();
+        statements.ShouldAllBe(message => message.Contains("sum(size_bytes)", StringComparison.Ordinal) || message.Contains("a.id = $1", StringComparison.Ordinal) || message.Contains("WHERE artifact_id = $1", StringComparison.Ordinal) || message.Contains("INSERT INTO artifact_versions", StringComparison.Ordinal));
+        (await store.GetVersionsAsync(target, Token).ConfigureAwait(true)).Count.ShouldBe(2);
+    }
+
+    private static ArtifactRecord Header(string id) => new(id, Autonogrammer.Contracts.Artifacts.ArtifactKind.Markdown, "Title", "text/markdown", null, "session", null);
+
+    private static ArtifactVersionRecord Version(string id, int number, string text, ArtifactVersionRecord? parent)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(text);
+        return new ArtifactVersionRecord(id, number, bytes, ArtifactWireContract.Hash(bytes), parent?.Number, parent?.ContentSha256, ArtifactAuthor.Agent, DateTimeOffset.UnixEpoch, null);
+    }
 }

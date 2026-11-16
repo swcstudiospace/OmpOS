@@ -19,7 +19,7 @@ public sealed partial class SshCommandBuilder
     /// The shell lines that make a non-interactive remote shell find omp and bun: a non-interactive ssh session often has a shorter
     /// <c>PATH</c> than a login shell. The directories are appended, so nothing earlier on the path is shadowed.
     /// </summary>
-    internal const string PathSetup = "PATH=\"$PATH:$HOME/.bun/bin:$HOME/.local/bin:/usr/local/bin\"; export PATH";
+    public const string PathSetup = "PATH=\"$PATH:$HOME/.bun/bin:$HOME/.local/bin:/usr/local/bin\"; export PATH";
 
     private const int MaxControlPathDirectoryLength = 80;
     private const int LowestForwardPort = 1024;

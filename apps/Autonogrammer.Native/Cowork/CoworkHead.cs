@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Autonogrammer.Accounts;
 using Autonogrammer.Cowork;
 using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Harness.Abstractions;
@@ -49,6 +50,8 @@ internal sealed class CoworkHead : IAsyncDisposable
     /// <param name="providerKeys">The provider keys, or null.</param>
     /// <param name="catalog">The catalog, or null when the head has no services.</param>
     /// <param name="coworkTools">The Cowork tool host the gateway serves, or null for registry tools only.</param>
+    /// <param name="resolveOmpPath">Resolves the omp each session open runs, or null to run <paramref name="ompPath"/> as given.</param>
+    /// <param name="accountSession">The account session the host follows, or null for a host that only reads the gate.</param>
     /// <returns>The head. The gateway starts on the first session.</returns>
     [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: each owner is nulled once transferred to its composed holder; the finally disposes any owner still held directly.")]
     public static async Task<CoworkHead> CreateAsync(
@@ -61,7 +64,9 @@ internal sealed class CoworkHead : IAsyncDisposable
         TimeProvider clock,
         ProviderKeyEnvironment? providerKeys,
         McpServerCatalog? catalog,
-        ICoworkToolHost? coworkTools = null)
+        ICoworkToolHost? coworkTools = null,
+        Func<CancellationToken, Task<string?>>? resolveOmpPath = null,
+        IAccountSession? accountSession = null)
     {
         CoworkToolServer? tools = null;
         CoworkSessionHost? sessions = null;
@@ -78,9 +83,11 @@ internal sealed class CoworkHead : IAsyncDisposable
                 TransportFactory = transportFactory,
                 LoggerFactory = loggerFactory,
                 OmpPath = ompPath,
+                ResolveOmpPath = resolveOmpPath,
                 ProviderKeys = providerKeys,
                 Catalog = catalog,
                 Tools = tools,
+                AccountSession = accountSession,
             });
             var head = new CoworkHead(sessions, tools);
             sessions = null;

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.Versioning;
 using System.Text;
 using Autonogrammer.Harness.Abstractions;
@@ -117,7 +119,53 @@ public sealed class AcpStdioTransportTests
             await using var framesScope = frames.ConfigureAwait(true);
             var malformed = await Should.ThrowAsync<MalformedFrameHarnessException>(async () => await frames.MoveNextAsync().ConfigureAwait(true))
                 .ConfigureAwait(true);
-            malformed.Message.ShouldContain("1 MiB");
+            malformed.Message.ShouldContain("1048576 characters");
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    /// <summary>A child line over a configured cap stops the child before the refusal reaches the caller, so the session can fail cleanly.</summary>
+    [Fact]
+    [SupportedOSPlatform("linux")]
+    public async Task OverCapLineStopsTheChildBeforeTheErrorReachesTheCaller()
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            Assert.Skip("The stdio fixture uses a POSIX shell script.");
+        }
+
+        var ct = TestContext.Current.CancellationToken;
+        var directory = CreateDirectory();
+        try
+        {
+            // The child records its pid, writes a 17-character line (over the 16-character cap), then would run for a minute.
+            var pidFile = Path.Combine(directory, "pid");
+            var longLine = new string('a', 17);
+            var script = WriteScript(directory, "over-cap", $"echo $$ > '{pidFile}'\nprintf '{longLine}\\n'\nsleep 60\n");
+            var transport = new AcpStdioTransport(
+                script,
+                directory,
+                [],
+                new Dictionary<string, string>(StringComparer.Ordinal),
+                EngineEnvironmentPolicy.Inherit,
+                processWrapper: null,
+                logger: null,
+                maxLineLength: 16);
+            await using var transportScope = transport.ConfigureAwait(true);
+            await transport.ConnectAsync(ct).ConfigureAwait(true);
+
+            var frames = transport.ReceiveAsync(ct).GetAsyncEnumerator(ct);
+            await using var framesScope = frames.ConfigureAwait(true);
+            var malformed = await Should.ThrowAsync<MalformedFrameHarnessException>(async () => await frames.MoveNextAsync().ConfigureAwait(true))
+                .ConfigureAwait(true);
+            malformed.Message.ShouldContain("16 characters");
+
+            // The child is gone by the time the caller sees the error: it was stopped and reaped, not left running.
+            var childId = int.Parse((await File.ReadAllTextAsync(pidFile, TestContext.Current.CancellationToken).ConfigureAwait(true)).Trim(), CultureInfo.InvariantCulture);
+            Should.Throw<ArgumentException>(() => Process.GetProcessById(childId));
         }
         finally
         {

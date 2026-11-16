@@ -56,7 +56,11 @@ public sealed class DispatchDedupeStore
     /// <param name="nonce">The delivery nonce.</param>
     /// <param name="seq">The per-device sequence.</param>
     /// <returns>The admission decision.</returns>
-    public DispatchAdmission Admit(string commandId, string nonce, long seq)
+    public DispatchAdmission Admit(string commandId, string nonce, long seq) => AdmitCore(commandId, nonce, seq, advanceHighWater: true);
+
+    internal DispatchAdmission AdmitOutOfOrder(string commandId, string nonce, long seq) => AdmitCore(commandId, nonce, seq, advanceHighWater: false);
+
+    private DispatchAdmission AdmitCore(string commandId, string nonce, long seq, bool advanceHighWater)
     {
         lock (_gate)
         {
@@ -70,7 +74,7 @@ public sealed class DispatchDedupeStore
                 return DispatchAdmission.Replayed;
             }
 
-            var nextHighWater = Math.Max(_highWater, seq);
+            var nextHighWater = advanceHighWater ? Math.Max(_highWater, seq) : _highWater;
             var next = new List<DispatchRecentCommand>(_recent) { new(commandId, nonce) };
             if (next.Count > MaxRecentCommands)
             {

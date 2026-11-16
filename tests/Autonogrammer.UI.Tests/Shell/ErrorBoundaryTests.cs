@@ -3,6 +3,7 @@ using Bunit;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.JSInterop;
 using Shouldly;
 using Xunit;
 
@@ -74,5 +75,39 @@ public sealed class ErrorBoundaryTests : UiTestContext
         await cut.Find("button").ClickAsync().ConfigureAwait(true);
 
         cut.Find("button").TextContent.ShouldBe(ErrorFallback.ReloadText);
+    }
+
+    /// <summary>Only a JavaScript interop failure is classified as one, so only those log their stack frames.</summary>
+    [Fact]
+    public void OnlyAJavaScriptFailureIsAnInteropFailure()
+    {
+        AppErrorBoundary.IsInteropFailure(new JSException("a message that is never logged")).ShouldBeTrue();
+        AppErrorBoundary.IsInteropFailure(new InvalidOperationException()).ShouldBeFalse();
+    }
+
+    /// <summary>The first line of a JavaScript stack repeats the error message, so only the frame lines of a stack are kept.</summary>
+    [Fact]
+    public void FrameLinesKeepsTheFramesAndDropsTheMessage()
+    {
+        const string stack = "Error: a selector such as #secret-value failed\n    at track (autonogrammer-keys.js:12:3)\n    at guardList (autonogrammer-keys.js:20:1)";
+
+        AppErrorBoundary.FrameLines(stack).ShouldBe("at track (autonogrammer-keys.js:12:3) | at guardList (autonogrammer-keys.js:20:1)");
+    }
+
+    /// <summary>A stack keeps at most forty frames, so one failure cannot flood the log.</summary>
+    [Fact]
+    public void FrameLinesKeepsAtMostFortyFrames()
+    {
+        var stack = string.Join('\n', Enumerable.Range(1, 50).Select(static index => "   at Frame" + index + "()"));
+
+        AppErrorBoundary.FrameLines(stack).Split(" | ").Length.ShouldBe(40);
+    }
+
+    /// <summary>A stack that is missing or empty yields no frames.</summary>
+    [Fact]
+    public void FrameLinesOfAMissingStackIsEmpty()
+    {
+        AppErrorBoundary.FrameLines(null).ShouldBe(string.Empty);
+        AppErrorBoundary.FrameLines(string.Empty).ShouldBe(string.Empty);
     }
 }

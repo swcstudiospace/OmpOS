@@ -1,5 +1,6 @@
 using System.Net.WebSockets;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Autonogrammer.Api.Dispatch.Devices;
 using Autonogrammer.Api.Services;
 using Autonogrammer.Contracts.Dispatch;
@@ -37,6 +38,7 @@ internal sealed class DispatchHub : IDispatchConnectHandler
     private readonly TimeProvider _time;
     private readonly DispatchSessionRegistry _sessions;
     private readonly DispatchDeliveryLoop _delivery;
+    private readonly DispatchDeviceFrames _frames;
     private readonly DispatchMetrics _metrics;
     private readonly ILogger<DispatchHub> _logger;
     private volatile bool _draining;
@@ -50,6 +52,7 @@ internal sealed class DispatchHub : IDispatchConnectHandler
     /// <param name="time">The clock.</param>
     /// <param name="sessions">The sockets this process holds.</param>
     /// <param name="delivery">The delivery loop each socket runs after the welcome.</param>
+    /// <param name="frames">The device frames: ack, result and event frames the hub applies.</param>
     /// <param name="metrics">The Dispatch metrics.</param>
     /// <param name="lifetime">The host lifetime, whose stop starts the drain.</param>
     /// <param name="logger">The logger. It never receives a body, a token or a key.</param>
@@ -62,6 +65,7 @@ internal sealed class DispatchHub : IDispatchConnectHandler
         TimeProvider time,
         DispatchSessionRegistry sessions,
         DispatchDeliveryLoop delivery,
+        DispatchDeviceFrames frames,
         DispatchMetrics metrics,
         IHostApplicationLifetime lifetime,
         ILogger<DispatchHub> logger)
@@ -74,6 +78,7 @@ internal sealed class DispatchHub : IDispatchConnectHandler
         _time = time;
         _sessions = sessions;
         _delivery = delivery;
+        _frames = frames;
         _metrics = metrics;
         _logger = logger;
         ArgumentNullException.ThrowIfNull(lifetime);
@@ -84,6 +89,13 @@ internal sealed class DispatchHub : IDispatchConnectHandler
     public async Task<IResult> HandleAsync(HttpContext context, string deviceId, string accountId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
+        if (_draining)
+        {
+            _metrics.Connect("refused", "draining");
+            context.Response.Headers["Retry-After"] = "5";
+            return WebProblems.Of(StatusCodes.Status503ServiceUnavailable, "hub_draining", "The hub is stopping.", "Reconnect shortly.");
+        }
+
         var refusal = RefuseUpgrade(context);
         if (refusal is not null)
         {
@@ -94,13 +106,6 @@ internal sealed class DispatchHub : IDispatchConnectHandler
         {
             _metrics.Connect("refused", "origin_present");
             return WebProblems.Of(StatusCodes.Status403Forbidden, "origin_refused", "Origin refused.", "A device connection carries no Origin header.");
-        }
-
-        if (_draining)
-        {
-            _metrics.Connect("refused", "draining");
-            context.Response.Headers["Retry-After"] = "5";
-            return WebProblems.Of(StatusCodes.Status503ServiceUnavailable, "hub_draining", "The hub is stopping.", "Reconnect shortly.");
         }
 
         var device = await _store.GetDeviceAsync(accountId, deviceId, cancellationToken).ConfigureAwait(false);
@@ -185,8 +190,13 @@ internal sealed class DispatchHub : IDispatchConnectHandler
                 return;
             }
 
+            _ = await _store.RecordSourcePrefixAsync(device.AccountId, device.DeviceId, DispatchSourcePrefix.Of(context.Connection.RemoteIpAddress), cancellationToken).ConfigureAwait(false);
             await AdmitAsync(session, hello, cancellationToken).ConfigureAwait(false);
             await DeliverAndPumpAsync(session, hello.LastAppliedSeq, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Autonogrammer.Resilience.DataPlaneTimeoutException)
+        {
+            await session.CloseAsync(DispatchCloseCodes.TryAgainLater, "data_plane_unavailable", cancellationToken).ConfigureAwait(false);
         }
         catch (WebSocketException)
         {
@@ -269,6 +279,12 @@ internal sealed class DispatchHub : IDispatchConnectHandler
 
     private async Task<bool> VerifyHelloAsync(DispatchHubSession session, DispatchDeviceRecord device, string nonce, string origin, DispatchHelloFrame hello, CancellationToken cancellationToken)
     {
+        if (hello.Running is { Count: > 32 })
+        {
+            await session.CloseAsync(DispatchCloseCodes.InvalidPayload, "too_many_running", cancellationToken).ConfigureAwait(false);
+            return false;
+        }
+
         if (!string.Equals(hello.DeviceId, device.DeviceId, StringComparison.Ordinal)
             || !string.Equals(hello.Nonce, nonce, StringComparison.Ordinal)
             || !await _nonces.TryConsumeAsync(DispatchHandshake.HashNonce(nonce), cancellationToken).ConfigureAwait(false))
@@ -334,20 +350,33 @@ internal sealed class DispatchHub : IDispatchConnectHandler
     private async Task FailRestartedAsync(DispatchHubSession session, IReadOnlyList<string>? running, CancellationToken cancellationToken)
     {
         var stillRunning = new HashSet<string>(running ?? Array.Empty<string>(), StringComparer.Ordinal);
-        var rows = await _store.ListCommandsAsync(session.Owner, session.DeviceId, 100, cancellationToken).ConfigureAwait(false);
-        foreach (var row in rows)
+        long cursor = 0;
+        while (true)
         {
-            if (stillRunning.Contains(row.CommandId) || !IsInFlight(row.State))
+            var rows = await _store.ListInFlightAfterAsync(session.Owner, session.DeviceId, cursor, 100, cancellationToken).ConfigureAwait(false);
+            if (rows.Count == 0)
             {
-                continue;
+                return;
             }
 
-            _ = await _store.TryTransitionAsync(session.Owner, row.CommandId, row.State, DispatchCommandState.Failed, DispatchFailureReason.DeviceRestarted, cancellationToken).ConfigureAwait(false);
+            foreach (var row in rows)
+            {
+                cursor = row.Seq;
+                if (stillRunning.Contains(row.CommandId))
+                {
+                    continue;
+                }
+
+                var payload = new JsonObject
+                {
+                    ["commandId"] = row.CommandId,
+                    ["state"] = DispatchCommandStateWire.ToWire(DispatchCommandState.Failed),
+                    ["reason"] = DispatchFailureReasonWire.ToWire(DispatchFailureReason.DeviceRestarted),
+                }.ToJsonString();
+                _ = await _store.TryTransitionAsync(session.Owner, row.CommandId, row.State, DispatchCommandState.Failed, DispatchFailureReason.DeviceRestarted, new DispatchFeedDraft("command.state", payload), cancellationToken).ConfigureAwait(false);
+            }
         }
     }
-
-    private static bool IsInFlight(DispatchCommandState state) =>
-        state is DispatchCommandState.Received or DispatchCommandState.AwaitingApproval or DispatchCommandState.Accepted or DispatchCommandState.Running;
 
     private async Task PumpAsync(DispatchHubSession session, CancellationToken cancellationToken)
     {
@@ -358,6 +387,7 @@ internal sealed class DispatchHub : IDispatchConnectHandler
             switch (message.Kind)
             {
                 case DispatchHubSession.InboundKind.Close:
+                    await session.CloseAsync(DispatchCloseCodes.Normal, "closed", cancellationToken).ConfigureAwait(false);
                     return;
                 case DispatchHubSession.InboundKind.Binary:
                     continue;
@@ -387,7 +417,13 @@ internal sealed class DispatchHub : IDispatchConnectHandler
 
             if (string.Equals(admission.Type, DispatchFrameTypes.Hb, StringComparison.Ordinal))
             {
-                if (!await _presence.RefreshAsync(session.Owner, session.DeviceId, session.Holder, PresenceLifetime, cancellationToken).ConfigureAwait(false))
+                if (!ValidHeartbeat(message.Payload))
+                {
+                    await session.CloseAsync(DispatchCloseCodes.InvalidPayload, "invalid_heartbeat", cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+
+                if (await RefreshPresenceAsync(session, cancellationToken).ConfigureAwait(false) is false)
                 {
                     await session.CloseAsync(DispatchCloseCodes.Replaced, "replaced", cancellationToken).ConfigureAwait(false);
                     return;
@@ -398,10 +434,48 @@ internal sealed class DispatchHub : IDispatchConnectHandler
                 await session.CloseAsync(DispatchCloseCodes.PolicyViolation, "hello_repeated", cancellationToken).ConfigureAwait(false);
                 return;
             }
+            else
+            {
+                await RouteDeviceFrameAsync(session, admission.Type, message.Payload, cancellationToken).ConfigureAwait(false);
+            }
         }
     }
 
-    private void BeginDrain()
+    private ValueTask RouteDeviceFrameAsync(DispatchHubSession session, string? type, byte[] payload, CancellationToken cancellationToken) => type switch
+    {
+        DispatchFrameTypes.Ack => _frames.AckAsync(session.Owner, session.DeviceId, payload, cancellationToken),
+        DispatchFrameTypes.Evt => _frames.EventAsync(session.Owner, session.DeviceId, payload, cancellationToken),
+        DispatchFrameTypes.Res => _frames.ResultAsync(session.Owner, session.DeviceId, payload, cancellationToken),
+        _ => ValueTask.CompletedTask,
+    };
+
+    private async Task<bool?> RefreshPresenceAsync(DispatchHubSession session, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _presence.RefreshAsync(session.Owner, session.DeviceId, session.Holder, PresenceLifetime, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Autonogrammer.Resilience.DataPlaneTimeoutException)
+        {
+            return null;
+        }
+    }
+
+    private static bool ValidHeartbeat(byte[] payload)
+    {
+        try
+        {
+            var heartbeat = JsonSerializer.Deserialize(payload, DispatchJsonContext.Default.DispatchHbFrame);
+            return heartbeat is not null && heartbeat.LastAppliedSeq >= 0 && heartbeat.RunningCount >= 0
+                && heartbeat.Status is "idle" or "busy" or "approval_pending" or "paused";
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    internal void BeginDrain()
     {
         _draining = true;
         _ = Task.Run(CloseAllAsync);

@@ -25,6 +25,7 @@
     <ProjectReference Include="../../src/Autonogrammer.Harness.Agent/Autonogrammer.Harness.Agent.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.AgentLoop/Autonogrammer.Harness.AgentLoop.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Remote/Autonogrammer.Harness.Remote.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.RemoteProvision/Autonogrammer.Harness.RemoteProvision.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.EngineHost/Autonogrammer.EngineHost.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Sessions/Autonogrammer.Sessions.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Sessions.Postgres/Autonogrammer.Sessions.Postgres.csproj" />

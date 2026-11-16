@@ -3,6 +3,8 @@ using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Native.Tests.Parity;
 using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Presentation.AgentPanel;
+using Autonogrammer.Presentation.Landing;
+using Autonogrammer.Presentation.Remote;
 using Autonogrammer.Presentation.State;
 using Avalonia;
 using Avalonia.Controls;
@@ -33,11 +35,10 @@ public sealed class AgentPanelStateTests
 
             texts.ShouldContain(AgentPanelCopy.EmptyRailHeading, StringComparer.Ordinal);
             texts.ShouldContain(AgentPanelCopy.EmptyRailBody, StringComparer.Ordinal);
-            texts.ShouldContain(AgentPanelCopy.EmptyThreadHeading, StringComparer.Ordinal);
-            texts.ShouldContain(AgentPanelCopy.EmptyThreadBody, StringComparer.Ordinal);
+            texts.ShouldContain(CodeLandingCopy.Heading, StringComparer.Ordinal);
+            texts.ShouldContain(RemoteCopy.EmptyHeading, StringComparer.Ordinal);
             main.FindControl<ContentControl>("PipelineHost")!.Content.ShouldBeNull("with no agent there is no plugin connection row");
             ShellTree.NamedVisible<Button>(main, "NewAgentButton").ShouldNotBeNull();
-            ShellTree.NamedVisible<Button>(main, "StartFirstAgentButton").ShouldNotBeNull();
             main.FindControl<ContentControl>("ComposerHost")!.IsVisible.ShouldBeFalse("with no agent there is no composer");
             main.FindControl<ContentControl>("ThreadHeaderHost")!.Content.ShouldBeNull();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);

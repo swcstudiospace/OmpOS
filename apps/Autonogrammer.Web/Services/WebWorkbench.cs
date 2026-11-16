@@ -227,9 +227,7 @@ internal sealed class WebWorkbench : IAsyncDisposable
 
     private async Task ReloadAsync(CancellationToken cancellationToken)
     {
-        var sessions = await _api.ListSessionsAsync(cancellationToken).ConfigureAwait(true);
-        _catalog.Replace(sessions);
-        await PruneRuntimesAsync().ConfigureAwait(true);
+        await RefreshCatalogAsync(cancellationToken).ConfigureAwait(true);
         Workspace = await TryAsync(_api.GetWorkspaceAsync, cancellationToken).ConfigureAwait(true);
         Source = await TryAsync(_api.GetSourceAsync, cancellationToken).ConfigureAwait(true);
         Changed?.Invoke(this, EventArgs.Empty);
@@ -301,6 +299,12 @@ internal sealed class WebWorkbench : IAsyncDisposable
         var listed = _catalog.Entries.Select(static entry => entry.Id).ToHashSet(StringComparer.Ordinal);
         foreach (var id in _runtimes.Keys.Where(id => !listed.Contains(id)).ToList())
         {
+            // A session created while another runtime was being disposed is not stale.
+            if (_catalog.Find(id) is not null)
+            {
+                continue;
+            }
+
             var runtime = _runtimes[id];
             _ = _runtimes.Remove(id);
             await runtime.DisposeAsync().ConfigureAwait(true);
@@ -309,7 +313,8 @@ internal sealed class WebWorkbench : IAsyncDisposable
 
     private async Task PumpUserEventsAsync(CancellationToken cancellationToken)
     {
-        long? last = null;
+        // A future position forces a fresh snapshot after the stream is connected, without replaying stale history.
+        long? last = IUserEventFeed.ResyncPosition;
         var failures = 0;
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -318,7 +323,7 @@ internal sealed class WebWorkbench : IAsyncDisposable
                 await foreach (var evt in _feed.StreamAsync(last, cancellationToken).ConfigureAwait(true))
                 {
                     failures = 0;
-                    last = string.Equals(evt.Kind, CatalogEventKinds.Resync, StringComparison.Ordinal) ? null : evt.Id ?? last;
+                    last = string.Equals(evt.Kind, CatalogEventKinds.Resync, StringComparison.Ordinal) ? IUserEventFeed.ResyncPosition : evt.Id ?? last;
                     await ApplyAsync(evt, cancellationToken).ConfigureAwait(true);
                 }
             }
@@ -353,12 +358,15 @@ internal sealed class WebWorkbench : IAsyncDisposable
 
                 break;
             case CatalogEventKinds.SessionStatus when evt.Status is { } status:
-                if (!_catalog.Apply(status))
+                if (!_catalog.Apply(status, out var applied))
                 {
                     await ReloadCatalogAsync(cancellationToken).ConfigureAwait(true);
+                    if (_catalog.Find(status.SessionId) is { } refreshed && _runtimes.TryGetValue(status.SessionId, out var loaded))
+                    {
+                        await loaded.ApplyStatusAsync(refreshed.RowStatus).ConfigureAwait(true);
+                    }
                 }
-
-                if (_runtimes.TryGetValue(status.SessionId, out var observed))
+                else if (applied && _runtimes.TryGetValue(status.SessionId, out var observed))
                 {
                     await observed.ApplyStatusAsync(status.RowStatus).ConfigureAwait(true);
                 }
@@ -378,6 +386,14 @@ internal sealed class WebWorkbench : IAsyncDisposable
                     if (_catalog.Find(runtime.ViewModel.Id) is { } entry)
                     {
                         await runtime.ApplyStatusAsync(entry.RowStatus).ConfigureAwait(true);
+                        try
+                        {
+                            await runtime.Stages.RefreshAsync(cancellationToken).ConfigureAwait(true);
+                        }
+                        catch (Exception fault) when (WebFailureText.IsExpected(fault))
+                        {
+                            // A failed stage read must not prevent the other sessions from resyncing.
+                        }
                     }
                 }
 
@@ -391,12 +407,21 @@ internal sealed class WebWorkbench : IAsyncDisposable
     {
         try
         {
-            _catalog.Replace(await _api.ListSessionsAsync(cancellationToken).ConfigureAwait(true));
-            await PruneRuntimesAsync().ConfigureAwait(true);
+            await RefreshCatalogAsync(cancellationToken).ConfigureAwait(true);
         }
         catch (Exception fault) when (WebFailureText.IsExpected(fault))
         {
             // The stream stays open; the next event or Retry loads the list again.
+        }
+    }
+
+    private async Task RefreshCatalogAsync(CancellationToken cancellationToken)
+    {
+        var stamp = _catalog.BeginSnapshot();
+        var sessions = await _api.ListSessionsAsync(cancellationToken).ConfigureAwait(true);
+        if (_catalog.MergeSnapshot(sessions, stamp))
+        {
+            await PruneRuntimesAsync().ConfigureAwait(true);
         }
     }
 }

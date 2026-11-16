@@ -69,7 +69,7 @@ The platform health check runs at deploy time from host `healthcheck.railway.app
 | Stage | Image | Why |
 |-------|-------|-----|
 | Build | `mcr.microsoft.com/dotnet/sdk:10.0.402-noble` | `global.json` pins SDK `10.0.402` with `rollForward: latestPatch`. |
-| Runtime | `mcr.microsoft.com/dotnet/aspnet:10.0.13-noble` | Runtime bundled with SDK 10.0.402 is 10.0.13. Noble is used because the entrypoint needs `/bin/sh` to map `PORT`. |
+| Runtime | `mcr.microsoft.com/dotnet/aspnet:10.0.15-noble` | Shipped runtime. The 10.0.13 bundled with SDK 10.0.402 carries GHSA-p3jp-9v83-76w9, fixed in 10.0.14. Noble is used because the entrypoint needs `/bin/sh` to map `PORT`. |
 
 Both stages pass `--locked-mode` restore, then `publish --no-restore`. The final stage runs as UID/GID `10001`. Pin by digest before production (for example `sdk:10.0.402-noble@sha256:...`). No digest has been recorded, because no registry pull was performed.
 
@@ -129,6 +129,8 @@ The TimescaleDB, Dragonfly, and GreptimeDB variables belong to their own service
 Names and operator steps are in [Data plane](data-plane.md). The `autonogrammer-dragonfly` service, the `autonogrammer` database, the roles `autonogrammer_app` and `autonogrammer_migrator`, and the `autonogrammer-migrate` one-shot service are operator steps. Nothing here has been applied to Railway (OQ-73, OQ-100). `deploy/railway/api.railway.json` is not edited by the data-plane docs: its `healthcheckTimeout` of 120 must stay equal to `DataPlane:Postgres:SchemaWaitSeconds`.
 
 The OTLP database header is `X-Greptime-DB-Name=autonogrammer`. Do not list a data-plane variable in `Harness:Acp:Environment:Allow`.
+
+The Dispatch hub holds one long-lived WebSocket per paired device. `Dispatch:Enabled=true` requires `Api:Auth:Mode=Oidc`. Outside Development it refuses `Coordination:Store=InMemory` and requires `Sessions:Store=Postgres`. On `ApplicationStopping` the hub refuses new connections with 503 `hub_draining` and starts closing open sockets in parallel with 1001 and a 5-second cancellation bound per close. `Hosting:ShutdownTimeoutSeconds` defaults to 30 and Railway's `drainingSeconds` is 35; hosted WebSocket draining has not been verified (OQ-420). The source prefix comes from the client address after forwarded-header processing, so `Hosting:ForwardedHeaders:Mode` decides which address the device row records.
 
 ## Deploy steps
 

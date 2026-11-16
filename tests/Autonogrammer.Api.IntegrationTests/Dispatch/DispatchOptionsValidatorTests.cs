@@ -87,7 +87,6 @@ public sealed class DispatchOptionsValidatorTests
         var result = Validator(Environments.Production).Validate(null, Enabled());
 
         result.Failures!.ShouldContain(item => item.Contains("Coordination:Store", StringComparison.Ordinal));
-        result.Failures!.ShouldContain(item => item.Contains("Dispatch:Enabled", StringComparison.Ordinal) && item.Contains("IDispatchStore", StringComparison.Ordinal));
     }
 
     [Fact]

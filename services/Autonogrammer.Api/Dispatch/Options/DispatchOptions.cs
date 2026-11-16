@@ -38,6 +38,9 @@ internal sealed class DispatchOptions
     /// <summary>Gets or sets how long a local approval may wait. Default 5 minutes.</summary>
     public TimeSpan CommandApprovalTimeout { get; set; } = TimeSpan.FromMinutes(5);
 
+    /// <summary>Gets or sets the background sweeper. Tests turn it off and call the sweep directly.</summary>
+    public SweeperSettings Sweeper { get; set; } = new();
+
     /// <summary>Gets or sets whether this process is the only dispatch replica.</summary>
     public DispatchReplicaMode ReplicaMode { get; set; } = DispatchReplicaMode.Single;
 
@@ -105,6 +108,14 @@ internal sealed class DispatchOptions
         /// <summary>Gets or sets the session and cancel run limit. Default 60 seconds.</summary>
         public TimeSpan Session { get; set; } = TimeSpan.FromSeconds(60);
     }
+
+    /// <summary>Background sweeper settings.</summary>
+    internal sealed class SweeperSettings
+    {
+        /// <summary>Gets or sets whether the background sweeper runs. Default true.</summary>
+        public bool Enabled { get; set; } = true;
+    }
+
     /// <summary>How many dispatch processes share the store.</summary>
     internal enum DispatchReplicaMode
     {

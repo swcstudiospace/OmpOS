@@ -56,6 +56,19 @@ public sealed class DedupeTests : IDisposable
     }
 
     [Fact]
+    public void OutOfOrderControlSurvivesRestartWithoutSkippingAnEarlierCommand()
+    {
+        var store = new DispatchDedupeStore(StatePath);
+        store.Admit("cmd-1", "n-1", 1).ShouldBe(DispatchAdmission.Execute);
+        store.AdmitOutOfOrder("cancel-3", "n-3", 3).ShouldBe(DispatchAdmission.Execute);
+        var restarted = new DispatchDedupeStore(StatePath);
+        restarted.HighWater.ShouldBe(1);
+        restarted.AdmitOutOfOrder("cancel-3", "new-nonce", 3).ShouldBe(DispatchAdmission.Duplicate);
+        restarted.Admit("cmd-2", "n-2", 2).ShouldBe(DispatchAdmission.Execute);
+        restarted.HighWater.ShouldBe(2);
+    }
+
+    [Fact]
     public void ANonceReusedByADifferentCommandIsReplayed()
     {
         var store = new DispatchDedupeStore(StatePath);

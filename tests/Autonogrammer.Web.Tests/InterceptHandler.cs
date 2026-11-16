@@ -6,10 +6,26 @@ internal sealed class InterceptHandler(HttpMessageHandler inner) : DelegatingHan
     /// <summary>Gets or sets the interceptor: it returns a response to answer the request itself, or null to pass it on.</summary>
     internal Func<HttpRequestMessage, HttpResponseMessage?>? Intercept { get; set; }
 
+    /// <summary>Optionally delays a response after the inner handler has captured it.</summary>
+    internal Func<HttpRequestMessage, HttpResponseMessage, CancellationToken, Task>? AfterResponse { get; set; }
+
     /// <inheritdoc />
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var answer = Intercept?.Invoke(request);
-        return answer is null ? base.SendAsync(request, cancellationToken) : Task.FromResult(answer);
+        var response = Intercept?.Invoke(request) ?? await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (AfterResponse is { } after)
+            {
+                await after(request, response, cancellationToken).ConfigureAwait(false);
+            }
+
+            return response;
+        }
+        catch
+        {
+            response.Dispose();
+            throw;
+        }
     }
 }

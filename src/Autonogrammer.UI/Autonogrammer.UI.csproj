@@ -16,4 +16,8 @@
     <ProjectReference Include="../Autonogrammer.Cowork.Artifacts/Autonogrammer.Cowork.Artifacts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Autonogrammer.UI.Tests" />
+  </ItemGroup>
+
 </Project>

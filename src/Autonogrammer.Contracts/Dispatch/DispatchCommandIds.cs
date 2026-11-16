@@ -43,4 +43,9 @@ public static class DispatchCommandIds
 
         return new string(characters);
     }
+
+    /// <summary>Reports whether a value has the shape of a command identifier: 26 characters from the identifier alphabet.</summary>
+    /// <param name="value">The candidate.</param>
+    /// <returns><see langword="true"/> when the value is a command identifier.</returns>
+    public static bool IsValid(string? value) => value is not null && value.Length == Length && value.All(static character => Alphabet.AsSpan().Contains(character));
 }

@@ -1,7 +1,7 @@
 namespace Autonogrammer.Sessions.Postgres.Migrations;
 
 /// <summary>Adds durable, account-scoped memory create claims. Down loses replay history and requires quiescence.</summary>
-internal sealed class M0011_MemoryIdempotency : IMigrationStep
+internal sealed class M0013_MemoryIdempotency : IMigrationStep
 {
     private const string Up = """
         CREATE TABLE IF NOT EXISTS cowork_memory_idempotency (
@@ -21,7 +21,7 @@ internal sealed class M0011_MemoryIdempotency : IMigrationStep
     private const string Down = "DROP TABLE IF EXISTS cowork_memory_idempotency;";
 
     /// <inheritdoc />
-    public int Version => 11;
+    public int Version => 13;
 
     /// <inheritdoc />
     public string Name => "memory_idempotency";

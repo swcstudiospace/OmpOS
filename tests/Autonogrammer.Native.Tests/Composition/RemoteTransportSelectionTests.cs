@@ -104,6 +104,8 @@ public sealed class RemoteTransportSelectionTests
     [Fact]
     public async Task ALocalSessionOfAHeadWithServicesHasNoRemoteResources()
     {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "The fake omp is a POSIX shell script.");
+
         using var tree = new TempTree();
         var services = await Autonogrammer.Native.Composition.HeadServices.CreateAsync(
             new Autonogrammer.Native.Composition.HeadServicesOptions
@@ -114,6 +116,7 @@ public sealed class RemoteTransportSelectionTests
                 HomeDirectory = Path.Combine(tree.Root, "home"),
                 ConfigDirectory = Path.Combine(tree.Root, "config"),
                 GetVariable = static _ => null,
+                OmpPath = AgentLoopFixtures.WriteFakeOmp(Path.Combine(tree.Root, "omp"), "18.18.1"),
             },
             Token).ConfigureAwait(true);
         await using var servicesScope = services.ConfigureAwait(true);

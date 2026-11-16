@@ -3,7 +3,6 @@ using System.Text.Encodings.Web;
 using Autonogrammer.Api.Dispatch.Devices;
 using Autonogrammer.Api.Security;
 using Autonogrammer.Api.Services;
-using Autonogrammer.Contracts.Dispatch;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
@@ -59,10 +58,12 @@ internal static class DispatchDeviceScheme
                 return AuthenticateResult.NoResult();
             }
 
-            if (!_dispatch.Value.Enabled && Context.RequestServices.GetService<IDispatchStore>() is null)
+            if (!_dispatch.Value.Enabled
+                && (string.IsNullOrWhiteSpace(_dispatch.Value.Credentials.SigningKeyPem)
+                    || (!Context.RequestServices.GetRequiredService<IHostEnvironment>().IsDevelopment()
+                        && !string.Equals(Context.RequestServices.GetRequiredService<IConfiguration>()["Sessions:Store"], "Postgres", StringComparison.OrdinalIgnoreCase))))
             {
-                // Outside Development no device store is registered. With dispatch off the credential cannot be checked, so the request is refused
-                // as unauthenticated instead of failing while the handler is built.
+                // No usable device store is configured; fail authentication without resolving the store.
                 return AuthenticateResult.Fail("The device credential cannot be checked while dispatch is off.");
             }
 

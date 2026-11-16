@@ -59,11 +59,10 @@ public sealed class DispatchDisabledTests
     }
 
     /// <summary>
-    /// Outside Development no device store is registered. With dispatch off the device credential cannot be checked, so the connect route answers 401
-    /// instead of failing while its authentication handler is built.
+    /// With dispatch off the device credential is not checked, so the connect route answers 401 before any device store is resolved.
     /// </summary>
     [Fact]
-    public async Task A_connect_with_dispatch_off_and_no_device_store_is_refused_as_unauthenticated()
+    public async Task A_connect_with_dispatch_off_in_production_is_refused_as_unauthenticated()
     {
         var ct = TestContext.Current.CancellationToken;
         var config = JwtTestHost.ProductionConfig();

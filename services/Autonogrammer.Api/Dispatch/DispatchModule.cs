@@ -2,10 +2,13 @@ using Autonogrammer.Api.Accounts;
 using Autonogrammer.Api.Dispatch.Devices;
 using Autonogrammer.Api.Dispatch.Store;
 using Autonogrammer.Contracts.Dispatch;
+using Autonogrammer.Coordination;
+using Autonogrammer.Sessions.Postgres;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using Npgsql;
 
 namespace Autonogrammer.Api.Dispatch;
 
@@ -37,12 +40,7 @@ internal static class DispatchModule
             var options = provider.GetRequiredService<IOptions<DispatchOptions>>().Value.Limits;
             return new DispatchStoreLimits(options.MaxQueuedPerDevice, options.DevicesPerAccount, options.FeedRetention, options.BodyRetention);
         });
-        if (environment.IsDevelopment())
-        {
-            services.TryAddSingleton<IDispatchStore>(static provider => new InMemoryDispatchStore(
-                provider.GetRequiredService<DispatchStoreLimits>(),
-                provider.GetRequiredService<TimeProvider>()));
-        }
+        services.TryAddSingleton<IDispatchStore>(static provider => SelectStore(provider));
 
         services.AddSingleton<DeviceCredentialIssuer>();
         services.AddSingleton<DeviceCredentialValidator>();
@@ -104,5 +102,25 @@ internal static class DispatchModule
 
         /// <inheritdoc />
         public bool Enabled => _options.Value.Enabled;
+    }
+
+    /// <summary>Selects the device store the first time it is resolved: Postgres when Sessions:Store is Postgres, otherwise the in-memory store in Development. Outside Development without Postgres, resolving it fails.</summary>
+    /// <param name="provider">The service provider.</param>
+    /// <returns>The store.</returns>
+    private static IDispatchStore SelectStore(IServiceProvider provider)
+    {
+        var limits = provider.GetRequiredService<DispatchStoreLimits>();
+        var time = provider.GetRequiredService<TimeProvider>();
+        if (string.Equals(provider.GetRequiredService<IConfiguration>()["Sessions:Store"], "Postgres", StringComparison.OrdinalIgnoreCase))
+        {
+            return new PostgresDispatchStore(provider.GetRequiredService<NpgsqlDataSource>(), limits, time, provider.GetRequiredService<ITenantHasher>().HashTenant, provider.GetRequiredService<PostgresResilience>());
+        }
+
+        if (provider.GetRequiredService<IHostEnvironment>().IsDevelopment())
+        {
+            return new InMemoryDispatchStore(limits, time);
+        }
+
+        throw new InvalidOperationException("Dispatch has no device store outside Development. Set Sessions:Store=Postgres.");
     }
 }
