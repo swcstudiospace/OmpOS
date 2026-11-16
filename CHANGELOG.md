@@ -31,6 +31,8 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 - Sign-in coordinator defers synchronization-resource disposal until registered sends finish.
 - Artifact version uploads apply the configured per-kind byte limit (a later version uses the stored kind) and `MaxVersions`, and require the next version number; a version that skips ahead is a `409` conflict instead of a history that fails its integrity check.
 - PostgreSQL artifact writes take a per-account database advisory lock before reading usage, so parallel uploads cannot exceed the account quota and concurrent writes of one version resolve to same-hash or conflict. A write reads usage with aggregate queries and loads only the artifact it changes.
+- A desktop refresh no longer overwrites or removes a newer sign-in another process stored, and no longer brings back a session another process signed out; sign-in and sign-out now take the cross-process refresh guard (sign-out waits at most 5 seconds for it). Two-process behaviour has only been exercised with two managers over one store.
+- Account enrollment no longer holds the request for the account write: only account routes wait (at most 2 seconds) for their caller's write, other routes continue at once, concurrent first requests share one pending write, pending writes are bounded, time out after 10 seconds and stop when the host begins stopping.
 
 ### Changed
 
