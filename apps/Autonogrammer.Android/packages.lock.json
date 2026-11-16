@@ -812,14 +812,14 @@
       "autonogrammer.cowork.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.0, )"
+          "Autonogrammer.Contracts": "[0.16.1, )"
         }
       },
       "autonogrammer.cowork.artifacts": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.0, )",
-          "Autonogrammer.Cowork.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Contracts": "[0.16.1, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.16.1, )",
           "DiffPlex": "[1.9.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.Options.ConfigurationExtensions": "[10.0.13, )"
@@ -828,36 +828,36 @@
       "autonogrammer.dispatch.client": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.0, )",
-          "Autonogrammer.Presentation": "[0.16.0, )"
+          "Autonogrammer.Contracts": "[0.16.1, )",
+          "Autonogrammer.Presentation": "[0.16.1, )"
         }
       },
       "autonogrammer.genui": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.0, )"
+          "Autonogrammer.Contracts": "[0.16.1, )"
         }
       },
       "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.0, )"
+          "Autonogrammer.Contracts": "[0.16.1, )"
         }
       },
       "autonogrammer.harness.acp": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.16.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.1, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.harness.agentloop": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.16.0, )",
-          "Autonogrammer.Harness.Acp": "[0.16.0, )",
-          "Autonogrammer.Harness.Plugins": "[0.16.0, )",
+          "Autonogrammer.Contracts": "[0.16.1, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.1, )",
+          "Autonogrammer.Harness.Acp": "[0.16.1, )",
+          "Autonogrammer.Harness.Plugins": "[0.16.1, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
@@ -870,15 +870,15 @@
       "autonogrammer.harness.mcp": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.16.0, )",
-          "Autonogrammer.Harness.Acp": "[0.16.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.1, )",
+          "Autonogrammer.Harness.Acp": "[0.16.1, )",
           "ModelContextProtocol": "[2.3.0, )"
         }
       },
       "autonogrammer.harness.omplauncher": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Terminal": "[0.16.0, )"
+          "Autonogrammer.Harness.Terminal": "[0.16.1, )"
         }
       },
       "autonogrammer.harness.plugins": {
@@ -893,25 +893,25 @@
       "autonogrammer.harness.workspace": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.16.0, )"
+          "Autonogrammer.Harness.Abstractions": "[0.16.1, )"
         }
       },
       "autonogrammer.native.views": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.0, )",
-          "Autonogrammer.Cowork.Artifacts": "[0.16.0, )",
-          "Autonogrammer.GenUi": "[0.16.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.16.0, )",
-          "Autonogrammer.Harness.AgentLoop": "[0.16.0, )",
-          "Autonogrammer.Harness.Completion": "[0.16.0, )",
-          "Autonogrammer.Harness.Mcp": "[0.16.0, )",
-          "Autonogrammer.Harness.OmpLauncher": "[0.16.0, )",
-          "Autonogrammer.Harness.Plugins": "[0.16.0, )",
-          "Autonogrammer.Harness.Terminal": "[0.16.0, )",
-          "Autonogrammer.Harness.Workspace": "[0.16.0, )",
-          "Autonogrammer.Presentation": "[0.16.0, )",
-          "Autonogrammer.Sessions": "[0.16.0, )",
+          "Autonogrammer.Contracts": "[0.16.1, )",
+          "Autonogrammer.Cowork.Artifacts": "[0.16.1, )",
+          "Autonogrammer.GenUi": "[0.16.1, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.1, )",
+          "Autonogrammer.Harness.AgentLoop": "[0.16.1, )",
+          "Autonogrammer.Harness.Completion": "[0.16.1, )",
+          "Autonogrammer.Harness.Mcp": "[0.16.1, )",
+          "Autonogrammer.Harness.OmpLauncher": "[0.16.1, )",
+          "Autonogrammer.Harness.Plugins": "[0.16.1, )",
+          "Autonogrammer.Harness.Terminal": "[0.16.1, )",
+          "Autonogrammer.Harness.Workspace": "[0.16.1, )",
+          "Autonogrammer.Presentation": "[0.16.1, )",
+          "Autonogrammer.Sessions": "[0.16.1, )",
           "Avalonia": "[12.1.4, )",
           "Avalonia.AvaloniaEdit": "[12.0.0, )",
           "Avalonia.Controls.DataGrid": "[12.1.2, )",
@@ -925,25 +925,25 @@
       "autonogrammer.parser": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.0, )",
+          "Autonogrammer.Contracts": "[0.16.1, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.presentation": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.0, )",
-          "Autonogrammer.GenUi": "[0.16.0, )",
-          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.16.0, )",
-          "Autonogrammer.Parser": "[0.16.0, )",
+          "Autonogrammer.Contracts": "[0.16.1, )",
+          "Autonogrammer.GenUi": "[0.16.1, )",
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.16.1, )",
+          "Autonogrammer.Parser": "[0.16.1, )",
           "Markdig": "[1.4.2, )"
         }
       },
       "autonogrammer.sessions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.16.0, )"
+          "Autonogrammer.Contracts": "[0.16.1, )",
+          "Autonogrammer.Harness.Abstractions": "[0.16.1, )"
         }
       },
       "Avalonia": {
@@ -1210,7 +1210,50 @@
         "contentHash": "I/TNfpQ7YYXJxFEFbV9/NjT9XXyh7rY2xcYEx3wt6xOYoXgYv5HggUFWNfsSshlywUwNbJoPe1Bzu6T8bb3nwg=="
       }
     },
-    "net10.0-android36.0/linux-x64": {
+    "net10.0-android36.0/android-arm64": {
+      "HarfBuzzSharp.NativeAssets.Android": {
+        "type": "Transitive",
+        "resolved": "8.3.1.5",
+        "contentHash": "1/7tWN8z3mqwQgeVZr3JRd9wkZcrsWhgg17no6gT21U4NCQOAf4KRZj+zawZlcxb6i8UHLdwLMlap4q/Lx0RyQ=="
+      },
+      "HarfBuzzSharp.NativeAssets.Linux": {
+        "type": "Transitive",
+        "resolved": "8.3.1.3",
+        "contentHash": "RI6A1LgmooU30+4QIyFt5rmBCzP0VzTR+587IJSGvYIsHHWlahFufihYxtraLfsIhW7I8dn6+xX+DZGygOPKWQ=="
+      },
+      "SkiaSharp.NativeAssets.Android": {
+        "type": "Transitive",
+        "resolved": "3.119.4",
+        "contentHash": "qfjNh5hZBZxpOIM1aeDByj2qNbcK2JZG5Y7YyGSeliaYnf1N/hVfsswIPUa+qzcMqS9Q0VCGk85zQLvwVXtrvQ=="
+      },
+      "SkiaSharp.NativeAssets.Linux": {
+        "type": "Transitive",
+        "resolved": "3.119.4",
+        "contentHash": "UAyVzbqNfZsZbKbzj68zXLyUyF/SbTKmzTfOO6qDu++dtIUMMTzPBe8oOuzU/DiewpfKoUUlOSsJmqWc6blxBw=="
+      },
+      "Microsoft.Windows.Console.ConPTY": {
+        "type": "CentralTransitive",
+        "requested": "[1.24.260710001, )",
+        "resolved": "1.24.260710001",
+        "contentHash": "JR1xAkZbNnAALBjzFpqSwEx7YZfD1LI228jF9j9cgKknBPCiFy9mpphlgH+TpTN8vajTUpcgg9Miy5Y8eUAH9g=="
+      },
+      "Onigwrap": {
+        "type": "CentralTransitive",
+        "requested": "[1.0.10, )",
+        "resolved": "1.0.10",
+        "contentHash": "eujNEpEhCl4UiqHTG0CeG/sWS8v/iYXGqUpaVkgBmYRZp3Utmz/aw38fuFL2rcnhj1FNfHwHaxGDeLY34a3nEA=="
+      },
+      "Porta.Pty": {
+        "type": "CentralTransitive",
+        "requested": "[2.2.3, )",
+        "resolved": "2.2.3",
+        "contentHash": "Q+U4BOiKQP8AR68Fjy6h+rLlcXcH5ao+qwIO7xAejO0U4MqFqM9/SdtcG/cZwOlQydciagiA0I7HWVRkfealyQ==",
+        "dependencies": {
+          "Microsoft.Windows.Console.ConPTY": "1.24.260710001"
+        }
+      }
+    },
+    "net10.0-android36.0/android-x64": {
       "HarfBuzzSharp.NativeAssets.Android": {
         "type": "Transitive",
         "resolved": "8.3.1.5",
