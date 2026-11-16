@@ -48,7 +48,6 @@
           "Microsoft.Extensions.AI.Abstractions": "10.11.0"
         }
       }
-    },
-    "net10.0/linux-x64": {}
+    }
   }
 }

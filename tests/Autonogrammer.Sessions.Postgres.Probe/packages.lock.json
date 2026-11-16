@@ -60,7 +60,7 @@
       "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.0, )"
+          "Autonogrammer.Contracts": "[0.17.0, )"
         }
       },
       "autonogrammer.resilience": {
@@ -72,17 +72,17 @@
       "autonogrammer.sessions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.16.0, )"
+          "Autonogrammer.Contracts": "[0.17.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.17.0, )"
         }
       },
       "autonogrammer.sessions.postgres": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.16.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.16.0, )",
-          "Autonogrammer.Resilience": "[0.16.0, )",
-          "Autonogrammer.Sessions": "[0.16.0, )",
+          "Autonogrammer.Contracts": "[0.17.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.17.0, )",
+          "Autonogrammer.Resilience": "[0.17.0, )",
+          "Autonogrammer.Sessions": "[0.17.0, )",
           "Microsoft.Extensions.Configuration.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
           "Npgsql": "[10.0.3, )"
@@ -118,7 +118,6 @@
         "resolved": "10.0.13",
         "contentHash": "ZjTwxzhiw2TMEzIbUDkMF0dfDB2I4NQgIfKD0ELu9/5Mk+SRGdKZcD0/lvBrRCAPo6KN2r0BW86MRancoyJkoA=="
       }
-    },
-    "net10.0/linux-x64": {}
+    }
   }
 }
