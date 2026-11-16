@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Cryptography;
 using Autonogrammer.Api.Dispatch;
 using Autonogrammer.Api.Dispatch.Devices;
@@ -10,6 +11,7 @@ using Autonogrammer.Sessions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
@@ -59,8 +61,9 @@ internal sealed class DispatchApiHost : IAsyncDisposable
     /// <param name="enabled">Whether <c>Dispatch:Enabled</c> is true.</param>
     /// <param name="configure">Extra configuration.</param>
     /// <param name="registerServices">Extra service registrations, applied after the dispatch services; a test replaces a seam here.</param>
+    /// <param name="network">Listen on loopback for a real desktop connector instead of using TestServer.</param>
     /// <returns>The host.</returns>
-    public static async Task<DispatchApiHost> StartAsync(CancellationToken cancellationToken, bool enabled = true, Action<Dictionary<string, string?>>? configure = null, Action<IServiceCollection>? registerServices = null)
+    public static async Task<DispatchApiHost> StartAsync(CancellationToken cancellationToken, bool enabled = true, Action<Dictionary<string, string?>>? configure = null, Action<IServiceCollection>? registerServices = null, bool network = false)
     {
         using var credential = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         using var command = ECDsa.Create(ECCurve.NamedCurves.nistP256);
@@ -73,13 +76,14 @@ internal sealed class DispatchApiHost : IAsyncDisposable
             ["Dispatch:CommandSigning:KeyPem"] = command.ExportPkcs8PrivateKeyPem(),
             ["Coordination:Store"] = "InMemory",
             ["Sessions:Store"] = "InMemory",
+            ["Dispatch:Sweeper:Enabled"] = "false",
             ["Hosting:RequestTimeoutSeconds"] = "30",
         };
         configure?.Invoke(settings);
 
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = Environments.Development, ApplicationName = "Autonogrammer.Api" });
         builder.Configuration.AddInMemoryCollection(settings);
-        builder.WebHost.UseTestServer();
+        ConfigureServer(builder, network);
         builder.Logging.ClearProviders();
         builder.Services.AddSingleton<ISessionRepository, InMemorySessionRepository>();
         builder.AddHostingHardening();
@@ -94,6 +98,8 @@ internal sealed class DispatchApiHost : IAsyncDisposable
         builder.Services.AddInMemoryCoordination();
         builder.Services.AddDispatchServices(builder.Environment);
         builder.Services.AddDispatchHub();
+        builder.Services.TryAddSingleton<ITenantHasher>(new Autonogrammer.Coordination.Dragonfly.TenantHasher(new Autonogrammer.Coordination.Dragonfly.TenantHasherOptions { Pepper = "test-pepper" }));
+        builder.Services.TryAddSingleton<Autonogrammer.Api.Audit.IAuditLedger, Autonogrammer.Api.Audit.NullAuditLedger>();
         registerServices?.Invoke(builder.Services);
         builder.Services.AddAutonogrammerOpenApi();
         builder.Services.AddRateLimiter(_ => { });
@@ -102,6 +108,7 @@ internal sealed class DispatchApiHost : IAsyncDisposable
         app.UseDeveloperExceptionPage();
         app.UseHostingHardening();
         app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(20) });
+        UseTestRemoteAddress(app);
         app.UseAuthentication();
         app.UseRateLimiter();
         app.UseAuthorization();
@@ -114,11 +121,43 @@ internal sealed class DispatchApiHost : IAsyncDisposable
 
     /// <summary>Gets a client that talks to the test server.</summary>
     /// <returns>The client.</returns>
-    public HttpClient GetTestClient() => _app.GetTestClient();
+    public HttpClient GetTestClient() => _app.Services.GetRequiredService<IServer>() is TestServer
+        ? _app.GetTestClient()
+        : new HttpClient { BaseAddress = new Uri(_app.Urls.Single()) };
+
+    /// <summary>Gets the loopback origin for a network host.</summary>
+    public Uri Origin => new(_app.Urls.Single());
 
     /// <summary>Creates a WebSocket client that talks to the test server.</summary>
     /// <returns>The client.</returns>
     public WebSocketClient CreateWebSocketClient() => ((TestServer)_app.Services.GetRequiredService<IServer>()).CreateWebSocketClient();
+
+    private static void ConfigureServer(WebApplicationBuilder builder, bool network)
+    {
+        if (network)
+        {
+            builder.WebHost.UseUrls("http://127.0.0.1:0");
+        }
+        else
+        {
+            builder.WebHost.UseTestServer();
+        }
+    }
+
+    /// <summary>Test-only: takes the remote address from the X-Test-Remote-Address header, so a test chooses the source address of a device connection.</summary>
+    /// <param name="app">The application.</param>
+    private static void UseTestRemoteAddress(WebApplication app)
+    {
+        app.Use((context, next) =>
+        {
+            if (context.Request.Headers.TryGetValue("X-Test-Remote-Address", out var address) && IPAddress.TryParse(address.ToString(), out var remote))
+            {
+                context.Connection.RemoteIpAddress = remote;
+            }
+
+            return next(context);
+        });
+    }
 
     /// <summary>Posts a JSON body and returns the response. The caller disposes it.</summary>
     /// <param name="client">The client.</param>

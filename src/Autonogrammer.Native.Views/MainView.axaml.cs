@@ -206,9 +206,8 @@ public partial class MainView : UserControl, IDisposable
         _rail.CloseRequested += OnRailCloseRequested;
         RailHost.Content = _rail;
 
-        // The panel state block (empty, loading, error) sits above the thread and hides itself while the panel is ready.
+        // The panel state block (loading, error) sits above the thread and hides itself while the panel is ready or empty.
         _stateView = (PanelStateView)ViewMapping.Create(panel);
-        _stateView.NewAgentCompleted += OnNewAgentCompleted;
         PanelStateHost.Content = _stateView;
 
         // The Agents window: one registry of runs and one view model over it. The view opens in place of the transcript.
@@ -418,6 +417,9 @@ public partial class MainView : UserControl, IDisposable
             case nameof(AgentPanelViewModel.PipelineAnnouncement):
                 ForwardAnnouncement();
                 break;
+            case nameof(AgentPanelViewModel.State):
+                RefreshLanding();
+                break;
             case nameof(AgentPanelViewModel.ActionError):
                 if (_panel.ActionError is { } failure)
                 {
@@ -479,7 +481,7 @@ public partial class MainView : UserControl, IDisposable
         _current = viewModel is null ? null : GetPane(viewModel);
         var pane = _current;
         ThreadHeaderHost.Content = pane?.Header;
-        TranscriptHost.Content = pane is null ? null : pane.TerminalView ?? (Control)pane.Transcript;
+        TranscriptHost.Content = pane is null ? _landingView : pane.TerminalView ?? (Control)pane.Transcript;
         PipelineHost.Content = pane?.Strip;
         SearchHost.Content = pane?.SearchView;
         SearchHost.IsVisible = pane is { SearchOpen: true };
@@ -501,6 +503,7 @@ public partial class MainView : UserControl, IDisposable
         RefreshAvailability();
         RefreshFeedback();
         ForwardAnnouncement();
+        RefreshLanding();
     }
 
     // When a closed or lost agent comes back (Reopen agent, Resume agent) the composer returns and focus moves to its prompt.
@@ -1166,7 +1169,7 @@ public partial class MainView : UserControl, IDisposable
     }
 
     // The prompt of the selected agent. A closed or lost agent has no prompt, so focus lands on its transcript. With no agent, it lands on
-    // the first control of the empty thread.
+    // the first control of the Code landing.
     private void FocusThread()
     {
         if (_current is { } pane)
@@ -1187,7 +1190,7 @@ public partial class MainView : UserControl, IDisposable
             return;
         }
 
-        _stateView.FindControl<Button>("StartFirstAgentButton").FocusWhenReady();
+        _landingView?.FocusFirst();
     }
 
     private void OnLayoutSizeChanged(object? sender, SizeChangedEventArgs e)
@@ -1640,7 +1643,6 @@ public partial class MainView : UserControl, IDisposable
         _rail.NewTerminalCompleted -= OnNewAgentCompleted;
         _rail.RowActivated -= OnRowActivated;
         _rail.CloseRequested -= OnRailCloseRequested;
-        _stateView.NewAgentCompleted -= OnNewAgentCompleted;
         CloseShell();
         _panel.PropertyChanged -= OnPanelChanged;
         _panel.Catalog.PropertyChanged -= OnCatalogChanged;

@@ -73,9 +73,9 @@ internal sealed class DispatchOptionsValidator : IValidateOptions<DispatchOption
             failures.Add("Dispatch:Enabled refuses Coordination:Store=InMemory outside Development.");
         }
 
-        if (!_environment.IsDevelopment())
+        if (!_environment.IsDevelopment() && !string.Equals(_configuration["Sessions:Store"], "Postgres", StringComparison.OrdinalIgnoreCase))
         {
-            failures.Add("Dispatch:Enabled refuses the in-memory IDispatchStore outside Development.");
+            failures.Add("Dispatch:Enabled requires Sessions:Store=Postgres outside Development.");
         }
 
         if (!_environment.IsDevelopment() && string.IsNullOrWhiteSpace(options.HubOrigin))

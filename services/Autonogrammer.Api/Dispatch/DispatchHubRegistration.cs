@@ -1,3 +1,4 @@
+using Autonogrammer.Api.Dispatch.Audit;
 using Autonogrammer.Api.Dispatch.Devices;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -15,6 +16,10 @@ internal static class DispatchHubRegistration
         services.AddSingleton<DispatchSessionRegistry>();
         services.AddSingleton<DispatchSigner>();
         services.AddSingleton<DispatchDeliveryLoop>();
+        services.AddSingleton<DispatchAuditWriter>();
+        services.AddSingleton<DispatchDeviceFrames>();
+        services.AddSingleton<DispatchSweeper>();
+        services.AddSingleton<IHostedService>(static provider => provider.GetRequiredService<DispatchSweeper>());
         services.AddSingleton<DispatchHub>();
         services.Replace(ServiceDescriptor.Singleton<IDispatchConnectHandler>(static provider => provider.GetRequiredService<DispatchHub>()));
         services.AddHostedService<DispatchSignalSubscriber>();

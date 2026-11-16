@@ -18,6 +18,7 @@
     <Project Path="src/Autonogrammer.Harness.Acp/Autonogrammer.Harness.Acp.csproj" />
     <Project Path="src/Autonogrammer.Harness.InMemory/Autonogrammer.Harness.InMemory.csproj" />
     <Project Path="src/Autonogrammer.Harness.Remote/Autonogrammer.Harness.Remote.csproj" />
+    <Project Path="src/Autonogrammer.Harness.RemoteProvision/Autonogrammer.Harness.RemoteProvision.csproj" />
     <Project Path="src/Autonogrammer.Harness.Rpc/Autonogrammer.Harness.Rpc.csproj" />
     <Project Path="src/Autonogrammer.Harness.Worktrees/Autonogrammer.Harness.Worktrees.csproj" />
     <Project Path="src/Autonogrammer.Harness.Terminal/Autonogrammer.Harness.Terminal.csproj" />
@@ -79,6 +80,7 @@
     <Project Path="tests/Autonogrammer.Harness.InMemory.Tests/Autonogrammer.Harness.InMemory.Tests.csproj" />
     <Project Path="tests/Autonogrammer.Harness.Acp.Tests/Autonogrammer.Harness.Acp.Tests.csproj" />
     <Project Path="tests/Autonogrammer.Harness.Remote.Tests/Autonogrammer.Harness.Remote.Tests.csproj" />
+    <Project Path="tests/Autonogrammer.Harness.RemoteProvision.Tests/Autonogrammer.Harness.RemoteProvision.Tests.csproj" />
     <Project Path="tests/Autonogrammer.Harness.Rpc.Tests/Autonogrammer.Harness.Rpc.Tests.csproj" />
     <Project Path="tests/Autonogrammer.Harness.Worktrees.Tests/Autonogrammer.Harness.Worktrees.Tests.csproj" />
     <Project Path="tests/Autonogrammer.Parity.Support/Autonogrammer.Parity.Support.csproj" />

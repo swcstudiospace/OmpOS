@@ -24,7 +24,7 @@ public sealed class RemoteFrameBoundTests
         var malformed = await Should.ThrowAsync<MalformedFrameHarnessException>(
             () => CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct))).ConfigureAwait(true);
 
-        malformed.Message.ShouldBe("A physical frame exceeds the 1 MiB transport limit.");
+        malformed.Message.ShouldBe("A physical frame exceeds the transport limit of 1048576 characters.");
     }
 
     /// <summary>

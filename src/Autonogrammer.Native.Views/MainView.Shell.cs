@@ -4,15 +4,18 @@ using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Native.Views.Cloud;
 using Autonogrammer.Native.Views.Display;
 using Autonogrammer.Native.Views.Hooks;
+using Autonogrammer.Native.Views.Landing;
 using Autonogrammer.Native.Views.Remote;
 using Autonogrammer.Native.Views.Shell;
 using Autonogrammer.Native.Views.Workspace;
 using Autonogrammer.Native.Views.Worktrees;
+using Autonogrammer.Presentation.Accounts;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Cloud;
 using Autonogrammer.Presentation.Commands;
 using Autonogrammer.Presentation.Editor;
 using Autonogrammer.Presentation.Hooks;
+using Autonogrammer.Presentation.Landing;
 using Autonogrammer.Presentation.Queue;
 using Autonogrammer.Presentation.Remote;
 using Autonogrammer.Presentation.Settings;
@@ -35,6 +38,11 @@ public partial class MainView
     private IInputElement? _searchReturnFocus;
     private NewSessionTargetModel? _targetModel;
     private EnvironmentPickerView? _targetView;
+    private CodeLandingModel? _landing;
+    private CodeLandingView? _landingView;
+    private Action? _cancelInstall;
+    private IAccountHost? _accountHost;
+    private EventHandler? _accountChanged;
     private HooksServiceSource? _hooksSource;
     private HookRunLogModel? _hookLog;
     private EventHandler<HookRunItemEventArgs>? _hookRunHandler;
@@ -95,6 +103,9 @@ public partial class MainView
         WorkspacesButton.Click += OnWorkspacesClick;
         InitializeSearchOverlay();
         InitializeTargetPicker();
+        InitializeLanding();
+        // The first profile read starts after the landing exists. A read that completes at once would otherwise set the landing's remote state before it is there.
+        _ = LoadTargetsAsync();
         InitializeHooks();
         InitializeWorktrees();
         InitializeCloud();
@@ -137,6 +148,16 @@ public partial class MainView
         if (_targetView is not null)
         {
             _targetView.ManageRequested -= OnManageEnvironmentsRequested;
+        }
+
+        if (_landing is not null)
+        {
+            _landing.ActionRequested -= OnLandingActionRequested;
+        }
+
+        if (_accountHost is not null && _accountChanged is not null)
+        {
+            _accountHost.Changed -= _accountChanged;
         }
 
         if (_targetModel is not null)
@@ -252,6 +273,191 @@ public partial class MainView
 
     #endregion
 
+    #region Code landing
+
+    // The Code landing: the four environment cards that show while no session is selected. It reads the picker's environments, the account and the omp
+    // of this computer. Omp is checked once when the window opens and again when its Try again button is pressed.
+    private void InitializeLanding()
+    {
+        _landing = new CodeLandingModel(_targetModel ?? new NewSessionTargetModel([]));
+        _landingView = new CodeLandingView { DataContext = _landing };
+        _landing.ActionRequested += OnLandingActionRequested;
+        if (_services.RemoteEnvironments is null)
+        {
+            _landing.SetRemote(RemoteLoadState.Loaded);
+        }
+
+        if (_services.Account is { } account)
+        {
+            _accountHost = account;
+            _accountChanged = (_, _) => Dispatcher.UIThread.Post(() => RefreshAccount());
+            account.Changed += _accountChanged;
+        }
+
+        RefreshAccount();
+        _ = RefreshLocalOmpAsync();
+        // The update check starts once the window is painted, so it never delays the first frame.
+        Dispatcher.UIThread.Post(() => _ = RefreshLocalOmpUpdateAsync(), DispatcherPriority.ApplicationIdle);
+    }
+
+    private void RefreshAccount() => _landing?.SetAccount(_accountHost?.State);
+
+    private async Task RefreshLocalOmpAsync()
+    {
+        var landing = _landing;
+        if (landing is null)
+        {
+            return;
+        }
+
+        if (_services.LocalOmp is not { } read)
+        {
+            landing.SetLocal(LocalOmpStatus.NotChecked);
+            return;
+        }
+
+        landing.SetLocal(LocalOmpStatus.Pending);
+        try
+        {
+            var status = await read(CancellationToken.None).ConfigureAwait(true);
+            landing.SetLocal(status);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+        {
+            landing.SetLocal(LocalOmpStatus.Failed(exception.GetBaseException().Message));
+        }
+    }
+
+    // The managed omp is checked for a newer release after the first paint. A newer one is installed, and the status is read again so the card names it.
+    private async Task RefreshLocalOmpUpdateAsync()
+    {
+        var landing = _landing;
+        if (landing is null || _services.LocalOmpUpdateCheck is not { } check)
+        {
+            return;
+        }
+
+        try
+        {
+            var update = await check(CancellationToken.None).ConfigureAwait(true);
+            landing.SetLocalUpdate(update);
+            if (update.State == LocalOmpUpdateState.Updated)
+            {
+                await RefreshLocalOmpAsync().ConfigureAwait(true);
+            }
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+        {
+            landing.SetLocalUpdate(new LocalOmpUpdate(LocalOmpUpdateState.Failed, null, null, exception.GetBaseException().Message));
+        }
+    }
+
+    // The Local machine card's install. Its progress and its outcome are posted to the UI queue in the order they happen, so an outcome is never
+    // overtaken by a progress stage that was queued before it. A cancel, or an install that did not complete, leaves the card as the install found it or says why it failed.
+    private async Task InstallLocalOmpAsync()
+    {
+        var landing = _landing;
+        if (landing is null || _services.LocalOmpInstall is not { } install || _cancelInstall is not null)
+        {
+            return;
+        }
+
+        var cancellation = new CancellationTokenSource();
+        _cancelInstall = cancellation.Cancel;
+        try
+        {
+            var update = await install(status => Dispatcher.UIThread.Post(() => landing.SetLocal(status)), cancellation.Token).ConfigureAwait(true);
+            Dispatcher.UIThread.Post(() => FinishInstall(landing, update));
+        }
+        catch (OperationCanceledException)
+        {
+            Dispatcher.UIThread.Post(() => _ = RefreshLocalOmpAsync());
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            var reason = exception.GetBaseException().Message;
+            Dispatcher.UIThread.Post(() => landing.SetLocal(LocalOmpStatus.InstallFailed(reason)));
+        }
+        finally
+        {
+            _cancelInstall = null;
+            cancellation.Dispose();
+        }
+    }
+
+    private void FinishInstall(CodeLandingModel landing, LocalOmpUpdate update)
+    {
+        if (update.State == LocalOmpUpdateState.Updated)
+        {
+            landing.SetLocalUpdate(update);
+            _ = RefreshLocalOmpAsync();
+            return;
+        }
+
+        landing.SetLocal(LocalOmpStatus.InstallFailed(update.Reason ?? string.Empty));
+    }
+
+    // The landing shows while no session is selected and the panel has no loading or error to show. Its tool and Agents views cover it through the transcript host.
+    private void RefreshLanding()
+    {
+        if (_landingView is null)
+        {
+            return;
+        }
+
+        _landingView.IsVisible = _current is null && (_panel.State is PanelState.Empty or PanelState.Ready);
+    }
+
+    private void OnLandingActionRequested(object? sender, CodeLandingActionEventArgs e)
+    {
+        if (_closed)
+        {
+            return;
+        }
+
+        switch (e.Action)
+        {
+            case CodeLandingAction.StartOnEnvironment when e.OptionId is { } optionId:
+                _ = StartOnEnvironmentAsync(optionId);
+                break;
+            case CodeLandingAction.RetryOmpCheck:
+                _ = RefreshLocalOmpAsync();
+                break;
+            case CodeLandingAction.InstallOmp:
+                _ = InstallLocalOmpAsync();
+                break;
+            case CodeLandingAction.CancelOmpInstall:
+                _cancelInstall?.Invoke();
+                break;
+            case CodeLandingAction.RetryRemoteLoad:
+                _landing?.SetRemote(RemoteLoadState.Loading);
+                _ = LoadTargetsAsync();
+                break;
+            case CodeLandingAction.ManageRemote:
+                RequestSettings(SettingsSection.Remote);
+                break;
+            case CodeLandingAction.OpenCloud:
+                RequestSettings(SettingsSection.Cloud);
+                break;
+            case CodeLandingAction.SignIn when _accountHost is not null:
+                _services.SignIn?.Invoke(_accountHost);
+                break;
+        }
+    }
+
+    // A card's environment is the picker's choice: the picker selects it, and the new session starts there through the same path as New agent.
+    private async Task StartOnEnvironmentAsync(string optionId)
+    {
+        if (_targetModel is { } targets && targets.Options.Any(option => string.Equals(option.Id, optionId, StringComparison.Ordinal)))
+        {
+            targets.Select(optionId);
+        }
+
+        await StartNewAgentAsync().ConfigureAwait(true);
+    }
+
+    #endregion
+
     #region Environment picker
 
     private void InitializeTargetPicker()
@@ -269,7 +475,6 @@ public partial class MainView
         EnvironmentExpander.IsVisible = true;
         EnvironmentExpander.PropertyChanged += OnEnvironmentExpanderChanged;
         RefreshTargetHeader();
-        _ = LoadTargetsAsync();
     }
 
     private async Task LoadTargetsAsync()
@@ -283,10 +488,12 @@ public partial class MainView
         {
             var list = await host.LoadProfilesAsync(CancellationToken.None).ConfigureAwait(true);
             _targetModel.SetProfiles(list.Profiles.Select(static stored => stored.Profile));
+            _landing?.SetRemote(RemoteLoadState.Loaded);
         }
         catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
         {
             Trace.TraceWarning($"Autonogrammer could not read the remote environments ({exception.GetType().Name}).");
+            _landing?.SetRemote(RemoteLoadState.Failed);
         }
     }
 

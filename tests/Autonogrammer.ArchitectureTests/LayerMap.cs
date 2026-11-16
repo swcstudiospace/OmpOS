@@ -55,6 +55,7 @@ internal static class LayerMap
         ["Autonogrammer.Harness.Agent"] = 2,
         ["Autonogrammer.Harness.AgentLoop"] = 2,
         ["Autonogrammer.Harness.Remote"] = 2,
+        ["Autonogrammer.Harness.RemoteProvision"] = 3,
         ["Autonogrammer.Coordination.Dragonfly"] = 2,
         ["Autonogrammer.EngineHost"] = 3,
         ["Autonogrammer.Accounts.Desktop"] = 3,

@@ -34,7 +34,7 @@ internal sealed class BestOfNCandidateRunner
             throw new InvalidOperationException("Best of n runs its candidates without asking you, so it needs the Run Everything mode. Choose it on the Run mode page and try again.");
         }
 
-        var engine = _owner.ComposeUnattendedEngine(request.Run.Path);
+        var engine = await _owner.ComposeUnattendedEngineAsync(request.Run.Path, cancellationToken).ConfigureAwait(false);
         await using (engine.Host.ConfigureAwait(false))
         {
             return await EngineAnswer.CollectAsync(engine.Host.SubmitPromptAsync(request.Prompt, new PromptOptions(), cancellationToken), cancellationToken).ConfigureAwait(false);

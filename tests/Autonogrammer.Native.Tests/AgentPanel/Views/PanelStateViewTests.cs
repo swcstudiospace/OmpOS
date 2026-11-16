@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Autonogrammer.Native.Tests.AgentPanel.Views;
 
-/// <summary>The thread block of the panel states Empty, Loading and Error (46-UI-SPEC, States).</summary>
+/// <summary>The thread block of the panel states Loading and Error (46-UI-SPEC, States). Empty is the Code landing's.</summary>
 public sealed class PanelStateViewTests : IDisposable
 {
     private readonly List<IDisposable> _owned = [];
@@ -37,9 +37,9 @@ public sealed class PanelStateViewTests : IDisposable
         return (view, panel, host, fake, clock, window);
     }
 
-    /// <summary>With no sessions the block draws the first-run copy and the Start first agent button, the only accent fill.</summary>
+    /// <summary>With no sessions the block draws nothing: the Code landing takes the empty state, so there is one start surface, not two.</summary>
     [Fact]
-    public async Task EmptyStateRendersItsCopy()
+    public async Task EmptyStateDrawsNothing()
     {
         await using var session = TestAppBuilder.StartSession();
         await session.Dispatch(() =>
@@ -47,17 +47,8 @@ public sealed class PanelStateViewTests : IDisposable
             var (view, panel, _, _, _, window) = Open();
 
             panel.State.ShouldBe(PanelState.Empty);
-            view.IsVisible.ShouldBeTrue();
-            var texts = ViewHarness.VisibleTexts(view);
-            texts.ShouldContain(AgentPanelCopy.EmptyThreadHeading, StringComparer.Ordinal);
-            texts.ShouldContain(AgentPanelCopy.EmptyThreadBody, StringComparer.Ordinal);
-            var start = ViewHarness.Find<Button>(view, "StartFirstAgentButton");
-            start.IsEffectivelyVisible.ShouldBeTrue();
-            start.Content.ShouldBe(AgentPanelCopy.NewAgent);
-            AutomationProperties.GetName(start).ShouldBe(AgentPanelCopy.StartFirstAgent);
-            start.Classes.Contains("primary").ShouldBeTrue();
-            start.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
-            ViewHarness.Find<Border>(view, "PanelError").IsEffectivelyVisible.ShouldBeFalse();
+            view.IsVisible.ShouldBeFalse();
+            ViewHarness.VisibleTexts(view).ShouldBeEmpty();
             window.Close();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
@@ -119,27 +110,6 @@ public sealed class PanelStateViewTests : IDisposable
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>Start first agent runs the New agent command and then tells the owner.</summary>
-    [Fact]
-    public async Task StartFirstAgentCreatesASessionAndReportsCompletion()
-    {
-        await using var session = TestAppBuilder.StartSession();
-        await session.RunAsync(async () =>
-        {
-            var (view, panel, host, _, _, window) = Open();
-            var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            view.NewAgentCompleted += (_, _) => completed.TrySetResult();
-
-            ViewHarness.TabOrder(view).ShouldBe(new[] { AgentPanelCopy.StartFirstAgent });
-            ViewHarness.Click(window, ViewHarness.Find<Button>(view, "StartFirstAgentButton"));
-            await completed.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).ConfigureAwait(true);
-
-            host.Created.Count.ShouldBe(1);
-            panel.SessionCount.ShouldBe(1);
-            window.Close();
-        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
-    }
-
     /// <summary>Once an agent exists the block hides itself, so nothing of it is a tab stop.</summary>
     [Fact]
     public async Task ReadyStateHidesTheBlock()
@@ -177,11 +147,12 @@ public sealed class PanelStateViewTests : IDisposable
 
             view.DataContext = other;
             ViewHarness.Settle(window);
-            view.IsVisible.ShouldBeTrue();
+            other.State.ShouldBe(PanelState.Empty);
+            view.IsVisible.ShouldBeFalse("an empty panel draws nothing: the Code landing takes its place");
 
             first.ReportLoadFailure("Old panel failed");
             ViewHarness.Settle(window);
-            ViewHarness.Find<Border>(view, "PanelError").IsEffectivelyVisible.ShouldBeFalse("the old panel no longer drives the block");
+            view.IsVisible.ShouldBeFalse("the old panel no longer drives the block");
 
             other.ReportLoadFailure("New panel failed");
             ViewHarness.Settle(window);

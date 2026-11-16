@@ -24,6 +24,7 @@ using Autonogrammer.Presentation.Accounts;
 using Autonogrammer.Presentation.Checkpoints;
 using Autonogrammer.Presentation.Cloud;
 using Autonogrammer.Presentation.Commands.Handlers;
+using Autonogrammer.Presentation.Landing;
 using Autonogrammer.Presentation.Modes;
 using Autonogrammer.Presentation.Remote;
 using Autonogrammer.Presentation.Safety;
@@ -67,6 +68,9 @@ internal sealed class HeadServices : IAsyncDisposable
     private readonly DesktopAccountHost _account;
     private readonly Func<CancellationToken, ValueTask<string?>> _readToken;
     private readonly ArtifactsComposition _artifacts;
+    private readonly LocalOmpStatusProbe _localOmp;
+    private readonly LocalOmpInstaller? _localOmpInstaller;
+    private readonly OmpManagedInstall? _ompManaged;
     private readonly ILogger? _logger;
     private int _disposed;
 
@@ -94,7 +98,9 @@ internal sealed class HeadServices : IAsyncDisposable
         SshClientOptions sshOptions,
         ContainerHosts containers,
         DesktopAccountHost account,
-        Func<CancellationToken, ValueTask<string?>> readToken)
+        Func<CancellationToken, ValueTask<string?>> readToken,
+        LocalOmpStatusProbe localOmp,
+        OmpManagedInstall? ompManaged)
     {
         SshOptions = sshOptions;
         PodmanOptions = containers.Podman;
@@ -132,6 +138,9 @@ internal sealed class HeadServices : IAsyncDisposable
         Account = account;
         _account = account;
         _readToken = readToken;
+        _localOmp = localOmp;
+        _localOmpInstaller = ompManaged is null ? null : new LocalOmpInstaller(ompManaged);
+        _ompManaged = ompManaged;
         // Created last: nothing after it can throw, so the automations never outlive a failed constructor.
         Automations = CreateAutomations(options, configDirectory, cloud, TimeProvider);
     }
@@ -226,6 +235,21 @@ internal sealed class HeadServices : IAsyncDisposable
     /// <summary>Gets the cloud agents host, or null when no API address is configured.</summary>
     public ICloudAgentsHost? Cloud { get; }
 
+    /// <summary>Reads the status of omp on this computer for the Code landing: its source and version, or why it is missing.</summary>
+    public Func<CancellationToken, Task<LocalOmpStatus>> ReadLocalOmp => _localOmp.ReadAsync;
+
+    /// <summary>Checks the managed omp for a newer release after the window is shown. Null when the managed install is not consulted.</summary>
+    public Func<CancellationToken, Task<LocalOmpUpdate>>? CheckLocalOmpUpdate => _localOmpInstaller is null ? null : ct => _localOmpInstaller.CheckAsync(ct);
+
+    /// <summary>Installs the latest managed omp, reporting each stage through the callback. Null when the managed install is not consulted.</summary>
+    public Func<Action<LocalOmpStatus>, CancellationToken, Task<LocalOmpUpdate>>? InstallLocalOmp =>
+        _localOmpInstaller is null ? null : (progress, ct) => _localOmpInstaller.InstallAsync(progress, ct);
+
+    /// <summary>Resolves the omp a session launch runs: the configured path when it runs, then the managed install, then PATH. Null when none is runnable.</summary>
+    /// <param name="cancellationToken">Cancels the resolution.</param>
+    /// <returns>The executable, or null.</returns>
+    internal Task<string?> ResolveOmpForLaunchAsync(CancellationToken cancellationToken) => _localOmp.ResolveExecutableAsync(cancellationToken);
+
     /// <summary>Gets the account panel host. Null only when construction was skipped; the head always builds one.</summary>
     public IAccountHost? Account { get; }
 
@@ -274,6 +298,7 @@ internal sealed class HeadServices : IAsyncDisposable
         // The stores and the API client are owned here until the services take them over; a failure part way disposes the ones that exist.
         Stores? stores = null;
         HttpClient? apiClient = null;
+        OmpManagedInstall? ompManaged = null;
         var created = false;
         try
         {
@@ -291,21 +316,25 @@ internal sealed class HeadServices : IAsyncDisposable
             var opened = await OpenAccountAsync(options, clock, urlLauncher, cancellationToken).ConfigureAwait(false);
             apiClient = opened.Client;
             var containers = CreateContainerHosts(options, clock);
+            ompManaged = options.OmpManagedRoot is { } ompRoot ? new OmpManagedInstall(ompRoot, clock) : null;
+            var localOmp = new LocalOmpStatusProbe(options.OmpPath, ompManaged?.Options);
 
             var services = new HeadServices(
                 options, runModeHub.HomeDirectory, config, hooks, hookApproval, stores.RemoteProfiles, remoteEnvironments, mcp, stores.Checkpoints, setupConsent, stores.ConsentStore,
-                worktrees, new AboutLauncher(), urlLauncher, display, runModeHub, runModes, stores.WorkspaceSets, opened.Cloud, apiClient, sshOptions, containers, opened.Account, opened.Token);
+                worktrees, new AboutLauncher(), urlLauncher, display, runModeHub, runModes, stores.WorkspaceSets, opened.Cloud, apiClient, sshOptions, containers, opened.Account, opened.Token, localOmp, ompManaged);
             holder.Owner = services;
             created = true;
 
-            // The services own the stores and the client from here on.
+            // The services own the stores, the client and the omp probe from here on.
             stores = null;
             apiClient = null;
+            ompManaged = null;
             return services;
         }
         finally
         {
             apiClient?.Dispose();
+            ompManaged?.Dispose();
             stores?.Dispose();
             if (!created)
             {
@@ -506,6 +535,7 @@ internal sealed class HeadServices : IAsyncDisposable
         await _account.DisposeAsync().ConfigureAwait(false);
         _cloudDisposable?.Dispose();
         _apiClient?.Dispose();
+        _ompManaged?.Dispose();
         Checkpoints.Dispose();
         _consentStore.Dispose();
         WorkspaceSets.Dispose();
@@ -532,6 +562,17 @@ internal sealed class HeadServices : IAsyncDisposable
                 options.StateRoot,
                 options.LoggerFactory)
             : options.ConfigDirectory;
+
+    /// <summary>
+    /// Resolves the root the managed omp install owns. The installer writes only below an <c>omp</c> folder of this root, so the other folders of
+    /// the root, such as the DPAPI secrets, are never touched. The root is the per-user local data directory, which a roaming profile does not copy;
+    /// with no local data folder it is the state root.
+    /// </summary>
+    /// <param name="localApplicationData">The per-user local application data folder. Empty when the platform has none.</param>
+    /// <param name="stateRoot">The state root the root falls back to.</param>
+    /// <returns>The managed root.</returns>
+    internal static string ResolveManagedOmpRoot(string localApplicationData, string stateRoot) =>
+        string.IsNullOrEmpty(localApplicationData) ? stateRoot : Autonogrammer.Harness.Abstractions.UserDataDirectory.PathFor(localApplicationData);
 
     /// <summary>
     /// Resolves the directory the head keeps its configuration in when none was configured, and moves a legacy per-user data directory into it once.

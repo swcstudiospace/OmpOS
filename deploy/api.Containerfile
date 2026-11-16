@@ -3,13 +3,13 @@
 #
 # Base image tags:
 #   SDK:     mcr.microsoft.com/dotnet/sdk:10.0.402-noble     (global.json pins SDK 10.0.402 exactly)
-#   Runtime: mcr.microsoft.com/dotnet/aspnet:10.0.13-noble   (the runtime bundled with SDK 10.0.402)
+#   Runtime: mcr.microsoft.com/dotnet/aspnet:10.0.14-noble   (shipped runtime; the 10.0.13 bundled with SDK 10.0.402 carries GHSA-p3jp-9v83-76w9, fixed in 10.0.14)
 # The noble (Ubuntu 24.04) variant is used rather than chiseled because the entrypoint runs /bin/sh
 # to map the platform PORT variable onto ASPNETCORE_URLS. Chiseled images contain no shell.
 
-# Digests resolved 2026-10-29 from mcr.microsoft.com (manifest-list digest, HTTP Docker-Content-Digest header). Refresh with the tag bump.
+# Digests resolved from mcr.microsoft.com (manifest-list digest, HTTP Docker-Content-Digest header): SDK 2026-10-29, runtime 2026-11-08. Refresh with the tag bump.
 ARG SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:10.0.402-noble@sha256:747cbade5bfd918a175ac32f8f1d931edec2c7d0d5397a3de72eaef1ac1f66d2
-ARG RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:10.0.13-noble@sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca
+ARG RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:10.0.14-noble@sha256:1a48394b6f29d3a32c79d9edecd4abda0ecbe8776d567dbfc4590ed6979c740c
 
 FROM ${SDK_IMAGE} AS build
 WORKDIR /src
@@ -31,20 +31,21 @@ RUN dotnet publish services/Autonogrammer.Api/Autonogrammer.Api.csproj -c Releas
 # omp runtime for Harness__Adapter=Acp: the ACP adapter launches the `omp` CLI, which this stage supplies.
 #
 # Pins (each read from its source; see docs/runbooks/hosting.md, "Known blockers and gaps", item 2):
-#   Bun 1.4.3, asset bun-linux-x64.zip, SHA-256 3e730528d89775f03f87f05c06787c4df4099d0a37f3f252e7b829cb23816e18
-#     Source: oven-sh/bun release bun-v1.4.3 SHASUMS256.txt. omp requires bun >=1.3.14 (engines.bun) and
+#   Bun 1.4.4, asset bun-linux-x64.zip, SHA-256 bf8ccbfb2b0b80159e0f9a6d15c55317add8077534dbc6130a3edb52fccb395c
+#     Source: oven-sh/bun release bun-v1.4.4 SHASUMS256.txt (the zip's sha256 was checked against that file). omp requires bun >=1.4.4 (engines.bun) and
 #     dist/cli.js starts with #!/usr/bin/env bun.
-#   @oh-my-pi/pi-coding-agent 18.12.5, npm integrity sha512-MZxW8b5bM2OMwRQzz5j0JQp6nsCXS0gHmwxSpbotWcNt6dpi1Sr1nMABjseHkPk3sFEXdGpSGJgfHmROxSASJA==
+#   @oh-my-pi/pi-coding-agent 18.18.1, npm dist.integrity sha512-+ZTKxJofs5NTL2ENS/6rqrm5tB8MbRHyTAJ00SQEVqMj8woQA/zV+ubzXxxXXlp6IPmA626vjCDmEg/Kf/CaHw==
+#     Source: registry.npmjs.org tarball pi-coding-agent-18.18.1.tgz (its sha512 hex equals the integrity value above).
 #     The tarball is checked against the sha512 hex form of that integrity value before extraction.
 #
 # NOT FROZEN: the omp package ships no lockfile (no package-lock.json, bun.lock or yarn.lock in its tarball).
 # `bun install` therefore resolves transitive dependency ranges at build time, and it writes an uncommitted
 # bun.lock inside the image. Only the omp tarball and the Bun zip are pinned. Do not commit an invented lockfile.
 FROM ${SDK_IMAGE} AS omp-runtime
-ARG BUN_VERSION=1.4.3
-ARG BUN_ZIP_SHA256=3e730528d89775f03f87f05c06787c4df4099d0a37f3f252e7b829cb23816e18
-ARG OMP_VERSION=18.12.5
-ARG OMP_TGZ_SHA512=319c56f1be5b33638cc11433cf98f4250a7a9ec0974b48079b0c52a5ba2d59c36de9da62d52af59cc0018ec78790f937b05117746a5218981f1e644ec5201224
+ARG BUN_VERSION=1.4.4
+ARG BUN_ZIP_SHA256=bf8ccbfb2b0b80159e0f9a6d15c55317add8077534dbc6130a3edb52fccb395c
+ARG OMP_VERSION=18.18.1
+ARG OMP_TGZ_SHA512=f994cac49a1fb393532f610d4bfeabaab9b9b41f0c6d11f24c0274d1240456a323f30a1003fcd5fae6f35f1c575e5a7a20f980eb6eaf8c20e6120fca7ff09a1f
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl unzip \
  && rm -rf /var/lib/apt/lists/*
@@ -92,6 +93,10 @@ RUN mkdir -p /licenses \
 
 FROM ${RUNTIME_IMAGE} AS final
 WORKDIR /app
+# apt 2.8.3 is in the base image; CVE-2026-109518 is fixed in 2.8.4ubuntu0.1. Upgrade apt alone; nothing else is installed.
+RUN apt-get update \
+ && apt-get install -y --only-upgrade apt \
+ && rm -rf /var/lib/apt/lists/*
 
 # Non-root service account with fixed numeric IDs, so the platform can enforce the user without name lookup.
 RUN groupadd --system --gid 10001 autonogrammer \

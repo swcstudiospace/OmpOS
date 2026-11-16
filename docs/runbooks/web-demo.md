@@ -24,7 +24,7 @@ dotnet publish apps/Autonogrammer.Web -c Release -o /tmp/autonogrammer-web
 python3 -m http.server 5180 --bind 127.0.0.1 --directory /tmp/autonogrammer-web/wwwroot
 ```
 
-Open `http://127.0.0.1:5180/`. The page reads its API origin from `wwwroot/appsettings.json` (`Api:BaseUrl`, default `http://127.0.0.1:5187`); a loopback page may override it with `?apiBaseUrl=http://127.0.0.1:<port>`. The in-memory harness answers with an echo, not a model. `scripts/web-smoke/run-smoke.sh` does the same with a headless browser and axe.
+Open `http://127.0.0.1:5180/`. The page reads its API origin from `wwwroot/appsettings.json` (`Api:BaseUrl`, default `http://127.0.0.1:5187`); a `?apiBaseUrl=` override works only for an origin listed in `Api:OverrideOrigins` in that file (empty by default). The in-memory harness answers with an echo, not a model. `scripts/web-smoke/run-smoke.sh` does the same with a headless browser and axe.
 
 Optional configuration of the API for the web head: `Api:Workspace:Root` (an absolute folder: accepting or rejecting a change then writes the file, only when it still holds the text the agent wrote) and `GIT_SHA` (shown as the source revision).
 
