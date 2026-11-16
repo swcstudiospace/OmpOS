@@ -32,7 +32,11 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ### Changed
 
-- Merged `main` (0.16.1 to 0.16.3: desktop installers, split checksum filenames, managed Omp install, JavaScript interop stack logging, Dispatch relay) into the Phase 66 to 77 line; migration M0011 stays `dispatch_sweep_indexes` from `main` and the Cowork memory idempotency migration is now M0012.
+- Merged `main` (0.16.1 to 0.16.3: desktop installers, split checksum filenames, managed Omp install, JavaScript interop stack logging, Dispatch relay) into the Phase 66 to 77 line; migration M0011 stays `dispatch_sweep_indexes` from `main`, M0012 is the account erasure fence, and the Cowork memory idempotency migration is now M0013 (its checksum is unchanged; its fence trigger is M0014). A database that applied the unreleased integration build with memory idempotency as version 12 must be rebuilt before it can migrate.
+
+### Security
+
+- Account erasure is fenced in the database (SEC-77-07, migration M0012). The eraser takes the account lock exclusively, which waits for every writer that was already admitted, and commits a permanent `account_erasure_fence` row (a digest of the account, never the identifier) before it deletes anything. A trigger on every account-owned table (accounts, sessions and their events and approvals, cloud agents, Dispatch devices, commands and feed, Cowork events, projects, instructions, memory entries, settings and claims, artifacts, versions and grants) then refuses every insert and update for that account with SQLSTATE `AE001`, whichever store, job, older binary or direct SQL sends it; the stores that share the PostgreSQL pipeline raise `AccountErasingException`. The families are deleted behind the fence, the account row and the fence row move to `erased` in the same last transaction, and a repeated call resumes a failed erasure and re-runs the tenant-key deletion. Rollback of M0012 and M0014 is refused while the fence holds any row. Not covered: the Dragonfly coordination keys (at most 24 hours, no user content), a production entry point for erasure and identity-provider session revocation; see SEC-77-09 in `docs/quality/v0.16.0-security-review.md`.
 
 ## [0.16.3] - 2026-11-08
 
