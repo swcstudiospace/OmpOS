@@ -113,7 +113,7 @@ public sealed class ComputerUseBoundaryTests
         foreach (string head in new[]
         {
             "Autonogrammer.Web", "Autonogrammer.UI", "Autonogrammer.Api",
-            "Autonogrammer.AgentWorker", "Autonogrammer.Android",
+            "Autonogrammer.AgentWorker", "Autonogrammer.Android", "Autonogrammer.iOS",
         })
         {
             ComputerUseBoundaryChecker.FindForbiddenProjectEdges(
@@ -284,8 +284,9 @@ public sealed class ComputerUseBoundaryTests
             string path = Path.Combine(AppContext.BaseDirectory, name + ".dll");
             if (!File.Exists(path))
             {
-                // The Android head targets net10.0-android and is covered by the project graph in this suite.
-                if (string.Equals(name, "Autonogrammer.Android", StringComparison.Ordinal))
+                // The Android and iOS heads target net10.0-android and net10.0-ios and are covered by the project graph in this suite.
+                if (string.Equals(name, "Autonogrammer.Android", StringComparison.Ordinal)
+                    || string.Equals(name, "Autonogrammer.iOS", StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -320,6 +321,7 @@ public sealed class ComputerUseBoundaryTests
             "Autonogrammer.Api",
             "Autonogrammer.AgentWorker",
             "Autonogrammer.Android",
+            "Autonogrammer.iOS",
         ];
 
 

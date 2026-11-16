@@ -32,9 +32,9 @@ public sealed class ScaffoldRegistrationTests
     ];
 
     [Fact]
-    public void LayerMapHas62LayersAndSixNewTuples()
+    public void LayerMapHas63LayersAndSixNewTuples()
     {
-        LayerMap.Layers.Count.ShouldBe(62);
+        LayerMap.Layers.Count.ShouldBe(63);
         LayerMap.SameLayerAllowed.Count.ShouldBe(31);
 
         foreach (var tuple in NewTuples)
@@ -72,7 +72,8 @@ public sealed class ScaffoldRegistrationTests
                 }
 
                 var isAndroid = string.Equals(relative, "apps/Autonogrammer.Android/Autonogrammer.Android.csproj", StringComparison.Ordinal);
-                if (!isAndroid && !slnf.Contains(relative, StringComparison.Ordinal))
+                var isIos = string.Equals(relative, "apps/Autonogrammer.iOS/Autonogrammer.iOS.csproj", StringComparison.Ordinal);
+                if (!isAndroid && !isIos && !slnf.Contains(relative, StringComparison.Ordinal))
                 {
                     missing.Add($"slnf missing {relative}");
                 }

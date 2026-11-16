@@ -2,6 +2,7 @@
   <Folder Name="/apps/">
     <Project Path="apps/Autonogrammer.Web/Autonogrammer.Web.csproj" />
     <Project Path="apps/Autonogrammer.Android/Autonogrammer.Android.csproj" />
+    <Project Path="apps/Autonogrammer.iOS/Autonogrammer.iOS.csproj" />
     <Project Path="apps/Autonogrammer.Native/Autonogrammer.Native.csproj" />
   </Folder>
   <Folder Name="/services/">

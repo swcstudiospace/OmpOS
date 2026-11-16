@@ -20,6 +20,7 @@ public sealed class BrowserUseIsolationTests
         "Autonogrammer.Presentation",
         "Autonogrammer.Native.Views",
         "Autonogrammer.Android",
+        "Autonogrammer.iOS",
     ];
 
     /// <summary>Product project edges name Harness.BrowserUse only from Native.</summary>

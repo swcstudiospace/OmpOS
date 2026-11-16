@@ -298,8 +298,9 @@ public sealed class CoworkSurfaceIsolationTests
             var path = Path.Combine(AppContext.BaseDirectory, name + ".dll");
             if (!File.Exists(path))
             {
-                // The Android head targets net10.0-android and is built only in its own CI job.
-                if (string.Equals(name, "Autonogrammer.Android", StringComparison.Ordinal))
+                // The Android and iOS heads target net10.0-android and net10.0-ios and are each built only in their own CI job.
+                if (string.Equals(name, "Autonogrammer.Android", StringComparison.Ordinal)
+                    || string.Equals(name, "Autonogrammer.iOS", StringComparison.Ordinal))
                 {
                     continue;
                 }

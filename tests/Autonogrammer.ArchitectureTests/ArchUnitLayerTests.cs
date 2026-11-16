@@ -73,9 +73,10 @@ public sealed class ArchUnitLayerTests
             var candidate = Path.Combine(AppContext.BaseDirectory, name + ".dll");
             if (!File.Exists(candidate))
             {
-                // Only the Android head may be absent: it targets net10.0-android, which the net10.0 test projects cannot reference,
-                // so it is built only in the Android CI job and never in the Linux test output.
-                if (!string.Equals(name, "Autonogrammer.Android", StringComparison.Ordinal))
+                // Only the Android and iOS heads may be absent: they target net10.0-android and net10.0-ios, which the net10.0 test
+                // projects cannot reference, so each is built only in its own CI job and never in the Linux test output.
+                if (!string.Equals(name, "Autonogrammer.Android", StringComparison.Ordinal)
+                    && !string.Equals(name, "Autonogrammer.iOS", StringComparison.Ordinal))
                 {
                     throw new FileNotFoundException($"Expected built assembly for {name} at {candidate}.");
                 }

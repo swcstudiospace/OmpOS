@@ -74,6 +74,7 @@ internal static class LayerMap
         ["Autonogrammer.Native"] = 4,
         ["Autonogrammer.Native.Views"] = 3,
         ["Autonogrammer.Android"] = 4,
+        ["Autonogrammer.iOS"] = 4,
     };
 
     /// <summary>
