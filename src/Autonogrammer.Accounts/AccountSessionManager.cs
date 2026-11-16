@@ -66,6 +66,9 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
     private static readonly Action<ILogger, string, Exception?> FlightFailed =
         LoggerMessage.Define<string>(LogLevel.Error, new EventId(3021, "AccountRefreshFlightFailed"), "The refresh stopped on an unexpected {ExceptionType}.");
 
+    private static readonly Action<ILogger, Exception?> StoredSessionChangedElsewhere =
+        LoggerMessage.Define(LogLevel.Information, new EventId(3022, "AccountStoredSessionChangedElsewhere"), "Another process changed the stored session while this one refreshed; the stored session was left as it is.");
+
     private readonly ISecretStore _store;
     private readonly Func<CancellationToken, ValueTask<GoTrueClient?>> _clientProvider;
     private readonly TimeProvider _timeProvider;
@@ -215,22 +218,32 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
         ArgumentNullException.ThrowIfNull(session);
         ArgumentException.ThrowIfNullOrWhiteSpace(issuer);
 
-        await _mutation.WaitAsync(cancellationToken).ConfigureAwait(false);
+        // The cross-process guard comes first, like in every refresh: a refresh another process has under way finishes its write before this sign-in writes
+        // its own, so the newest sign-in is the one left in the store.
+        IAsyncDisposable? handle = await AcquireGuardAsync(budget: null, cancellationToken).ConfigureAwait(false);
         try
         {
-            _ = Interlocked.Increment(ref _epoch);
-            var live = new LiveSession(issuer, session.UserId, session.Email, session.RefreshToken, session.AccessToken, session.ExpiresAt, session.Lifetime);
-            bool remembered = await TryWriteStoredAsync(live, cancellationToken).ConfigureAwait(false);
-            Volatile.Write(ref _live, live);
-            Publish(new AccountState(
-                AuthPhase.SignedIn,
-                new AccountIdentity(live.UserId, live.Email),
-                AccountConnectivity.Online,
-                remembered ? AccountNotices.None : AccountNotices.SessionNotRemembered));
+            await _mutation.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                _ = Interlocked.Increment(ref _epoch);
+                var live = new LiveSession(issuer, session.UserId, session.Email, session.RefreshToken, session.AccessToken, session.ExpiresAt, session.Lifetime);
+                bool remembered = await TryWriteStoredAsync(live, cancellationToken).ConfigureAwait(false);
+                Volatile.Write(ref _live, live);
+                Publish(new AccountState(
+                    AuthPhase.SignedIn,
+                    new AccountIdentity(live.UserId, live.Email),
+                    AccountConnectivity.Online,
+                    remembered ? AccountNotices.None : AccountNotices.SessionNotRemembered));
+            }
+            finally
+            {
+                _ = _mutation.Release();
+            }
         }
         finally
         {
-            _ = _mutation.Release();
+            await ReleaseGuardAsync(handle).ConfigureAwait(false);
         }
 
         if (_logger is not null)
@@ -281,21 +294,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
             return await SignOutOthersAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        LiveSession? live;
-        bool cleared;
-        await _mutation.WaitAsync(CancellationToken.None).ConfigureAwait(false);
-        try
-        {
-            live = Volatile.Read(ref _live);
-            Volatile.Write(ref _live, null);
-            _ = Interlocked.Increment(ref _epoch);
-            cleared = await TryRemoveStoredAsync(CancellationToken.None).ConfigureAwait(false);
-            Publish(AccountState.SignedOut);
-        }
-        finally
-        {
-            _ = _mutation.Release();
-        }
+        (LiveSession? live, bool cleared) = await ClearLocalAsync().ConfigureAwait(false);
 
         if (live is null)
         {
@@ -321,6 +320,36 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
         }
 
         return revoked;
+    }
+
+    /// <summary>
+    /// Clears the live session and the stored secret. The guard wait is bounded: a sign-out never waits long behind another process's refresh. Without
+    /// the guard the removal still happens, and a refresh that finds the stored session gone does not write it back.
+    /// </summary>
+    private async Task<(LiveSession? Live, bool Cleared)> ClearLocalAsync()
+    {
+        IAsyncDisposable? handle = await AcquireGuardAsync(SignOutBudget, CancellationToken.None).ConfigureAwait(false);
+        try
+        {
+            await _mutation.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+            try
+            {
+                LiveSession? live = Volatile.Read(ref _live);
+                Volatile.Write(ref _live, null);
+                _ = Interlocked.Increment(ref _epoch);
+                bool cleared = await TryRemoveStoredAsync(CancellationToken.None).ConfigureAwait(false);
+                Publish(AccountState.SignedOut);
+                return (live, cleared);
+            }
+            finally
+            {
+                _ = _mutation.Release();
+            }
+        }
+        finally
+        {
+            await ReleaseGuardAsync(handle).ConfigureAwait(false);
+        }
     }
 
     /// <summary>Stops the background work. A sign-out already under way finishes on its own budget.</summary>
@@ -582,6 +611,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
     private async Task<bool> ApplyRefreshedAsync(long epoch, LiveSession previous, GoTrueSession session, CancellationToken cancellationToken)
     {
         await _mutation.WaitAsync(cancellationToken).ConfigureAwait(false);
+        bool superseded = false;
         try
         {
             if (Volatile.Read(ref _live) is null || Interlocked.Read(ref _epoch) != epoch)
@@ -598,7 +628,10 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
                 session.ExpiresAt,
                 session.Lifetime);
 
-            bool remembered = await TryWriteStoredAsync(next, cancellationToken).ConfigureAwait(false);
+            // The refresh started from what this process last read or wrote. The caller holds the cross-process guard, so a stored session that differs now
+            // was written by a sign-in or removed by a sign-out in another process while the request ran; that newer state is not overwritten.
+            superseded = !await StoredIsOursAsync(cancellationToken).ConfigureAwait(false);
+            bool remembered = !superseded && await TryWriteStoredAsync(next, cancellationToken).ConfigureAwait(false);
             Volatile.Write(ref _live, next);
             AccountNotices notices = State.Notices & ~AccountNotices.SessionNotRemembered;
             Publish(new AccountState(
@@ -614,10 +647,31 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
 
         if (_logger is not null)
         {
+            if (superseded)
+            {
+                StoredSessionChangedElsewhere(_logger, null);
+            }
+
             RefreshSucceeded(_logger, null);
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Whether the secret store still holds what this process last read or wrote, so a write or removal based on it cannot overwrite another process's newer
+    /// sign-in or bring back a session another process signed out. A store that cannot be read counts as unchanged: the write that follows fails or works
+    /// on its own, as it always did.
+    /// </summary>
+    private async Task<bool> StoredIsOursAsync(CancellationToken cancellationToken)
+    {
+        (StoredSession? stored, bool unreadable, bool failed) = await ReadStoredCoreAsync(cancellationToken).ConfigureAwait(false);
+        if (failed || unreadable)
+        {
+            return true;
+        }
+
+        return stored is null ? _knownStored is null : string.Equals(stored.RefreshToken, _knownStored, StringComparison.Ordinal);
     }
 
     private async Task DiscardAsync(long epoch, AccountNotices notice, CancellationToken cancellationToken)
@@ -632,7 +686,13 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
 
             Volatile.Write(ref _live, null);
             _ = Interlocked.Increment(ref _epoch);
-            _ = await TryRemoveStoredAsync(cancellationToken).ConfigureAwait(false);
+
+            // Only this process's own stored session is removed; a newer sign-in another process stored stays.
+            if (await StoredIsOursAsync(cancellationToken).ConfigureAwait(false))
+            {
+                _ = await TryRemoveStoredAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             Publish(AccountState.SignedOut with { Notices = notice });
         }
         finally
@@ -754,6 +814,13 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
 
     private async Task<(StoredSession? Stored, bool Unreadable)> ReadStoredAsync(CancellationToken cancellationToken)
     {
+        (StoredSession? stored, bool unreadable, _) = await ReadStoredCoreAsync(cancellationToken).ConfigureAwait(false);
+        return (stored, unreadable);
+    }
+
+    /// <summary>Reads the stored session. <c>Failed</c> tells a store that could not be read from one that holds nothing.</summary>
+    private async Task<(StoredSession? Stored, bool Unreadable, bool Failed)> ReadStoredCoreAsync(CancellationToken cancellationToken)
+    {
         SecretString? secret;
         try
         {
@@ -762,12 +829,12 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
         catch (SecretStoreException exception)
         {
             LogStoreFailure("read", exception);
-            return (null, false);
+            return (null, false, true);
         }
 
         if (secret is null)
         {
-            return (null, false);
+            return (null, false, false);
         }
 
         try
@@ -777,14 +844,38 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
                 && !string.IsNullOrEmpty(stored.Issuer)
                 && !string.IsNullOrEmpty(stored.RefreshToken)
                 && !string.IsNullOrEmpty(stored.UserId)
-                ? (stored, false)
-                : (null, true);
+                ? (stored, false, false)
+                : (null, true, false);
         }
         catch (JsonException)
         {
-            return (null, true);
+            return (null, true, false);
         }
     }
+
+    /// <summary>
+    /// Takes the cross-process guard. With a <paramref name="budget"/> it gives up when the guard stays held; a guard that fails with a lock timeout or an I/O
+    /// error is skipped too, so a broken lock file never blocks a sign-in or sign-out. Cancelling <paramref name="cancellationToken"/> still throws.
+    /// </summary>
+    private async Task<IAsyncDisposable?> AcquireGuardAsync(TimeSpan? budget, CancellationToken cancellationToken)
+    {
+        using CancellationTokenSource? limit = budget is { } span ? new CancellationTokenSource(span, _timeProvider) : null;
+        using CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, limit?.Token ?? CancellationToken.None);
+        try
+        {
+            return await _guard.AcquireAsync(linked.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+        catch (Exception exception) when (exception is TimeoutException or IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private static ValueTask ReleaseGuardAsync(IAsyncDisposable? handle) => handle?.DisposeAsync() ?? ValueTask.CompletedTask;
 
     private async Task<bool> TryWriteStoredAsync(LiveSession live, CancellationToken cancellationToken)
     {
