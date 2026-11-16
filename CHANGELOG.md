@@ -29,6 +29,8 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 - Dispatch pairing rejects file-backed and other non-OS secret stores for device keys and credentials; native pairing and platform keyrings remain unverified.
 - PostgreSQL Dispatch store transaction handling covers duplicate devices, replay and retention; production Dispatch remains disabled pending migration registration and idempotency-key isolation.
 - Sign-in coordinator defers synchronization-resource disposal until registered sends finish.
+- Artifact version uploads apply the configured per-kind byte limit (a later version uses the stored kind) and `MaxVersions`, and require the next version number; a version that skips ahead is a `409` conflict instead of a history that fails its integrity check.
+- PostgreSQL artifact writes take a per-account database advisory lock before reading usage, so parallel uploads cannot exceed the account quota and concurrent writes of one version resolve to same-hash or conflict. A write reads usage with aggregate queries and loads only the artifact it changes.
 
 ### Changed
 
