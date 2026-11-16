@@ -3,13 +3,14 @@ using Autonogrammer.Harness.BrowserUse;
 namespace Autonogrammer.Native.Cowork;
 
 /// <summary>
-/// Closes a browser host from the composition's synchronous release. The host is <see cref="IAsyncDisposable"/>, so the close starts
-/// here and is not awaited: the browsers and their egress proxies are closed in that background task.
+/// Closes a browser host when the composition releases. The close starts at most once and its task is held until it is awaited, so no close
+/// task is discarded. <see cref="DisposeAsync"/> waits for the close; <see cref="Dispose"/> starts it for a caller that cannot await.
 /// </summary>
-internal sealed class BrowserSessionHostCloser : IDisposable
+internal sealed class BrowserSessionHostCloser : IDisposable, IAsyncDisposable
 {
     private readonly BrowserSessionHost _host;
-    private int _disposed;
+    private readonly Lock _gate = new();
+    private Task? _closing;
 
     /// <summary>Initializes the closer.</summary>
     /// <param name="host">The host whose browsers close on release.</param>
@@ -19,14 +20,25 @@ internal sealed class BrowserSessionHostCloser : IDisposable
         _host = host;
     }
 
-    /// <summary>Starts closing the host once.</summary>
+    /// <summary>Starts closing the host once. The task is kept so <see cref="DisposeAsync"/> can await it. Prefer <see cref="DisposeAsync"/>.</summary>
     public void Dispose()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) == 0)
+        lock (_gate)
         {
-            _ = CloseAsync(_host);
+            _closing ??= _host.DisposeAsync().AsTask();
         }
     }
 
-    private static async Task CloseAsync(BrowserSessionHost host) => await host.DisposeAsync().ConfigureAwait(false);
+    /// <summary>Closes the host once and waits until its browsers and egress proxies are closed.</summary>
+    /// <returns>A task that completes when the host has closed.</returns>
+    public async ValueTask DisposeAsync()
+    {
+        Task closing;
+        lock (_gate)
+        {
+            closing = _closing ??= _host.DisposeAsync().AsTask();
+        }
+
+        await closing.ConfigureAwait(false);
+    }
 }

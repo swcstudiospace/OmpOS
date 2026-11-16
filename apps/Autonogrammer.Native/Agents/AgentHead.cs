@@ -110,7 +110,7 @@ internal sealed class AgentHead : IAsyncDisposable
             var broker = new CoworkApprovalBroker(clock: TimeProvider.System, windowAvailable: true);
             var computer = await CoworkHead.CreateComputerProviderAsync(loop.StateRoot, topLevel, TimeProvider.System, CoworkGate(services), broker, CancellationToken.None).ConfigureAwait(true);
             computerOwner = computer.Owner;
-            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = services?.Artifacts.ToolProvider, Computer = computer.Provider, ProductionPages = true });
+            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = services?.Artifacts.ToolProvider, Computer = computer.Provider, Configure = BrowserUseComposition.BindConfiguration, ProductionPages = true });
             // The Models page and the provider keys omp is started with are built together, so a key saved on the page reaches every omp the head starts.
             models = ModelsSettingsComposition.Create(new ModelsSettingsCompositionOptions { StateRoot = loop.StateRoot });
             var modelSource = models.Source;
@@ -161,7 +161,7 @@ internal sealed class AgentHead : IAsyncDisposable
             {
                 if (browser is not null)
                 {
-                    browser.Dispose();
+                    await browser.DisposeAsync().ConfigureAwait(true);
                 }
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
@@ -242,7 +242,7 @@ internal sealed class AgentHead : IAsyncDisposable
         BrowserUseCompositionResult? browser = null;
         try
         {
-            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = options.Services?.Artifacts.ToolProvider, ProductionPages = true });
+            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = options.Services?.Artifacts.ToolProvider, Configure = BrowserUseComposition.BindConfiguration, ProductionPages = true });
             var broker = new CoworkApprovalBroker(clock: options.TimeProvider ?? TimeProvider.System, windowAvailable: true);
             return await BuildAsync(
                 new SessionEngineSetOptions
@@ -284,7 +284,7 @@ internal sealed class AgentHead : IAsyncDisposable
         {
             if (browser is not null)
             {
-                browser.Dispose();
+                await browser.DisposeAsync().ConfigureAwait(true);
             }
         }
     }
@@ -380,7 +380,7 @@ internal sealed class AgentHead : IAsyncDisposable
                 }
                 finally
                 {
-                    DisposeModels();
+                    await DisposeModelsAsync().ConfigureAwait(true);
                 }
             }
         }
@@ -451,7 +451,7 @@ internal sealed class AgentHead : IAsyncDisposable
         }
     }
 
-    private void DisposeModels()
+    private async ValueTask DisposeModelsAsync()
     {
         try
         {
@@ -478,7 +478,10 @@ internal sealed class AgentHead : IAsyncDisposable
                     finally
                     {
                         // Released last: the head's reference keeps the call gate, pane and handler open until the sessions and Cowork have stopped. Every provider call waits on the gate, so an earlier release would close it under calls still running.
-                        BrowserUse?.Release();
+                        if (BrowserUse is { } browser)
+                        {
+                            await browser.ReleaseAsync().ConfigureAwait(true);
+                        }
                     }
                 }
             }
@@ -653,7 +656,7 @@ internal sealed class AgentHead : IAsyncDisposable
             {
                 if (retainedBrowser is not null)
                 {
-                    retainedBrowser.Release();
+                    await retainedBrowser.ReleaseAsync().ConfigureAwait(true);
                 }
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)

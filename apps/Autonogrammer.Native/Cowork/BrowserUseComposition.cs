@@ -1,4 +1,5 @@
 #pragma warning disable MA0048 // The request and result travel with the composition method.
+using System.Collections;
 using System.Reflection;
 using Autonogrammer.Contracts.Cowork.Browser;
 using Autonogrammer.Cowork.Abstractions;
@@ -17,6 +18,7 @@ using Autonogrammer.Presentation.Cowork;
 using Autonogrammer.Presentation.Cowork.Browser;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PuppeteerSharp;
 
@@ -28,7 +30,7 @@ internal sealed class BrowserUseCompositionRequest
     /// <summary>Gets the head state directory.</summary>
     public required string StateDirectory { get; init; }
 
-    /// <summary>Gets the section bind. Null leaves the defaults, including Enabled false.</summary>
+    /// <summary>Gets the section bind. Null leaves the defaults, including Enabled false. Production passes <see cref="BrowserUseComposition.BindConfiguration"/>.</summary>
     public Action<BrowserUseOptions>? Configure { get; init; }
 
     /// <summary>Gets a scripted page source. Null falls back to <see cref="ProductionPages"/>, and to no page when that is false.</summary>
@@ -59,11 +61,16 @@ internal sealed class BrowserUseCompositionRequest
     public ICoworkApprovalBroker? Broker { get; init; }
 }
 
-/// <summary>The desktop browser composition: options, settings, gate, provider and pane.</summary>
-internal sealed class BrowserUseCompositionResult : IDisposable
+/// <summary>
+/// The desktop browser composition: options, settings, gate, provider and pane. <see cref="DisposeAsync"/> releases it and waits for the browser host to close.
+/// <see cref="Dispose"/> releases the same resources synchronously and starts the host close without awaiting it; callers should use <c>await using</c>.
+/// </summary>
+internal sealed class BrowserUseCompositionResult : IDisposable, IAsyncDisposable
 {
     private readonly HttpMessageHandler _handler;
     private readonly IDisposable[] _owned;
+    private readonly BrowserSessionHostCloser[] _closers;
+    private readonly BrowserPaneStop _stop;
     private int _disposed;
     private int _references = 1;
 
@@ -78,7 +85,9 @@ internal sealed class BrowserUseCompositionResult : IDisposable
         BrowserPanePanel panel,
         Func<bool> capability,
         HttpMessageHandler handler,
-        IDisposable[] owned)
+        IDisposable[] owned,
+        BrowserSessionHostCloser[] closers,
+        BrowserPaneStop stop)
     {
         Options = options;
         Settings = settings;
@@ -91,6 +100,8 @@ internal sealed class BrowserUseCompositionResult : IDisposable
         Capability = capability;
         _handler = handler;
         _owned = owned;
+        _closers = closers;
+        _stop = stop;
     }
 
     /// <summary>Gets the bound options.</summary>
@@ -122,12 +133,22 @@ internal sealed class BrowserUseCompositionResult : IDisposable
     /// <summary>Gets the capability predicate. It is <see cref="BrowserUseCapability.IsOffered"/>.</summary>
     public Func<bool> Capability { get; }
 
-    /// <summary>Releases the original caller's reference. An attached head keeps its own reference until its sessions stop.</summary>
+    /// <summary>Releases the original caller's reference synchronously. The browser host close is started and not awaited; prefer <see cref="DisposeAsync"/>.</summary>
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) == 0)
         {
             Release();
+        }
+    }
+
+    /// <summary>Releases the original caller's reference and waits until the browser host has closed. An attached head keeps its own reference until its sessions stop.</summary>
+    /// <returns>A task that completes when the release has finished.</returns>
+    public async ValueTask DisposeAsync()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) == 0)
+        {
+            await ReleaseAsync().ConfigureAwait(false);
         }
     }
 
@@ -146,7 +167,7 @@ internal sealed class BrowserUseCompositionResult : IDisposable
         return this;
     }
 
-    /// <summary>Releases the head's retained reference after all browser consumers have stopped.</summary>
+    /// <summary>Releases the head's retained reference after all browser consumers have stopped. The host close is started, not awaited.</summary>
     internal void Release()
     {
         if (Interlocked.Decrement(ref _references) != 0)
@@ -154,6 +175,50 @@ internal sealed class BrowserUseCompositionResult : IDisposable
             return;
         }
 
+        try
+        {
+            ReleaseOwned();
+        }
+        finally
+        {
+            foreach (var closer in _closers)
+            {
+                closer.Dispose();
+            }
+        }
+    }
+
+    /// <summary>Releases the head's retained reference after all browser consumers have stopped. Pending Stop calls are joined and the browser host is closed before this returns.</summary>
+    /// <returns>A task that completes when the last reference is released and the host has closed.</returns>
+    internal async ValueTask ReleaseAsync()
+    {
+        if (Interlocked.Decrement(ref _references) != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await _stop.JoinAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            try
+            {
+                ReleaseOwned();
+            }
+            finally
+            {
+                foreach (var closer in _closers)
+                {
+                    await closer.DisposeAsync().ConfigureAwait(false);
+                }
+            }
+        }
+    }
+
+    private void ReleaseOwned()
+    {
         try
         {
             _handler.Dispose();
@@ -179,6 +244,47 @@ internal sealed class BrowserUseCompositionResult : IDisposable
                 }
             }
         }
+    }
+}
+
+/// <summary>
+/// Starts the pane's Stop from a caller that cannot await it: the header action and the chord. Each Stop task is kept and joined by
+/// <see cref="BrowserUseCompositionResult.ReleaseAsync"/>, so none is discarded and release never disposes the pane under a running Stop.
+/// </summary>
+internal sealed class BrowserPaneStop
+{
+    private readonly BrowserPaneViewModel _pane;
+    private readonly Lock _gate = new();
+    private readonly List<Task> _pending = [];
+
+    /// <summary>Initializes the stop.</summary>
+    /// <param name="pane">The pane that Stop calls.</param>
+    public BrowserPaneStop(BrowserPaneViewModel pane)
+    {
+        ArgumentNullException.ThrowIfNull(pane);
+        _pane = pane;
+    }
+
+    /// <summary>Starts Stop and returns at once. The task is kept until <see cref="JoinAsync"/> awaits it.</summary>
+    public void Start()
+    {
+        lock (_gate)
+        {
+            _pending.Add(_pane.StopAsync());
+        }
+    }
+
+    /// <summary>Waits for every Stop started so far.</summary>
+    /// <returns>A task that completes when those Stops have finished.</returns>
+    public Task JoinAsync()
+    {
+        Task[] snapshot;
+        lock (_gate)
+        {
+            snapshot = [.. _pending];
+        }
+
+        return Task.WhenAll(snapshot);
     }
 }
 
@@ -244,6 +350,7 @@ internal static class BrowserUseComposition
         var offerTools = options.Enabled && (request.ForceAvailable || located.State == BrowserLocateState.Found);
         var (grants, audit) = OpenToolStores(request.StateDirectory);
         var owned = new List<IDisposable> { grants, audit };
+        var closers = new List<BrowserSessionHostCloser>();
         var broker = request.Broker ?? new CoworkApprovalBroker(windowAvailable: request.Shell is not null);
         BrowserToolProvider? provider = null;
         if (offerTools)
@@ -252,7 +359,7 @@ internal static class BrowserUseComposition
                 options,
                 broker,
                 grants,
-                PagesFor(request, options, located, () => provider?.OriginGrants ?? throw new InvalidOperationException("The browser tools are not registered."), owned),
+                PagesFor(request, options, located, () => provider?.OriginGrants ?? throw new InvalidOperationException("The browser tools are not registered."), closers),
                 gate,
                 new ClosedPorts(),
                 readiness: new CoworkProviderState(CoworkProviderAvailability.Available, null));
@@ -270,9 +377,10 @@ internal static class BrowserUseComposition
         try
         {
             var panel = new BrowserPanePanel(pane);
-            BindStopChord(panel.View, pane);
-            request.Chrome?.Add(new SurfaceChromeEntry(IndicatorId, BrowserChromeCopy.AgentControlling, () => { _ = pane.StopAsync(); }, "Ctrl+Shift+."));
-            var result = new BrowserUseCompositionResult(options, settings, gate, control, provider, host, pane, panel, () => BrowserUseCapability.IsOffered(options), handler, owned.ToArray());
+            var stop = new BrowserPaneStop(pane);
+            BindStopChord(panel.View, stop);
+            request.Chrome?.Add(new SurfaceChromeEntry(IndicatorId, BrowserChromeCopy.AgentControlling, () => stop.Start(), "Ctrl+Shift+."));
+            var result = new BrowserUseCompositionResult(options, settings, gate, control, provider, host, pane, panel, () => BrowserUseCapability.IsOffered(options), handler, owned.ToArray(), closers.ToArray(), stop);
             request.Shell?.RegisterPanel(panel);
             return result;
         }
@@ -288,9 +396,9 @@ internal static class BrowserUseComposition
     /// <param name="options">The bound options the production host runs with.</param>
     /// <param name="located">The locate result. Its binary is used only when found.</param>
     /// <param name="grants">Returns the origin grants the approval path writes to, so a granted origin reaches the proxy.</param>
-    /// <param name="owned">The composition's owned objects. The production host is added so release closes its browsers.</param>
+    /// <param name="closers">The host closers. The production host's closer is added so release closes its browsers.</param>
     /// <returns>The page source.</returns>
-    private static IBrowserPageSource PagesFor(BrowserUseCompositionRequest request, BrowserUseOptions options, ChromiumLocation located, Func<OriginGrants> grants, List<IDisposable> owned)
+    private static IBrowserPageSource PagesFor(BrowserUseCompositionRequest request, BrowserUseOptions options, ChromiumLocation located, Func<OriginGrants> grants, List<BrowserSessionHostCloser> closers)
     {
         if (request.Pages is not null)
         {
@@ -303,7 +411,7 @@ internal static class BrowserUseComposition
         }
 
         var (pages, host) = ProductionBrowserPages.Create(options, path, _ => grants(), new ChromiumProcessLauncher());
-        owned.Add(new BrowserSessionHostCloser(host));
+        closers.Add(new BrowserSessionHostCloser(host));
         return pages;
     }
 
@@ -362,12 +470,40 @@ internal static class BrowserUseComposition
 
     /// <summary>Binds Ctrl+Shift+. on the pane so Stop runs while that view is in the tunnel, including when a child has focus.</summary>
     /// <param name="view">The pane view.</param>
-    /// <param name="pane">The pane that Stop calls.</param>
-    public static void BindStopChord(BrowserPaneView view, BrowserPaneViewModel pane)
+    /// <param name="stop">The stop the chord starts. Its task is kept until release joins it.</param>
+    public static void BindStopChord(BrowserPaneView view, BrowserPaneStop stop)
     {
         ArgumentNullException.ThrowIfNull(view);
-        ArgumentNullException.ThrowIfNull(pane);
-        view.AddHandler(InputElement.KeyDownEvent, (_, args) => OnStopChord(args, pane), RoutingStrategies.Tunnel, handledEventsToo: true);
+        ArgumentNullException.ThrowIfNull(stop);
+        view.AddHandler(InputElement.KeyDownEvent, (_, args) => OnStopChord(args, stop), RoutingStrategies.Tunnel, handledEventsToo: true);
+    }
+
+    /// <summary>
+    /// Binds <c>Cowork:BrowserUse</c> from the desktop configuration. The desktop has no configuration host, so keys come from the process
+    /// environment: the variable <c>Cowork__BrowserUse__Enabled</c> is the key <c>Cowork:BrowserUse:Enabled</c>. An absent key keeps the default,
+    /// so Enabled stays false.
+    /// </summary>
+    /// <param name="options">The options to bind.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    public static void BindConfiguration(BrowserUseOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        DesktopConfiguration().GetSection(BrowserUseOptions.SectionName).Bind(options);
+    }
+
+    private static IConfiguration DesktopConfiguration()
+    {
+        const string prefix = "Cowork__";
+        var values = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (DictionaryEntry entry in Environment.GetEnvironmentVariables())
+        {
+            if (entry.Key is string name && name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                values[name.Replace("__", ":", StringComparison.Ordinal)] = entry.Value as string;
+            }
+        }
+
+        return new ConfigurationBuilder().AddInMemoryCollection(values).Build();
     }
 
     private static void RegisterServices(BrowserUseOptions options)
@@ -408,7 +544,7 @@ internal static class BrowserUseComposition
         };
     }
 
-    private static void OnStopChord(KeyEventArgs args, BrowserPaneViewModel pane)
+    private static void OnStopChord(KeyEventArgs args, BrowserPaneStop stop)
     {
         if (args.Handled || args.Key != Key.OemPeriod)
         {
@@ -422,7 +558,7 @@ internal static class BrowserUseComposition
         }
 
         args.Handled = true;
-        _ = pane.StopAsync();
+        stop.Start();
     }
 
     private sealed class FixedFeed : IBrowserPaneFeed
