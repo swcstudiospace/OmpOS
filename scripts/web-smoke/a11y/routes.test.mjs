@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { bootShellOutcome, readyFor, waitForInitialTitle } from "./routes.mjs";
+import { bootShellOutcome, DIRECT_ROUTES, readyFor, waitForInitialTitle } from "./routes.mjs";
 
 test("a second attempt that produced entries adds no finding", () => {
   assert.equal(bootShellOutcome([{ route: "/kanban" }]), null);
@@ -45,4 +45,22 @@ test("dynamic session readiness waits for a rendered main heading and no loading
   assert.equal(ready(document(false, false)), false);
   assert.equal(ready(document(true, true)), false);
   assert.equal(ready(document(true, false)), true);
+});
+
+test("the unknown path is checked as the bare NotFound page and is ready only once its own heading renders", () => {
+  const spec = DIRECT_ROUTES.find((r) => r.route === "/does-not-exist-a11y");
+  assert.equal(spec.layout, "bare");
+  assert.equal(readyFor("/does-not-exist-a11y"), spec.ready);
+  const ready = new Function("document", `return ${spec.ready}`);
+  const document = (...present) => ({ querySelector: (selector) => (present.includes(selector) ? {} : null) });
+  assert.equal(ready(document()), false);
+  assert.equal(ready(document(".autonogrammer-notfound-page")), false);
+  assert.equal(ready(document(".autonogrammer-notfound-page h1")), true);
+});
+
+test("a route with its own ready state keeps it, and an unknown in-app path has none", () => {
+  const kanban = new Function("document", `return ${readyFor("/kanban")}`);
+  assert.equal(kanban({ querySelector: (selector) => (selector === ".autonogrammer-kanban" ? {} : null) }), true);
+  assert.equal(kanban({ querySelector: () => null }), false);
+  assert.equal(readyFor("/somewhere-else"), null);
 });
