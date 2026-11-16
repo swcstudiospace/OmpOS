@@ -6,7 +6,7 @@
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
     <ApplicationId>com.swcstudiospace.ompos</ApplicationId>
     <ApplicationVersion>1</ApplicationVersion>
-    <ApplicationDisplayVersion>0.10.0</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>$(VersionPrefix)</ApplicationDisplayVersion>
     <RootNamespace>Autonogrammer.Android</RootNamespace>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
