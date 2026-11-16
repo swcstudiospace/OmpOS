@@ -88,7 +88,7 @@ public sealed class DataPlaneStartupGateTests
         var schema = await LedgerSchema.CreateAsync(token).ConfigureAwait(true);
         await using var schemaScope = schema.ConfigureAwait(true);
         await schema.RunAsync(MigrationRegistry.All.Where(static step => step.Version <= 9).ToArray(), token).ConfigureAwait(true);
-        await schema.ExecuteAsync("INSERT INTO schema_migrations(version, name, checksum) VALUES (12, 'future', 'future')", token).ConfigureAwait(true);
+        await schema.ExecuteAsync("INSERT INTO schema_migrations(version, name, checksum) VALUES (99, 'future', 'future')", token).ConfigureAwait(true);
         var current = schema.Probe(MigrationRegistry.All);
         (await current.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Behind);
         await AssertWaitExpiresAsync(current, token).ConfigureAwait(true);

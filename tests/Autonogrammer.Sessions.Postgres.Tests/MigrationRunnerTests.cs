@@ -14,7 +14,7 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
 {
     private static readonly string[] ExpectedTables =
     [
-        "accounts", "artifact_grants", "artifact_versions", "artifacts", "cloud_agents", "cowork_events", "cowork_instructions", "cowork_memory_entries", "cowork_memory_idempotency",
+        "account_erasure_fence", "accounts", "artifact_grants", "artifact_versions", "artifacts", "cloud_agents", "cowork_events", "cowork_instructions", "cowork_memory_entries", "cowork_memory_idempotency",
         "cowork_memory_settings", "cowork_projects", "dispatch_audit", "dispatch_commands", "dispatch_devices", "dispatch_events", "ledger_outbox",
         "schema_migrations", "session_events", "session_tool_approvals", "sessions",
     ];
@@ -120,7 +120,7 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
         }
     }
 
-    /// <summary>M0012 preserves preexisting data through repeat, rollback and reapplication.</summary>
+    /// <summary>M0013 (and its fence trigger, M0014) preserves preexisting data through repeat, rollback and reapplication.</summary>
     [Fact]
     public async Task MemoryClaimsExpandAndRollbackPreserveMemory()
     {
@@ -129,7 +129,7 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
         try
         {
             var dataSource = schema.CreateDataSource();
-            var old = new MigrationRunner(dataSource, schema.SchemaName, [.. MigrationRegistry.All.Where(static step => step.Version <= 11)]);
+            var old = new MigrationRunner(dataSource, schema.SchemaName, [.. MigrationRegistry.All.Where(static step => step.Version <= 12)]);
             await old.MigrateAsync(ct).ConfigureAwait(true);
             using (var seed = dataSource.CreateCommand("""
                 INSERT INTO cowork_projects (id, account_id, name, created_at, updated_at) VALUES ('p', 'a', 'project', now(), now());
@@ -139,24 +139,24 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
                 await seed.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
             }
             var runner = new MigrationRunner(dataSource, schema.SchemaName);
-            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([12]);
+            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([13, 14]);
             (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBeEmpty();
-            (await runner.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(12);
+            (await runner.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(14);
             var applied = await runner.ListAppliedAsync(ct).ConfigureAwait(true);
-            applied.Single(static step => step.Version == 12).Checksum.ShouldBe(MigrationRunner.ChecksumOf(MigrationRegistry.All.Single(static step => step.Version == 12)));
+            applied.Single(static step => step.Version == 13).Checksum.ShouldBe(MigrationRunner.ChecksumOf(MigrationRegistry.All.Single(static step => step.Version == 13)));
             using (var claim = dataSource.CreateCommand("""
                 INSERT INTO cowork_memory_idempotency VALUES ('a', 'create', 'key', 1, decode(repeat('00', 32), 'hex'), 'm', now(), now() + interval '24 hours')
                 """))
             {
                 await claim.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
             }
-            (await runner.DownAsync(11, ct).ConfigureAwait(true)).ShouldBe([12]);
+            (await runner.DownAsync(12, ct).ConfigureAwait(true)).ShouldBe([14, 13]);
             (await ExistsAsync(dataSource, schema.SchemaName + ".cowork_memory_idempotency", ct).ConfigureAwait(true)).ShouldBeFalse();
             using (var preserved = dataSource.CreateCommand("SELECT p.name || ':' || m.content FROM cowork_projects p JOIN cowork_memory_entries m ON m.project_id = p.id"))
             {
                 (await preserved.ExecuteScalarAsync(ct).ConfigureAwait(true)).ShouldBe("project:kept");
             }
-            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([12]);
+            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([13, 14]);
             using var count = dataSource.CreateCommand("SELECT count(*) FROM cowork_memory_idempotency");
             (await count.ExecuteScalarAsync(ct).ConfigureAwait(true)).ShouldBe(0L);
         }
@@ -166,7 +166,7 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
         }
     }
 
-    /// <summary>Reserved M0010 can be registered before M0012 and applied in version order.</summary>
+    /// <summary>Reserved M0010 can be registered before M0013 and applied in version order.</summary>
     [Fact]
     public async Task ReservedVersionCanPrecedeMemoryClaims()
     {
@@ -177,9 +177,9 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
             var source = schema.CreateDataSource();
             var old = new MigrationRunner(source, schema.SchemaName, [.. MigrationRegistry.All.Where(static step => step.Version <= 9)]);
             await old.MigrateAsync(ct).ConfigureAwait(true);
-            var withTen = new MigrationRunner(source, schema.SchemaName, [.. MigrationRegistry.All.Where(static step => step.Version <= 9), new M0010_DispatchDeviceState(), MigrationRegistry.All.Single(static step => step.Version == 12)]);
-            (await withTen.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([10, 12]);
-            (await withTen.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(12);
+            var withTen = new MigrationRunner(source, schema.SchemaName, [.. MigrationRegistry.All.Where(static step => step.Version <= 9), new M0010_DispatchDeviceState(), MigrationRegistry.All.Single(static step => step.Version == 13)]);
+            (await withTen.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([10, 13]);
+            (await withTen.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(13);
             var recorded = await withTen.ListAppliedAsync(ct).ConfigureAwait(true);
             recorded.Select(static step => step.Version).ShouldContain(10);
             recorded.Single(static step => step.Version == 10).Checksum.ShouldBe(MigrationRunner.ChecksumOf(new M0010_DispatchDeviceState()));

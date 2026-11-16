@@ -39,8 +39,9 @@ public sealed class PostgresResilienceOptions
     /// <summary>Builds the pipeline policy.</summary>
     /// <param name="isTransient">The driver's transient-failure predicate, or <see langword="null"/> for the BCL default.</param>
     /// <param name="isSerializationFailure">The driver's serialisation-failure predicate, or <see langword="null"/> for none.</param>
+    /// <param name="translateFailure">The driver's failure translator, or <see langword="null"/> for none.</param>
     /// <returns>The policy of the <c>postgres</c> component.</returns>
-    public ResiliencePolicy ToPolicy(Func<Exception, bool>? isTransient = null, Func<Exception, bool>? isSerializationFailure = null) =>
+    public ResiliencePolicy ToPolicy(Func<Exception, bool>? isTransient = null, Func<Exception, bool>? isSerializationFailure = null, Func<Exception, Exception?>? translateFailure = null) =>
         new()
         {
             Component = "postgres",
@@ -55,5 +56,6 @@ public sealed class PostgresResilienceOptions
             BreakerOpenDuration = TimeSpan.FromSeconds(BreakerOpenSeconds),
             IsTransient = isTransient ?? ResiliencePolicy.DefaultIsTransient,
             IsSerializationFailure = isSerializationFailure ?? (static _ => false),
+            TranslateFailure = translateFailure,
         };
 }

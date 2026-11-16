@@ -55,7 +55,7 @@ Three sources (later wins on conflict):
 
 ## Memory (AG-75-4..7, D-13..D-21)
 
-**Tables:** M0009 adds `cowork_memory_entries` and `cowork_memory_settings` (per account/project scoping); M0011 adds separate `cowork_memory_idempotency` claim metadata. Memory itself does not expire after 24 hours.
+**Tables:** M0009 adds `cowork_memory_entries` and `cowork_memory_settings` (per account/project scoping); M0013 adds separate `cowork_memory_idempotency` claim metadata. Memory itself does not expire after 24 hours.
 
 **Limits:**
 - 1,000 entries per account

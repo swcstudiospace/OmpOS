@@ -34,7 +34,7 @@ public sealed class PostgresResilience
     public static PostgresResilience Create(PostgresResilienceOptions options, TimeProvider? timeProvider = null, ILogger<ResiliencePipeline>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return new PostgresResilience(new ResiliencePipeline(options.ToPolicy(IsTransient, IsSerializationFailure), timeProvider ?? TimeProvider.System, null, logger));
+        return new PostgresResilience(new ResiliencePipeline(options.ToPolicy(IsTransient, IsSerializationFailure, TranslateFailure), timeProvider ?? TimeProvider.System, null, logger));
     }
 
     /// <summary>Builds a pipeline with the default options of D-41.</summary>
@@ -55,6 +55,17 @@ public sealed class PostgresResilience
         NpgsqlException npgsql => npgsql.IsTransient,
         _ => ResiliencePolicy.DefaultIsTransient(exception),
     };
+
+    /// <summary>
+    /// Turns a refusal of the account erasure fence (SQLSTATE <c>AE001</c>, <c>AE002</c> or <c>AE003</c>; see <c>M0012_AccountErasureFence</c>) into an <see cref="AccountErasingException"/>,
+    /// so every store that shares this pipeline fails closed with one typed error. Any other failure is left as it is.
+    /// </summary>
+    /// <param name="exception">The failure that ended a call.</param>
+    /// <returns>The typed exception, or <see langword="null"/> when the failure is not a fence refusal.</returns>
+    internal static Exception? TranslateFailure(Exception exception) =>
+        exception is PostgresException postgres && AccountErasureFence.IsRefusal(postgres)
+            ? new AccountErasingException(AccountErasingException.DefaultMessage, postgres) { SqlState = postgres.SqlState }
+            : null;
 
     /// <summary>Says whether a failure is a serialisation failure or a deadlock, which the whole transaction may answer with one retry.</summary>
     /// <param name="exception">The failure to classify.</param>
