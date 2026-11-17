@@ -176,7 +176,7 @@ public sealed class ProvidersCredentialEndpointTests
     [Fact]
     public async Task ACodingPlanNeedsTheRuleTextToBeConfirmed()
     {
-        var plan = CatalogueRows.All.First(static row => row.Plan is not null && row.IsOmpNative && row.Routes.Count > 0 && row.UrlVariables.Count == 0);
+        var plan = CatalogueRows.All.First(static row => row.Plan is not null && row.IsOmpNative && row.Routes.Count > 0 && row.UrlVariables.Count == 0 && row.ApiKeyEnv is not null);
         var backend = new FakeProviderBackend();
         using var factory = ProvidersTestHost.Dev(backend, new Dictionary<string, string?>(StringComparer.Ordinal) { ["Providers:AllowCredentialWrite"] = "true" });
         using var client = factory.CreateClient();
