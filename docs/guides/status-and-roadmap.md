@@ -35,7 +35,7 @@ The row-by-row truth is the [Cursor parity audit of 2026-10-28](../quality/curso
 | Area | Status | Honest note |
 |---|---|---|
 | Desktop app on Linux: Agents window, thread, composer, Kanban, omp terminals, Changes bar, steering, Settings (21 pages), slash palette | Built | Verified on Linux without a model turn. Windows and macOS not run. |
-| The four plugins loop (Ultrathink, Swarm, Substrate, GSD-Core) | Built | Connected against the real omp 18.12.6 without a model turn. |
+| The five plugins loop (Ultrathink, Swarm, Substrate, Realm, GSD-Core) | Partial | Four plugins connected against the real omp 18.12.6 without a model turn (2026-10-26). Realm was added on 2026-11-17: its extension and contract are recorded, and no run has connected it yet. |
 | White-and-Purple brand, Light default, logo set | Built | Owner sign-off of the look is open. |
 | AGPL-3.0-or-later licence and the source offer | Built | Licence of two submodules is open (OQ-102). |
 | Web Demo | Built | Deployed; simulated engine; checked in a browser (see above). |

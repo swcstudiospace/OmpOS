@@ -36,7 +36,7 @@ Order in the window (`SettingsWindowFactory`): Runtime, General, Display, Agents
 | Rules, Skills, Commands | The rule files, skill files (including the ten built-in skills with scope Built-in) and slash commands of the workspace, read-only. | Built (read-only) |
 | Hooks | The effective hooks and where they came from, approve or revoke a hook version, the run log ([Hooks](../reference/hooks.md)). | Partial (wired; no live omp) |
 | MCP servers | Servers read from Autonogrammer, Cursor, Claude Code and VS Code files, their state and problems, and **Add from preset** (13 presets, added disabled) ([MCP servers](../reference/mcp.md)). | Partial |
-| Plugins | The four plugins connected to every omp process, read-only. There is deliberately no switch. | Built (read-only) |
+| Plugins | The five plugins connected to every omp process, read-only. There is deliberately no switch. | Built (read-only) |
 | Workspaces | Saved sets of several folders and starting a session in one ([Multi-repo](../runbooks/multi-repo.md)). | Partial |
 | Worktrees | The worktree setup file and its consent state, read-only ([Checkpoints and worktrees](../reference/checkpoints-and-worktrees.md)). | Partial |
 | Ignore | Cursor-style ignore files (gitignore syntax) that hide paths from the agent, Tab and `@` mentions. | Partial |

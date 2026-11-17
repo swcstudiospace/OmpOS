@@ -8,6 +8,15 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-11-17
+
+### Added
+- Realm is the fifth omp plugin: `plugins/agent-realm` is a submodule pinned to `f28a3acc` and launched as an omp extension after GSD-Core, with its default `fail-closed` policy in force. It needs `npm ci && npm run build` in its directory before it loads, and it has not run in a live omp session.
+- Recorded plugin contracts (`tests/Autonogrammer.Harness.AgentLoop.Tests/Fixtures/OmpPluginContracts`) and the `OmpPluginContractTests` gate: commands, tools, environment variables, schema identifiers, package identity and pins are checked offline; evidence literals and manifests at the pin are checked by Live tests.
+
+### Changed
+- The plugin catalog, launch planner, head copy and submodule invariant cover five plugins. `AgentLoopSettings.RealmEnabled` switches Realm, and omp launches pass `-e plugins/agent-realm` after the GSD-Core plugin.
+
 ## [0.17.0] - 2026-11-16
 
 ### Added
@@ -414,7 +423,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.3...v0.17.0
 [0.16.3]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.1...v0.16.2

@@ -98,7 +98,7 @@ The Android head (`apps/Autonogrammer.Android`) builds in CI with warnings as er
 
 ## Where next
 
-- [Concepts](concepts.md): sessions, agents, the engine and the four plugins.
+- [Concepts](concepts.md): sessions, agents, the engine and the five plugins.
 - [Choose a model provider](providers-guide.md) and the [Settings guide](settings-guide.md).
 - [Troubleshooting and FAQ](troubleshooting-and-faq.md).
 - [Status and roadmap](status-and-roadmap.md): what is built, partial or blocked.
