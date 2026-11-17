@@ -41,6 +41,31 @@ public sealed class PodmanFollowedLogsRegressionTests
         runner.Specs.ShouldContain(static s => PodmanTestData.HasArgument(s, "-f"));
     }
 
+    /// <summary>
+    /// A followed stream that ends on its own (the container stopped) completes the iterator instead of blocking.
+    /// </summary>
+    [Fact]
+    public async Task FollowedLogs_StreamThatEndsCompletesTheIterator()
+    {
+        var runner = new FakeProcessRunner();
+        runner.SetResult(PodmanTestData.Ok("0123456789ab"));
+        var provider = PodmanTestData.CreateProvider(runner);
+        var ct = TestContext.Current.CancellationToken;
+        var provisioned = await provider.ProvisionAsync(PodmanTestData.CreateRequest(), ct);
+
+        using var bounded = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        bounded.CancelAfter(TimeSpan.FromSeconds(10));
+        runner.StreamFor = _ => FirstLineOnly.ToAsyncEnumerable();
+
+        var lines = await provider
+            .StreamLogsAsync(provisioned.Descriptor.Id, new LogCursor { Position = 0, Follow = true }, bounded.Token)
+            .ToListAsync(bounded.Token);
+
+        lines.ShouldBe(["first"]);
+    }
+
+    private static readonly string[] FirstLineOnly = ["first"];
+
     private static async IAsyncEnumerable<string> GatedLinesAsync(SemaphoreSlim release, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         yield return "first";

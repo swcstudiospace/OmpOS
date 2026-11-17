@@ -398,11 +398,6 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
             {
                 yield return line;
             }
-
-            if (!cancellationToken.IsCancellationRequested)
-            {
-                await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
-            }
         }
         else
         {
