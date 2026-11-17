@@ -1,4 +1,5 @@
 using Autonogrammer.Cowork.Chat;
+using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.AgentLoop.Launch;
 using Autonogrammer.Harness.AgentLoop.Safety;
@@ -12,6 +13,9 @@ internal static class CoworkEngineComposer
 {
     /// <summary>The notice raised when a catalog server named cowork is dropped because the plan already uses that name.</summary>
     public const string CoworkNameClashNotice = "A catalog server named cowork was not attached. The Cowork gateway keeps that name.";
+
+    /// <summary>The contributors every Cowork launch applies. The standing context adds the memory backend off overlay entry.</summary>
+    private static readonly IReadOnlyList<ILaunchContributor> Contributors = [new StandingContextContributor()];
 
     private static readonly string[] WindowsExtras =
     [
@@ -34,8 +38,8 @@ internal static class CoworkEngineComposer
             keys,
             gateway?.Url,
             gateway?.Bearer);
-        ConfigOverlayWriter.WriteYaml(request.SessionDirectory, CoworkSessionProfile.OverlayYaml);
-        var plan = profile.Create(request.StandingContext);
+        var plan = profile.Create(request.StandingContext, contributors: Contributors);
+        ConfigOverlayWriter.WriteYaml(request.SessionDirectory, CoworkSessionProfile.RenderOverlay(plan.OverlayEntries));
         var notices = new List<string>();
         var extra = CatalogServers(request, notices);
         // Cowork always wires LiveSteering unconditionally (unlike Code's LiveSteering option guard) so that

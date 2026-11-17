@@ -1,3 +1,4 @@
+using System.Text;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.AgentLoop.Launch;
 using Autonogrammer.Harness.AgentLoop.Plugins;
@@ -10,7 +11,10 @@ namespace Autonogrammer.Cowork.Chat;
 /// </summary>
 public sealed class CoworkSessionProfile
 {
-    /// <summary>The overlay the composer writes with <see cref="ConfigOverlayWriter.WriteYaml"/>.</summary>
+    /// <summary>
+    /// The fixed keys of the Cowork overlay. <see cref="RenderOverlay"/> adds the blocks the launch plan carries, and the composer writes
+    /// the result with <see cref="ConfigOverlayWriter.WriteYaml"/>.
+    /// </summary>
     public const string OverlayYaml = "browser:\n  enabled: false\ncomputer:\n  enabled: false\n";
 
     private const string ProviderPrefix = "AUTONOGRAMMER_PROVIDER_";
@@ -137,7 +141,7 @@ public sealed class CoworkSessionProfile
         var promptPath = CoworkSystemPrompt.Write(_sessionDirectory, standingContext, browserGuidance, computerGuidance);
         var overlayPath = SessionStateLayout.ConfigOverlayFile(Path.GetFullPath(_sessionDirectory));
 
-        // The planner applies contributed arguments and environment; overlay and prompt contribution delivery remains incomplete.
+        // The planner applies contributed arguments, environment and overlay entries; prompt paragraph delivery remains incomplete.
         var basePlan = OmpLaunchPlanner.Plan(
             new AgentLoopSettings { PluginsRoot = string.Empty, StateRoot = _sessionDirectory },
             Array.Empty<ResolvedPlugin>(),
@@ -148,7 +152,7 @@ public sealed class CoworkSessionProfile
             surface: "cowork",
             includeSessionEnvironment: false);
 
-        var arguments = new List<string>(basePlan.ExtraArguments);
+        var arguments = ArgumentsWithoutPlannerConfig(basePlan);
         arguments.Add("--approval-mode");
         arguments.Add(CoworkPermissionMode.ApprovalModeArgument(_mode));
         foreach (var folder in _trustedFolders)
@@ -176,11 +180,67 @@ public sealed class CoworkSessionProfile
             McpServers = Servers(),
             WorkingDirectory = Path.GetFullPath(_workingDirectory),
             ConfigOverlayPath = overlayPath,
+            OverlayEntries = basePlan.OverlayEntries,
             AdditionalDirectories = _trustedFolders.Select(Path.GetFullPath).ToArray(),
             PlanningEvents = basePlan.PlanningEvents,
             LoadedPluginIds = basePlan.LoadedPluginIds,
             HooksBridgeLoaded = basePlan.HooksBridgeLoaded,
         };
+    }
+
+    /// <summary>
+    /// Renders the Cowork overlay: the browser and computer keys, then each contributed block in order.
+    /// </summary>
+    /// <param name="overlayEntries">The overlay entries of the launch plan. Blank entries are skipped.</param>
+    /// <returns>The overlay YAML the composer writes.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="overlayEntries"/> is null.</exception>
+    public static string RenderOverlay(IReadOnlyList<string> overlayEntries)
+    {
+        ArgumentNullException.ThrowIfNull(overlayEntries);
+        var builder = new StringBuilder(OverlayYaml);
+        foreach (var entry in overlayEntries)
+        {
+            if (string.IsNullOrWhiteSpace(entry))
+            {
+                continue;
+            }
+
+            builder.Append(entry);
+            if (entry[^1] != '\n')
+            {
+                builder.Append('\n');
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// The planner's arguments without its own <c>--config</c>. The planner adds one when a contributor brings overlay entries, and that names
+    /// a file under the planner's own session directory, which nothing writes. The Cowork overlay, written by the composer, is the one file
+    /// this profile passes to <c>--config</c>.
+    /// </summary>
+    /// <param name="basePlan">The plan the planner made for this profile.</param>
+    /// <returns>The planner arguments with its overlay flag removed.</returns>
+    private static List<string> ArgumentsWithoutPlannerConfig(OmpLaunchPlan basePlan)
+    {
+        var source = basePlan.ExtraArguments;
+        var arguments = new List<string>(source.Count);
+        for (var index = 0; index < source.Count; index++)
+        {
+            if (basePlan.ConfigOverlayPath is { } plannerOverlay
+                && index + 1 < source.Count
+                && string.Equals(source[index], "--config", StringComparison.Ordinal)
+                && string.Equals(source[index + 1], plannerOverlay, StringComparison.Ordinal))
+            {
+                index++;
+                continue;
+            }
+
+            arguments.Add(source[index]);
+        }
+
+        return arguments;
     }
 
     private IReadOnlyList<AgentMcpServerSpec> Servers()

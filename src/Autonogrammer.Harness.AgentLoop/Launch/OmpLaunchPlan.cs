@@ -26,6 +26,13 @@ public sealed record OmpLaunchPlan
     public string? ConfigOverlayPath { get; init; }
 
     /// <summary>
+    /// Gets the top-level YAML blocks that contributors asked to add to the settings overlay, in composition order. They are written
+    /// after the overlay's own keys, so the caller passes them to <see cref="ConfigOverlayWriter.Write"/> with this plan's settings. Empty when
+    /// no contributor added one.
+    /// </summary>
+    public IReadOnlyList<string> OverlayEntries { get; init; } = [];
+
+    /// <summary>
     /// Gets the absolute paths of the other roots of a multi-root workspace, in order. Each also appears in <see cref="ExtraArguments"/> as
     /// <c>--add-dir &lt;path&gt;</c>. Empty for a single-root session and when the plan was not made by the planner.
     /// </summary>

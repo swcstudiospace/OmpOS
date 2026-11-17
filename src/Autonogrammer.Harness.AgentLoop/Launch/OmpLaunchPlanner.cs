@@ -101,7 +101,8 @@ public static class OmpLaunchPlanner
             WorkingDirectory = workspaceRoot,
             TrustedFolders = extraDirectories
         };
-        var addEnv = ApplyContributors(contributors, req, arguments, sessionDirectory, ref overlayPath);
+        var overlayEntries = new List<string>();
+        var addEnv = ApplyContributors(contributors, req, arguments, overlayEntries, sessionDirectory, ref overlayPath);
 
         var baseEnv = includeSessionEnvironment
             ? BuildEnvironment(settings, sessionDirectory, substrateActive ? substrate.BaseAddress : null, hooksLoaded ? hookBridge : null)
@@ -126,6 +127,7 @@ public static class OmpLaunchPlanner
             McpServers = substrateActive ? [BuildMcpServer(settings, substrate.BaseAddress!)] : [],
             WorkingDirectory = workspaceRoot,
             ConfigOverlayPath = overlayPath,
+            OverlayEntries = overlayEntries,
             AdditionalDirectories = extraDirectories,
             LoadedPluginIds = loaded,
             PlanningEvents = events,
@@ -182,13 +184,13 @@ public static class OmpLaunchPlanner
         IReadOnlyList<ILaunchContributor>? contributors,
         LaunchRequest req,
         List<string> arguments,
+        List<string> overlayEntries,
         string sessionDirectory,
         ref string? overlayPath)
     {
         var contribs = contributors ?? System.Array.Empty<ILaunchContributor>();
         var addArgs = new List<string>();
         var addEnv = new Dictionary<string, string?>(System.StringComparer.Ordinal);
-        var addOverlay = new List<string>();
         string? para = null;
         foreach (var c in contribs)
         {
@@ -198,7 +200,7 @@ public static class OmpLaunchPlanner
             {
                 addEnv[kvp.Key] = kvp.Value;
             }
-            addOverlay.AddRange(ct.OverlayEntries);
+            overlayEntries.AddRange(ct.OverlayEntries.Where(entry => !string.IsNullOrWhiteSpace(entry)));
             if (!string.IsNullOrEmpty(ct.SystemPromptParagraph))
             {
                 var b = System.Text.Encoding.UTF8.GetByteCount(ct.SystemPromptParagraph);
@@ -211,7 +213,7 @@ public static class OmpLaunchPlanner
             // FirstPromptBlock carried for Cowork profile / starter consumption (task 2)
         }
         arguments.AddRange(addArgs);
-        if (addOverlay.Count > 0 && string.IsNullOrEmpty(overlayPath))
+        if (overlayEntries.Count > 0 && string.IsNullOrEmpty(overlayPath))
         {
             overlayPath = SessionStateLayout.ConfigOverlayFile(sessionDirectory);
             arguments.Add("--config");

@@ -536,14 +536,14 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
         try
         {
-            return (launch, ConfigOverlayWriter.Write(settings, scope.SessionStateDirectory, additionalDirectories, bashOverlay));
+            return (launch, ConfigOverlayWriter.Write(settings, scope.SessionStateDirectory, additionalDirectories, bashOverlay, launch.OverlayEntries));
         }
         catch (Exception exception) when (bashOverlay is not null && exception is IOException or UnauthorizedAccessException)
         {
             // The deny rules for shell commands could not reach omp: plan again without them and say so, so the session still starts.
             notices.Add(Notice(scope, "run-mode-overlay", "Run mode", StageStatus.Degraded, "The settings file with the shell deny rules could not be written, so omp does not enforce them itself in this session. " + exception.GetType().Name));
             launch = OmpLaunchPlanner.Plan(settings, plugins, scope.SessionId, scope.WorkspaceRoot, scope.GraphId, clock, additionalDirectories, hookBridge, runModes?.Launch, null);
-            return (launch, launch.ConfigOverlayPath is null ? null : ConfigOverlayWriter.Write(settings, scope.SessionStateDirectory, additionalDirectories));
+            return (launch, launch.ConfigOverlayPath is null ? null : ConfigOverlayWriter.Write(settings, scope.SessionStateDirectory, additionalDirectories, null, launch.OverlayEntries));
         }
     }
 

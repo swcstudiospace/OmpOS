@@ -5,7 +5,7 @@ namespace Autonogrammer.Harness.AgentLoop.Launch;
 
 /// <summary>
 /// Writes the per-session omp settings overlay that <c>omp acp --config &lt;path&gt;</c> reads, and deletes it when disposed.
-/// The overlay exists only when the settings ask for an overlay key, and it holds settings, never secrets. On Unix the
+/// The overlay exists only when the settings ask for an overlay key or a contributor adds a block, and it holds settings, never secrets. On Unix the
 /// file has mode 0600 and a directory created for it has mode 0700.
 /// </summary>
 public sealed class ConfigOverlayWriter : IDisposable
@@ -21,19 +21,20 @@ public sealed class ConfigOverlayWriter : IDisposable
     public string Path { get; }
 
     /// <summary>
-    /// Writes the overlay for one session when the settings ask for any overlay key.
+    /// Writes the overlay for one session when the settings ask for any overlay key or a contributor adds a block.
     /// </summary>
     /// <param name="settings">What the user asked of the agent loop.</param>
     /// <param name="sessionStateDirectory">The directory returned by <see cref="SessionStateLayout.SessionDirectory"/>. It is created when missing.</param>
     /// <param name="additionalDirectories">The other roots of a multi-root workspace (see <see cref="OmpLaunchPlan.AdditionalDirectories"/>), or null.</param>
     /// <param name="extraYaml">Further top-level YAML blocks to add, for example the <c>bash</c> block of the run mode (see <c>RunModeOverlay.RenderYaml</c>), or null for none. They never repeat a key the writer owns.</param>
-    /// <returns>The writer that owns the file, or null when no overlay key is set and nothing was written.</returns>
+    /// <param name="overlayEntries">Further top-level YAML blocks that contributors asked for (see <see cref="OmpLaunchPlan.OverlayEntries"/>), or null for none. Blank entries are skipped.</param>
+    /// <returns>The writer that owns the file, or null when no overlay key or block is set and nothing was written.</returns>
     /// <exception cref="IOException">The file cannot be written.</exception>
-    public static ConfigOverlayWriter? Write(AgentLoopSettings settings, string sessionStateDirectory, IReadOnlyList<string>? additionalDirectories = null, string? extraYaml = null)
+    public static ConfigOverlayWriter? Write(AgentLoopSettings settings, string sessionStateDirectory, IReadOnlyList<string>? additionalDirectories = null, string? extraYaml = null, IReadOnlyList<string>? overlayEntries = null)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionStateDirectory);
-        var content = Render(settings, additionalDirectories, extraYaml);
+        var content = Render(settings, additionalDirectories, extraYaml, overlayEntries);
         if (content is null)
         {
             return null;
@@ -133,11 +134,13 @@ public sealed class ConfigOverlayWriter : IDisposable
     /// <param name="settings">What the user asked of the agent loop.</param>
     /// <param name="additionalDirectories">The other roots of a multi-root workspace, or null for none.</param>
     /// <param name="extraYaml">Further top-level YAML blocks, or null for none.</param>
-    internal static string? Render(AgentLoopSettings settings, IReadOnlyList<string>? additionalDirectories = null, string? extraYaml = null)
+    /// <param name="overlayEntries">Further top-level YAML blocks from contributors, or null for none. Blank entries are skipped.</param>
+    internal static string? Render(AgentLoopSettings settings, IReadOnlyList<string>? additionalDirectories = null, string? extraYaml = null, IReadOnlyList<string>? overlayEntries = null)
     {
         ArgumentNullException.ThrowIfNull(settings);
         var hasExtra = !string.IsNullOrWhiteSpace(extraYaml);
-        if (!settings.DisableProjectMcpConfig && !hasExtra)
+        var entries = (overlayEntries ?? Array.Empty<string>()).Where(entry => !string.IsNullOrWhiteSpace(entry)).ToList();
+        if (!settings.DisableProjectMcpConfig && !hasExtra && entries.Count == 0)
         {
             return null;
         }
@@ -163,6 +166,15 @@ public sealed class ConfigOverlayWriter : IDisposable
         {
             builder.Append(extraYaml);
             if (extraYaml![^1] != '\n')
+            {
+                builder.Append('\n');
+            }
+        }
+
+        foreach (var entry in entries)
+        {
+            builder.Append(entry);
+            if (entry[^1] != '\n')
             {
                 builder.Append('\n');
             }
