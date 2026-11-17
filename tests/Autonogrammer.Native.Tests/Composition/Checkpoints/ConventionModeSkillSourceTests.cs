@@ -88,7 +88,7 @@ public sealed class ConventionModeSkillSourceTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         var directory = Path.Combine(_pluginRoot, "skills", "bundled");
         Directory.CreateDirectory(directory);
-        await File.WriteAllTextAsync(Path.Combine(directory, "SKILL.md"), "---\ndescription: Bundled skill\n---\nDo the bundled thing.\n").ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(directory, "SKILL.md"), "---\ndescription: Bundled skill\n---\nDo the bundled thing.\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
         BundleComposition.PluginRootsFor = _ => new[] { _pluginRoot };
         var source = new ConventionModeSkillSource([_root], null);
 
