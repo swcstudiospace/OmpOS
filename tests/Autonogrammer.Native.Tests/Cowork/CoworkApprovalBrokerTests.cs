@@ -48,7 +48,7 @@ public sealed class CoworkApprovalBrokerTests
         var broker = new CoworkApprovalBroker(new CoworkToolHostOptions { ApprovalTimeout = TimeSpan.FromSeconds(30) });
         using var cancellation = new CancellationTokenSource();
         var waiting = broker.RequestAsync(Ask(mustBeLocal: true), cancellation.Token);
-        cancellation.Cancel();
+        await cancellation.CancelAsync();
         await Should.ThrowAsync<OperationCanceledException>(() => waiting.AsTask()).ConfigureAwait(true);
         broker.Cards.ShouldBeEmpty();
         broker.CompleteLocal("call-1", CoworkApprovalOutcome.Allowed).ShouldBeFalse();

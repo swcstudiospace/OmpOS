@@ -19,7 +19,7 @@ public sealed class ConnectorPermissionStoreTests : IDisposable
 
         matrix.SetToolState("remote", "echo", ConnectorToolState.Blocked);
 
-        UserTokens("deny").ShouldContain("Read(.env)");
+        UserTokens("deny").ShouldContain("Read(.env)", StringComparer.Ordinal);
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public sealed class ConnectorPermissionStoreTests : IDisposable
 
         matrix.SetToolState("remote", "echo", ConnectorToolState.Blocked);
 
-        UserTokens("deny").ShouldContain("Mcp(remote:echo)");
+        UserTokens("deny").ShouldContain("Mcp(remote:echo)", StringComparer.Ordinal);
     }
 
     [Fact]
@@ -41,8 +41,8 @@ public sealed class ConnectorPermissionStoreTests : IDisposable
 
         matrix.SetToolState("remote", "echo", ConnectorToolState.AlwaysAllow);
 
-        UserTokens("allow").ShouldContain("Shell(git)");
-        UserTokens("allow").ShouldContain("Mcp(remote:echo)");
+        UserTokens("allow").ShouldContain("Shell(git)", StringComparer.Ordinal);
+        UserTokens("allow").ShouldContain("Mcp(remote:echo)", StringComparer.Ordinal);
     }
 
     /// <inheritdoc />
