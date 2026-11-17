@@ -31,6 +31,8 @@ public sealed class PostgresMemoryStore : IMemoryStore, IMemoryIdempotentStore
     internal Func<bool>? SuppressCommitAcknowledgement { get; set; }
     // Test seam: coordinate another database connection after the database-clock sample.
     internal Func<DateTimeOffset, CancellationToken, Task>? AfterExpiryTimeSample { get; set; }
+    // Test seam: a pause committed after an unkeyed save starts and before its account lock is taken.
+    internal Func<CancellationToken, Task>? BeforeUnkeyedAccountLock { get; set; }
 
     /// <summary>Initializes a new instance of the <see cref="PostgresMemoryStore"/> class.</summary>
     /// <param name="dataSource">The host data source. This type does not dispose it.</param>
@@ -96,13 +98,6 @@ public sealed class PostgresMemoryStore : IMemoryStore, IMemoryIdempotentStore
     {
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentNullException.ThrowIfNull(draft);
-        var settings = await GetSettingsAsync(scope.AccountId, cancellationToken).ConfigureAwait(false);
-        var refused = Refuse(scope, draft, settings);
-        if (refused is not null)
-        {
-            return refused;
-        }
-
         return await InsertAsync(scope, draft, cancellationToken).ConfigureAwait(false);
     }
 
@@ -480,7 +475,14 @@ public sealed class PostgresMemoryStore : IMemoryStore, IMemoryIdempotentStore
         await using var connectionDisposal = connection.ConfigureAwait(false);
         var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         await using var transactionDisposal = transaction.ConfigureAwait(false);
-        var refused = await CheckWriteScopeAsync(scope, connection, transaction, cancellationToken).ConfigureAwait(false);
+        if (BeforeUnkeyedAccountLock is { } beforeLock)
+        {
+            await beforeLock(cancellationToken).ConfigureAwait(false);
+        }
+        await LockAccountAsync(scope.AccountId, connection, transaction, cancellationToken).ConfigureAwait(false);
+        var settings = await ReadSettingsAsync(scope.AccountId, connection, transaction, cancellationToken).ConfigureAwait(false);
+        var refused = Refuse(scope, draft, settings)
+            ?? await CheckWriteScopeAsync(scope, connection, transaction, cancellationToken).ConfigureAwait(false);
         if (refused is not null)
         {
             return refused;

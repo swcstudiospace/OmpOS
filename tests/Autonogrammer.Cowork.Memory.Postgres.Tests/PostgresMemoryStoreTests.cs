@@ -635,6 +635,20 @@ public sealed class PostgresMemoryStoreTests : MemoryStoreContractTests, IAsyncL
         (await store.GetSettingsAsync("owner", token).ConfigureAwait(true)).Paused.ShouldBe(pause);
     }
 
+    /// <summary>A pause committed after an unkeyed save starts and before its account lock is taken is honored by that save.</summary>
+    [Fact]
+    public async Task PauseBeforeUnkeyedWriteLockIsHonored()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var store = new PostgresMemoryStore(_app!);
+        store.BeforeUnkeyedAccountLock = ct => store.SetSettingsAsync("owner", new MemorySettings(true, true, false), ct);
+        var result = await store.SaveAsync(new MemoryScope("owner", null, false, "session"), new MemoryDraft(null, Canary, null), token).ConfigureAwait(true);
+        result.Succeeded.ShouldBeFalse();
+        result.Code.ShouldBe(MemoryCodes.MemoryPaused);
+        await using var count = _app!.CreateCommand("SELECT count(*) FROM cowork_memory_entries WHERE account_id = 'owner'");
+        ((long)(await count.ExecuteScalarAsync(token).ConfigureAwait(true))!).ShouldBe(0);
+    }
+
     /// <summary>A replay holding the account lock finishes before a later settings write.</summary>
     [Theory]
     [InlineData(true, false)]
