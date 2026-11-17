@@ -16,8 +16,7 @@ internal sealed class ConventionModeSkillSource : IModeSkillSource
     private readonly string? _userHome;
     private readonly IConventionFileSource? _files;
     private readonly Lock _gate = new();
-    private Dictionary<string, string> _paths = new(StringComparer.Ordinal);
-    private IConventionFileSource? _reader;
+    private Dictionary<string, SkillFile> _known = new(StringComparer.Ordinal);
 
     /// <summary>Initializes a new instance of the <see cref="ConventionModeSkillSource"/> class.</summary>
     /// <param name="roots">The workspace roots to scan.</param>
@@ -40,11 +39,13 @@ internal sealed class ConventionModeSkillSource : IModeSkillSource
             ? (pluginRoots is { Count: > 0 } ? local.WithPluginRoots(pluginRoots) : local)
             : new ConventionSources(_files, _files);
         var set = await ConventionCatalog.DiscoverAsync(_roots, _userHome, sources, null, cancellationToken).ConfigureAwait(false);
-        var paths = new Dictionary<string, string>(StringComparer.Ordinal);
+        var reader = _files ?? new LocalConventionFileSource(_userHome is null ? _roots : [.. _roots, _userHome]);
+        var pluginReader = sources.Plugin ?? reader;
+        var files = new Dictionary<string, SkillFile>(StringComparer.Ordinal);
         var skills = new List<ModeSkill>();
         foreach (var skill in set.Skills)
         {
-            if (!skill.UserInvocable || !paths.TryAdd(skill.Name, skill.Path))
+            if (!skill.UserInvocable || !files.TryAdd(skill.Name, new SkillFile(skill.Path, skill.Scope == ConventionScope.Plugin ? pluginReader : reader)))
             {
                 continue;
             }
@@ -55,8 +56,7 @@ internal sealed class ConventionModeSkillSource : IModeSkillSource
 
         lock (_gate)
         {
-            _paths = paths;
-            _reader = _files ?? new LocalConventionFileSource(_userHome is null ? _roots : [.. _roots, _userHome]);
+            _known = files;
         }
 
         return skills;
@@ -66,20 +66,18 @@ internal sealed class ConventionModeSkillSource : IModeSkillSource
     public async Task<string?> ReadBodyAsync(ModeSkill skill, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(skill);
-        string? path;
-        IConventionFileSource? reader;
+        SkillFile? known;
         lock (_gate)
         {
-            path = _paths.GetValueOrDefault(skill.Name);
-            reader = _reader;
+            known = _known.GetValueOrDefault(skill.Name);
         }
 
-        if (path is null || reader is null)
+        if (known is null)
         {
             throw new InvalidOperationException($"The skill '{skill.Name}' is not known; list the skills first.");
         }
 
-        var read = await reader.ReadTextAsync(path, MaxBodyBytes, cancellationToken).ConfigureAwait(false);
+        var read = await known.Reader.ReadTextAsync(known.Path, MaxBodyBytes, cancellationToken).ConfigureAwait(false);
         if (!read.IsRead)
         {
             throw new InvalidOperationException($"The skill '{skill.Name}' cannot be read: {read.Problem}");
@@ -87,4 +85,6 @@ internal sealed class ConventionModeSkillSource : IModeSkillSource
 
         return ConventionFrontmatterParser.Parse(read.Text!).Body;
     }
+
+    private sealed record SkillFile(string Path, IConventionFileSource Reader);
 }
