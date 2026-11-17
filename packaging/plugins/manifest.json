@@ -43,6 +43,15 @@
       "expectedLicenseFile": true,
       "licenceAcceptedWithoutFile": false,
       "licenseNote": "Tracked in this repository. package.json declares AGPL-3.0-or-later, and this directory carries its AGPL-3.0 LICENSE file."
+    },
+    {
+      "dir": "agent-realm",
+      "source": "https://github.com/swcstudiospace/realm.git",
+      "private": false,
+      "requiredForRelease": false,
+      "expectedLicenseFile": true,
+      "licenceAcceptedWithoutFile": false,
+      "licenseNote": "Pinned submodule with a LICENSE file (AGPL-3.0-only). The packaged copy carries source only: dist/ is not in the repository and node_modules is removed, so the plugin is not loaded until the owner decides how Realm is built and shipped (Node 22.13 or newer plus its runtime dependencies). Not required for a release until then."
     }
   ]
 }
