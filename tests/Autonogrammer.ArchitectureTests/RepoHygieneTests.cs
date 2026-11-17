@@ -166,7 +166,7 @@ public sealed class RepoHygieneTests
         var root = CreateTempTree();
         try
         {
-            foreach (var submodule in new[] { "claude-ultrathink", "agent-swarm", "agent-substrate" })
+            foreach (var submodule in new[] { "claude-ultrathink", "agent-swarm", "agent-substrate", "agent-realm" })
             {
                 var directory = Path.Combine(root, "plugins", submodule, "src");
                 Directory.CreateDirectory(directory);

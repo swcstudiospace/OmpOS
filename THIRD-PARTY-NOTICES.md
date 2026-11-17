@@ -11725,6 +11725,7 @@ Submodules under `plugins/` are separate programs pinned by reference; their fil
 
 | Submodule | Repository | Licence |
 |---|---|---|
+| `plugins/agent-realm` | https://github.com/swcstudiospace/realm.git | not recorded |
 | `plugins/agent-substrate` | https://github.com/swcstudiospace/substrate.git | none published (no LICENSE file, private repository; OQ-102) |
 | `plugins/agent-swarm` | https://github.com/swcstudiospace/swarm.git | none published (no LICENSE file; OQ-102) |
 | `plugins/claude-ultrathink` | https://github.com/swcstudiospace/ultrathink.git | AGPL-3.0-or-later (its LICENSE; same family as Autonogrammer) |

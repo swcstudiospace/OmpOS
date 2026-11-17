@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "pluginId": "realm",
+  "source": "submodule",
+  "submodulePath": "plugins/agent-realm",
+  "pinnedCommit": "f28a3acc319d9805c2d2487c05d12a075a2c8ad7",
+  "manifestPath": "package.json",
+  "packageName": "agent-realm",
+  "packageVersion": "0.3.38",
+  "licence": "AGPL-3.0-only",
+  "ompExtensions": ["./dist/src/omp/extension.js"],
+  "entryFiles": [],
+  "commands": ["realm-retry"],
+  "tools": ["exec", "read", "write", "list", "status"],
+  "environmentVariables": ["REALM_OMP_REATTACH"],
+  "schemaIds": [],
+  "evidence": [
+    {"name": "tool names", "path": "src/omp/tools.ts", "literal": "Object.freeze([\"exec\", \"read\", \"write\", \"list\", \"status\"] as const)"},
+    {"name": "retry command", "path": "src/omp/plugin.ts", "literal": "REALM_RETRY_COMMAND = \"realm-retry\""},
+    {"name": "reattach variable", "path": "src/omp/extension.ts", "literal": "REALM_OMP_REATTACH"}
+  ]
+}

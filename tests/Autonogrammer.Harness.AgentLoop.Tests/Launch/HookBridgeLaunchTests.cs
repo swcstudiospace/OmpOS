@@ -72,6 +72,7 @@ public sealed class HookBridgeLaunchTests
             "-e", "/p/claude-ultrathink",
             "-e", "/p/agent-swarm/omp",
             "-e", "/p/gsd-core-omp",
+            "-e", "/p/agent-realm",
             "-e", "/p/autonogrammer-hooks-omp",
         ]);
         plan.Environment[HookBridgeEnvironment.Url].ShouldBe("http://127.0.0.1:49152/v1/hook");

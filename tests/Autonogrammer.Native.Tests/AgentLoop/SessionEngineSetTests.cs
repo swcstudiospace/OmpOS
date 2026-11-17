@@ -67,6 +67,7 @@ public sealed class SessionEngineSetTests
             "-e", tree.PluginPath("claude-ultrathink"),
             "-e", tree.PluginPath("agent-swarm/omp"),
             "-e", tree.PluginPath("gsd-core-omp"),
+            "-e", tree.PluginPath("agent-realm"),
         ];
         planA.Launch.ExtraArguments.ShouldBe(expectedArguments);
         planB.Launch.ExtraArguments.ShouldBe(expectedArguments);
@@ -431,7 +432,7 @@ public sealed class SessionEngineSetTests
         tree.WriteReadyPlugins();
         await head.Host.ReloadAsync(ct).ConfigureAwait(true);
 
-        head.Host.Plugins.Count(static plugin => plugin.Health == PluginHealth.Ready).ShouldBe(3, "the three enabled plugins are ready; the substrate is switched off");
+        head.Host.Plugins.Count(static plugin => plugin.Health == PluginHealth.Ready).ShouldBe(4, "the four enabled plugins are ready; the substrate is switched off");
         head.Host.Catalog.Snapshot().ShouldHaveSingleItem().Id.ShouldBe(id);
     }
 }

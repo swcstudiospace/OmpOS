@@ -50,7 +50,7 @@ internal sealed class TempTree : IDisposable
         Write($"plugins/{pluginsRelativeDirectory}/{extension}", "export default function () {}\n");
     }
 
-    /// <summary>Creates the four built-in plugins, each ready to load. The substrate has two extension files and no package.</summary>
+    /// <summary>Creates the five built-in plugins, each ready to load. The substrate has two extension files and no package.</summary>
     public void WriteReadyPlugins()
     {
         WritePackagePlugin("claude-ultrathink", "src/host/omp.ts");
@@ -58,6 +58,7 @@ internal sealed class TempTree : IDisposable
         Write("plugins/agent-substrate/packages/projector/omp/substrate-status.ts", "export default function () {}\n");
         Write("plugins/agent-substrate/packages/projector/omp/substrate-skills.ts", "export default function () {}\n");
         WritePackagePlugin("gsd-core-omp", "src/index.ts");
+        WritePackagePlugin("agent-realm", "dist/src/omp/extension.js");
     }
 
     /// <summary>Gets the full path of a plugin directory below the plugins root.</summary>

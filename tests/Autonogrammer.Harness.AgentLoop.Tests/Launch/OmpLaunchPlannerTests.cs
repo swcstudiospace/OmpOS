@@ -51,6 +51,7 @@ public sealed class OmpLaunchPlannerTests
         "-e", "/p/agent-substrate/packages/projector/omp/substrate-skills.ts",
     ];
     private static readonly string[] GsdArgs = ["-e", "/p/gsd-core-omp"];
+    private static readonly string[] RealmArgs = ["-e", "/p/agent-realm"];
 
     private static string[] Args(params string[][] groups) => ["--no-extensions", .. groups.SelectMany(group => group)];
 
@@ -77,7 +78,7 @@ public sealed class OmpLaunchPlannerTests
     {
         var plan = Plan(Settings());
 
-        plan.ExtraArguments.ShouldBe(Args(UltrathinkArgs, SwarmArgs, SubstrateArgs, GsdArgs));
+        plan.ExtraArguments.ShouldBe(Args(UltrathinkArgs, SwarmArgs, SubstrateArgs, GsdArgs, RealmArgs));
         Env(plan).ShouldBe(SubstrateEnv().Order(StringComparer.Ordinal));
         plan.McpServers.Count.ShouldBe(1);
         plan.McpServers[0].Name.ShouldBe("substrate");
@@ -94,7 +95,7 @@ public sealed class OmpLaunchPlannerTests
     {
         var reversed = PlannerFixtures.AllReady().Reverse().ToList();
 
-        Plan(Settings(), reversed).ExtraArguments.ShouldBe(Args(UltrathinkArgs, SwarmArgs, SubstrateArgs, GsdArgs));
+        Plan(Settings(), reversed).ExtraArguments.ShouldBe(Args(UltrathinkArgs, SwarmArgs, SubstrateArgs, GsdArgs, RealmArgs));
     }
 
     [Fact]
@@ -104,15 +105,16 @@ public sealed class OmpLaunchPlannerTests
 
         plan.ExtraArguments[0].ShouldBe("--no-extensions");
         plan.ExtraArguments.ShouldNotContain("--plugin-dir", StringComparer.Ordinal);
-        plan.ExtraArguments.Where(argument => string.Equals(argument, "-e", StringComparison.Ordinal)).Count().ShouldBe(5);
+        plan.ExtraArguments.Where(argument => string.Equals(argument, "-e", StringComparison.Ordinal)).Count().ShouldBe(6);
     }
 
     public static TheoryData<string, string[], string[]> DisabledCases() => new()
     {
-        { "ultrathink", Args(SwarmArgs, SubstrateArgs, GsdArgs), [.. SubstrateEnv(), "ULTRATHINK_UPLIFT=0"] },
-        { "swarm", Args(UltrathinkArgs, SubstrateArgs, GsdArgs), SubstrateEnv() },
-        { "substrate", Args(UltrathinkArgs, SwarmArgs, GsdArgs), BaseEnv() },
-        { "gsd", Args(UltrathinkArgs, SwarmArgs, SubstrateArgs), SubstrateEnv() },
+        { "ultrathink", Args(SwarmArgs, SubstrateArgs, GsdArgs, RealmArgs), [.. SubstrateEnv(), "ULTRATHINK_UPLIFT=0"] },
+        { "swarm", Args(UltrathinkArgs, SubstrateArgs, GsdArgs, RealmArgs), SubstrateEnv() },
+        { "substrate", Args(UltrathinkArgs, SwarmArgs, GsdArgs, RealmArgs), BaseEnv() },
+        { "gsd", Args(UltrathinkArgs, SwarmArgs, SubstrateArgs, RealmArgs), SubstrateEnv() },
+        { "realm", Args(UltrathinkArgs, SwarmArgs, SubstrateArgs, GsdArgs), SubstrateEnv() },
     };
 
     [Theory]
@@ -124,7 +126,8 @@ public sealed class OmpLaunchPlannerTests
             "ultrathink" => Settings() with { UltrathinkEnabled = false },
             "swarm" => Settings() with { SwarmEnabled = false },
             "substrate" => Settings() with { SubstrateEnabled = false },
-            _ => Settings() with { GsdEnabled = false },
+            "gsd" => Settings() with { GsdEnabled = false },
+            _ => Settings() with { RealmEnabled = false },
         };
 
         var plan = Plan(settings);
@@ -141,10 +144,11 @@ public sealed class OmpLaunchPlannerTests
 
     public static TheoryData<string, string[], string[]> UninitializedCases() => new()
     {
-        { "ultrathink", Args(SwarmArgs, SubstrateArgs, GsdArgs), SubstrateEnv() },
-        { "swarm", Args(UltrathinkArgs, SubstrateArgs, GsdArgs), SubstrateEnv() },
-        { "substrate", Args(UltrathinkArgs, SwarmArgs, GsdArgs), BaseEnv() },
-        { "gsd", Args(UltrathinkArgs, SwarmArgs, SubstrateArgs), SubstrateEnv() },
+        { "ultrathink", Args(SwarmArgs, SubstrateArgs, GsdArgs, RealmArgs), SubstrateEnv() },
+        { "swarm", Args(UltrathinkArgs, SubstrateArgs, GsdArgs, RealmArgs), SubstrateEnv() },
+        { "substrate", Args(UltrathinkArgs, SwarmArgs, GsdArgs, RealmArgs), BaseEnv() },
+        { "gsd", Args(UltrathinkArgs, SwarmArgs, SubstrateArgs, RealmArgs), SubstrateEnv() },
+        { "realm", Args(UltrathinkArgs, SwarmArgs, SubstrateArgs, GsdArgs), SubstrateEnv() },
     };
 
     [Theory]
@@ -201,7 +205,7 @@ public sealed class OmpLaunchPlannerTests
 
         var plan = Plan(settings);
 
-        plan.ExtraArguments.ShouldBe(Args(UltrathinkArgs, SwarmArgs, GsdArgs));
+        plan.ExtraArguments.ShouldBe(Args(UltrathinkArgs, SwarmArgs, GsdArgs, RealmArgs));
         plan.ExtraArguments.ShouldNotContain(argument => argument.Contains("substrate", StringComparison.Ordinal));
         plan.Environment.ContainsKey("SUBSTRATE_URL").ShouldBeFalse();
         plan.Environment.ContainsKey("SUBSTRATE_TOKENS_DIR").ShouldBeFalse();
@@ -217,7 +221,7 @@ public sealed class OmpLaunchPlannerTests
     {
         var plan = Plan(Settings() with { SubstrateEndpoint = null });
 
-        plan.ExtraArguments.ShouldBe(Args(UltrathinkArgs, SwarmArgs, GsdArgs));
+        plan.ExtraArguments.ShouldBe(Args(UltrathinkArgs, SwarmArgs, GsdArgs, RealmArgs));
         plan.Environment.ContainsKey("SUBSTRATE_URL").ShouldBeFalse();
         plan.McpServers.ShouldBeEmpty();
         plan.PlanningEvents.ShouldHaveSingleItem().Status.ShouldBe(StageStatus.Unavailable);
@@ -276,7 +280,7 @@ public sealed class OmpLaunchPlannerTests
     [Fact]
     public void AllPluginsDisabledStillPlansPlainOmpWithTheSessionVariables()
     {
-        var settings = Settings() with { UltrathinkEnabled = false, SwarmEnabled = false, SubstrateEnabled = false, GsdEnabled = false };
+        var settings = Settings() with { UltrathinkEnabled = false, SwarmEnabled = false, SubstrateEnabled = false, GsdEnabled = false, RealmEnabled = false };
 
         var plan = Plan(settings);
 
@@ -284,7 +288,7 @@ public sealed class OmpLaunchPlannerTests
         Env(plan).ShouldBe(BaseEnv().Append("ULTRATHINK_UPLIFT=0").Order(StringComparer.Ordinal));
         plan.McpServers.ShouldBeEmpty();
         plan.PlanningEvents.Select(e => e.Status).ShouldAllBe(status => status == StageStatus.Skipped);
-        plan.PlanningEvents.Count.ShouldBe(4);
+        plan.PlanningEvents.Count.ShouldBe(5);
     }
 
     [Fact]
@@ -331,7 +335,7 @@ public sealed class OmpLaunchPlannerTests
         var text = Plan(Settings()).ToString();
 
         text.ShouldBe(
-            "OmpLaunchPlan { Arguments = 11, Environment = [AUTONOGRAMMER_CONNECTION_FILE, AUTONOGRAMMER_STEER_DIR, SUBSTRATE_OMP_PENDING_DIR, SUBSTRATE_TOKENS_DIR, SUBSTRATE_URL, " +
+            "OmpLaunchPlan { Arguments = 13, Environment = [AUTONOGRAMMER_CONNECTION_FILE, AUTONOGRAMMER_STEER_DIR, SUBSTRATE_OMP_PENDING_DIR, SUBSTRATE_TOKENS_DIR, SUBSTRATE_URL, " +
             "SWARM_CLAUDE_STATE_DIR, SWARM_DIR, SWARM_GSD_STATE_FILE, ULTRATHINK_STATE_DIR], McpServers = [substrate] }");
         text.ShouldNotContain("/state/sessions");
         text.ShouldNotContain("127.0.0.1");
@@ -417,7 +421,7 @@ public sealed class OmpLaunchPlannerTests
         var plan = Plan(Settings() with { DisableProjectMcpConfig = true });
 
         plan.ConfigOverlayPath.ShouldBe(SessionDir + "/omp-overlay.yml");
-        plan.ExtraArguments.ShouldBe(Args(UltrathinkArgs, SwarmArgs, SubstrateArgs, GsdArgs, ["--config", SessionDir + "/omp-overlay.yml"]));
+        plan.ExtraArguments.ShouldBe(Args(UltrathinkArgs, SwarmArgs, SubstrateArgs, GsdArgs, RealmArgs, ["--config", SessionDir + "/omp-overlay.yml"]));
     }
 
     [Fact]

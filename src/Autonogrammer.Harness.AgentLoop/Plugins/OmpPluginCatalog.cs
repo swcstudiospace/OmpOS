@@ -1,8 +1,8 @@
 namespace Autonogrammer.Harness.AgentLoop.Plugins;
 
 /// <summary>
-/// The plugins the agent loop composes, in composition order: the planner first, then the orchestrator, the substrate and
-/// the workflow engine. Three live in pinned git submodules; the workflow plugin is tracked by Autonogrammer itself.
+/// The plugins the agent loop composes, in composition order: the planner first, then the orchestrator, the substrate,
+/// the workflow engine and the execution sandbox. Four live in pinned git submodules; the workflow plugin is tracked by Autonogrammer itself.
 /// </summary>
 public static class OmpPluginCatalog
 {
@@ -17,6 +17,9 @@ public static class OmpPluginCatalog
 
     /// <summary>The identifier of the workflow engine.</summary>
     public const string GsdId = "gsd";
+
+    /// <summary>The identifier of the execution sandbox.</summary>
+    public const string RealmId = "realm";
 
     /// <summary>The built-in plugins in composition order.</summary>
     public static IReadOnlyList<OmpPluginDescriptor> BuiltIn { get; } =
@@ -85,6 +88,18 @@ public static class OmpPluginCatalog
             Required = false,
             OptionalFixCommand = "git restore plugins/gsd-core-omp",
             ExpectedCommands = ["gsd-core"],
+        },
+        new OmpPluginDescriptor
+        {
+            Id = RealmId,
+            DisplayName = "Realm",
+            Role = OmpPluginRole.ExecutionSandbox,
+            RelativeDirectory = "agent-realm",
+            Required = false,
+            SubmoduleName = "agent-realm",
+            OptionalFixCommand = SubmoduleFix("agent-realm"),
+            ExpectedCommands = ["realm-retry"],
+            ExpectedTools = ["exec", "read", "write", "list", "status"],
         },
     ];
 
