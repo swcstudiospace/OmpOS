@@ -65,6 +65,8 @@ qianfan
 qwen-portal
 sakana
 sambanova
+# scaleway: omp 18.22.0 (audit-verified), not in the 18.12.6 list above.
+scaleway
 siliconflow
 siliconflow-cn
 singularityapi-dev

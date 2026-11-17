@@ -527,8 +527,8 @@
       "country": "US",
       "residencyNote": null,
       "kind": "api",
-      "ompProviderId": null,
-      "apiKeyEnv": "LLAMA_API_KEY",
+      "ompProviderId": "meta",
+      "apiKeyEnv": "MODEL_API_KEY",
       "routes": [
         {
           "id": "openai",
@@ -547,7 +547,7 @@
       "sourceUrl": "https://llama.developer.meta.com/docs/features/compatibility/",
       "status": "partial",
       "statusDate": "2026-10-27",
-      "note": "Conflict: omp catalogue lists meta at https://api.meta.ai/v1 (openai-responses; MODEL_API_KEY, META_API_KEY); unsure it is the Llama API, so no omp id. Research page not opened.",
+      "note": "omp id meta (env MODEL_API_KEY, then META_API_KEY). omp's meta host is https://api.meta.ai/v1; this row keeps api.llama.com, so the base URL conflict is unresolved. Research page not opened.",
       "loginCommand": null,
       "plan": null
     },

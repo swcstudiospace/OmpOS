@@ -78,7 +78,7 @@
       "residencyNote": null,
       "kind": "codingPlan",
       "ompProviderId": null,
-      "apiKeyEnv": "MISTRAL_API_KEY",
+      "apiKeyEnv": null,
       "routes": [
         {
           "id": "openai",
@@ -246,8 +246,8 @@
       "country": "FR",
       "residencyNote": "EU data centres (Paris region)",
       "kind": "api",
-      "ompProviderId": null,
-      "apiKeyEnv": "SCALEWAY_API_KEY",
+      "ompProviderId": "scaleway",
+      "apiKeyEnv": "SCW_SECRET_KEY",
       "routes": [
         {
           "id": "openai",

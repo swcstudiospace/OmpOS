@@ -161,6 +161,19 @@ public sealed class ProvidersCredentialEndpointTests
     }
 
     [Fact]
+    public async Task AKeylessOmpNativeRowIsRefusedAndNoKeyReachesOmp()
+    {
+        var backend = new FakeProviderBackend();
+        using var factory = ProvidersTestHost.Dev(backend, new Dictionary<string, string?>(StringComparer.Ordinal) { ["Providers:AllowCredentialWrite"] = "true" });
+        using var client = factory.CreateClient();
+
+        using var response = await ProvidersTestHost.SendAsync(client, HttpMethod.Put, "/providers/kimi-code/credential", KeyBody(plan: true), Token).ConfigureAwait(true);
+
+        await WebAppTestHost.ShouldBeProblemAsync(response, HttpStatusCode.Conflict, "credential_not_applicable", Token).ConfigureAwait(true);
+        backend.Imports.ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task ACodingPlanNeedsTheRuleTextToBeConfirmed()
     {
         var plan = CatalogueRows.All.First(static row => row.Plan is not null && row.IsOmpNative && row.Routes.Count > 0 && row.UrlVariables.Count == 0);
