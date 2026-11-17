@@ -82,14 +82,14 @@ public sealed class RunModeRequestParserTests
     [Theory]
     [InlineData("mcp__github_list_issues", "github", "list_issues")]
     [InlineData("mcp__linear__save_issue", "linear", "save_issue")]
-    public void AnMcpToolNameMakesAnMcpRequestWhateverTheKind(string name, string server, string tool)
+    public void AnMcpToolNameMakesAnMcpRequestUnlessItsKindActs(string name, string server, string tool)
     {
         var request = Parse("{ \"kind\": \"other\", \"title\": \"" + name + "\" }");
 
         request.Kind.ShouldBe(RunModeToolKind.Mcp);
         request.McpServer.ShouldBe(server);
         request.McpTool.ShouldBe(tool);
-        Parse("{ \"kind\": \"execute\", \"toolName\": \"" + name + "\", \"title\": \"Run\" }").Kind.ShouldBe(RunModeToolKind.Mcp);
+        Parse("{ \"kind\": \"execute\", \"toolName\": \"" + name + "\", \"title\": \"Run\" }").Kind.ShouldBe(RunModeToolKind.Shell);
     }
 
     [Theory]

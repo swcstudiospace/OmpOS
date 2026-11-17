@@ -80,6 +80,18 @@ public sealed class RunModePolicyTests
         decision.Rule.ShouldNotBeNull().Source.ShouldBe(rig.InHome(".autonogrammer/permissions.json"));
     }
 
+    [Fact]
+    public void ADenyRuleSeesTheCommandAFindActionRuns()
+    {
+        using var rig = new SafetyRig();
+        var policy = rig.PolicyWith(RunMode.Allowlist, """{ "permissions": { "allow": ["Shell(find)"], "deny": ["Shell(rm)"] } }""");
+
+        var decision = policy.Decide(RunModeRequest.ForShell("find . -exec rm -rf {} \\;"));
+
+        decision.Outcome.ShouldBe(RunModeOutcome.Deny);
+        decision.Stage.ShouldBe(RunModeStage.DenyRule);
+    }
+
     [Theory]
     [InlineData("echo rm", RunModeOutcome.Allow)]
     [InlineData("npm run rm-all", RunModeOutcome.Allow)]
@@ -158,6 +170,50 @@ public sealed class RunModePolicyTests
         workspace.Decide(RunModeRequest.ForShell("cat README.md")).Outcome.ShouldBe(RunModeOutcome.Allow);
         workspace.Decide(RunModeRequest.ForShell("ls", rig.Outside)).Outcome.ShouldBe(RunModeOutcome.Ask, "a working directory outside the boundary is not known-safe");
         workspace.Decide(RunModeRequest.ForShell("ls", rig.InProject("src"))).Outcome.ShouldBe(RunModeOutcome.Allow);
+    }
+
+    [Fact]
+    public void AKnownSafeReadOfADollarWordIsNotAllowed()
+    {
+        using var rig = new SafetyRig();
+
+        var decision = rig.Policy(RunMode.AutoReview).Decide(RunModeRequest.ForShell("cat $HOME/.ssh/id_rsa"));
+
+        decision.Outcome.ShouldBe(RunModeOutcome.Ask, "the shell expands $HOME to a path outside the workspace");
+        decision.Stage.ShouldBe(RunModeStage.Default);
+    }
+
+    [Fact]
+    public void AKnownSafeReadOfANamedHomeWordIsNotAllowed()
+    {
+        using var rig = new SafetyRig();
+
+        var decision = rig.Policy(RunMode.AutoReview).Decide(RunModeRequest.ForShell("cat ~root/.ssh/id_rsa"));
+
+        decision.Outcome.ShouldBe(RunModeOutcome.Ask, "the shell expands ~root to another user's home");
+        decision.Stage.ShouldBe(RunModeStage.Default);
+    }
+
+    [Fact]
+    public void AKnownSafeReadOfAWorkspaceFileIsStillAllowed()
+    {
+        using var rig = new SafetyRig();
+
+        var decision = rig.Policy(RunMode.AutoReview).Decide(RunModeRequest.ForShell("cat notes.txt"));
+
+        decision.Outcome.ShouldBe(RunModeOutcome.Allow);
+        decision.Stage.ShouldBe(RunModeStage.KnownSafe);
+    }
+
+    [Fact]
+    public void ABareTildeWordIsNotMadeUnreadableByTheExpansionRule()
+    {
+        using var rig = new SafetyRig();
+
+        var decision = rig.Policy(RunMode.AutoReview).Decide(RunModeRequest.ForShell("cat ~"));
+
+        decision.Outcome.ShouldBe(RunModeOutcome.Allow, "a bare ~ expands to the home directory, which the system boundary reads");
+        decision.Stage.ShouldBe(RunModeStage.KnownSafe);
     }
 
     // ---- reads -------------------------------------------------------------------------------------------------

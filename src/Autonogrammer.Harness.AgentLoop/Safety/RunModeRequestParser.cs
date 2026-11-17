@@ -6,7 +6,7 @@ namespace Autonogrammer.Harness.AgentLoop.Safety;
 /// <summary>
 /// Reads a permission request that omp sent over ACP into a <see cref="RunModeRequest"/>. The ACP tool kind picks the kind of call
 /// (<c>execute</c> is a shell command, <c>read</c> and <c>search</c> read files, <c>edit</c>, <c>delete</c> and <c>move</c> write them, <c>fetch</c> fetches), and a tool
-/// named like an MCP tool is an MCP call. The command, files and address come from the call's <c>rawInput</c> and <c>locations</c>; their field names are
+/// named like an MCP tool is an MCP call unless its kind is <c>execute</c>, <c>edit</c>, <c>delete</c> or <c>move</c>. The command, files and address come from the call's <c>rawInput</c> and <c>locations</c>; their field names are
 /// UNVERIFIED against omp (<c>omp acp</c> with a fake key and no model turn, reading a permission request), so several spellings are accepted and a call without
 /// the field its kind needs becomes a request that asks.
 /// </summary>
@@ -37,12 +37,13 @@ public static class RunModeRequestParser
         var name = Strings(call, NameKeys).FirstOrDefault() ?? Strings(call, ["title"]).FirstOrDefault() ?? request.Name;
         var input = call.TryGetProperty("rawInput", out var raw) && raw.ValueKind == JsonValueKind.Object ? raw : default;
         var workingDirectory = input.ValueKind == JsonValueKind.Object ? Strings(input, WorkingDirectoryKeys).FirstOrDefault() : null;
-        if (McpToolName.TryParse(name, out var server, out var tool))
+        var kind = Strings(call, ["kind"]).FirstOrDefault() ?? string.Empty;
+        var actuating = kind is "execute" or "edit" or "delete" or "move";
+        if (!actuating && McpToolName.TryParse(name, out var server, out var tool))
         {
             return new RunModeRequest(RunModeToolKind.Mcp, name, McpServer: server, McpTool: tool);
         }
 
-        var kind = Strings(call, ["kind"]).FirstOrDefault() ?? string.Empty;
         switch (kind)
         {
             case "execute":

@@ -13,6 +13,7 @@ public sealed class ShellDeleteDetectorTests
     [InlineData("unlink notes.txt")]
     [InlineData("shred notes.txt")]
     [InlineData("find . -delete")]
+    [InlineData("find . -exec rm -rf {} \\;")]
     [InlineData("git clean -fd")]
     [InlineData("sudo rm -rf notes.txt")]
     [InlineData("env rm notes.txt")]

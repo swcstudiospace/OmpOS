@@ -19,6 +19,16 @@ internal static class KnownSafeCommands
 
     private static readonly string[] RefusedGitOptions = ["--output", "--ext-diff", "--textconv", "--open-files-in-pager", "-O", "--paginate", "-c"];
 
+    private static readonly Dictionary<string, string> ValueShortOptions = new(StringComparer.Ordinal)
+    {
+        ["grep"] = "efmABCdDX",
+        ["head"] = "nc",
+        ["tail"] = "ncs",
+        ["ls"] = "IwT",
+    };
+
+    private const string GitValueShortOptions = "ULSGMCBlxXun";
+
     /// <summary>Returns whether a reading of a command line is known-safe.</summary>
     /// <param name="reading">The command line, read for allow matching.</param>
     /// <param name="argumentAllowed">Tells whether an argument that may name a file is inside the read boundary and not denied.</param>
@@ -58,6 +68,7 @@ internal static class KnownSafeCommands
             return false;
         }
 
+        var shortValueLetters = first == 2 ? GitValueShortOptions : ValueShortOptions.GetValueOrDefault(words[0], string.Empty);
         for (var index = first; index < words.Count; index++)
         {
             var word = words[index];
@@ -68,10 +79,39 @@ internal static class KnownSafeCommands
                     return false;
                 }
 
+                if (!OptionValuesAllowed(word, shortValueLetters, argumentAllowed))
+                {
+                    return false;
+                }
+
                 continue;
             }
 
             if (!argumentAllowed(word))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>Checks the value carried inside an option word: the text after '=' for a long option, and the text after each value-taking letter of a short cluster.</summary>
+    /// <param name="word">The option word, beginning with a dash.</param>
+    /// <param name="shortValueLetters">The short option letters of the command that take a value.</param>
+    /// <param name="argumentAllowed">Tells whether an argument that may name a file is allowed.</param>
+    /// <returns>True when every value carried by the option word is allowed.</returns>
+    private static bool OptionValuesAllowed(string word, string shortValueLetters, Func<string, bool> argumentAllowed)
+    {
+        if (word.StartsWith("--", StringComparison.Ordinal))
+        {
+            var equals = word.IndexOf('=', StringComparison.Ordinal);
+            return equals < 0 || equals == word.Length - 1 || argumentAllowed(word[(equals + 1)..]);
+        }
+
+        for (var index = 1; index < word.Length - 1; index++)
+        {
+            if (shortValueLetters.Contains(word[index], StringComparison.Ordinal) && !argumentAllowed(word[(index + 1)..]))
             {
                 return false;
             }
