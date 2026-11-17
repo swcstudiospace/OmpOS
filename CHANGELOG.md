@@ -8,6 +8,27 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-11-17
+
+### Added
+- Herdr session client: `HerdrCliSessionClient` runs create, status, list and terminate against the installed herdr CLI; the live test passes on a host with herdr (`AUTONOGRAMMER_LIVE_HERDR=1`).
+- Provider catalogue: `scaleway` (`SCW_SECRET_KEY`), `meta` (`MODEL_API_KEY`) and three regional xiaomi rows (cn, sgp, ams), aligned to omp 18.22.0.
+
+### Changed
+- Herdr pause, resume, attach and detach report unsupported, because herdr 0.9.5 has no such commands; they no longer fake success.
+- Trust All skips quarantined, disabled and not-applicable hooks (behaviour change).
+- A cowork launch with contributed overlay entries writes `omp-overlay.yml` (behaviour change).
+- Key-less omp-native rows (mistral-vibe-plan, kimi-code) refuse a credential write.
+
+### Fixed
+- Shell auto-review: known-safe reads refuse unexpanded `$` and `~user`; a chained allow rule approves only when every segment matches; `find -exec` and `-ok` are expanded; the ACP kind is read before the MCP name.
+- ACP: a turn cancel releases a parked permission; a read-then-write keeps CRLF line endings.
+- Native: a late Allow after a denial stays denied; connector saves keep deny rules; git mention diffs refuse secret-looking files; plugin-root skills are readable.
+- MCP consent shows the full command, and a reload clears a pending consent.
+- Sandbox: a failed agentOS start tears down its actor; podman follow-mode logs finish when the container exits.
+- Memory: a pause is re-checked under the account lock before unkeyed writes.
+- Launch: contributed overlay entries are written to the launch file.
+
 ## [0.18.0] - 2026-11-17
 
 ### Added
@@ -423,7 +444,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.18.0...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.0...HEAD
+[0.19.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.3...v0.17.0
 [0.16.3]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.2...v0.16.3
