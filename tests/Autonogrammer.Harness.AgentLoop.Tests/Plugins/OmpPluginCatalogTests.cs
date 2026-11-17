@@ -60,7 +60,7 @@ public sealed class OmpPluginCatalogTests
     public void EachPluginReportsAsItsOwnStageSource()
     {
         OmpPluginCatalog.BuiltIn.Select(plugin => plugin.StageSource).ShouldBe(
-            [StageSource.Ultrathink, StageSource.Swarm, StageSource.Substrate, StageSource.Gsd, StageSource.Omp]);
+            [StageSource.Ultrathink, StageSource.Swarm, StageSource.Substrate, StageSource.Gsd, StageSource.Realm]);
     }
 
     [Fact]

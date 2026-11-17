@@ -53,7 +53,7 @@ public sealed class PluginConnectionStageSourceTests
         await run.StepAsync(2).ConfigureAwait(true);
 
         run.Events.Select(e => e.StageId).ShouldBe(["connection:ultrathink", "connection:swarm", "connection:substrate", "connection:gsd", "connection:realm"]);
-        run.Events.Select(e => e.Source).ShouldBe([StageSource.Ultrathink, StageSource.Swarm, StageSource.Substrate, StageSource.Gsd, StageSource.Omp]);
+        run.Events.Select(e => e.Source).ShouldBe([StageSource.Ultrathink, StageSource.Swarm, StageSource.Substrate, StageSource.Gsd, StageSource.Realm]);
         run.Events.Select(e => e.Title).ShouldBe(["Ultrathink connection", "Agent Swarm connection", "Agent Substrate connection", "GSD connection", "Realm connection"]);
         run.Events.ShouldAllBe(e => e.Status == StageStatus.Pending && e.Detail == "Waiting for omp to report its plugins" && e.SessionId == "s-1");
         Directory.Exists(scope.SessionStateDirectory).ShouldBeFalse();
