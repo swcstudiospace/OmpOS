@@ -140,7 +140,7 @@ How it works:
 
 What is verified (2026-10-26, Linux, real omp 18.12.6, no model turn): the probes in `docs/runbooks/evidence/phase-48-omp-plugins-2026-10-26/` (exactly-once loading, the interactive omp with the planned arguments, the connection report and heartbeat in both modes); the live tests `LiveOmpHandshakeTests` (engine session: all four plugins connected, fresh heartbeat, mode `rpc`) and `LiveOmpTerminalTests` (interactive omp in the PTY: all four connected, fresh heartbeat, mode `tui`, closes on two Ctrl+C once the TUI is quiet), tagged `Category=Live` and excluded from the gate; the planner, terminal and degraded-path tests of the gate.
 
-What is not verified: a live model turn (OD-07); one application run showing all five plugins connected in the row (Realm was added on 2026-11-17 and is not in any recorded run); a run against a real Substrate server; the user's real credentials with this launch recipe; Windows, macOS, Android and the hosted deployments. The checklist is in the [agent loop runbook](runbooks/agent-loop.md#evidence-to-record).
+What is not verified: a live model turn (OD-07); one application run showing all five plugins connected in the row; a run against a real Substrate server; the user's real credentials with this launch recipe; Windows, macOS, Android and the hosted deployments. Verified on 2026-11-17 without a model turn: the opt-in live handshake (`LiveOmpHandshakeTests`, Isolated profile, omp 18.22.0) connects all five plugins once the host Realm config is shared into the isolated home (`RealmHostConfig`). The checklist is in the [agent loop runbook](runbooks/agent-loop.md#evidence-to-record).
 
 ## Host requirements
 

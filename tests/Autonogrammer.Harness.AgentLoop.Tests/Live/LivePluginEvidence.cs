@@ -46,6 +46,12 @@ internal static class LivePluginEvidence
             Profile = AgentLoopProfile.Isolated,
             IsolatedHomeDirectory = sandbox.OmpHome,
         };
+        var hostRealmConfig = RealmHostConfig.ResolveHostPath(Environment.GetEnvironmentVariable);
+        if (hostRealmConfig is not null)
+        {
+            // The isolated profile points HOME and XDG_CONFIG_HOME at the sandbox. Realm needs its host config there; the owner decided to share it.
+            RealmHostConfig.ShareInto(sandbox.OmpHome, hostRealmConfig);
+        }
 
         var plugins = settings.ResolveBuiltInPlugins();
         foreach (var plugin in plugins.Where(plugin => settings.IsEnabled(plugin.Descriptor.Id)))
@@ -61,7 +67,7 @@ internal static class LivePluginEvidence
         var plan = OmpLaunchPlanner.Plan(settings, plugins, sessionId, sandbox.Workspace, graphId: null);
         plan.LoadedPluginIds.ShouldBe(
             OmpPluginCatalog.BuiltIn.Select(static descriptor => descriptor.Id).ToArray(),
-            customMessage: "the plan must load all four plugins in composition order: " + string.Join("; ", plan.PlanningEvents.Select(static e => e.Detail)));
+            customMessage: "the plan must load all five plugins in composition order: " + string.Join("; ", plan.PlanningEvents.Select(static e => e.Detail)));
         plan.Environment.ContainsKey(OmpLaunchPlanner.SteerDirectoryVariable).ShouldBeTrue("the plan sets no AUTONOGRAMMER_STEER_DIR.");
         plan.Environment.ContainsKey(OmpLaunchPlanner.ConnectionFileVariable).ShouldBeTrue("the plan sets no AUTONOGRAMMER_CONNECTION_FILE.");
         return plan;
