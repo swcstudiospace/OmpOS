@@ -53,8 +53,11 @@ public sealed class McpServerSpec
     /// <summary>Gets the variable references that could not be expanded, without <c>${</c> and <c>}</c>. Names only.</summary>
     public IReadOnlyList<string> UnresolvedVariables { get; init; } = [];
 
-    /// <summary>Gets the command line as written, before expansion, for the consent prompt; or the host of a remote server. No secret is expanded into it.</summary>
+    /// <summary>Gets the command line as written, cut short for a list; or the scheme and host of a remote server. No secret is expanded into it.</summary>
     public string CommandPreview { get; init; } = string.Empty;
+
+    /// <summary>Gets the command line as written, in full and before expansion, for the consent prompt, which shows everything the approval covers. For a remote server, the same host text as <see cref="CommandPreview"/>.</summary>
+    public string CommandText { get; init; } = string.Empty;
 
     /// <summary>Gets the consent identity: a hash of the declared command, arguments, environment, URL and headers as written. See <see cref="McpConsentIdentity"/>.</summary>
     public required string ConsentIdentity { get; init; }

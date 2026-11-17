@@ -16,10 +16,10 @@ namespace Autonogrammer.Native.Tests.Mcp;
 public sealed class McpPageViewTests
 {
     private static McpServerEntry NeedsConsent() =>
-        new("tool", "stdio", McpEntryScope.Project, ".cursor/mcp.json", McpServerStatusKind.NeedsConsent, null, null, "node ./tool.js --serve", ["TOOL_TOKEN"], [], true, false, true, false, false);
+        new("tool", "stdio", McpEntryScope.Project, ".cursor/mcp.json", McpServerStatusKind.NeedsConsent, null, null, "node ./tool.js --serve", "node ./tool.js --serve", ["TOOL_TOKEN"], [], true, false, true, false, false);
 
     private static McpServerEntry Ready() =>
-        new("files", "http", McpEntryScope.User, "~/.cursor/mcp.json", McpServerStatusKind.Configured, null, null, "https://files.example.com", [], ["Authorization"], true, true, false, false, false);
+        new("files", "http", McpEntryScope.User, "~/.cursor/mcp.json", McpServerStatusKind.Configured, null, null, "https://files.example.com", "https://files.example.com", [], ["Authorization"], true, true, false, false, false);
 
     private static (McpPageView View, McpSettingsViewModel Model, Window Window) Open(ScriptedMcpPageSource source)
     {

@@ -170,8 +170,9 @@ internal sealed class McpServerReader
         }
 
         NoteIgnoredFields(entry, stdio: true);
-        var preview = Truncate(rawArgs.Count == 0 ? rawCommand : rawCommand + " " + string.Join(' ', rawArgs));
-        return Build(McpTransportKind.Stdio, entry, preview, command, args, env, null, new Dictionary<string, string>(StringComparer.Ordinal), rawCommand, rawArgs, rawEnv, null, new Dictionary<string, string>(StringComparer.Ordinal));
+        var commandLine = rawArgs.Count == 0 ? rawCommand : rawCommand + " " + string.Join(' ', rawArgs);
+        var preview = Truncate(commandLine);
+        return Build(McpTransportKind.Stdio, entry, preview, commandLine, command, args, env, null, new Dictionary<string, string>(StringComparer.Ordinal), rawCommand, rawArgs, rawEnv, null, new Dictionary<string, string>(StringComparer.Ordinal));
     }
 
     private McpServerSpec? ReadRemote(JsonElement entry, McpTransportKind transport)
@@ -225,13 +226,14 @@ internal sealed class McpServerReader
 
         NoteIgnoredFields(entry, stdio: false);
         var preview = url is null ? "(URL has unresolved variables)" : url.GetLeftPart(UriPartial.Authority);
-        return Build(transport, entry, preview, null, [], new Dictionary<string, string>(StringComparer.Ordinal), url, headers, null, [], new Dictionary<string, string>(StringComparer.Ordinal), rawUrl, rawHeaders);
+        return Build(transport, entry, preview, preview, null, [], new Dictionary<string, string>(StringComparer.Ordinal), url, headers, null, [], new Dictionary<string, string>(StringComparer.Ordinal), rawUrl, rawHeaders);
     }
 
     private McpServerSpec Build(
         McpTransportKind transport,
         JsonElement entry,
         string preview,
+        string commandText,
         string? command,
         List<string> args,
         Dictionary<string, string> env,
@@ -279,6 +281,7 @@ internal sealed class McpServerReader
             UsesEnvironmentVariables = _usedEnvironment,
             UnresolvedVariables = [.. _unresolved.Distinct(StringComparer.Ordinal)],
             CommandPreview = preview,
+            CommandText = commandText,
             ConsentIdentity = McpConsentIdentity.Compute(transport, rawCommand, rawArgs, rawEnv, rawUrl, rawHeaders),
         };
     }

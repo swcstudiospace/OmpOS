@@ -71,7 +71,7 @@ internal sealed class ScriptedMcpPageSource : IMcpSettingsSource
     public Task<string> AddTemplateAsync(McpTemplateChoice choice, string name, CancellationToken cancellationToken)
     {
         Calls.Add("template " + choice + " " + name);
-        _servers.Add(new McpServerEntry(name, "stdio", McpEntryScope.Project, ".autonogrammer/mcp.json", McpServerStatusKind.Disabled, "Switched off in Autonogrammer.", null, "npx -y replace-with-mcp-server-package", [], [], false, false, true, false, false));
+        _servers.Add(new McpServerEntry(name, "stdio", McpEntryScope.Project, ".autonogrammer/mcp.json", McpServerStatusKind.Disabled, "Switched off in Autonogrammer.", null, "npx -y replace-with-mcp-server-package", "npx -y replace-with-mcp-server-package", [], [], false, false, true, false, false));
         return Task.FromResult(".autonogrammer/mcp.json");
     }
 

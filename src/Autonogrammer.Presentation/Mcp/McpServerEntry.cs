@@ -11,7 +11,8 @@ namespace Autonogrammer.Presentation.Mcp;
 /// <param name="Status">The state.</param>
 /// <param name="Reason">The one sentence that explains a failed or switched-off server, or <see langword="null"/>.</param>
 /// <param name="ToolCount">How many tools the server advertised, when known.</param>
-/// <param name="CommandPreview">The command line as written for a stdio server, or the scheme and host for a remote server.</param>
+/// <param name="CommandPreview">The command line as written, cut short for a list, or the scheme and host for a remote server.</param>
+/// <param name="CommandText">The command line as written, in full, or the scheme and host for a remote server. The consent prompt shows it.</param>
 /// <param name="EnvNames">The environment variable names a stdio server receives.</param>
 /// <param name="HeaderNames">The header names a remote server sends.</param>
 /// <param name="IsEnabled">Whether the server is switched on.</param>
@@ -28,6 +29,7 @@ public sealed record McpServerEntry(
     string? Reason,
     int? ToolCount,
     string CommandPreview,
+    string CommandText,
     IReadOnlyList<string> EnvNames,
     IReadOnlyList<string> HeaderNames,
     bool IsEnabled,
