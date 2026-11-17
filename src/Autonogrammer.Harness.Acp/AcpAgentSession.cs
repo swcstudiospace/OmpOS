@@ -77,6 +77,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
     private readonly AcpHookSignals? _hookSignals;
     private int _endNotified;
     private readonly Dictionary<long, PendingCall> _pending = [];
+    private readonly List<ParkedWait> _parkedWaits = [];
     private long _lastRequestId;
     private PromptTurn? _turn;
     private Task? _pumpTask;
@@ -361,6 +362,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
 
             _machine.TransitionTo(HarnessState.Cancelling);
             turn = active;
+            InterruptTurnLocked(turn);
         }
 
         await SendCancelAsync(turn, cancellationToken).ConfigureAwait(false);
@@ -635,6 +637,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
             }
 
             _disposed = true;
+            CancelParkedWaitsLocked(null);
             turn = _turn;
             sessionId = SessionId;
             closeRemote = sessionId is not null && !_sessionClosed && !_connectionLost;
@@ -1486,8 +1489,9 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
     }
 
     /// <summary>
-    /// Answers a parked permission request once its decision arrives. Runs off the pump. A timeout, a cancelled wait
-    /// or a failing resolver denies the request; a failure to write the answer faults the session, as a dropped frame does.
+    /// Answers a parked permission request once its decision arrives. Runs off the pump. A timeout or a failing resolver denies
+    /// the request. A turn cancel, abandon or dispose cancels the wait instead, so the answer is the cancelled outcome and never an allow.
+    /// A failure to write the answer faults the session, as a dropped frame does.
     /// </summary>
     [SuppressMessage(
         "Design",
@@ -1500,11 +1504,13 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         IPermissionResolver resolver,
         PromptTurn? turn)
     {
+        using var interrupt = ParkPermissionWait(turn);
         var granted = false;
         try
         {
             using var timeout = new CancellationTokenSource(_permissionDecisionTimeout);
-            var decision = await resolver.ResolveAsync(requestEvent, timeout.Token).ConfigureAwait(false);
+            using var wait = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, interrupt.Token);
+            var decision = await resolver.ResolveAsync(requestEvent, wait.Token).ConfigureAwait(false);
             granted = decision == PermissionDecision.Allow;
         }
         catch (OperationCanceledException)
@@ -1516,13 +1522,60 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
             RecordParkedDiagnostic(turn, $"Permission decision failed: {ex.GetType().Name}. Denied.");
         }
 
+        // The wait's source is read under the gate: a cancel, abandon or dispose that landed first has already cancelled it, so
+        // the answer is the cancelled outcome and never an allow.
+        bool cancelled;
+        lock (_gate)
+        {
+            cancelled = interrupt.IsCancellationRequested;
+            _parkedWaits.RemoveAll(parked => parked.Source == interrupt);
+        }
+
         try
         {
-            await SendPermissionOutcomeAsync(id, options, granted, CancellationToken.None).ConfigureAwait(false);
+            await SendPermissionOutcomeAsync(id, options, granted && !cancelled, CancellationToken.None, cancelled).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             FaultAfterLostAnswer(turn, ex);
+        }
+    }
+
+    /// <summary>
+    /// Registers the cancellation source of a permission wait parked on <paramref name="turn"/>. A wait registered after its turn
+    /// was interrupted, or after the session was disposed, starts cancelled, so it can only be answered cancelled.
+    /// </summary>
+    private CancellationTokenSource ParkPermissionWait(PromptTurn? turn)
+    {
+        var interrupt = new CancellationTokenSource();
+        lock (_gate)
+        {
+            _parkedWaits.Add(new ParkedWait(turn, interrupt));
+            if (_disposed || turn?.Interrupted == true)
+            {
+                interrupt.Cancel();
+            }
+        }
+
+        return interrupt;
+    }
+
+    /// <summary>Marks a turn interrupted and cancels the permission waits parked on it, so none of them can answer allow. Guarded by the session gate.</summary>
+    private void InterruptTurnLocked(PromptTurn turn)
+    {
+        turn.Interrupted = true;
+        CancelParkedWaitsLocked(turn);
+    }
+
+    /// <summary>Cancels the permission waits parked on <paramref name="turn"/>, or every parked wait when it is null. Guarded by the session gate.</summary>
+    private void CancelParkedWaitsLocked(PromptTurn? turn)
+    {
+        foreach (var parked in _parkedWaits)
+        {
+            if (turn is null || parked.Turn == turn)
+            {
+                parked.Source.Cancel();
+            }
         }
     }
 
@@ -1543,9 +1596,9 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         }
     }
 
-    private Task SendPermissionOutcomeAsync(long id, IReadOnlyList<AcpFrames.PermissionOption>? options, bool granted, CancellationToken cancellationToken)
+    private Task SendPermissionOutcomeAsync(long id, IReadOnlyList<AcpFrames.PermissionOption>? options, bool granted, CancellationToken cancellationToken, bool cancelled = false)
     {
-        var option = SelectOption(options, granted);
+        AcpFrames.PermissionOption? option = cancelled ? null : SelectOption(options, granted);
         var outcome = option is null
             ? new AcpFrames.PermissionOutcome("cancelled", null)
             : new AcpFrames.PermissionOutcome("selected", option.OptionId);
@@ -1605,15 +1658,15 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
             return;
         }
 
-        var lines = await TryReadFsLinesAsync(id, fullPath).ConfigureAwait(false);
-        if (lines is null)
+        var text = await TryReadFsTextAsync(id, fullPath).ConfigureAwait(false);
+        if (text is null)
         {
             return;
         }
 
         if (_hookGate is not null)
         {
-            var hookVerdict = await AskGateAsync("BeforeReadFile", gate => gate.BeforeReadFileAsync(fullPath, string.Join("\n", lines), CancellationToken.None)).ConfigureAwait(false);
+            var hookVerdict = await AskGateAsync("BeforeReadFile", gate => gate.BeforeReadFileAsync(fullPath, text, CancellationToken.None)).ConfigureAwait(false);
             if (hookVerdict.Denied)
             {
                 await SendFsErrorAsync(id, InvalidParams, $"{FsReadMethod} was denied by a hook: {hookVerdict.DenialText}").ConfigureAwait(false);
@@ -1621,6 +1674,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
             }
         }
 
+        var lines = SplitLinesKeepingTerminators(text);
         var start = (parameters.Line ?? 1) - 1;
         var selected = lines.Skip(start);
         if (parameters.Limit.HasValue)
@@ -1629,12 +1683,12 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         }
 
         await SendFrameAsync(
-            new AcpFrames.Response<AcpFrames.FsReadResult>(id, new AcpFrames.FsReadResult(string.Join("\n", selected))),
+            new AcpFrames.Response<AcpFrames.FsReadResult>(id, new AcpFrames.FsReadResult(string.Concat(selected))),
             AcpJsonContext.Default.ResponseFsReadResult,
             CancellationToken.None).ConfigureAwait(false);
     }
 
-    private async Task<string[]?> TryReadFsLinesAsync(long id, string fullPath)
+    private async Task<string?> TryReadFsTextAsync(long id, string fullPath)
     {
         try
         {
@@ -1644,7 +1698,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
                 return null;
             }
 
-            return await File.ReadAllLinesAsync(fullPath, CancellationToken.None).ConfigureAwait(false);
+            return await File.ReadAllTextAsync(fullPath, CancellationToken.None).ConfigureAwait(false);
         }
         catch (IOException ex)
         {
@@ -1655,6 +1709,37 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         {
             await SendFsErrorAsync(id, InternalError, $"{FsReadMethod} could not read the file: {ex.Message}").ConfigureAwait(false);
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Splits text into lines with the same terminators as <c>File.ReadAllLines</c> (<c>\r\n</c>, <c>\n</c> or <c>\r</c>;
+    /// a final unterminated segment is a line), but keeps each terminator on its line so that concatenating the
+    /// lines reproduces the input exactly.
+    /// </summary>
+    private static IEnumerable<string> SplitLinesKeepingTerminators(string text)
+    {
+        var start = 0;
+        var i = 0;
+        while (i < text.Length)
+        {
+            var c = text[i];
+            i++;
+            if (c == '\r' && i < text.Length && text[i] == '\n')
+            {
+                i++;
+            }
+
+            if (c is '\r' or '\n')
+            {
+                yield return text[start..i];
+                start = i;
+            }
+        }
+
+        if (start < text.Length)
+        {
+            yield return text[start..];
         }
     }
 
@@ -2074,6 +2159,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         var cancel = false;
         lock (_gate)
         {
+            InterruptTurnLocked(turn);
             if (turn.Settled)
             {
                 return;
@@ -2431,5 +2517,11 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
 
         /// <summary>Gets or sets a value indicating whether the turn has ended, normally or not. Guarded by the session gate.</summary>
         public bool Settled { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether the turn was cancelled, abandoned or disposed. Guarded by the session gate.</summary>
+        public bool Interrupted { get; set; }
     }
+
+    /// <summary>A permission wait parked on a turn (null when no turn was active), with the source that cancels it.</summary>
+    private sealed record ParkedWait(PromptTurn? Turn, CancellationTokenSource Source);
 }
