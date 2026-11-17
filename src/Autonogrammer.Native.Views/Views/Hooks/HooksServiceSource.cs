@@ -157,11 +157,19 @@ internal sealed class HooksServiceSource : IHooksPageSource
     /// <inheritdoc />
     public Task ApproveAllAsync(CancellationToken cancellationToken) => GuardAsync(() =>
     {
-        List<EffectiveHook> pending;
+        HooksOverview? overview;
         lock (_gate)
         {
-            pending = [.. (_overview?.Hooks ?? []).Where(static info => !info.IsConsented && info.Hook is { Event: not null } or { IsOmpEvent: true }).Select(static info => info.Hook)];
+            overview = _overview;
         }
+
+        // The rule the page counts with (HookPageRow.State == NeedsConsent): a quarantined, disabled or not-applicable hook is never approved.
+        List<EffectiveHook> pending =
+        [
+            .. (overview?.Hooks ?? [])
+                .Where(info => new HookPageRow(Map(info), isRunning: false, isSelected: false).State == HookRowState.NeedsConsent)
+                .Select(static info => info.Hook),
+        ];
 
         return _service.ApproveAllAsync(pending, cancellationToken);
     });

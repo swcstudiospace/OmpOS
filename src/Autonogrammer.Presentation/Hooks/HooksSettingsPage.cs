@@ -201,7 +201,7 @@ public sealed class HooksSettingsPage : SettingsPageBase
     /// <returns>A task that completes when the consents are stored and the list is read again.</returns>
     public Task ApproveAllAsync(CancellationToken cancellationToken)
     {
-        var count = _rows.Count(static r => r.State == HookRowState.NeedsConsent);
+        var count = NeedsConsentCount;
         return count == 0
             ? Task.CompletedTask
             : RunActionAsync(_source.ApproveAllAsync, HooksCopy.ApprovedAllAnnouncement(count), cancellationToken);
