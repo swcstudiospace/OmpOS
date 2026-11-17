@@ -38,7 +38,7 @@ Applies to: v0.15.0
 | MCP | Model Context Protocol: servers that give the agent extra tools. |
 | omp | The engine: `omp`, package `@oh-my-pi/pi-coding-agent` (MIT). |
 | omp terminal | omp's terminal UI embedded in a terminal view. |
-| Plugin | One of the four omp extensions Autonogrammer launches with: Ultrathink, Substrate, Swarm, GSD-Core. |
+| Plugin | One of the five omp extensions Autonogrammer launches with: Ultrathink, Substrate, Swarm, Realm, GSD-Core. |
 | Presentation layer | `Autonogrammer.Presentation`: view models with no UI framework, shared by every head. |
 | Profile (remote) | A saved remote environment: an `ssh` host and how to start omp there. |
 | Railway | The hosting platform intended for the API, the cloud agent worker and PostgreSQL. Only a staged private worker runs there (2026-10-28); the API is not deployed. |

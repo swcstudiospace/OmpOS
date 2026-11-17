@@ -77,6 +77,7 @@ internal static class HeadSettingsCopy
         OmpPluginRole.SubagentOrchestrator => "Runs subagents after the planner.",
         OmpPluginRole.SessionSubstrate => "Shares memory, leases, handoffs and the event ledger across sessions.",
         OmpPluginRole.WorkflowEngine => "Drives the phases and plans a session works through.",
+        OmpPluginRole.ExecutionSandbox => "Runs the agent's exec, read, write, list and status tools in a sandbox and guards built-in tools by policy.",
         _ => "Extends omp.",
     };
 

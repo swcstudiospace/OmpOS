@@ -1,5 +1,5 @@
 ---
-description: "The ideas behind Autonogrammer: sessions and agents, the omp engine, the four plugins loop, stages, steering, approvals, changes, and where an agent runs."
+description: "The ideas behind Autonogrammer: sessions and agents, the omp engine, the five plugins loop, stages, steering, approvals, changes, and where an agent runs."
 ---
 
 # Concepts
@@ -25,13 +25,14 @@ Autonogrammer has no model and no agent logic of its own. The engine is **omp** 
 
 Everything model-related is therefore omp's: which providers exist, how a key is stored, what a mode means. Autonogrammer adds the workspace around it: the rail, Kanban, review, steering, Settings, hooks, remote and cloud. See [Choose a model provider](providers-guide.md).
 
-## The four plugins loop
+## The five plugins loop
 
-Every omp process Autonogrammer starts is launched with four plugins loaded once:
+Every omp process Autonogrammer starts is launched with five plugins loaded once:
 
 ```
 prompt -> Ultrathink (plan) -> Swarm (subagents) -> Substrate (session state, steering record)
                       GSD-Core (phase and workflow context across all three)
+                      Realm (execution sandbox: exec, read, write, list and status tools)
 ```
 
 | Plugin | Role |

@@ -16,13 +16,14 @@
 * [Local terminal](runbooks/local-terminal.md)
 * [Cloud terminals on Railway](runbooks/cloud-terminals.md)
 * [Cowork browser use](runbooks/browser-use.md)
-* [Agent loop and the four plugins](runbooks/agent-loop.md)
+* [Agent loop and the five plugins](runbooks/agent-loop.md)
 
 ## Concepts
 
 * [Concepts](guides/concepts.md)
 * [Architecture](architecture.md)
 * [Plugins](plugins.md)
+* [Plugin upgrades and the contract gate](runbooks/plugin-upgrade.md)
 * [Sandbox providers](runbooks/sandbox.md)
 * [Glossary](guides/glossary.md)
 

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "pluginId": "swarm",
+  "source": "submodule",
+  "submodulePath": "plugins/agent-swarm",
+  "pinnedCommit": "1944a6bbbf4a09ffe6569843af7f85bf1937527a",
+  "manifestPath": "omp/package.json",
+  "packageName": "agent-swarm-omp",
+  "packageVersion": null,
+  "licence": null,
+  "ompExtensions": ["./src/index.ts"],
+  "entryFiles": [],
+  "commands": ["swarm"],
+  "tools": ["swarm_assignment", "swarm_catalog", "swarm_gate", "swarm_ingest", "swarm_plan", "swarm_status", "swarm_tool_call", "swarm_transition"],
+  "environmentVariables": ["SWARM_DIR"],
+  "schemaIds": ["swarm.live.v1"],
+  "evidence": [
+    {"name": "swarm command", "path": "omp/src/index.ts", "literal": "pi.registerCommand(\"swarm\""},
+    {"name": "assignment tool", "path": "omp/src/tools.ts", "literal": "name: \"swarm_assignment\""},
+    {"name": "catalog tool", "path": "omp/src/tools.ts", "literal": "name: \"swarm_catalog\""},
+    {"name": "gate tool", "path": "omp/src/tools.ts", "literal": "name: \"swarm_gate\""},
+    {"name": "ingest tool", "path": "omp/src/tools.ts", "literal": "name: \"swarm_ingest\""},
+    {"name": "plan tool", "path": "omp/src/tools.ts", "literal": "name: \"swarm_plan\""},
+    {"name": "status tool", "path": "omp/src/tools.ts", "literal": "name: \"swarm_status\""},
+    {"name": "tool-call tool", "path": "omp/src/tools.ts", "literal": "name: \"swarm_tool_call\""},
+    {"name": "transition tool", "path": "omp/src/tools.ts", "literal": "name: \"swarm_transition\""},
+    {"name": "live schema", "path": "omp/src/swarm_bar.ts", "literal": "export const LIVE_SCHEMA = \"swarm.live.v1\""},
+    {"name": "swarm directory variable", "path": "omp/src/bridge.ts", "literal": "SWARM_DIR"}
+  ]
+}

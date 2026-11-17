@@ -9,7 +9,7 @@ namespace Autonogrammer.Native.Tests.Settings.Head;
 /// <summary>The Plugins page's rows over a plugins root.</summary>
 public sealed class PluginsSettingsSourceTests
 {
-    /// <summary>Four rows in composition order; with every plugin in place all are Found and say which submodule they were pinned from.</summary>
+    /// <summary>Five rows in composition order; with every plugin in place all are Found and say which submodule they were pinned from.</summary>
     [Fact]
     public async Task EveryPluginInPlaceIsFoundInCompositionOrder()
     {
@@ -18,13 +18,14 @@ public sealed class PluginsSettingsSourceTests
 
         var values = await new PluginsSettingsSource(tree.Plugins).LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
-        values.Rows.Select(static row => row.Id).ShouldBe(["ultrathink", "swarm", "substrate", "gsd"]);
+        values.Rows.Select(static row => row.Id).ShouldBe(["ultrathink", "swarm", "substrate", "gsd", "realm"]);
         values.Rows.ShouldAllBe(row => row.IsFound);
         values.Rows.ShouldAllBe(row => row.Availability == PluginRow.FoundAvailability);
         values.Rows[0].Detail.ShouldBe("Pinned submodule plugins/claude-ultrathink.");
         values.Rows[1].Detail.ShouldBe("Pinned submodule plugins/agent-swarm.");
         values.Rows[2].Detail.ShouldBe("Pinned submodule plugins/agent-substrate.");
         values.Rows[3].Detail.ShouldNotBeNull().ShouldContain("plugins/gsd-core-omp", Case.Sensitive);
+        values.Rows[4].Detail.ShouldBe("Pinned submodule plugins/agent-realm.");
         values.Rows.ShouldAllBe(row => row.Role.Length > 0);
     }
 
@@ -36,7 +37,7 @@ public sealed class PluginsSettingsSourceTests
 
         var values = await new PluginsSettingsSource(tree.Plugins).LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
-        values.Rows.Count.ShouldBe(4);
+        values.Rows.Count.ShouldBe(5);
         values.Rows.ShouldAllBe(row => !row.IsFound);
         values.Rows.ShouldAllBe(row => row.Availability == PluginRow.MissingAvailability);
         values.Rows[0].Detail.ShouldNotBeNull().ShouldContain("plugins/claude-ultrathink", Case.Sensitive);

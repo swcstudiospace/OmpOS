@@ -196,7 +196,7 @@ public sealed class SettingsWindowHostTests : IDisposable
         var pages = _windows.Single().Model.Pages;
         pages.OfType<RulesSettingsPage>().Single().Entries.ShouldHaveSingleItem().Title.ShouldBe("r");
         pages.OfType<CommandsSettingsPage>().Single().Entries.ShouldNotBeEmpty();
-        pages.OfType<PluginsPage>().Single().Rows.Count.ShouldBe(4);
+        pages.OfType<PluginsPage>().Single().Rows.Count.ShouldBe(5);
         pages.OfType<TabPage>().Single().IsEnabled.ShouldBeFalse();
         pages.OfType<GeneralPage>().Single().Motion.ShouldBe(MotionPreference.System);
     }

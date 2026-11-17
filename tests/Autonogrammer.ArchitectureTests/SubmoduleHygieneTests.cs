@@ -16,16 +16,17 @@ public sealed class SubmoduleHygieneTests
         "plugins/claude-ultrathink",
         "plugins/agent-swarm",
         "plugins/agent-substrate",
+        "plugins/agent-realm",
     ];
 
     [Fact]
-    public void GitModules_NamesTheThreePluginSubmodulesByHttpsRemoteUrl()
+    public void GitModules_NamesTheFourPluginSubmodulesByHttpsRemoteUrl()
     {
         var repoRoot = ProjectGraphChecker.FindRepoRoot();
         var entries = ParseGitModules(Path.Combine(repoRoot, ".gitmodules"));
 
         entries.Select(static entry => entry.Path).Order(StringComparer.Ordinal)
-            .ShouldBe(ExpectedSubmodulePaths.Order(StringComparer.Ordinal), "the plugin submodules are exactly the three sibling projects");
+            .ShouldBe(ExpectedSubmodulePaths.Order(StringComparer.Ordinal), "the plugin submodules are exactly the four sibling projects");
 
         foreach (var entry in entries)
         {

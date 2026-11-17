@@ -97,6 +97,7 @@ public sealed class TerminalSessionTests
                     "-e", tree.PluginPath("agent-substrate/packages/projector/omp/substrate-status.ts"),
                     "-e", tree.PluginPath("agent-substrate/packages/projector/omp/substrate-skills.ts"),
                     "-e", tree.PluginPath("gsd-core-omp"),
+                    "-e", tree.PluginPath("agent-realm"),
                 ];
                 fake.Arguments().ShouldBe(expectedArguments);
                 fake.Arguments().ShouldNotContain("acp", StringComparer.Ordinal);

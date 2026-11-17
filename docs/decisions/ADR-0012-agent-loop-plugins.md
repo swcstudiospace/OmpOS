@@ -78,3 +78,14 @@ Source: the code and the recorded runs of 2026-10-26 (`.planning/phases/44-*` to
 - **The Inspector is gone (DR-1, built).** The default Agent Panel has a session rail, a thread, a composer, the header chips and the one-line connection row. `AgentPanelLayoutTests.TheDefaultPanelHasNoRegionBesideRailThreadAndComposer` pins that no inspector control exists. Task context and steering history belong on the Kanban card (Phase 39). Phase 47 (web head) is deferred (`.planning/phases/47-agent-panel-on-the-web-head/47-DEFERRED.md`).
 
 Consequences: D3 now reads "chat sessions steer through omp's native `_session/steering`, terminals and the fallback through the Autonogrammer inbox, Substrate records only". OQ-81 stays open until an `injected` delivery is recorded. No other accepted decision changes.
+
+## Update 2026-11-17
+
+Source: the connector work of 2026-11-17 (release 0.18.0): Realm as a fifth plugin and the recorded plugin contracts. The accepted text and the earlier updates are unchanged. Where this section and the text above disagree, this section governs.
+
+- **Realm is a fifth plugin and a fourth submodule (amends D2 and D7).** `plugins/agent-realm` is a git submodule (`https://github.com/swcstudiospace/realm.git`, `branch = main`) pinned to `f28a3acc319d9805c2d2487c05d12a075a2c8ad7`. It is an omp extension in package mode (`omp.extensions` points at `./dist/src/omp/extension.js`), launched as `-e plugins/agent-realm` after `plugins/gsd-core-omp`. Its `dist/` is built on the host (`npm ci && npm run build`, Node 22.13 or newer) and is not tracked. The owner chose full extension mode on 2026-11-17.
+- **Realm's default policy is fail-closed, and Autonogrammer keeps it.** The policy schema defaults to `fail-closed` (`src/core/policy.schema.json`). While Realm's daemon is not active the plugin removes the omp built-ins it can replace and refuses guarded calls with `REALM_NOT_ACTIVE`. Changing that default is a product decision and needs its own record.
+- **Transport is unchanged (D1, D7).** The plugins are not run as child processes that speak JSON-RPC to the host. That alternative contradicts D1 and D7 and was rejected. Observation remains files, HTTP and the connection report.
+- **Recorded contracts.** `tests/Autonogrammer.Harness.AgentLoop.Tests/Fixtures/OmpPluginContracts/<plugin>.json` records each plugin's commands, tools, environment variables, schema identifiers, package identity and evidence literals. Offline tests fail when a pin, a catalog descriptor or a fixture disagrees. Live tests read the sources at the pin. An upgrade changes the pin and its fixture together ([plugin upgrades runbook](../runbooks/plugin-upgrade.md)).
+- **Not verified.** The five plugins connected in one omp session with Realm; a live model turn; Realm's daemon behaviour against a real workspace.
+

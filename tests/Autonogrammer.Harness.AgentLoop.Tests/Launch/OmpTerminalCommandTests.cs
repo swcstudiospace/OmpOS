@@ -26,6 +26,7 @@ public sealed class OmpTerminalCommandTests
         "-e", "/p/agent-substrate/packages/projector/omp/substrate-status.ts",
         "-e", "/p/agent-substrate/packages/projector/omp/substrate-skills.ts",
         "-e", "/p/gsd-core-omp",
+        "-e", "/p/agent-realm",
     ];
 
     private static AgentLoopSettings Settings() => new()
@@ -153,6 +154,7 @@ public sealed class OmpTerminalCommandTests
             "-e", "/p/agent-substrate/packages/projector/omp/substrate-status.ts",
             "-e", "/p/agent-substrate/packages/projector/omp/substrate-skills.ts",
             "-e", "/p/gsd-core-omp",
+            "-e", "/p/agent-realm",
             "hello",
         ]);
         var stageEvent = command.PlanningEvents.ShouldHaveSingleItem();
@@ -203,7 +205,7 @@ public sealed class OmpTerminalCommandTests
         var text = command.ToString();
 
         text.ShouldBe(
-            "OmpTerminalCommand { Arguments = 14, Environment = [AUTONOGRAMMER_CONNECTION_FILE, AUTONOGRAMMER_STEER_DIR, SUBSTRATE_OMP_PENDING_DIR, SUBSTRATE_URL, " +
+            "OmpTerminalCommand { Arguments = 16, Environment = [AUTONOGRAMMER_CONNECTION_FILE, AUTONOGRAMMER_STEER_DIR, SUBSTRATE_OMP_PENDING_DIR, SUBSTRATE_URL, " +
             "SWARM_CLAUDE_STATE_DIR, SWARM_DIR, SWARM_GSD_STATE_FILE, ULTRATHINK_STATE_DIR] }");
         text.ShouldNotContain("native-secret-id", Case.Sensitive);
         text.ShouldNotContain("private prompt text", Case.Sensitive);
@@ -237,8 +239,8 @@ public sealed class OmpTerminalCommandTests
     [Fact]
     public void ThePlanListsExactlyTheLoadedPluginsInCompositionOrder()
     {
-        Plan().LoadedPluginIds.ShouldBe(["ultrathink", "swarm", "substrate", "gsd"]);
-        Plan(plugins: PlannerFixtures.AllReady().Reverse().ToList()).LoadedPluginIds.ShouldBe(["ultrathink", "swarm", "substrate", "gsd"]);
-        Plan(Settings() with { SwarmEnabled = false, SubstrateReachable = false }).LoadedPluginIds.ShouldBe(["ultrathink", "gsd"]);
+        Plan().LoadedPluginIds.ShouldBe(["ultrathink", "swarm", "substrate", "gsd", "realm"]);
+        Plan(plugins: PlannerFixtures.AllReady().Reverse().ToList()).LoadedPluginIds.ShouldBe(["ultrathink", "swarm", "substrate", "gsd", "realm"]);
+        Plan(Settings() with { SwarmEnabled = false, SubstrateReachable = false }).LoadedPluginIds.ShouldBe(["ultrathink", "gsd", "realm"]);
     }
 }

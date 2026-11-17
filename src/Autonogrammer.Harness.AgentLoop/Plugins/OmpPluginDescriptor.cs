@@ -56,6 +56,7 @@ public sealed record OmpPluginDescriptor
         OmpPluginRole.SubagentOrchestrator => StageSource.Swarm,
         OmpPluginRole.SessionSubstrate => StageSource.Substrate,
         OmpPluginRole.WorkflowEngine => StageSource.Gsd,
+        OmpPluginRole.ExecutionSandbox => StageSource.Realm,
         _ => StageSource.Omp,
     };
 }

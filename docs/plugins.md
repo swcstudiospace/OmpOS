@@ -1,16 +1,16 @@
 ---
-description: "The four omp plugins Autonogrammer launches with every session: Ultrathink, Substrate, Swarm and GSD-Core, how they are pinned, health, steering and licence facts."
+description: "The five omp plugins Autonogrammer launches with every session: Ultrathink, Substrate, Swarm, Realm and GSD-Core, how they are pinned, health, steering, the contract gate and licence facts."
 ---
 
 # Plugins
 
-Status: Built; verified without a model turn (no live turn has been run)
+Status: Built; verified without a model turn (no live turn has been run). Realm and the contract gate were added on 2026-11-17 and are verified offline only.
 
 Last verified: 2026-10-28
 
-Applies to: v0.15.0
+Applies to: v0.18.0
 
-Autonogrammer runs four plugins inside the omp engine. Three are sibling projects pinned as git submodules under `plugins/`; one is first-party and tracked in this repository. All four are omp extensions: Autonogrammer launches omp with them, observes what they write, and shows what they expose in the default Cursor-style Agent Panel (session rail, thread, composer, and the one-line plugin connection row under the thread header). The panel has no stage panels or inspector of its own (DR-1, [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md#update-2026-10-26)); task context and steering history belong on the Kanban tab card (Phase 39). The plugins are connected to every omp process the application starts, engine sessions over ACP and omp terminals, as described in "Plugins in omp terminals" below (verified without a model turn on Linux; that section lists what is not verified). Autonogrammer never copies, forks or edits their source. Decision record: [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md). Evidence: [docs/plans/agent-loop/](plans/agent-loop/README.md).
+Autonogrammer runs five plugins inside the omp engine. Four are sibling projects pinned as git submodules under `plugins/`; one is first-party and tracked in this repository. All five are omp extensions: Autonogrammer launches omp with them, observes what they write, and shows what they expose in the default Cursor-style Agent Panel (session rail, thread, composer, and the one-line plugin connection row under the thread header). The panel has no stage panels or inspector of its own (DR-1, [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md#update-2026-10-26)); task context and steering history belong on the Kanban tab card (Phase 39). The plugins are connected to every omp process the application starts, engine sessions over ACP and omp terminals, as described in "Plugins in omp terminals" below (verified without a model turn on Linux; that section lists what is not verified). Autonogrammer never copies, forks or edits their source. Decision record: [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md), including the 2026-11-17 update for Realm and the contract gate. Evidence: [docs/plans/agent-loop/](plans/agent-loop/README.md).
 
 ## The loop
 
@@ -25,6 +25,7 @@ prompt -> Ultrathink (plan) -> Swarm (subagents) -> Substrate (session state, st
 | Swarm | A 30-agent subagent orchestrator (agents `a01` to `a30`, tools `swarm_*`, command `/swarm`) with a Python runtime. Runs after Ultrathink. Writes `.swarm/live.json` and `.swarm/events.jsonl`, which Autonogrammer reads. |
 | Substrate | Cross-session state: an MCP server (`POST /brief`, `POST /mcp`, `GET /healthz`), two omp projector extensions (`substrate-status.ts`, `substrate-skills.ts`), leases, handoffs, governed memory and an append-only event ledger keyed by a Graph ID `ut-<ts36>-<8hex>`. Autonogrammer reads shared memory and lessons and records steering actions. |
 | GSD-Core | Phase and workflow context (`.planning/`). GSD-Core upstream has no omp runtime, so `plugins/gsd-core-omp` is a thin Autonogrammer-owned plugin that exposes the installed GSD-Core agent profiles to omp's `task` tool and reports health. It copies nothing from GSD-Core. |
+| Realm | Execution sandbox: an omp extension that starts the Realm daemon when none answers and registers the `exec`, `read`, `write`, `list` and `status` tools. Under its default `fail-closed` policy it removes the omp built-ins it can replace (`src/omp/host-tools.ts`) and refuses guarded calls with `REALM_NOT_ACTIVE` while the daemon is not active (`src/omp/plugin.ts`). |
 
 ## Where each plugin lives
 
@@ -33,6 +34,7 @@ prompt -> Ultrathink (plan) -> Swarm (subagents) -> Substrate (session state, st
 | `plugins/claude-ultrathink` | `https://github.com/swcstudiospace/ultrathink.git` | `71101ed069a66b3862fa5da5b01995a60c2160c2` (tracks `main`) | AGPL-3.0-or-later | public |
 | `plugins/agent-swarm` | `https://github.com/swcstudiospace/swarm.git` | `1944a6bbbf4a09ffe6569843af7f85bf1937527a` (on branch `fix/taskstore-update-allowlist`, not `main`; the gitlink on `main` pins it) | no LICENSE file in the repository | public |
 | `plugins/agent-substrate` | `https://github.com/swcstudiospace/substrate.git` | `754c51a17a9e6ffbc222d04bdaf4e783b4eca720` (tracks `main`) | no LICENSE file in the repository | private |
+| `plugins/agent-realm` | `https://github.com/swcstudiospace/realm.git` | `f28a3acc319d9805c2d2487c05d12a075a2c8ad7` (tracks `main`) | AGPL-3.0-only (`package.json` and `LICENSE`) | not checked |
 | `plugins/gsd-core-omp` | tracked in this repository, not a submodule | n/a | Autonogrammer-owned; `AGPL-3.0-or-later` like Autonogrammer (see Licence facts) | n/a |
 
 `.gitmodules` is the source of truth for URL and branch; the pin is the commit recorded in the Autonogrammer tree (`git submodule status`). The three repositories were renamed upstream: `claude-ultrathink` to `ultrathink`, `agent-swarm` to `swarm`, `agent-substrate` to `substrate`. The old URLs redirect. The directory names under `plugins/` keep the old names the team uses, so paths, descriptors and docs say `claude-ultrathink`, `agent-swarm` and `agent-substrate`.
@@ -51,11 +53,13 @@ git submodule update --init --recursive
 
 `./bootstrap.sh` runs the same command and only warns when it fails; the gate does not need the plugin contents. An uninitialised plugin is not an error at startup: the panel opens, the plugin's stage shows Unavailable, and the exception message names the plugin, the path and the fix `git submodule update --init --recursive plugins/<name>`.
 
+Realm also needs a build before its extension loads: `npm ci && npm run build` inside `plugins/agent-realm`, on Node 22.13 or newer. Its `dist/` directory is not in the repository, so until that build runs the plugin is not loaded.
+
 ### Access to the private substrate repository
 
 `swcstudiospace/substrate` is private. A clone without read access fails on that one submodule. Fix: authenticate to GitHub (for example `gh auth login`) with an account that can read `swcstudiospace/substrate`, then run `git submodule update --init --recursive plugins/agent-substrate`. Without it the substrate plugin stays Unavailable and sessions run without shared memory, leases or a steering record.
 
-In CI, the `build-test` job in `.github/workflows/ci.yml` checks out the two public submodules always, and checks out the private one only when the repository secret `SUBMODULE_TOKEN` exists. The secret holds a read-only token for `swcstudiospace/substrate`. It reaches git only through a masked `http.https://github.com/.extraheader` setting for that one command. When the secret is missing, the job prints a warning and continues. Who provisions the token is open: [OQ-63](open-questions.md). The container build context ignores `plugins/` (`.containerignore`), so no image contains plugin source.
+In CI, the `build-test` job in `.github/workflows/ci.yml` checks out the three public submodules always (`claude-ultrathink`, `agent-swarm` and `agent-realm`), and checks out the private one only when the repository secret `SUBMODULE_TOKEN` exists. The secret holds a read-only token for `swcstudiospace/substrate`. It reaches git only through a masked `http.https://github.com/.extraheader` setting for that one command. When the secret is missing, the job prints a warning and continues. Who provisions the token is open: [OQ-63](open-questions.md). The container build context ignores `plugins/` (`.containerignore`), so no image contains plugin source.
 
 ## Bumping a pin
 
@@ -90,7 +94,8 @@ omp acp --no-extensions \
   -e plugins/agent-swarm/omp \
   -e plugins/agent-substrate/packages/projector/omp/substrate-status.ts \
   -e plugins/agent-substrate/packages/projector/omp/substrate-skills.ts \
-  -e plugins/gsd-core-omp
+  -e plugins/gsd-core-omp \
+  -e plugins/agent-realm
 ```
 
 (Autonogrammer passes absolute paths.) Notes, each confirmed by a live probe without a model turn ([dossier-omp-loading.md](plans/agent-loop/dossier-omp-loading.md)):
@@ -135,7 +140,7 @@ How it works:
 
 What is verified (2026-10-26, Linux, real omp 18.12.6, no model turn): the probes in `docs/runbooks/evidence/phase-48-omp-plugins-2026-10-26/` (exactly-once loading, the interactive omp with the planned arguments, the connection report and heartbeat in both modes); the live tests `LiveOmpHandshakeTests` (engine session: all four plugins connected, fresh heartbeat, mode `rpc`) and `LiveOmpTerminalTests` (interactive omp in the PTY: all four connected, fresh heartbeat, mode `tui`, closes on two Ctrl+C once the TUI is quiet), tagged `Category=Live` and excluded from the gate; the planner, terminal and degraded-path tests of the gate.
 
-What is not verified: a live model turn (OD-07); one application run showing all four plugins connected in the row; a run against a real Substrate server; the user's real credentials with this launch recipe; Windows, macOS, Android and the hosted deployments. The checklist is in the [agent loop runbook](runbooks/agent-loop.md#evidence-to-record).
+What is not verified: a live model turn (OD-07); one application run showing all five plugins connected in the row; a run against a real Substrate server; the user's real credentials with this launch recipe; Windows, macOS, Android and the hosted deployments. Verified on 2026-11-17 without a model turn: the opt-in live handshake (`LiveOmpHandshakeTests`, Isolated profile, omp 18.22.0) connects all five plugins once the host Realm config is shared into the isolated home (`RealmHostConfig`). The checklist is in the [agent loop runbook](runbooks/agent-loop.md#evidence-to-record).
 
 ## Host requirements
 
@@ -147,6 +152,7 @@ What is not verified: a live model turn (OD-07); one application run showing all
 | Substrate (omp extensions) | the omp runtime only; the extensions fail soft when no server is reachable |
 | Substrate (server, only to run one) | Bun 1.4.0 and PostgreSQL 16 for the index (graphs, leases, memory); the event ledger (`events_*`, handoffs, drift) needs GreptimeDB over HTTP SQL. Without Postgres, `graph_claim` and `memory_write` fail. |
 | GSD-Core (`gsd-core-omp`) | `node` >= 24 (`gsd-tools.cjs` requires it) and an installed GSD-Core (Kimi layout at `~/.agents/gsd-core`, or `GSD_CORE_HOME`) |
+| Realm | `node` >= 22.13 (its `engines` field), and `npm ci && npm run build` inside `plugins/agent-realm` once, because `dist/` is not in the repository. The extension starts the Realm daemon detached when none answers. |
 
 Autonogrammer does not start a Substrate server.
 
@@ -160,6 +166,7 @@ Every degradation is a stage event with status Degraded or Unavailable and a pla
 | Swarm | The run is single-agent. |
 | Substrate | No steering record, no shared memory; the UI says so. An unhealthy server is omitted from `session/new.mcpServers`, because omp fails `session/new` when any MCP server is unreachable. |
 | GSD-Core | Task context shows the phase as unknown. |
+| Realm | Not loaded (no build, or submodule not initialised): the omp built-in tools are unchanged and no sandbox applies. Loaded with the daemon not active under the default `fail-closed` policy: guarded calls fail with `REALM_NOT_ACTIVE`. |
 | Any submodule not initialised | `SubmoduleNotInitializedException` naming the plugin, the path and `git submodule update --init --recursive plugins/<name>`. |
 
 ## Steering
@@ -180,6 +187,18 @@ These are facts, not legal advice. Autonogrammer itself is `AGPL-3.0-or-later` (
 - Autonogrammer and `plugins/gsd-core-omp` are `AGPL-3.0-or-later`.
 - `claude-ultrathink` is AGPL-3.0-or-later. `agent-swarm` and `agent-substrate` have no LICENSE file; `agent-substrate` is private.
 - The plugins are separate programs launched as omp extensions. They are pinned by reference. Their source is not copied or linked into Autonogrammer binaries, and the container build context excludes `plugins/`.
+- `agent-realm` is `AGPL-3.0-only` (its `package.json` and `LICENSE`). Autonogrammer and the first-party plugin are `AGPL-3.0-or-later`. The plugin is a separate program launched as an omp extension, not linked. No owner decision on how the two identifiers combine in one distribution is recorded; the open licence questions are in [OQ-102](open-questions.md).
+
+## Contract gate and upgrades
+
+Each plugin's surface is recorded in `tests/Autonogrammer.Harness.AgentLoop.Tests/Fixtures/OmpPluginContracts/<plugin>.json`: the commands and tools it registers, the environment variables and schema identifiers it uses, its package identity, the omp extension entries it declares, its pinned commit and evidence literals found in its source at that commit. `OmpPluginContractTests` fails when:
+
+- a built-in plugin has no recorded contract, or its recorded commands or tools differ from `OmpPluginCatalog`;
+- a submodule pin differs from its gitlink in the superproject index;
+- an environment variable or schema identifier has no evidence literal;
+- (`Category=Live`, submodules initialised) an evidence literal is missing at the pin, or the manifest at the pin declares a different package or extension entry.
+
+The gate runs in CI without the submodules (`Category!=Live`). An upgrade changes the pin and its contract together: see the [plugin upgrades runbook](runbooks/plugin-upgrade.md).
 
 ## Tests
 

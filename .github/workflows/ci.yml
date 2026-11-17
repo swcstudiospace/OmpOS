@@ -47,7 +47,7 @@ jobs:
         env:
           SUBMODULE_TOKEN: ${{ secrets.SUBMODULE_TOKEN }}
         run: |
-          git submodule update --init --recursive plugins/claude-ultrathink plugins/agent-swarm
+          git submodule update --init --recursive plugins/claude-ultrathink plugins/agent-swarm plugins/agent-realm
           if [ -n "${SUBMODULE_TOKEN:-}" ]; then
             header="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$SUBMODULE_TOKEN" | base64 -w0)"
             echo "::add-mask::$header"

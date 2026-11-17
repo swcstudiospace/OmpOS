@@ -27,6 +27,9 @@ public sealed record AgentLoopSettings
     /// <summary>Gets a value indicating whether the workflow plugin runs.</summary>
     public bool GsdEnabled { get; init; } = true;
 
+    /// <summary>Gets a value indicating whether the execution sandbox plugin is loaded. Its daemon starts with omp, and its policy guards built-in tools.</summary>
+    public bool RealmEnabled { get; init; } = true;
+
     /// <summary>Gets the substrate's base address, or null when none is configured.</summary>
     public Uri? SubstrateEndpoint { get; init; }
 
@@ -70,6 +73,7 @@ public sealed record AgentLoopSettings
         OmpPluginCatalog.SwarmId => SwarmEnabled,
         OmpPluginCatalog.SubstrateId => SubstrateEnabled,
         OmpPluginCatalog.GsdId => GsdEnabled,
+        OmpPluginCatalog.RealmId => RealmEnabled,
         _ => false,
     };
 

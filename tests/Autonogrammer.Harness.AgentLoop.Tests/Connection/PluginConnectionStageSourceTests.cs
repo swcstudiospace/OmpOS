@@ -52,9 +52,9 @@ public sealed class PluginConnectionStageSourceTests
         await using var runLifetime = run.ConfigureAwait(true);
         await run.StepAsync(2).ConfigureAwait(true);
 
-        run.Events.Select(e => e.StageId).ShouldBe(["connection:ultrathink", "connection:swarm", "connection:substrate", "connection:gsd"]);
-        run.Events.Select(e => e.Source).ShouldBe([StageSource.Ultrathink, StageSource.Swarm, StageSource.Substrate, StageSource.Gsd]);
-        run.Events.Select(e => e.Title).ShouldBe(["Ultrathink connection", "Agent Swarm connection", "Agent Substrate connection", "GSD connection"]);
+        run.Events.Select(e => e.StageId).ShouldBe(["connection:ultrathink", "connection:swarm", "connection:substrate", "connection:gsd", "connection:realm"]);
+        run.Events.Select(e => e.Source).ShouldBe([StageSource.Ultrathink, StageSource.Swarm, StageSource.Substrate, StageSource.Gsd, StageSource.Realm]);
+        run.Events.Select(e => e.Title).ShouldBe(["Ultrathink connection", "Agent Swarm connection", "Agent Substrate connection", "GSD connection", "Realm connection"]);
         run.Events.ShouldAllBe(e => e.Status == StageStatus.Pending && e.Detail == "Waiting for omp to report its plugins" && e.SessionId == "s-1");
         Directory.Exists(scope.SessionStateDirectory).ShouldBeFalse();
     }
@@ -71,7 +71,7 @@ public sealed class PluginConnectionStageSourceTests
         ConnectionTestSupport.Write(scope, ConnectionTestSupport.FullReport());
         await run.StepAsync().ConfigureAwait(true);
 
-        foreach (var id in new[] { "ultrathink", "swarm", "substrate", "gsd" })
+        foreach (var id in new[] { "ultrathink", "swarm", "substrate", "gsd", "realm" })
         {
             var latest = Latest(run, id);
             latest.Status.ShouldBe(StageStatus.Succeeded);
@@ -79,9 +79,9 @@ public sealed class PluginConnectionStageSourceTests
             latest.Timestamp.ShouldBe(clock.GetUtcNow());
         }
 
-        run.Events.Count.ShouldBe(8);
+        run.Events.Count.ShouldBe(10);
         await run.StepAsync(3).ConfigureAwait(true);
-        run.Events.Count.ShouldBe(8);
+        run.Events.Count.ShouldBe(10);
     }
 
     [Fact]
@@ -231,12 +231,12 @@ public sealed class PluginConnectionStageSourceTests
 
         var options = PluginConnectionStageSourceOptions.ForPlan(plan);
 
-        options.Plugins.Select(plugin => plugin.Id).ShouldBe(["ultrathink"]);
+        options.Plugins.Select(plugin => plugin.Id).ShouldBe(["ultrathink", "realm"]);
         using var directory = new StageTempDirectory();
         var clock = new StageFakeTimeProvider();
         var run = await StartAsync(new PluginConnectionStageSource(options with { PollInterval = Interval }, clock), directory.Scope(), clock).ConfigureAwait(true);
         await using var runLifetime = run.ConfigureAwait(true);
-        run.Events.ShouldHaveSingleItem().StageId.ShouldBe("connection:ultrathink");
+        run.Events.Select(e => e.StageId).ShouldBe(["connection:ultrathink", "connection:realm"]);
     }
 
     [Fact]
@@ -270,14 +270,14 @@ public sealed class PluginConnectionStageSourceTests
 
         await run.StepAsync().ConfigureAwait(true);
 
-        run.Events.Count.ShouldBe(8);
-        run.Events.Skip(4).ShouldAllBe(e => e.Status == StageStatus.Degraded && e.Detail == "omp has not reported its plugins after 30 s");
+        run.Events.Count.ShouldBe(10);
+        run.Events.Skip(5).ShouldAllBe(e => e.Status == StageStatus.Degraded && e.Detail == "omp has not reported its plugins after 30 s");
 
         ConnectionTestSupport.Write(scope, ConnectionTestSupport.FullReport());
         await run.StepAsync().ConfigureAwait(true);
 
-        run.Events.Count.ShouldBe(12);
-        run.Events.Skip(8).ShouldAllBe(e => e.Status == StageStatus.Succeeded);
+        run.Events.Count.ShouldBe(15);
+        run.Events.Skip(10).ShouldAllBe(e => e.Status == StageStatus.Succeeded);
     }
 
     [Fact]
@@ -385,7 +385,7 @@ public sealed class PluginConnectionStageSourceTests
         var run = await StartAsync(NewSource(clock), scope, clock).ConfigureAwait(true);
         await using var runLifetime = run.ConfigureAwait(true);
 
-        run.Events.Count.ShouldBe(4);
+        run.Events.Count.ShouldBe(5);
         foreach (var stageEvent in run.Events)
         {
             stageEvent.Status.ShouldBe(StageStatus.Failed);

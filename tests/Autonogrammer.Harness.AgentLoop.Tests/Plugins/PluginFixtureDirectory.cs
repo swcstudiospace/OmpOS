@@ -49,7 +49,7 @@ internal sealed class PluginFixtureDirectory : IDisposable
         WriteFile(relativeDirectory + "/package.json", "{ \"name\": \"fixture\", \"" + key + "\": { \"extensions\": [" + list + "] } }");
     }
 
-    /// <summary>Lays out all four built-in plugins so that each resolves as ready.</summary>
+    /// <summary>Lays out all five built-in plugins so that each resolves as ready.</summary>
     public void CreateAllPlugins()
     {
         WritePackage("plugins/claude-ultrathink", "omp", "./src/host/omp.ts");
@@ -63,6 +63,9 @@ internal sealed class PluginFixtureDirectory : IDisposable
         WriteFile("plugins/agent-substrate/packages/projector/omp/substrate-skills.ts");
         WritePackage("plugins/gsd-core-omp", "omp", "./src/index.ts");
         WriteFile("plugins/gsd-core-omp/src/index.ts");
+        WriteFile("plugins/agent-realm/.git", "gitdir: ../../.git/modules/agent-realm\n");
+        WritePackage("plugins/agent-realm", "omp", "./dist/src/omp/extension.js");
+        WriteFile("plugins/agent-realm/dist/src/omp/extension.js");
     }
 
     /// <summary>Deletes the directory and everything in it.</summary>

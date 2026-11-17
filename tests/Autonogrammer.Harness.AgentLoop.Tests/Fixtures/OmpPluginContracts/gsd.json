@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "pluginId": "gsd",
+  "source": "in-repo",
+  "submodulePath": "plugins/gsd-core-omp",
+  "pinnedCommit": null,
+  "manifestPath": "package.json",
+  "packageName": "gsd-core-omp",
+  "packageVersion": "0.1.0",
+  "licence": "AGPL-3.0-or-later",
+  "ompExtensions": ["./src/index.ts"],
+  "entryFiles": [],
+  "commands": ["gsd-core"],
+  "tools": [],
+  "environmentVariables": ["AUTONOGRAMMER_CONNECTION_FILE"],
+  "schemaIds": [],
+  "evidence": [
+    {"name": "gsd-core command", "path": "src/index.ts", "literal": "pi.registerCommand(\"gsd-core\""},
+    {"name": "connection file variable", "path": "src/connection-report.mjs", "literal": "AUTONOGRAMMER_CONNECTION_FILE"}
+  ]
+}

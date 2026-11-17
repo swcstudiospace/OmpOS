@@ -72,11 +72,11 @@ jobs:
           persist-credentials: false
       # The public plugin submodules come first. The private agent-substrate has its own step, so the SUBMODULE_TOKEN secret reaches git
       # for that one command only. persist-credentials is off above, so the checkout's GITHUB_TOKEN header is not stored for later fetches.
-      - name: Plugin submodules for ultrathink and swarm (public)
+      - name: Plugin submodules for ultrathink, swarm and realm (public)
         shell: bash
         run: |
           set -euo pipefail
-          git submodule update --init --recursive plugins/claude-ultrathink plugins/agent-swarm
+          git submodule update --init --recursive plugins/claude-ultrathink plugins/agent-swarm plugins/agent-realm
       - name: Plugin submodule agent-substrate (private; needs the SUBMODULE_TOKEN secret)
         shell: bash
         env:

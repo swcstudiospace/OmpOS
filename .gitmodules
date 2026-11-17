@@ -10,3 +10,7 @@
 	path = plugins/agent-substrate
 	url = https://github.com/swcstudiospace/substrate.git
 	branch = main
+[submodule "plugins/agent-realm"]
+	path = plugins/agent-realm
+	url = https://github.com/swcstudiospace/realm.git
+	branch = main

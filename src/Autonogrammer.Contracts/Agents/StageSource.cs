@@ -20,4 +20,7 @@ public enum StageSource
 
     /// <summary>The workflow engine whose phases and plans the session works through.</summary>
     Gsd,
+
+    /// <summary>The execution sandbox that Realm provides: the isolated per-session file system. It is not a pipeline stage.</summary>
+    Realm,
 }

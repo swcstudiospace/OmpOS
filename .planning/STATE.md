@@ -6,10 +6,10 @@ current_phase: "74.1"
 current_phase_name: Durable account-scoped memory idempotency migration and atomic replay
 status: blocked
 stopped_at: "Phase 74.1 plan 03 awaiting independent human runbook review; 75-12 held"
-last_updated: "2026-11-10T15:16:20.720Z"
-last_activity: 2026-11-10
-last_activity_desc: "Phase 74.1 local checks passed but human runbook review remains pending. Independent account-default, Cowork notice and Chromium pipe fixes received focused verification; guarded browsing and release gates remain open."
-state_head: bcbb5658e2d68ab32e1d48e51ca1ba1b26b062b8
+ last_updated: "2026-11-16T22:52:57Z"
+ last_activity: 2026-11-16
+ last_activity_desc: "Phase 74.1 local checks passed but human runbook review remains pending. Merged PR #13 (feat/autonogrammer-integration to main) via gh, tagged v0.17.0 release. Independent account-default, Cowork notice and Chromium pipe fixes received focused verification; guarded browsing and release gates remain open."
+ state_head: bcbb5658e2d68ab32e1d48e51ca1ba1b26b062b8
 progress:
   total_phases: 17
   completed_phases: 11

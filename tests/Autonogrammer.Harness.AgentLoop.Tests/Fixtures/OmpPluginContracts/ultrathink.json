@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "pluginId": "ultrathink",
+  "source": "submodule",
+  "submodulePath": "plugins/claude-ultrathink",
+  "pinnedCommit": "71101ed069a66b3862fa5da5b01995a60c2160c2",
+  "manifestPath": "package.json",
+  "packageName": "ultrathink",
+  "packageVersion": "1.4.0",
+  "licence": "AGPL-3.0-or-later",
+  "ompExtensions": ["./src/host/omp.ts"],
+  "entryFiles": [],
+  "commands": ["ultrathink-off", "ultrathink-on", "ultrathink-quick", "ultrathink-skip", "ultrathink-status", "ultrathink-swarm", "ultrathink-track", "ultrathink-ui"],
+  "tools": [],
+  "environmentVariables": ["ULTRATHINK_STATE_DIR", "ULTRATHINK_UPLIFT"],
+  "schemaIds": [],
+  "evidence": [
+    {"name": "verb table", "path": "src/host/omp.ts", "literal": "const COMMANDS: Record<UltrathinkVerb, string> = {"},
+    {"name": "quick description", "path": "src/host/omp.ts", "literal": "Send <message> to the agent as typed: no plan, no Graph of Thought, no Linear/Notion rows"},
+    {"name": "skip description", "path": "src/host/omp.ts", "literal": "Do not plan the next message"},
+    {"name": "off description", "path": "src/host/omp.ts", "literal": "Turn planning off for Omp on this machine until turned on"},
+    {"name": "on description", "path": "src/host/omp.ts", "literal": "Turn planning back on for Omp on this machine"},
+    {"name": "track description", "path": "src/host/omp.ts", "literal": "on|off: keep planning but start or stop creating Linear/Notion rows"},
+    {"name": "status description", "path": "src/host/omp.ts", "literal": "Show the current ultrathink state"},
+    {"name": "verb loop", "path": "src/host/omp.ts", "literal": "pi.registerCommand?.(name, {"},
+    {"name": "ui command", "path": "src/host/omp.ts", "literal": "pi.registerCommand?.(\"ultrathink-ui\", {"},
+    {"name": "swarm command", "path": "src/host/omp.ts", "literal": "pi.registerCommand?.(\"ultrathink-swarm\", {"},
+    {"name": "state directory variable", "path": "src/doctor/state-check.ts", "literal": "ULTRATHINK_STATE_DIR"},
+    {"name": "uplift variable", "path": "src/host/plan.ts", "literal": "ULTRATHINK_UPLIFT"}
+  ]
+}

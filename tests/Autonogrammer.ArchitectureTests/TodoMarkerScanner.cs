@@ -23,8 +23,8 @@ internal static class TodoMarkerScanner
     /// Skipped path segments: .git, bin, obj, node_modules, TestResults, output, .planning
     /// (planning text is not code), docs (documentation, not code), TestData (recorded
     /// payloads are data), .nuget (the NuGet package cache, which CI places inside the
-    /// checkout), the third-party plugin submodule directories claude-ultrathink, agent-swarm
-    /// and agent-substrate (checkouts of other repositories pinned by .gitmodules: their
+    /// checkout), the third-party plugin submodule directories claude-ultrathink, agent-swarm,
+    /// agent-substrate and agent-realm (checkouts of other repositories pinned by .gitmodules: their
     /// markers belong to those repositories, and the first-party plugins/gsd-core-omp stays
     /// scanned), plus the vendored wwwroot/lib subtree only (wwwroot itself stays
     /// scanned: first-party css and html live there).
@@ -45,7 +45,7 @@ internal static class TodoMarkerScanner
     [
         ".git", "bin", "obj", "node_modules", "TestResults", "output",
         ".planning", "docs", "TestData", ".nuget",
-        "claude-ultrathink", "agent-swarm", "agent-substrate",
+        "claude-ultrathink", "agent-swarm", "agent-substrate", "agent-realm",
         // Untracked runtime state: .swarm/.gitignore ignores everything under it.
         ".swarm",
     ];

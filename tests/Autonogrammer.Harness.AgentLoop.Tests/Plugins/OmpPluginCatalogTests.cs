@@ -11,15 +11,16 @@ namespace Autonogrammer.Harness.AgentLoop.Tests.Plugins;
 public sealed class OmpPluginCatalogTests
 {
     [Fact]
-    public void BuiltInListsTheFourPluginsInCompositionOrder()
+    public void BuiltInListsTheFivePluginsInCompositionOrder()
     {
-        OmpPluginCatalog.BuiltIn.Select(plugin => plugin.Id).ShouldBe(["ultrathink", "swarm", "substrate", "gsd"]);
+        OmpPluginCatalog.BuiltIn.Select(plugin => plugin.Id).ShouldBe(["ultrathink", "swarm", "substrate", "gsd", "realm"]);
         OmpPluginCatalog.BuiltIn.Select(plugin => plugin.Role).ShouldBe(
         [
             OmpPluginRole.PromptPlanner,
             OmpPluginRole.SubagentOrchestrator,
             OmpPluginRole.SessionSubstrate,
             OmpPluginRole.WorkflowEngine,
+            OmpPluginRole.ExecutionSandbox,
         ]);
     }
 
@@ -32,6 +33,7 @@ public sealed class OmpPluginCatalogTests
             "agent-swarm/omp",
             "agent-substrate/packages/projector/omp",
             "gsd-core-omp",
+            "agent-realm",
         ]);
         OmpPluginCatalog.BuiltIn.Single(plugin => string.Equals(plugin.Id, "substrate", StringComparison.Ordinal)).EntryRelativePaths
             .ShouldBe(["substrate-status.ts", "substrate-skills.ts"]);
@@ -48,16 +50,17 @@ public sealed class OmpPluginCatalogTests
             "git submodule update --init --recursive plugins/agent-swarm",
             "git submodule update --init --recursive plugins/agent-substrate",
             "git restore plugins/gsd-core-omp",
+            "git submodule update --init --recursive plugins/agent-realm",
         ]);
         OmpPluginCatalog.BuiltIn.Select(plugin => plugin.SubmoduleName).ShouldBe(
-            ["claude-ultrathink", "agent-swarm", "agent-substrate", null]);
+            ["claude-ultrathink", "agent-swarm", "agent-substrate", null, "agent-realm"]);
     }
 
     [Fact]
     public void EachPluginReportsAsItsOwnStageSource()
     {
         OmpPluginCatalog.BuiltIn.Select(plugin => plugin.StageSource).ShouldBe(
-            [StageSource.Ultrathink, StageSource.Swarm, StageSource.Substrate, StageSource.Gsd]);
+            [StageSource.Ultrathink, StageSource.Swarm, StageSource.Substrate, StageSource.Gsd, StageSource.Realm]);
     }
 
     [Fact]
@@ -93,6 +96,8 @@ public sealed class OmpPluginCatalogTests
         byId["substrate"].ExpectedTools.ShouldBeEmpty();
         byId["gsd"].ExpectedCommands.ShouldBe(["gsd-core"]);
         byId["gsd"].ExpectedTools.ShouldBeEmpty();
+        byId["realm"].ExpectedCommands.ShouldBe(["realm-retry"]);
+        byId["realm"].ExpectedTools.ShouldBe(["exec", "read", "write", "list", "status"]);
     }
 
     [Fact]

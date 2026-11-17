@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "pluginId": "substrate",
+  "source": "submodule",
+  "submodulePath": "plugins/agent-substrate",
+  "pinnedCommit": "754c51a17a9e6ffbc222d04bdaf4e783b4eca720",
+  "manifestPath": "packages/projector/package.json",
+  "packageName": "@substrate/projector",
+  "packageVersion": "0.1.0",
+  "licence": null,
+  "ompExtensions": [],
+  "entryFiles": ["packages/projector/omp/substrate-status.ts", "packages/projector/omp/substrate-skills.ts"],
+  "commands": ["substrate"],
+  "tools": [],
+  "environmentVariables": ["SUBSTRATE_URL"],
+  "schemaIds": [],
+  "evidence": [
+    {"name": "status command", "path": "packages/projector/omp/substrate-status.ts", "literal": "pi.registerCommand(\"substrate\""},
+    {"name": "url variable", "path": "packages/projector/omp/substrate-skills.ts", "literal": "SUBSTRATE_URL"}
+  ]
+}
