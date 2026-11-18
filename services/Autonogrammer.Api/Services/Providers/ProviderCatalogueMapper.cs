@@ -27,8 +27,9 @@ internal static class ProviderCatalogueMapper
             StatusDate = row.StatusDate,
             OmpProviderId = row.OmpProviderId,
             ApiKeyEnv = row.ApiKeyEnv,
-            TakesKey = row.Routes.Count > 0 && row.Routes.Any(static route => route.Auth != CatalogueAuthStyle.None),
-            SignInOnly = row.Routes.Count == 0,
+            TakesKey = (row.Routes.Count > 0 && row.Routes.Any(static route => route.Auth != CatalogueAuthStyle.None))
+                || (row.Routes.Count == 0 && row.IsOmpNative && row.ApiKeyEnv is not null),
+            SignInOnly = row.Routes.Count == 0 && !(row.IsOmpNative && row.ApiKeyEnv is not null),
             LoginCommand = row.LoginCommand,
             Routes = [.. row.Routes.Select(ToRoute)],
             UrlVariables = [.. row.UrlVariables.Select(static variable => new ProviderUrlVariableInfo

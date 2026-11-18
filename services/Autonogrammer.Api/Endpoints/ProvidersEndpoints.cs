@@ -185,12 +185,12 @@ internal static class ProvidersEndpoints
 
     private static ProblemHttpResult? CredentialRefusal(CatalogueRow row, bool planRuleAccepted)
     {
-        if (row.Routes.Count == 0)
+        if (row.Routes.Count == 0 && !(row.IsOmpNative && row.ApiKeyEnv is not null))
         {
             return WebProblems.Of(StatusCodes.Status409Conflict, "credential_not_applicable", "No key to write.", SignInSentence(row));
         }
 
-        if (row.Routes.All(static route => route.Auth == CatalogueAuthStyle.None))
+        if (row.Routes.Count > 0 && row.Routes.All(static route => route.Auth == CatalogueAuthStyle.None))
         {
             return WebProblems.Of(StatusCodes.Status409Conflict, "credential_not_applicable", "No key to write.", "This provider needs no key.");
         }
@@ -207,7 +207,7 @@ internal static class ProvidersEndpoints
 
         if (!row.IsOmpNative || row.UrlVariables.Count > 0)
         {
-            var variable = row.TakesApiKey ? ProviderKeyNames.EnvNameFor(row.BlockProviderId(row.Routes[0])) : null;
+            var variable = row.TakesApiKey && row.Routes.Count > 0 ? ProviderKeyNames.EnvNameFor(row.BlockProviderId(row.Routes[0])) : null;
             return WebProblems.Of(StatusCodes.Status409Conflict, "credential_operator_managed", "Key set by the operator.", ProviderCopy.OperatorSetsKey(variable));
         }
 
