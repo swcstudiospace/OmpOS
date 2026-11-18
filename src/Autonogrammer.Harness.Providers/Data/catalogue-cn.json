@@ -131,7 +131,7 @@
       "residencyNote": "Global host api.kimi.ai/coding and mainland host api.kimi.com/coding",
       "kind": "codingPlan",
       "ompProviderId": "kimi-code",
-      "apiKeyEnv": "KIMI_CODE_API_KEY",
+      "apiKeyEnv": null,
       "routes": [
         {
           "id": "mainland",
@@ -1973,39 +1973,19 @@
       "plan": null
     },
     {
-      "id": "xiaomi-token-plan",
-      "displayName": "Xiaomi MiMo Token Plan (Individual and Team)",
+      "id": "xiaomi-token-plan-cn",
+      "displayName": "Xiaomi MiMo Token Plan (Individual and Team), mainland cluster",
       "region": "cn",
       "country": "CN",
-      "residencyNote": "Clusters cn (mainland), sgp (Singapore), ams (Europe)",
+      "residencyNote": "Mainland cluster (token-plan-cn host)",
       "kind": "codingPlan",
-      "ompProviderId": null,
-      "apiKeyEnv": "XIAOMI_TOKEN_PLAN_API_KEY",
+      "ompProviderId": "xiaomi-token-plan-cn",
+      "apiKeyEnv": "XIAOMI_TOKEN_PLAN_CN_API_KEY",
       "routes": [
         {
           "id": "cn",
           "api": "openai-completions",
           "baseUrl": "https://token-plan-cn.xiaomimimo.com/v1",
-          "auth": "bearer",
-          "authHeader": null,
-          "discovery": false,
-          "modelsEndpoint": null,
-          "models": []
-        },
-        {
-          "id": "sgp",
-          "api": "openai-completions",
-          "baseUrl": "https://token-plan-sgp.xiaomimimo.com/v1",
-          "auth": "bearer",
-          "authHeader": null,
-          "discovery": false,
-          "modelsEndpoint": null,
-          "models": []
-        },
-        {
-          "id": "ams",
-          "api": "openai-completions",
-          "baseUrl": "https://token-plan-ams.xiaomimimo.com/v1",
           "auth": "bearer",
           "authHeader": null,
           "discovery": false,
@@ -2021,11 +2001,71 @@
           "discovery": false,
           "modelsEndpoint": null,
           "models": []
-        },
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://mimo.mi.com/docs/en-US/price/token-plan",
+      "keyPageUrl": "https://platform.xiaomimimo.com/#/console/plan-manage",
+      "sourceUrl": "https://mimo.mi.com/docs/en-US/price/token-plan",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "omp id xiaomi-token-plan-cn (env XIAOMI_TOKEN_PLAN_CN_API_KEY). Key tp-xxxxx. Plan model list n/a; model list unverified without a key. Restriction text partial.",
+      "loginCommand": null,
+      "plan": {
+        "ruleText": "Quota only for programming tools such as OpenClaw, OpenCode (search excerpt of the subscription page; full rule text not read).",
+        "ruleSourceUrl": "https://mimo.mi.com/docs/en-US/price/token-plan",
+        "interactiveOnly": true,
+        "cloudDefaultPayAsYouGo": true,
+        "separateKey": true,
+        "planUrl": "https://mimo.mi.com/docs/en-US/price/token-plan",
+        "validityDays": null,
+        "tiers": [
+          {
+            "name": "Lite",
+            "priceText": "$6 / 39 CNY per month",
+            "priceVerified": true,
+            "quotaText": "4.1B credits"
+          },
+          {
+            "name": "Standard",
+            "priceText": "$16 / 99 CNY per month",
+            "priceVerified": true,
+            "quotaText": "11B credits"
+          },
+          {
+            "name": "Pro",
+            "priceText": "$50 / 329 CNY per month",
+            "priceVerified": true,
+            "quotaText": "38B credits"
+          },
+          {
+            "name": "Max",
+            "priceText": "$100 / 659 CNY per month",
+            "priceVerified": true,
+            "quotaText": "82B credits"
+          }
+        ],
+        "listedTools": [
+          "OpenCode",
+          "OpenClaw",
+          "Claude Code"
+        ]
+      }
+    },
+    {
+      "id": "xiaomi-token-plan-sgp",
+      "displayName": "Xiaomi MiMo Token Plan (Individual and Team), Singapore cluster",
+      "region": "cn",
+      "country": "SG",
+      "residencyNote": "Singapore cluster (token-plan-sgp host)",
+      "kind": "codingPlan",
+      "ompProviderId": "xiaomi-token-plan-sgp",
+      "apiKeyEnv": "XIAOMI_TOKEN_PLAN_SGP_API_KEY",
+      "routes": [
         {
-          "id": "anthropic-sgp",
-          "api": "anthropic-messages",
-          "baseUrl": "https://token-plan-sgp.xiaomimimo.com/anthropic",
+          "id": "sgp",
+          "api": "openai-completions",
+          "baseUrl": "https://token-plan-sgp.xiaomimimo.com/v1",
           "auth": "bearer",
           "authHeader": null,
           "discovery": false,
@@ -2033,7 +2073,87 @@
           "models": []
         },
         {
-          "id": "anthropic-ams",
+          "id": "anthropic",
+          "api": "anthropic-messages",
+          "baseUrl": "https://token-plan-sgp.xiaomimimo.com/anthropic",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://mimo.mi.com/docs/en-US/price/token-plan",
+      "keyPageUrl": "https://platform.xiaomimimo.com/#/console/plan-manage",
+      "sourceUrl": "https://mimo.mi.com/docs/en-US/price/token-plan",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "omp id xiaomi-token-plan-sgp (env XIAOMI_TOKEN_PLAN_SGP_API_KEY). Key tp-xxxxx. Plan model list n/a; model list unverified without a key. Restriction text partial.",
+      "loginCommand": null,
+      "plan": {
+        "ruleText": "Quota only for programming tools such as OpenClaw, OpenCode (search excerpt of the subscription page; full rule text not read).",
+        "ruleSourceUrl": "https://mimo.mi.com/docs/en-US/price/token-plan",
+        "interactiveOnly": true,
+        "cloudDefaultPayAsYouGo": true,
+        "separateKey": true,
+        "planUrl": "https://mimo.mi.com/docs/en-US/price/token-plan",
+        "validityDays": null,
+        "tiers": [
+          {
+            "name": "Lite",
+            "priceText": "$6 / 39 CNY per month",
+            "priceVerified": true,
+            "quotaText": "4.1B credits"
+          },
+          {
+            "name": "Standard",
+            "priceText": "$16 / 99 CNY per month",
+            "priceVerified": true,
+            "quotaText": "11B credits"
+          },
+          {
+            "name": "Pro",
+            "priceText": "$50 / 329 CNY per month",
+            "priceVerified": true,
+            "quotaText": "38B credits"
+          },
+          {
+            "name": "Max",
+            "priceText": "$100 / 659 CNY per month",
+            "priceVerified": true,
+            "quotaText": "82B credits"
+          }
+        ],
+        "listedTools": [
+          "OpenCode",
+          "OpenClaw",
+          "Claude Code"
+        ]
+      }
+    },
+    {
+      "id": "xiaomi-token-plan-ams",
+      "displayName": "Xiaomi MiMo Token Plan (Individual and Team), Europe cluster",
+      "region": "cn",
+      "country": null,
+      "residencyNote": "Europe cluster (token-plan-ams host)",
+      "kind": "codingPlan",
+      "ompProviderId": "xiaomi-token-plan-ams",
+      "apiKeyEnv": "XIAOMI_TOKEN_PLAN_AMS_API_KEY",
+      "routes": [
+        {
+          "id": "ams",
+          "api": "openai-completions",
+          "baseUrl": "https://token-plan-ams.xiaomimimo.com/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        },
+        {
+          "id": "anthropic",
           "api": "anthropic-messages",
           "baseUrl": "https://token-plan-ams.xiaomimimo.com/anthropic",
           "auth": "bearer",
@@ -2047,9 +2167,9 @@
       "docsUrl": "https://mimo.mi.com/docs/en-US/price/token-plan",
       "keyPageUrl": "https://platform.xiaomimimo.com/#/console/plan-manage",
       "sourceUrl": "https://mimo.mi.com/docs/en-US/price/token-plan",
-      "status": "verified",
+      "status": "partial",
       "statusDate": "2026-10-27",
-      "note": "omp ids xiaomi-token-plan-cn, -sgp, -ams (one per route; env XIAOMI_TOKEN_PLAN_<CN|SGP|AMS>_API_KEY). Key tp-xxxxx. Plan model list n/a. Restriction text partial.",
+      "note": "omp id xiaomi-token-plan-ams (env XIAOMI_TOKEN_PLAN_AMS_API_KEY). Key tp-xxxxx. Plan model list n/a; model list unverified without a key. Restriction text partial.",
       "loginCommand": null,
       "plan": {
         "ruleText": "Quota only for programming tools such as OpenClaw, OpenCode (search excerpt of the subscription page; full rule text not read).",

@@ -54,6 +54,28 @@ public static class KnownSafeShell
         return false;
     }
 
+    /// <summary>
+    /// Returns whether every simple command of a command line matches at least one of the shell allow patterns. This is the allow reading
+    /// <c>RunModePolicy</c> applies to a shell call. The result is false when the line is opaque, when it holds no simple command, and when any
+    /// simple command matches no pattern. An assignment segment matches no pattern, so it also gives false.
+    /// </summary>
+    /// <param name="commandLine">The command line.</param>
+    /// <param name="patterns">The <c>Shell</c> token arguments of the allow rules.</param>
+    /// <returns>True when every simple command matches a pattern.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="patterns"/> is null.</exception>
+    /// <exception cref="ArgumentException">A pattern is null, empty or white space.</exception>
+    public static bool AllSegmentsMatchShellRules(string commandLine, IReadOnlyList<string> patterns)
+    {
+        ArgumentNullException.ThrowIfNull(patterns);
+        foreach (var pattern in patterns)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(pattern, nameof(patterns));
+        }
+
+        var reading = ShellCommandAnalysis.ReadForAllow(commandLine ?? string.Empty);
+        return ShellCommandAnalysis.RuleAllowingEverySegment(reading, words => patterns.FirstOrDefault(pattern => PermissionMatcher.MatchesShell(pattern, words, forDeny: false))) is not null;
+    }
+
     /// <summary>Returns whether an <c>Mcp(server:tool)</c> pattern matches a server and tool.</summary>
     /// <param name="pattern">The token argument, <c>server:tool</c>.</param>
     /// <param name="server">The server name.</param>

@@ -60,3 +60,8 @@ dba27a6a2ac5e4b07af6265435397e448e63c2a2:src/Autonogrammer.UI/wwwroot/lib/mermai
 
 # RFC 6455 example WebSocket handshake nonce in a test, not a credential. Fingerprinted to the historical commit.
 06787cc4046bb8aea7978765d2e31cc2780a8609:tests/Autonogrammer.Api.IntegrationTests/Dispatch/Hub/ShutdownTests.cs:generic-api-key:55
+
+# The sentinel "APPROVED_AFTER_512" in TheConsentPromptShowsTheWholeCommandAndTheListKeepsItsPreview (commit c84cd307,
+# tests/Autonogrammer.Presentation.Tests/Mcp/McpSettingsViewModelActionTests.cs line 116) is a test marker placed past the
+# 512-character preview, not a credential. Allowlisted by fingerprint. History is not rewritten.
+c84cd307efcf27d35c3560a241cf44ae8c34aced:tests/Autonogrammer.Presentation.Tests/Mcp/McpSettingsViewModelActionTests.cs:generic-api-key:116

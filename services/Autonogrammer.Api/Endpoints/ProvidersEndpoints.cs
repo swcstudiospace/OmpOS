@@ -200,6 +200,11 @@ internal static class ProvidersEndpoints
             return WebProblems.Of(StatusCodes.Status400BadRequest, "plan_rule_not_accepted", "Plan rule not confirmed.", "Confirm that you have read the vendor's rule text for this plan (planRuleAccepted) before a key is written.");
         }
 
+        if (!row.TakesApiKey)
+        {
+            return WebProblems.Of(StatusCodes.Status409Conflict, "credential_not_applicable", "No key to write.", SignInSentence(row));
+        }
+
         if (!row.IsOmpNative || row.UrlVariables.Count > 0)
         {
             var variable = row.TakesApiKey ? ProviderKeyNames.EnvNameFor(row.BlockProviderId(row.Routes[0])) : null;

@@ -4,8 +4,9 @@ using Autonogrammer.Presentation.Settings.Connectors;
 namespace Autonogrammer.Native.Composition.Connectors;
 
 /// <summary>
-/// Reads MCP permission tokens through <see cref="PermissionsLoader"/> and writes them with
-/// <see cref="PermissionsFileEditor.SetPermissionTokens"/> to <c>~/.autonogrammer/permissions.json</c>.
+/// Reads MCP permission tokens through <see cref="PermissionsLoader"/>. A write replaces the MCP tokens of
+/// <c>~/.autonogrammer/permissions.json</c> through <see cref="PermissionsFileEditor.SetPermissionTokens"/> and keeps every
+/// non-MCP token the user file already has.
 /// </summary>
 internal sealed class ConnectorPermissionStore : IConnectorPermissionStore
 {
@@ -43,10 +44,18 @@ internal sealed class ConnectorPermissionStore : IConnectorPermissionStore
     private void Write(string list, IReadOnlyList<string> tokens)
     {
         ArgumentNullException.ThrowIfNull(tokens);
-        var result = PermissionsFileEditor.SetPermissionTokens(_path, list, tokens);
+        var kept = UserTokensExceptMcp(list);
+        var result = PermissionsFileEditor.SetPermissionTokens(_path, list, [.. kept, .. tokens]);
         if (!result.Succeeded)
         {
             throw new InvalidOperationException(result.Error ?? "The permission file could not be written.");
         }
+    }
+
+    private List<string> UserTokensExceptMcp(string list)
+    {
+        var user = PermissionsFileReader.Read(new SafetyFileLocation(_path, PermissionScope.User, PermissionFileOrigin.Autonogrammer));
+        var existing = string.Equals(list, PermissionsFileEditor.AllowTokensList, StringComparison.Ordinal) ? user.AllowTokens : user.DenyTokens;
+        return [.. existing.Where(token => token.Kind != PermissionTokenKind.Mcp).Select(token => token.Text)];
     }
 }

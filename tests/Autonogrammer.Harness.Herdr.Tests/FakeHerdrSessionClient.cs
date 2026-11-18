@@ -20,6 +20,9 @@ internal sealed class FakeHerdrSessionClient : IHerdrSessionClient
     private bool _failNextTerminate;
     private int _nativeCount;
 
+    /// <inheritdoc />
+    public HerdrSessionCapabilities Capabilities { get; } = new(Pause: true, Resume: true, Attach: true, Detach: true);
+
     /// <summary>Gets a copy of every recorded call, oldest first.</summary>
     public IReadOnlyList<HerdrTranscriptEntry> Transcript
     {

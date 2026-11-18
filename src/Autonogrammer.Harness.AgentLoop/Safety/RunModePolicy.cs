@@ -128,34 +128,16 @@ public sealed class RunModePolicy
         }
 
         var reading = ShellCommandAnalysis.ReadForAllow(request.Command);
-        if (!reading.Opaque && reading.Segments.Count > 0)
+        var shellRules = Rules(_permissions.AllowRules, PermissionTokenKind.Shell).ToList();
+        var first = ShellCommandAnalysis.RuleAllowingEverySegment(reading, words => shellRules.Find(candidate => PermissionMatcher.MatchesShell(candidate.Token.Argument, words, forDeny: false)));
+        if (first is not null)
         {
-            var shellRules = Rules(_permissions.AllowRules, PermissionTokenKind.Shell).ToList();
-            PermissionRule? first = null;
-            var all = true;
-            foreach (var words in reading.Segments)
-            {
-                var rule = ShellCommandAnalysis.IsAssignment(words[0])
-                    ? null
-                    : shellRules.Find(candidate => PermissionMatcher.MatchesShell(candidate.Token.Argument, words, forDeny: false));
-                if (rule is null)
-                {
-                    all = false;
-                    break;
-                }
-
-                first ??= rule;
-            }
-
-            if (all && first is not null)
-            {
-                return Allow(RunModeStage.AllowRule, $"{first.Token.Text} in {first.Source} allows this command.", first);
-            }
+            return Allow(RunModeStage.AllowRule, $"{first.Token.Text} in {first.Source} allows this command.", first);
         }
 
         if (Mode == RunMode.AutoReview
             && (request.WorkingDirectory is null || ArgumentReadable(request.WorkingDirectory, null))
-            && KnownSafeCommands.IsKnownSafe(reading, argument => ArgumentReadable(argument, request.WorkingDirectory)))
+            && KnownSafeCommands.IsKnownSafe(reading, argument => !IsUnexpandedWord(argument) && ArgumentReadable(argument, request.WorkingDirectory)))
         {
             return Allow(RunModeStage.KnownSafe, "A read-only command from the known-safe list, inside the read boundary.");
         }
@@ -178,6 +160,9 @@ public sealed class RunModePolicy
         var lexical = _paths.Lexical(argument, workingDirectory);
         return !Rules(_permissions.DenyRules, PermissionTokenKind.Read).Any(rule => PermissionMatcher.MatchesPath(rule.Token.Argument, _paths, lexical, real, forDeny: true));
     }
+
+    private static bool IsUnexpandedWord(string argument) =>
+        argument.Contains('$', StringComparison.Ordinal) || (argument.Length > 1 && argument[0] == '~' && argument[1] != '/');
 
     private RunModeDecision DecideRead(RunModeRequest request)
     {

@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Autonogrammer.Contracts.Sandboxes;
 using Autonogrammer.Sandbox.Abstractions;
+using Autonogrammer.Sandbox.Abstractions.Exceptions;
 using Shouldly;
 using Xunit;
 
@@ -51,6 +52,22 @@ public sealed class AgentOsContractTests
         handler.Requests[2].Json!["args"]![0]!["patch"]!["environment"]!["DEBUG"]!.GetValue<string>().ShouldBe("1");
     }
 
+    [Fact]
+    public async Task Provision_WhenDenyNetworkFails_DestroysCreatedActorAndRethrowsOriginal()
+    {
+        using var handler = new RecordingHandler(rejectedTarget: "/gateway/vm-1/action/v1.config.set");
+        using var http = new HttpClient(handler);
+        var provider = new AgentOsProvider(http, new Uri("https://api.rivet.dev"), "ns-test", SecretToken);
+
+        var error = await Should.ThrowAsync<NotAvailableException>(
+            () => provider.ProvisionAsync(CreateRequest(new Dictionary<string, string>(StringComparer.Ordinal)), TestContext.Current.CancellationToken));
+
+        error.Message.ShouldContain("v1.config.set");
+        var destroy = handler.Requests.Single(sent => sent.Method == HttpMethod.Delete);
+        destroy.Target.ShouldBe("/actors/vm-1?namespace=ns-test");
+        destroy.BearerToken.ShouldBe(SecretToken);
+    }
+
     private static ProvisionRequest CreateRequest(IReadOnlyDictionary<string, string> environment) => new()
     {
         IdempotencyKey = "autonogrammer-session-key",
@@ -72,6 +89,10 @@ public sealed class AgentOsContractTests
 
     private sealed class RecordingHandler : HttpMessageHandler
     {
+        private readonly string? _rejectedTarget;
+
+        public RecordingHandler(string? rejectedTarget = null) => _rejectedTarget = rejectedTarget;
+
         public List<SentRequest> Requests { get; } = [];
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -81,7 +102,10 @@ public sealed class AgentOsContractTests
             var target = request.RequestUri?.PathAndQuery ?? string.Empty;
             Requests.Add(new SentRequest(request.Method, target, request.Headers.Authorization?.Parameter, rivetToken, body));
             var json = target.StartsWith("/actors", StringComparison.Ordinal) ? CreatedVmJson : NullOutputJson;
-            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
+            return new HttpResponseMessage(string.Equals(target, _rejectedTarget, StringComparison.Ordinal) ? HttpStatusCode.InternalServerError : HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json"),
+            };
         }
     }
 

@@ -118,7 +118,7 @@ internal sealed class ScriptedMcpSource : IMcpSettingsSource
 
         _servers.Add(new McpServerEntry(
             name, choice == McpTemplateChoice.Http ? "http" : "stdio", McpEntryScope.Project, ".autonogrammer/mcp.json",
-            McpServerStatusKind.Disabled, "Switched off in Autonogrammer.", null, "placeholder", [], [], false, false, true, false, false));
+            McpServerStatusKind.Disabled, "Switched off in Autonogrammer.", null, "placeholder", "placeholder", [], [], false, false, true, false, false));
         return Task.FromResult(".autonogrammer/mcp.json");
     }
 
@@ -150,7 +150,7 @@ internal sealed class ScriptedMcpSource : IMcpSettingsSource
 
         _servers.Add(new McpServerEntry(
             presetId, "http", McpEntryScope.Project, ".autonogrammer/mcp.json",
-            McpServerStatusKind.Disabled, "Switched off in Autonogrammer.", null, "https://preset.example.com", [], [], false, false, true, false, false));
+            McpServerStatusKind.Disabled, "Switched off in Autonogrammer.", null, "https://preset.example.com", "https://preset.example.com", [], [], false, false, true, false, false));
         return Task.FromResult(".autonogrammer/mcp.json");
     }
 

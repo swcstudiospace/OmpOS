@@ -95,7 +95,9 @@ public sealed class CoworkPermissionResolver : IPermissionResolver
         ArgumentNullException.ThrowIfNull(request);
         var parsed = RunModeRequestParser.Parse(request);
         var kind = RunModeRequestParser.AcpKind(request);
-        if (IsCoworkTool(request.Name) || IsCoworkTool(parsed.ToolName) || string.Equals(parsed.McpServer, "cowork", StringComparison.Ordinal))
+        // An actuating kind never takes the Cowork allow: it goes through the shell, path and delete gates.
+        var actuating = TaintedActuatingKinds.Contains(kind);
+        if (!actuating && (IsCoworkTool(request.Name) || IsCoworkTool(parsed.ToolName) || string.Equals(parsed.McpServer, "cowork", StringComparison.Ordinal)))
         {
             return FinishAsync(request, parsed, PermissionDecision.Allow, RunModeStage.CoworkAutoRule, "Cowork tools are allowed at the omp level.", cancellationToken);
         }
@@ -192,7 +194,7 @@ public sealed class CoworkPermissionResolver : IPermissionResolver
         }
 
         var allowed = MatchShell(permissions.AllowRules, command, forDeny: false);
-        if (allowed is not null)
+        if (allowed is not null && KnownSafeShell.AllSegmentsMatchShellRules(command, ShellPatterns(permissions.AllowRules)))
         {
             return FinishAsync(request, parsed, PermissionDecision.Allow, RunModeStage.CoworkAutoRule, "An allow rule runs this command.", cancellationToken, allowed);
         }
@@ -347,6 +349,9 @@ public sealed class CoworkPermissionResolver : IPermissionResolver
 
         return null;
     }
+
+    private static List<string> ShellPatterns(IReadOnlyList<PermissionRule> rules) =>
+        rules.Where(rule => rule.Token.Kind == PermissionTokenKind.Shell).Select(rule => rule.Token.Argument).ToList();
 
     private static bool IsCoworkTool(string? name) =>
         name is not null && name.StartsWith("mcp__cowork_", StringComparison.Ordinal);

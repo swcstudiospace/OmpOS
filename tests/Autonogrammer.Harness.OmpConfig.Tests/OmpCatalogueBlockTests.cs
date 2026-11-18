@@ -20,6 +20,11 @@ public sealed class OmpCatalogueBlockTests
         var data = new TheoryData<string, string>();
         foreach (var row in CatalogueRows.All)
         {
+            // Key-less login rows share their omp provider id and write no managed block (ADR-0019, amended).
+            if (row.ApiKeyEnv is null && row.OmpProviderId is not null)
+            {
+                continue;
+            }
             foreach (var route in row.Routes)
             {
                 data.Add(row.Id, route.Id);

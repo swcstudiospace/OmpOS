@@ -97,29 +97,41 @@ public sealed class HerdrSessionService : IDisposable
     /// <param name="afterSequence">The last sequence number the caller has seen.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The view after the attach.</returns>
+    /// <exception cref="HerdrOperationUnsupportedException">The server does not support attach. No server call is made.</exception>
     public Task<HerdrSessionView> AttachAsync(HerdrSessionId id, long afterSequence, CancellationToken cancellationToken) =>
-        ApplyAsync(id, client => client.AttachAsync(id, afterSequence, cancellationToken), cancellationToken);
+        _client.Capabilities.Attach
+            ? ApplyAsync(id, client => client.AttachAsync(id, afterSequence, cancellationToken), cancellationToken)
+            : UnsupportedAsync("Attach");
 
     /// <summary>Detaches the client from a recorded session. The agent keeps running.</summary>
     /// <param name="id">The session to detach from.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The view after the detach.</returns>
+    /// <exception cref="HerdrOperationUnsupportedException">The server does not support detach. No server call is made.</exception>
     public Task<HerdrSessionView> DetachAsync(HerdrSessionId id, CancellationToken cancellationToken) =>
-        ApplyAsync(id, client => client.DetachAsync(id, cancellationToken), cancellationToken);
+        _client.Capabilities.Detach
+            ? ApplyAsync(id, client => client.DetachAsync(id, cancellationToken), cancellationToken)
+            : UnsupportedAsync("Detach");
 
     /// <summary>Pauses a running recorded session.</summary>
     /// <param name="id">The session to pause.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The view after the pause.</returns>
+    /// <exception cref="HerdrOperationUnsupportedException">The server does not support pause. No server call is made.</exception>
     public Task<HerdrSessionView> PauseAsync(HerdrSessionId id, CancellationToken cancellationToken) =>
-        ApplyAsync(id, client => client.PauseAsync(id, cancellationToken), cancellationToken);
+        _client.Capabilities.Pause
+            ? ApplyAsync(id, client => client.PauseAsync(id, cancellationToken), cancellationToken)
+            : UnsupportedAsync("Pause");
 
     /// <summary>Resumes a paused recorded session.</summary>
     /// <param name="id">The session to resume.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The view after the resume.</returns>
+    /// <exception cref="HerdrOperationUnsupportedException">The server does not support resume. No server call is made.</exception>
     public Task<HerdrSessionView> ResumeAsync(HerdrSessionId id, CancellationToken cancellationToken) =>
-        ApplyAsync(id, client => client.ResumeAsync(id, cancellationToken), cancellationToken);
+        _client.Capabilities.Resume
+            ? ApplyAsync(id, client => client.ResumeAsync(id, cancellationToken), cancellationToken)
+            : UnsupportedAsync("Resume");
 
     /// <summary>Ends a recorded session.</summary>
     /// <param name="id">The session to end.</param>
@@ -173,6 +185,7 @@ public sealed class HerdrSessionService : IDisposable
     /// <summary>
     /// Reconciles every recorded session with the server after a start. A session that is still alive is reattached by its
     /// stored id. A session the server reports as lost, or does not know, is recorded as lost and keeps its native reference.
+    /// When the server does not support attach, a live session is reported as the server holds it, unattached.
     /// A terminated session is not contacted.
     /// </summary>
     /// <param name="cancellationToken">Cancels the call.</param>
@@ -219,6 +232,9 @@ public sealed class HerdrSessionService : IDisposable
 
         return current with { LastKnownState = beat.State, LastSequence = beat.LastSequence };
     }
+
+    private static Task<HerdrSessionView> UnsupportedAsync(string operation) =>
+        Task.FromException<HerdrSessionView>(new HerdrOperationUnsupportedException(operation));
 
     private static bool IsLive(HerdrSessionState state) => state is HerdrSessionState.Running or HerdrSessionState.Paused;
 
@@ -294,14 +310,22 @@ public sealed class HerdrSessionService : IDisposable
 
         _monitor.Track(stored.Id);
         var snapshot = await ReattachAsync(stored, cancellationToken).ConfigureAwait(false);
-        return await PersistAsync(snapshot, cancellationToken).ConfigureAwait(false);
+        var view = await PersistAsync(snapshot, cancellationToken).ConfigureAwait(false);
+        if (_client.Capabilities.Attach)
+        {
+            return view;
+        }
+
+        // Without attach, this service instance holds no attachment after a restart, so the restored view reports none.
+        return view with { Snapshot = view.Snapshot with { IsAttached = false } };
     }
 
     private async Task<HerdrSessionSnapshot> ReattachAsync(HerdrStoredSession stored, CancellationToken cancellationToken)
     {
         var current = await ReadServerSnapshotAsync(stored, cancellationToken).ConfigureAwait(false);
-        if (!IsLive(current.State))
+        if (!IsLive(current.State) || !_client.Capabilities.Attach)
         {
+            // Without attach, a live session is reported as the server holds it: unattached, with no attach call.
             return current;
         }
 

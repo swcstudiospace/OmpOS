@@ -6,7 +6,7 @@ namespace Autonogrammer.Harness.AgentLoop.Safety;
 /// Splits a shell command line into its simple commands, for matching permission tokens. This is a conservative reading, not a shell
 /// parser: a line it cannot read with confidence (a substitution, a redirection, a subshell, a background job, an open quote) is
 /// opaque, and an opaque line never matches an allow rule. For deny rules the same line is read more eagerly: substitutions and
-/// subshells are split open, wrapper commands such as <c>sudo</c> and <c>env</c> are looked through, and the text after <c>sh -c</c> is read as a command line.
+/// subshells are split open, wrapper commands such as <c>sudo</c> and <c>env</c> are looked through, the command a <c>find</c> action runs is read as a command of its own, and the text after <c>sh -c</c> is read as a command line.
 /// </summary>
 internal static class ShellCommandAnalysis
 {
@@ -32,6 +32,38 @@ internal static class ShellCommandAnalysis
     /// <param name="command">The command line.</param>
     /// <returns>The reading.</returns>
     public static Reading ReadForAllow(string command) => Scan(command, splitSubstitutions: false);
+
+    /// <summary>
+    /// Returns the rule that allows every simple command of a reading, or null. An opaque reading and one with no simple command allow nothing.
+    /// An assignment segment such as <c>CI=1</c> matches no rule, so it blocks the allow.
+    /// </summary>
+    /// <typeparam name="TRule">The rule type.</typeparam>
+    /// <param name="reading">The reading from <see cref="ReadForAllow"/>.</param>
+    /// <param name="ruleFor">Returns the rule that allows one segment's words, or null when none does.</param>
+    /// <returns>The rule that allowed the first segment, when every segment is allowed; otherwise null.</returns>
+    public static TRule? RuleAllowingEverySegment<TRule>(Reading reading, Func<IReadOnlyList<string>, TRule?> ruleFor)
+        where TRule : class
+    {
+        ArgumentNullException.ThrowIfNull(ruleFor);
+        if (reading.Opaque || reading.Segments.Count == 0)
+        {
+            return null;
+        }
+
+        TRule? first = null;
+        foreach (var words in reading.Segments)
+        {
+            TRule? rule = IsAssignment(words[0]) ? null : ruleFor(words);
+            if (rule is null)
+            {
+                return null;
+            }
+
+            first ??= rule;
+        }
+
+        return first;
+    }
 
     /// <summary>Lists every command a command line may run, for deny matching: the simple commands, those inside substitutions, the ones wrappers run, and the ones a shell's <c>-c</c> text holds.</summary>
     /// <param name="command">The command line.</param>
@@ -127,7 +159,38 @@ internal static class ShellCommandAnalysis
                 }
             }
         }
+        else if (string.Equals(name, "find", StringComparison.Ordinal))
+        {
+            ExpandFindActions(current, depth, into);
+        }
     }
+
+    private static void ExpandFindActions(string[] words, int depth, List<IReadOnlyList<string>> into)
+    {
+        for (var index = 1; index < words.Length; index++)
+        {
+            if (words[index] is not ("-exec" or "-execdir" or "-ok" or "-okdir"))
+            {
+                continue;
+            }
+
+            var end = index + 1;
+            while (end < words.Length && !IsFindTerminator(words, end))
+            {
+                end++;
+            }
+
+            if (end > index + 1)
+            {
+                ExpandWords(words[(index + 1)..end], depth + 1, into);
+            }
+
+            index = end;
+        }
+    }
+
+    private static bool IsFindTerminator(string[] words, int index) =>
+        string.Equals(words[index], ";", StringComparison.Ordinal) || (string.Equals(words[index], "+", StringComparison.Ordinal) && string.Equals(words[index - 1], "{}", StringComparison.Ordinal));
 
     private static bool IsWrapperNoise(string wrapper, string word) =>
         (word.Length > 1 && word[0] == '-') || IsAssignment(word) || (wrapper is "timeout" or "nice" or "ionice" && IsDuration(word));

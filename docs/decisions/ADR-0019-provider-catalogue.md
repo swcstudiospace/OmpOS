@@ -23,6 +23,9 @@ Data, not code, and no new dependency.
 ### Mapping and block rules
 
 - A row with an omp provider id, no URL variable and the default route chosen sends the key to omp (`SaveApiKeyAsync(ompProviderId, key)`); omp keeps it. Every other row gets an Autonogrammer managed block with the provider id `row` (default route) or `row-route`; the key is kept by Autonogrammer and reaches omp as an environment variable, as for custom providers.
+
+**Amendment (2026-11-18, owner-approved):** a key-less login row (`apiKeyEnv` null) may carry the omp provider id of its keyed row. mistral-vibe-plan carries `mistral`. Such a row stores no key and writes no managed block: omp holds the login.
+
 - A block id that equals an omp provider id overrides that provider. It is used only where the row IS that provider (native rows with account placeholders: Azure, Bedrock, Vertex, Cloudflare AI Gateway, Snowflake) and for three named cases (`minimax-cn`, `xiaomi-token-plan-sgp`, `xiaomi-token-plan-ams`). Cloudflare's OpenAI-compatible route has its own id (`cloudflare-workers-ai-compat`) because a block under omp's `cloudflare-workers-ai` id lists as a judge model (found by running omp, see Verification route).
 
 ### Coding-plan terms policy

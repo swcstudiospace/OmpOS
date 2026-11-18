@@ -151,6 +151,7 @@ internal sealed class McpCatalogSettingsSource : IMcpSettingsSource
             entry.Status.Reason,
             entry.Status.ToolCount,
             server.CommandPreview,
+            server.CommandText,
             server.EnvNames,
             server.HeaderNames,
             entry.IsEnabled,

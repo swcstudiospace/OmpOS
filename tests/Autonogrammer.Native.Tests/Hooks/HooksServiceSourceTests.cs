@@ -215,6 +215,22 @@ public sealed class HooksServiceSourceTests
         ]);
     }
 
+    /// <summary>Trust all approves exactly the hooks the page counts as needing approval: a quarantined or disabled hook is not approved, and the count is the number approved.</summary>
+    [Fact]
+    public async Task TrustAllApprovesExactlyTheHooksThePageCounts()
+    {
+        var quarantined = Info(Hook("quarantined"), consented: false) with { Quarantine = new PluginQuarantine("cursor-project:abc", "the shell failed", Noon) };
+        var (source, service) = Create(Overview(Info(Hook("guard"), consented: false), quarantined, Info(Hook("disabled"), enabled: false, consented: false)));
+        var page = new HooksSettingsPage(SettingsSection.Plugins, source);
+        await page.LoadAsync(Token).ConfigureAwait(true);
+
+        page.NeedsConsentCount.ShouldBe(1);
+        page.CanTrustAll.ShouldBeTrue();
+        await page.ApproveAllAsync(Token).ConfigureAwait(true);
+
+        service.Calls.Where(static call => call.StartsWith("ApproveAll(", StringComparison.Ordinal)).ToArray().ShouldBe(["ApproveAll(guard)"]);
+    }
+
     /// <summary>A hook that is not in the last load, a quarantine that is already gone and a file system failure each become the page's inline error.</summary>
     [Fact]
     public async Task FailuresBecomeInlineErrors()

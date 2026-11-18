@@ -1,3 +1,4 @@
+#pragma warning disable MA0048, CA1032
 namespace Autonogrammer.Harness.Herdr;
 
 /// <summary>
@@ -21,6 +22,12 @@ namespace Autonogrammer.Harness.Herdr;
 /// </remarks>
 public interface IHerdrSessionClient
 {
+    /// <summary>
+    /// The optional operations this server supports. An operation whose flag is false fails with
+    /// <see cref="HerdrOperationUnsupportedException"/> and makes no server call.
+    /// </summary>
+    HerdrSessionCapabilities Capabilities { get; }
+
     /// <summary>Starts a session, or resumes a lost one from its native reference.</summary>
     /// <param name="request">The identifier, provider selection and optional native reference.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
@@ -84,4 +91,35 @@ public interface IHerdrSessionClient
     /// <param name="cancellationToken">Ends the stream.</param>
     /// <returns>The beats, in the order the server produced them.</returns>
     IAsyncEnumerable<HerdrHeartbeat> HeartbeatsAsync(CancellationToken cancellationToken);
+}
+
+/// <summary>The optional session operations one herdr server supports. Each flag is true only when the server runs that operation.</summary>
+/// <param name="Pause">True when <see cref="IHerdrSessionClient.PauseAsync"/> is supported.</param>
+/// <param name="Resume">True when <see cref="IHerdrSessionClient.ResumeAsync"/> is supported.</param>
+/// <param name="Attach">True when <see cref="IHerdrSessionClient.AttachAsync"/> is supported.</param>
+/// <param name="Detach">True when <see cref="IHerdrSessionClient.DetachAsync"/> is supported.</param>
+public sealed record HerdrSessionCapabilities(bool Pause, bool Resume, bool Attach, bool Detach);
+
+/// <summary>
+/// An optional session operation the herdr server does not support. The refusal is typed and starts no server call.
+/// </summary>
+public sealed class HerdrOperationUnsupportedException : HerdrSessionException
+{
+    /// <summary>The reason herdr 0.9.5 gives for refusing pause, resume, attach and detach.</summary>
+    public const string UnsupportedReason = "herdr 0.9.5 has no pause, resume, attach or detach command";
+
+    /// <summary>Initializes a new instance of the <see cref="HerdrOperationUnsupportedException"/> class.</summary>
+    /// <param name="operation">The refused operation, named without the Async suffix.</param>
+    public HerdrOperationUnsupportedException(string operation)
+        : base($"The herdr {operation} operation is not supported. {UnsupportedReason}.")
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(operation);
+        Operation = operation;
+    }
+
+    /// <summary>Gets the refused operation, named without the Async suffix.</summary>
+    public string Operation { get; }
+
+    /// <summary>Gets the reason the operation is refused.</summary>
+    public string Reason { get; } = UnsupportedReason;
 }

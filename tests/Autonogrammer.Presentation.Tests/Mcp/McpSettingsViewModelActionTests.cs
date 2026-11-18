@@ -94,6 +94,39 @@ public sealed class McpSettingsViewModelActionTests
     }
 
     [Fact]
+    public async Task LoadingAgainClosesTheConsentPromptSoApprovalCannotGrantAStaleDeclaration()
+    {
+        var (model, source) = await LoadedAsync(new ScriptedMcpSource(McpEntries.NeedsConsent("tool"))).ConfigureAwait(true);
+        model.RequestConsent("tool");
+        model.PendingConsent.ShouldNotBeNull();
+
+        await model.LoadAsync(Token).ConfigureAwait(true);
+
+        model.PendingConsent.ShouldBeNull();
+        model.HasPendingConsent.ShouldBeFalse();
+
+        await model.ApproveCommand.ExecuteAsync().ConfigureAwait(true);
+
+        source.Calls.ShouldBe(["load", "load"]);
+    }
+
+    [Fact]
+    public async Task TheConsentPromptShowsTheWholeCommandAndTheListKeepsItsPreview()
+    {
+        const string token = "APPROVED_AFTER_512";
+        var command = "node ./tool.js " + new string('a', 512) + " " + token;
+        var preview = command[..512] + "...";
+        var source = new ScriptedMcpSource(McpEntries.NeedsConsent("tool") with { CommandPreview = preview, CommandText = command });
+        var (model, _) = await LoadedAsync(source).ConfigureAwait(true);
+
+        model.RequestConsent("tool");
+
+        var prompt = model.PendingConsent.ShouldNotBeNull();
+        prompt.CommandText.ShouldBe(command);
+        model.Rows.Single().CommandText.ShouldBe(preview);
+    }
+
+    [Fact]
     public async Task AFailedApprovalKeepsThePromptOpenWithTheReason()
     {
         var source = new ScriptedMcpSource(McpEntries.NeedsConsent("tool"));

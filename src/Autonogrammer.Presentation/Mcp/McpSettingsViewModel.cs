@@ -173,11 +173,13 @@ public sealed class McpSettingsViewModel : ObservableModel
     /// <summary>Gets the command of the Add http server button.</summary>
     public McpActionCommand AddHttpCommand { get; }
 
-    /// <summary>Reads the configuration through the source. A failure puts the page in <see cref="McpViewState.Error"/>.</summary>
+    /// <summary>Reads the configuration through the source. A failure puts the page in <see cref="McpViewState.Error"/>. An open consent prompt closes first, because the reload may change the declaration it showed.</summary>
     /// <param name="cancellationToken">Cancels the load.</param>
     /// <returns>A task that completes when the page shows the loaded configuration or the failure.</returns>
     public async Task LoadAsync(CancellationToken cancellationToken)
     {
+        // The prompt was built from the snapshot this load replaces, so it closes before the reload.
+        _pendingConsent = null;
         _pending++;
         Publish();
         string? failure = null;

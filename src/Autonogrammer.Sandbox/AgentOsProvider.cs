@@ -35,6 +35,7 @@ public sealed class AgentOsProvider : ISandboxProvider
     private const string SnapshotNotSupported = "agentOS hosted API has no VM snapshot action; filesystem.export is a root-filesystem snapshot whose bytes the hosted JSON encoding cannot carry (Q-SB-AGENTOS)";
     private const string LogsNotMapped = "agentOS output.read returns process output as bytes; the hosted JSON encoding cannot carry raw bytes and no other encoding is documented (Q-SB-AGENTOS)";
     private static readonly TimeSpan ControlTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan TeardownOnFailureTimeout = TimeSpan.FromSeconds(10);
 
     private readonly HttpClient _http;
     private readonly Uri _endpoint;
@@ -223,17 +224,53 @@ public sealed class AgentOsProvider : ISandboxProvider
         var json = await ReadJsonAsync(response, "provisioning", cancellationToken).ConfigureAwait(false);
         var actorId = ReadString(Member(Member(json, "actor"), "actor_id"))
             ?? throw new NotAvailableException("agentOS provisioning response has no actor_id");
-        var created = ReadBool(Member(json, "created"))
-            ?? throw new NotAvailableException("agentOS provisioning response has no created flag");
-        // config.set replaces the complete config, so it runs before the environment patch.
-        await DenyNetworkAsync(actorId, request.Timeout, cancellationToken).ConfigureAwait(false);
-
-        if (request.Spec.Environment.Count > 0)
+        try
         {
-            await PatchEnvironmentAsync(actorId, request.Spec.Environment, request.Timeout, cancellationToken).ConfigureAwait(false);
-        }
+            var created = ReadBool(Member(json, "created"))
+                ?? throw new NotAvailableException("agentOS provisioning response has no created flag");
+            // config.set replaces the complete config, so it runs before the environment patch.
+            await DenyNetworkAsync(actorId, request.Timeout, cancellationToken).ConfigureAwait(false);
 
-        return BuildProvisionResult(request, actorId, created);
+            if (request.Spec.Environment.Count > 0)
+            {
+                await PatchEnvironmentAsync(actorId, request.Spec.Environment, request.Timeout, cancellationToken).ConfigureAwait(false);
+            }
+
+            return BuildProvisionResult(request, actorId, created);
+        }
+        catch (Exception ex) when (!IsCallerCancellation(ex, cancellationToken))
+        {
+            await DestroyUnregisteredActorAsync(actorId).ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    private static bool IsCallerCancellation(Exception ex, CancellationToken cancellationToken) =>
+        ex is OperationCanceledException && cancellationToken.IsCancellationRequested;
+
+    /// <summary>
+    /// Best-effort destroy of an actor that a failed provisioning attempt created but never returned. Its failure is
+    /// swallowed so the original provisioning exception, rethrown by the caller, is the one that propagates.
+    /// </summary>
+    private async Task DestroyUnregisteredActorAsync(string actorId)
+    {
+        using var bound = new CancellationTokenSource(TeardownOnFailureTimeout);
+        try
+        {
+            await TeardownAsync(actorId, bound.Token).ConfigureAwait(false);
+        }
+        catch (TeardownFailedException)
+        {
+            // Intentionally ignored: the provisioning failure is the error to report.
+        }
+        catch (NotAvailableException)
+        {
+            // Intentionally ignored: the provisioning failure is the error to report.
+        }
+        catch (OperationCanceledException)
+        {
+            // Intentionally ignored: the bounded teardown deadline elapsed; the provisioning failure is the error to report.
+        }
     }
 
     private async Task PatchEnvironmentAsync(string actorId, IReadOnlyDictionary<string, string> environment, TimeSpan timeout, CancellationToken cancellationToken)

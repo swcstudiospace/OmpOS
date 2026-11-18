@@ -68,4 +68,13 @@ public sealed class ProviderIdMapTests
             row.Plan.ShouldNotBeNull().InteractiveOnly.ShouldBe(plan.InteractiveToolsOnly, plan.Id);
         }
     }
+
+    [Fact]
+    public void EveryMappedOmpProviderIdResolvesBackToItsRow()
+    {
+        foreach (var mapping in ProviderIdMap.All.Where(candidate => candidate.OmpProviderId is not null))
+        {
+            CatalogueRows.FindByOmpProviderId(mapping.OmpProviderId!).ShouldNotBeNull(mapping.LegacyId).Id.ShouldBe(mapping.RowId, mapping.LegacyId);
+        }
+    }
 }

@@ -167,9 +167,14 @@
                      Text="{x:Static pm:McpCopy.ConsentExplanation}" />
           <TextBlock Classes="settings-label"
                      Text="{CompiledBinding PendingConsent.Summary}" />
-          <TextBlock Classes="settings-mono"
-                     Text="{CompiledBinding PendingConsent.CommandText}"
-                     AutomationProperties.Name="Command the approval covers" />
+          <ScrollViewer MaxHeight="200"
+                        HorizontalScrollBarVisibility="Disabled"
+                        VerticalScrollBarVisibility="Auto">
+            <SelectableTextBlock Classes="settings-selectable settings-mono"
+                                 TextWrapping="Wrap"
+                                 Text="{CompiledBinding PendingConsent.CommandText}"
+                                 AutomationProperties.Name="Command the approval covers" />
+          </ScrollViewer>
           <TextBlock Classes="settings-help"
                      Text="{CompiledBinding PendingConsent.EnvironmentText}" />
           <TextBlock Classes="settings-help"

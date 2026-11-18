@@ -88,7 +88,7 @@ def is_https_url(value: object) -> bool:
 def validate(rows: list[dict], file_label: str = "data") -> list[str]:
     problems: list[str] = []
     seen: set[str] = set()
-    omp_ids: set[str] = set()
+    omp_keyed: dict[str, bool] = {}
     for index, row in enumerate(rows):
         rid = row.get("id", f"<row {index}>")
         where = f"{file_label}:{rid}"
@@ -135,9 +135,10 @@ def validate(rows: list[dict], file_label: str = "data") -> list[str]:
         if omp is not None:
             if not SLUG.match(omp.replace(".", "-")):
                 bad("ompProviderId is not a slug")
-            if omp in omp_ids:
+            if omp not in omp_keyed:
+                omp_keyed[omp] = row.get("apiKeyEnv") is not None
+            elif not (row.get("apiKeyEnv") is None and omp_keyed[omp]):
                 bad(f"ompProviderId {omp} used by two rows")
-            omp_ids.add(omp)
         env = row.get("apiKeyEnv")
         if env is not None and not ENV.match(env):
             bad("apiKeyEnv is not an env var NAME")

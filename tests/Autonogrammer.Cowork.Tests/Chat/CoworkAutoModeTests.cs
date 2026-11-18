@@ -49,6 +49,38 @@ public sealed class CoworkAutoModeTests
     }
 
     [Fact]
+    public async Task ShellAllowRuleDoesNotApproveAChainWithAnUnmatchedSegment()
+    {
+        using var world = new AutoWorld();
+        world.WriteRules("""{"permissions":{"allow":["Shell(ls)"]}}""");
+        var semicolon = new RunModeAuditLog();
+        var semicolonResolver = world.Resolver(semicolon);
+        (await semicolonResolver.ResolveAsync(world.Execute("ls; git push --force"), CancellationToken.None)).ShouldBe(PermissionDecision.Allow);
+        world.Ask.Calls.ShouldBe(1);
+        semicolon.Snapshot().ShouldContain(entry => entry.Decision.Stage == RunModeStage.CoworkAutoRule && entry.Decision.Outcome == RunModeOutcome.Ask);
+
+        world.Ask.Calls = 0;
+        var pipe = new RunModeAuditLog();
+        var pipeResolver = world.Resolver(pipe);
+        (await pipeResolver.ResolveAsync(world.Execute("ls | sh"), CancellationToken.None)).ShouldBe(PermissionDecision.Allow);
+        world.Ask.Calls.ShouldBe(1);
+        pipe.Snapshot().ShouldContain(entry => entry.Decision.Stage == RunModeStage.CoworkAutoRule && entry.Decision.Outcome == RunModeOutcome.Ask);
+    }
+
+    [Fact]
+    public async Task ShellAllowRuleApprovesASingleCommandAndAChainWhereEverySegmentMatches()
+    {
+        using var world = new AutoWorld();
+        world.WriteRules("""{"permissions":{"allow":["Shell(ls)"]}}""");
+        var resolver = world.Resolver(new RunModeAuditLog());
+        (await resolver.ResolveAsync(world.Execute("ls"), CancellationToken.None)).ShouldBe(PermissionDecision.Allow);
+        world.Ask.Calls.ShouldBe(0);
+
+        (await resolver.ResolveAsync(world.Execute("ls && ls"), CancellationToken.None)).ShouldBe(PermissionDecision.Allow);
+        world.Ask.Calls.ShouldBe(0);
+    }
+
+    [Fact]
     public async Task ProviderAndMcpAskInAutoAndATaintedSessionAsksForActuatingCalls()
     {
         using var world = new AutoWorld();

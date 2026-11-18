@@ -10,7 +10,7 @@ namespace Autonogrammer.Native.Composition.Mentions;
 /// The git diffs a mention attaches, read with the <c>git</c> command line in the workspace root. The <b>working</b> diff is <c>git diff HEAD</c> plus every untracked file shown as a new
 /// file (at most <see cref="MaxUntrackedFiles"/> of them). The <b>branch</b> diff is the merge base of <c>HEAD</c> with the base branch against <c>HEAD</c>: the commits of the branch, not its
 /// uncommitted changes. The base branch is <c>origin/HEAD</c> when the clone has it, else the first that exists of <c>origin/main</c>, <c>origin/master</c>, <c>main</c> and <c>master</c>.
-/// Both diffs are limited to the workspace folder (<c>-- .</c>). Git runs without a shell, a pager, optional index locks, external diff programs, text conversion filters or a file system monitor,
+/// Both diffs are limited to the workspace folder (<c>-- .</c>). Files that <see cref="MentionSecretFiles"/> names as secrets are left out before git reads them, and the diff says how many. Git runs without a shell, a pager, optional index locks, external diff programs, text conversion filters or a file system monitor,
 /// so reading a diff never runs a program the repository names. A folder that is not a repository, a repository with no commit, a missing base branch, a missing git and a slow git
 /// all read as <see cref="MentionUnavailableException"/> (the summary reports them as unavailable); nothing here throws anything else except cancellation.
 /// </summary>
@@ -22,6 +22,7 @@ internal sealed class GitMentionDiffSource : IGitDiffSource
 
     private const int ListingCharacters = 1024 * 1024;
     private const int ShortCharacters = 16 * 1024;
+    private const string ListingTooLong = "Git listed more files than the picker can check for secrets.";
 
     private static readonly string[] GlobalOptions =
     [
@@ -31,6 +32,9 @@ internal sealed class GitMentionDiffSource : IGitDiffSource
         "core.fsmonitor=false",
         "-c",
         "core.quotepath=false",
+        // Repository-relative names, which the secret exclusions match with :(top).
+        "-c",
+        "diff.relative=false",
     ];
 
     private static readonly string[] DiffOptions = ["--no-ext-diff", "--no-textconv", "--no-color"];
@@ -103,11 +107,16 @@ internal sealed class GitMentionDiffSource : IGitDiffSource
 
         var baseRef = await ResolveBaseAsync(cancellationToken).ConfigureAwait(false);
         var mergeBase = await MergeBaseAsync(baseRef, cancellationToken).ConfigureAwait(false);
-        var diff = await RunCheckedAsync(["diff", .. DiffOptions, mergeBase, "HEAD", "--", "."], maxBytes, "Git could not produce the branch diff", cancellationToken).ConfigureAwait(false);
-        var cut = MentionTextCut.Cut(diff.StandardOutput, maxBytes);
-        return diff.StandardOutput.Length == 0 && !diff.StandardOutputTruncated
-            ? NoChanges("This branch has no changes against " + baseRef + ".")
-            : cut with { Truncated = cut.Truncated || diff.StandardOutputTruncated };
+        var secret = await SecretPathsAsync([mergeBase, "HEAD"], cancellationToken).ConfigureAwait(false);
+        var diff = await RunCheckedAsync(["diff", .. DiffOptions, mergeBase, "HEAD", "--", ".", .. Exclusions(secret)], maxBytes, "Git could not produce the branch diff", cancellationToken).ConfigureAwait(false);
+        if (diff.StandardOutput.Length == 0 && !diff.StandardOutputTruncated)
+        {
+            return secret.Length == 0 ? NoChanges("This branch has no changes against " + baseRef + ".") : NoChanges(SkippedSentence(secret.Length));
+        }
+
+        var text = secret.Length == 0 ? diff.StandardOutput : diff.StandardOutput + SkippedSentence(secret.Length) + "\n";
+        var cut = MentionTextCut.Cut(text, maxBytes);
+        return cut with { Truncated = cut.Truncated || diff.StandardOutputTruncated };
     }
 
     private static MentionContent NoChanges(string sentence) => new(sentence, Encoding.UTF8.GetByteCount(sentence), false);
@@ -122,11 +131,14 @@ internal sealed class GitMentionDiffSource : IGitDiffSource
 
     private async Task<MentionContent> ReadWorkingAsync(int maxBytes, CancellationToken cancellationToken)
     {
-        var tracked = await RunCheckedAsync(["diff", .. DiffOptions, "HEAD", "--", "."], maxBytes, "Git could not produce the diff", cancellationToken).ConfigureAwait(false);
-        var untracked = await ListUntrackedAsync(cancellationToken).ConfigureAwait(false);
+        var secretTracked = await SecretPathsAsync(["HEAD"], cancellationToken).ConfigureAwait(false);
+        var tracked = await RunCheckedAsync(["diff", .. DiffOptions, "HEAD", "--", ".", .. Exclusions(secretTracked)], maxBytes, "Git could not produce the diff", cancellationToken).ConfigureAwait(false);
+        var listed = await ListUntrackedAsync(cancellationToken).ConfigureAwait(false);
+        var untracked = listed.Where(static path => !MentionSecretFiles.IsSecretBearing(path)).ToArray();
+        var skipped = secretTracked.Length + listed.Length - untracked.Length;
         if (tracked.StandardOutput.Length == 0 && untracked.Length == 0)
         {
-            return NoChanges("There are no uncommitted changes.");
+            return skipped == 0 ? NoChanges("There are no uncommitted changes.") : NoChanges(SkippedSentence(skipped));
         }
 
         var text = new StringBuilder(tracked.StandardOutput);
@@ -152,6 +164,13 @@ internal sealed class GitMentionDiffSource : IGitDiffSource
             used += size;
             total += size;
             truncated |= piece.StandardOutputTruncated;
+        }
+
+        if (skipped > 0)
+        {
+            var note = SkippedSentence(skipped) + "\n";
+            text.Append(note);
+            total += Encoding.UTF8.GetByteCount(note);
         }
 
         var cut = MentionTextCut.Cut(text.ToString(), maxBytes);
@@ -221,8 +240,32 @@ internal sealed class GitMentionDiffSource : IGitDiffSource
     private async Task<string[]> ListUntrackedAsync(CancellationToken cancellationToken)
     {
         var listing = await RunCheckedAsync(["ls-files", "--others", "--exclude-standard", "-z", "--", "."], ListingCharacters, "Git could not list the new files", cancellationToken).ConfigureAwait(false);
+        if (listing.StandardOutputTruncated)
+        {
+            throw new MentionUnavailableException(ListingTooLong);
+        }
+
         return listing.StandardOutput.Split('\0', StringSplitOptions.RemoveEmptyEntries);
     }
+
+    /// <summary>The changed paths of a diff that <see cref="MentionSecretFiles"/> names as secrets. Renames are off, so a secret file moved away shows as its own deletion.</summary>
+    private async Task<string[]> SecretPathsAsync(IReadOnlyList<string> revisions, CancellationToken cancellationToken)
+    {
+        var listing = await RunCheckedAsync(["diff", "--name-only", "--no-renames", "-z", .. revisions, "--", "."], ListingCharacters, "Git could not list the changed files", cancellationToken).ConfigureAwait(false);
+        if (listing.StandardOutputTruncated)
+        {
+            throw new MentionUnavailableException(ListingTooLong);
+        }
+
+        return listing.StandardOutput.Split('\0', StringSplitOptions.RemoveEmptyEntries).Where(MentionSecretFiles.IsSecretBearing).ToArray();
+    }
+
+    /// <summary>The pathspecs that leave the given repository-relative paths out of a diff.</summary>
+    private static string[] Exclusions(IEnumerable<string> paths) => paths.Select(static path => ":(top,exclude,literal)" + path).ToArray();
+
+    private static string SkippedSentence(int count) => count == 1
+        ? "One file that looks like a secret was left out."
+        : string.Create(CultureInfo.InvariantCulture, $"{count} files that look like secrets were left out.");
 
     private async Task<ProcessOutcome> RunCheckedAsync(IReadOnlyList<string> arguments, int maxCharacters, string failure, CancellationToken cancellationToken)
     {

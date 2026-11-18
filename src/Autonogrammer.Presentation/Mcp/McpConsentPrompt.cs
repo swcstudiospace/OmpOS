@@ -10,7 +10,7 @@ public sealed class McpConsentPrompt
         ArgumentNullException.ThrowIfNull(entry);
         Name = entry.Name;
         Summary = entry.Name + " (" + entry.Transport + " server, " + entry.Origin + ")";
-        CommandText = entry.CommandPreview;
+        CommandText = entry.CommandText;
         EnvironmentText = McpCopy.NamesText("Environment", entry.EnvNames);
         HeadersText = McpCopy.NamesText("Headers", entry.HeaderNames);
         ApproveName = "Approve server " + entry.Name;
@@ -23,7 +23,7 @@ public sealed class McpConsentPrompt
     /// <summary>Gets the one-line description of the server.</summary>
     public string Summary { get; }
 
-    /// <summary>Gets the command as written, or the host of a remote server.</summary>
+    /// <summary>Gets the command as written in full, or the host of a remote server.</summary>
     public string CommandText { get; }
 
     /// <summary>Gets the environment variable names, labelled, or an empty string.</summary>

@@ -149,7 +149,15 @@ public sealed partial class CatalogueRowsTests
         foreach (var row in named)
         {
             known.ShouldContain(row.OmpProviderId!, StringComparer.Ordinal, row.Id);
-            CatalogueRows.FindByOmpProviderId(row.OmpProviderId!).ShouldBeSameAs(row);
+            var holder = CatalogueRows.FindByOmpProviderId(row.OmpProviderId!).ShouldNotBeNull(row.Id);
+            if (string.Equals(holder.Id, row.Id, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            // A key-less login row may share the omp id of its keyed row (ADR-0019, amended); the keyed row holds the key.
+            row.ApiKeyEnv.ShouldBeNull(row.Id);
+            holder.ApiKeyEnv.ShouldNotBeNull(row.Id);
         }
 
         CatalogueRows.FindByOmpProviderId("no-such-omp-provider").ShouldBeNull();
@@ -169,7 +177,8 @@ public sealed partial class CatalogueRowsTests
         new Uri(codestral.Routes[0].BaseAddressTemplate).Host.ShouldBe("codestral.mistral.ai");
         vibe.Kind.ShouldBe(CatalogueKind.CodingPlan);
         vibe.Plan.ShouldNotBeNull().SeparateKey.ShouldBeTrue();
-        vibe.OmpProviderId.ShouldBeNull();
+        vibe.OmpProviderId.ShouldBe("mistral");
+        vibe.ApiKeyEnv.ShouldBeNull();
         new[] { payg.Id, codestral.Id, vibe.Id }.Distinct(StringComparer.Ordinal).Count().ShouldBe(3);
     }
 
@@ -258,7 +267,7 @@ public sealed partial class CatalogueRowsTests
     {
         // A models.yml block under an omp provider id overrides that provider (a Workers AI block, for example, lists as a judge model),
         // so a row may share an id with omp only when it is that provider, or for these routes that reach omp's own host.
-        string[] reachedOnPurpose = ["minimax-cn", "xiaomi-token-plan-sgp", "xiaomi-token-plan-ams"];
+        string[] reachedOnPurpose = ["minimax-cn"];
         var known = OmpProviderIdFixture.Read();
         foreach (var row in CatalogueRows.All)
         {
@@ -271,6 +280,50 @@ public sealed partial class CatalogueRowsTests
                 }
             }
         }
+    }
+
+    [Fact]
+    public void XiaomiTokenPlanIsOneRowPerRegionWithItsOwnKey()
+    {
+        (string Id, string Key, string Host)[] regions =
+        [
+            ("xiaomi-token-plan-cn", "XIAOMI_TOKEN_PLAN_CN_API_KEY", "https://token-plan-cn.xiaomimimo.com/v1"),
+            ("xiaomi-token-plan-sgp", "XIAOMI_TOKEN_PLAN_SGP_API_KEY", "https://token-plan-sgp.xiaomimimo.com/v1"),
+            ("xiaomi-token-plan-ams", "XIAOMI_TOKEN_PLAN_AMS_API_KEY", "https://token-plan-ams.xiaomimimo.com/v1"),
+        ];
+        foreach (var (id, key, host) in regions)
+        {
+            var row = CatalogueRows.Find(id).ShouldNotBeNull(id);
+            row.OmpProviderId.ShouldBe(id, id);
+            row.ApiKeyEnv.ShouldBe(key, id);
+            row.Status.ShouldBe(CatalogueStatus.Partial, id);
+            row.Routes[0].BaseAddressTemplate.ShouldBe(host, id);
+        }
+
+        CatalogueRows.Find("xiaomi-token-plan").ShouldBeNull();
+    }
+
+    [Fact]
+    public void KeylessSignInRowsCarryNoKeySetting()
+    {
+        foreach (var id in new[] { "kimi-code", "mistral-vibe-plan" })
+        {
+            var row = CatalogueRows.Find(id).ShouldNotBeNull(id);
+            row.ApiKeyEnv.ShouldBeNull(id);
+            row.TakesApiKey.ShouldBeFalse(id);
+        }
+    }
+
+    [Fact]
+    public void ScalewayAndMetaResolveByTheirOmpIdsWithTheirKeySettings()
+    {
+        var scaleway = CatalogueRows.FindByOmpProviderId("scaleway").ShouldNotBeNull();
+        scaleway.Id.ShouldBe("scaleway");
+        scaleway.ApiKeyEnv.ShouldBe("SCW_SECRET_KEY");
+
+        var meta = CatalogueRows.FindByOmpProviderId("meta").ShouldNotBeNull();
+        meta.Id.ShouldBe("meta-llama-api");
+        meta.ApiKeyEnv.ShouldBe("MODEL_API_KEY");
     }
 
     private static string[] VariableNames(string id) =>

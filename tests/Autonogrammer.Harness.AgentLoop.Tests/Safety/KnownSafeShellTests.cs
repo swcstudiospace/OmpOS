@@ -20,4 +20,24 @@ public sealed class KnownSafeShellTests
         KnownSafeShell.IsKnownSafe("ls /elsewhere", static _ => false).ShouldBeFalse();
         KnownSafeShell.IsKnownSafe("rm notes.txt", static _ => true).ShouldBeFalse();
     }
+
+    [Fact]
+    public void EverySegmentMatchingAnAllowPatternIsAllowed()
+    {
+        KnownSafeShell.AllSegmentsMatchShellRules("ls && ls", ["ls"]).ShouldBeTrue();
+        KnownSafeShell.AllSegmentsMatchShellRules("ls; git status", ["ls", "git status"]).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void OneSegmentMatchingNoPatternIsNotAllowed()
+    {
+        KnownSafeShell.AllSegmentsMatchShellRules("ls; git push --force", ["ls"]).ShouldBeFalse();
+        KnownSafeShell.AllSegmentsMatchShellRules("ls | sh", ["ls"]).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void AnOpaqueLineIsNotAllowedEvenWhenItsWordsMatch()
+    {
+        KnownSafeShell.AllSegmentsMatchShellRules("ls > out.txt", ["ls"]).ShouldBeFalse();
+    }
 }

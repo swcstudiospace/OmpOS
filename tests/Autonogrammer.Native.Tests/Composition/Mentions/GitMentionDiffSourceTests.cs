@@ -215,4 +215,62 @@ public sealed class GitMentionDiffSourceTests
         await cancelled.CancelAsync().ConfigureAwait(true);
         await Should.ThrowAsync<TaskCanceledException>(() => again.WaitAsync(Token)).ConfigureAwait(true);
     }
+
+    /// <summary>An untracked secret-looking file that git does not ignore is left out of the working diff; the other new file is in it.</summary>
+    [Fact]
+    public async Task AnUntrackedSecretFileIsLeftOutOfTheWorkingDiff()
+    {
+        NeedGit();
+        using var tree = await CommittedRepositoryAsync().ConfigureAwait(true);
+        tree.Write(".env", "SECRET=shh\n");
+        tree.Write("c.txt", "brand new\n");
+        var source = new GitMentionDiffSource(tree.Root);
+
+        var content = await source.ReadAsync(MentionGitDiffKind.Working, 100_000, Token).ConfigureAwait(true);
+
+        content.Text.ShouldContain("+brand new", Case.Sensitive);
+        content.Text.ShouldNotContain("SECRET", Case.Sensitive);
+        content.Text.ShouldNotContain(".env", Case.Sensitive);
+        content.Text.ShouldContain("One file that looks like a secret was left out.", Case.Sensitive);
+    }
+
+    /// <summary>A committed secret-looking file is left out of the branch diff; the branch's other changes are in it.</summary>
+    [Fact]
+    public async Task ACommittedSecretFileIsLeftOutOfTheBranchDiff()
+    {
+        NeedGit();
+        using var tree = await CommittedRepositoryAsync().ConfigureAwait(true);
+        await GitCli.RunAsync(tree.Root, ["checkout", "--quiet", "-b", "feature"], Token).ConfigureAwait(true);
+        tree.Write(".env", "SECRET=shh\n");
+        tree.Write("feature.txt", "feature work\n");
+        await GitCli.CommitAllAsync(tree.Root, "feature", Token).ConfigureAwait(true);
+        var source = new GitMentionDiffSource(tree.Root);
+
+        var content = await source.ReadAsync(MentionGitDiffKind.Branch, 100_000, Token).ConfigureAwait(true);
+
+        content.Text.ShouldContain("+feature work", Case.Sensitive);
+        content.Text.ShouldNotContain("SECRET", Case.Sensitive);
+        content.Text.ShouldNotContain(".env", Case.Sensitive);
+        content.Text.ShouldContain("One file that looks like a secret was left out.", Case.Sensitive);
+    }
+
+    /// <summary>A tracked secret-looking file changed in the working tree is left out of the working diff; an ordinary tracked change is still in it.</summary>
+    [Fact]
+    public async Task AnOrdinaryTrackedChangeIsStillInTheWorkingDiff()
+    {
+        NeedGit();
+        using var tree = await CommittedRepositoryAsync().ConfigureAwait(true);
+        tree.Write(".env", "SECRET=old\n");
+        await GitCli.CommitAllAsync(tree.Root, "env", Token).ConfigureAwait(true);
+        tree.Write(".env", "SECRET=new\n");
+        tree.Write("a.txt", "new\n");
+        var source = new GitMentionDiffSource(tree.Root);
+
+        var content = await source.ReadAsync(MentionGitDiffKind.Working, 100_000, Token).ConfigureAwait(true);
+
+        content.Text.ShouldContain("diff --git a/a.txt b/a.txt", Case.Sensitive);
+        content.Text.ShouldContain("-old\n+new\n", Case.Sensitive);
+        content.Text.ShouldNotContain("SECRET", Case.Sensitive);
+        content.Text.ShouldNotContain("diff --git a/.env", Case.Sensitive);
+    }
 }

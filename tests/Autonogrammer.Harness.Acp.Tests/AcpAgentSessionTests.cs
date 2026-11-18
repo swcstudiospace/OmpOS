@@ -316,16 +316,90 @@ public sealed class AcpAgentSessionTests
             var options = FsOptions(root.FullName);
 
             var full = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, "notes/hello.txt"), FsAnswerId, ct).ConfigureAwait(true);
-            full["result"]!["content"]!.GetValue<string>().ShouldBe("line1\nline2\nline3");
+            // The read returns the file's exact content, terminators included, as the fs/read_text_file contract requires.
+            full["result"]!["content"]!.GetValue<string>().ShouldBe("line1\nline2\nline3\n");
 
             var absolute = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, Path.Combine(dir, "hello.txt")), FsAnswerId, ct).ConfigureAwait(true);
-            absolute["result"]!["content"]!.GetValue<string>().ShouldBe("line1\nline2\nline3");
+            absolute["result"]!["content"]!.GetValue<string>().ShouldBe("line1\nline2\nline3\n");
 
             var window = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, "notes/hello.txt", line: 2, limit: 1), FsAnswerId, ct).ConfigureAwait(true);
-            window["result"]!["content"]!.GetValue<string>().ShouldBe("line2");
+            window["result"]!["content"]!.GetValue<string>().ShouldBe("line2\n");
 
             var pastEnd = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, "notes/hello.txt", line: 9), FsAnswerId, ct).ConfigureAwait(true);
             pastEnd["result"]!["content"]!.GetValue<string>().ShouldBe(string.Empty);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    /// <summary>A read returns the file's text exactly, keeping CRLF terminators instead of normalising them to LF.</summary>
+    [Fact]
+    public async Task FsReadKeepsCrlfTerminatorsExactly()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var root = Directory.CreateTempSubdirectory("acp-fs-");
+        try
+        {
+            await File.WriteAllBytesAsync(Path.Combine(root.FullName, "crlf.txt"), "alpha\r\nbeta\r\n"u8.ToArray(), ct).ConfigureAwait(true);
+
+            var answer = await AnswerFsAsync(FsOptions(root.FullName), FsReadRequest(FsAnswerId, "crlf.txt"), FsAnswerId, ct).ConfigureAwait(true);
+
+            answer["result"]!["content"]!.GetValue<string>().ShouldBe("alpha\r\nbeta\r\n");
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    /// <summary>Reading a CRLF file and writing the returned content back produces a byte-identical file.</summary>
+    [Fact]
+    public async Task FsReadThenWriteRoundTripsCrlfBytesExactly()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var root = Directory.CreateTempSubdirectory("acp-fs-");
+        try
+        {
+            var source = Path.Combine(root.FullName, "source.txt");
+            await File.WriteAllBytesAsync(source, "alpha\r\nbeta\r\n"u8.ToArray(), ct).ConfigureAwait(true);
+            var options = FsOptions(root.FullName);
+
+            var read = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, "source.txt"), FsAnswerId, ct).ConfigureAwait(true);
+            var content = read["result"]!["content"]!.GetValue<string>();
+
+            var write = await AnswerFsAsync(options, FsWriteRequest(FsAnswerId, "copy.txt", content), FsAnswerId, ct).ConfigureAwait(true);
+            write["error"].ShouldBeNull();
+
+            (await File.ReadAllBytesAsync(Path.Combine(root.FullName, "copy.txt"), ct).ConfigureAwait(true))
+                .ShouldBe(await File.ReadAllBytesAsync(source, ct).ConfigureAwait(true));
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    /// <summary>A line-limited read returns the same lines as before, each with its original terminator.</summary>
+    [Fact]
+    public async Task FsReadLineWindowKeepsOriginalTerminators()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var root = Directory.CreateTempSubdirectory("acp-fs-");
+        try
+        {
+            await File.WriteAllBytesAsync(Path.Combine(root.FullName, "mixed.txt"), "alpha\r\nbeta\r\ngamma\n"u8.ToArray(), ct).ConfigureAwait(true);
+            var options = FsOptions(root.FullName);
+
+            var second = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, "mixed.txt", line: 2, limit: 1), FsAnswerId, ct).ConfigureAwait(true);
+            second["result"]!["content"]!.GetValue<string>().ShouldBe("beta\r\n");
+
+            var firstTwo = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, "mixed.txt", line: 1, limit: 2), FsAnswerId, ct).ConfigureAwait(true);
+            firstTwo["result"]!["content"]!.GetValue<string>().ShouldBe("alpha\r\nbeta\r\n");
+
+            var last = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, "mixed.txt", line: 3, limit: 1), FsAnswerId, ct).ConfigureAwait(true);
+            last["result"]!["content"]!.GetValue<string>().ShouldBe("gamma\n");
         }
         finally
         {

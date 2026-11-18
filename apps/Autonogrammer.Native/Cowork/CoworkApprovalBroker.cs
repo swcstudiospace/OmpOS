@@ -51,11 +51,10 @@ internal sealed class CoworkApprovalBroker : ICoworkApprovalBroker
         ArgumentNullException.ThrowIfNull(request);
         if (!_windowAvailable)
         {
-            Remember(request, "Unavailable");
             return new CoworkApprovalDecision(CoworkApprovalOutcome.Unavailable);
         }
 
-        var pending = Remember(request, null);
+        var pending = Remember(request);
         using var timeout = new CancellationTokenSource(_options.ApprovalTimeout, _clock);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
@@ -65,8 +64,11 @@ internal sealed class CoworkApprovalBroker : ICoworkApprovalBroker
         }
         catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            pending.Card = pending.Card with { StatusText = "Timed out" };
             return new CoworkApprovalDecision(CoworkApprovalOutcome.TimedOut);
+        }
+        finally
+        {
+            Forget(pending);
         }
     }
 
@@ -107,7 +109,7 @@ internal sealed class CoworkApprovalBroker : ICoworkApprovalBroker
         }
     }
 
-    private Pending Remember(CoworkApprovalRequest request, string? status)
+    private Pending Remember(CoworkApprovalRequest request)
     {
         var card = new CoworkApprovalCard(
             new PendingToolApproval
@@ -119,7 +121,7 @@ internal sealed class CoworkApprovalBroker : ICoworkApprovalBroker
             },
             request.Preview.Target,
             request.Preview.Details,
-            status);
+            null);
         var pending = new Pending(request, card);
         lock (_gate)
         {
@@ -129,11 +131,22 @@ internal sealed class CoworkApprovalBroker : ICoworkApprovalBroker
         return pending;
     }
 
+    private void Forget(Pending pending)
+    {
+        lock (_gate)
+        {
+            if (_pending.TryGetValue(pending.Request.CallId, out var current) && ReferenceEquals(current, pending))
+            {
+                _ = _pending.Remove(pending.Request.CallId);
+            }
+        }
+    }
+
     private sealed class Pending(CoworkApprovalRequest request, CoworkApprovalCard card)
     {
         public CoworkApprovalRequest Request { get; } = request;
 
-        public CoworkApprovalCard Card { get; set; } = card;
+        public CoworkApprovalCard Card { get; } = card;
 
         public TaskCompletionSource<CoworkApprovalDecision> Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
