@@ -4,10 +4,14 @@ namespace Autonogrammer.Presentation.Tests.Mcp;
 
 /// <summary>
 /// An MCP source the test scripts: it holds servers, files and notices in memory, applies switch, consent and template writes to them,
-/// records every call, and can hold a load or a check open or fail a load or a write with the expected failure.
+/// records every call, and can hold a load or a check open or fail a load or a write with the expected failure. Like the harness catalog, it
+/// refuses an approval whose consent identity is not the server's current one.
 /// </summary>
 internal sealed class ScriptedMcpSource : IMcpSettingsSource
 {
+    /// <summary>The failure an approval with a stale consent identity faults with.</summary>
+    internal const string ChangedDeclaration = "The declaration of the MCP server changed after it was shown. Review it again before you approve it.";
+
     private readonly List<McpServerEntry> _servers = [];
     private readonly TaskCompletionSource _checkGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private bool _holdCheck;
@@ -40,6 +44,9 @@ internal sealed class ScriptedMcpSource : IMcpSettingsSource
     /// <summary>Gets the calls that reached the source, as <c>verb name</c> strings, in order.</summary>
     internal List<string> Calls { get; } = [];
 
+    /// <summary>Gets the presets the source offers; add to it to script the add-from-preset list.</summary>
+    internal List<McpPresetChoice> PresetList { get; } = [];
+
     /// <summary>Makes the next check wait until <see cref="CompleteCheck"/>.</summary>
     internal void HoldCheck() => _holdCheck = true;
 
@@ -50,6 +57,10 @@ internal sealed class ScriptedMcpSource : IMcpSettingsSource
     /// <param name="name">The server name.</param>
     /// <returns>The entry.</returns>
     internal McpServerEntry Entry(string name) => _servers.Single(server => string.Equals(server.Name, name, StringComparison.Ordinal));
+
+    /// <summary>Replaces a server's declaration without the page reading it again, as an edit of the configuration file does.</summary>
+    /// <param name="declaration">The server as it is declared now. Its name selects the server it replaces.</param>
+    internal void Redeclare(McpServerEntry declaration) => Replace(declaration.Name, _ => declaration);
 
     /// <inheritdoc />
     public Task LoadAsync(CancellationToken cancellationToken)
@@ -82,9 +93,20 @@ internal sealed class ScriptedMcpSource : IMcpSettingsSource
     }
 
     /// <inheritdoc />
-    public Task GrantConsentAsync(string name, CancellationToken cancellationToken)
+    public Task GrantConsentAsync(string name, string consentIdentity, CancellationToken cancellationToken)
     {
         Calls.Add("grant " + name);
+        var server = _servers.Find(entry => string.Equals(entry.Name, name, StringComparison.Ordinal));
+        if (server is null)
+        {
+            return Task.FromException(new McpSourceException("No MCP server named '" + name + "' is configured."));
+        }
+
+        if (!string.Equals(server.ConsentIdentity, consentIdentity, StringComparison.Ordinal))
+        {
+            return Task.FromException(new McpSourceException(ChangedDeclaration));
+        }
+
         return WriteAsync(() => Replace(name, entry => entry with { Status = McpServerStatusKind.Configured, IsOffered = true, IsConsentGranted = true }));
     }
 
@@ -118,12 +140,9 @@ internal sealed class ScriptedMcpSource : IMcpSettingsSource
 
         _servers.Add(new McpServerEntry(
             name, choice == McpTemplateChoice.Http ? "http" : "stdio", McpEntryScope.Project, ".autonogrammer/mcp.json",
-            McpServerStatusKind.Disabled, "Switched off in Autonogrammer.", null, "placeholder", "placeholder", [], [], false, false, true, false, false));
+            McpServerStatusKind.Disabled, "Switched off in Autonogrammer.", null, "placeholder", "placeholder", [], [], false, false, true, false, false, McpEntries.IdentityOf(name)));
         return Task.FromResult(".autonogrammer/mcp.json");
     }
-
-    /// <summary>Gets the presets the source offers; add to it to script the add-from-preset list.</summary>
-    internal List<McpPresetChoice> PresetList { get; } = [];
 
     /// <inheritdoc />
     public IReadOnlyList<McpPresetChoice> Presets => PresetList;
@@ -150,7 +169,7 @@ internal sealed class ScriptedMcpSource : IMcpSettingsSource
 
         _servers.Add(new McpServerEntry(
             presetId, "http", McpEntryScope.Project, ".autonogrammer/mcp.json",
-            McpServerStatusKind.Disabled, "Switched off in Autonogrammer.", null, "https://preset.example.com", "https://preset.example.com", [], [], false, false, true, false, false));
+            McpServerStatusKind.Disabled, "Switched off in Autonogrammer.", null, "https://preset.example.com", "https://preset.example.com", [], [], false, false, true, false, false, McpEntries.IdentityOf(presetId)));
         return Task.FromResult(".autonogrammer/mcp.json");
     }
 

@@ -94,14 +94,21 @@ public sealed class McpServerCatalog
         _ = Rebuild();
     }
 
-    /// <summary>Approves a server's exact declaration. Nothing is started.</summary>
+    /// <summary>Approves a server's exact declaration, as the consent prompt showed it. Nothing is started.</summary>
     /// <param name="name">The server name.</param>
+    /// <param name="consentIdentity">The consent identity of the declaration the user reviewed. The approval is refused when the server's declaration has another identity now.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>A task that completes when the approval is saved.</returns>
-    /// <exception cref="McpCatalogException">The server is unknown or the state file cannot be written.</exception>
-    public async Task GrantConsentAsync(string name, CancellationToken cancellationToken)
+    /// <exception cref="McpCatalogException">The server is unknown, its declaration changed since <paramref name="consentIdentity"/> was taken, or the state file cannot be written.</exception>
+    public async Task GrantConsentAsync(string name, string consentIdentity, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(consentIdentity);
         var server = Find(name);
+        if (!string.Equals(server.ConsentIdentity, consentIdentity, StringComparison.Ordinal))
+        {
+            throw new McpCatalogException("The declaration of MCP server '" + name + "' changed after it was shown. Review it again before you approve it.");
+        }
+
         await SaveAsync(_state.WithConsent(server.ConsentIdentity), cancellationToken).ConfigureAwait(false);
         _ = Rebuild();
     }

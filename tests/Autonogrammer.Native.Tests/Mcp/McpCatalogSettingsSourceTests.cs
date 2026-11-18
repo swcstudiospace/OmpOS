@@ -86,12 +86,29 @@ public sealed class McpCatalogSettingsSourceTests
         var source = Create(files);
         await source.LoadAsync(Token).ConfigureAwait(true);
 
-        await source.GrantConsentAsync("tool", Token).ConfigureAwait(true);
+        await source.GrantConsentAsync("tool", source.Snapshot().Servers.Single().ConsentIdentity, Token).ConfigureAwait(true);
 
         var tool = source.Snapshot().Servers.Single();
         tool.Status.ShouldBe(McpServerStatusKind.Configured);
         tool.IsConsentGranted.ShouldBeTrue();
         tool.IsOffered.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task ApprovingADeclarationThatChangedSinceItWasShownIsASourceFailureAndRecordsNothing()
+    {
+        var path = Path.Combine(Root, ".cursor", "mcp.json");
+        var files = new MemoryMcpFiles().With(path, """{ "mcpServers": { "tool": { "command": "node" } } }""");
+        var source = Create(files);
+        await source.LoadAsync(Token).ConfigureAwait(true);
+        var shown = source.Snapshot().Servers.Single().ConsentIdentity;
+        _ = files.With(path, """{ "mcpServers": { "tool": { "command": "node", "args": ["--evil"] } } }""");
+        await source.LoadAsync(Token).ConfigureAwait(true);
+
+        var failure = await Should.ThrowAsync<McpSourceException>(() => source.GrantConsentAsync("tool", shown, Token)).ConfigureAwait(true);
+
+        failure.Message.ShouldContain("changed after it was shown");
+        source.Snapshot().Servers.Single().IsConsentGranted.ShouldBeFalse();
     }
 
     [Fact]

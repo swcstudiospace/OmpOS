@@ -13,6 +13,7 @@ public sealed class McpConsentPrompt
         CommandText = entry.CommandText;
         EnvironmentText = McpCopy.NamesText("Environment", entry.EnvNames);
         HeadersText = McpCopy.NamesText("Headers", entry.HeaderNames);
+        ConsentIdentity = entry.ConsentIdentity;
         ApproveName = "Approve server " + entry.Name;
         CancelName = McpCopy.CancelName;
     }
@@ -31,6 +32,9 @@ public sealed class McpConsentPrompt
 
     /// <summary>Gets the header names, labelled, or an empty string.</summary>
     public string HeadersText { get; }
+
+    /// <summary>Gets the consent identity of the declaration shown. Approval passes it back, so a declaration that changed after the prompt opened is refused.</summary>
+    public string ConsentIdentity { get; }
 
     /// <summary>Gets the accessible name of the approve button.</summary>
     public string ApproveName { get; }

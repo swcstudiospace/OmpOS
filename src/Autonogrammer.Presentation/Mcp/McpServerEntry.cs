@@ -20,6 +20,7 @@ namespace Autonogrammer.Presentation.Mcp;
 /// <param name="RequiresConsent">Whether the server needs the user's approval.</param>
 /// <param name="IsConsentGranted">Whether the user approved the server's exact declaration.</param>
 /// <param name="HasOAuthSettings">Whether the entry carries OAuth settings, which are not passed to omp.</param>
+/// <param name="ConsentIdentity">The identity of the declaration the server is started or reached with. The consent prompt carries it, and approval is refused once the declaration has another identity.</param>
 public sealed record McpServerEntry(
     string Name,
     string Transport,
@@ -36,4 +37,5 @@ public sealed record McpServerEntry(
     bool IsOffered,
     bool RequiresConsent,
     bool IsConsentGranted,
-    bool HasOAuthSettings);
+    bool HasOAuthSettings,
+    string ConsentIdentity);

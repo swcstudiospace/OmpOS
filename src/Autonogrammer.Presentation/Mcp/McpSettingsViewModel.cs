@@ -36,6 +36,7 @@ public sealed class McpSettingsViewModel : ObservableModel
     private string _templateName = string.Empty;
     private bool _loaded;
     private int _pending;
+    private int _actionVersion;
 
     /// <summary>Creates the page over a source. It is loading until <see cref="LoadAsync"/> runs.</summary>
     /// <param name="source">The MCP source.</param>
@@ -192,10 +193,14 @@ public sealed class McpSettingsViewModel : ObservableModel
         {
             failure = exception.Message;
         }
-        finally
+        catch (Exception)
         {
             _pending--;
+            Publish();
+            throw;
         }
+
+        _pending--;
 
         if (failure is null)
         {
@@ -238,7 +243,10 @@ public sealed class McpSettingsViewModel : ObservableModel
         Publish();
     }
 
-    /// <summary>Approves the server the consent prompt shows. It records consent for that exact declaration and starts nothing.</summary>
+    /// <summary>
+    /// Approves the server the consent prompt shows. It records consent for the declaration the prompt showed, identified by its consent identity,
+    /// and starts nothing. A declaration that changed since the prompt opened is refused.
+    /// </summary>
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>A task that completes when the page shows the approval or its failure.</returns>
     public async Task ConfirmConsentAsync(CancellationToken cancellationToken)
@@ -249,7 +257,7 @@ public sealed class McpSettingsViewModel : ObservableModel
             return;
         }
 
-        var failed = await RunAsync(() => _source.GrantConsentAsync(prompt.Name, cancellationToken)).ConfigureAwait(true);
+        var failed = await RunAsync(() => _source.GrantConsentAsync(prompt.Name, prompt.ConsentIdentity, cancellationToken)).ConfigureAwait(true);
         if (!failed)
         {
             _pendingConsent = null;
@@ -274,7 +282,10 @@ public sealed class McpSettingsViewModel : ObservableModel
     public async Task CheckAsync(string name, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(name);
-        _ = _checking.Add(name);
+        if (!_checking.Add(name))
+        {
+            return;
+        }
         Refresh();
         try
         {
@@ -336,6 +347,7 @@ public sealed class McpSettingsViewModel : ObservableModel
     // Returns true when the action failed with an expected failure.
     private async Task<bool> RunAsync(Func<Task> action)
     {
+        var version = ++_actionVersion;
         _pending++;
         _actionFailure = string.Empty;
         _actionResult = string.Empty;
@@ -353,10 +365,15 @@ public sealed class McpSettingsViewModel : ObservableModel
         finally
         {
             _pending--;
+            // An action that finishes after a newer one started does not clear the newer action's message. Its own failure is still shown.
+            if (failure is not null || version == _actionVersion)
+            {
+                _actionFailure = failure ?? string.Empty;
+            }
+
+            Refresh();
         }
 
-        _actionFailure = failure ?? string.Empty;
-        Refresh();
         return failure is not null;
     }
 
@@ -375,7 +392,9 @@ public sealed class McpSettingsViewModel : ObservableModel
             new McpActionCommand(() => OpenConfigFileAsync(file.Origin, CancellationToken.None))))];
         _notices = [.. snapshot.Notices.OrderByDescending(notice => notice.Severity).Select(notice => new McpNoticeRow(notice))];
         _presetRows = [.. _source.Presets.Select(choice => BuildPresetRow(choice, entries))];
-        if (_pendingConsent is { } prompt && !entries.Exists(entry => string.Equals(entry.Name, prompt.Name, StringComparison.Ordinal) && entry.Status == McpServerStatusKind.NeedsConsent))
+        // The prompt stays open only while its server still waits for approval of the declaration it showed. A changed declaration has another identity.
+        if (_pendingConsent is { } prompt && !entries.Exists(entry => string.Equals(entry.Name, prompt.Name, StringComparison.Ordinal)
+            && entry.Status == McpServerStatusKind.NeedsConsent && string.Equals(entry.ConsentIdentity, prompt.ConsentIdentity, StringComparison.Ordinal)))
         {
             _pendingConsent = null;
         }
