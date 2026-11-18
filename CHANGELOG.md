@@ -8,6 +8,30 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.19.1] - 2026-11-18
+
+### Added
+- Provider catalogue: 31 omp-native rows, each `unverified` with a note that begins `Verify before use:`; verification is tracked as KL-13. Seven researched rows are not added (KL-16).
+- Routeless omp-native rows accept an API key and send it to omp by provider id, in the API, the native settings and the presentation card (ADR-0019, amended 2026-11-18).
+- ADR-0013 (plugin isolation) accepted by the owner, 2026-11-18.
+
+### Changed
+- A hook gate that does not answer within 5 seconds denies the action.
+- A prompt submitted while a model or option switch is in flight waits for the switch instead of failing.
+- A cloud create or hand-off cancelled after its request was sent reports an unknown outcome and is not retried.
+
+### Fixed
+- Shell scanner: deny rules see commands behind a quoted substitution, a backslash-newline continuation, an ANSI-C quoted name, `env -S`, and wrapper options that take a value (`env -u`, `env -C`, `timeout -s`); known-safe commands with unquoted glob words ask.
+- ACP: an over-long stderr line is cut at the bound; a failed WebSocket connect no longer blocks the next attempt; an all-omitted image set is refused rather than sent as a note alone.
+- Hooks: a failClosed omp hook on a guarding event such as `tool_call` blocks when it fails; a damaged `hooks-host.json` fails the open instead of substituting defaults.
+- Sessions: an unreadable state file is kept and no later write replaces it; unknown lifecycle words survive a rewrite; titles are cut on whole characters.
+- Plugin consent: approval records the declaration the prompt showed, and a changed declaration is refused.
+- Browser: a take-over releases keyboard capture and the gate on close.
+- Settings and views: display saves write only the switches that changed; bundle and skill toggles snap back after a refused write; network diagnostics and browser acquisition show their failures; connectors settings loads servers; Projects rename sends the typed name; Kanban does not re-read details on reattach; artifact images keep the previous size cap.
+
+### Removed
+- The dead Native hooks view chain (`HooksModel`, `HooksView`, `HookRow`, `HookRegistrySource`); the live surface is `HooksPageView`.
+
 ## [0.19.0] - 2026-11-17
 
 ### Added
@@ -444,7 +468,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.1...HEAD
+[0.19.1]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.0...v0.19.1
 [0.19.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.16.3...v0.17.0
