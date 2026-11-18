@@ -40,6 +40,18 @@ public sealed record CoworkSessionSummary
     {
         ArgumentNullException.ThrowIfNull(title);
         var trimmed = title.Trim();
-        return trimmed.Length <= MaxTitleLength ? trimmed : trimmed[..MaxTitleLength];
+        if (trimmed.Length <= MaxTitleLength)
+        {
+            return trimmed;
+        }
+
+        // Never cut between the two halves of a surrogate pair: that would store a lone surrogate.
+        var length = MaxTitleLength;
+        if (char.IsHighSurrogate(trimmed[length - 1]))
+        {
+            length--;
+        }
+
+        return trimmed[..length];
     }
 }

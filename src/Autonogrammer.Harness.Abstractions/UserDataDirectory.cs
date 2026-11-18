@@ -16,6 +16,7 @@ namespace Autonogrammer.Harness.Abstractions;
 /// one is left untouched and a warning is returned. A legacy directory that cannot be read is left alone with a warning; startup never fails
 /// for it. Two processes that start together perform one migration: the check-then-move runs under an exclusive lock file beside the
 /// directories, and the atomic rename is the final arbiter.
+/// A legacy directory that changes while it is copied is kept with a warning and is never deleted.
 /// </remarks>
 public static class UserDataDirectory
 {
@@ -30,6 +31,9 @@ public static class UserDataDirectory
 
     private const int LockAttempts = 200;
     private const int LockRetryMilliseconds = 25;
+
+    /// <summary>One entry of a legacy tree: its place, kind, size and last write. Two equal sets of entries describe the same tree.</summary>
+    private readonly record struct EntryStamp(string RelativePath, bool IsDirectory, long Length, DateTime LastWriteUtc);
 
     /// <summary>Returns the per-user data directory under a parent root. A pure computation: nothing is read or created.</summary>
     /// <param name="parentRoot">The parent root, such as the application data folder or <c>~/.local/share</c>.</param>
@@ -132,9 +136,10 @@ public static class UserDataDirectory
             return Warned(current, Unreadable(legacy), warn);
         }
 
-        // The rename could not be done in one step (another volume). Copy into a staging directory beside the target, publish it with one rename, then delete the source.
+        // The rename could not be done in one step (another volume). Copy into a staging directory beside the target, publish it with one rename, then delete the source if it did not change.
         var staging = Path.Combine(parentRoot, CurrentName + ".migrating-" + Guid.NewGuid().ToString("N"));
-        if (!TryCopyTree(legacy, staging))
+        var copied = TryCopyTree(legacy, staging);
+        if (copied is null)
         {
             TryDelete(staging);
             return Warned(current, CopyFailed(legacy), warn);
@@ -148,8 +153,25 @@ public static class UserDataDirectory
                 : Warned(current, CopyFailed(legacy), warn);
         }
 
-        var leftover = TryDelete(legacy) ? null : LegacyNotRemoved(legacy);
-        return Finished(current, leftover, warn, timeProvider);
+        return Finished(current, LegacyLeftover(legacy, copied), warn, timeProvider);
+    }
+
+    private static string? LegacyLeftover(string legacy, HashSet<EntryStamp> copied)
+    {
+        // The source is deleted only while it is still exactly what was copied. A write, create or removal during the copy leaves the legacy
+        // directory in place with a warning, rather than losing that change with it.
+        var now = StampTree(legacy);
+        if (now is null)
+        {
+            return Unreadable(legacy);
+        }
+
+        if (!now.SetEquals(copied))
+        {
+            return LegacyChanged(legacy);
+        }
+
+        return TryDelete(legacy) ? null : LegacyNotRemoved(legacy);
     }
 
     private static UserDataMigration Finished(string current, string? warning, Action<string>? warn, TimeProvider timeProvider)
@@ -243,21 +265,23 @@ public static class UserDataDirectory
         }
     }
 
-    private static bool TryCopyTree(string source, string destination)
+    private static HashSet<EntryStamp>? TryCopyTree(string source, string destination)
     {
         try
         {
             _ = Directory.CreateDirectory(destination);
-            var options = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.None, IgnoreInaccessible = false };
-            foreach (var entry in new DirectoryInfo(source).EnumerateFileSystemInfos("*", options))
+            var copied = new HashSet<EntryStamp>();
+            foreach (var entry in EnumerateTree(source))
             {
-                var target = Path.Combine(destination, Path.GetRelativePath(source, entry.FullName));
+                var relative = Path.GetRelativePath(source, entry.FullName);
+                var target = Path.Combine(destination, relative);
                 if (entry.LinkTarget is not null)
                 {
                     // A link is not copied: it would point somewhere the copy cannot vouch for. The move is refused and the legacy directory stays as it is.
-                    return false;
+                    return null;
                 }
 
+                _ = copied.Add(Stamp(relative, entry));
                 if (entry is DirectoryInfo)
                 {
                     _ = Directory.CreateDirectory(target);
@@ -268,17 +292,48 @@ public static class UserDataDirectory
                 }
             }
 
-            return true;
+            return copied;
         }
         catch (IOException)
         {
-            return false;
+            return null;
         }
         catch (UnauthorizedAccessException)
         {
-            return false;
+            return null;
         }
     }
+
+    private static IEnumerable<FileSystemInfo> EnumerateTree(string source)
+    {
+        var options = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.None, IgnoreInaccessible = false };
+        return new DirectoryInfo(source).EnumerateFileSystemInfos("*", options);
+    }
+
+    private static HashSet<EntryStamp>? StampTree(string source)
+    {
+        try
+        {
+            var stamps = new HashSet<EntryStamp>();
+            foreach (var entry in EnumerateTree(source))
+            {
+                _ = stamps.Add(Stamp(Path.GetRelativePath(source, entry.FullName), entry));
+            }
+
+            return stamps;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private static EntryStamp Stamp(string relative, FileSystemInfo entry) =>
+        new(relative, entry is DirectoryInfo, entry is FileInfo file ? file.Length : 0L, entry.LastWriteTimeUtc);
 
     private static bool TryDelete(string directory)
     {
@@ -334,6 +389,10 @@ public static class UserDataDirectory
 
     private static string LegacyNotRemoved(string legacy) =>
         "The " + Path.GetFileName(legacy) + " data directory under " + Path.GetDirectoryName(legacy) + " was copied to the " + CurrentName + " directory but could not be removed; the " + CurrentName + " directory is used.";
+
+    private static string LegacyChanged(string legacy) =>
+        "The " + Path.GetFileName(legacy) + " data directory under " + Path.GetDirectoryName(legacy) + " changed while it was copied, so it is kept and the " +
+        CurrentName + " directory is used. The changes made during the copy are not in the " + CurrentName + " directory.";
 
     private static string LockBusy(string legacy) =>
         "The " + Path.GetFileName(legacy) + " data directory under " + Path.GetDirectoryName(legacy) + " is being moved by another process, so it is left alone and the " + CurrentName + " directory is used.";

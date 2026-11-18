@@ -91,6 +91,7 @@ public sealed record OmpEvent
         DiagnosticEvent => OmpEventKind.Diagnostic,
         ErrorEvent => OmpEventKind.Error,
         CompletedEvent => OmpEventKind.Completed,
+        ContextUsageEvent => OmpEventKind.ContextUsage,
         _ => throw new InvalidOperationException($"No event kind is mapped for harness event {payload.GetType().Name}."),
     };
 }

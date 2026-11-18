@@ -39,7 +39,7 @@ public interface IBrowserPaneControl
     /// <returns>The task.</returns>
     Task StopAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Closes the browser process.</summary>
+    /// <summary>Closes the browser process. Releases keyboard capture and control whether or not the close succeeds.</summary>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The task.</returns>
     Task CloseBrowserAsync(CancellationToken cancellationToken = default);
