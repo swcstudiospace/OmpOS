@@ -149,7 +149,15 @@ public sealed partial class CatalogueRowsTests
         foreach (var row in named)
         {
             known.ShouldContain(row.OmpProviderId!, StringComparer.Ordinal, row.Id);
-            CatalogueRows.FindByOmpProviderId(row.OmpProviderId!).ShouldBeSameAs(row);
+            var holder = CatalogueRows.FindByOmpProviderId(row.OmpProviderId!).ShouldNotBeNull(row.Id);
+            if (string.Equals(holder.Id, row.Id, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            // A key-less login row may share the omp id of its keyed row (ADR-0019, amended); the keyed row holds the key.
+            row.ApiKeyEnv.ShouldBeNull(row.Id);
+            holder.ApiKeyEnv.ShouldNotBeNull(row.Id);
         }
 
         CatalogueRows.FindByOmpProviderId("no-such-omp-provider").ShouldBeNull();
@@ -169,7 +177,8 @@ public sealed partial class CatalogueRowsTests
         new Uri(codestral.Routes[0].BaseAddressTemplate).Host.ShouldBe("codestral.mistral.ai");
         vibe.Kind.ShouldBe(CatalogueKind.CodingPlan);
         vibe.Plan.ShouldNotBeNull().SeparateKey.ShouldBeTrue();
-        vibe.OmpProviderId.ShouldBeNull();
+        vibe.OmpProviderId.ShouldBe("mistral");
+        vibe.ApiKeyEnv.ShouldBeNull();
         new[] { payg.Id, codestral.Id, vibe.Id }.Distinct(StringComparer.Ordinal).Count().ShouldBe(3);
     }
 
