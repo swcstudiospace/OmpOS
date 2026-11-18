@@ -30,10 +30,10 @@ internal sealed class DispatchSignalSubscriber : IHostedService
     /// <inheritdoc />
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        if (_subscription is not null)
+        var subscription = Interlocked.Exchange(ref _subscription, null);
+        if (subscription is not null)
         {
-            await _subscription.DisposeAsync().ConfigureAwait(false);
-            _subscription = null;
+            await subscription.DisposeAsync().ConfigureAwait(false);
         }
     }
 }
