@@ -3,8 +3,8 @@ using System.Windows.Input;
 namespace Autonogrammer.Native.Views.Hooks;
 
 /// <summary>
-/// A command that starts an asynchronous hooks action. It can always run. The action is a model method that reports its own
-/// failures, so the task it starts never faults; the command therefore does not observe it.
+/// A command that starts an asynchronous hooks action. It can always run. The model reports a failure of the action as its action
+/// failure text, except OutOfMemoryException, which faults the task. The command observes the task and never rethrows the fault.
 /// </summary>
 internal sealed class HookActionCommand(Func<Task> execute) : ICommand
 {
@@ -22,7 +22,11 @@ internal sealed class HookActionCommand(Func<Task> execute) : ICommand
     /// <returns>Always true.</returns>
     public bool CanExecute(object? parameter) => true;
 
-    /// <summary>Starts the action on the UI thread. The action completes on the UI thread as well.</summary>
+    /// <summary>Starts the action. The task is observed so that a fault is never left unobserved; the model reports the failure.</summary>
     /// <param name="parameter">Unused.</param>
-    public void Execute(object? parameter) => _ = _execute();
+    public void Execute(object? parameter) => _ = _execute().ContinueWith(
+        static task => _ = task.Exception,
+        CancellationToken.None,
+        TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+        TaskScheduler.Default);
 }
