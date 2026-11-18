@@ -79,7 +79,7 @@ public sealed class HookDispatcher
     {
         ArgumentNullException.ThrowIfNull(session);
         var info = HookEvents.Info(hookEvent);
-        var context = new HookDispatchContext(info.Name, hookEvent, info, session, payload, HookEvents.MatcherValue(hookEvent, payload));
+        var context = new HookDispatchContext(info.Name, hookEvent, info, session, payload, HookEvents.MatcherValue(hookEvent, payload), info.CanBlock);
         return DispatchCoreAsync(context, Hooks.For(hookEvent), cancellationToken);
     }
 
@@ -96,7 +96,7 @@ public sealed class HookDispatcher
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ompEvent);
         ArgumentNullException.ThrowIfNull(session);
-        var context = new HookDispatchContext(ompEvent, null, null, session, payload, OmpMatcherValue(ompEvent, payload));
+        var context = new HookDispatchContext(ompEvent, null, null, session, payload, OmpMatcherValue(ompEvent, payload), HookEvents.IsGuardingOmp(ompEvent));
         return DispatchCoreAsync(context, Hooks.ForOmp(ompEvent), cancellationToken);
     }
 

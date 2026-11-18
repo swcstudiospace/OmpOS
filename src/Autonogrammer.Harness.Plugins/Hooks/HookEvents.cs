@@ -42,10 +42,22 @@ public static class HookEvents
     private static readonly FrozenDictionary<string, HookEventInfo> ByName =
         Table.ToFrozenDictionary(info => info.Name, StringComparer.Ordinal);
 
+    // omp events whose result can stop an action: a hook on one can deny, and so can a failed failClosed hook on one.
+    private static readonly FrozenSet<string> GuardingOmpEvents = new[] { "tool_call", "before_subagent_spawn", "input" }
+        .ToFrozenSet(StringComparer.Ordinal);
+
     /// <summary>
     /// Every event, in the order of the <see cref="HookEvent"/> enum.
     /// </summary>
     public static IReadOnlyList<HookEventInfo> All => Table;
+
+    /// <summary>
+    /// Gets a value saying whether an omp extension event can stop an action. A hook on such an event may deny, and a
+    /// failed <c>failClosed</c> hook on it denies.
+    /// </summary>
+    /// <param name="ompEvent">The omp event name, for example <c>tool_call</c>.</param>
+    /// <returns>True for <c>tool_call</c>, <c>before_subagent_spawn</c> and <c>input</c>.</returns>
+    public static bool IsGuardingOmp(string ompEvent) => GuardingOmpEvents.Contains(ompEvent);
 
     /// <summary>
     /// Returns the facts about an event.
