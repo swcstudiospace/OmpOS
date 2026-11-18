@@ -146,6 +146,31 @@ public sealed class ProviderListingCardTests
     }
 
     [Fact]
+    public async Task ARoutelessKeyedOmpNativeRowOffersASetUpThatSendsTheKeyToOmp()
+    {
+        var listing = ListingTestData.Mistral() with { Routes = [] };
+        var (_, _, card) = await OpenAsync(listing.Id, [listing]).ConfigureAwait(true);
+
+        card.TakesKey.ShouldBeTrue();
+        card.CanSetUp.ShouldBeTrue();
+        card.HasModelIdsField.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task ARoutelessKeyedOmpNativeRowSavesItsKeyByOmpProviderId()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var listing = ListingTestData.Mistral() with { Routes = [] };
+        var (_, source, card) = await OpenAsync(listing.Id, [listing]).ConfigureAwait(true);
+        card.BeginSetup();
+        card.ApiKey.ShouldNotBeNull().Entry = Key;
+
+        (await card.SaveAsync(token).ConfigureAwait(true)).ShouldBeTrue();
+
+        source.OmpKeys.ShouldHaveSingleItem().ProviderId.ShouldBe(listing.OmpProviderId);
+    }
+
+    [Fact]
     public async Task SettingUpABlockProviderSendsTheRequestWithTheTypedValuesAndTheKeySeparately()
     {
         var token = TestContext.Current.CancellationToken;

@@ -225,7 +225,7 @@ public sealed class ProviderListingCardModel : ObservableModel
     }
 
     /// <summary>Gets a value indicating whether the chosen route takes a key from the user: the listing is not a sign-in listing and the route is not keyless.</summary>
-    public bool TakesKey => _selectedRoute is { TakesKey: true };
+    public bool TakesKey => _selectedRoute?.TakesKey ?? (_listing.ApiKeyEnv is not null);
 
     /// <summary>
     /// Gets a value indicating whether the key goes to omp itself: omp knows the provider by id, the listing has no placeholder and
@@ -234,11 +234,10 @@ public sealed class ProviderListingCardModel : ObservableModel
     public bool UsesOmpKey =>
         _listing.OmpProviderId is not null
         && _listing.Variables.Count == 0
-        && _selectedRoute is not null
-        && ReferenceEquals(_selectedRoute, _listing.Routes[0]);
+        && (_listing.Routes.Count == 0 || ReferenceEquals(_selectedRoute, _listing.Routes[0]));
 
     /// <summary>Gets a value indicating whether the listing can be set up from here: it is not a sign-in listing and, when omp knows it, takes a key.</summary>
-    public bool CanSetUp => !IsSignInOnly && _selectedRoute is not null && (!UsesOmpKey || TakesKey);
+    public bool CanSetUp => !IsSignInOnly && (_selectedRoute is not null || UsesOmpKey) && (!UsesOmpKey || TakesKey);
 
     /// <summary>Gets a value indicating whether the Set up action is offered: the listing can be set up and its form is closed.</summary>
     public bool CanBeginSetup => CanSetUp && !_isSetupOpen;
@@ -346,7 +345,7 @@ public sealed class ProviderListingCardModel : ObservableModel
     /// <returns>True when omp now has the provider.</returns>
     public async Task<bool> SaveAsync(CancellationToken cancellationToken = default)
     {
-        if (!_isSetupOpen || _isBusy || _selectedRoute is null)
+        if (!_isSetupOpen || _isBusy || (_selectedRoute is null && !UsesOmpKey))
         {
             return false;
         }
@@ -367,12 +366,14 @@ public sealed class ProviderListingCardModel : ObservableModel
 
         var draft = _apiKey;
         var key = draft?.TakeKey() ?? string.Empty;
-        var request = new CatalogueProviderRequest(
-            _listing.Id,
-            _selectedRoute.Id,
-            TypedValues(),
-            ParseModelIds(_modelIdsText),
-            _planRuleAccepted);
+        CatalogueProviderRequest? request = _selectedRoute is null
+            ? null
+            : new CatalogueProviderRequest(
+                _listing.Id,
+                _selectedRoute.Id,
+                TypedValues(),
+                ParseModelIds(_modelIdsText),
+                _planRuleAccepted);
         var result = await SendAsync(request, key, draft, cancellationToken).ConfigureAwait(true);
         if (!result.Succeeded)
         {
@@ -390,7 +391,7 @@ public sealed class ProviderListingCardModel : ObservableModel
         return true;
     }
 
-    private async Task<ModelsActionResult> SendAsync(CatalogueProviderRequest request, string key, ApiKeyDraft? draft, CancellationToken cancellationToken)
+    private async Task<ModelsActionResult> SendAsync(CatalogueProviderRequest? request, string key, ApiKeyDraft? draft, CancellationToken cancellationToken)
     {
         ErrorText = null;
         ActionText = null;
@@ -405,7 +406,9 @@ public sealed class ProviderListingCardModel : ObservableModel
             // The continuation must run on the context that owns the model, so the context is captured.
             return UsesOmpKey
                 ? await _source.SaveApiKeyAsync(_listing.OmpProviderId!, key, cancellationToken).ConfigureAwait(true)
-                : await _source.AddCatalogueProviderAsync(request, key, cancellationToken).ConfigureAwait(true);
+                : request is null
+                    ? ModelsActionResult.Failure(ModelsCopy.ActionFailed)
+                    : await _source.AddCatalogueProviderAsync(request, key, cancellationToken).ConfigureAwait(true);
         }
         catch (SettingsSourceException exception)
         {
