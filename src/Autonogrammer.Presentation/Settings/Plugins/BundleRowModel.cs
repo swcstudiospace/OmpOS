@@ -42,6 +42,9 @@ public sealed class BundleSkillRowModel : ObservableModel
     public ICommand ToggleCommand { get; }
 
     internal void SetEnabled(bool enabled) => SetProperty(ref _enabled, enabled);
+
+    // The switch the user moved shows the stored value again after an attempt the store did not take.
+    internal void ShowStoredEnabled() => NotifyPropertyChanged(nameof(Enabled));
 }
 
 /// <summary>One installed bundle on the settings section.</summary>
@@ -103,6 +106,9 @@ public sealed class BundleRowModel : ObservableModel
         var notice = NoticeOf(ProjectScope, enabled, Collision);
         SetProperty(ref _notice, notice, nameof(Notice));
     }
+
+    // The switch the user moved shows the stored value again after an attempt the store did not take.
+    internal void ShowStoredEnabled() => NotifyPropertyChanged(nameof(Enabled));
 
     private static string NoticeOf(bool projectScope, bool enabled, string? collision)
     {

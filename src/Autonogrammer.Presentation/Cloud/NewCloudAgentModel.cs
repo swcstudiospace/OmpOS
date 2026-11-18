@@ -233,11 +233,11 @@ public sealed class NewCloudAgentModel : ObservableModel
     /// <summary>Gets whether every entry is valid. The cost confirmation is a separate condition of <see cref="CanCreate"/>.</summary>
     public bool IsValid => Problem() is null;
 
-    /// <summary>Gets whether Create is enabled: the entries are valid, the cost is confirmed, no create is running and no agent was created yet.</summary>
-    public bool CanCreate => !_isCreating && _result is not { IsCreated: true } && IsValid && _costConfirmed;
+    /// <summary>Gets whether Create is enabled: the entries are valid, the cost is confirmed, no create is running, no agent was created yet and the latest attempt did not end Unknown.</summary>
+    public bool CanCreate => !_isCreating && _result is not { IsCreated: true } and not { Outcome: CloudCreateOutcome.Unknown } && IsValid && _costConfirmed;
 
-    /// <summary>Gets the one reason Create is disabled, in words, or an empty string when it is enabled.</summary>
-    public string WhyDisabled => _result is { IsCreated: true } ? string.Empty : Problem() ?? (_costConfirmed ? string.Empty : CloudCopy.CostNotConfirmed);
+    /// <summary>Gets the one reason Create is disabled, in words, or an empty string when it is enabled. After an attempt that ended Unknown it is that attempt's sentence.</summary>
+    public string WhyDisabled => _result is { IsCreated: true } ? string.Empty : _result is { Outcome: CloudCreateOutcome.Unknown } interrupted ? interrupted.Message : Problem() ?? (_costConfirmed ? string.Empty : CloudCopy.CostNotConfirmed);
 
     /// <summary>Gets whether a create is running.</summary>
     public bool IsCreating => _isCreating;
@@ -379,6 +379,7 @@ public sealed class NewCloudAgentModel : ObservableModel
     /// Creates the agent. Without valid entries and a confirmed cost no request is made and the result is <see cref="CloudCreateOutcome.NotReady"/>.
     /// A refusal for a cap or the quota, a rejection and a failure keep the dialog open with their message so the user can change an entry
     /// and try again. This method does not throw an expected failure.
+    /// A create cancelled after its request was sent ends Unknown: the agent may exist, so nothing retries it and the user checks the list.
     /// </summary>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>How the attempt ended.</returns>
@@ -387,6 +388,11 @@ public sealed class NewCloudAgentModel : ObservableModel
         if (_result is { IsCreated: true } done)
         {
             return done;
+        }
+
+        if (_result is { Outcome: CloudCreateOutcome.Unknown } interrupted)
+        {
+            return interrupted;
         }
 
         if (_isCreating)
@@ -413,7 +419,8 @@ public sealed class NewCloudAgentModel : ObservableModel
         }
         catch (OperationCanceledException)
         {
-            result = new CloudCreateResult(CloudCreateOutcome.Failed, CloudCopy.CreateCancelled);
+            // The request was sent before the cancellation, so the agent may exist: no retry is offered.
+            result = new CloudCreateResult(CloudCreateOutcome.Unknown, CloudCopy.CreateOutcomeUnknown);
         }
         catch (Exception fault) when (CloudFailures.IsHandled(fault))
         {
@@ -526,10 +533,10 @@ public sealed class NewCloudAgentModel : ObservableModel
         Touch();
     }
 
-    // An edit makes the previous result stale; the readiness properties are recomputed from the entries.
+    // An edit makes the previous result stale; the readiness properties are recomputed from the entries. An interrupted create stays: a retry could create a second agent.
     private void Touch()
     {
-        if (!_isCreating && _result is { IsCreated: false })
+        if (!_isCreating && _result is { IsCreated: false, Outcome: not CloudCreateOutcome.Unknown })
         {
             _result = null;
             NotifyPropertyChanged(nameof(Result));

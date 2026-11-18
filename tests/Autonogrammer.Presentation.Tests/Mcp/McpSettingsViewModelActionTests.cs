@@ -154,13 +154,61 @@ public sealed class McpSettingsViewModelActionTests
     }
 
     [Fact]
+    public async Task ApprovingTheDeclarationThePromptShowedRecordsThatDeclaration()
+    {
+        var source = new ScriptedMcpSource(McpEntries.NeedsConsent("tool"));
+        var (model, _) = await LoadedAsync(source).ConfigureAwait(true);
+        model.RequestConsent("tool");
+        model.PendingConsent.ShouldNotBeNull().ConsentIdentity.ShouldBe(source.Entry("tool").ConsentIdentity);
+
+        await model.ApproveCommand.ExecuteAsync().ConfigureAwait(true);
+
+        source.Entry("tool").IsConsentGranted.ShouldBeTrue();
+        model.ActionFailure.ShouldBeEmpty();
+        model.PendingConsent.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task ApprovingADeclarationThatChangedAfterThePromptOpenedIsRefusedAndRecordsNothing()
+    {
+        var source = new ScriptedMcpSource(McpEntries.NeedsConsent("tool"));
+        var (model, _) = await LoadedAsync(source).ConfigureAwait(true);
+        model.RequestConsent("tool");
+        source.Redeclare(McpEntries.NeedsConsent("tool") with { CommandText = "node ./other.js --serve", ConsentIdentity = "identity:changed" });
+
+        await model.ApproveCommand.ExecuteAsync().ConfigureAwait(true);
+
+        source.Calls.ShouldBe(["load", "grant tool"]);
+        model.ActionFailure.ShouldBe(ScriptedMcpSource.ChangedDeclaration);
+        source.Entry("tool").IsConsentGranted.ShouldBeFalse();
+        model.Rows.Single().StatusText.ShouldBe("Needs approval");
+        model.PendingConsent.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task ADeclarationThatChangesBeforeTheNextReadClosesThePromptSoItCannotBeApproved()
+    {
+        var source = new ScriptedMcpSource(McpEntries.NeedsConsent("tool"), McpEntries.Ready("files"));
+        var (model, _) = await LoadedAsync(source).ConfigureAwait(true);
+        model.RequestConsent("tool");
+        source.Redeclare(McpEntries.NeedsConsent("tool") with { CommandText = "node ./other.js --serve", ConsentIdentity = "identity:changed" });
+
+        await model.SetEnabledAsync("files", false, Token).ConfigureAwait(true);
+        await model.ApproveCommand.ExecuteAsync().ConfigureAwait(true);
+
+        model.PendingConsent.ShouldBeNull();
+        source.Calls.ShouldNotContain("grant tool", StringComparer.Ordinal);
+        source.Entry("tool").IsConsentGranted.ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task ThePromptClosesWhenItsServerNoLongerNeedsConsent()
     {
         var source = new ScriptedMcpSource(McpEntries.NeedsConsent("tool"));
         var (model, _) = await LoadedAsync(source).ConfigureAwait(true);
         model.RequestConsent("tool");
 
-        await source.GrantConsentAsync("tool", Token).ConfigureAwait(true);
+        await source.GrantConsentAsync("tool", source.Entry("tool").ConsentIdentity, Token).ConfigureAwait(true);
         await model.ReloadCommand.ExecuteAsync().ConfigureAwait(true);
 
         model.PendingConsent.ShouldBeNull();
@@ -171,7 +219,7 @@ public sealed class McpSettingsViewModelActionTests
     {
         var source = new ScriptedMcpSource(McpEntries.NeedsConsent("tool"));
         var (model, _) = await LoadedAsync(source).ConfigureAwait(true);
-        await source.GrantConsentAsync("tool", Token).ConfigureAwait(true);
+        await source.GrantConsentAsync("tool", source.Entry("tool").ConsentIdentity, Token).ConfigureAwait(true);
         await model.ReloadCommand.ExecuteAsync().ConfigureAwait(true);
 
         await ((McpActionCommand)model.Rows.Single().RevokeCommand).ExecuteAsync().ConfigureAwait(true);

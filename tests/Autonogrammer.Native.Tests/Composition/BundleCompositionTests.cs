@@ -35,7 +35,7 @@ public sealed class BundleCompositionTests
 
             await catalog.SetEnabledAsync(server.Name, true, TestContext.Current.CancellationToken).ConfigureAwait(true);
             catalog.Current.Entries.ShouldHaveSingleItem().IsOffered.ShouldBeFalse();
-            await catalog.GrantConsentAsync(server.Name, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await catalog.GrantConsentAsync(server.Name, server.ConsentIdentity, TestContext.Current.CancellationToken).ConfigureAwait(true);
             catalog.Current.Entries.ShouldHaveSingleItem().IsOffered.ShouldBeTrue();
         }
         finally

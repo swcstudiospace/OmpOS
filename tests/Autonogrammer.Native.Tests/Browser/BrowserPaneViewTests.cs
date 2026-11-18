@@ -109,6 +109,39 @@ public sealed class BrowserPaneViewTests
         }, token).ConfigureAwait(true);
     }
 
+    /// <summary>Closing the browser while the pane holds keyboard capture releases the capture, so no later key is sent to the page.</summary>
+    [Fact]
+    public async Task ClosingTheBrowserWhileCapturedReleasesKeyboardCapture()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(() =>
+        {
+            var feed = new FakeFeed(BrowserPaneState.Live);
+            var control = new FakeControl { Control = BrowserControlState.Agent };
+            using var model = new BrowserPaneViewModel(feed, control, new FakeTime());
+            var panel = new BrowserPanePanel(model);
+            var window = new Window { Content = panel.View, Width = 480, Height = 320 };
+            try
+            {
+                window.Show();
+                ShellHarness.Settle(window);
+                panel.View.TakeOver.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                panel.View.KeyboardCaptured.ShouldBeTrue();
+
+                panel.View.CloseBrowser.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+                panel.View.KeyboardCaptured.ShouldBeFalse();
+            }
+            finally
+            {
+                window.Close();
+            }
+
+            return Task.CompletedTask;
+        }, token).ConfigureAwait(true);
+    }
+
     /// <summary>ModelCannotSeeImages renders the choose-a-vision-model action.</summary>
     [Fact]
     public async Task ModelCannotSeeImagesOffersTheVisionAction()

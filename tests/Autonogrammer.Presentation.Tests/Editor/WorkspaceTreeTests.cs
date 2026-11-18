@@ -248,4 +248,39 @@ public sealed class WorkspaceTreeTests
 
         public IReadOnlyList<WorkspaceEntry> ListDirectory(string relativeDirectory) => listing(relativeDirectory);
     }
+
+    /// <summary>A key that needs a listing is dropped when the selection moved while the listing ran, so it never applies to another row.</summary>
+    [Fact]
+    public async Task HandleKeyAsync_DropsTheKeyWhenTheSelectionMovedDuringTheListing()
+    {
+        var gate = new TaskCompletionSource();
+        var tree = new WorkspaceTree();
+        await tree.OpenFolderAsync(new GatedListingFileSystem(new InMemoryWorkspaceFileSystem("/home/dev/work").WithFile("README.md").WithFile("src/app/main.cs"), gate.Task), Token).ConfigureAwait(true);
+        tree.Selected.ShouldNotBeNull().Name.ShouldBe("src");
+
+        var pending = tree.HandleKeyAsync(WorkspaceKey.Enter, Token);
+        tree.HandleKey(WorkspaceKey.Down);
+        gate.SetResult();
+
+        (await pending.ConfigureAwait(true)).ShouldBeNull();
+        tree.Selected.ShouldNotBeNull().Name.ShouldBe("README.md");
+    }
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    /// <summary>An asynchronous file system whose listing of the <c>src</c> folder waits for a gate; every other listing answers at once.</summary>
+    private sealed class GatedListingFileSystem(InMemoryWorkspaceFileSystem inner, Task gate) : IAsyncWorkspaceFileSystem
+    {
+        public string RootPath => inner.RootPath;
+
+        public async Task<IReadOnlyList<WorkspaceEntry>> ListDirectoryAsync(string relativeDirectory, CancellationToken cancellationToken)
+        {
+            if (string.Equals(relativeDirectory, "src", StringComparison.Ordinal))
+            {
+                await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            return inner.ListDirectory(relativeDirectory);
+        }
+    }
 }

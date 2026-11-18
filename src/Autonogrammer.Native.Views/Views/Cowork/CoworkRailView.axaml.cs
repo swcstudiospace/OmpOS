@@ -1,4 +1,5 @@
 using Autonogrammer.Presentation.Cowork;
+using Autonogrammer.Presentation.Cowork.Projects;
 using Avalonia.Automation;
 using Avalonia.Controls;
 
@@ -11,6 +12,7 @@ namespace Autonogrammer.Native.Views.Cowork;
 public partial class CoworkRailView : UserControl
 {
     private CoworkSessionListModel? _list;
+    private ProjectsView? _projectsView;
 
     /// <summary>Creates the rail with no list.</summary>
     public CoworkRailView()
@@ -51,6 +53,18 @@ public partial class CoworkRailView : UserControl
         Apply();
     }
 
+    /// <summary>Binds the project list and editor that the Projects section shows. The editor view is created once and bound here.</summary>
+    /// <param name="projects">The project list.</param>
+    /// <param name="editor">The project editor.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="projects"/> or <paramref name="editor"/> is null.</exception>
+    public void AttachProjects(ProjectListModel projects, ProjectEditorModel editor)
+    {
+        ArgumentNullException.ThrowIfNull(projects);
+        ArgumentNullException.ThrowIfNull(editor);
+        _projectsView ??= new ProjectsView();
+        _projectsView.Attach(projects, editor);
+    }
+
     private void OnChanged(object? sender, EventArgs e) => Apply();
 
     private void Apply()
@@ -87,8 +101,7 @@ public partial class CoworkRailView : UserControl
     }
     private void OnProjectsClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        var editor = new ProjectsView();
-        ProjectEditorHost.Content = editor;
+        ProjectEditorHost.Content = _projectsView ??= new ProjectsView();
         ProjectEditorHost.IsVisible = true;
     }
 

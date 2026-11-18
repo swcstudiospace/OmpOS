@@ -217,6 +217,30 @@ public sealed class CloudHandoffModelTests
         started.ShouldBe(1);
     }
 
+    /// <summary>A hand-off cancelled after its request was sent ends Unknown: the dialog offers no retry, so a second attempt makes no second call.</summary>
+    [Fact]
+    public async Task AHandoffCancelledAfterTheRequestIsSentIsUnknownAndNeverRetried()
+    {
+        var host = CloudFixtures.Host(_clock);
+        var release = host.HoldNext("Create");
+        var model = Model(host);
+        model.CostConfirmed = true;
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
+
+        var pending = model.StartAsync(cancel.Token);
+        await cancel.CancelAsync().ConfigureAwait(true);
+        var result = await pending.ConfigureAwait(true);
+        release();
+
+        result.Outcome.ShouldBe(CloudHandoffOutcome.Unknown);
+        result.Message.ShouldBe(CloudCopy.CreateOutcomeUnknown);
+        model.HasError.ShouldBeTrue();
+        model.CanStart.ShouldBeFalse("the agent may exist, so a retry is not offered");
+        model.WhyDisabled.ShouldBe(CloudCopy.CreateOutcomeUnknown);
+        (await model.StartAsync(Token).ConfigureAwait(true)).ShouldBe(result);
+        host.CountOf("Create").ShouldBe(1);
+    }
+
     /// <summary>A failure the host did not translate reads as the plain failure sentence and never shows its own text.</summary>
     [Fact]
     public async Task AnUntranslatedFailureReadsAsAPlainFailure()

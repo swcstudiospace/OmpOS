@@ -49,6 +49,12 @@ public sealed record AgentSessionRecord
     /// <summary>Gets what the session is: a chat behind the Agent Panel or an omp terminal. Defaults to <see cref="SessionKind.Chat"/>.</summary>
     public SessionKind Kind { get; init; } = SessionKind.Chat;
 
+    /// <summary>Gets the lifecycle word the state file held when this build does not know it, or null. It is written back while <see cref="Lifecycle"/> still reads as that word, so a value from a newer build survives a rewrite.</summary>
+    internal string? UnrecognizedLifecycle { get; init; }
+
+    /// <summary>Gets the kind word the state file held when this build does not know it, or null. It is written back while <see cref="Kind"/> still reads as that word.</summary>
+    internal string? UnrecognizedKind { get; init; }
+
     /// <summary>Returns the list-row view of the record. It carries no resume reference.</summary>
     /// <returns>The summary.</returns>
     public SessionSummary ToSummary() => new()

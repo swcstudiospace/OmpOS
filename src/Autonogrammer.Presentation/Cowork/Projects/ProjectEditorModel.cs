@@ -44,6 +44,7 @@ public sealed class ProjectEditorModel : ObservableModel
     private bool _deleteRan;
     private CoworkViewState _state = CoworkViewState.Loading;
     private string? _sentence;
+    private int _openGeneration;
 
     /// <summary>Creates the editor.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
@@ -96,12 +97,16 @@ public sealed class ProjectEditorModel : ObservableModel
     public async Task OpenAsync(string id, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        var generation = ++_openGeneration;
         Id = id;
         _confirmationReady = false;
         _deleteRan = false;
         Set(CoworkViewState.Loading, "Loading project.");
         var read = await _source.ReadAsync(id, cancellationToken).ConfigureAwait(false);
-        ApplyRead(read);
+        if (generation == _openGeneration)
+        {
+            ApplyRead(read);
+        }
     }
 
     /// <summary>Renames the open project.</summary>

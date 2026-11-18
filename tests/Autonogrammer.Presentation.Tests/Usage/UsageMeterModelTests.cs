@@ -55,4 +55,19 @@ public sealed class UsageMeterModelTests
         meter.ToString().ShouldBe(nameof(UsageMeterModel));
         meter.Days[0].ToString().ShouldNotContain("10");
     }
+
+    /// <summary>A day whose sessions report different currencies is unavailable instead of a sum that mixes them.</summary>
+    [Fact]
+    public void ADayWithTwoCurrenciesIsUnavailableInsteadOfASum()
+    {
+        var meter = UsageMeterModel.Create(
+        [
+            new UsageMeterModel.Sample("s1", Day, 1000, 100, 10.00m, "USD"),
+            new UsageMeterModel.Sample("s2", Day, 800, 40, 5.00m, "EUR"),
+        ]);
+
+        meter.Days[0].Unavailable.ShouldBeTrue();
+        meter.Days[0].Amount.ShouldBeNull();
+        meter.Days[0].Currency.ShouldBeNull();
+    }
 }

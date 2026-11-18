@@ -112,6 +112,11 @@ public sealed class GsdStateObserver : IStageSource
         {
             return null;
         }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // A path failure can quote the workspace path, so only the exception type is shown.
+            return new Observation(StageStatus.Degraded, string.Create(CultureInfo.InvariantCulture, $"Workflow state could not be read: the workspace could not be inspected ({exception.GetType().Name})."));
+        }
     }
 
     private static Observation Describe(GsdWorkflowSnapshot snapshot)

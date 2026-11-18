@@ -164,7 +164,7 @@ def validate(rows: list[dict], file_label: str = "data") -> list[str]:
         used: set[str] = set()
         routes = row.get("routes") or []
         login = row.get("loginCommand")
-        if not routes and not login:
+        if not routes and not login and omp is None:
             bad("a row needs a route or a loginCommand")
         route_ids: set[str] = set()
         for route in routes:

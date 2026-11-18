@@ -7,7 +7,7 @@ public static class KnownSafeShell
 {
     /// <summary>Returns whether a command line is a short read-only command whose arguments the caller allows.</summary>
     /// <param name="commandLine">The command line.</param>
-    /// <param name="argumentAllowed">Tells whether an argument that may name a file is allowed.</param>
+    /// <param name="argumentAllowed">Tells whether an argument that may name a file is allowed. A word with an unexpanded glob, brace, variable or tilde form is refused before this is asked.</param>
     /// <returns>True when the internal known-safe list accepts the line.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="argumentAllowed"/> is null.</exception>
     public static bool IsKnownSafe(string commandLine, Func<string, bool> argumentAllowed)

@@ -26,4 +26,7 @@ public enum CloudHandoffOutcome
 
     /// <summary>The hand-off failed.</summary>
     Failed = 7,
+
+    /// <summary>The request was interrupted after it was sent, so the agent may or may not exist. Check the list before a retry.</summary>
+    Unknown = 8,
 }

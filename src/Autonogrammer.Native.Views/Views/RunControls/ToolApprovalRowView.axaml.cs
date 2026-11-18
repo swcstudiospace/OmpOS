@@ -88,12 +88,12 @@ internal partial class ToolApprovalRowView : UserControl
         _inFlight++;
         Refresh();
 
-        var attachment = CurrentAttachment();
         var requestId = _approval.RequestId;
         var work = _coordinator.DecideAsync(_approval, decision, CancellationToken.None);
 
         // The coordinator completes on the UI thread. A fault is traced first, whether or not the row is still attached, so a fault
-        // that lands after the row has detached is never lost. Settlement is posted back, scoped to this attachment.
+        // that lands after the row has detached is never lost. The settlement always runs on the UI thread, so the in-flight count
+        // returns to zero even when the row has detached. Only the refresh of the controls waits for an attached row.
         _ = work.ContinueWith(
             finished =>
             {
@@ -102,7 +102,7 @@ internal partial class ToolApprovalRowView : UserControl
                     Trace.TraceError($"Autonogrammer could not record the tool-approval decision {requestId}: {fault.GetBaseException()}");
                 }
 
-                PostWhileAttached(() => Settle(finished.Exception), attachment);
+                Dispatcher.UIThread.Post(() => Settle(finished.Exception));
             },
             CancellationToken.None,
             TaskContinuationOptions.None,
@@ -113,7 +113,10 @@ internal partial class ToolApprovalRowView : UserControl
     {
         _inFlight--;
         _faultMessage = fault is null ? null : $"{MainView.FaultedStatus} {fault.GetBaseException().Message}";
-        Refresh();
+        if (VisualRoot is not null)
+        {
+            Refresh();
+        }
     }
 
     /// <summary>Refreshes the row on the UI thread. The status changes on whichever thread completes the decision, so a change is marshalled here.</summary>

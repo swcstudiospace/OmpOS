@@ -398,7 +398,7 @@ public sealed class ComposerViewModel : ObservableModel
     public async Task SendAsync()
     {
         var hasImages = _images is { HasItems: true };
-        if (_sending || IsStreaming || (string.IsNullOrWhiteSpace(Draft) && !hasImages) || (hasImages && _imageSender is null))
+        if (_sending || IsStreaming || (string.IsNullOrWhiteSpace(Draft) && !hasImages) || (hasImages && (_imageSender is null || !ImagesMaySend())))
         {
             return;
         }
@@ -451,6 +451,8 @@ public sealed class ComposerViewModel : ObservableModel
             _sending = false;
         }
     }
+
+    private bool ImagesMaySend() => _images is not { HasItems: true } attached || attached.SendAllowed();
 
     /// <summary>Stops the streaming response.</summary>
     /// <returns>A task that completes when the host has handled the stop.</returns>

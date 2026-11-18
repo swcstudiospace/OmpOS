@@ -7,7 +7,8 @@ namespace Autonogrammer.Harness.AgentLoop.Hooks;
 /// The host-level state of hooks that is not consent itself: the global <c>Run hooks</c> switch, whether Claude settings are discovered, the
 /// workspaces whose project hooks may be loaded, and the last approved version of every hook. Reads use an immutable snapshot and never wait;
 /// each write reaches the disk (owner-only, atomically) before the snapshot changes, so a failed write leaves the previous state in force.
-/// A file that cannot be read is treated as empty: nothing is trusted and nothing was approved, which is the safe direction.
+/// A file that is not valid JSON is set aside next to it as <c>&lt;file&gt;.corrupt</c> and the store starts empty: nothing is trusted and nothing was
+/// approved, which is the safe direction. A file that exists but cannot be read fails the open, so no write can replace its contents.
 /// </summary>
 internal sealed class HooksHostStore : IDisposable
 {
@@ -27,10 +28,15 @@ internal sealed class HooksHostStore : IDisposable
     /// <summary>Gets a value indicating whether Claude settings files are discovered.</summary>
     internal bool IncludeThirdPartyConfigs => _snapshot.IncludeThirdPartyConfigs;
 
-    /// <summary>Opens the store at <paramref name="path"/>; a missing or unreadable file starts it empty.</summary>
+    /// <summary>
+    /// Opens the store at <paramref name="path"/>; a missing file starts it empty. A file that is not valid JSON is set aside as
+    /// <c>&lt;path&gt;.corrupt</c> and the store starts empty.
+    /// </summary>
     /// <param name="path">The state file.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The store.</returns>
+    /// <exception cref="IOException">The file exists but cannot be read. It is left untouched.</exception>
+    /// <exception cref="UnauthorizedAccessException">The file exists but cannot be read. It is left untouched.</exception>
     internal static async Task<HooksHostStore> OpenAsync(string path, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -38,21 +44,30 @@ internal sealed class HooksHostStore : IDisposable
         var snapshot = Snapshot.Empty;
         if (File.Exists(fullPath))
         {
-            try
+            var bytes = await File.ReadAllBytesAsync(fullPath, cancellationToken).ConfigureAwait(false);
+            if (Parse(bytes) is { } document)
             {
-                var bytes = await File.ReadAllBytesAsync(fullPath, cancellationToken).ConfigureAwait(false);
-                if (JsonSerializer.Deserialize(bytes, HooksHostJsonContext.Default.HooksHostDocument) is { } document)
-                {
-                    snapshot = Snapshot.FromDocument(document);
-                }
+                snapshot = Snapshot.FromDocument(document);
             }
-            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+            else
             {
-                snapshot = Snapshot.Empty;
+                File.Move(fullPath, fullPath + ".corrupt", overwrite: true);
             }
         }
 
         return new HooksHostStore(fullPath, snapshot);
+    }
+
+    private static HooksHostDocument? Parse(byte[] bytes)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize(bytes, HooksHostJsonContext.Default.HooksHostDocument);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     /// <inheritdoc/>

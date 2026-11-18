@@ -169,7 +169,13 @@ internal partial class RemoteEnvironmentsPageView : UserControl
         }
     }
 
-    private void OnCancelTestClick(object? sender, RoutedEventArgs e) => _model?.CancelTest();
+    private void OnCancelTestClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: RemoteProfileRow row } && _model is not null)
+        {
+            _model.CancelTest(row);
+        }
+    }
 
     private void OnTrustHostClick(object? sender, RoutedEventArgs e)
     {

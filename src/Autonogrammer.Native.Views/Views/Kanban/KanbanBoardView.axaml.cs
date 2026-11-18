@@ -35,6 +35,7 @@ internal partial class KanbanBoardView : UserControl
     private List<List<KanbanCardView>> _layout = [];
     private CancellationTokenSource? _detailsLifetime;
     private string _detailsKey = string.Empty;
+    private bool _detailsLoaded;
     private string? _currentId;
     private bool _attached;
 
@@ -135,12 +136,20 @@ internal partial class KanbanBoardView : UserControl
         _attached = false;
         _watch.Set(null);
         StopDetails();
+        if (!_detailsLoaded)
+        {
+            // An unfinished read is read again on attach; a finished one keeps its key, so the same cards are not read again.
+            _detailsKey = string.Empty;
+        }
     }
 
     /// <inheritdoc />
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
+
+        StopDetails();
+        _detailsKey = string.Empty;
 
         if (_attached)
         {
@@ -455,8 +464,9 @@ internal partial class KanbanBoardView : UserControl
             return;
         }
 
-        _detailsKey = key;
         StopDetails();
+        _detailsKey = key;
+        _detailsLoaded = false;
         var lifetime = new CancellationTokenSource();
         _detailsLifetime = lifetime;
         _ = LoadDetailsAsync(board, lifetime.Token);
@@ -467,14 +477,17 @@ internal partial class KanbanBoardView : UserControl
         _detailsLifetime?.Cancel();
         _detailsLifetime?.Dispose();
         _detailsLifetime = null;
-        _detailsKey = string.Empty;
     }
 
-    private static async Task LoadDetailsAsync(KanbanBoardModel board, CancellationToken cancellationToken)
+    private async Task LoadDetailsAsync(KanbanBoardModel board, CancellationToken cancellationToken)
     {
         try
         {
             await board.RefreshDetailsAsync(cancellationToken).ConfigureAwait(true);
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                _detailsLoaded = true;
+            }
         }
         catch (OperationCanceledException)
         {

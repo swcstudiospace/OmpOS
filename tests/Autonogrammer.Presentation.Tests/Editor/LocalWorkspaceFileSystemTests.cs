@@ -100,4 +100,15 @@ public sealed class LocalWorkspaceFileSystemTests : IDisposable
         tree.Nodes.Select(node => node.Name).Order(StringComparer.Ordinal).ShouldBe(["inside", "linked-inside"]);
         Should.Throw<ArgumentException>(() => tree.ExpandPath("escape"));
     }
+
+    /// <summary>A capped read refuses a file larger than the cap and reads a file that fits.</summary>
+    [Fact]
+    public void ReadFile_WithACap_RefusesALargerFileAndReadsOneThatFits()
+    {
+        File.WriteAllText(Path.Combine(_root, "wide.txt"), "0123456789");
+        var fileSystem = new LocalWorkspaceFileSystem(_root);
+
+        Should.Throw<WorkspaceFileTooLargeException>(() => fileSystem.ReadFile("wide.txt", 9));
+        fileSystem.ReadFile("wide.txt", 10).ShouldBe("0123456789");
+    }
 }

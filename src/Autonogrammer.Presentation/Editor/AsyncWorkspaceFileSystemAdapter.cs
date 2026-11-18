@@ -5,8 +5,9 @@ namespace Autonogrammer.Presentation.Editor;
 
 /// <summary>
 /// Presents a synchronous <see cref="IWorkspaceFileSystem"/> (the local disk) as an <see cref="IAsyncWorkspaceFileSystem"/>. Every call runs on
-/// the thread pool, so the caller is never blocked by the disk. The behaviour is that of the wrapped file system; the read additionally
-/// refuses a file whose UTF-8 size exceeds the cap, after reading it (the local disk has no cheaper way to know).
+/// the thread pool, so the caller is never blocked by the disk. The behaviour is that of the wrapped file system; the read refuses a file
+/// larger than the cap before its contents are read when the wrapped file system can tell its size, and always refuses a text whose UTF-8
+/// size exceeds the cap after reading it (decoding can make the text larger than the file).
 /// </summary>
 public sealed class AsyncWorkspaceFileSystemAdapter : IAsyncWorkspaceFileSystem
 {
@@ -38,7 +39,7 @@ public sealed class AsyncWorkspaceFileSystemAdapter : IAsyncWorkspaceFileSystem
         return Task.Run(
             () =>
             {
-                var text = _inner.ReadFile(relativePath);
+                var text = _inner.ReadFile(relativePath, maxBytes);
                 if (Encoding.UTF8.GetByteCount(text) > maxBytes)
                 {
                     throw new WorkspaceFileTooLargeException(string.Create(CultureInfo.InvariantCulture, $"'{relativePath}' holds more than {maxBytes} bytes."));

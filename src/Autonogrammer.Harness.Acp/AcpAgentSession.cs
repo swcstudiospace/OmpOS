@@ -46,6 +46,9 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
     /// <summary>How long a <c>sessionEnd</c> hook may delay the close of a session.</summary>
     private static readonly TimeSpan HookSessionEndTimeout = TimeSpan.FromSeconds(5);
 
+    /// <summary>How long a hook gate may take to answer before the session denies the action (fail-closed). A gate that never answers must not hold the pump or a prompt.</summary>
+    private static readonly TimeSpan HookGateTimeout = TimeSpan.FromSeconds(5);
+
     /// <summary>The largest file whose previous text is read to describe an <c>afterFileEdit</c>; a larger file is reported without a previous text.</summary>
     private const long MaxHookCompareBytes = 2L * 1024 * 1024;
 
@@ -60,6 +63,12 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
             LogLevel.Warning,
             new EventId(2, "AcpHookGateFailed"),
             "The hook gate failed at {Point} with {ExceptionType}; the action was allowed.");
+
+    private static readonly Action<ILogger, string, Exception?> HookGateTimedOut =
+        LoggerMessage.Define<string>(
+            LogLevel.Warning,
+            new EventId(3, "AcpHookGateTimedOut"),
+            "The hook gate did not answer at {Point} in time; the action was denied.");
 
     private static readonly string[] AllowKinds = ["allow_once", "allow_always"];
     private static readonly string[] RejectKinds = ["reject_once", "reject_always"];
@@ -87,7 +96,8 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
     private IReadOnlyList<OmpModelChoice> _modelChoices = [];
     private string? _modelOptionId;
     private string? _currentModelId;
-    private bool _optionChanging;
+    /// <summary>The setting change in flight, or null. It completes when the change ends, so a prompt submitted meanwhile can wait for it. Guarded by the session gate.</summary>
+    private TaskCompletionSource? _optionChange;
     private bool _steeringSupported;
     private bool? _supportsImages;
     private bool _openFailed;
@@ -300,7 +310,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
             yield break;
         }
 
-        var turn = BeginTurn();
+        var turn = await BeginTurnAsync(cancellationToken).ConfigureAwait(false);
         var finished = false;
         try
         {
@@ -325,7 +335,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
                         yield return new DiagnosticEvent(notice);
                     }
 
-                    turn = BeginTurn();
+                    turn = await BeginTurnAsync(cancellationToken).ConfigureAwait(false);
                     await StartPromptAsync(turn, followUp, [], [], cancellationToken).ConfigureAwait(false);
                     continue;
                 }
@@ -388,7 +398,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
                 return new OmpModelSwitchResult(OmpModelSwitchOutcome.Switched, _currentModelId, null);
             }
 
-            _optionChanging = true;
+            _optionChange = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             sessionId = SessionId!;
             optionId = _modelOptionId!;
         }
@@ -426,7 +436,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
                 return new OmpOptionSetResult(OmpOptionSetOutcome.Set, option.CurrentValue, null);
             }
 
-            _optionChanging = true;
+            _optionChange = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             sessionId = SessionId!;
         }
 
@@ -685,7 +695,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
 
         // omp's own handler does not reject a switch mid-turn, but the turn runs on the model it started with; a client that lets the
         // change land mid-turn would show a model that is not the one answering, so a running prompt refuses the switch here.
-        if (_machine.State != HarnessState.Ready || _turn is not null || _optionChanging)
+        if (_machine.State != HarnessState.Ready || _turn is not null || _optionChange is not null)
         {
             return new OmpModelSwitchResult(OmpModelSwitchOutcome.Busy, _currentModelId, "The model cannot be changed while a response is running.");
         }
@@ -713,7 +723,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         }
 
         // A running prompt keeps the settings it started with, for the same reason as the model.
-        if (_machine.State != HarnessState.Ready || _turn is not null || _optionChanging)
+        if (_machine.State != HarnessState.Ready || _turn is not null || _optionChange is not null)
         {
             return new OmpOptionSetResult(OmpOptionSetOutcome.Busy, current?.CurrentValue, "The setting cannot be changed while a response is running.");
         }
@@ -751,10 +761,15 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         }
         finally
         {
+            TaskCompletionSource? ended;
             lock (_gate)
             {
-                _optionChanging = false;
+                ended = _optionChange;
+                _optionChange = null;
             }
+
+            // Completed outside the gate: a prompt waiting for the change resumes on its own.
+            ended?.TrySetResult();
         }
     }
 
@@ -1340,12 +1355,12 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
 
             if (AcpWireMapping.MapSessionUpdate(notification.Update) is { } harnessEvent)
             {
-                WriteTurnEvent(turn, harnessEvent);
+                WriteUpdateEvent(turn, harnessEvent);
             }
         }
         catch (JsonException)
         {
-            WriteTurnEvent(turn, new DiagnosticEvent("omp acp sent a session/update that could not be decoded."));
+            WriteUpdateEvent(turn, new DiagnosticEvent("omp acp sent a session/update that could not be decoded."));
         }
     }
 
@@ -1962,20 +1977,35 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         return null;
     }
 
-    private PromptTurn BeginTurn()
+    /// <summary>
+    /// Starts a turn once no setting change is in flight. A prompt submitted during a switch waits for the switch to finish; it holds no lock
+    /// while it waits, and the switch answers on the pump, so the wait never depends on the prompt itself.
+    /// </summary>
+    private async Task<PromptTurn> BeginTurnAsync(CancellationToken cancellationToken)
     {
-        lock (_gate)
+        while (true)
         {
-            ThrowIfDisposed();
-            if (_sessionClosed)
+            Task switching;
+            lock (_gate)
             {
-                throw new InvalidOperationException("The ACP session is closed.");
+                ThrowIfDisposed();
+                if (_sessionClosed)
+                {
+                    throw new InvalidOperationException("The ACP session is closed.");
+                }
+
+                if (_optionChange is not { } change)
+                {
+                    _machine.TransitionTo(HarnessState.Streaming);
+                    var turn = new PromptTurn(SessionId ?? throw new InvalidOperationException("The ACP session has no sessionId."));
+                    _turn = turn;
+                    return turn;
+                }
+
+                switching = change.Task;
             }
 
-            _machine.TransitionTo(HarnessState.Streaming);
-            var turn = new PromptTurn(SessionId ?? throw new InvalidOperationException("The ACP session has no sessionId."));
-            _turn = turn;
-            return turn;
+            await switching.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -2154,12 +2184,31 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         }
     }
 
+    /// <summary>
+    /// Writes a <c>session/update</c> event into the turn unless its consumer has gone. An abandoned turn has nobody to read its events, so they are
+    /// dropped instead of buffered until the buffer faults the session.
+    /// </summary>
+    private void WriteUpdateEvent(PromptTurn turn, HarnessEvent harnessEvent)
+    {
+        bool abandoned;
+        lock (_gate)
+        {
+            abandoned = turn.Abandoned;
+        }
+
+        if (!abandoned)
+        {
+            WriteTurnEvent(turn, harnessEvent);
+        }
+    }
+
     private async Task AbandonTurnAsync(PromptTurn turn)
     {
         var cancel = false;
         lock (_gate)
         {
             InterruptTurnLocked(turn);
+            turn.Abandoned = true;
             if (turn.Settled)
             {
                 return;
@@ -2449,12 +2498,23 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         }
     }
 
-    /// <summary>Asks the gate a question. A gate that throws allows the action: the failure policy of a hook (<c>failClosed</c>) lives inside the gate.</summary>
+    /// <summary>
+    /// Asks the gate a question. A gate that does not answer within <see cref="HookGateTimeout"/> denies the action: the session cannot tell what the
+    /// gate would have said, so it refuses rather than let the action through. A gate that throws allows the action: the failure policy of a hook
+    /// (<c>failClosed</c>) lives inside the gate.
+    /// </summary>
     private async Task<AcpHookVerdict> AskGateAsync(string point, Func<IAcpHookGate, ValueTask<AcpHookVerdict>> ask)
     {
+        // A gate that never answers cannot hold the pump or a prompt past the limit; its silence is a denial.
+        using var deadline = new CancellationTokenSource(HookGateTimeout);
         try
         {
-            return await ask(_hookGate!).ConfigureAwait(false);
+            return await ask(_hookGate!).AsTask().WaitAsync(deadline.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (deadline.IsCancellationRequested)
+        {
+            HookGateTimedOut(_logger, point, null);
+            return new AcpHookVerdict { Denied = true, AgentMessage = "A hook did not answer in time, so this action was denied." };
         }
         catch (Exception ex) when (ex is not (OutOfMemoryException or OperationCanceledException))
         {
@@ -2520,6 +2580,9 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
 
         /// <summary>Gets or sets a value indicating whether the turn was cancelled, abandoned or disposed. Guarded by the session gate.</summary>
         public bool Interrupted { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether the consumer stopped reading the turn, so its session updates are dropped. Guarded by the session gate.</summary>
+        public bool Abandoned { get; set; }
     }
 
     /// <summary>A permission wait parked on a turn (null when no turn was active), with the source that cancels it.</summary>

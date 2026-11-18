@@ -88,13 +88,15 @@ public sealed class EffectiveHookSet
             .ToFrozenSet(StringComparer.Ordinal);
 
     /// <summary>
-    /// The event names for which an unreachable hook host must deny: events with an enabled <c>failClosed</c> hook, and
-    /// events where a managed hook guards a permission event (design 3.5).
+    /// The event names for which an unreachable hook host must deny: events with an enabled <c>failClosed</c> hook on an
+    /// event that can block (a Cursor event, or a guarding <c>omp</c> event), and events where a managed hook guards a
+    /// permission event (design 3.5).
     /// </summary>
     public IReadOnlySet<string> FailClosedEvents() =>
         Hooks
-            .Where(hook => hook.Enabled && !hook.IsOmpEvent && hook.Event is not null
-                && (hook.FailClosed || (hook.Scope == HookScope.Managed && hook.IsPermissionHook)))
-            .Select(hook => HookEvents.Format(hook.Event!.Value))
+            .Where(hook => hook.Enabled && (hook.IsOmpEvent
+                ? hook.FailClosed && HookEvents.IsGuardingOmp(hook.EventName)
+                : hook is { Event: not null } && (hook.FailClosed || (hook.Scope == HookScope.Managed && hook.IsPermissionHook))))
+            .Select(hook => hook.IsOmpEvent ? hook.EventName : HookEvents.Format(hook.Event!.Value))
             .ToFrozenSet(StringComparer.Ordinal);
 }

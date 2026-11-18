@@ -50,8 +50,8 @@ internal sealed class McpCatalogSettingsSource : IMcpSettingsSource
         TranslateAsync(() => _catalog.SetEnabledAsync(name, enabled, cancellationToken));
 
     /// <inheritdoc />
-    public Task GrantConsentAsync(string name, CancellationToken cancellationToken) =>
-        TranslateAsync(() => _catalog.GrantConsentAsync(name, cancellationToken));
+    public Task GrantConsentAsync(string name, string consentIdentity, CancellationToken cancellationToken) =>
+        TranslateAsync(() => _catalog.GrantConsentAsync(name, consentIdentity, cancellationToken));
 
     /// <inheritdoc />
     public Task RevokeConsentAsync(string name, CancellationToken cancellationToken) =>
@@ -158,7 +158,8 @@ internal sealed class McpCatalogSettingsSource : IMcpSettingsSource
             entry.IsOffered,
             server.RequiresConsent,
             entry.IsConsentGranted,
-            server.HasOAuthSettings);
+            server.HasOAuthSettings,
+            server.ConsentIdentity);
     }
 
     private static McpServerStatusKind MapState(McpServerState state) => state switch

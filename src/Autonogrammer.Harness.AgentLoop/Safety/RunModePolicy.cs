@@ -137,7 +137,7 @@ public sealed class RunModePolicy
 
         if (Mode == RunMode.AutoReview
             && (request.WorkingDirectory is null || ArgumentReadable(request.WorkingDirectory, null))
-            && KnownSafeCommands.IsKnownSafe(reading, argument => !IsUnexpandedWord(argument) && ArgumentReadable(argument, request.WorkingDirectory)))
+            && KnownSafeCommands.IsKnownSafe(reading, argument => ArgumentReadable(argument, request.WorkingDirectory)))
         {
             return Allow(RunModeStage.KnownSafe, "A read-only command from the known-safe list, inside the read boundary.");
         }
@@ -160,9 +160,6 @@ public sealed class RunModePolicy
         var lexical = _paths.Lexical(argument, workingDirectory);
         return !Rules(_permissions.DenyRules, PermissionTokenKind.Read).Any(rule => PermissionMatcher.MatchesPath(rule.Token.Argument, _paths, lexical, real, forDeny: true));
     }
-
-    private static bool IsUnexpandedWord(string argument) =>
-        argument.Contains('$', StringComparison.Ordinal) || (argument.Length > 1 && argument[0] == '~' && argument[1] != '/');
 
     private RunModeDecision DecideRead(RunModeRequest request)
     {

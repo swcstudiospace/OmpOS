@@ -67,4 +67,20 @@ public sealed class ForkModelTests
         (await model.DuplicateAsync(Token).ConfigureAwait(true)).ShouldNotBeNull();
         model.HasError.ShouldBeFalse();
     }
+
+    /// <summary>A fault in a head's handler for the new session is not a failed fork: the fork happened, the status says so and the fault reaches the caller.</summary>
+    [Fact]
+    public async Task AFaultInAForkedHandlerIsNotReportedAsAFailedFork()
+    {
+        var forker = new ScriptedSessionForker(canForkFromMessage: false);
+        var model = new ForkModel("s1", forker);
+        model.Forked += (_, _) => throw new InvalidOperationException("the head cannot open the chat");
+
+        await Should.ThrowAsync<InvalidOperationException>(() => model.DuplicateAsync(Token)).ConfigureAwait(true);
+
+        forker.Requests.Count.ShouldBe(1);
+        model.HasError.ShouldBeFalse();
+        model.StatusText.ShouldBe("Duplicated the chat as Copy of chat. The original chat is unchanged.");
+        model.IsBusy.ShouldBeFalse();
+    }
 }

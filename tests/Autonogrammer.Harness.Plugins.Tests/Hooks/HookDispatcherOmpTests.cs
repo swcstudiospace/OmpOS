@@ -12,6 +12,8 @@ public sealed class HookDispatcherOmpTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
+    private static readonly string[] ExpectedFailClosedEvents = ["tool_call", "input", "preToolUse"];
+
     private static EffectiveHook OmpHook(string ompEvent, string id = "omp", string? matcher = null, bool blocking = false) =>
         HookFixtures.Hook(HookEvent.PreToolUse, id: id, matcher: matcher, blocking: blocking) with
         {
@@ -141,5 +143,102 @@ public sealed class HookDispatcherOmpTests
         decision.OmpResult.ShouldBeNull();
         decision.IsDenied.ShouldBeFalse();
         decision.Records.Single().Status.ShouldBe(HookRunStatus.InvalidResponse);
+    }
+
+    private static async Task<(HookDecision Decision, DispatcherRig Rig)> DispatchOutcomeAsync(EffectiveHook hook, string ompEvent, HookCommandOutcome outcome)
+    {
+        var rig = await DispatcherRig.CreateAsync([hook], Token, ScriptedCommandRunner.Always(outcome)).ConfigureAwait(true);
+        var decision = await rig.Dispatcher.DispatchOmpAsync(ompEvent, rig.Session, HookFixtures.Json("""{ "toolName": "bash", "toolCallId": "c1" }"""), Token).ConfigureAwait(true);
+        return (decision, rig);
+    }
+
+    [Fact]
+    public async Task AFailClosedHookOnAGuardingEventBlocksWhenItExits()
+    {
+        var hook = OmpHook("tool_call", blocking: true) with { FailClosed = true };
+        var (decision, rig) = await DispatchOutcomeAsync(hook, "tool_call", ScriptedCommandRunner.Exit(1));
+        using var _ = rig;
+
+        decision.OmpResult!.Value.GetProperty("block").GetBoolean().ShouldBeTrue();
+        decision.OmpResult!.Value.GetProperty("reason").GetString().ShouldNotBeNull().ShouldContain("failClosed");
+        decision.Records.Single().Status.ShouldBe(HookRunStatus.Failed);
+    }
+
+    [Fact]
+    public async Task AFailClosedHookOnAGuardingEventBlocksWhenItCannotStart()
+    {
+        var outcome = new HookCommandOutcome(-1, string.Empty, string.Empty, false, false, HookSpawnFailure.AccessDenied, "permission denied");
+        var hook = OmpHook("tool_call", blocking: true) with { FailClosed = true };
+        var (decision, rig) = await DispatchOutcomeAsync(hook, "tool_call", outcome);
+        using var _ = rig;
+
+        decision.OmpResult!.Value.GetProperty("block").GetBoolean().ShouldBeTrue();
+        decision.Records.Single().Status.ShouldBe(HookRunStatus.Failed);
+    }
+
+    [Fact]
+    public async Task AFailClosedHookOnAGuardingEventBlocksWhenItTimesOut()
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var runner = new ScriptedCommandRunner(async (_, token) =>
+        {
+            started.SetResult();
+            await Task.Delay(Timeout.InfiniteTimeSpan, token).ConfigureAwait(false);
+            return ScriptedCommandRunner.Exit(0);
+        });
+        var hook = OmpHook("tool_call", blocking: true) with { FailClosed = true, Timeout = TimeSpan.FromSeconds(5) };
+        using var rig = await DispatcherRig.CreateAsync([hook], Token, runner).ConfigureAwait(true);
+
+        var pending = rig.Dispatcher.DispatchOmpAsync("tool_call", rig.Session, HookFixtures.Json("""{ "toolName": "bash" }"""), Token);
+        await started.Task.ConfigureAwait(true);
+        rig.Clock.Advance(TimeSpan.FromSeconds(6));
+        var decision = await pending.ConfigureAwait(true);
+
+        decision.OmpResult!.Value.GetProperty("block").GetBoolean().ShouldBeTrue();
+        decision.Records.Single().Status.ShouldBe(HookRunStatus.TimedOut);
+    }
+
+    [Fact]
+    public async Task AFailingHookOnAGuardingEventWithoutFailClosedDoesNotBlock()
+    {
+        var (decision, rig) = await DispatchOutcomeAsync(OmpHook("tool_call", blocking: true), "tool_call", ScriptedCommandRunner.Exit(1));
+        using var _ = rig;
+
+        decision.OmpResult.ShouldBeNull();
+        decision.Records.Single().Status.ShouldBe(HookRunStatus.Failed);
+    }
+
+    [Fact]
+    public async Task ExitCodeTwoOnAGuardingEventDeniesWithStderrAsTheReason()
+    {
+        var (decision, rig) = await DispatchOutcomeAsync(OmpHook("tool_call", blocking: true), "tool_call", ScriptedCommandRunner.Exit(2, string.Empty, "not today"));
+        using var _ = rig;
+
+        decision.OmpResult!.Value.GetProperty("block").GetBoolean().ShouldBeTrue();
+        decision.OmpResult!.Value.GetProperty("reason").GetString().ShouldBe("not today");
+        decision.Records.Single().Status.ShouldBe(HookRunStatus.Denied);
+    }
+
+    [Fact]
+    public async Task ExitCodeTwoOnAnEventThatCannotBlockOnlyFails()
+    {
+        var (decision, rig) = await DispatchOutcomeAsync(OmpHook("session_start"), "session_start", ScriptedCommandRunner.Exit(2, string.Empty, "not today"));
+        using var _ = rig;
+
+        decision.OmpResult.ShouldBeNull();
+        decision.Records.Single().Status.ShouldBe(HookRunStatus.Failed);
+    }
+
+    [Fact]
+    public void OnlyFailClosedHooksOnGuardingOmpEventsMakeTheirEventFailClosedForTheBridge()
+    {
+        var set = HookFixtures.Set(
+            OmpHook("tool_call") with { FailClosed = true },
+            OmpHook("input") with { FailClosed = true },
+            OmpHook("session_start") with { FailClosed = true },
+            OmpHook("before_subagent_spawn"),
+            HookFixtures.Hook(HookEvent.PreToolUse, failClosed: true));
+
+        set.FailClosedEvents().ShouldBe(ExpectedFailClosedEvents, ignoreOrder: true);
     }
 }

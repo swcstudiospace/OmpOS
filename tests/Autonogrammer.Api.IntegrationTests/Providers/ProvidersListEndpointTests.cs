@@ -186,7 +186,7 @@ public sealed class ProvidersListEndpointTests
         using var factory = ProvidersTestHost.Dev(new FakeProviderBackend());
         using var client = factory.CreateClient();
         var plan = CatalogueRows.All.First(static row => row.Plan is not null && row.Routes.Count > 0);
-        var signIn = CatalogueRows.All.First(static row => row.Routes.Count == 0);
+        var signIn = CatalogueRows.All.First(static row => row.Routes.Count == 0 && row.ApiKeyEnv is null && row.LoginCommand is not null);
 
         using var planResponse = await client.GetAsync(new Uri("/providers/" + plan.Id, UriKind.Relative), Token).ConfigureAwait(true);
         using var signInResponse = await client.GetAsync(new Uri("/providers/" + signIn.Id, UriKind.Relative), Token).ConfigureAwait(true);

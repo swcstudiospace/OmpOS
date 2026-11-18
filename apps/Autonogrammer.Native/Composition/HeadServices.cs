@@ -28,6 +28,7 @@ using Autonogrammer.Presentation.Landing;
 using Autonogrammer.Presentation.Modes;
 using Autonogrammer.Presentation.Remote;
 using Autonogrammer.Presentation.Safety;
+using Autonogrammer.Presentation.Settings.Connectors;
 using Autonogrammer.Presentation.Worktrees;
 using Autonogrammer.Workspace;
 using Autonogrammer.Workspace.Checkpoints;
@@ -72,6 +73,7 @@ internal sealed class HeadServices : IAsyncDisposable
     private readonly LocalOmpInstaller? _localOmpInstaller;
     private readonly OmpManagedInstall? _ompManaged;
     private readonly ILogger? _logger;
+    private readonly ContainerHosts _containers;
     private int _disposed;
 
     private HeadServices(
@@ -83,6 +85,7 @@ internal sealed class HeadServices : IAsyncDisposable
         EnvironmentProfileStore remoteProfiles,
         IRemoteEnvironmentsHost remoteEnvironments,
         McpServerCatalog mcp,
+        IConnectorCheckSource connectorChecks,
         CheckpointStore checkpoints,
         ForwardingSetupConsentPrompt setupConsent,
         FileSetupConsentStore consentStore,
@@ -103,10 +106,7 @@ internal sealed class HeadServices : IAsyncDisposable
         OmpManagedInstall? ompManaged)
     {
         SshOptions = sshOptions;
-        PodmanOptions = containers.Podman;
-        WslOptions = containers.Wsl;
-        ContainerEnvironments = containers.Environments;
-        ContainerLister = containers.Lister;
+        _containers = containers;
         _artifacts = new ArtifactsComposition(new NativeCoworkAccountGate(account.Session), options.StateRoot, apiClient, readToken, account.Session);
         StateRoot = options.StateRoot;
         PluginsRoot = options.PluginsRoot;
@@ -120,6 +120,7 @@ internal sealed class HeadServices : IAsyncDisposable
         RemoteProfiles = remoteProfiles;
         RemoteEnvironments = remoteEnvironments;
         Mcp = mcp;
+        ConnectorChecks = connectorChecks;
         Checkpoints = checkpoints;
         SetupConsent = setupConsent;
         _consentStore = consentStore;
@@ -182,16 +183,16 @@ internal sealed class HeadServices : IAsyncDisposable
     public SshClientOptions SshOptions { get; }
 
     /// <summary>Gets how podman is run for the container environments: the executable and the time one command may take. The connection test, the listing of running containers and the sessions share it.</summary>
-    public PodmanClientOptions PodmanOptions { get; }
+    public PodmanClientOptions PodmanOptions => _containers.Podman;
 
     /// <summary>Gets how wsl.exe is run for the WSL environments.</summary>
-    public WslClientOptions WslOptions { get; }
+    public WslClientOptions WslOptions => _containers.Wsl;
 
     /// <summary>Gets the host of the Containers and WSL section of the Remote page: the connection tests and the start of a stopped container. WSL is supported on Windows only.</summary>
-    public IContainerEnvironmentsHost ContainerEnvironments { get; }
+    public IContainerEnvironmentsHost ContainerEnvironments => _containers.Environments;
 
     /// <summary>Gets the lister of the running containers the Remote page offers to add.</summary>
-    public IContainerLister ContainerLister { get; }
+    public IContainerLister ContainerLister => _containers.Lister;
 
     /// <summary>Gets the automations of this computer: their file, their scheduler and the manager of the Automations page. The head starts the scheduler once it is open.</summary>
     public AutomationsHost Automations { get; }
@@ -201,6 +202,9 @@ internal sealed class HeadServices : IAsyncDisposable
 
     /// <summary>Gets the MCP server catalog: the servers of the user's own files, their state and the consent for each.</summary>
     public McpServerCatalog Mcp { get; }
+
+    /// <summary>Gets the check the Connectors page runs: it checks a server through <see cref="Mcp"/> and reports the tools the check listed.</summary>
+    public IConnectorCheckSource ConnectorChecks { get; }
 
     /// <summary>Gets the checkpoint store of the window's workspace.</summary>
     public CheckpointStore Checkpoints { get; }
@@ -303,15 +307,12 @@ internal sealed class HeadServices : IAsyncDisposable
         try
         {
             stores = new Stores(options, config, clock);
-            var holder = new TrustTerminalHolder();
-            var sshOptions = new SshClientOptions { ControlPathDirectory = PrivateSshControlDirectory() };
-            var remoteEnvironments = new RemoteEnvironmentsHost(stores.RemoteProfiles, sshOptions, openTrustTerminal: holder.OpenAsync, clock: clock);
-            var mcp = new McpServerCatalog(new LocalMcpFileStore(), new FileMcpStateStore(Path.Combine(config, "mcp-state.json")), new RecordingConnectionChecker(new McpConnectionChecker()), extra: options.McpExtra);
+            var (holder, sshOptions, remoteEnvironments) = CreateRemote(stores.RemoteProfiles, clock);
+            var (mcp, connectorChecks) = CreateMcp(options, config);
             var setupConsent = new ForwardingSetupConsentPrompt();
             var worktrees = CreateWorktrees(options, stores.ConsentStore, setupConsent);
             var urlLauncher = new SystemUrlLauncher(options.TopLevel ?? (static () => null));
-            var display = new DisplaySettings(new FileDisplaySettingsStore(Path.Combine(options.StateRoot, "config", "display.json")));
-            await display.LoadAsync(cancellationToken).ConfigureAwait(false);
+            var display = await OpenDisplayAsync(options, cancellationToken).ConfigureAwait(false);
             var (runModeHub, runModes) = CreateRunModes(options, string.IsNullOrWhiteSpace(home) ? config : home, hooks, clock);
             var opened = await OpenAccountAsync(options, clock, urlLauncher, cancellationToken).ConfigureAwait(false);
             apiClient = opened.Client;
@@ -320,7 +321,7 @@ internal sealed class HeadServices : IAsyncDisposable
             var localOmp = new LocalOmpStatusProbe(options.OmpPath, ompManaged?.Options);
 
             var services = new HeadServices(
-                options, runModeHub.HomeDirectory, config, hooks, hookApproval, stores.RemoteProfiles, remoteEnvironments, mcp, stores.Checkpoints, setupConsent, stores.ConsentStore,
+                options, runModeHub.HomeDirectory, config, hooks, hookApproval, stores.RemoteProfiles, remoteEnvironments, mcp, connectorChecks, stores.Checkpoints, setupConsent, stores.ConsentStore,
                 worktrees, new AboutLauncher(), urlLauncher, display, runModeHub, runModes, stores.WorkspaceSets, opened.Cloud, apiClient, sshOptions, containers, opened.Account, opened.Token, localOmp, ompManaged);
             holder.Owner = services;
             created = true;
@@ -348,6 +349,27 @@ internal sealed class HeadServices : IAsyncDisposable
             Path.Combine(options.StateRoot, "worktrees"),
             () => options.WorkspaceRoot,
             new ConsentedWorktreeSetupRunner(new WorktreeSetupConsentAdapter(consentStore, setupConsent), new ShellWorktreeSetupExecutor()));
+
+    private static (TrustTerminalHolder Holder, SshClientOptions Ssh, RemoteEnvironmentsHost Environments) CreateRemote(EnvironmentProfileStore profiles, TimeProvider clock)
+    {
+        var holder = new TrustTerminalHolder();
+        var sshOptions = new SshClientOptions { ControlPathDirectory = PrivateSshControlDirectory() };
+        return (holder, sshOptions, new RemoteEnvironmentsHost(profiles, sshOptions, openTrustTerminal: holder.OpenAsync, clock: clock));
+    }
+
+    private static (McpServerCatalog Catalog, IConnectorCheckSource Checks) CreateMcp(HeadServicesOptions options, string config)
+    {
+        var connectorRecording = new RecordingConnectionChecker(new McpConnectionChecker());
+        var mcp = new McpServerCatalog(new LocalMcpFileStore(), new FileMcpStateStore(Path.Combine(config, "mcp-state.json")), connectorRecording, extra: options.McpExtra);
+        return (mcp, new ConnectorCheckSource(mcp, connectorRecording));
+    }
+
+    private static async Task<DisplaySettings> OpenDisplayAsync(HeadServicesOptions options, CancellationToken cancellationToken)
+    {
+        var display = new DisplaySettings(new FileDisplaySettingsStore(Path.Combine(options.StateRoot, "config", "display.json")));
+        await display.LoadAsync(cancellationToken).ConfigureAwait(false);
+        return display;
+    }
 
     private static (RunModeHub Hub, RefreshingRunModeSource Source) CreateRunModes(HeadServicesOptions options, string modeHome, HooksService hooks, TimeProvider clock)
     {

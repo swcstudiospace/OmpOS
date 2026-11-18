@@ -6,7 +6,7 @@ namespace Autonogrammer.Harness.Providers.Tests;
 /// <summary>Each invariant of <see cref="CatalogueRowValidator"/> is broken on purpose in a valid sample row and must be reported by name.</summary>
 public sealed class CatalogueRowValidatorTests
 {
-    private static readonly DateOnly Day = new(2026, 10, 27);
+    private static readonly DateOnly Day = new(2026, 11, 18);
 
     private static CatalogueRoute Route(string baseUrl = "https://api.example-vendor.test/v1", CatalogueAuthStyle auth = CatalogueAuthStyle.Bearer, string? header = null) =>
         new("openai", "openai-completions", baseUrl, auth, header, Discovery: true, ModelsEndpoint: "GET /v1/models", Models: []);
@@ -152,7 +152,15 @@ public sealed class CatalogueRowValidatorTests
 
     [Fact]
     public void ARowWithoutARouteOrASignInCommandIsReported() =>
-        Check(Row() with { Routes = [] }).ShouldContain(problem => problem.Contains("route or an omp sign-in", StringComparison.Ordinal));
+        Check(Row() with { Routes = [] }).ShouldContain(problem => problem.Contains("a row needs a route", StringComparison.Ordinal));
+
+    [Fact]
+    public void ARoutelessOmpNativeRowIsValid() =>
+        Check(Row() with { Routes = [], OmpProviderId = "example-omp" }).ShouldBeEmpty();
+
+    [Fact]
+    public void ARoutelessRowWithoutOmpIdOrLoginIsInvalid() =>
+        Check(Row() with { Routes = [], LoginCommand = null, OmpProviderId = null }).ShouldNotBeEmpty();
 
     [Fact]
     public void NullRowsThrow() => Should.Throw<ArgumentNullException>(() => CatalogueRowValidator.Validate(null!));

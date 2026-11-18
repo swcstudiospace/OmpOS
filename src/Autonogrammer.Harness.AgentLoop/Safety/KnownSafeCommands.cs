@@ -31,7 +31,7 @@ internal static class KnownSafeCommands
 
     /// <summary>Returns whether a reading of a command line is known-safe.</summary>
     /// <param name="reading">The command line, read for allow matching.</param>
-    /// <param name="argumentAllowed">Tells whether an argument that may name a file is inside the read boundary and not denied.</param>
+    /// <param name="argumentAllowed">Tells whether an argument that may name a file is inside the read boundary and not denied. A word with an unexpanded glob, brace, variable or tilde form is refused before this is asked.</param>
     /// <returns>True when every simple command is on the list and every argument is allowed.</returns>
     public static bool IsKnownSafe(ShellCommandAnalysis.Reading reading, Func<string, bool> argumentAllowed)
     {
@@ -40,9 +40,11 @@ internal static class KnownSafeCommands
             return false;
         }
 
+        Func<string, bool> guarded = argument => !IsUnexpandedWord(argument) && argumentAllowed(argument);
+
         foreach (var words in reading.Segments)
         {
-            if (!IsSafeSegment(words, argumentAllowed))
+            if (!IsSafeSegment(words, guarded))
             {
                 return false;
             }
@@ -119,4 +121,7 @@ internal static class KnownSafeCommands
 
         return true;
     }
+
+    private static bool IsUnexpandedWord(string argument) =>
+        argument.IndexOfAny(['$', '*', '?', '[', '{']) >= 0 || (argument.Length > 1 && argument[0] == '~' && argument[1] != '/');
 }

@@ -302,14 +302,26 @@ public sealed class WorktreeCommandsModel : ObservableModel
                 var stamp = _timeProvider.GetUtcNow().ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
                 for (var index = 1; index <= count; index++)
                 {
-                    var candidate = new BestOfNCandidate(index, string.Create(CultureInfo.InvariantCulture, $"bon-{stamp}-{index}"));
-                    _candidates.Add(candidate);
-                    await StartCandidateAsync(candidate, cancellationToken).ConfigureAwait(true);
+                    _candidates.Add(new BestOfNCandidate(index, string.Create(CultureInfo.InvariantCulture, $"bon-{stamp}-{index}")));
                 }
 
                 var host = _bestOfHost;
                 var task = prompt.Trim();
-                await Task.WhenAll(_candidates.Where(static candidate => candidate.Run is not null).Select(candidate => RunCandidateAsync(host, task, count, candidate, cancellationToken))).ConfigureAwait(true);
+                try
+                {
+                    foreach (var candidate in _candidates.ToArray())
+                    {
+                        await StartCandidateAsync(candidate, cancellationToken).ConfigureAwait(true);
+                    }
+
+                    await Task.WhenAll(_candidates.Where(static candidate => candidate.Run is not null).Select(candidate => RunCandidateAsync(host, task, count, candidate, cancellationToken))).ConfigureAwait(true);
+                }
+                catch (OperationCanceledException)
+                {
+                    MarkUnfinishedCancelled();
+                    throw;
+                }
+
                 await ReloadAsync(cancellationToken).ConfigureAwait(true);
                 CountChanges();
                 Open();
@@ -414,6 +426,14 @@ public sealed class WorktreeCommandsModel : ObservableModel
         catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
         {
             candidate.Update(BestOfNState.Failed, exception.Message, 0);
+        }
+    }
+
+    private void MarkUnfinishedCancelled()
+    {
+        foreach (var candidate in _candidates.Where(static item => item.State is BestOfNState.Waiting or BestOfNState.Running))
+        {
+            candidate.Update(BestOfNState.Failed, WorktreeCommandsCopy.Cancelled, candidate.ChangedFiles);
         }
     }
 

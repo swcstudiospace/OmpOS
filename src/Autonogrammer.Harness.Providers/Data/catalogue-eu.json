@@ -779,6 +779,26 @@
       "note": "Host is model-<name>-<project-id>-<account-id>.ai.gcore.dev; X-API-Key auth is off by default. Models list not confirmed: enter a model id.",
       "loginCommand": null,
       "plan": null
+    },
+    {
+      "id": "helmcode",
+      "displayName": "Helmcode",
+      "region": "eu",
+      "country": null,
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "helmcode",
+      "apiKeyEnv": "HELMCODE_API_KEY",
+      "routes": [],
+      "urlVariables": [],
+      "docsUrl": "https://helmcode.com/docs",
+      "keyPageUrl": "https://cloud.helmcode.com",
+      "sourceUrl": "https://helmcode.com/docs",
+      "status": "unverified",
+      "statusDate": "2026-11-18",
+      "note": "Verify before use: Omp-native: omp owns the endpoints; the key goes to omp by provider id.",
+      "loginCommand": null,
+      "plan": null
     }
   ]
 }

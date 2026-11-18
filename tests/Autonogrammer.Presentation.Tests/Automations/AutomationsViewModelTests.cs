@@ -166,6 +166,73 @@ public sealed class AutomationsViewModelTests
         source.WriteCount.ShouldBe(1);
     }
 
+    /// <summary>A reload that is cancelled leaves the list as it was: the loaded state and rows come back and the page is not busy.</summary>
+    [Fact]
+    public async Task CancelledReloadLeavesTheLoadedListAsItWas()
+    {
+        var source = new HeldReloadSource(Nightly, Manual);
+        var model = new AutomationsViewModel(source);
+        await model.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        using var cancellation = new CancellationTokenSource();
+        source.HoldLoads = true;
+
+        var reload = Should.ThrowAsync<TaskCanceledException>(async () => await model.LoadAsync(cancellation.Token).ConfigureAwait(true));
+        model.State.ShouldBe(AutomationsViewState.Loading);
+        await cancellation.CancelAsync().ConfigureAwait(true);
+
+        await reload.ConfigureAwait(true);
+        model.State.ShouldBe(AutomationsViewState.Success);
+        model.Rows.Count.ShouldBe(2);
+        model.IsBusy.ShouldBeFalse();
+    }
+
+    /// <summary>A write that succeeds after a failed reload reads the list again as loaded, so the earlier load failure no longer shows.</summary>
+    [Fact]
+    public async Task SuccessfulWriteAfterAFailedReloadClearsTheLoadFailure()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var source = new ScriptedAutomationsSource(Nightly, Manual);
+        var model = new AutomationsViewModel(source);
+        await model.LoadAsync(token).ConfigureAwait(true);
+        source.LoadFailure = "guard store is unreadable";
+        await model.LoadAsync(token).ConfigureAwait(true);
+        model.State.ShouldBe(AutomationsViewState.Error);
+
+        source.LoadFailure = null;
+        await model.ToggleAsync("manual-only", token).ConfigureAwait(true);
+
+        model.State.ShouldBe(AutomationsViewState.Success);
+        model.LoadFailure.ShouldBeEmpty();
+        model.Rows.Single(row => string.Equals(row.Id, "manual-only", StringComparison.Ordinal)).IsEnabled.ShouldBeTrue();
+    }
+
+    /// <summary>A source whose later loads can be held open until the caller cancels them.</summary>
+    private sealed class HeldReloadSource(params AutomationEntry[] automations) : IAutomationsSource
+    {
+        private readonly List<AutomationEntry> _automations = [.. automations];
+
+        /// <summary>Gets or sets whether a load waits until it is cancelled.</summary>
+        public bool HoldLoads { get; set; }
+
+        /// <inheritdoc />
+        public async Task LoadAsync(CancellationToken cancellationToken)
+        {
+            if (HoldLoads)
+            {
+                await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(true);
+            }
+        }
+
+        /// <inheritdoc />
+        public IReadOnlyList<AutomationEntry> Snapshot() => _automations;
+
+        /// <inheritdoc />
+        public Task SetEnabledAsync(string automationId, bool enabled, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        /// <inheritdoc />
+        public Task ResumeAsync(string automationId, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
     private static AutomationEntry Automation(string id, string trigger, bool enabled) =>
         new(id, trigger, enabled, TimeSpan.FromMinutes(5), LastRun: null, Pause: null);
 }

@@ -26,6 +26,13 @@ public interface IWorkspaceFileSystem
     /// <exception cref="UnauthorizedAccessException">The path resolves outside the workspace root, through a link.</exception>
     string ReadFile(string relativePath) => throw new NotSupportedException("This workspace file system is read-only.");
 
+    /// <summary>Reads one text file as UTF-8 like <see cref="ReadFile(string)"/>, refusing a file that holds more than <paramref name="maxBytes"/> bytes before its contents are read when the implementation can tell its size.</summary>
+    /// <param name="relativePath">The normalised workspace-relative path of the file.</param>
+    /// <param name="maxBytes">The most bytes the file may hold.</param>
+    /// <returns>The file's text.</returns>
+    /// <exception cref="WorkspaceFileTooLargeException">The file holds more than <paramref name="maxBytes"/> bytes.</exception>
+    string ReadFile(string relativePath, int maxBytes) => ReadFile(relativePath);
+
     /// <summary>
     /// Replaces the text of an existing file when it still holds the text the caller based the new text on. The write is atomic:
     /// the text goes to a temporary file in the same directory, which then replaces the file, so a reader sees the old or the new

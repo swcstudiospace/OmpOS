@@ -90,11 +90,37 @@ public sealed class TakeOverControllerTests
         session.Commands.Single().Method.ShouldBe("Browser.close");
     }
 
+    /// <summary>Closing the browser releases keyboard capture and the gate whether or not the browser confirms the close, so the pane and the controller agree.</summary>
+    /// <param name="closeFails">True when the browser refuses the close.</param>
+    /// <returns>The task.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CloseBrowser_ReleasesKeyboardAndGate_WhateverTheCloseOutcome(bool closeFails)
+    {
+        var session = new ScriptedInputSession { FailBrowserClose = closeFails };
+        var controller = new TakeOverController(session);
+        await controller.TakeOverAsync().ConfigureAwait(true);
+        var waiting = controller.Gate.WaitIfTakenOverAsync(CancellationToken.None);
+        waiting.IsCompleted.ShouldBeFalse();
+
+        var failure = await Record.ExceptionAsync(() => controller.CloseBrowserAsync()).ConfigureAwait(true);
+
+        (failure is not null).ShouldBe(closeFails);
+        controller.KeyboardCaptured.ShouldBeFalse();
+        controller.Gate.UserHasControl.ShouldBeFalse();
+        controller.Control.ShouldBe(BrowserControlState.Agent);
+        await waiting.ConfigureAwait(true);
+        session.Commands.Single().Method.ShouldBe("Browser.close");
+    }
+
     private sealed class ScriptedInputSession : ICDPSession
     {
         private readonly List<(string Method, object? Args)> _commands = [];
 
         public List<(string Method, object? Args)> Commands => _commands;
+
+        public bool FailBrowserClose { get; init; }
 
         public ILoggerFactory LoggerFactory => NullLoggerFactory.Instance;
 
@@ -120,7 +146,7 @@ public sealed class TakeOverControllerTests
         {
             _ = options;
             Record(method, args);
-            return Task.FromResult<T>(default!);
+            return FailsBrowserClose(method) ? Task.FromException<T>(new InvalidOperationException("Browser.close failed.")) : Task.FromResult<T>(default!);
         }
 
         public Task<JsonElement?> SendAsync(string method, object? args = null, bool waitForCallback = true, CommandOptions? options = null)
@@ -128,7 +154,7 @@ public sealed class TakeOverControllerTests
             _ = waitForCallback;
             _ = options;
             Record(method, args);
-            return Task.FromResult<JsonElement?>(null);
+            return FailsBrowserClose(method) ? Task.FromException<JsonElement?>(new InvalidOperationException("Browser.close failed.")) : Task.FromResult<JsonElement?>(null);
         }
 
         private void Record(string method, object? args)
@@ -139,5 +165,7 @@ public sealed class TakeOverControllerTests
             _ = SessionDetached;
             _ = MessageReceived;
         }
+
+        private bool FailsBrowserClose(string method) => FailBrowserClose && string.Equals(method, "Browser.close", StringComparison.Ordinal);
     }
 }

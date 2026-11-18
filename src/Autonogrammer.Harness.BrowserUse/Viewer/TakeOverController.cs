@@ -144,7 +144,15 @@ public sealed class TakeOverController : IBrowserPaneControl
     public async Task CloseBrowserAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        await _session.SendAsync("Browser.close", new Dictionary<string, object>(StringComparer.Ordinal), waitForCallback: true, options: null).ConfigureAwait(false);
+        try
+        {
+            await _session.SendAsync("Browser.close", new Dictionary<string, object>(StringComparer.Ordinal), waitForCallback: true, options: null).ConfigureAwait(false);
+        }
+        finally
+        {
+            KeyboardCaptured = false;
+            Gate.LeaveUserControl();
+        }
     }
 
     private void RefuseRemote()

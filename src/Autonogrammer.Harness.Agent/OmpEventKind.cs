@@ -35,4 +35,7 @@ public enum OmpEventKind
 
     /// <summary>The terminal event of a finished or cancelled turn. Payload: CompletedEvent.</summary>
     Completed,
+
+    /// <summary>The engine reported how much of the context window the conversation uses. Payload: ContextUsageEvent.</summary>
+    ContextUsage,
 }

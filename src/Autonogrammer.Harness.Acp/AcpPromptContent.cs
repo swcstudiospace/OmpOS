@@ -138,12 +138,15 @@ public static class AcpPromptContent
         ArgumentNullException.ThrowIfNull(images);
 
         var imageBlocks = AcpImageContent.Build(images, imageLimits);
-        if (imageBlocks.Count == 0)
+        var sendsImage = imageBlocks.Any(static block => string.Equals(block.Type, "image", StringComparison.Ordinal));
+        var hasUserContent = !string.IsNullOrWhiteSpace(text) || resources.Count > 0;
+        if (!sendsImage && !hasUserContent)
         {
+            // Nothing reaches omp but at most an omission note: Build refuses this message as it refuses an empty one.
             return Build(text, resources, limits);
         }
 
-        if (string.IsNullOrWhiteSpace(text) && resources.Count == 0)
+        if (!hasUserContent)
         {
             return imageBlocks;
         }

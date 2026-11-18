@@ -22,11 +22,12 @@ public interface IMcpSettingsSource
     /// <returns>A task that completes when the choice is saved.</returns>
     Task SetEnabledAsync(string name, bool enabled, CancellationToken cancellationToken);
 
-    /// <summary>Approves the server's exact declaration. Nothing is started.</summary>
+    /// <summary>Approves the server's exact declaration, as the consent prompt showed it. Nothing is started.</summary>
     /// <param name="name">The server name.</param>
+    /// <param name="consentIdentity">The <see cref="McpServerEntry.ConsentIdentity"/> the prompt showed. The approval is refused when the server's declaration no longer has that identity.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
-    /// <returns>A task that completes when the approval is saved.</returns>
-    Task GrantConsentAsync(string name, CancellationToken cancellationToken);
+    /// <returns>A task that completes when the approval is saved. Faults with <see cref="McpSourceException"/> when the declaration changed since it was shown.</returns>
+    Task GrantConsentAsync(string name, string consentIdentity, CancellationToken cancellationToken);
 
     /// <summary>Withdraws the approval of the server's exact declaration.</summary>
     /// <param name="name">The server name.</param>

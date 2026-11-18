@@ -17,9 +17,24 @@ internal static class ShellCommandAnalysis
         "sudo", "doas", "env", "nohup", "time", "command", "exec", "nice", "ionice", "xargs", "stdbuf", "timeout", "builtin", "setsid",
     };
 
-    private static readonly HashSet<string> OptionValueWrappers = new(StringComparer.Ordinal) { "sudo", "doas" };
+    /// <summary>The value-taking options of one wrapper: the short letters that take a value, and the long options that take it as the next word.</summary>
+    /// <param name="ShortValueLetters">The short option letters that take a value.</param>
+    /// <param name="LongValueOptions">The long option names that take their value as the next word.</param>
+    private sealed record WrapperOptions(string ShortValueLetters, HashSet<string> LongValueOptions);
 
-    private static readonly HashSet<string> OptionsWithValue = new(StringComparer.Ordinal) { "-u", "-g", "-h", "-p", "-C", "-D", "-R", "-T", "-U" };
+    private static readonly Dictionary<string, WrapperOptions> ValueOptions = new(StringComparer.Ordinal)
+    {
+        ["sudo"] = new("CDghpRrtTUu", new(StringComparer.Ordinal) { "--user", "--group", "--host", "--prompt", "--chdir", "--chroot", "--close-from", "--other-user", "--role", "--type", "--command-timeout" }),
+        ["doas"] = new("uC", new(StringComparer.Ordinal)),
+        ["env"] = new("uC", new(StringComparer.Ordinal) { "--unset", "--chdir" }),
+        ["timeout"] = new("sk", new(StringComparer.Ordinal) { "--signal", "--kill-after" }),
+        ["nice"] = new("n", new(StringComparer.Ordinal) { "--adjustment" }),
+        ["ionice"] = new("cnpPu", new(StringComparer.Ordinal) { "--class", "--classdata", "--pid", "--pgid", "--uid" }),
+        ["xargs"] = new("adEILnPs", new(StringComparer.Ordinal) { "--arg-file", "--delimiter", "--max-args", "--max-procs", "--max-chars", "--process-slot-var" }),
+        ["stdbuf"] = new("ioe", new(StringComparer.Ordinal) { "--input", "--output", "--error" }),
+        ["time"] = new("fo", new(StringComparer.Ordinal) { "--format", "--output" }),
+        ["exec"] = new("a", new(StringComparer.Ordinal)),
+    };
 
     private static readonly HashSet<string> Shells = new(StringComparer.Ordinal) { "sh", "bash", "zsh", "dash", "ksh", "fish" };
 
@@ -137,16 +152,7 @@ internal static class ShellCommandAnalysis
         var name = BaseName(current[0]);
         if (Wrappers.Contains(name))
         {
-            var index = 1;
-            while (index < current.Length && IsWrapperNoise(name, current[index]))
-            {
-                index += OptionValueWrappers.Contains(name) && OptionsWithValue.Contains(current[index]) ? 2 : 1;
-            }
-
-            if (index < current.Length)
-            {
-                ExpandWords(current[index..], depth + 1, into);
-            }
+            ExpandWrapped(name, current, depth, into);
         }
         else if (Shells.Contains(name))
         {
@@ -163,6 +169,69 @@ internal static class ShellCommandAnalysis
         {
             ExpandFindActions(current, depth, into);
         }
+    }
+
+    private static void ExpandWrapped(string name, string[] current, int depth, List<IReadOnlyList<string>> into)
+    {
+        var index = 1;
+        while (index < current.Length && IsWrapperNoise(name, current[index]))
+        {
+            if (string.Equals(name, "env", StringComparison.Ordinal) && EnvSplitString(current, index) is { } split)
+            {
+                Expand(split, depth + 1, into);
+                return;
+            }
+
+            index += TakesNextWordAsValue(name, current[index]) ? 2 : 1;
+        }
+
+        if (index < current.Length)
+        {
+            ExpandWords(current[index..], depth + 1, into);
+        }
+    }
+
+    /// <summary>
+    /// Returns the command line an <c>env</c> split-string option carries when the word at <paramref name="index"/> is one of its forms:
+    /// <c>-S text</c>, <c>-Stext</c>, an S in a short-option cluster, or <c>--split-string=text</c>.
+    /// </summary>
+    private static string? EnvSplitString(string[] words, int index)
+    {
+        var word = words[index];
+        if (word is "-S" or "--split-string")
+        {
+            return index + 1 < words.Length ? words[index + 1] : null;
+        }
+
+        if (word.StartsWith("--split-string=", StringComparison.Ordinal))
+        {
+            return word["--split-string=".Length..];
+        }
+
+        if (word.Length < 2 || word[0] != '-' || word[1] == '-')
+        {
+            return null;
+        }
+
+        for (var letter = 1; letter < word.Length; letter++)
+        {
+            if (word[letter] == 'S')
+            {
+                if (letter + 1 < word.Length)
+                {
+                    return word[(letter + 1)..];
+                }
+
+                return index + 1 < words.Length ? words[index + 1] : null;
+            }
+
+            if (word[letter] is 'C' or 'u')
+            {
+                return null;
+            }
+        }
+
+        return null;
     }
 
     private static void ExpandFindActions(string[] words, int depth, List<IReadOnlyList<string>> into)
@@ -195,6 +264,37 @@ internal static class ShellCommandAnalysis
     private static bool IsWrapperNoise(string wrapper, string word) =>
         (word.Length > 1 && word[0] == '-') || IsAssignment(word) || (wrapper is "timeout" or "nice" or "ionice" && IsDuration(word));
 
+    /// <summary>
+    /// Returns whether a wrapper option word takes its value as the next word, so that word is skipped rather than read as the command.
+    /// A short cluster takes one only when its first value letter ends the word: <c>-iu NAME</c> does and <c>-uNAME</c> does not.
+    /// A long option takes one only when it is named without <c>=</c>: <c>--unset NAME</c> does and <c>--unset=NAME</c> does not.
+    /// </summary>
+    /// <param name="wrapper">The wrapper command name.</param>
+    /// <param name="word">The option word.</param>
+    /// <returns>True when the next word is the option's value.</returns>
+    private static bool TakesNextWordAsValue(string wrapper, string word)
+    {
+        if (!ValueOptions.TryGetValue(wrapper, out var options) || word.Length < 2 || word[0] != '-')
+        {
+            return false;
+        }
+
+        if (word[1] == '-')
+        {
+            return options.LongValueOptions.Contains(word);
+        }
+
+        for (var letter = 1; letter < word.Length; letter++)
+        {
+            if (options.ShortValueLetters.Contains(word[letter], StringComparison.Ordinal))
+            {
+                return letter == word.Length - 1;
+            }
+        }
+
+        return false;
+    }
+
     private static bool IsDuration(string word)
     {
         if (word.Length == 0)
@@ -223,6 +323,10 @@ internal static class ShellCommandAnalysis
         private bool _opaque;
         private char _quote;
         private int _index;
+        private readonly Stack<OpenSubstitution> _open = new();
+
+        /// <summary>A substitution or subshell the scan is inside. One opened inside double quotes resumes that quote when it closes.</summary>
+        private readonly record struct OpenSubstitution(bool Backtick, char ResumeQuote);
 
         public Reading Run()
         {
@@ -298,6 +402,10 @@ internal static class ShellCommandAnalysis
             {
                 _quote = '\0';
             }
+            else if (c == '\\' && next == '\n')
+            {
+                _index++;
+            }
             else if (c == '\\' && next != '\0')
             {
                 _word.Append(next);
@@ -313,6 +421,7 @@ internal static class ShellCommandAnalysis
                 }
 
                 EndSegment();
+                PushSubstitution(backtick: c == '`', resumeQuote: '"');
                 _quote = '\0';
                 if (c == '$')
                 {
@@ -334,7 +443,11 @@ internal static class ShellCommandAnalysis
                     _hasWord = true;
                     break;
                 case '\\':
-                    if (next != '\0')
+                    if (next == '\n')
+                    {
+                        _index++;
+                    }
+                    else if (next != '\0')
                     {
                         Append(next);
                         _index++;
@@ -354,10 +467,20 @@ internal static class ShellCommandAnalysis
                     _opaque = true;
                     Append(c);
                     break;
-                case '`' or '(' or ')':
+                case '`':
+                    ToggleBacktick();
+                    Substitution(c, skipNext: false);
+                    break;
+                case '(':
+                    PushSubstitution(backtick: false, resumeQuote: '\0');
+                    Substitution(c, skipNext: false);
+                    break;
+                case ')':
+                    CloseParen();
                     Substitution(c, skipNext: false);
                     break;
                 case '$' when next == '(':
+                    PushSubstitution(backtick: false, resumeQuote: '\0');
                     Substitution(c, skipNext: true);
                     break;
                 default:
@@ -399,6 +522,44 @@ internal static class ShellCommandAnalysis
             if (skipNext)
             {
                 _index++;
+            }
+        }
+
+        private void PushSubstitution(bool backtick, char resumeQuote)
+        {
+            if (splitSubstitutions)
+            {
+                _open.Push(new OpenSubstitution(backtick, resumeQuote));
+            }
+        }
+
+        private void PopSubstitution()
+        {
+            if (_open.Count > 0)
+            {
+                _quote = _open.Pop().ResumeQuote;
+            }
+        }
+
+        private bool InSubstitution(bool backtick) => _open.Count > 0 && _open.Peek().Backtick == backtick;
+
+        private void ToggleBacktick()
+        {
+            if (InSubstitution(backtick: true))
+            {
+                PopSubstitution();
+            }
+            else
+            {
+                PushSubstitution(backtick: true, resumeQuote: '\0');
+            }
+        }
+
+        private void CloseParen()
+        {
+            if (InSubstitution(backtick: false))
+            {
+                PopSubstitution();
             }
         }
     }

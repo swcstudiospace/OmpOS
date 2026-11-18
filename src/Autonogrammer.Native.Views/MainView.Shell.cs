@@ -850,8 +850,23 @@ public partial class MainView
             throw new InvalidOperationException("This window cannot start a session on several folders.");
         }
 
+        // A start that is blocked creates no session, so it must not leave the set's folders pending for the next new session.
+        if (NewSessionBlocked(out var reason))
+        {
+            SetStatus(reason);
+            return false;
+        }
+
         pending.SetRoots(roots);
-        await StartNewAgentAsync().ConfigureAwait(true);
+        try
+        {
+            await StartNewAgentAsync().ConfigureAwait(true);
+        }
+        finally
+        {
+            pending.SetRoots(null);
+        }
+
         return true;
     }
 

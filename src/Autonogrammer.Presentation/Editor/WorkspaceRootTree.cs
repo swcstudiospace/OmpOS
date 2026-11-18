@@ -78,7 +78,7 @@ public sealed class WorkspaceRootTree : ObservableModel
             Tree.OpenFolder(_open());
             Error = null;
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException or ArgumentException)
+        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
         {
             Error = $"{DisplayName}: {exception.Message}";
         }
@@ -97,7 +97,7 @@ public sealed class WorkspaceRootTree : ObservableModel
             await Tree.OpenFolderAsync(fileSystem, cancellationToken).ConfigureAwait(true);
             Error = null;
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException or ArgumentException)
+        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
         {
             Error = $"{DisplayName}: {exception.Message}";
         }

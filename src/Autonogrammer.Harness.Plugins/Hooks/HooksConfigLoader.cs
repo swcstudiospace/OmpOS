@@ -1,5 +1,3 @@
-using System.Collections.Frozen;
-
 namespace Autonogrammer.Harness.Plugins.Hooks;
 
 /// <summary>
@@ -10,10 +8,6 @@ namespace Autonogrammer.Harness.Plugins.Hooks;
 public sealed class HooksConfigLoader
 {
     private const int MaxDigestedFileBytes = 1024 * 1024;
-
-    // omp events whose result can stop an action. A hook on one of them denies when it has no consent, like a permission hook.
-    private static readonly FrozenSet<string> GuardingOmpEvents = new[] { "tool_call", "before_subagent_spawn", "input" }
-        .ToFrozenSet(StringComparer.Ordinal);
 
     private readonly IHookFileSource _files;
 
@@ -111,7 +105,7 @@ public sealed class HooksConfigLoader
     }
 
     private static bool IsBlocking(HookDefinition definition) => definition.IsOmpEvent
-        ? GuardingOmpEvents.Contains(definition.EventName)
+        ? HookEvents.IsGuardingOmp(definition.EventName)
         : definition.Event is { } hookEvent && HookEvents.IsPermission(hookEvent);
 
     private async Task<EffectiveHook> BuildAsync(

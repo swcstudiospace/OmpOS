@@ -81,6 +81,7 @@ public sealed class AutomationEditorModel : ObservableModel
     private readonly IAutomationsManager _manager;
     private readonly string[] _supportedTargetKinds;
     private readonly List<AutomationTriggerDraft> _extraTriggers = [];
+    private readonly List<AutomationTriggerDraft> _surplusSchedules = [];
     private readonly List<string> _extraTools = [];
     private readonly HashSet<string> _touched = new(StringComparer.Ordinal);
     private HostedAutomationEntry? _existing;
@@ -887,12 +888,22 @@ public sealed class AutomationEditorModel : ObservableModel
                 _webhookActionsText = string.Join(", ", trigger.Actions);
                 _webhookBranchesText = string.Join(", ", trigger.Branches);
             }
+            else if (IsScheduleKind(trigger.Kind))
+            {
+                _surplusSchedules.Add(trigger);
+            }
             else
             {
                 _extraTriggers.Add(trigger);
             }
         }
     }
+
+    private static bool IsScheduleKind(string kind) =>
+        string.Equals(kind, CronKind, StringComparison.Ordinal) || string.Equals(kind, WebhookKind, StringComparison.Ordinal);
+
+    private bool KeepsSurplus(AutomationTriggerDraft trigger) =>
+        string.Equals(trigger.Kind, CronKind, StringComparison.Ordinal) ? _cronText.Trim().Length > 0 : _webhookEnabled;
 
     private void LoadTools(AutomationDraft draft)
     {
@@ -926,6 +937,7 @@ public sealed class AutomationEditorModel : ObservableModel
                 github ? SplitList(_webhookBranchesText) : []));
         }
 
+        triggers.AddRange(_surplusSchedules.Where(KeepsSurplus));
         triggers.AddRange(_extraTriggers);
         return triggers;
     }

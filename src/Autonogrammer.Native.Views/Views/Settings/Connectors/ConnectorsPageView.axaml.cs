@@ -6,7 +6,7 @@ namespace Autonogrammer.Native.Views.Settings;
 
 /// <summary>
 /// The Connectors page: one card per server, a connection chip, a Check connection button and a three-state control per tool.
-/// The button is the only check. Wiring into the settings window belongs to a later plan.
+/// The button is the only check. The settings window draws it with the page's cards and check source.
 /// </summary>
 public partial class ConnectorsPageView : UserControl
 {
@@ -55,6 +55,8 @@ public partial class ConnectorsPageView : UserControl
 
 #pragma warning restore VSTHRD100
 
+    // A server-level change writes the server policy, then redraws the card's tool rows, since the server policy sets each tool's effective
+    // state. A selection the matrix already holds writes nothing, so the initial binding leaves the permissions file as it is.
     private void OnServerStateChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (_matrix is null || sender is not ComboBox { Tag: string serverId, SelectedItem: string label })
@@ -62,6 +64,46 @@ public partial class ConnectorsPageView : UserControl
             return;
         }
 
-        _matrix.SetServerState(serverId, ConnectorStateLabels.Parse(label));
+        var state = ConnectorStateLabels.Parse(label);
+        if (_matrix.ServerState(serverId) == state)
+        {
+            return;
+        }
+
+        _matrix.SetServerState(serverId, state);
+        RedrawTools(serverId);
+    }
+
+    // A tool selection the matrix already shows writes nothing, so the initial binding leaves the permissions file as it is.
+    private void OnToolStateChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_matrix is null || sender is not ComboBox { DataContext: ConnectorToolRow row, SelectedItem: string label })
+        {
+            return;
+        }
+
+        var state = ConnectorStateLabels.Parse(label);
+        if (_matrix.ToolState(row.ServerId, row.Name) != state)
+        {
+            _matrix.SetToolState(row.ServerId, row.Name, state);
+        }
+    }
+
+    // Rebuilds a card's rows from the tool names it already lists, under the matrix's current policy. No check runs.
+    private void RedrawTools(string serverId)
+    {
+        if (_matrix is null || Cards.ItemsSource is not IEnumerable<ConnectorCardModel> cards)
+        {
+            return;
+        }
+
+        var card = cards.FirstOrDefault(item => string.Equals(item.ServerId, serverId, StringComparison.Ordinal));
+        if (card is null)
+        {
+            return;
+        }
+
+        var names = card.Tools.Select(tool => tool.Name).ToList();
+        card.ApplyCheck(card.ConnectionState, _matrix.Rows(serverId, names), _matrix.ServerState(serverId));
     }
 }

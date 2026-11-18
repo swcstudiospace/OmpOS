@@ -1,7 +1,7 @@
 namespace Autonogrammer.Presentation.Commands.Handlers;
 
 /// <summary>
-/// Runs <c>/vim</c>, <c>/line-numbers</c>, <c>/show-thinking</c> and <c>/status-indicators</c> over <see cref="DisplaySettings"/>. With <c>on</c> or <c>off</c> the switch is set; with nothing, <c>toggle</c> it is flipped;
+/// Runs a display switch over <see cref="DisplaySettings"/>. Only <c>/line-numbers</c> and <c>/status-indicators</c> are registered; <c>/vim</c> and <c>/show-thinking</c> are unavailable in the slash catalogue. With <c>on</c> or <c>off</c> the switch is set; with nothing, <c>toggle</c> it is flipped;
 /// with <c>status</c> it is only reported. The value is saved at once, so it holds after a restart. When saving fails the switch still holds for this run and the status line says it was not saved.
 /// </summary>
 public sealed class DisplayToggleSlashHandler : ISlashActionHandler

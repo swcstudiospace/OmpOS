@@ -23,6 +23,7 @@ public sealed class ComputerSettingsViewModel : ObservableModel
     private string _savedKillChord = string.Empty;
     private string _savedPhrase = string.Empty;
     private string _indicatorTestResult = string.Empty;
+    private string _denylistFailure = string.Empty;
     private ComputerGrantRow[] _grantRows = [];
     private ComputerDenylistEntry[] _denylistRows = [];
     private string[] _auditRows = [];
@@ -73,6 +74,9 @@ public sealed class ComputerSettingsViewModel : ObservableModel
 
     /// <summary>Gets denylist rows. Built-in rows are read-only.</summary>
     public IReadOnlyList<ComputerDenylistEntry> DenylistRows => _denylistRows;
+
+    /// <summary>Gets the sentence shown when the last denylist addition failed, or an empty string.</summary>
+    public string DenylistFailure => _denylistFailure;
 
     /// <summary>Gets or sets the identity to add. This does not remove a row.</summary>
     public string DenylistIdentity
@@ -204,10 +208,18 @@ public sealed class ComputerSettingsViewModel : ObservableModel
             return;
         }
 
-        await _denylist.AddAsync(identity, CancellationToken.None).ConfigureAwait(true);
-        var settings = await _settings.LoadAsync(CancellationToken.None).ConfigureAwait(true);
-        ReloadDenylist(settings);
-        DenylistIdentity = string.Empty;
+        try
+        {
+            await _denylist.AddAsync(identity, CancellationToken.None).ConfigureAwait(true);
+            var settings = await _settings.LoadAsync(CancellationToken.None).ConfigureAwait(true);
+            ReloadDenylist(settings);
+            DenylistIdentity = string.Empty;
+            SetProperty(ref _denylistFailure, string.Empty, nameof(DenylistFailure));
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+        {
+            SetProperty(ref _denylistFailure, "Could not add the denylist entry: " + exception.Message.TrimEnd('.') + ".", nameof(DenylistFailure));
+        }
     }
 
     private void RunIndicatorTest()

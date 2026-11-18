@@ -170,6 +170,53 @@ public sealed class OmpTerminalPtyBridgeTests
         bridge.SupportsCancellableRead.ShouldBeTrue();
     }
 
+    [Fact]
+    public async Task SynchronousAndAsynchronousInputReachTheSessionInWriteOrder()
+    {
+        using var bridge = new OmpTerminalPtyBridge((_, _) => { });
+        var session = new FakeTerminalSession();
+        await using var sessionScope = session.ConfigureAwait(true);
+        bridge.AttachSession(session);
+
+        await bridge.WriterStream.WriteAsync(Encoding.UTF8.GetBytes("first"), Token).ConfigureAwait(true);
+        await bridge.WriterStream.WriteAsync(Encoding.UTF8.GetBytes("second"), Token).ConfigureAwait(true);
+
+        session.Writes.ShouldBe(["first", "second"]);
+    }
+
+    [Fact]
+    public async Task AFailedInputWriteDoesNotStopLaterInputFromReachingTheSession()
+    {
+        using var bridge = new OmpTerminalPtyBridge((_, _) => { });
+        var session = new RejectingSession("rejected");
+        await using var sessionScope = session.ConfigureAwait(true);
+        bridge.AttachSession(session);
+
+        await Should.ThrowAsync<InvalidOperationException>(() => bridge.WriterStream.WriteAsync(Encoding.UTF8.GetBytes("rejected"), Token).AsTask()).ConfigureAwait(true);
+        await bridge.WriterStream.WriteAsync(Encoding.UTF8.GetBytes("after"), Token).ConfigureAwait(true);
+
+        session.Writes.ShouldBe(["rejected", "after"]);
+    }
+
+    private sealed class RejectingSession(string rejectedText) : Autonogrammer.Harness.Terminal.ITerminalSession
+    {
+        public List<string> Writes { get; } = [];
+
+        public Task WriteInputAsync(string text, CancellationToken cancellationToken)
+        {
+            Writes.Add(text);
+            return string.Equals(text, rejectedText, StringComparison.Ordinal) ? Task.FromException(new InvalidOperationException("The session rejected the input.")) : Task.CompletedTask;
+        }
+
+        public void Resize(int columns, int rows)
+        {
+        }
+
+        public Task<int> WaitForExitAsync(CancellationToken cancellationToken) => Task.FromResult(0);
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
     private static async Task<int> ReadOnceAsync(Stream stream, byte[] buffer) =>
         await stream.ReadAsync(buffer.AsMemory(), Token).ConfigureAwait(true);
 

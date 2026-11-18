@@ -216,15 +216,68 @@ public sealed class ArtifactPanelViewTests
         await session.RunAsync(async () =>
         {
             var refused = new ArtifactImageView();
-            refused.Show("Pixel", "image/png", new byte[] { 1, 2, 3 });
+            refused.Show("Pixel", "image/png", new byte[] { 1, 2, 3 }, 5 * 1024 * 1024);
             refused.MessageText.ShouldContain("This image cannot be shown");
             refused.PictureControl.IsVisible.ShouldBeFalse();
 
             var accepted = new ArtifactImageView();
-            accepted.Show("Pixel", "image/png", Convert.FromBase64String(Png1x1));
+            accepted.Show("Pixel", "image/png", Convert.FromBase64String(Png1x1), 5 * 1024 * 1024);
             accepted.PictureControl.IsVisible.ShouldBeTrue();
             accepted.PictureControl.Source.ShouldNotBeNull();
             accepted.MessageText.ShouldBeEmpty();
+        }, ct);
+    }
+
+    /// <summary>An unconfigured panel shows an image within the standard cap: the cap starts at the artifact options' default.</summary>
+    [Fact]
+    public async Task AnUnconfiguredPanelShowsAnImageWithinTheDefaultCap()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var model = new ArtifactPanelModel(new FakeArtifactSurface(), new ArtifactPanelOptions(AutoOpen: false));
+            await model.ShowAsync(Item(kind: ArtifactKind.Image), ct).ConfigureAwait(true);
+            var view = (ArtifactPanelView)ViewMapping.Create(model);
+            var window = Show(view);
+            try
+            {
+                view.ShowContent(new ArtifactContent(ArtifactKind.Image, "Pixel", Convert.FromBase64String(Png1x1), MediaType: "image/png"));
+                var image = view.FrameContentHost.Content.ShouldBeOfType<ArtifactImageView>();
+                image.PictureControl.IsVisible.ShouldBeTrue();
+                image.MessageText.ShouldBeEmpty();
+            }
+            finally
+            {
+                window.Close();
+            }
+        }, ct);
+    }
+
+    /// <summary>A host that configures the image cap is obeyed: an image over the configured cap is refused as too large.</summary>
+    [Fact]
+    public async Task AConfiguredImageCapRefusesAnImageOverIt()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var model = new ArtifactPanelModel(new FakeArtifactSurface(), new ArtifactPanelOptions(AutoOpen: false));
+            await model.ShowAsync(Item(kind: ArtifactKind.Image), ct).ConfigureAwait(true);
+            var view = (ArtifactPanelView)ViewMapping.Create(model);
+            view.MaxImageBytes = 10;
+            var window = Show(view);
+            try
+            {
+                view.ShowContent(new ArtifactContent(ArtifactKind.Image, "Pixel", Convert.FromBase64String(Png1x1), MediaType: "image/png"));
+                var image = view.FrameContentHost.Content.ShouldBeOfType<ArtifactImageView>();
+                image.PictureControl.IsVisible.ShouldBeFalse();
+                image.MessageText.ShouldContain("(too_large)");
+            }
+            finally
+            {
+                window.Close();
+            }
         }, ct);
     }
 

@@ -66,7 +66,10 @@ internal sealed class SettingsFixture : IDisposable
         Keyboard = new KeyboardSettingsPage(KeyboardSource);
         Computer = new ComputerUseSettingsPage(Grants, Denylist, Audit, ComputerSettings, KillSwitch, ComputerStatus);
         Bundles = new Autonogrammer.Presentation.Settings.Cowork.BundlesSettingsPage(new FixtureBundles());
-        Connectors = new Autonogrammer.Presentation.Settings.Cowork.ConnectorsSettingsPage(new Autonogrammer.Native.Composition.Connectors.ConnectorPermissionStore(Path.GetTempPath()));
+        Connectors = new Autonogrammer.Presentation.Settings.Cowork.ConnectorsSettingsPage(
+            new Autonogrammer.Native.Composition.Connectors.ConnectorPermissionStore(Path.GetTempPath()),
+            _ => Task.FromResult<IReadOnlyList<Autonogrammer.Presentation.Settings.Connectors.ConnectorServerListing>>([]),
+            new FakeConnectorCheckSource());
         Permissions = new Autonogrammer.Presentation.Settings.Cowork.CoworkPermissionsSettingsPage(new FixtureFolderGrants());
         Isolation = new Autonogrammer.Presentation.Settings.Cowork.IsolationSettingsPage();
         Usage = new Autonogrammer.Presentation.Settings.Cowork.UsageSettingsPage();

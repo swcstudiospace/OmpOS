@@ -10,7 +10,8 @@ namespace Autonogrammer.Harness.AgentLoop.Sessions;
 /// Reads and writes the registry's state file. A write goes to a temporary file in the same directory (created with mode 0600),
 /// is flushed to disk and then renamed over the state file, so a reader sees the old document or the new one and never a
 /// partial one. A file that is empty, not valid JSON, too large, null-listed or of an unknown schema version is renamed to
-/// <c>&lt;file&gt;.quarantined-&lt;utc yyyyMMddTHHmmssZ&gt;</c> and the load yields an empty list. A load never throws.
+/// <c>&lt;file&gt;.quarantined-&lt;utc yyyyMMddTHHmmssZ&gt;</c> and the load yields an empty list. A file that cannot be read is left in place,
+/// the load yields an empty list, and writes are refused until a later load reads it. A load never throws.
 /// </summary>
 internal sealed class AgentSessionStateFile
 {
@@ -45,10 +46,21 @@ internal sealed class AgentSessionStateFile
         new EventId(5, "AgentSessionStateDirectoryNotDeleted"),
         "The state directory of session {SessionId} could not be deleted; it stays on disk.");
 
+    private static readonly Action<ILogger, string, Exception?> ReadFailed = LoggerMessage.Define<string>(
+        LogLevel.Warning,
+        new EventId(6, "AgentSessionStateReadFailed"),
+        "The session state file {FileName} could not be read; the registry starts empty and does not overwrite it.");
+
+    private static readonly Action<ILogger, string, Exception?> WriteRefused = LoggerMessage.Define<string>(
+        LogLevel.Warning,
+        new EventId(7, "AgentSessionStateWriteRefused"),
+        "The session state file {FileName} could not be read earlier, so it is not overwritten; the change is kept in memory only.");
+
     private readonly string _path;
     private readonly string _stateRoot;
     private readonly TimeProvider _clock;
     private readonly ILogger _logger;
+    private bool _unreadable;
 
     /// <summary>Initializes a new instance of the <see cref="AgentSessionStateFile"/> class.</summary>
     /// <param name="path">The full path of the state file.</param>
@@ -133,9 +145,10 @@ internal sealed class AgentSessionStateFile
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return Quarantine();
+            return LoadUnreadable();
         }
 
+        _unreadable = false;
         return Interpret(bytes);
     }
 
@@ -151,10 +164,19 @@ internal sealed class AgentSessionStateFile
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return Quarantine();
+            return LoadUnreadable();
         }
 
+        _unreadable = false;
         return Interpret(bytes);
+    }
+
+    // A file that cannot be read may be valid, so it is left in place and writes are refused until a later load reads it.
+    private List<AgentSessionRecord> LoadUnreadable()
+    {
+        _unreadable = true;
+        ReadFailed(_logger, Path.GetFileName(_path), null);
+        return [];
     }
 
     /// <summary>Writes the records atomically. A failed write is logged and reported by the return value, never thrown.</summary>
@@ -162,6 +184,12 @@ internal sealed class AgentSessionStateFile
     /// <returns>True when the new document replaced the old one.</returns>
     public bool Write(IEnumerable<AgentSessionRecord> records)
     {
+        if (_unreadable)
+        {
+            WriteRefused(_logger, Path.GetFileName(_path), null);
+            return false;
+        }
+
         var temporary = _path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         var replaced = false;
         try
@@ -214,7 +242,7 @@ internal sealed class AgentSessionStateFile
     {
         Id = record.Id,
         Title = record.Title,
-        Lifecycle = record.Lifecycle.ToString(),
+        Lifecycle = record.UnrecognizedLifecycle is { } lifecycleWord && ParseLifecycle(lifecycleWord) == record.Lifecycle ? lifecycleWord : record.Lifecycle.ToString(),
         CreatedAt = record.CreatedAt,
         LastActivity = record.LastActivity,
         Heartbeat = record.Heartbeat,
@@ -223,7 +251,7 @@ internal sealed class AgentSessionStateFile
         WorkspaceRoot = record.WorkspaceRoot,
         AcpSessionId = record.AcpSessionId,
         ResumeReference = record.ResumeReference,
-        Kind = record.Kind.ToString(),
+        Kind = record.UnrecognizedKind is { } kindWord && ParseKind(kindWord) == record.Kind ? kindWord : record.Kind.ToString(),
     };
 
     // A temporary file that cannot be deleted is left behind; the registry reads only its own path, so the file is never used.
@@ -241,20 +269,22 @@ internal sealed class AgentSessionStateFile
         }
     }
 
-    private static SessionLifecycle ParseLifecycle(string? text) =>
-        Enum.TryParse<SessionLifecycle>(text, ignoreCase: true, out var lifecycle)
+    private static bool TryParseLifecycle(string? text, out SessionLifecycle lifecycle) =>
+        Enum.TryParse<SessionLifecycle>(text, ignoreCase: true, out lifecycle)
         && Enum.IsDefined(lifecycle)
-        && !int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out _)
-            ? lifecycle
-            : SessionLifecycle.Lost;
+        && !int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out _);
+
+    private static SessionLifecycle ParseLifecycle(string? text) =>
+        TryParseLifecycle(text, out var lifecycle) ? lifecycle : SessionLifecycle.Lost;
+
+    private static bool TryParseKind(string? text, out SessionKind kind) =>
+        Enum.TryParse<SessionKind>(text, ignoreCase: true, out kind)
+        && Enum.IsDefined(kind)
+        && !int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out _);
 
     // A file written before sessions had a kind, or one with a name this build does not know, describes a chat session.
     private static SessionKind ParseKind(string? text) =>
-        Enum.TryParse<SessionKind>(text, ignoreCase: true, out var kind)
-        && Enum.IsDefined(kind)
-        && !int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out _)
-            ? kind
-            : SessionKind.Chat;
+        TryParseKind(text, out var kind) ? kind : SessionKind.Chat;
 
     private byte[] ReadCapped()
     {
@@ -357,6 +387,7 @@ internal sealed class AgentSessionStateFile
             Id = id,
             Title = string.IsNullOrWhiteSpace(entry.Title) ? AgentSessionRegistry.DefaultTitle : entry.Title,
             Lifecycle = ParseLifecycle(entry.Lifecycle),
+            UnrecognizedLifecycle = TryParseLifecycle(entry.Lifecycle, out _) ? null : entry.Lifecycle,
             CreatedAt = createdAt,
             LastActivity = lastActivity,
             GraphId = entry.GraphId,
@@ -367,6 +398,7 @@ internal sealed class AgentSessionStateFile
             ResumeReference = entry.ResumeReference,
             Heartbeat = entry.Heartbeat ?? lastActivity,
             Kind = ParseKind(entry.Kind),
+            UnrecognizedKind = TryParseKind(entry.Kind, out _) ? null : entry.Kind,
         };
     }
 

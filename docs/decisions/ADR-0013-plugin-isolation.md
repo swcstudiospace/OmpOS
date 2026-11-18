@@ -1,6 +1,9 @@
 # ADR-0013: Plugin isolation boundary
 
-- Status: Proposed 2026-10-26. It records the boundary that `src/Autonogrammer.Harness.Plugins` implements today and the boundary ADR-0012 sets for omp plugins. Owner sign-off on the boundary text is pending (see Owner decisions needed).
+- Status: Accepted (2026-11-18). It records the boundary that `src/Autonogrammer.Harness.Plugins` implements today and the boundary ADR-0012 sets for omp plugins. The owner accepted the boundary text and the plugin-isolation sign-off (OQ-84) on 2026-11-18.
+
+Accepted by the owner on 2026-11-18 (HITL answer: accept ADR-0013 and the plugin-isolation sign-off, OQ-84).
+
 - Date: 2026-10-26
 - Owner: autonogrammer-maintainers
 - Deciders: autonogrammer-maintainers

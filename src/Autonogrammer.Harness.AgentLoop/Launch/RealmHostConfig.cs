@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Autonogrammer.Harness.AgentLoop.Launch;
 
 /// <summary>
@@ -49,13 +51,54 @@ public static class RealmHostConfig
         var directory = Path.Combine(isolatedHome, "home", ".config", "realm");
         Directory.CreateDirectory(directory);
         var destination = Path.Combine(directory, "config.json");
-        File.Copy(hostConfigPath, destination, overwrite: true);
-        if (!OperatingSystem.IsWindows())
+        var temporary = Path.Combine(directory, "." + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture) + ".tmp");
+        var moved = false;
+        try
         {
-            File.SetUnixFileMode(destination, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            CopyOwnerOnly(hostConfigPath, temporary);
+            File.Move(temporary, destination, overwrite: true);
+            moved = true;
+        }
+        finally
+        {
+            if (!moved)
+            {
+                DeleteQuietly(temporary);
+            }
         }
 
         return true;
+    }
+
+    // The copy is created owner-only from the start, so no other user can read it between its creation and a later chmod.
+    private static void CopyOwnerOnly(string source, string destination)
+    {
+        var options = new FileStreamOptions
+        {
+            Mode = FileMode.CreateNew,
+            Access = FileAccess.Write,
+            Share = FileShare.None,
+        };
+        if (!OperatingSystem.IsWindows())
+        {
+            options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        }
+
+        using var input = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using var output = new FileStream(destination, options);
+        input.CopyTo(output);
+    }
+
+    private static void DeleteQuietly(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // The partial copy is not the config and nothing reads it, so a failed delete changes nothing.
+        }
     }
 
     private static string? AbsoluteOrNull(string? value) =>

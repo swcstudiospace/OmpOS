@@ -20,4 +20,7 @@ public enum CloudCreateOutcome
 
     /// <summary>No request was made because the entries are not valid or the cost was not confirmed.</summary>
     NotReady = 5,
+
+    /// <summary>The request was sent and then interrupted before the service answered, so the agent may or may not exist. Check the list before a retry.</summary>
+    Unknown = 6,
 }

@@ -114,9 +114,16 @@ public sealed class UsageMeterModel
     private static UsageDayModel DayFrom(DateOnly day, IReadOnlyList<Sample> rows)
     {
         var bySession = rows.GroupBy(static sample => sample.SessionId, StringComparer.Ordinal).ToList();
-        var missing = bySession.Any(static group => group.Last().Amount is null);
-        decimal? amount = missing ? null : bySession.Sum(static group => group.Last().Amount!.Value);
-        string? currency = missing ? null : bySession.Select(static group => group.Last().Currency).LastOrDefault(static value => !string.IsNullOrEmpty(value));
+        var lastSamples = bySession.Select(static group => group.Last()).ToList();
+        var currencyCount = lastSamples
+            .Where(static sample => !string.IsNullOrEmpty(sample.Currency))
+            .Select(static sample => sample.Currency)
+            .Distinct(StringComparer.Ordinal)
+            .Count();
+        // Amounts in different currencies cannot be added up, so such a day is unavailable rather than a total in one currency.
+        var missing = lastSamples.Any(static sample => sample.Amount is null) || currencyCount > 1;
+        decimal? amount = missing ? null : lastSamples.Sum(static sample => sample.Amount!.Value);
+        string? currency = missing ? null : lastSamples.Select(static sample => sample.Currency).LastOrDefault(static value => !string.IsNullOrEmpty(value));
         return new UsageDayModel(day, bySession.Count, rows.Max(static sample => sample.Used), rows[^1].Used, amount, currency, missing);
     }
 

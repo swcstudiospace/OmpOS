@@ -45,6 +45,9 @@ public static class NetworkCopy
     /// <summary>The announcement after a run failed as a whole.</summary>
     public const string RunFailed = "Diagnostics could not be run.";
 
+    /// <summary>The line written to the trace when a run fails with a fault. It is for the developer log, not the page.</summary>
+    public const string RunFaultTrace = "Network diagnostics could not be run. ";
+
     /// <summary>The text shown before the first run.</summary>
     public const string NotRun = "Diagnostics have not been run in this session.";
 

@@ -65,7 +65,7 @@ public sealed class TerminalSurfaceModel : ObservableModel
         State = RemoteTerminalState.Attached;
         try
         {
-            await foreach (RemoteTerminalChunk chunk in transport.AttachAsync(terminalId, AckedSequence, cancellationToken).ConfigureAwait(false))
+            await foreach (RemoteTerminalChunk chunk in transport.AttachAsync(terminalId, AckedSequence, cancellationToken).ConfigureAwait(true))
             {
                 if (chunk.Sequence <= AckedSequence)
                 {

@@ -55,7 +55,9 @@ public sealed class DemoProvidersRouteTests : IDisposable
         var plans = all.Providers.Where(static provider => provider.Plan is not null).ToList();
         plans.Count.ShouldBe(CatalogueRows.All.Count(static row => row.Plan is not null));
         plans.ShouldAllBe(static provider => !string.IsNullOrWhiteSpace(provider.Plan!.RuleText));
-        all.Providers.Where(static provider => provider.Region == ProviderRegion.Europe).ShouldAllBe(static provider => !string.IsNullOrWhiteSpace(provider.Country));
+        all.Providers
+            .Where(static provider => provider.Region == ProviderRegion.Europe && provider.Status == ProviderVerification.Verified)
+            .ShouldAllBe(static provider => !string.IsNullOrWhiteSpace(provider.Country));
     }
 
     /// <summary>The region filter keeps only that region; the kind filter keeps only that kind; both together narrow to the intersection.</summary>

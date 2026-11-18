@@ -7,7 +7,7 @@ namespace Autonogrammer.Presentation.Accounts;
 /// </summary>
 public interface IAccountHost
 {
-    /// <summary>Occurs when <see cref="State"/> changed. It may be raised on any thread; the model dispatches it.</summary>
+    /// <summary>Occurs when <see cref="State"/> changed. It may be raised on any thread; the model runs its handling on the dispatch given to its constructor, so a head passes its UI dispatch.</summary>
     event EventHandler? Changed;
 
     /// <summary>Gets the state to draw.</summary>

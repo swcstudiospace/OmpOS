@@ -46,9 +46,15 @@ internal sealed class ScriptedMcpPageSource : IMcpSettingsSource
     }
 
     /// <inheritdoc />
-    public Task GrantConsentAsync(string name, CancellationToken cancellationToken)
+    public Task GrantConsentAsync(string name, string consentIdentity, CancellationToken cancellationToken)
     {
         Calls.Add("grant " + name);
+        var server = _servers.Single(entry => string.Equals(entry.Name, name, StringComparison.Ordinal));
+        if (!string.Equals(server.ConsentIdentity, consentIdentity, StringComparison.Ordinal))
+        {
+            return Task.FromException(new McpSourceException("The declaration of the MCP server changed after it was shown. Review it again before you approve it."));
+        }
+
         Replace(name, entry => entry with { Status = McpServerStatusKind.Configured, IsOffered = true, IsConsentGranted = true });
         return Task.CompletedTask;
     }
@@ -71,7 +77,7 @@ internal sealed class ScriptedMcpPageSource : IMcpSettingsSource
     public Task<string> AddTemplateAsync(McpTemplateChoice choice, string name, CancellationToken cancellationToken)
     {
         Calls.Add("template " + choice + " " + name);
-        _servers.Add(new McpServerEntry(name, "stdio", McpEntryScope.Project, ".autonogrammer/mcp.json", McpServerStatusKind.Disabled, "Switched off in Autonogrammer.", null, "npx -y replace-with-mcp-server-package", "npx -y replace-with-mcp-server-package", [], [], false, false, true, false, false));
+        _servers.Add(new McpServerEntry(name, "stdio", McpEntryScope.Project, ".autonogrammer/mcp.json", McpServerStatusKind.Disabled, "Switched off in Autonogrammer.", null, "npx -y replace-with-mcp-server-package", "npx -y replace-with-mcp-server-package", [], [], false, false, true, false, false, "identity:" + name));
         return Task.FromResult(".autonogrammer/mcp.json");
     }
 

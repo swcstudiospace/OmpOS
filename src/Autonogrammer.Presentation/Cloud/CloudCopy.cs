@@ -349,6 +349,9 @@ public static class CloudCopy
     /// <summary>The sentence of a cancelled create.</summary>
     public const string CreateCancelled = "Creating the agent was cancelled. Nothing was changed on your side; check the list before you try again.";
 
+    /// <summary>The sentence of a create whose request was interrupted before the service answered.</summary>
+    public const string CreateOutcomeUnknown = "The agent may or may not have been created: the request was interrupted before the service answered. Check the list before you try again.";
+
     /// <summary>The sentence of a failed create.</summary>
     public const string CreateFailed = "The agent could not be created. Check your connection and try again.";
 

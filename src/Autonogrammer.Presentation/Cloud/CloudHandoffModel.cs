@@ -90,7 +90,7 @@ public sealed class CloudHandoffModel : ObservableModel
     /// <summary>Gets the result of the latest attempt, or null before the first one and after an edit made it stale.</summary>
     public CloudHandoffResult? Result => _result;
 
-    /// <summary>Gets whether the hand-off can start: a valid repository, a confirmed cost, a task and no hand-off running or done.</summary>
+    /// <summary>Gets whether the hand-off can start: a valid repository, a confirmed cost, a task and no hand-off running, done or interrupted.</summary>
     public bool CanStart => WhyDisabled.Length == 0;
 
     /// <summary>Gets the sentence that says what is missing before the hand-off can start. Empty when <see cref="CanStart"/> is true.</summary>
@@ -103,7 +103,7 @@ public sealed class CloudHandoffModel : ObservableModel
                 return CloudCopy.CreateInProgress;
             }
 
-            if (_result is { Outcome: CloudHandoffOutcome.Started })
+            if (_result is { Outcome: CloudHandoffOutcome.Started or CloudHandoffOutcome.Unknown })
             {
                 return _result.Message;
             }
@@ -130,14 +130,15 @@ public sealed class CloudHandoffModel : ObservableModel
     /// <summary>
     /// Hands the task off. Without a valid repository, a task and the cost confirmation no host call is made and the result says what is missing.
     /// A refusal for a cap or the quota, a rejection and a failure keep the dialog open with their message. This method does not throw an expected failure.
+    /// A hand-off interrupted after its request was sent ends Unknown: nothing retries it, because the agent may exist.
     /// </summary>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>How the attempt ended.</returns>
     public async Task<CloudHandoffResult> StartAsync(CancellationToken cancellationToken)
     {
-        if (_result is { Outcome: CloudHandoffOutcome.Started } done)
+        if (_result is { Outcome: CloudHandoffOutcome.Started or CloudHandoffOutcome.Unknown } settled)
         {
-            return done;
+            return settled;
         }
 
         if (_isBusy)
@@ -200,10 +201,10 @@ public sealed class CloudHandoffModel : ObservableModel
 
     private bool RepositoryReady() => _repositoryText.Trim().Length > 0 && RepositoryError.Length == 0;
 
-    // An edit makes a refusal stale: its sentence goes away and the readiness properties are recomputed.
+    // An edit makes a refusal stale: its sentence goes away and the readiness properties are recomputed. An interrupted hand-off stays: a retry could create a second agent.
     private void Touch()
     {
-        if (!_isBusy && _result is { Outcome: not CloudHandoffOutcome.Started })
+        if (!_isBusy && _result is { Outcome: not (CloudHandoffOutcome.Started or CloudHandoffOutcome.Unknown) })
         {
             _result = null;
             _status = string.Empty;

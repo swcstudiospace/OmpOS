@@ -39,6 +39,7 @@ public sealed class CloudHandoff : ICloudHandoff
             return new CloudHandoffResult(CloudHandoffOutcome.NeedsCostConfirmation, CloudCopy.CostNotConfirmed);
         }
 
+        var requestSent = false;
         try
         {
             var setup = await _host.GetSetupAsync(cancellationToken).ConfigureAwait(true);
@@ -53,6 +54,7 @@ public sealed class CloudHandoff : ICloudHandoff
                 return new CloudHandoffResult(CloudHandoffOutcome.NeedsInput, idleError);
             }
 
+            requestSent = true;
             var agent = await _host.CreateAsync(
                 new CloudAgentRequest
                 {
@@ -71,7 +73,9 @@ public sealed class CloudHandoff : ICloudHandoff
         }
         catch (OperationCanceledException)
         {
-            return new CloudHandoffResult(CloudHandoffOutcome.Failed, CloudCopy.CreateCancelled);
+            return requestSent
+                ? new CloudHandoffResult(CloudHandoffOutcome.Unknown, CloudCopy.CreateOutcomeUnknown)
+                : new CloudHandoffResult(CloudHandoffOutcome.Failed, CloudCopy.CreateCancelled);
         }
         catch (Exception fault) when (CloudFailures.IsHandled(fault))
         {

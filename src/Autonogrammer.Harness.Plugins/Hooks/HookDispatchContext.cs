@@ -11,17 +11,16 @@ namespace Autonogrammer.Harness.Plugins.Hooks;
 /// <param name="Session">The conversation.</param>
 /// <param name="Payload">The event-specific fields.</param>
 /// <param name="MatcherValue">The value matchers are tested against, or null.</param>
+/// <param name="CanBlock">True when exit code 2 and a failure policy can block this dispatch: a permission or prompt event, or a guarding <c>omp</c> event.</param>
 internal sealed record HookDispatchContext(
     string EventName,
     HookEvent? Event,
     HookEventInfo? Info,
     HookSession Session,
     JsonElement Payload,
-    string? MatcherValue)
+    string? MatcherValue,
+    bool CanBlock)
 {
-    /// <summary>True when exit code 2 and a failure policy can block this event.</summary>
-    public bool CanBlock => Info is { CanBlock: true };
-
     /// <summary>True for <c>stop</c> and <c>subagentStop</c>, which have follow-ups and a loop counter.</summary>
     public bool HasFollowups => Event is HookEvent.Stop or HookEvent.SubagentStop;
 }

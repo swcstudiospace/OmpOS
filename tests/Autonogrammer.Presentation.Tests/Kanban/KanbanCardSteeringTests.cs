@@ -92,6 +92,24 @@ public sealed class KanbanCardSteeringTests
         model.IsSteering.ShouldBeFalse();
     }
 
+    /// <summary>A service that gives up on its own timeout is a failed send that keeps the text, not a send that silently never reports.</summary>
+    [Fact]
+    public async Task AServiceTimeoutKeepsTheTextAndSaysItTimedOut()
+    {
+        _steering.Answer = static _ => throw new OperationCanceledException("The steering timer fired.");
+        using var catalog = NewCatalog();
+        using var board = NewBoard(catalog);
+        var model = board.CardModelOf("a").ShouldNotBeNull();
+        model.SteerText = "hello";
+
+        await model.SteerCommand.ExecuteAsync(null).ConfigureAwait(true);
+
+        model.SteerText.ShouldBe("hello");
+        model.SteerFailed.ShouldBeTrue();
+        model.SteerResultText.ShouldBe("The message timed out");
+        model.IsSteering.ShouldBeFalse();
+    }
+
     /// <summary>A blank message is not sent, the command is disabled, and a head without a steering service cannot steer.</summary>
     [Fact]
     public async Task ABlankMessageOrNoServiceDoesNotSend()

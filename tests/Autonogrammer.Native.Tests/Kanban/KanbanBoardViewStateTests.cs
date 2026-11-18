@@ -174,4 +174,25 @@ public sealed class KanbanBoardViewStateTests
             AutomationProperties.GetName(ready.View.Live).ShouldBe(KanbanCopy.LiveRegionName);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
+
+    /// <summary>Attaching the board again with the same cards reads the Substrate details once; a re-attach that changes no card reads nothing again.</summary>
+    [Fact]
+    public async Task ReattachingTheBoardWithTheSameCardsDoesNotReadTheDetailsAgain()
+    {
+        await using var session = TestAppBuilder.StartSession();
+        await session.Dispatch(() =>
+        {
+            using var fixture = KanbanFixture.Open();
+            fixture.Settle();
+            var initial = fixture.Details.Reads;
+            initial.ShouldBeGreaterThan(0);
+
+            fixture.Window.Content = null;
+            fixture.Settle();
+            fixture.Window.Content = fixture.View;
+            fixture.Settle();
+
+            fixture.Details.Reads.ShouldBe(initial);
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
 }

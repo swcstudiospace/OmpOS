@@ -3,17 +3,15 @@ using Autonogrammer.Presentation.Commands.Handlers;
 namespace Autonogrammer.Presentation.Settings;
 
 /// <summary>
-/// The Display page: vim mode, line numbers, thinking blocks, status indicators, running time and rewind. The switches are a draft until
-/// <see cref="EditableSettingsPage{TValues}.SaveAsync"/> writes the ones that changed through <see cref="DisplaySettings"/>, the object the
+/// The Display page: line numbers, status indicators, running time and rewind. The switches are a draft until
+/// <see cref="EditableSettingsPage{TValues}.SaveAsync"/> writes the ones the draft changed through <see cref="DisplaySettings"/>, the object the
 /// slash commands and the views read, so a saved switch is in force at once. A file that cannot be written is an inline save error.
 /// </summary>
 public sealed class DisplaySettingsPage : EditableSettingsPage<DisplaySettingsValues>
 {
     private static readonly DisplayToggle[] AllToggles =
     [
-        new(DisplaySetting.VimMode, DisplayCopy.VimLabel, DisplayCopy.VimHelp),
         new(DisplaySetting.LineNumbers, DisplayCopy.LineNumbersLabel, DisplayCopy.LineNumbersHelp),
-        new(DisplaySetting.ThinkingBlocks, DisplayCopy.ThinkingLabel, DisplayCopy.ThinkingHelp),
         new(DisplaySetting.StatusIndicators, DisplayCopy.StatusIndicatorsLabel, DisplayCopy.StatusIndicatorsHelp),
         new(DisplaySetting.StatusLineRunningTime, DisplayCopy.RunningTimeLabel, DisplayCopy.RunningTimeHelp),
         new(DisplaySetting.Rewind, DisplayCopy.RewindLabel, DisplayCopy.RewindHelp),
@@ -67,13 +65,7 @@ public sealed class DisplaySettingsPage : EditableSettingsPage<DisplaySettingsVa
         ArgumentNullException.ThrowIfNull(values);
         try
         {
-            foreach (var setting in Enum.GetValues<DisplaySetting>())
-            {
-                if (values.Get(setting) != _display.Get(setting))
-                {
-                    await _display.SetAsync(setting, values.Get(setting), cancellationToken).ConfigureAwait(true);
-                }
-            }
+            await _display.SaveChangesAsync(Saved, values, cancellationToken).ConfigureAwait(true);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

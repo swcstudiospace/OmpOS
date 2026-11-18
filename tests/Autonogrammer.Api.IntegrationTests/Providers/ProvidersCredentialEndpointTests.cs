@@ -190,6 +190,20 @@ public sealed class ProvidersCredentialEndpointTests
         backend.Imports.Single().ShouldBe((plan.OmpProviderId!, Canary));
     }
 
+    [Fact]
+    public async Task AKeyForARoutelessOmpNativeRowIsImportedByItsOmpProviderId()
+    {
+        var row = CatalogueRows.All.First(static row => row.Routes.Count == 0 && row.IsOmpNative && row.ApiKeyEnv is not null && row.UrlVariables.Count == 0);
+        var backend = new FakeProviderBackend();
+        using var factory = ProvidersTestHost.Dev(backend, new Dictionary<string, string?>(StringComparer.Ordinal) { ["Providers:AllowCredentialWrite"] = "true" });
+        using var client = factory.CreateClient();
+
+        using var response = await ProvidersTestHost.SendAsync(client, HttpMethod.Put, $"/providers/{row.Id}/credential", KeyBody(), Token).ConfigureAwait(true);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        backend.Imports.Single().ShouldBe((row.OmpProviderId!, Canary));
+    }
+
     [Theory]
     [InlineData(nameof(ProviderWriteStatus.Rejected), HttpStatusCode.UnprocessableEntity, "credential_rejected")]
     [InlineData(nameof(ProviderWriteStatus.Unavailable), HttpStatusCode.ServiceUnavailable, "omp_unavailable")]

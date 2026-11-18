@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Autonogrammer.Native.Agents;
+using Autonogrammer.Native.Composition.Connectors;
 using Autonogrammer.Native.Views.Shell;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Cloud;
@@ -138,6 +139,7 @@ internal sealed class HeadSettings : IAsyncDisposable
             WorkspaceSets = services?.WorkspaceSets,
             RemoteEnvironments = services?.RemoteEnvironments,
             Cloud = services?.Cloud,
+            Connectors = services is null ? null : ConnectorsSettingsPageFactory.Create(services, engines.Loop.WorkspaceRoot),
             ContainerEnvironments = services?.ContainerEnvironments,
             ContainerLister = services?.ContainerLister,
             Automations = services?.Automations.Manager,

@@ -62,7 +62,7 @@ public sealed class BrowserUseSettingsPageTests
 
         await dialog.ConfirmAsync(Token).ConfigureAwait(true);
         source.AcquireCalls.ShouldBe(1);
-        dialog.IsConfirmed.ShouldBeTrue();
+        dialog.ErrorText.ShouldBeNull();
     }
 
     /// <summary>Open and trusted local origins each show a one-line risk text. The other modes do not.</summary>

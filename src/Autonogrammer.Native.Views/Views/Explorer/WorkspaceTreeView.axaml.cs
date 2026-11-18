@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics;
 using Autonogrammer.Presentation.Editor;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -245,7 +246,24 @@ internal partial class WorkspaceTreeView : UserControl
         }
 
         e.Handled = true;
-        var file = _tree.HandleKey(key);
+        _ = ApplyKeyAsync(_tree, key);
+    }
+
+    // Right and Enter can list a directory that was never expanded, so the key goes through the tree's asynchronous form. A listing that
+    // fails leaves the tree as it was, and the failure is traced.
+    private async Task ApplyKeyAsync(WorkspaceTree tree, WorkspaceKey key)
+    {
+        WorkspaceEntry? file;
+        try
+        {
+            file = await tree.HandleKeyAsync(key, CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
+        {
+            Trace.TraceError($"Autonogrammer could not list the folder: {exception.Message}");
+            return;
+        }
+
         Rebuild();
         if (file is not null)
         {

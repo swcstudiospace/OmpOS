@@ -45,13 +45,13 @@ internal sealed partial class ModelsSettingsSource
             return CatalogueAddOutcome.Refused(CatalogueAddStatus.InvalidRequest, CatalogueAddCopy.UnknownListing);
         }
 
-        if (row.Routes.Count == 0)
+        if (row.Routes.Count == 0 && !(row.IsOmpNative && row.ApiKeyEnv is not null))
         {
             return CatalogueAddOutcome.Refused(CatalogueAddStatus.Unavailable, CatalogueAddCopy.SignInOnly(row.LoginCommand));
         }
 
         var route = row.Routes.FirstOrDefault(candidate => string.Equals(candidate.Id, request.RouteId, StringComparison.Ordinal));
-        if (route is null)
+        if (row.Routes.Count > 0 && route is null)
         {
             return CatalogueAddOutcome.Refused(CatalogueAddStatus.InvalidRequest, CatalogueAddCopy.UnknownRoute);
         }
@@ -62,7 +62,7 @@ internal sealed partial class ModelsSettingsSource
         }
 
         var key = apiKey.Trim();
-        var keyed = route.Auth != CatalogueAuthStyle.None;
+        var keyed = route is null || route.Auth != CatalogueAuthStyle.None;
         if (keyed && key.Length > 0 && CustomProviderRules.ValidateApiKey(key) is { } keyProblem)
         {
             return CatalogueAddOutcome.Refused(CatalogueAddStatus.InvalidRequest, keyProblem);
@@ -71,7 +71,7 @@ internal sealed partial class ModelsSettingsSource
         await _writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            return UsesOmpCredential(row, route)
+            return (route is null || UsesOmpCredential(row, route))
                 ? await ImportCredentialAsync(row, key, cancellationToken).ConfigureAwait(false)
                 : await WriteBlockAsync(row, route, request, key, keyed, cancellationToken).ConfigureAwait(false);
         }
@@ -81,11 +81,13 @@ internal sealed partial class ModelsSettingsSource
         }
     }
 
-    private static bool UsesOmpCredential(CatalogueRow row, CatalogueRoute route) =>
+    private static bool UsesOmpCredential(CatalogueRow row, CatalogueRoute? route) =>
         row.IsOmpNative
-        && row.UrlVariables.Count == 0
-        && route.Auth != CatalogueAuthStyle.None
-        && string.Equals(row.Routes[0].Id, route.Id, StringComparison.Ordinal);
+        && (row.Routes.Count == 0
+            || (row.UrlVariables.Count == 0
+                && route is not null
+                && route.Auth != CatalogueAuthStyle.None
+                && string.Equals(row.Routes[0].Id, route.Id, StringComparison.Ordinal)));
 
     private async Task<CatalogueAddOutcome> ImportCredentialAsync(CatalogueRow row, string key, CancellationToken cancellationToken)
     {

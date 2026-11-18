@@ -174,7 +174,7 @@ public sealed class ModelsSettingsSourceCatalogueTests
         SkipUnlessLinux();
         using var fake = new ModelsFakeOmp();
         using var composition = fake.Compose();
-        var row = CatalogueRows.All.First(static candidate => candidate.Routes.Count == 0);
+        var row = CatalogueRows.All.First(static candidate => candidate.Routes.Count == 0 && candidate.ApiKeyEnv is null && candidate.LoginCommand is not null);
 
         var outcome = await Source(composition).AddCatalogueAsync(Request(row.Id, "none"), ModelsForms.Canary, planRuleAccepted: true, Token).ConfigureAwait(true);
 

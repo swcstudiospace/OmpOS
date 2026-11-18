@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace Autonogrammer.Presentation.Editor;
@@ -80,6 +81,18 @@ public sealed class LocalWorkspaceFileSystem : IWorkspaceFileSystem
     public string ReadFile(string relativePath)
     {
         var file = ResolveFile(relativePath);
+        return DecodeFile(File.ReadAllBytes(file), out _);
+    }
+
+    /// <inheritdoc/>
+    public string ReadFile(string relativePath, int maxBytes)
+    {
+        var file = ResolveFile(relativePath);
+        if (new FileInfo(file).Length > maxBytes)
+        {
+            throw new WorkspaceFileTooLargeException(string.Create(CultureInfo.InvariantCulture, $"'{relativePath}' holds more than {maxBytes} bytes."));
+        }
+
         return DecodeFile(File.ReadAllBytes(file), out _);
     }
 

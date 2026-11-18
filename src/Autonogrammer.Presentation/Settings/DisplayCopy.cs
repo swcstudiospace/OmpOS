@@ -11,25 +11,13 @@ public static class DisplayCopy
 
     /// <summary>The sentence under the heading.</summary>
     public const string Description =
-        "What the prompt, the transcript and the status bar show. A choice is a draft until you save it. The slash commands /vim, /line-numbers, /show-thinking and /status-indicators change the same switches at once.";
-
-    /// <summary>The label of the vim mode switch.</summary>
-    public const string VimLabel = "Vim keys in the prompt";
-
-    /// <summary>The sentence under the vim mode switch.</summary>
-    public const string VimHelp = "Edit the prompt with vim keys. Off by default.";
+        "What the prompt, the transcript and the status bar show. A choice is a draft until you save it. The slash commands /line-numbers and /status-indicators change the same switches at once.";
 
     /// <summary>The label of the line numbers switch.</summary>
     public const string LineNumbersLabel = "Line numbers in code blocks";
 
     /// <summary>The sentence under the line numbers switch.</summary>
     public const string LineNumbersHelp = "Number the lines of code blocks in the transcript.";
-
-    /// <summary>The label of the thinking blocks switch.</summary>
-    public const string ThinkingLabel = "Thinking blocks";
-
-    /// <summary>The sentence under the thinking blocks switch.</summary>
-    public const string ThinkingHelp = "Show the model's reasoning blocks in the transcript. They are not part of the answer.";
 
     /// <summary>The reason shown when the display settings could not be read.</summary>
     public const string LoadFailed = "The display settings could not be read.";

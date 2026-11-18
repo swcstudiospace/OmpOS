@@ -5,7 +5,7 @@ namespace Autonogrammer.Native.Composition.Connectors;
 
 /// <summary>
 /// Checks one server through <see cref="McpServerCatalog.CheckAsync"/>, so a disabled, unapproved or incomplete server is not contacted,
-/// and reads the tool names from <see cref="RecordingConnectionChecker"/>.
+/// and reads the tool names from <see cref="RecordingConnectionChecker"/>. A check the catalog refuses is reported as a failed server with no tools.
 /// </summary>
 internal sealed class ConnectorCheckSource : IConnectorCheckSource
 {
@@ -27,7 +27,15 @@ internal sealed class ConnectorCheckSource : IConnectorCheckSource
     public async Task<ConnectorCheckSnapshot> CheckAsync(string serverId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(serverId);
-        var status = await _catalog.CheckAsync(serverId, cancellationToken).ConfigureAwait(false);
-        return new ConnectorCheckSnapshot(status.State.ToString(), _recording.ToolNames(serverId));
+        try
+        {
+            var status = await _catalog.CheckAsync(serverId, cancellationToken).ConfigureAwait(false);
+            return new ConnectorCheckSnapshot(status.State.ToString(), _recording.ToolNames(serverId));
+        }
+        catch (McpCatalogException)
+        {
+            // The catalog refused the check, for example because the server is no longer in its configuration. The card shows it as failed.
+            return new ConnectorCheckSnapshot(nameof(McpServerState.Failed), []);
+        }
     }
 }

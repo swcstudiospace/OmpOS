@@ -64,7 +64,7 @@ public sealed class McpServerCatalogTests
         Entry(catalog, "s").IsOffered.ShouldBeFalse();
         catalog.OfferedServers().ShouldBeEmpty();
 
-        await catalog.GrantConsentAsync("s", Token).ConfigureAwait(true);
+        await catalog.GrantConsentAsync("s", Entry(catalog, "s").Server.ConsentIdentity, Token).ConfigureAwait(true);
 
         Entry(catalog, "s").Status.State.ShouldBe(McpServerState.Configured);
         Entry(catalog, "s").IsConsentGranted.ShouldBeTrue();
@@ -78,11 +78,45 @@ public sealed class McpServerCatalogTests
         var files = new MemoryMcpFileStore().With(CursorProject, Project("project-tool"));
         var state = new InMemoryMcpStateStore();
         var catalog = await LoadedAsync(files, state).ConfigureAwait(true);
-        await catalog.GrantConsentAsync("s", Token).ConfigureAwait(true);
+        await catalog.GrantConsentAsync("s", Entry(catalog, "s").Server.ConsentIdentity, Token).ConfigureAwait(true);
 
         _ = files.With(CursorProject, Project("project-tool --evil"));
         _ = await catalog.RefreshAsync(McpTestContext.Create(), Token).ConfigureAwait(true);
 
+        Entry(catalog, "s").Status.State.ShouldBe(McpServerState.NeedsConsent);
+        catalog.OfferedServers().ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task ApprovingTheDeclarationThatWasShownRecordsItsIdentityAndOffersTheServer()
+    {
+        var files = new MemoryMcpFileStore().With(CursorProject, Project("project-tool"));
+        var state = new InMemoryMcpStateStore();
+        var catalog = await LoadedAsync(files, state).ConfigureAwait(true);
+        var shown = Entry(catalog, "s").Server.ConsentIdentity;
+
+        await catalog.GrantConsentAsync("s", shown, Token).ConfigureAwait(true);
+
+        state.State.ConsentedIdentities.ShouldContain(shown, StringComparer.Ordinal);
+        Entry(catalog, "s").IsOffered.ShouldBeTrue();
+        catalog.OfferedServers().Single().ShouldBeOfType<AcpStdioMcpServer>().Command.ShouldBe("project-tool");
+    }
+
+    [Fact]
+    public async Task ApprovingADeclarationThatChangedAfterItWasShownIsRefusedAndRecordsNothing()
+    {
+        var files = new MemoryMcpFileStore().With(CursorProject, Project("project-tool"));
+        var state = new InMemoryMcpStateStore();
+        var catalog = await LoadedAsync(files, state).ConfigureAwait(true);
+        var shown = Entry(catalog, "s").Server.ConsentIdentity;
+
+        _ = files.With(CursorProject, Project("project-tool --evil"));
+        _ = await catalog.RefreshAsync(McpTestContext.Create(), Token).ConfigureAwait(true);
+
+        var failure = await Should.ThrowAsync<McpCatalogException>(() => catalog.GrantConsentAsync("s", shown, Token)).ConfigureAwait(true);
+
+        failure.Message.ShouldContain("changed after it was shown");
+        state.State.ConsentedIdentities.ShouldBeEmpty();
         Entry(catalog, "s").Status.State.ShouldBe(McpServerState.NeedsConsent);
         catalog.OfferedServers().ShouldBeEmpty();
     }
@@ -93,7 +127,7 @@ public sealed class McpServerCatalogTests
         var files = new MemoryMcpFileStore().With(CursorProject, Project("project-tool"));
         var state = new InMemoryMcpStateStore();
         var first = await LoadedAsync(files, state).ConfigureAwait(true);
-        await first.GrantConsentAsync("s", Token).ConfigureAwait(true);
+        await first.GrantConsentAsync("s", Entry(first, "s").Server.ConsentIdentity, Token).ConfigureAwait(true);
 
         var second = await LoadedAsync(files, state).ConfigureAwait(true);
         Entry(second, "s").IsOffered.ShouldBeTrue();
@@ -257,7 +291,7 @@ public sealed class McpServerCatalogTests
         var state = new InMemoryMcpStateStore { SaveFailure = new IOException("read-only") };
         var catalog = await LoadedAsync(files, state).ConfigureAwait(true);
 
-        var failure = await Should.ThrowAsync<McpCatalogException>(() => catalog.GrantConsentAsync("s", Token)).ConfigureAwait(true);
+        var failure = await Should.ThrowAsync<McpCatalogException>(() => catalog.GrantConsentAsync("s", Entry(catalog, "s").Server.ConsentIdentity, Token)).ConfigureAwait(true);
 
         failure.Message.ShouldBe("The MCP state file could not be written.");
         Entry(catalog, "s").Status.State.ShouldBe(McpServerState.NeedsConsent);

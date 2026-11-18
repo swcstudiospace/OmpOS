@@ -14,7 +14,7 @@ public sealed class OmpAgentContractTests
     [Fact]
     public void ContractVersionIsOne() => IOmpAgentAdapter.Version.ShouldBe(1);
 
-    /// <summary>Each of the ten harness event types produces its own kind, and every kind is produced by some type.</summary>
+    /// <summary>Each of the eleven harness event types produces its own kind, and every kind is produced by some type.</summary>
     [Fact]
     public void EveryHarnessEventTypeProducesItsOwnKind()
     {
@@ -30,6 +30,7 @@ public sealed class OmpAgentContractTests
             (new DiagnosticEvent("slow"), OmpEventKind.Diagnostic),
             (new ErrorEvent("failed", false), OmpEventKind.Error),
             (new CompletedEvent("completed"), OmpEventKind.Completed),
+            (new ContextUsageEvent(1_200, 200_000), OmpEventKind.ContextUsage),
         ];
 
         var log = new OmpEventLog("session-kinds");

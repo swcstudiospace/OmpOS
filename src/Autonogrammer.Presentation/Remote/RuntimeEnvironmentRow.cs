@@ -17,6 +17,7 @@ public sealed class RuntimeEnvironmentRow : ObservableModel
     private bool _isBusy;
     private bool _isTesting;
     private string _environmentText = string.Empty;
+    private RuntimeEnvironmentRow? _successor;
 
     internal RuntimeEnvironmentRow(RemoteStoredProfile stored)
     {
@@ -124,39 +125,59 @@ public sealed class RuntimeEnvironmentRow : ObservableModel
     /// <summary>Gets the text a screen reader announces for the row: name, kind, destination and status.</summary>
     public string AccessibleName => DisplayName + ", " + KindLabel + ", " + DestinationText + ", " + StatusLabel;
 
+    // The row that replaced this one after a reload. An operation that started on this instance applies its outcome to the live row.
+    private RuntimeEnvironmentRow Live
+    {
+        get
+        {
+            var row = this;
+            while (row._successor is { } next)
+            {
+                row = next;
+            }
+
+            return row;
+        }
+    }
+
     internal void BeginTest()
     {
-        _isTesting = true;
-        _isBusy = true;
-        Refresh();
+        var live = Live;
+        live._isTesting = true;
+        live._isBusy = true;
+        live.Refresh();
     }
 
     internal void EndTest()
     {
-        _isTesting = false;
-        _isBusy = false;
-        Refresh();
+        var live = Live;
+        live._isTesting = false;
+        live._isBusy = false;
+        live.Refresh();
     }
 
     internal void BeginStart()
     {
-        _isBusy = true;
-        Refresh();
+        var live = Live;
+        live._isBusy = true;
+        live.Refresh();
     }
 
     internal void EndStart()
     {
-        _isBusy = false;
-        Refresh();
+        var live = Live;
+        live._isBusy = false;
+        live.Refresh();
     }
 
     internal void ApplyReport(RemotePreflightReport report)
     {
-        _tested = RemoteStatusDescriber.FromReport(report);
-        _diagnoses.Clear();
+        var live = Live;
+        live._tested = RemoteStatusDescriber.FromReport(report);
+        live._diagnoses.Clear();
         foreach (var diagnosis in report.Diagnoses)
         {
-            _diagnoses.Add(RemoteDiagnosisRow.From(diagnosis));
+            live._diagnoses.Add(RemoteDiagnosisRow.From(diagnosis));
         }
 
         var parts = new List<string>();
@@ -170,56 +191,61 @@ public sealed class RuntimeEnvironmentRow : ObservableModel
             parts.Add(platform);
         }
 
-        _environmentText = string.Join(", ", parts);
-        _isTesting = false;
-        _isBusy = false;
-        Refresh();
+        live._environmentText = string.Join(", ", parts);
+        live._isTesting = false;
+        live._isBusy = false;
+        live.Refresh();
     }
 
     // A failed start or test keeps the finding on the row with its fix.
     internal void ApplyDiagnosis(RemoteDiagnosis diagnosis)
     {
-        _tested = RemoteStatusDescriber.FromReport(new RemotePreflightReport { Succeeded = false, Diagnoses = [diagnosis] });
-        _diagnoses.Clear();
-        _diagnoses.Add(RemoteDiagnosisRow.From(diagnosis));
-        _environmentText = string.Empty;
-        _isTesting = false;
-        _isBusy = false;
-        Refresh();
+        var live = Live;
+        live._tested = RemoteStatusDescriber.FromReport(new RemotePreflightReport { Succeeded = false, Diagnoses = [diagnosis] });
+        live._diagnoses.Clear();
+        live._diagnoses.Add(RemoteDiagnosisRow.From(diagnosis));
+        live._environmentText = string.Empty;
+        live._isTesting = false;
+        live._isBusy = false;
+        live.Refresh();
     }
 
     // After a start the old findings no longer hold: the row goes back to "not checked" and asks for a new test.
     internal void ApplyStarted()
     {
-        _tested = RemoteEnvironmentStatus.NotChecked;
-        _diagnoses.Clear();
-        _environmentText = string.Empty;
-        _isBusy = false;
-        Refresh();
+        var live = Live;
+        live._tested = RemoteEnvironmentStatus.NotChecked;
+        live._diagnoses.Clear();
+        live._environmentText = string.Empty;
+        live._isBusy = false;
+        live.Refresh();
     }
 
     internal void ApplyTestFailure(string message)
     {
-        _tested = RemoteEnvironmentStatus.RuntimeUnavailable;
-        _diagnoses.Clear();
-        _diagnoses.Add(new RemoteDiagnosisRow
+        var live = Live;
+        live._tested = RemoteEnvironmentStatus.RuntimeUnavailable;
+        live._diagnoses.Clear();
+        live._diagnoses.Add(new RemoteDiagnosisRow
         {
             SeverityLabel = RemoteCopy.ErrorLabel,
             IsError = true,
             Summary = message,
-            FixText = Container is not null
+            FixText = live.Container is not null
                 ? "Check that podman works in a terminal ('podman ps'), then test the environment again."
                 : "Check that WSL works in a terminal ('wsl --list'), then test the environment again.",
         });
-        _environmentText = string.Empty;
-        _isTesting = false;
-        _isBusy = false;
-        Refresh();
+        live._environmentText = string.Empty;
+        live._isTesting = false;
+        live._isBusy = false;
+        live.Refresh();
     }
 
-    // After a reload the row keeps the test outcome only while the settings it was made with are unchanged.
+    // After a reload the row keeps the test outcome only while the settings it was made with are unchanged. An operation still in flight on the
+    // earlier instance keeps its busy flags here and reports to this row.
     internal void CarryOver(RuntimeEnvironmentRow earlier)
     {
+        earlier._successor = this;
         _isTesting = earlier._isTesting;
         _isBusy = earlier._isBusy;
         if (!SameTarget(earlier))

@@ -46,16 +46,6 @@ public sealed class LaunchContributionTests
     }
 
     [Fact]
-    public void ContributorParagraphOver2KiBIsRefused()
-    {
-        var over = new string('x', OmpLaunchPlanner.ContributorParagraphBudgetBytes + 1);
-        var contrib = new TestContributor(para: over);
-
-        Should.Throw<ArgumentOutOfRangeException>(() =>
-            OmpLaunchPlanner.Plan(Settings(), Array.Empty<ResolvedPlugin>(), "s1", "/w", null, contributors: new[] { contrib }));
-    }
-
-    [Fact]
     public void ContributedOverlayEntryIsWrittenToTheFileThePlanNames()
     {
         using var fixture = new PluginFixtureDirectory();

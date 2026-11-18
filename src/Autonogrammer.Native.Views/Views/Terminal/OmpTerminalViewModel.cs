@@ -190,7 +190,7 @@ internal sealed class OmpTerminalViewModel : ObservableModel, IAsyncDisposable
 
                 return;
             }
-            catch (ArgumentException exception)
+            catch (Exception exception) when (exception is not OutOfMemoryException)
             {
                 if (generation == _generation)
                 {
@@ -299,9 +299,9 @@ internal sealed class OmpTerminalViewModel : ObservableModel, IAsyncDisposable
         {
             return;
         }
-        catch (Exception exception) when (exception is IOException or InvalidOperationException)
+        catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            // The session's output failed, so the exit code is unknown. The terminal still ended.
+            // The session failed while omp was running, so the exit code is unknown. The terminal still ended.
             code = null;
         }
 

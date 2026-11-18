@@ -12,8 +12,6 @@ namespace Autonogrammer.Harness.AgentLoop.Launch;
 /// </summary>
 public static class OmpLaunchPlanner
 {
-    /// <summary>The budget (bytes) for a contributed system-prompt paragraph. Refused above this (2 KiB, see D-10 and task 1 test).</summary>
-    public const int ContributorParagraphBudgetBytes = 2 * 1024;
 
     /// <summary>The name of the MCP server entry that reaches the substrate.</summary>
     public const string SubstrateMcpServerName = "substrate";
@@ -52,8 +50,7 @@ public static class OmpLaunchPlanner
     /// <see cref="OmpLaunchPlan.ConfigOverlayPath"/>, and the caller writes the file with <see cref="ConfigOverlayWriter.Write"/> before launching.
     /// </param>
     /// <param name="contributors">
-    /// Zero or more <see cref="ILaunchContributor"/> instances. The planner walks them and composes their contributions (arguments, environment, overlay entries, prompt paragraph/block) without naming any concrete type such as Cowork.
-    /// A paragraph over <see cref="ContributorParagraphBudgetBytes"/> is refused.
+    /// Zero or more <see cref="ILaunchContributor"/> instances. The planner walks them and composes their arguments, environment and overlay entries without naming any concrete type such as Cowork.
     /// </param>
     /// <param name="surface">The surface identifier passed in the <see cref="LaunchRequest"/> to each contributor (e.g. "cowork", "code").</param>
     /// <param name="includeSessionEnvironment">Whether to include the planner's session-specific environment. Contributor environment is applied either way.</param>
@@ -191,7 +188,6 @@ public static class OmpLaunchPlanner
         var contribs = contributors ?? System.Array.Empty<ILaunchContributor>();
         var addArgs = new List<string>();
         var addEnv = new Dictionary<string, string?>(System.StringComparer.Ordinal);
-        string? para = null;
         foreach (var c in contribs)
         {
             var ct = c.Contribute(req, System.Threading.CancellationToken.None);
@@ -201,15 +197,6 @@ public static class OmpLaunchPlanner
                 addEnv[kvp.Key] = kvp.Value;
             }
             overlayEntries.AddRange(ct.OverlayEntries.Where(entry => !string.IsNullOrWhiteSpace(entry)));
-            if (!string.IsNullOrEmpty(ct.SystemPromptParagraph))
-            {
-                var b = System.Text.Encoding.UTF8.GetByteCount(ct.SystemPromptParagraph);
-                if (b > ContributorParagraphBudgetBytes)
-                {
-                    throw new System.ArgumentOutOfRangeException(nameof(contributors), $"The contributed paragraph is {b} bytes over the {ContributorParagraphBudgetBytes} byte budget.");
-                }
-                para = ct.SystemPromptParagraph;
-            }
             // FirstPromptBlock carried for Cowork profile / starter consumption (task 2)
         }
         arguments.AddRange(addArgs);

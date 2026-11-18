@@ -8,8 +8,8 @@ namespace Autonogrammer.Native.Views.Blocks;
 
 /// <summary>
 /// Draws inline images. Only an allowed inline base64 data URI whose bytes start like the image type it declares is decoded;
-/// every other source, and every payload that is not a complete image header, yields null, so no remote content is ever fetched
-/// and a truncated payload never reaches the decoder.
+/// every other source, and every payload whose header is not complete, yields null, so no remote content is ever fetched and a
+/// truncated header never reaches the decoder. A payload the decoder rejects also yields null.
 /// </summary>
 internal static class DataImage
 {
@@ -17,11 +17,15 @@ internal static class DataImage
 
     private static readonly byte[] JpegSignature = [0xFF, 0xD8, 0xFF];
 
+    /// <summary>The production decoder: Avalonia's codec. Tests inject a replacement through <see cref="TryCreatePicture"/>.</summary>
+    private static readonly Func<Stream, Bitmap> DefaultDecoder = static stream => new Bitmap(stream);
+
     /// <summary>Decodes an allowed inline base64 image data URI into a picture control.</summary>
     /// <param name="source">The image source text.</param>
+    /// <param name="decode">Decodes the validated bytes. Null uses the production codec.</param>
     /// <returns>An image control that owns the decoded bitmap, or null when the source is not an allowed, decodable inline image.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
-    public static Image? TryCreatePicture(string source)
+    public static Image? TryCreatePicture(string source, Func<Stream, Bitmap>? decode = null)
     {
         ArgumentNullException.ThrowIfNull(source);
 
@@ -53,23 +57,47 @@ internal static class DataImage
             return null;
         }
 
+        return CreatePicture(bytes, decode ?? DefaultDecoder);
+    }
+
+    /// <summary>Decodes the bytes into a picture control. Returns null when the decoder rejects them or they decode to no pixels; otherwise the returned image owns the bitmap.</summary>
+    private static Image? CreatePicture(byte[] bytes, Func<Stream, Bitmap> decode)
+    {
         using var stream = new MemoryStream(bytes);
-        var bitmap = new Bitmap(stream);
-
-        // A decode that yields no pixels is not drawn either.
-        if (bitmap.PixelSize.Width <= 0 || bitmap.PixelSize.Height <= 0)
+        Bitmap? bitmap = null;
+        try
         {
-            bitmap.Dispose();
-            return null;
+            try
+            {
+                bitmap = decode(stream);
+            }
+            catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or NotSupportedException)
+            {
+                return null;
+            }
+
+            // A decode that yields no pixels is not drawn either.
+            if (bitmap.PixelSize.Width <= 0 || bitmap.PixelSize.Height <= 0)
+            {
+                return null;
+            }
+
+            var image = new Image
+            {
+                Source = bitmap,
+                Stretch = Stretch.Uniform,
+                MaxWidth = BlockTokens.MaxImageWidth,
+                HorizontalAlignment = HorizontalAlignment.Left,
+            };
+
+            // The image now owns the bitmap, so the finally block must not dispose it.
+            bitmap = null;
+            return image;
         }
-
-        return new Image
+        finally
         {
-            Source = bitmap,
-            Stretch = Stretch.Uniform,
-            MaxWidth = BlockTokens.MaxImageWidth,
-            HorizontalAlignment = HorizontalAlignment.Left,
-        };
+            bitmap?.Dispose();
+        }
     }
 
     /// <summary>Checks that the bytes begin with the header of the declared raster type, including the chunk or segment that carries its size.</summary>
