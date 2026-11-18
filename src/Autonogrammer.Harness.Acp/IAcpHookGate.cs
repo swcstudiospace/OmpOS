@@ -13,6 +13,7 @@ namespace Autonogrammer.Harness.Acp;
 /// </para>
 /// <para>
 /// An implementation must not throw for an expected failure; a method that throws is treated by the session as an allow and a diagnostic.
+/// A <c>Before</c> method that does not return within five seconds is treated as a denial, with a diagnostic.
 /// <see cref="Observe"/> must return at once: it runs on the receive loop of the connection.
 /// </para>
 /// </remarks>

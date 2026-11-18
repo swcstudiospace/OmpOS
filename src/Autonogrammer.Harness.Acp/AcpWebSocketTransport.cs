@@ -14,8 +14,9 @@ namespace Autonogrammer.Harness.Acp;
 /// <summary>
 /// Carries ACP over one authenticated WebSocket to an Autonogrammer agent worker, which bridges it to <c>omp acp</c> on stdio.
 /// Each JSON-RPC message is exactly one WebSocket text frame; binary frames are ignored. The upgrade request carries
-/// <c>Authorization: Bearer &lt;worker JWT&gt;</c>. A background pump reads the socket from connect until close so keep-alive
-/// control frames are answered even while no caller is receiving, and so a cancelled receive never aborts the connection.
+/// <c>Authorization: Bearer &lt;worker JWT&gt;</c>. A background pump reads the socket from connect until close, so keep-alive
+/// control frames are answered while the receive queue has room, even while no caller is receiving, and a cancelled receive never aborts the connection.
+/// While the queue is full the pump waits for a caller to read and does not read the socket, so keep-alives go unanswered until then.
 /// Faults map to the exceptions <see cref="AcpStdioTransport"/> raises: a connect failure is a
 /// <see cref="ProcessStartHarnessException"/>, a dropped or closed connection is a <see cref="DisconnectedHarnessException"/> and an
 /// undecodable or oversized frame is a <see cref="MalformedFrameHarnessException"/>.
@@ -101,6 +102,24 @@ public sealed class AcpWebSocketTransport : IAcpTransport
             _connectStarted = true;
         }
 
+        try
+        {
+            await ConnectSocketAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            // A failed attempt leaves no socket behind, so the transport can be connected again, as the stdio transport allows.
+            lock (_gate)
+            {
+                _connectStarted = false;
+            }
+
+            throw;
+        }
+    }
+
+    private async Task ConnectSocketAsync(CancellationToken cancellationToken)
+    {
         var token = await ResolveTokenAsync(cancellationToken).ConfigureAwait(false);
         ClientWebSocket? pending = new ClientWebSocket();
         var socket = pending;

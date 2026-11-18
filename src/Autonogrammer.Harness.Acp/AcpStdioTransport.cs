@@ -20,6 +20,9 @@ public sealed class AcpStdioTransport : IAcpTransport
     /// <summary>The number of stderr lines retained. Older lines are dropped first.</summary>
     public const int StderrCapacity = 256;
 
+    /// <summary>The longest stderr line kept, in characters. A longer line is cut here and its remainder discarded, so one unterminated run cannot grow the drain's memory.</summary>
+    private const int MaxStderrLineLength = 4096;
+
     private static readonly TimeSpan ExitGracePeriod = TimeSpan.FromSeconds(2);
     private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false);
     private static readonly byte[] NewLine = [(byte)'\n'];
@@ -372,7 +375,7 @@ public sealed class AcpStdioTransport : IAcpTransport
     {
         try
         {
-            while (await process.StandardError.ReadLineAsync().ConfigureAwait(false) is { } line)
+            while (await ReadStderrLineAsync(process.StandardError).ConfigureAwait(false) is { } line)
             {
                 _stderr.Writer.TryWrite(line);
             }
@@ -387,6 +390,39 @@ public sealed class AcpStdioTransport : IAcpTransport
             _stderr.Writer.TryComplete();
         }
     }
+
+    /// <summary>
+    /// Reads one stderr line, keeping at most <see cref="MaxStderrLineLength"/> characters of it. The rest of an over-long line is read and discarded
+    /// up to its terminator, so the drain never holds more than the cap for one line and the next line starts where it would have.
+    /// </summary>
+    private static async Task<string?> ReadStderrLineAsync(TextReader reader)
+    {
+        var line = new StringBuilder();
+        var character = new char[1];
+        while (true)
+        {
+            var read = await reader.ReadAsync(character.AsMemory()).ConfigureAwait(false);
+            if (read == 0)
+            {
+                return line.Length == 0 ? null : TrimCarriageReturn(line);
+            }
+
+            if (character[0] == '\n')
+            {
+                return TrimCarriageReturn(line);
+            }
+
+            if (line.Length < MaxStderrLineLength)
+            {
+                line.Append(character[0]);
+            }
+        }
+    }
+
+    private static string TrimCarriageReturn(StringBuilder line) =>
+        line.Length > 0 && line[line.Length - 1] == '\r'
+            ? line.ToString(0, line.Length - 1)
+            : line.ToString();
 
     private Stream WritableStdin()
     {
