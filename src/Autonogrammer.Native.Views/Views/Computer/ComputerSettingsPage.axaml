@@ -28,6 +28,10 @@
         <TextBlock Classes="settings-section" Text="{CompiledBinding AdvisorTitle}" />
         <TextBlock Classes="settings-body" Text="{CompiledBinding AdvisorBody}" />
         <TextBlock Classes="settings-body" Text="{CompiledBinding AdvisorWhyBlocked}" />
+        <TextBlock Classes="settings-body"
+                   IsVisible="{CompiledBinding AdvisorRefreshFailure, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Text="{CompiledBinding AdvisorRefreshFailure}"
+                   AutomationProperties.LiveSetting="Polite" />
         <Button x:Name="OpenSettingsButton"
                 Content="{x:Static comp:ComputerUseCopy.OpenSystemSettings}"
                 MinWidth="24"
@@ -64,6 +68,10 @@
                 MinHeight="24"
                 Command="{CompiledBinding Model.AddDenylist}"
                 AutomationProperties.Name="Add denylist identity" />
+        <TextBlock Classes="settings-body"
+                   IsVisible="{CompiledBinding Model.DenylistFailure, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Text="{CompiledBinding Model.DenylistFailure}"
+                   AutomationProperties.LiveSetting="Assertive" />
 
         <TextBlock Classes="settings-section" Text="{x:Static comp:ComputerUseCopy.KillChordHeading}" />
         <TextBlock Classes="settings-body" Text="{x:Static comp:ComputerUseCopy.KillChordDescription}" />

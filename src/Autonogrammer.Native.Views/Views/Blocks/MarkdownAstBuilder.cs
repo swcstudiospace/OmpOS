@@ -366,8 +366,8 @@ internal static class MarkdownAstBuilder
             return;
         }
 
-        // Not an inline image this view can draw: its text, and the source when the source is not an inline data URI.
-        var label = altText.Length > 0 ? altText : source;
+        // Not an inline image this view can draw: its text, or a generic label for an inline data URI, which is never shown as text.
+        var label = altText.Length > 0 ? altText : (source.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ? "Image" : source);
         if (label.Length == 0)
         {
             return;

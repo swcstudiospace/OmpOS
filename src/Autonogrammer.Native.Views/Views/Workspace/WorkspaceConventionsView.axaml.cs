@@ -3,6 +3,7 @@ using Autonogrammer.Workspace;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input.Platform;
+using Avalonia.Media;
 using Avalonia.Threading;
 
 namespace Autonogrammer.Native.Views.Workspace;
@@ -14,6 +15,8 @@ namespace Autonogrammer.Native.Views.Workspace;
 /// </summary>
 internal partial class WorkspaceConventionsView : UserControl
 {
+    private readonly HashSet<string> _movedLegacyPaths = new(StringComparer.Ordinal);
+    private readonly TextBlock _moveStatus = new() { IsVisible = false, TextWrapping = TextWrapping.Wrap };
     private WorkspaceConventionsModel? _model;
     private bool _rendering;
 
@@ -23,6 +26,10 @@ internal partial class WorkspaceConventionsView : UserControl
         InitializeComponent();
         ModePicker.SelectionChanged += OnModeSelectionChanged;
         ModeRows.SelectionChanged += OnModeSelectionChanged;
+        if (NoticeRows.Parent is Panel panel)
+        {
+            panel.Children.Insert(panel.Children.IndexOf(NoticeRows) + 1, _moveStatus);
+        }
     }
 
     /// <summary>Gets the last command the copy affordance stored.</summary>
@@ -75,7 +82,8 @@ internal partial class WorkspaceConventionsView : UserControl
         _rendering = true;
         try
         {
-            SetItems(NoticeRows, (_model?.Notices ?? []).Select(notice => new LegacyConventionNoticeRow(notice, this)).ToList());
+            var notices = (_model?.Notices ?? []).Where(notice => !_movedLegacyPaths.Contains(notice.LegacyPath));
+            SetItems(NoticeRows, notices.Select(notice => new LegacyConventionNoticeRow(notice, this)).ToList());
             SetItems(RuleRows, snapshot.Rules);
             SetItems(SkillRows, snapshot.Skills);
             SetItems(DiagnosticRows, snapshot.Diagnostics);
@@ -108,7 +116,45 @@ internal partial class WorkspaceConventionsView : UserControl
         }
     }
 
-    internal void MoveUser(string home) => _model?.MoveUserLegacyDirectory(home);
+    /// <summary>Moves the user-scope legacy directory and shows what happened. A refusal or a failure is shown, never dropped.</summary>
+    /// <param name="home">The user home.</param>
+    /// <returns>The move's result, or null when the panel has no model or the move failed.</returns>
+    internal LegacyMoveResult? MoveUser(string home)
+    {
+        if (_model is null)
+        {
+            return null;
+        }
+
+        LegacyMoveResult result;
+        try
+        {
+            result = _model.MoveUserLegacyDirectory(home);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            ShowMoveStatus("Move failed. Nothing was moved: " + exception.Message);
+            return null;
+        }
+
+        if (result.Status is LegacyMoveStatus.Moved or LegacyMoveStatus.AlreadyMigrated)
+        {
+            _movedLegacyPaths.Add(result.LegacyPath);
+            Render();
+        }
+
+        ShowMoveStatus(result.Status == LegacyMoveStatus.Moved ? "Moved " + result.LegacyPath + " to " + result.NewPath + "." : result.Message ?? string.Empty);
+        return result;
+    }
+
+    /// <summary>Gets the text of the move status line. Empty when no move has been reported.</summary>
+    internal string MoveStatusText => _moveStatus.Text ?? string.Empty;
+
+    private void ShowMoveStatus(string text)
+    {
+        _moveStatus.Text = text;
+        _moveStatus.IsVisible = text.Length > 0;
+    }
 
     private static void SetItems(ItemsControl target, IEnumerable items)
     {

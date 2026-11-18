@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using Autonogrammer.Native.Views.RunControls;
 using Autonogrammer.Presentation.Approvals;
+using Avalonia.Controls;
 using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
@@ -42,6 +43,44 @@ public sealed class DetachedSettlementTests
 
             approval.Status.ShouldBe(ToolApprovalStatus.Denied);
             RunControlsHarness.RowText(row, "StatusText").ShouldBeEmpty();
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// A decision that settles while its row is detached leaves the row decidable: once the row is shown again, a waiting request
+    /// has its Deny control enabled, so no in-flight count is left behind.
+    /// </summary>
+    [Fact]
+    public async Task ARowThatSettlesWhileDetachedCanDecideAgainWhenShownAgain()
+    {
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var bridge = new GatedBridge();
+            var window = RunControlsHarness.Show(bridge);
+            var approval = RunControlsHarness.AddRequest(window, "request-reshown");
+            var row = RunControlsHarness.Row(window);
+
+            RunControlsHarness.Click(RunControlsHarness.Named(window, "Deny tool request"));
+            ShellHarness.RuntimeOf(window).RunControls.Approvals.Remove(approval);
+            ShellHarness.Settle(window);
+            window.GetVisualDescendants().OfType<ToolApprovalRowView>().ShouldBeEmpty();
+
+            bridge.CompleteOnBackgroundThread(ToolApprovalOutcome.Refused);
+            await RunControlsHarness.UntilAsync(() => approval.Status == ToolApprovalStatus.Refused, "the refused settlement", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await RunControlsHarness.FlushAsync(window, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            var reshown = new Window { Content = row };
+            reshown.Show();
+            ShellHarness.Settle(reshown);
+            try
+            {
+                row.FindControl<Button>("DenyButton")!.IsEnabled.ShouldBeTrue();
+            }
+            finally
+            {
+                reshown.Close();
+            }
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 

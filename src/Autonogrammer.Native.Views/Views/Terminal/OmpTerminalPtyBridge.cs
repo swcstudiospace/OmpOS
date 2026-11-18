@@ -15,6 +15,8 @@ namespace Autonogrammer.Native.Views.Terminal;
 /// <remarks>
 /// The bridge outlives the sessions: one bridge serves every start of omp in the view, and <see cref="AttachSession"/>
 /// points it at the current session. Input typed while no session is attached is dropped, because no process reads it.
+/// The control's input is sent in the order it was written, whether written synchronously or asynchronously: both pass through one
+/// queue that a single task drains.
 /// The bridge never reports an exit itself: the view model watches the session and shows the exit.
 /// </remarks>
 internal sealed class OmpTerminalPtyBridge : IPtyConnection
@@ -22,8 +24,11 @@ internal sealed class OmpTerminalPtyBridge : IPtyConnection
     private readonly Channel<byte[]> _output = Channel.CreateUnbounded<byte[]>(
         new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
 
-    private readonly Channel<byte[]> _input = Channel.CreateUnbounded<byte[]>(
+    private readonly Channel<PendingInput> _input = Channel.CreateUnbounded<PendingInput>(
         new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
+
+    /// <summary>One control input waiting for the pump: its bytes, the writer's completion (or null for a synchronous write), and the token of its write.</summary>
+    private readonly record struct PendingInput(byte[] Bytes, TaskCompletionSource? Completion, CancellationToken Cancellation);
 
     private readonly OutputStream _reader;
     private readonly InputStream _writer;
@@ -174,12 +179,56 @@ internal sealed class OmpTerminalPtyBridge : IPtyConnection
         }
     }
 
-    /// <summary>Sends the input the control wrote synchronously, one write at a time and in write order, so the control's thread never waits for omp.</summary>
+    /// <summary>
+    /// Queues control input for the pump and waits until the pump has sent it. Input is sent in the order it was queued, whether it
+    /// was written synchronously or asynchronously. Input that arrives after the bridge is disposed is dropped.
+    /// </summary>
+    private async ValueTask EnqueueInputAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+    {
+        if (buffer.IsEmpty)
+        {
+            return;
+        }
+
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (!_input.Writer.TryWrite(new PendingInput(buffer.ToArray(), completion, cancellationToken)))
+        {
+            return;
+        }
+
+        await completion.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Sends the queued control input one item at a time, in the order it was queued, so the control's thread never waits for omp.</summary>
     private async Task PumpInputAsync()
     {
-        await foreach (var bytes in _input.Reader.ReadAllAsync().ConfigureAwait(false))
+        await foreach (var input in _input.Reader.ReadAllAsync().ConfigureAwait(false))
         {
-            await SendInputAsync(bytes, CancellationToken.None).ConfigureAwait(false);
+            await ProcessInputAsync(input).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Sends one queued input and reports the outcome to the writer that waits for it. A failed send does not end the pump: the
+    /// input after it still reaches the session.
+    /// </summary>
+    private async Task ProcessInputAsync(PendingInput input)
+    {
+        if (input.Cancellation.IsCancellationRequested)
+        {
+            input.Completion?.TrySetCanceled(input.Cancellation);
+            return;
+        }
+
+        try
+        {
+            await SendInputAsync(input.Bytes, input.Cancellation).ConfigureAwait(false);
+            input.Completion?.TrySetResult();
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // A synchronous write has no waiter, so its failure is dropped here, as its input has nowhere to go.
+            input.Completion?.TrySetException(exception);
         }
     }
 
@@ -315,7 +364,7 @@ internal sealed class OmpTerminalPtyBridge : IPtyConnection
             ArgumentNullException.ThrowIfNull(buffer);
             if (count > 0)
             {
-                bridge._input.Writer.TryWrite(buffer.AsSpan(offset, count).ToArray());
+                bridge._input.Writer.TryWrite(new PendingInput(buffer.AsSpan(offset, count).ToArray(), null, CancellationToken.None));
             }
         }
 
@@ -325,7 +374,7 @@ internal sealed class OmpTerminalPtyBridge : IPtyConnection
 
         /// <inheritdoc/>
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) =>
-            bridge.SendInputAsync(buffer, cancellationToken);
+            bridge.EnqueueInputAsync(buffer, cancellationToken);
 
         /// <inheritdoc/>
         public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();

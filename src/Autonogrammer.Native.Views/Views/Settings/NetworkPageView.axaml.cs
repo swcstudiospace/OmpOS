@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Presentation.Settings;
 using Avalonia.Controls;
@@ -61,7 +62,21 @@ internal partial class NetworkPageView : SettingsPageViewBase
     {
         if (_watched is { } page)
         {
-            _ = page.RunDiagnosticsAsync(CancellationToken.None);
+            _ = ObserveRunAsync(page);
+        }
+    }
+
+    // The page announces a run the source refused. Any other fault is a defect: it is traced, and the live region says the run could not be run.
+    private async Task ObserveRunAsync(NetworkSettingsPage page)
+    {
+        try
+        {
+            await page.RunDiagnosticsAsync(CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+        {
+            Trace.TraceError(NetworkCopy.RunFaultTrace + exception.Message);
+            Announcement.Text = NetworkCopy.RunFailed;
         }
     }
 

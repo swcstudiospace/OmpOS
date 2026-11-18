@@ -24,7 +24,8 @@ public partial class ArtifactCodeView : UserControl
         ["md"] = "text.html.markdown",
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
-    private readonly RegistryOptions _registry = new(ThemeName.DarkPlus);
+    // One registry serves every code view: TextMate loads its grammars and theme once, when the first code view is highlighted.
+    private static readonly Lazy<RegistryOptions> SharedRegistry = new(() => new RegistryOptions(ThemeName.DarkPlus));
     private TextMate.Installation? _textMate;
     private bool _attached;
 
@@ -70,7 +71,7 @@ public partial class ArtifactCodeView : UserControl
             return;
         }
 
-        _textMate ??= Editor.InstallTextMate(_registry);
+        _textMate ??= Editor.InstallTextMate(SharedRegistry.Value);
         _textMate.SetGrammar(HighlightScope);
     }
 

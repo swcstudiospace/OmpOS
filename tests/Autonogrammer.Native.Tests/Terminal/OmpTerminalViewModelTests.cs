@@ -195,6 +195,34 @@ public sealed class OmpTerminalViewModelTests
     }
 
     [Fact]
+    public async Task AStartThatFailsUnexpectedlyIsUnavailableInsteadOfStuckStarting()
+    {
+        var model = new OmpTerminalViewModel(new FaultingStarter(new InvalidOperationException("The pseudo terminal is gone.")));
+        await using var modelScope = model.ConfigureAwait(true);
+
+        await model.StartAsync().ConfigureAwait(true);
+
+        model.State.ShouldBe(OmpTerminalState.Unavailable);
+        model.FixText.ShouldContain("The pseudo terminal is gone.", Case.Sensitive);
+    }
+
+    [Fact]
+    public async Task ASessionThatFailsWhileWaitingForExitEndsAsExitedWithUnknownCode()
+    {
+        var session = new FaultingExitSession(new NotSupportedException("The exit wait is not supported."));
+        await using var sessionScope = session.ConfigureAwait(true);
+        var model = new OmpTerminalViewModel(new FixedSessionStarter(session));
+        await using var modelScope = model.ConfigureAwait(true);
+        await model.StartAsync().ConfigureAwait(true);
+
+        await WaitForStateAsync(model, OmpTerminalState.Exited).ConfigureAwait(true);
+
+        model.ExitCode.ShouldBeNull();
+        model.StatusText.ShouldBe("omp exited");
+        model.Session.ShouldBeNull();
+    }
+
+    [Fact]
     public async Task StopDisposesTheSessionAndReturnsToIdle()
     {
         var starter = new FakeOmpTerminalStarter();
@@ -350,5 +378,37 @@ public sealed class OmpTerminalViewModelTests
             int rows,
             IProcessOutputSink output,
             CancellationToken cancellationToken) => Task.FromException<OmpTerminalLaunchResult>(new ArgumentException(message, nameof(columns)));
+    }
+
+    private sealed class FaultingStarter(Exception fault) : IOmpTerminalStarter
+    {
+        public Task<OmpTerminalLaunchResult> StartAsync(
+            int columns,
+            int rows,
+            IProcessOutputSink output,
+            CancellationToken cancellationToken) => Task.FromException<OmpTerminalLaunchResult>(fault);
+    }
+
+    private sealed class FixedSessionStarter(ITerminalSession session) : IOmpTerminalStarter
+    {
+        public Task<OmpTerminalLaunchResult> StartAsync(
+            int columns,
+            int rows,
+            IProcessOutputSink output,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<OmpTerminalLaunchResult>(new OmpTerminalStarted("/usr/bin/omp", "1.2.3", session));
+    }
+
+    private sealed class FaultingExitSession(Exception fault) : ITerminalSession
+    {
+        public Task WriteInputAsync(string text, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public void Resize(int columns, int rows)
+        {
+        }
+
+        public Task<int> WaitForExitAsync(CancellationToken cancellationToken) => Task.FromException<int>(fault);
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 }

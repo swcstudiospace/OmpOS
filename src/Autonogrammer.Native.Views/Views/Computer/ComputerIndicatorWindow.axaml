@@ -5,7 +5,7 @@
         x:DataType="comp:ComputerIndicatorViewModel"
         Title="Autonogrammer is controlling this computer"
         Width="420"
-        Height="96"
+        SizeToContent="Height"
         Topmost="True"
         ShowActivated="False"
         Focusable="False"
@@ -24,6 +24,10 @@
                IsVisible="{CompiledBinding HasRemoteLabel}"
                Text="{CompiledBinding RemoteLabel}"
                AutomationProperties.Name="Remote Dispatch" />
+    <TextBlock Classes="settings-body"
+               IsVisible="{CompiledBinding TripFailureText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               Text="{CompiledBinding TripFailureText}"
+               AutomationProperties.LiveSetting="Assertive" />
     <Button Content="Stop"
             MinWidth="24"
             MinHeight="24"

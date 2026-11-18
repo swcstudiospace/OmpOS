@@ -119,7 +119,13 @@ internal partial class RuntimeEnvironmentsView : UserControl
         }
     }
 
-    private void OnCancelRunClick(object? sender, RoutedEventArgs e) => _model?.CancelRun();
+    private void OnCancelRunClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: RuntimeEnvironmentRow row } && _model is not null)
+        {
+            _model.CancelRun(row);
+        }
+    }
 
     private void OnStartContainerClick(object? sender, RoutedEventArgs e)
     {

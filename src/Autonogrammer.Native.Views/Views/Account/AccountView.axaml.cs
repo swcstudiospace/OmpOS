@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Presentation.Accounts;
+using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -15,8 +16,8 @@ namespace Autonogrammer.Native.Views.Account;
 /// </summary>
 internal partial class AccountView : UserControl
 {
+    private readonly DispatcherTimer _clock = new() { Interval = TimeSpan.FromSeconds(1) };
     private AccountViewModel? _model;
-    private DispatcherTimer? _clock;
     private string? _announced;
 
     /// <summary>Creates the panel with no model.</summary>
@@ -24,6 +25,21 @@ internal partial class AccountView : UserControl
     {
         InitializeComponent();
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
+        EmailBox.TextChanged += (_, _) =>
+        {
+            if (_model is not null)
+            {
+                _model.Email = EmailBox.Text ?? string.Empty;
+            }
+        };
+        CodeBox.TextChanged += (_, _) =>
+        {
+            if (_model is not null)
+            {
+                _model.Code = CodeBox.Text ?? string.Empty;
+            }
+        };
+        _clock.Tick += OnTick;
     }
 
     /// <summary>Gets the email field.</summary>
@@ -78,25 +94,21 @@ internal partial class AccountView : UserControl
         _model.PropertyChanged += OnModelChanged;
         EmailBox.Text = model.Email;
         CodeBox.Text = model.Code;
-        EmailBox.TextChanged += (_, _) =>
-        {
-            if (_model is not null)
-            {
-                _model.Email = EmailBox.Text ?? string.Empty;
-            }
-        };
-        CodeBox.TextChanged += (_, _) =>
-        {
-            if (_model is not null)
-            {
-                _model.Code = CodeBox.Text ?? string.Empty;
-            }
-        };
-        _clock ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-        _clock.Tick -= OnTick;
-        _clock.Tick += OnTick;
-        _clock.Start();
         Apply();
+    }
+
+    /// <inheritdoc/>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        _clock.Start();
+    }
+
+    /// <inheritdoc/>
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        _clock.Stop();
     }
 
     private void OnTick(object? sender, EventArgs e) => _model?.RefreshClock();

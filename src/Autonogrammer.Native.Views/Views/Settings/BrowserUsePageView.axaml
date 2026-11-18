@@ -118,6 +118,10 @@
             <TextBlock x:Name="DialogText"
                        Classes="settings-body"
                        Text="{CompiledBinding DialogText}" />
+            <TextBlock x:Name="AcquisitionError"
+                       Classes="tone-error settings-body"
+                       IsVisible="False"
+                       AutomationProperties.LiveSetting="Assertive" />
             <StackPanel Orientation="Horizontal"
                         Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
               <Button x:Name="ConfirmButton"

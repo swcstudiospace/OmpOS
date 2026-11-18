@@ -252,6 +252,32 @@ public sealed class WorkspaceTreeViewTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
+    /// <summary>On a folder opened asynchronously, Right lists an unloaded directory and expands it, without a fault reaching the key handler.</summary>
+    [Fact]
+    public async Task ARightKeyListsAnUnloadedDirectoryOfAnAsyncFolder()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var folder = ExplorerHarness.NewFolder();
+            var tree = new WorkspaceTree();
+            using var window = ExplorerHarness.Show(tree);
+            await tree.OpenFolderAsync(new AsyncListing(folder), ct).ConfigureAwait(true);
+            ShellHarness.Settle(window);
+
+            folder.ListedDirectories.ShouldBe([""]);
+
+            ExplorerHarness.FocusRows(window);
+            ExplorerHarness.Press(window, Key.Down, PhysicalKey.ArrowDown);
+            ExplorerHarness.SelectedName(window).ShouldBe("src");
+            ExplorerHarness.Press(window, Key.Right, PhysicalKey.ArrowRight);
+
+            folder.ListedDirectories.ShouldBe(["", "src"]);
+            ExplorerHarness.RenderedNames(window).ShouldBe(["docs", "src", "lib", "main.cs", "README.md"]);
+        }, ct).ConfigureAwait(true);
+    }
+
     // Shows the explorer on a tree that has the fixture folder open, and returns the window.
     private static ExplorerWindow ShowOpenFolder(out WorkspaceTreeView view)
     {
@@ -261,5 +287,14 @@ public sealed class WorkspaceTreeViewTests
         ShellHarness.Settle(window);
         view = ExplorerHarness.View(window);
         return window;
+    }
+
+    /// <summary>Presents the in-memory listing through the asynchronous file system port, as an async folder does.</summary>
+    private sealed class AsyncListing(ListingWorkspaceFileSystem inner) : IAsyncWorkspaceFileSystem
+    {
+        public string RootPath => inner.RootPath;
+
+        public Task<IReadOnlyList<WorkspaceEntry>> ListDirectoryAsync(string relativeDirectory, CancellationToken cancellationToken) =>
+            Task.FromResult(inner.ListDirectory(relativeDirectory));
     }
 }

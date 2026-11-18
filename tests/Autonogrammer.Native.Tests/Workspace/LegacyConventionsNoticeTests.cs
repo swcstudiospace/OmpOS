@@ -23,6 +23,35 @@ public sealed class LegacyConventionsNoticeTests
         model.Notices.Count.ShouldBe(1);
     }
 
+    /// <summary>A refused user-scope move says why on the panel, and moves nothing.</summary>
+    [Fact]
+    public async Task AConflictingUserMoveShowsTheRefusalOnThePanel()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var home = Directory.CreateTempSubdirectory("legacy-panel-").FullName;
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(home, LegacyBrandNames.ConventionDirectory));
+            Directory.CreateDirectory(Path.Combine(home, ".autonogrammer"));
+            using var workspace = new TempWorkspace();
+            using var catalog = new WorkspaceCatalog(new WorkspaceRoot(workspace.Root));
+            using var model = new WorkspaceConventionsModel(catalog);
+            await using var session = TestAppBuilder.StartSession();
+            await session.Dispatch(() =>
+            {
+                var view = new WorkspaceConventionsView { DataContext = model };
+                ViewHost.Show(view);
+                view.MoveUser(home).ShouldNotBeNull().Status.ShouldBe(LegacyMoveStatus.Conflict);
+                view.MoveStatusText.ShouldContain("Conflict");
+            }, ct).ConfigureAwait(true);
+            Directory.Exists(Path.Combine(home, LegacyBrandNames.ConventionDirectory)).ShouldBeTrue();
+        }
+        finally
+        {
+            Directory.Delete(home, recursive: true);
+        }
+    }
+
     /// <summary>The user-scope move runs only when the current directory is absent, and refuses a collision without merging.</summary>
     [Fact]
     public void UserMoveRefusesACollisionAndMovesWhenTheNewDirectoryIsAbsent()

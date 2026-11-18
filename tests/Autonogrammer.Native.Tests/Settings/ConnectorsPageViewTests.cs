@@ -47,6 +47,99 @@ public sealed class ConnectorsPageViewTests
         }, ct).ConfigureAwait(true);
     }
 
+    /// <summary>Loading the cards writes nothing; changing a tool's control writes that tool's policy to the store.</summary>
+    [Fact]
+    public async Task ChangingAToolControlWritesThatToolsPolicy()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var session = TestAppBuilder.StartSession();
+        await session.Dispatch(() =>
+        {
+            var store = new RecordingStore();
+            var matrix = new ConnectorMatrixModel(store);
+            var cards = new[] { new ConnectorCardModel("alpha", "Alpha", ConnectorToolState.NeedsApproval, matrix.Rows("alpha", ["echo"]), "Connected") };
+            var view = new ConnectorsPageView();
+            view.Show(matrix, cards, checks: null);
+            var window = new Window { Width = 900, Height = 800, Content = view };
+            window.Show();
+            SettingsTree.SettleSafe(window);
+            try
+            {
+                store.Writes.ShouldBeEmpty();
+
+                SettingsTree.Named<ComboBox>(view, "Tool echo on alpha").SelectedItem = "Blocked";
+
+                store.Deny.ShouldContain("Mcp(alpha:echo)", StringComparer.Ordinal);
+                matrix.ToolState("alpha", "echo").ShouldBe(ConnectorToolState.Blocked);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }, ct).ConfigureAwait(true);
+    }
+
+    /// <summary>A server-level change redraws the card's tool rows under the new policy, and writes the server policy, without a check.</summary>
+    [Fact]
+    public async Task ChangingTheServerPolicyRedrawsItsToolRows()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var session = TestAppBuilder.StartSession();
+        await session.Dispatch(() =>
+        {
+            var store = new RecordingStore();
+            var matrix = new ConnectorMatrixModel(store);
+            var card = new ConnectorCardModel("alpha", "Alpha", ConnectorToolState.NeedsApproval, matrix.Rows("alpha", ["echo"]), "Connected");
+            var view = new ConnectorsPageView();
+            view.Show(matrix, [card], checks: null);
+            var window = new Window { Width = 900, Height = 800, Content = view };
+            window.Show();
+            SettingsTree.SettleSafe(window);
+            try
+            {
+                SettingsTree.Named<ComboBox>(view, "Server alpha permission").SelectedItem = "Always allow";
+
+                store.Allow.ShouldContain("Mcp(alpha:*)", StringComparer.Ordinal);
+                card.Tools.Single().State.ShouldBe(ConnectorToolState.AlwaysAllow);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }, ct).ConfigureAwait(true);
+    }
+
+    private sealed class RecordingStore : IConnectorPermissionStore
+    {
+        private List<string> _allow = [];
+        private List<string> _deny = [];
+
+        /// <summary>Gets the allow tokens as last written.</summary>
+        public IReadOnlyList<string> Allow => _allow;
+
+        /// <summary>Gets the deny tokens as last written.</summary>
+        public IReadOnlyList<string> Deny => _deny;
+
+        /// <summary>Gets one entry per write, so a test can assert that nothing was written.</summary>
+        public List<string> Writes { get; } = [];
+
+        public IReadOnlyList<string> ReadAllowTokens() => _allow;
+
+        public IReadOnlyList<string> ReadDenyTokens() => _deny;
+
+        public void ReplaceAllowTokens(IReadOnlyList<string> tokens)
+        {
+            _allow = [.. tokens];
+            Writes.Add("allow");
+        }
+
+        public void ReplaceDenyTokens(IReadOnlyList<string> tokens)
+        {
+            _deny = [.. tokens];
+            Writes.Add("deny");
+        }
+    }
+
     [Fact]
     public async Task CheckConnection_ContactsThatServerOnly()
     {

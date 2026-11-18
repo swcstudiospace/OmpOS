@@ -170,7 +170,11 @@ public partial class BrowserPaneView : UserControl
         _ = _model?.StopAsync();
     }
 
-    private void OnClose(object? sender, RoutedEventArgs e) => _ = _model?.CloseBrowserAsync();
+    private void OnClose(object? sender, RoutedEventArgs e)
+    {
+        _keyboardCaptured = false;
+        _ = _model?.CloseBrowserAsync();
+    }
 
     private void OnFix(object? sender, RoutedEventArgs e)
     {

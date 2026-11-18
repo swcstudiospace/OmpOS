@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Autonogrammer.Contracts.Artifacts;
+using Autonogrammer.Cowork.Artifacts;
 using Autonogrammer.Presentation.Cowork.Artifacts;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -20,6 +21,13 @@ public partial class ArtifactPanelView : UserControl
     private PropertyChangedEventHandler? _modelChanged;
     private ArtifactContent? _content;
     private NativeWebViewArtifactSurface? _surface;
+    private FrameKey? _frameKey;
+
+    /// <summary>
+    /// Gets or sets the image size cap, which the host sets from the configured <c>Cowork:Artifacts:MaxImageBytes</c>. It starts at
+    /// the cap <see cref="ArtifactOptions"/> defaults to, so an unconfigured host shows an image that is within that cap.
+    /// </summary>
+    public int MaxImageBytes { get; set; } = new ArtifactOptions().MaxImageBytes;
 
     /// <summary>Creates the view.</summary>
     public ArtifactPanelView()
@@ -274,14 +282,33 @@ public partial class ArtifactPanelView : UserControl
         SkipLink.IsVisible = item is not null;
         if (item is null)
         {
+            ReleaseFrame();
             FrameBorder.IsVisible = false;
-            FrameContent.Content = null;
             return;
         }
 
-        FrameContent.Content = ContentFor(item, model);
+        var key = new FrameKey(item.Key, item.Title, item.Kind, _content, _surface, model.SurfaceState, model.SurfaceReason);
+        if (_frameKey != key)
+        {
+            ReleaseFrame();
+            FrameContent.Content = ContentFor(item, model);
+            _frameKey = key;
+        }
+
         FrameBorder.IsVisible = true;
         AutomationProperties.SetName(FrameBorder, FrameName(item));
+    }
+
+    /// <summary>Removes the frame's content. A shown image releases its bitmap first.</summary>
+    private void ReleaseFrame()
+    {
+        if (FrameContent.Content is ArtifactImageView image)
+        {
+            image.ReleasePicture();
+        }
+
+        FrameContent.Content = null;
+        _frameKey = null;
     }
 
     private object ContentFor(ArtifactPanelItem item, ArtifactPanelModel model)
@@ -305,7 +332,7 @@ public partial class ArtifactPanelView : UserControl
         return _content is null ? Message("No content is loaded for this version.") : ViewFor(_content);
     }
 
-    private static Control ViewFor(ArtifactContent content)
+    private Control ViewFor(ArtifactContent content)
     {
         switch (content.Kind)
         {
@@ -319,7 +346,7 @@ public partial class ArtifactPanelView : UserControl
             case ArtifactKind.Image:
                 {
                     var image = new ArtifactImageView();
-                    image.Show(content.Title, content.MediaType, content.Bytes);
+                    image.Show(content.Title, content.MediaType, content.Bytes, MaxImageBytes);
                     return image;
                 }
 
@@ -383,4 +410,14 @@ public partial class ArtifactPanelView : UserControl
     }
 
     private static TextBlock Message(string text) => new() { Text = text, TextWrapping = TextWrapping.Wrap };
+
+    /// <summary>What the frame shows. The frame is rebuilt only when this changes, so an unchanged refresh keeps the shown control.</summary>
+    private readonly record struct FrameKey(
+        ArtifactVersionKey Version,
+        string Title,
+        ArtifactKind Kind,
+        ArtifactContent? Content,
+        NativeWebViewArtifactSurface? Surface,
+        ArtifactSurfaceState SurfaceState,
+        ArtifactSurfaceReason SurfaceReason);
 }

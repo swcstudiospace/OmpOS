@@ -54,7 +54,7 @@ internal static class SettingsPageViews
             ComputerUseSettingsPage => new ComputerSettingsPage(),
             BrowserUseSettingsPage => new BrowserUsePageView(),
             BundlesSettingsPage => new BundlesPageView(),
-            ConnectorsSettingsPage => new ConnectorsPageView(),
+            ConnectorsSettingsPage connectors => CreateConnectorsView(connectors),
             CoworkPermissionsSettingsPage permissions => new PermissionsPageView(permissions.Modes, permissions.Grants, permissions.Statements),
             IsolationSettingsPage => new IsolationPageView(),
             UsageSettingsPage => new Autonogrammer.Native.Views.Usage.UsageMeterView(),
@@ -65,17 +65,29 @@ internal static class SettingsPageViews
         return view;
     }
 
-    // The Dispatch view draws the page model the relay holds. The relay raises its change when the load completes; the view takes the new page
-    // and stops listening when it leaves the window.
+    // The Dispatch view draws the page model the relay holds. The relay raises its change when a load completes. The view follows that
+    // change only while it is attached, and takes the current page on every attach, so a load that completed while it was away is shown.
     private static Autonogrammer.Native.Views.Dispatch.DispatchPageView CreateDispatchView(DispatchSettingsPage dispatch)
     {
         var view = new Autonogrammer.Native.Views.Dispatch.DispatchPageView { DataContext = dispatch.Relay.Page };
         void OnChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args) => view.DataContext = dispatch.Relay.Page;
-        dispatch.Relay.PropertyChanged += OnChanged;
+        view.AttachedToVisualTree += (_, _) =>
+        {
+            dispatch.Relay.PropertyChanged += OnChanged;
+            view.DataContext = dispatch.Relay.Page;
+        };
         view.DetachedFromVisualTree += (_, _) => dispatch.Relay.PropertyChanged -= OnChanged;
         view.CancelRequested = commandId => _ = dispatch.Relay.CancelAsync(commandId, CancellationToken.None);
         view.CapabilityChanged = policy => _ = dispatch.Relay.SetCapabilityAsync(policy.Capability, policy.Enabled, CancellationToken.None);
         view.PauseChanged = paused => _ = dispatch.Relay.SetPausedAsync(paused, CancellationToken.None);
+        return view;
+    }
+
+    // The Connectors view draws the page's matrix, its cards and its check source. The cards are the page's own collection, so a load reaches the view.
+    private static ConnectorsPageView CreateConnectorsView(ConnectorsSettingsPage page)
+    {
+        var view = new ConnectorsPageView();
+        view.Show(page.Model, page.Cards, page.Checks);
         return view;
     }
 

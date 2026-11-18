@@ -54,7 +54,8 @@
                     <DataTemplate x:DataType="conn:ConnectorToolRow">
                       <ComboBox AutomationProperties.Name="{CompiledBinding AccessibleName}"
                                 ItemsSource="{x:Static conn:ConnectorStateLabels.All}"
-                                SelectedItem="{CompiledBinding SelectedLabel, Mode=TwoWay}" />
+                                SelectedItem="{CompiledBinding SelectedLabel, Mode=TwoWay}"
+                                SelectionChanged="OnToolStateChanged" />
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
