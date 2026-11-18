@@ -83,6 +83,22 @@ public sealed class ComposerAttachmentsModel : ObservableModel
         NotifyPropertyChanged(nameof(CapabilityNote));
     }
 
+    /// <summary>
+    /// Reports whether the attached images may be sent. The gate can close after an image was attached, for example when the model changes;
+    /// then nothing may be sent and <see cref="Notice"/> says why.
+    /// </summary>
+    /// <returns>True when no images are attached or the gate is open.</returns>
+    public bool SendAllowed()
+    {
+        if (_items.Count == 0 || _gate.CanAttach)
+        {
+            return true;
+        }
+
+        Notice = _gate.Reason;
+        return false;
+    }
+
     /// <summary>Adds one image.</summary>
     /// <param name="data">The encoded image.</param>
     /// <param name="mimeHint">The type the source declared, advisory only; the bytes decide. A non-image type is refused.</param>

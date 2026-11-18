@@ -126,9 +126,9 @@ public sealed class NetworkSettingsPageTests
         page.HasReport.ShouldBeFalse();
     }
 
-    /// <summary>A source that fails with a reason shows that reason, and any other fault shows the general sentence; neither is thrown.</summary>
+    /// <summary>A source refusal shows its reason and never throws. Any other fault is a defect: it is not announced as a failed run and it propagates.</summary>
     [Fact]
-    public async Task AFailedRunNeverThrows()
+    public async Task ARefusedRunShowsItsReasonAndADefectPropagates()
     {
         var source = new ScriptedNetworkSource { Fault = new SettingsSourceException("The provider list could not be read.") };
         var page = await ReadyPageAsync(source);
@@ -141,9 +141,11 @@ public sealed class NetworkSettingsPageTests
         page.HasReport.ShouldBeFalse();
 
         source.Fault = new InvalidOperationException("secret detail that must not be shown");
-        await page.RunDiagnosticsAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await Should.ThrowAsync<InvalidOperationException>(() => page.RunDiagnosticsAsync(TestContext.Current.CancellationToken)).ConfigureAwait(true);
 
-        page.Announcement.ShouldBe(NetworkCopy.RunFailed);
+        page.Announcement.ShouldBe(NetworkCopy.Running);
+        page.IsRunning.ShouldBeFalse();
+        page.CanRun.ShouldBeTrue();
     }
 
     /// <summary>A run that finds nothing to check says so and shows no row.</summary>

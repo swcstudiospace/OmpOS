@@ -238,7 +238,7 @@ public static class SlashCommandCatalogue
             Make(
                 "vim",
                 SlashCommandGroup.Cli,
-                "Toggles Vim keys in the prompt.",
+                "Vim keys in the prompt are not available.",
                 SlashHandlerKind.Unavailable,
                 SlashCommandStatus.Unavailable,
                 "unavailable",
@@ -266,7 +266,7 @@ public static class SlashCommandCatalogue
             Make(
                 "show-thinking",
                 SlashCommandGroup.Cli,
-                "Toggles the thinking block display.",
+                "The thinking block display is not available.",
                 SlashHandlerKind.Unavailable,
                 SlashCommandStatus.Unavailable,
                 "unavailable",

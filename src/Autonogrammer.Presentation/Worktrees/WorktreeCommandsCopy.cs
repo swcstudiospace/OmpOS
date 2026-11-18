@@ -35,6 +35,9 @@ public static class WorktreeCommandsCopy
     /// <summary>The status line when a deletion is dismissed.</summary>
     public const string DeleteCancelled = "Nothing was deleted.";
 
+    /// <summary>The summary of a best-of-n candidate that was cancelled before it finished.</summary>
+    public const string Cancelled = "Cancelled before it finished";
+
     /// <summary>Gets the text of a run's row.</summary>
     /// <param name="run">The run.</param>
     /// <returns>The text.</returns>
@@ -90,11 +93,18 @@ public static class WorktreeCommandsCopy
     public static string DeleteConfirmation(IReadOnlyList<WorktreeRunInfo> runs)
     {
         ArgumentNullException.ThrowIfNull(runs);
-        var files = runs.Sum(static run => run.ChangedFiles);
-        var names = string.Join(", ", runs.Select(static run => run.RunId));
-        return string.Create(
-            CultureInfo.InvariantCulture,
-            $"Delete {(runs.Count == 1 ? "worktree" : "worktrees")} {names}? {files} changed {(files == 1 ? "file is" : "files are")} lost unless you applied {(runs.Count == 1 ? "it" : "them")} first.");
+        var text = string.Create(CultureInfo.InvariantCulture, $"Delete {(runs.Count == 1 ? "worktree" : "worktrees")} {string.Join(", ", runs.Select(static run => run.RunId))}? ");
+        var known = runs.Where(static run => run.Problem is null).ToList();
+        if (known.Count > 0)
+        {
+            var files = known.Sum(static run => run.ChangedFiles);
+            text += string.Create(CultureInfo.InvariantCulture, $"{files} changed {(files == 1 ? "file is" : "files are")} lost unless you applied {(known.Count == 1 ? "it" : "them")} first. ");
+        }
+
+        var unknownText = string.Join(", ", runs.Where(static run => run.Problem is not null).Select(static run => run.RunId + ": changes unknown"));
+        return unknownText.Length == 0
+            ? text.TrimEnd()
+            : text + unknownText + ". Their changes cannot be verified as applied.";
     }
 
     /// <summary>Gets the sentence for a finished deletion.</summary>

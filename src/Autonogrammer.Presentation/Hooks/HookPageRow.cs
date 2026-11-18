@@ -94,7 +94,7 @@ public sealed class HookPageRow
             return HookRowState.UnknownEvent;
         }
 
-        if (item.QuarantineReason is not null)
+        if (item.QuarantinedSource is not null)
         {
             return HookRowState.Quarantined;
         }

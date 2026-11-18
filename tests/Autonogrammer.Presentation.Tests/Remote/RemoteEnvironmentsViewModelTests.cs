@@ -251,12 +251,57 @@ public sealed class RemoteEnvironmentsViewModelTests
         row.CanTest.ShouldBeFalse();
         await page.TestConnectionAsync(row, Token).ConfigureAwait(true);
         host.TestCalls.ShouldBe(1);
-        page.CancelTest();
+        page.CancelTest(row);
         await run.ConfigureAwait(true);
 
         row.Status.ShouldBe(RemoteEnvironmentStatus.NotChecked);
         row.CanTest.ShouldBeTrue();
         page.Announcement.ShouldContain("cancelled", Case.Sensitive);
+    }
+
+    /// <summary>A test that finishes after the page was reloaded shows its outcome on the row the page lists, which is not left testing.</summary>
+    [Fact]
+    public async Task ATestThatFinishesAfterAReloadShowsItsOutcomeOnTheListedRow()
+    {
+        var gate = new TaskCompletionSource();
+        var host = new FakeRemoteEnvironmentsHost { TestGate = gate.Task }.With(Profile("a", "alpha"));
+        var page = new RemoteEnvironmentsViewModel(host);
+        await page.LoadAsync(Token).ConfigureAwait(true);
+        var started = page.TestConnectionAsync(page.Rows[0], Token);
+
+        await page.LoadAsync(Token).ConfigureAwait(true);
+        page.Rows[0].IsTesting.ShouldBeTrue();
+        gate.SetResult();
+        await started.ConfigureAwait(true);
+
+        page.Rows[0].IsTesting.ShouldBeFalse();
+        page.Rows[0].CanTest.ShouldBeTrue();
+        page.Rows[0].EnvironmentText.ShouldBe("omp 18.12.6, Linux x86_64");
+    }
+
+    /// <summary>Two environments can be tested at once, and cancelling one test leaves the other running.</summary>
+    [Fact]
+    public async Task CancellingOneTestLeavesAnotherEnvironmentsTestRunning()
+    {
+        var gate = new TaskCompletionSource();
+        var host = new FakeRemoteEnvironmentsHost { TestGate = gate.Task }.With(Profile("a", "alpha")).With(Profile("b", "beta"));
+        var page = new RemoteEnvironmentsViewModel(host);
+        await page.LoadAsync(Token).ConfigureAwait(true);
+        var alpha = page.Rows[0];
+        var beta = page.Rows[1];
+        var alphaRun = page.TestConnectionAsync(alpha, Token);
+        var betaRun = page.TestConnectionAsync(beta, Token);
+
+        page.CancelTest(alpha);
+        await alphaRun.ConfigureAwait(true);
+
+        alpha.IsTesting.ShouldBeFalse();
+        page.Announcement.ShouldContain("cancelled", Case.Sensitive);
+        beta.IsTesting.ShouldBeTrue();
+
+        gate.SetResult();
+        await betaRun.ConfigureAwait(true);
+        beta.IsTesting.ShouldBeFalse();
     }
 
     /// <summary>A test that throws still ends with a finding on the row that says to check ssh by hand, and the model does not throw.</summary>

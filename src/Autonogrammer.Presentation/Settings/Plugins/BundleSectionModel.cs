@@ -13,6 +13,8 @@ public sealed class BundleSectionModel : ObservableModel
     /// <summary>The notice for a project-scope bundle that the user has not enabled.</summary>
     public const string ProjectScopeOff = "BundleProjectScopeOff";
 
+    private const string UnexpectedFailure = "The bundle change could not be completed.";
+
     private readonly IBundleManagementSource _source;
     private string _installPath = string.Empty;
     private string _banner = string.Empty;
@@ -25,7 +27,7 @@ public sealed class BundleSectionModel : ObservableModel
     {
         ArgumentNullException.ThrowIfNull(source);
         _source = source;
-        InstallCommand = new BundleActionCommand(() => InstallAsync(CancellationToken.None));
+        InstallCommand = new BundleActionCommand(() => InstallAsync(CancellationToken.None), ReportUnexpectedFailure);
     }
 
     /// <summary>Gets or sets the folder or zip path to install.</summary>
@@ -91,6 +93,10 @@ public sealed class BundleSectionModel : ObservableModel
         {
             SetBanner(exception.Message);
         }
+        finally
+        {
+            Row(bundleId)?.ShowStoredEnabled();
+        }
     }
 
     /// <summary>Enables or disables one skill. A refusal becomes <see cref="Banner"/>.</summary>
@@ -111,6 +117,10 @@ public sealed class BundleSectionModel : ObservableModel
         {
             SetBanner(exception.Message);
         }
+        finally
+        {
+            Row(bundleId)?.Skills.FirstOrDefault(skill => string.Equals(skill.Id, skillId, StringComparison.Ordinal))?.ShowStoredEnabled();
+        }
     }
 
     private BundleRowModel ToRow(BundleSnapshot snapshot)
@@ -119,12 +129,31 @@ public sealed class BundleSectionModel : ObservableModel
             snapshot.Id,
             skill.Id,
             skill.Enabled,
-            new BundleActionCommand(() => SetSkillEnabledAsync(snapshot.Id, skill.Id, !skill.Enabled, CancellationToken.None)))).ToArray();
+            new BundleActionCommand(() => ToggleSkillAsync(snapshot.Id, skill.Id), ReportUnexpectedFailure))).ToArray();
         return new BundleRowModel(
             snapshot,
-            new BundleActionCommand(() => SetBundleEnabledAsync(snapshot.Id, !snapshot.Enabled, CancellationToken.None)),
+            new BundleActionCommand(() => ToggleBundleAsync(snapshot.Id), ReportUnexpectedFailure),
             skills);
     }
+
+    private async Task ToggleBundleAsync(string bundleId)
+    {
+        if (Row(bundleId) is { } row)
+        {
+            await SetBundleEnabledAsync(bundleId, !row.Enabled, CancellationToken.None).ConfigureAwait(true);
+        }
+    }
+
+    private async Task ToggleSkillAsync(string bundleId, string skillId)
+    {
+        if (Row(bundleId)?.Skills.FirstOrDefault(skill => string.Equals(skill.Id, skillId, StringComparison.Ordinal)) is { } skill)
+        {
+            await SetSkillEnabledAsync(bundleId, skillId, !skill.Enabled, CancellationToken.None).ConfigureAwait(true);
+        }
+    }
+
+    private void ReportUnexpectedFailure(Exception exception) =>
+        SetBanner(string.IsNullOrWhiteSpace(exception.Message) ? UnexpectedFailure : exception.Message);
 
     private BundleRowModel? Row(string bundleId) =>
         _rows.FirstOrDefault(row => string.Equals(row.Id, bundleId, StringComparison.Ordinal));
@@ -138,8 +167,13 @@ public sealed class BundleSectionModel : ObservableModel
     private sealed class BundleActionCommand : ICommand
     {
         private readonly Func<Task> _execute;
+        private readonly Action<Exception> _onFault;
 
-        public BundleActionCommand(Func<Task> execute) => _execute = execute;
+        public BundleActionCommand(Func<Task> execute, Action<Exception> onFault)
+        {
+            _execute = execute;
+            _onFault = onFault;
+        }
 
         public event EventHandler? CanExecuteChanged
         {
@@ -149,6 +183,18 @@ public sealed class BundleSectionModel : ObservableModel
 
         public bool CanExecute(object? parameter) => true;
 
-        public void Execute(object? parameter) => _ = _execute();
+        public void Execute(object? parameter) => _ = RunAsync();
+
+        private async Task RunAsync()
+        {
+            try
+            {
+                await _execute().ConfigureAwait(true);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                _onFault(exception);
+            }
+        }
     }
 }

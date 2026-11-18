@@ -335,9 +335,22 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
         Announce(announcement);
     }
 
+    private static void ThrowOnRepeatedProvider(IReadOnlyList<ProviderInfo> providers)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var info in providers)
+        {
+            if (!seen.Add(info.Id))
+            {
+                throw new SettingsSourceException("omp listed provider " + info.Id + " twice.");
+            }
+        }
+    }
+
     private void Apply(ModelsSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
+        ThrowOnRepeatedProvider(snapshot.Providers);
 
         var existing = _cards.ToDictionary(card => card.Id, StringComparer.Ordinal);
         _cards.Clear();

@@ -31,6 +31,19 @@ public sealed class DisplaySettingsTests : IDisposable
         public Task SaveAsync(DisplaySettingsValues values, CancellationToken cancellationToken) => Task.FromException(new IOException("read-only disk"));
     }
 
+    private sealed class RecordingStore : IDisplaySettingsStore
+    {
+        public List<DisplaySettingsValues> Saves { get; } = [];
+
+        public Task<DisplaySettingsValues> LoadAsync(CancellationToken cancellationToken) => Task.FromResult(DisplaySettingsValues.Defaults);
+
+        public Task SaveAsync(DisplaySettingsValues values, CancellationToken cancellationToken)
+        {
+            Saves.Add(values);
+            return Task.CompletedTask;
+        }
+    }
+
     [Fact]
     public async Task WithoutAFileTheDefaultsApplyAndNothingIsWrittenByReading()
     {
@@ -128,7 +141,7 @@ public sealed class DisplaySettingsTests : IDisposable
     }
 
     [Fact]
-    public async Task AStoreThatCannotSaveKeepsTheSwitchForThisRunAndTheResultSaysItWasNotSaved()
+    public async Task AStoreThatCannotSaveLeavesTheSwitchAsItWasAndTheResultSaysItWasNotSaved()
     {
         var settings = new DisplaySettings(new FailingStore());
         var handler = new DisplayToggleSlashHandler(HandlerActionIds.DisplayVim, settings);
@@ -136,7 +149,33 @@ public sealed class DisplaySettingsTests : IDisposable
         var result = await handler.RunAsync(Typed("on"), Token).ConfigureAwait(true);
 
         result.Outcome.ShouldBe(SlashActionOutcome.Failed);
-        result.Message.ShouldBe("Vim keys in the composer: on. It was not saved: read-only disk.");
-        settings.VimMode.ShouldBeTrue();
+        result.Message.ShouldContain("It was not saved: read-only disk", Case.Sensitive);
+        settings.VimMode.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task ASaveOfDraftChangesWritesOnceAndKeepsSwitchesChangedElsewhere()
+    {
+        var store = new RecordingStore();
+        var settings = new DisplaySettings(store);
+        await settings.SetAsync(DisplaySetting.LineNumbers, false, Token).ConfigureAwait(true);
+        store.Saves.Clear();
+        var baseline = DisplaySettingsValues.Defaults;
+        var draft = baseline.With(DisplaySetting.Rewind, false).With(DisplaySetting.StatusIndicators, false);
+
+        await settings.SaveChangesAsync(baseline, draft, Token).ConfigureAwait(true);
+
+        store.Saves.ShouldHaveSingleItem().ShouldBe(new DisplaySettingsValues(false, false, true, false, true, false));
+        settings.Values.ShouldBe(store.Saves[0]);
+    }
+
+    [Fact]
+    public async Task AFailedSaveOfDraftChangesChangesNothing()
+    {
+        var settings = new DisplaySettings(new FailingStore());
+
+        await Should.ThrowAsync<IOException>(() => settings.SaveChangesAsync(DisplaySettingsValues.Defaults, DisplaySettingsValues.Defaults.With(DisplaySetting.Rewind, false), Token)).ConfigureAwait(true);
+
+        settings.Values.ShouldBe(DisplaySettingsValues.Defaults);
     }
 }

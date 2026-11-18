@@ -80,15 +80,21 @@ public sealed class ForkModel : ObservableModel
         SetProperty(ref _isBusy, true, nameof(IsBusy));
         try
         {
-            var result = await _forker.ForkAsync(new ForkRequest(_sessionId, messageCount), cancellationToken).ConfigureAwait(true);
+            ForkResult result;
+            try
+            {
+                result = await _forker.ForkAsync(new ForkRequest(_sessionId, messageCount), cancellationToken).ConfigureAwait(true);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+            {
+                SetStatus(ForkCopy.Failed(exception.Message), isError: true);
+                return null;
+            }
+
+            // The fork exists at this point. A fault in a Forked subscriber is not a failed fork, so it is not caught above.
             SetStatus(ForkCopy.Forked(result.Title.Length > 0 ? result.Title : result.NewSessionId, messageCount), isError: false);
             Forked?.Invoke(this, new ForkedEventArgs(_sessionId, result));
             return result;
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
-        {
-            SetStatus(ForkCopy.Failed(exception.Message), isError: true);
-            return null;
         }
         finally
         {

@@ -190,6 +190,46 @@ public sealed class HooksViewModelStateTests
         model.Rows.Single(row => string.Equals(row.Id, "lint/0", StringComparison.Ordinal)).IsEnabled.ShouldBeFalse();
     }
 
+    /// <summary>An unexpected fault after a write lands is the action failure, the list is read again, and the next action clears it.</summary>
+    [Fact]
+    public async Task UnexpectedWriteFaultIsReportedAndTheListIsReadAgain()
+    {
+        var source = new ScriptedHooksSource(Format, Lint);
+        var model = new HooksViewModel(source);
+        await model.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        source.WriteFault = new InvalidOperationException("registry lock is poisoned");
+
+        await model.SetEnabledAsync("lint/0", enabled: false, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        model.ActionFailure.ShouldBe("The change did not finish. The list has been read again.");
+        model.ActionFailure.ShouldNotContain("registry lock");
+        model.State.ShouldBe(HooksViewState.Success);
+        model.Rows.Single(row => string.Equals(row.Id, "lint/0", StringComparison.Ordinal)).IsEnabled.ShouldBeFalse();
+        model.IsBusy.ShouldBeFalse();
+
+        source.WriteFault = null;
+        await model.SetEnabledAsync("lint/0", enabled: true, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        model.ActionFailure.ShouldBeEmpty();
+        model.Rows.Single(row => string.Equals(row.Id, "lint/0", StringComparison.Ordinal)).IsEnabled.ShouldBeTrue();
+    }
+
+    /// <summary>An out-of-memory fault is not turned into an action failure: it escapes the model, and the busy flag still settles.</summary>
+    [Fact]
+    public async Task OutOfMemoryDuringAWriteEscapesAndTheBusyFlagSettles()
+    {
+        var source = new ScriptedHooksSource(Format, Lint);
+        var model = new HooksViewModel(source);
+        await model.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        source.WriteFault = new SimulatedOutOfMemoryException();
+
+        await Should.ThrowAsync<OutOfMemoryException>(
+            () => model.SetEnabledAsync("lint/0", enabled: false, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        model.IsBusy.ShouldBeFalse();
+        model.ActionFailure.ShouldBeEmpty();
+    }
+
     /// <summary>The row shows the exact command, quoting only the arguments that need it, and one numbered line per argument.</summary>
     [Fact]
     public async Task RowShowsTheExactCommandAndNumberedArguments()

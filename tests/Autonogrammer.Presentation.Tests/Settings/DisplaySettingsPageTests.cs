@@ -20,13 +20,13 @@ public sealed class DisplaySettingsPageTests
         return (page, store, display);
     }
 
-    /// <summary>The page lists six switches in order, each named by its copy, and loads the stored values.</summary>
+    /// <summary>The page lists the four switches it offers in order, each named by its copy, and loads the stored values.</summary>
     [Fact]
-    public async Task ThePageListsSixSwitchesAndLoadsTheStoredValues()
+    public async Task ThePageListsFourSwitchesAndLoadsTheStoredValues()
     {
         var (page, _, _) = await OpenAsync(DisplaySettingsValues.Defaults with { VimMode = true }).ConfigureAwait(true);
 
-        DisplaySettingsPage.Toggles.Select(static toggle => toggle.Setting).ShouldBe(Enum.GetValues<DisplaySetting>());
+        DisplaySettingsPage.Toggles.Select(static toggle => toggle.Setting).ShouldBe(new[] { DisplaySetting.LineNumbers, DisplaySetting.StatusIndicators, DisplaySetting.StatusLineRunningTime, DisplaySetting.Rewind });
         DisplaySettingsPage.Toggles.ShouldAllBe(static toggle => toggle.Label.Length > 0 && toggle.Help.Length > 0);
         page.State.ShouldBe(SettingsPageState.Ready);
         page.IsOn(DisplaySetting.VimMode).ShouldBeTrue();
@@ -58,11 +58,11 @@ public sealed class DisplaySettingsPageTests
     public async Task DiscardAndResetChangeOnlyTheDraft()
     {
         var (page, store, _) = await OpenAsync(DisplaySettingsValues.Defaults with { VimMode = true, RewindEnabled = false }).ConfigureAwait(true);
-        page.SetToggle(DisplaySetting.ThinkingBlocks, false);
+        page.SetToggle(DisplaySetting.LineNumbers, false);
 
         page.Discard();
         page.IsDirty.ShouldBeFalse();
-        page.IsOn(DisplaySetting.ThinkingBlocks).ShouldBeTrue();
+        page.IsOn(DisplaySetting.LineNumbers).ShouldBeTrue();
 
         page.Reset();
         page.IsOn(DisplaySetting.VimMode).ShouldBeFalse();
@@ -75,15 +75,16 @@ public sealed class DisplaySettingsPageTests
     [Fact]
     public async Task FailuresAreInlineStates()
     {
-        var (page, store, _) = await OpenAsync().ConfigureAwait(true);
+        var (page, store, display) = await OpenAsync().ConfigureAwait(true);
         store.SaveFailure = new IOException("disk");
-        page.SetToggle(DisplaySetting.VimMode, true);
+        page.SetToggle(DisplaySetting.LineNumbers, false);
 
         (await page.SaveAsync(Token).ConfigureAwait(true)).ShouldBeFalse();
 
         page.HasError.ShouldBeTrue();
         page.SaveError.ShouldBe(DisplayCopy.SaveFailed);
         page.IsDirty.ShouldBeTrue();
+        display.ShowLineNumbers.ShouldBeTrue();
 
         var broken = new DisplaySettingsPage(new DisplaySettings(new Store { LoadFailure = new UnauthorizedAccessException() }));
         await broken.LoadAsync(Token).ConfigureAwait(true);
@@ -122,6 +123,25 @@ public sealed class DisplaySettingsPageTests
         model.State.ShouldBe(CloudAgentsViewState.NotConfigured);
         model.Rows.ShouldBeEmpty();
         model.CanCreate.ShouldBeFalse();
+    }
+
+    /// <summary>Save writes only the switches the draft changed, in one write, and keeps a switch that changed elsewhere after the page loaded.</summary>
+    [Fact]
+    public async Task SaveWritesOnlyTheChangedSwitchesInOneWriteAndKeepsALiveChange()
+    {
+        var (page, store, display) = await OpenAsync().ConfigureAwait(true);
+        await display.SetAsync(DisplaySetting.StatusIndicators, false, Token).ConfigureAwait(true);
+        page.SetToggle(DisplaySetting.LineNumbers, false);
+        page.SetToggle(DisplaySetting.Rewind, false);
+        store.Saves.Clear();
+
+        (await page.SaveAsync(Token).ConfigureAwait(true)).ShouldBeTrue();
+
+        var saved = store.Saves.ShouldHaveSingleItem();
+        saved.ShowLineNumbers.ShouldBeFalse();
+        saved.RewindEnabled.ShouldBeFalse();
+        saved.ShowStatusIndicators.ShouldBeFalse();
+        display.Values.ShouldBe(saved);
     }
 
     private sealed class Store : IDisplaySettingsStore

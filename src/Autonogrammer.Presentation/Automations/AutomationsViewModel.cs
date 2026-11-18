@@ -65,12 +65,15 @@ public sealed class AutomationsViewModel : ObservableModel
     /// <returns>A task that completes when the automations are loaded or the load has failed.</returns>
     public Task LoadAsync(CancellationToken cancellationToken)
     {
+        var previousState = _state;
+        var previousFailure = _loadFailure;
+        var previousLoaded = _loaded;
         _loaded = false;
         _state = AutomationsViewState.Loading;
         _loadFailure = string.Empty;
         _pending++;
         Publish();
-        return LoadCoreAsync(cancellationToken);
+        return LoadCoreAsync(previousState, previousFailure, previousLoaded, cancellationToken);
     }
 
     /// <summary>Turns an automation on or off. Neither change starts a run.</summary>
@@ -107,7 +110,7 @@ public sealed class AutomationsViewModel : ObservableModel
         return StartChangeAsync(() => _source.ResumeAsync(automationId, cancellationToken));
     }
 
-    private async Task LoadCoreAsync(CancellationToken cancellationToken)
+    private async Task LoadCoreAsync(AutomationsViewState previousState, string previousFailure, bool previousLoaded, CancellationToken cancellationToken)
     {
         string? failure = null;
         try
@@ -122,6 +125,10 @@ public sealed class AutomationsViewModel : ObservableModel
         catch (Exception)
         {
             _pending--;
+            _state = previousState;
+            _loadFailure = previousFailure;
+            _loaded = previousLoaded;
+            Publish();
             throw;
         }
 
@@ -165,6 +172,13 @@ public sealed class AutomationsViewModel : ObservableModel
 
         _pending--;
         _actionFailure = failure ?? string.Empty;
+        if (failure is null && _state == AutomationsViewState.Error)
+        {
+            // A write that went through reads the list again, so the list is loaded again and the earlier load failure no longer applies.
+            _loaded = true;
+            _loadFailure = string.Empty;
+        }
+
         Refresh();
     }
 

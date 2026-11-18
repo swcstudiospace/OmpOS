@@ -3,11 +3,12 @@ using Autonogrammer.Presentation.Observable;
 namespace Autonogrammer.Presentation.Commands.Handlers;
 
 /// <summary>
-/// The display switches of the window: Vim keys in the composer, line numbers in code blocks, thinking blocks, status indicators, the running time on the status line, and whether rewind works. Every
-/// change is saved through <see cref="IDisplaySettingsStore"/>, so the slash commands (<c>/vim</c>, <c>/line-numbers</c>, <c>/show-thinking</c>, <c>/status-indicators</c>) and the Settings window share one state.
+/// The display switches of the window: line numbers in code blocks, status indicators, the running time on the status line, and whether rewind works. Every
+/// change is saved through <see cref="IDisplaySettingsStore"/>, so the slash commands (<c>/line-numbers</c>, <c>/status-indicators</c>) and the Settings window share one state.
 /// </summary>
 /// <remarks>
-/// <para>The model only holds the values and announces changes. Each view reads the switch it cares about: the composer reads <see cref="VimMode"/> as a flag and applies Vim keys itself, a code block reads <see cref="ShowLineNumbers"/>.</para>
+/// <para>The model only holds the values and announces changes. Each view reads the switch it cares about: a code block reads <see cref="ShowLineNumbers"/>.</para>
+/// <para>Vim keys and thinking blocks are still stored, but no view reads them yet, so neither the window nor a slash command offers them.</para>
 /// <para>Not thread-safe: it runs on the UI context that owns the presentation models.</para>
 /// </remarks>
 public sealed class DisplaySettings : ObservableModel
@@ -57,14 +58,42 @@ public sealed class DisplaySettings : ObservableModel
     /// <param name="setting">The switch.</param>
     /// <param name="value">The new value.</param>
     /// <param name="cancellationToken">Cancels the save.</param>
-    /// <returns>A task that completes when the value is saved. When saving fails the switch keeps the new value for this run and the exception goes to the caller.</returns>
+    /// <returns>A task that completes when the value is saved. The switch changes only after the save succeeds; when saving fails it keeps its previous value and the exception goes to the caller.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="setting"/> is not a defined value.</exception>
     /// <exception cref="IOException">The value could not be saved.</exception>
     public async Task SetAsync(DisplaySetting setting, bool value, CancellationToken cancellationToken)
     {
         var next = _values.With(setting, value);
-        Take(next);
         await _store.SaveAsync(next, cancellationToken).ConfigureAwait(true);
+        Take(next);
+    }
+
+    /// <summary>Saves every switch the draft changed from the baseline, in one write, on top of the current values.</summary>
+    /// <param name="baseline">The values the draft was made from.</param>
+    /// <param name="draft">The values to save.</param>
+    /// <param name="cancellationToken">Cancels the save.</param>
+    /// <returns>A task that completes when the changed switches are saved. Switches the draft did not change keep their current values, including changes made since the draft was made. When saving fails nothing changes.</returns>
+    /// <exception cref="IOException">The values could not be saved.</exception>
+    public async Task SaveChangesAsync(DisplaySettingsValues baseline, DisplaySettingsValues draft, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(baseline);
+        ArgumentNullException.ThrowIfNull(draft);
+        var next = _values;
+        foreach (var setting in Enum.GetValues<DisplaySetting>())
+        {
+            if (draft.Get(setting) != baseline.Get(setting))
+            {
+                next = next.With(setting, draft.Get(setting));
+            }
+        }
+
+        if (next == _values)
+        {
+            return;
+        }
+
+        await _store.SaveAsync(next, cancellationToken).ConfigureAwait(true);
+        Take(next);
     }
 
     /// <summary>Reads one switch.</summary>

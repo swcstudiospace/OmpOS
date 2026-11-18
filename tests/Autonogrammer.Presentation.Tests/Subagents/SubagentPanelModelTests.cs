@@ -48,6 +48,18 @@ public sealed class SubagentPanelModelTests
         model.Rows.ShouldAllBe(row => !row.NameFromCall);
     }
 
+    /// <summary>A named call whose name has no printable text takes a fresh number, so it never shares a label with an unnamed call.</summary>
+    [Fact]
+    public void AnUnprintableNameTakesAFreshFallbackNumber()
+    {
+        var model = new SubagentPanelModel(new ManualTimeProvider());
+        model.Apply(new SubagentActivityUpdateEventArgs("call-a", null, SubagentStatus.Running, "first line"));
+        model.Apply(new SubagentActivityUpdateEventArgs("call-b", "\u0001", SubagentStatus.Running, "second line"));
+
+        model.Rows.Select(row => row.Name).ShouldBe(["Sub-agent 1", "Sub-agent 2"]);
+        model.Rows.ShouldAllBe(row => !row.NameFromCall);
+    }
+
     /// <summary>Done, failed and cancelled updates move row status, and the running count tracks exactly.</summary>
     [Fact]
     public void StatusUpdatesMoveRowsAndTheRunningCount()

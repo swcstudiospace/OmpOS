@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Autonogrammer.Harness.ComputerUse.Abstractions;
 using Autonogrammer.Presentation.Settings;
 
@@ -33,6 +34,7 @@ public sealed class ComputerUseSettingsPage : SettingsPageBase, IDisposable
     {
         _model = new ComputerSettingsViewModel(grants, denylist, audit, settings, killSwitch, indicatorVisible);
         _advisor = new ComputerPermissionAdvisor(status, time);
+        _advisor.PropertyChanged += OnAdvisorPropertyChanged;
         _model.PropertyChanged += (_, _) => NotifyDirtyChanged();
     }
 
@@ -53,6 +55,9 @@ public sealed class ComputerUseSettingsPage : SettingsPageBase, IDisposable
 
     /// <summary>Gets why the state is blocked, or empty.</summary>
     public string AdvisorWhyBlocked => _advisor.Current.WhyBlocked ?? string.Empty;
+
+    /// <summary>Gets the sentence shown when the last permission status read failed, or an empty string.</summary>
+    public string AdvisorRefreshFailure => _advisor.RefreshFailure;
 
     /// <inheritdoc />
     public override bool IsDirty => _model.IsDirty;
@@ -81,14 +86,26 @@ public sealed class ComputerUseSettingsPage : SettingsPageBase, IDisposable
     /// <inheritdoc />
     public void Dispose() => _advisor.Dispose();
 
+    private void OnAdvisorPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(ComputerPermissionAdvisor.Current):
+                NotifyPropertyChanged(nameof(AdvisorTitle));
+                NotifyPropertyChanged(nameof(AdvisorBody));
+                NotifyPropertyChanged(nameof(AdvisorDeepLink));
+                NotifyPropertyChanged(nameof(AdvisorWhyBlocked));
+                break;
+            case nameof(ComputerPermissionAdvisor.RefreshFailure):
+                NotifyPropertyChanged(nameof(AdvisorRefreshFailure));
+                break;
+        }
+    }
+
     private async Task LoadCoreAsync(CancellationToken cancellationToken)
     {
         await _model.LoadAsync(cancellationToken).ConfigureAwait(true);
         await _advisor.RefreshAsync(cancellationToken).ConfigureAwait(true);
-        NotifyPropertyChanged(nameof(AdvisorTitle));
-        NotifyPropertyChanged(nameof(AdvisorBody));
-        NotifyPropertyChanged(nameof(AdvisorDeepLink));
-        NotifyPropertyChanged(nameof(AdvisorWhyBlocked));
         NotifyPropertyChanged(nameof(Model));
     }
 }

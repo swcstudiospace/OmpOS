@@ -11,8 +11,9 @@ namespace Autonogrammer.Presentation.Hooks;
 /// <para>
 /// Load and action methods report their expected failures (<see cref="HooksSourceException"/>) in <see cref="State"/>,
 /// <see cref="LoadFailure"/> and <see cref="ActionFailure"/> and never throw them, so a head can start them without observing the task.
-/// Any other exception is a defect and escapes. Cancelling a load throws <see cref="OperationCanceledException"/> and leaves the
-/// list as it was.
+/// An unexpected exception from an action is reported as <see cref="ActionFailure"/> too; only <see cref="OutOfMemoryException"/> escapes.
+/// Any other unexpected exception from a load is a defect and escapes. Cancelling a load throws <see cref="OperationCanceledException"/>
+/// and leaves the list as it was.
 /// </para>
 /// <para>
 /// Threading: continuations run on the captured context, which is the UI context when a head starts them. After each completed
@@ -22,6 +23,9 @@ namespace Autonogrammer.Presentation.Hooks;
 /// </remarks>
 public sealed class HooksViewModel : ObservableModel
 {
+    /// <summary>The action failure shown for an unexpected fault. The fault's own message is not shown to the user.</summary>
+    private const string UnexpectedFailure = "The change did not finish. The list has been read again.";
+
     private readonly IHooksSource _source;
     private HookRowModel[] _rows = [];
     private HooksViewState _state = HooksViewState.Loading;
@@ -201,10 +205,15 @@ public sealed class HooksViewModel : ObservableModel
         {
             failure = exception.Message;
         }
-        catch (Exception)
+        catch (OutOfMemoryException)
         {
             _pending--;
+            Publish();
             throw;
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            failure = UnexpectedFailure;
         }
 
         _pending--;

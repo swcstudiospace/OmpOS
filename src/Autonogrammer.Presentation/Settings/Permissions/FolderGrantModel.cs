@@ -20,12 +20,12 @@ public sealed class FolderGrantModel
     /// <param name="path">The folder.</param>
     /// <param name="access">The access mode.</param>
     /// <param name="scope">The scope.</param>
-    /// <returns>The grant the source stored.</returns>
+    /// <returns>The grant the source stored. A source that keeps the folder under another spelling is not an error: the grant as requested is returned.</returns>
     public FolderGrantDraft Save(string path, FolderAccessMode access, FolderGrantScope scope)
     {
         var grant = new FolderGrantDraft(path, access, scope);
         _source.Grant(grant);
-        return _source.List().First(item => string.Equals(item.Path, path, StringComparison.Ordinal));
+        return _source.List().FirstOrDefault(item => string.Equals(item.Path, path, StringComparison.Ordinal)) ?? grant;
     }
 
     /// <summary>Removes a grant.</summary>

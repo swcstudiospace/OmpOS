@@ -193,4 +193,31 @@ public sealed class ComposerAttachmentsTests
         images.HasItems.ShouldBeTrue();
         composer.Draft.ShouldBe("look");
     }
+
+    /// <summary>An image attached while the model accepted images is not sent once the model refuses them: nothing is sent, the draft and the image stay, and the notice says why.</summary>
+    [Fact]
+    public async Task ImagesAreNotSentOnceTheGateCloses()
+    {
+        var images = new ComposerAttachmentsModel();
+        var imageSends = 0;
+        var composer = new ComposerViewModel(static _ => Task.FromResult(true), static () => Task.CompletedTask)
+        {
+            Images = images,
+            Draft = "look",
+            ImageSender = (_, _, _) =>
+            {
+                imageSends++;
+                return Task.FromResult(true);
+            },
+        };
+        images.Add(Png(10), null, "a.png");
+        images.SetCapabilities(null, VisionSupport.No);
+
+        await composer.SendAsync().ConfigureAwait(true);
+
+        imageSends.ShouldBe(0);
+        images.HasItems.ShouldBeTrue();
+        composer.Draft.ShouldBe("look");
+        images.Notice.ShouldBe(AttachmentCopy.ModelRefuses);
+    }
 }

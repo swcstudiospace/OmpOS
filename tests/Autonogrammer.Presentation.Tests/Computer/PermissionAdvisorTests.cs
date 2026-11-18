@@ -51,6 +51,89 @@ public sealed class PermissionAdvisorTests
         advisor.Dispose();
     }
 
+    /// <summary>A granted permission is titled by its friendly name, like a missing one.</summary>
+    [Fact]
+    public void AGrantedPermissionIsNamedLikeItsMissingPanel()
+    {
+        var panel = ComputerPermissionAdvisor.ForPermission(new ComputerPermissionStatus
+        {
+            Kind = ComputerPermissionKind.Accessibility,
+            Granted = true,
+            MessageId = "computer.permission.accessibility",
+        });
+
+        panel.Title.ShouldBe("Accessibility is granted");
+    }
+
+    /// <summary>A status read that fails is said on the advisor, and the next tick reads the status again.</summary>
+    [Fact]
+    public void AFailedStatusReadIsSaidAndTheNextTickReadsAgain()
+    {
+        var clock = new ManualClock();
+        var status = new FailingStatus();
+        var advisor = new ComputerPermissionAdvisor(status, clock);
+        advisor.Open();
+
+        clock.Fire();
+        advisor.RefreshFailure.ShouldBe(ComputerPermissionAdvisor.RefreshFailed);
+
+        clock.Fire();
+        status.Calls.ShouldBe(2);
+        advisor.Dispose();
+    }
+
+    /// <summary>A tick that arrives while a status read is still running does not start a second read.</summary>
+    [Fact]
+    public void ATickWhileAReadIsRunningIsSkipped()
+    {
+        var clock = new ManualClock();
+        var status = new HeldStatus();
+        var advisor = new ComputerPermissionAdvisor(status, clock);
+        advisor.Open();
+
+        clock.Fire();
+        clock.Fire();
+
+        status.Calls.ShouldBe(1);
+        advisor.Dispose();
+    }
+
+    private sealed class FailingStatus : IComputerStatusSource
+    {
+        public int Calls { get; private set; }
+
+        public ValueTask<ComputerAvailability> GetAvailabilityAsync(CancellationToken cancellationToken)
+        {
+            Calls++;
+            return ValueTask.FromException<ComputerAvailability>(new IOException("the status service is down"));
+        }
+
+        public ValueTask<IReadOnlyList<ComputerPermissionStatus>> GetPermissionStatusAsync(CancellationToken cancellationToken) =>
+            ValueTask.FromResult<IReadOnlyList<ComputerPermissionStatus>>([]);
+
+        public ValueTask<ComputerPermissionStatus> RequestPermissionAsync(ComputerPermissionKind kind, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+    }
+
+    private sealed class HeldStatus : IComputerStatusSource
+    {
+        private readonly TaskCompletionSource<ComputerAvailability> _never = new();
+
+        public int Calls { get; private set; }
+
+        public ValueTask<ComputerAvailability> GetAvailabilityAsync(CancellationToken cancellationToken)
+        {
+            Calls++;
+            return new ValueTask<ComputerAvailability>(_never.Task);
+        }
+
+        public ValueTask<IReadOnlyList<ComputerPermissionStatus>> GetPermissionStatusAsync(CancellationToken cancellationToken) =>
+            ValueTask.FromResult<IReadOnlyList<ComputerPermissionStatus>>([]);
+
+        public ValueTask<ComputerPermissionStatus> RequestPermissionAsync(ComputerPermissionKind kind, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+    }
+
     private sealed class IdleStatus : IComputerStatusSource
     {
         public ValueTask<ComputerAvailability> GetAvailabilityAsync(CancellationToken cancellationToken) =>

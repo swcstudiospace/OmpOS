@@ -10,6 +10,7 @@ namespace Autonogrammer.Presentation.Accounts;
 public sealed class AccountViewModel : ObservableModel
 {
     private readonly IAccountHost _host;
+    private readonly Action<Action> _dispatch;
     private readonly TimeProvider _timeProvider;
     private AuthPhase _phase = AuthPhase.SignedOut;
     private string _email = string.Empty;
@@ -24,11 +25,13 @@ public sealed class AccountViewModel : ObservableModel
     /// <summary>Creates a model over a host.</summary>
     /// <param name="host">The head's account host.</param>
     /// <param name="timeProvider">The clock of the countdowns, or null for the system clock.</param>
+    /// <param name="dispatch">Runs a host change on the context that owns the model, or null to run it on the raising thread.</param>
     /// <exception cref="ArgumentNullException"><paramref name="host"/> is null.</exception>
-    public AccountViewModel(IAccountHost host, TimeProvider? timeProvider = null)
+    public AccountViewModel(IAccountHost host, TimeProvider? timeProvider = null, Action<Action>? dispatch = null)
     {
         ArgumentNullException.ThrowIfNull(host);
         _host = host;
+        _dispatch = dispatch ?? (static action => action());
         _timeProvider = timeProvider ?? TimeProvider.System;
         _host.Changed += OnHostChanged;
         Apply(_host.State, announce: false);
@@ -317,7 +320,7 @@ public sealed class AccountViewModel : ObservableModel
         Apply(_host.State, announce: false);
     }
 
-    private void OnHostChanged(object? sender, EventArgs e) => Apply(_host.State, announce: false);
+    private void OnHostChanged(object? sender, EventArgs e) => _dispatch(() => Apply(_host.State, announce: false));
 
     private void EnterSigningIn()
     {

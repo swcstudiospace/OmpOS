@@ -19,7 +19,7 @@ public sealed class RemoteEnvironmentsViewModel : ObservableModel
     private RemoteEnvironmentsState _state = RemoteEnvironmentsState.Loading;
     private RemoteProfileRow? _selected;
     private RemoteProfileEditor? _editor;
-    private CancellationTokenSource? _testRun;
+    private readonly Dictionary<string, CancellationTokenSource> _testRuns = new(StringComparer.Ordinal);
     private string _announcement = string.Empty;
     private string _loadError = string.Empty;
     private string? _warning;
@@ -238,34 +238,46 @@ public sealed class RemoteEnvironmentsViewModel : ObservableModel
         }
 
         using var run = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _testRun = run;
+        _testRuns[row.Id] = run;
         row.BeginTest();
         Announcement = "Testing " + row.DisplayName + ".";
         try
         {
             // The continuation must run on the context that owns the model, so the context is captured.
             var report = await _host.TestConnectionAsync(row.Ssh, run.Token).ConfigureAwait(true);
-            row.ApplyReport(report);
-            Announcement = row.DisplayName + ": " + row.StatusLabel + ". " + row.StatusDetail;
+            // A reload during the test replaces the row. The outcome belongs to the row that is listed now.
+            var current = Current(row);
+            current.ApplyReport(report);
+            Announcement = current.DisplayName + ": " + current.StatusLabel + ". " + current.StatusDetail;
         }
         catch (OperationCanceledException)
         {
-            row.EndTest();
+            Current(row).EndTest();
             Announcement = "The test of " + row.DisplayName + " was cancelled.";
         }
         catch (Exception fault) when (fault is not OutOfMemoryException)
         {
-            row.ApplyTestFailure("The connection test could not run. " + fault.Message);
-            Announcement = row.DisplayName + ": " + row.StatusLabel + ".";
+            var current = Current(row);
+            current.ApplyTestFailure("The connection test could not run. " + fault.Message);
+            Announcement = current.DisplayName + ": " + current.StatusLabel + ".";
         }
         finally
         {
-            _testRun = null;
+            _testRuns.Remove(row.Id);
         }
     }
 
-    /// <summary>Cancels the connection test that is running. It does nothing when none is.</summary>
-    public void CancelTest() => _testRun?.Cancel();
+    /// <summary>Cancels the connection test of one environment that is running. It does nothing when none is.</summary>
+    /// <param name="row">The environment.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="row"/> is null.</exception>
+    public void CancelTest(RemoteProfileRow row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        if (_testRuns.TryGetValue(row.Id, out var run))
+        {
+            run.Cancel();
+        }
+    }
 
     /// <summary>Opens the interactive terminal in which the user confirms the host key. It does not throw.</summary>
     /// <param name="row">The environment.</param>
@@ -339,6 +351,8 @@ public sealed class RemoteEnvironmentsViewModel : ObservableModel
         ArgumentNullException.ThrowIfNull(profileId);
         return _rows.FirstOrDefault(row => string.Equals(row.Id, profileId, StringComparison.Ordinal));
     }
+
+    private RemoteProfileRow Current(RemoteProfileRow row) => Find(row.Id) ?? row;
 
     private void ApplyRows(RemoteProfileList list)
     {

@@ -184,12 +184,29 @@ public sealed class CloudHandoffTests
         result.Message.ShouldNotContain(Canary, Case.Sensitive);
     }
 
-    /// <summary>A cancelled hand-off ends as a failure with the cancel sentence.</summary>
+    /// <summary>A cancel after the create request was sent is an unknown outcome: the agent may exist, so the sentence says to check the list rather than report a refusal.</summary>
     [Fact]
-    public async Task ACancelledHandoffEndsWithTheCancelSentence()
+    public async Task ACancelAfterTheCreateRequestIsAnUnknownOutcome()
     {
         var host = CloudFixtures.Host(_clock);
         _ = host.HoldNext("Create");
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+
+        var pending = new CloudHandoff(host).StartAsync(Request(), cancel.Token);
+        await cancel.CancelAsync().ConfigureAwait(true);
+        var result = await pending.ConfigureAwait(true);
+
+        result.Outcome.ShouldBe(CloudHandoffOutcome.Unknown);
+        result.Message.ShouldBe(CloudCopy.CreateOutcomeUnknown);
+        result.Agent.ShouldBeNull();
+    }
+
+    /// <summary>A cancel before the create request is sent created nothing, so it stays a failure with the cancel sentence.</summary>
+    [Fact]
+    public async Task ACancelBeforeTheCreateRequestIsAPlainFailure()
+    {
+        var host = CloudFixtures.Host(_clock);
+        _ = host.HoldNext("Setup");
         using var cancel = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
 
         var pending = new CloudHandoff(host).StartAsync(Request(), cancel.Token);

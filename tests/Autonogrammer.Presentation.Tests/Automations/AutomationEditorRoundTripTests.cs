@@ -91,6 +91,27 @@ public sealed class AutomationEditorRoundTripTests
         AssertSame(draft, original);
     }
 
+    /// <summary>Clearing the visible schedule of an automation with a second schedule removes both, so the saved automation does not keep a schedule the form shows as removed.</summary>
+    [Fact]
+    public void ClearingTheScheduleAlsoRemovesASecondSchedule()
+    {
+        var original = AutomationFixtures.Draft() with
+        {
+            Triggers =
+            [
+                new AutomationTriggerDraft("cron", "0 9 * * 1-5", string.Empty, [], [], []),
+                new AutomationTriggerDraft("cron", "0 18 * * 1-5", string.Empty, [], [], []),
+                AutomationFixtures.Webhook(),
+            ],
+        };
+        var model = new AutomationEditorModel(new FakeAutomationsManager(), AutomationFixtures.Entry(draft: original));
+
+        model.CronText = string.Empty;
+
+        model.ToDraft().Triggers.Select(static trigger => trigger.Kind).ShouldBe(["webhook"]);
+        model.Errors.ShouldBeEmpty();
+    }
+
     /// <summary>The form shows the fields of the entry it was opened on and starts without messages or a revealed secret.</summary>
     [Fact]
     public void FormShowsTheEntryItWasOpenedOn()

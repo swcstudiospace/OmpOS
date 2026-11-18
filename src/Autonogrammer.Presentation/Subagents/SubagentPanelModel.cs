@@ -82,7 +82,7 @@ public sealed class SubagentPanelModel : ObservableModel
             var name = named ? PanelText.Plain(update.AgentName, 80) : SubagentCopy.Unnamed(++_unnamed);
             if (name.Length == 0)
             {
-                name = SubagentCopy.Unnamed(_unnamed == 0 ? ++_unnamed : _unnamed);
+                name = SubagentCopy.Unnamed(++_unnamed);
                 named = false;
             }
 

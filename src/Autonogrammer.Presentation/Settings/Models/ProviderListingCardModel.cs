@@ -350,6 +350,13 @@ public sealed class ProviderListingCardModel : ObservableModel
             return false;
         }
 
+        if (!CanSetUp)
+        {
+            _apiKey?.Clear();
+            ErrorText = ModelsCopy.ActionFailed;
+            return false;
+        }
+
         if (KeyDisabledReason is { } disabledReason)
         {
             _apiKey?.Clear();

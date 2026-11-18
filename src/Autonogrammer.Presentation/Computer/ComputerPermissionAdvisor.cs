@@ -25,11 +25,15 @@ public sealed class ComputerPermissionAdvisor : ObservableModel, IComputerPermis
     /// <summary>Windows privacy settings.</summary>
     public const string WindowsPrivacyDeepLink = "ms-settings:privacy";
 
+    /// <summary>The sentence shown when a permission status read fails. The panel keeps its last state and the next tick reads again.</summary>
+    public const string RefreshFailed = "The permission status could not be read. The panel keeps its last state and checks again.";
+
     private readonly IComputerStatusSource _status;
     private readonly TimeProvider _timeProvider;
     private readonly Lock _gate = new();
     private ITimer? _timer;
-    private Task? _refresh;
+    private int _refreshing;
+    private string _refreshFailure = string.Empty;
     private DateTimeOffset _openedAt;
     private ComputerPermissionPanel _current = For(ComputerAvailability.Disabled);
 
@@ -46,6 +50,9 @@ public sealed class ComputerPermissionAdvisor : ObservableModel, IComputerPermis
 
     /// <inheritdoc />
     public ComputerPermissionPanel Current => _current;
+
+    /// <summary>Gets the sentence shown when the last permission status read failed, or an empty string.</summary>
+    public string RefreshFailure => _refreshFailure;
 
     /// <inheritdoc />
     public bool IsPolling
@@ -89,12 +96,12 @@ public sealed class ComputerPermissionAdvisor : ObservableModel, IComputerPermis
     {
         ArgumentNullException.ThrowIfNull(status);
         var link = status.Kind == ComputerPermissionKind.Accessibility ? AccessibilityDeepLink : ScreenRecordingDeepLink;
+        var name = status.Kind == ComputerPermissionKind.Accessibility ? "Accessibility" : "Screen Recording";
         if (status.Granted)
         {
-            return Panel(status.Kind + " is granted", "The operating system reports this permission is granted.", link, null, status.MessageId);
+            return Panel(name + " is granted", "The operating system reports this permission is granted.", link, null, status.MessageId);
         }
 
-        var name = status.Kind == ComputerPermissionKind.Accessibility ? "Accessibility" : "Screen Recording";
         return Panel(
             name + " is not granted",
             name + " lets Computer Use post input or capture the screen. It is not granted. No other mechanism is used.",
@@ -163,10 +170,26 @@ public sealed class ComputerPermissionAdvisor : ObservableModel, IComputerPermis
             return;
         }
 
-        var pending = RefreshAsync(CancellationToken.None);
-        if (!pending.IsCompletedSuccessfully)
+        if (Interlocked.CompareExchange(ref _refreshing, 1, 0) == 0)
         {
-            _refresh = pending.AsTask();
+            _ = RefreshOnTickAsync();
+        }
+    }
+
+    private async Task RefreshOnTickAsync()
+    {
+        try
+        {
+            await RefreshAsync(CancellationToken.None).ConfigureAwait(false);
+            SetProperty(ref _refreshFailure, string.Empty, nameof(RefreshFailure));
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+        {
+            SetProperty(ref _refreshFailure, RefreshFailed, nameof(RefreshFailure));
+        }
+        finally
+        {
+            Volatile.Write(ref _refreshing, 0);
         }
     }
 

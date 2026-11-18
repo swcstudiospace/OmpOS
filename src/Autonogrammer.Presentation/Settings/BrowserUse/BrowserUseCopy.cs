@@ -90,6 +90,12 @@ public static class BrowserUseCopy
     /// <summary>Accessible name of the acquisition dialog.</summary>
     public const string DialogName = "Confirm Chromium download";
 
+    /// <summary>The sentence shown when a download could not be started and the dialog holds no refusal to show.</summary>
+    public const string AcquisitionFailed = "The download could not be started. Try again.";
+
+    /// <summary>The line written to the trace when a download fails with a fault. It is for the developer log, not the page.</summary>
+    public const string AcquisitionFaultTrace = "The Chromium download failed. ";
+
     /// <summary>The ready-state sentence for a major version.</summary>
     /// <param name="version">The major version.</param>
     /// <returns>The sentence.</returns>

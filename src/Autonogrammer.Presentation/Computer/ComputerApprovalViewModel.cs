@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Windows.Input;
 using Autonogrammer.Harness.ComputerUse.Abstractions;
 using Autonogrammer.Presentation.Observable;
@@ -17,10 +18,14 @@ public sealed class ComputerApprovalViewModel : ObservableModel, IDisposable
     /// <summary>Host preview limit.</summary>
     public const int PreviewLimit = 40;
 
-    private TaskCompletionSource<ComputerApprovalChoice> _choice = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly Lock _gate = new();
+    private readonly List<TaskCompletionSource<ComputerApprovalChoice>> _waiters = [];
     private readonly TimeProvider _timeProvider;
     private readonly ITimer _timer;
-    private int _completed;
+    private CancellationTokenRegistration _cancellation;
+    private bool _waiting;
+    private bool _completed;
+    private ComputerApprovalChoice _recorded = ComputerApprovalChoice.Deny;
 
     /// <summary>Creates the model and starts the deny timeout.</summary>
     /// <param name="facts">Host-observed facts.</param>
@@ -99,27 +104,64 @@ public sealed class ComputerApprovalViewModel : ObservableModel, IDisposable
     public ICommand AllowForSession { get; }
 
     /// <summary>Gets a value indicating whether a choice was recorded. A remote answer does not set this.</summary>
-    public bool IsCompleted => Volatile.Read(ref _completed) != 0;
+    public bool IsCompleted
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _completed;
+            }
+        }
+    }
 
-    /// <summary>Waits for a local choice. Timeout and cancellation are deny.</summary>
+    /// <summary>Waits for the local choice. Timeout and cancellation are deny. Every call returns the same choice, so a second wait cannot hang.</summary>
     /// <param name="cancellationToken">Cancels the wait as deny.</param>
     /// <returns>The choice.</returns>
-    public Task<ComputerApprovalChoice> WaitAsync(CancellationToken cancellationToken)
+    public async Task<ComputerApprovalChoice> WaitAsync(CancellationToken cancellationToken)
     {
         var wait = new TaskCompletionSource<ComputerApprovalChoice>(TaskCreationOptions.RunContinuationsAsynchronously);
-        if (IsCompleted)
+        bool first;
+        lock (_gate)
         {
-            wait.SetResult(ComputerApprovalChoice.Deny);
-            return wait.Task;
+            first = !_waiting;
+            _waiting = true;
+            if (_completed)
+            {
+                wait.SetResult(_recorded);
+            }
+            else
+            {
+                _waiters.Add(wait);
+            }
         }
 
-        _choice = wait;
-        if (cancellationToken.CanBeCanceled)
+        if (first && cancellationToken.CanBeCanceled)
         {
-            cancellationToken.Register(() => Complete(ComputerApprovalChoice.Deny));
+            await RegisterCancellationAsync(cancellationToken).ConfigureAwait(true);
         }
 
-        return wait.Task;
+        return await wait.Task.ConfigureAwait(true);
+    }
+
+    private async Task RegisterCancellationAsync(CancellationToken cancellationToken)
+    {
+        var registration = cancellationToken.Register(() => Complete(ComputerApprovalChoice.Deny));
+        bool stored;
+        lock (_gate)
+        {
+            stored = !_completed;
+            if (stored)
+            {
+                _cancellation = registration;
+            }
+        }
+
+        if (!stored)
+        {
+            // The dialog completed before the registration was stored, so it is released outside the lock.
+            await registration.DisposeAsync().ConfigureAwait(true);
+        }
     }
 
     /// <summary>
@@ -179,15 +221,35 @@ public sealed class ComputerApprovalViewModel : ObservableModel, IDisposable
 
     private void Complete(ComputerApprovalChoice choice)
     {
-        if (Interlocked.Exchange(ref _completed, 1) != 0)
+        CancellationTokenRegistration cancellation;
+        TaskCompletionSource<ComputerApprovalChoice>[] waiters;
+        lock (_gate)
         {
-            return;
+            if (_completed)
+            {
+                return;
+            }
+
+            _completed = true;
+            _recorded = choice;
+            cancellation = _cancellation;
+            waiters = _waiters.ToArray();
+            _waiters.Clear();
         }
 
+        cancellation.Dispose();
         _timer.Dispose();
-        _choice.TrySetResult(choice);
+        foreach (var waiter in waiters)
+        {
+            waiter.TrySetResult(choice);
+        }
+
         NotifyPropertyChanged(nameof(IsCompleted));
     }
+
+    private static bool IsHidden(char character) =>
+        char.IsControl(character)
+        || char.GetUnicodeCategory(character) is UnicodeCategory.Format or UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator;
 
     private static string Plain(string? value, int limit)
     {
@@ -200,7 +262,7 @@ public sealed class ComputerApprovalViewModel : ObservableModel, IDisposable
         var count = 0;
         foreach (var character in value)
         {
-            if (char.IsControl(character))
+            if (IsHidden(character))
             {
                 continue;
             }

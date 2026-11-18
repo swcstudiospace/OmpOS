@@ -3,7 +3,7 @@ namespace Autonogrammer.Presentation.Settings;
 /// <summary>
 /// The Network page: a Run diagnostics button and the result of the latest run. A run sends one unauthenticated request to each
 /// endpoint the source knows; it starts only when the user asks and never at load. The page has nothing to edit and nothing to save. A run
-/// can be cancelled; a failed or cancelled run never throws out of the page, it only changes what the page announces.
+/// can be cancelled; a cancelled run or a run the source refuses never throws out of the page, it only changes what the page announces.
 /// </summary>
 public sealed class NetworkSettingsPage : SettingsPageBase
 {
@@ -54,8 +54,8 @@ public sealed class NetworkSettingsPage : SettingsPageBase
 
     /// <summary>
     /// Runs the diagnostics. It does nothing while a run is in progress or the page is not ready. The page shows the run as in progress,
-    /// then shows the result and announces it. A cancelled run keeps the previous result; a failed run keeps it too and announces the failure.
-    /// This method does not throw.
+    /// then shows the result and announces it. A cancelled run keeps the previous result; a run the source refuses keeps it too and announces the source's reason.
+    /// Any other exception is a defect in the page or the source: it is not announced and propagates to the caller.
     /// </summary>
     /// <param name="cancellationToken">Cancels the run together with <see cref="CancelRun"/>.</param>
     /// <returns>A task that completes when the run ended, failed or was cancelled.</returns>
@@ -80,9 +80,9 @@ public sealed class NetworkSettingsPage : SettingsPageBase
         {
             SetAnnouncement(NetworkCopy.Cancelled);
         }
-        catch (Exception fault) when (fault is not OutOfMemoryException)
+        catch (SettingsSourceException expected)
         {
-            SetAnnouncement(fault is SettingsSourceException { Message.Length: > 0 } expected ? expected.Message : NetworkCopy.RunFailed);
+            SetAnnouncement(expected.Message.Length > 0 ? expected.Message : NetworkCopy.RunFailed);
         }
         finally
         {

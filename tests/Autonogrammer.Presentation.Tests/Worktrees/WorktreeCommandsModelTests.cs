@@ -253,6 +253,43 @@ public sealed class WorktreeCommandsModelTests
         model.Rows[0].DeleteName.ShouldBe("Delete worktree a");
     }
 
+    [Fact]
+    public async Task ACancelledBestOfNLeavesNoCandidateWaitingOrRunning()
+    {
+        var (model, backend, host) = Create();
+        backend.StartFailure = new OperationCanceledException();
+
+        await Should.ThrowAsync<OperationCanceledException>(() => model.BestOfNAsync("task", 3, Token)).ConfigureAwait(true);
+
+        model.Candidates.Select(candidate => candidate.State).ShouldAllBe(state => state == BestOfNState.Failed);
+        model.Candidates.Select(candidate => candidate.Summary).ShouldAllBe(summary => string.Equals(summary, WorktreeCommandsCopy.Cancelled, StringComparison.Ordinal));
+        host.Requests.ShouldBeEmpty();
+        model.IsBusy.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task ACandidateCancelledWhileItRunsIsMarkedCancelledAndNotLeftRunning()
+    {
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        var backend = new FakeWorktreeBackend();
+        var model = new WorktreeCommandsModel(backend, new FixedTime(Now), new CancellingBestOfNHost(cancellation));
+
+        await Should.ThrowAsync<OperationCanceledException>(() => model.BestOfNAsync("task", 2, cancellation.Token)).ConfigureAwait(true);
+
+        model.Candidates.Select(candidate => candidate.State).ShouldAllBe(state => state == BestOfNState.Failed);
+        model.Candidates.Select(candidate => candidate.Summary).ShouldAllBe(summary => string.Equals(summary, WorktreeCommandsCopy.Cancelled, StringComparison.Ordinal));
+        model.IsBusy.ShouldBeFalse();
+    }
+
+    private sealed class CancellingBestOfNHost(CancellationTokenSource source) : IBestOfNHost
+    {
+        public async Task<BestOfNRunResult> RunAsync(BestOfNRunRequest request, CancellationToken cancellationToken)
+        {
+            await source.CancelAsync().ConfigureAwait(true);
+            throw new OperationCanceledException(cancellationToken);
+        }
+    }
+
     private sealed class FixedTime(DateTimeOffset now) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => now;

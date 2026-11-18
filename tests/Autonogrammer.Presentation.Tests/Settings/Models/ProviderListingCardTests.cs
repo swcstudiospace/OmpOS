@@ -109,6 +109,29 @@ public sealed class ProviderListingCardTests
         (await card.SaveAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeFalse();
     }
 
+    /// <summary>A form opened before the listing became sign-in only refuses to save, so the typed key never reaches omp.</summary>
+    [Fact]
+    public async Task AFormOpenedBeforeTheListingBecameSignInOnlyCannotSaveAKey()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var (page, source, card) = await OpenAsync("mistral").ConfigureAwait(true);
+        card.BeginSetup();
+        var draft = card.ApiKey.ShouldNotBeNull();
+        draft.Entry = Key;
+
+        var index = source.Listings.FindIndex(listing => string.Equals(listing.Id, "mistral", StringComparison.Ordinal));
+        source.Listings[index] = source.Listings[index] with { Routes = [], LoginCommand = "/login mistral" };
+        await page.LoadAsync(token).ConfigureAwait(true);
+        var reloaded = page.Directory.Find("mistral").ShouldNotBeNull();
+
+        reloaded.IsSetupOpen.ShouldBeTrue();
+        reloaded.CanSetUp.ShouldBeFalse();
+        (await reloaded.SaveAsync(token).ConfigureAwait(true)).ShouldBeFalse();
+        source.OmpKeys.ShouldBeEmpty();
+        source.CatalogueAdds.ShouldBeEmpty();
+        draft.Entry.ShouldBeEmpty();
+    }
+
     [Fact]
     public async Task AnOmpNativeKeylessRuntimeNeedsNoSetup()
     {

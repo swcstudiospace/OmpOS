@@ -4,7 +4,7 @@ namespace Autonogrammer.Presentation.Tests.Hooks;
 
 /// <summary>
 /// A hooks source the test scripts: it holds the registry in memory, applies enable, move and consent writes to it, counts each
-/// write, and can hold a load open or fail a load or a write with the expected failure.
+/// write, and can hold a load open, fail a load or a write with the expected failure, or fault a write after it lands.
 /// </summary>
 internal sealed class ScriptedHooksSource : IHooksSource
 {
@@ -37,6 +37,9 @@ internal sealed class ScriptedHooksSource : IHooksSource
     /// <summary>Gets or sets the reason the next writes fail with, or null when they succeed.</summary>
     internal string? WriteFailure { get; set; }
 
+    /// <summary>Gets or sets the unexpected fault the writes raise after they land, or null when they complete normally.</summary>
+    internal Exception? WriteFault { get; set; }
+
     /// <summary>Gets the number of writes that reached the source: enable, disable, move and consent.</summary>
     internal int WriteCount { get; private set; }
 
@@ -67,37 +70,42 @@ internal sealed class ScriptedHooksSource : IHooksSource
     /// <inheritdoc />
     public Task SetEnabledAsync(string hookId, bool enabled, CancellationToken cancellationToken)
     {
-        Write();
-        Replace(hookId, entry => entry with { IsEnabled = enabled });
+        Write(() => Replace(hookId, entry => entry with { IsEnabled = enabled }));
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
     public Task MoveAsync(string hookId, int index, CancellationToken cancellationToken)
     {
-        Write();
-        var entry = Entry(hookId);
-        _hooks.Remove(entry);
-        _hooks.Insert(index, entry);
+        Write(() =>
+        {
+            var entry = Entry(hookId);
+            _hooks.Remove(entry);
+            _hooks.Insert(index, entry);
+        });
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
     public Task GrantConsentAsync(string hookId, CancellationToken cancellationToken)
     {
-        Write();
-        Replace(hookId, entry => entry with { IsConsented = true });
+        Write(() => Replace(hookId, entry => entry with { IsConsented = true }));
         return Task.CompletedTask;
     }
 
-    private void Write()
+    private void Write(Action change)
     {
         if (WriteFailure is not null)
         {
             throw new HooksSourceException(WriteFailure);
         }
 
+        change();
         WriteCount++;
+        if (WriteFault is not null)
+        {
+            throw WriteFault;
+        }
     }
 
     private void Replace(string hookId, Func<HookEntry, HookEntry> change)

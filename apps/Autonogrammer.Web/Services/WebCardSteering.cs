@@ -6,6 +6,8 @@ namespace Autonogrammer.Web.Services;
 /// <summary>The <see cref="ICardSteering"/> of the web head: a steer from a Kanban card goes to <c>POST /sessions/{id}/steer</c>. A refusal is a result, never an exception.</summary>
 internal sealed class WebCardSteering : ICardSteering
 {
+    private const string TimedOut = "The API did not answer in time.";
+
     private readonly IOmpApiClient _api;
 
     /// <summary>Initializes a new instance of the <see cref="WebCardSteering"/> class.</summary>
@@ -33,6 +35,11 @@ internal sealed class WebCardSteering : ICardSteering
         catch (Exception fault) when (WebFailureText.IsExpected(fault))
         {
             return CardSteerResult.Failed(WebFailureText.Describe(fault));
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            // The HTTP client's own deadline ended the call, so the API did not answer in time.
+            return CardSteerResult.Failed(TimedOut);
         }
     }
 }

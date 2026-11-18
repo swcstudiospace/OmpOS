@@ -217,7 +217,8 @@ public sealed class WorkspaceTree : ObservableModel
 
     /// <summary>
     /// The asynchronous form of <see cref="HandleKey"/>: applies a key to the selection. A directory that has to be listed first (Right or Enter on
-    /// a directory that was never expanded) is listed without blocking, and then the key is applied as <see cref="HandleKey"/> applies it.
+    /// a directory that was never expanded) is listed without blocking, and then the key is applied as <see cref="HandleKey"/> applies it. When the
+    /// selection moved while the listing ran, the key is dropped and null is returned; the listing stays cached.
     /// </summary>
     /// <param name="key">The key.</param>
     /// <param name="cancellationToken">Cancels the listing.</param>
@@ -232,6 +233,10 @@ public sealed class WorkspaceTree : ObservableModel
         {
             var entries = await _asyncFileSystem.ListDirectoryAsync(node.RelativePath, cancellationToken).ConfigureAwait(true);
             node.SetChildren(BuildChildren(entries, node.RelativePath, node));
+            if (!ReferenceEquals(Selected, node))
+            {
+                return null;
+            }
         }
 
         return HandleKey(key);

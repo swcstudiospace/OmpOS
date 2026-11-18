@@ -296,9 +296,9 @@ public sealed class NewCloudAgentModelTests
         result.Message.ShouldNotContain(Canary, Case.Sensitive);
     }
 
-    /// <summary>A create the user cancels ends as a failed result with the cancel sentence and leaves the dialog usable.</summary>
+    /// <summary>A create cancelled after its request was sent ends Unknown with the interrupted sentence, offers no retry and makes no second request.</summary>
     [Fact]
-    public async Task ACancelledCreateEndsWithTheCancelSentence()
+    public async Task ACancelledCreateAfterTheRequestIsUnknownAndNeverRetried()
     {
         var host = CloudFixtures.Host(_clock);
         var release = host.HoldNext("Create");
@@ -312,10 +312,13 @@ public sealed class NewCloudAgentModelTests
         var result = await pending.ConfigureAwait(true);
         release();
 
-        result.Outcome.ShouldBe(CloudCreateOutcome.Failed);
-        result.Message.ShouldBe(CloudCopy.CreateCancelled);
+        result.Outcome.ShouldBe(CloudCreateOutcome.Unknown);
+        result.Message.ShouldBe(CloudCopy.CreateOutcomeUnknown);
         model.IsCreating.ShouldBeFalse();
-        model.CanCreate.ShouldBeTrue();
+        model.CanCreate.ShouldBeFalse("the agent may exist, so a retry is not offered");
+        model.WhyDisabled.ShouldBe(CloudCopy.CreateOutcomeUnknown);
+        (await model.CreateAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).Outcome.ShouldBe(CloudCreateOutcome.Unknown);
+        host.CountOf("Create").ShouldBe(1);
     }
 
     /// <summary>While a create runs Create and Cancel are locked and a second click makes no second request.</summary>

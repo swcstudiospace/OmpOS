@@ -10,9 +10,13 @@ namespace Autonogrammer.Presentation.Computer;
 /// </summary>
 public sealed class ComputerIndicatorViewModel : ObservableModel, IDisposable
 {
+    /// <summary>The sentence shown when Stop fails. Computer Use may still be running.</summary>
+    public const string TripFailed = "Stop failed. Computer Use may still be running; press Stop again.";
+
     private readonly IKillSwitchControl _killSwitch;
     private bool _acting;
     private string _stateLabel = string.Empty;
+    private string _tripFailureText = string.Empty;
 
     /// <summary>Creates the model and subscribes to the kill switch.</summary>
     /// <param name="killSwitch">The kill switch.</param>
@@ -63,6 +67,9 @@ public sealed class ComputerIndicatorViewModel : ObservableModel, IDisposable
     /// <summary>Gets the Stop command. It trips the kill switch.</summary>
     public ICommand Stop { get; }
 
+    /// <summary>Gets the sentence shown when Stop failed, or an empty string.</summary>
+    public string TripFailureText => _tripFailureText;
+
     /// <summary>Marks whether a ticket is in flight. Armed and not acting reads as armed, idle.</summary>
     /// <param name="acting">Whether an action is in flight.</param>
     public void SetActing(bool acting)
@@ -87,7 +94,19 @@ public sealed class ComputerIndicatorViewModel : ObservableModel, IDisposable
 
     private async Task TripAsync()
     {
-        await _killSwitch.TripAsync(CancellationToken.None).ConfigureAwait(false);
+        try
+        {
+            await _killSwitch.TripAsync(CancellationToken.None).ConfigureAwait(true);
+            SetProperty(ref _tripFailureText, string.Empty, nameof(TripFailureText));
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            SetProperty(ref _tripFailureText, TripFailed, nameof(TripFailureText));
+        }
+        finally
+        {
+            Apply(_killSwitch.State);
+        }
     }
 
     private sealed class StopCommand : ICommand

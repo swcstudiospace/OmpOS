@@ -9,6 +9,9 @@ public interface IComputerPermissionAdvisor
     /// <summary>Gets a value indicating whether the one-second poll is running.</summary>
     bool IsPolling { get; }
 
+    /// <summary>Gets the sentence shown when the last permission status read failed, or an empty string.</summary>
+    string RefreshFailure { get; }
+
     /// <summary>Opens the panel and polls every second for at most five minutes.</summary>
     void Open();
 

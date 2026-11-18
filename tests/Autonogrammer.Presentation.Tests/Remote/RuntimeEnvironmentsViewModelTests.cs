@@ -309,12 +309,64 @@ public sealed class RuntimeEnvironmentsViewModelTests
         row.CanTest.ShouldBeFalse();
         await page.TestAsync(row, Token).ConfigureAwait(true);
         runtime.ContainerTests.Count.ShouldBe(1);
-        page.CancelRun();
+        page.CancelRun(row);
         await first.ConfigureAwait(true);
 
         row.IsBusy.ShouldBeFalse();
         row.Status.ShouldBe(RemoteEnvironmentStatus.NotChecked);
         page.Announcement.ShouldContain("cancelled", Case.Sensitive);
+    }
+
+    /// <summary>Two environments can be tested at once, and cancelling one test leaves the other running.</summary>
+    [Fact]
+    public async Task CancellingOneRowLeavesAnotherRowsTestRunning()
+    {
+        var (page, store, runtime, _) = Create();
+        _ = store.With(Container("container-alpha", "alpha")).With(Container("container-beta", "beta"));
+        var gate = new TaskCompletionSource();
+        runtime.Gate = gate.Task;
+        await page.LoadAsync(Token).ConfigureAwait(true);
+        var alpha = page.Rows[0];
+        var beta = page.Rows[1];
+
+        var alphaRun = page.TestAsync(alpha, Token);
+        var betaRun = page.TestAsync(beta, Token);
+        page.CancelRun(alpha);
+        await alphaRun.ConfigureAwait(true);
+
+        alpha.IsBusy.ShouldBeFalse();
+        page.Announcement.ShouldContain("cancelled", Case.Sensitive);
+        beta.IsBusy.ShouldBeTrue();
+
+        gate.SetResult();
+        await betaRun.ConfigureAwait(true);
+        beta.IsBusy.ShouldBeFalse();
+        runtime.ContainerTests.Count.ShouldBe(2);
+    }
+
+    /// <summary>Cancelling the test of one container leaves the start of another container running.</summary>
+    [Fact]
+    public async Task CancellingATestLeavesAnotherContainersStartRunning()
+    {
+        var (page, store, runtime, _) = Create();
+        _ = store.With(Container("container-alpha", "alpha")).With(Container("container-beta", "beta"));
+        runtime.ContainerReport = Failure(RemoteDiagnosisKind.ContainerNotRunning);
+        await page.LoadAsync(Token).ConfigureAwait(true);
+        var alpha = page.Rows[0];
+        var beta = page.Rows[1];
+        await page.TestAsync(beta, Token).ConfigureAwait(true);
+        var gate = new TaskCompletionSource();
+        runtime.Gate = gate.Task;
+
+        var testing = page.TestAsync(alpha, Token);
+        var starting = page.StartContainerAsync(beta, Token);
+        page.CancelRun(alpha);
+        await testing.ConfigureAwait(true);
+
+        alpha.IsBusy.ShouldBeFalse();
+        beta.IsBusy.ShouldBeTrue();
+        gate.SetResult();
+        (await starting.ConfigureAwait(true)).ShouldBeTrue();
     }
 
     /// <summary>Start container runs only for a stopped container, only when the user asks, and the row then asks for a new test.</summary>

@@ -78,6 +78,20 @@ public sealed class ModelsPageLoadTests
         page.LoadFailure.ShouldBeNull();
     }
 
+    /// <summary>A provider list that names one provider twice is a read failure: the page shows the error and no half-built list.</summary>
+    [Fact]
+    public async Task ARepeatedProviderIdIsAReadFailure()
+    {
+        var provider = ModelsTestData.Ollama();
+        var page = new ModelsSettingsPage(new ScriptedModelsSource(provider, provider));
+
+        await page.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        page.State.ShouldBe(ModelsPageState.Error);
+        page.LoadFailure.ShouldBe("omp listed provider " + provider.Id + " twice.");
+        page.Groups.ShouldBeEmpty();
+    }
+
     /// <summary>Cancelling a load throws and leaves the page in the state it was in.</summary>
     [Fact]
     public async Task CancellingALoadRestoresTheState()

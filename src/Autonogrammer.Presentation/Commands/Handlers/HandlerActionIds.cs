@@ -60,13 +60,13 @@ public static class HandlerActionIds
     /// <summary><c>/load-workspace [name]</c>: opens a saved workspace, or lists them.</summary>
     public const string WorkspaceLoad = "workspace.load";
 
-    /// <summary><c>/vim [on|off]</c>: toggles Vim keys in the composer.</summary>
+    /// <summary><c>/vim</c>: not registered; the slash catalogue lists it as unavailable.</summary>
     public const string DisplayVim = "display.vim";
 
     /// <summary><c>/line-numbers [on|off]</c>: toggles line numbers in code blocks.</summary>
     public const string DisplayLineNumbers = "display.lineNumbers";
 
-    /// <summary><c>/show-thinking [on|off]</c>: toggles the display of thinking blocks.</summary>
+    /// <summary><c>/show-thinking</c>: not registered; the slash catalogue lists it as unavailable.</summary>
     public const string DisplayShowThinking = "display.showThinking";
 
     /// <summary><c>/status-indicators [on|off]</c>: toggles the status indicators of the window.</summary>

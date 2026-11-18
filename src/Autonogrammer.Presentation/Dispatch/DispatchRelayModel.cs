@@ -14,6 +14,9 @@ public sealed class DispatchRelayModel : INotifyPropertyChanged
     private readonly IThisDeviceHost? _thisDevice;
     private DispatchPageModel _page = new(DevicesViewModel.Loading(), [], null);
     private string? _actionProblem;
+    private readonly Lock _loadGate = new();
+    private readonly Queue<TaskCompletionSource> _loadTurns = new();
+    private bool _loadRunning;
 
     /// <summary>Initializes a new instance of the <see cref="DispatchRelayModel"/> class.</summary>
     /// <param name="host">The devices, commands and feed port.</param>
@@ -36,6 +39,52 @@ public sealed class DispatchRelayModel : INotifyPropertyChanged
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>A task that completes when the page is ready.</returns>
     public async Task LoadAsync(CancellationToken cancellationToken)
+    {
+        await WaitForLoadTurnAsync().ConfigureAwait(true);
+        try
+        {
+            await LoadPageAsync(cancellationToken).ConfigureAwait(true);
+        }
+        finally
+        {
+            EndLoadTurn();
+        }
+    }
+
+    private Task WaitForLoadTurnAsync()
+    {
+        var turn = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_loadGate)
+        {
+            if (_loadRunning)
+            {
+                _loadTurns.Enqueue(turn);
+            }
+            else
+            {
+                _loadRunning = true;
+                turn.SetResult();
+            }
+        }
+
+        return turn.Task;
+    }
+
+    private void EndLoadTurn()
+    {
+        lock (_loadGate)
+        {
+            if (_loadTurns.TryDequeue(out var next))
+            {
+                next.SetResult();
+                return;
+            }
+
+            _loadRunning = false;
+        }
+    }
+
+    private async Task LoadPageAsync(CancellationToken cancellationToken)
     {
         var actionProblem = _actionProblem;
         _actionProblem = null;

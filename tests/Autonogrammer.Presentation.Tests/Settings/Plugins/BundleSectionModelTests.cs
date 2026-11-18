@@ -46,6 +46,80 @@ public sealed class BundleSectionModelTests
         model.Banner.ShouldBe("BundleInvalid(BundleTraversal)");
     }
 
+    /// <summary>Each toggle sends the flip of the row's current state, so a switch can be turned back after one change.</summary>
+    [Fact]
+    public async Task EachToggleSendsTheFlipOfTheRowsCurrentState()
+    {
+        var source = new FakeSource([new BundleSnapshot("p", Enabled: false, ProjectScope: false, [], [new BundleSkillSnapshot("foo", false)], Collision: null)]);
+        var model = new BundleSectionModel(source);
+        await model.LoadAsync(CancellationToken.None).ConfigureAwait(true);
+
+        model.Rows.Single().ToggleCommand.Execute(null);
+        model.Rows.Single().ToggleCommand.Execute(null);
+
+        model.Rows.Single().Enabled.ShouldBeFalse();
+        source.BundleToggles.ShouldBe([("p", true), ("p", false)]);
+
+        model.Rows.Single().Skills.Single().ToggleCommand.Execute(null);
+        model.Rows.Single().Skills.Single().ToggleCommand.Execute(null);
+
+        source.SkillToggles.ShouldBe([("p", "foo", true), ("p", "foo", false)]);
+    }
+
+    /// <summary>A failure that is not a refusal still reaches the banner instead of being lost, and the row keeps the state the store has.</summary>
+    [Fact]
+    public async Task AnUnexpectedFailureOfAToggleShowsOnTheBanner()
+    {
+        var source = new FakeSource([new BundleSnapshot("p", Enabled: false, ProjectScope: false, [], [], Collision: null)]);
+        var model = new BundleSectionModel(source);
+        await model.LoadAsync(CancellationToken.None).ConfigureAwait(true);
+        source.ToggleFailure = new IOException("bundle state is unreadable");
+
+        model.Rows.Single().ToggleCommand.Execute(null);
+
+        model.Banner.ShouldBe("bundle state is unreadable");
+        model.Rows.Single().Enabled.ShouldBeFalse();
+    }
+
+    /// <summary>A refused toggle shows the refusal, and the row tells the switch to read the stored value again so a switch the user moved snaps back.</summary>
+    [Fact]
+    public async Task ARefusedToggleTellsTheSwitchToReadTheStoredValueAgain()
+    {
+        var source = new FakeSource([new BundleSnapshot("p", Enabled: false, ProjectScope: false, [], [], Collision: null)]);
+        var model = new BundleSectionModel(source);
+        await model.LoadAsync(CancellationToken.None).ConfigureAwait(true);
+        var row = model.Rows.Single();
+        source.ToggleFailure = new BundleManagementException("BundleTraversal");
+        var announced = new List<string?>();
+        row.PropertyChanged += (_, e) => announced.Add(e.PropertyName);
+
+        row.ToggleCommand.Execute(null);
+
+        model.Banner.ShouldBe("BundleInvalid(BundleTraversal)");
+        row.Enabled.ShouldBeFalse();
+        announced.ShouldContain(nameof(BundleRowModel.Enabled));
+    }
+
+    /// <summary>A refused skill toggle tells the switch to read the stored value again, so a switch the user moved snaps back.</summary>
+    [Fact]
+    public async Task ARefusedSkillToggleTellsTheSwitchToReadTheStoredValueAgain()
+    {
+        var source = new FakeSource([new BundleSnapshot("p", Enabled: false, ProjectScope: false, [], [new BundleSkillSnapshot("foo", false)], Collision: null)]);
+        var model = new BundleSectionModel(source);
+        await model.LoadAsync(CancellationToken.None).ConfigureAwait(true);
+        var skill = model.Rows.Single().Skills.Single();
+        source.SkillToggleFailure = new BundleManagementException("BundleTraversal");
+        var announced = new List<string?>();
+        skill.PropertyChanged += (_, e) => announced.Add(e.PropertyName);
+
+        skill.ToggleCommand.Execute(null);
+
+        model.Banner.ShouldBe("BundleInvalid(BundleTraversal)");
+        skill.Enabled.ShouldBeFalse();
+        source.SkillToggles.ShouldBe([("p", "foo", true)]);
+        announced.ShouldContain(nameof(BundleSkillRowModel.Enabled));
+    }
+
     private sealed class FakeSource : IBundleManagementSource
     {
         private readonly List<BundleSnapshot> _rows;
@@ -58,6 +132,10 @@ public sealed class BundleSectionModelTests
         public List<(string Bundle, string Skill, bool Enabled)> SkillToggles { get; } = [];
 
         public string? FailInstall { get; set; }
+
+        public Exception? ToggleFailure { get; set; }
+
+        public Exception? SkillToggleFailure { get; set; }
 
         public Task WaitOneAsync() => _gate.WaitAsync();
 
@@ -79,14 +157,14 @@ public sealed class BundleSectionModelTests
         {
             BundleToggles.Add((bundleId, enabled));
             _gate.Release();
-            return Task.CompletedTask;
+            return ToggleFailure is { } failure ? Task.FromException(failure) : Task.CompletedTask;
         }
 
         public Task SetSkillEnabledAsync(string bundleId, string skillId, bool enabled, CancellationToken cancellationToken)
         {
             SkillToggles.Add((bundleId, skillId, enabled));
             _gate.Release();
-            return Task.CompletedTask;
+            return SkillToggleFailure is { } failure ? Task.FromException(failure) : Task.CompletedTask;
         }
     }
 }

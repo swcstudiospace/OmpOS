@@ -2,7 +2,8 @@ namespace Autonogrammer.Presentation.Hooks;
 
 /// <summary>
 /// The expected failure of an <see cref="IHooksSource"/>: the registry could not be loaded, or a change could not be written.
-/// <see cref="HooksViewModel"/> turns it into the error state or the action failure text; any other exception is a defect and escapes.
+/// A load turns it into the error state and a change into the action failure text. For a change, any other exception is reported as the unexpected-failure text,
+/// except <see cref="OutOfMemoryException"/>, which escapes; a load exception other than this one escapes too.
 /// </summary>
 public sealed class HooksSourceException : Exception
 {

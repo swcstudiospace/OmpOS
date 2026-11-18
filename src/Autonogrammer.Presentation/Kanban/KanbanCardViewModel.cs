@@ -213,6 +213,10 @@ public sealed class KanbanCardViewModel : ObservableModel, IDisposable
         {
             result = await _steering.SteerAsync(_card.Id, text, mode, _lifetime.Token).ConfigureAwait(true);
         }
+        catch (OperationCanceledException) when (!_lifetime.IsCancellationRequested)
+        {
+            result = CardSteerResult.Failed("The message timed out");
+        }
         catch (Exception fault) when (fault is not OperationCanceledException and not OutOfMemoryException)
         {
             result = CardSteerResult.Failed(FaultText(fault));

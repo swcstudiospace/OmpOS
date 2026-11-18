@@ -21,7 +21,7 @@ public sealed class RuntimeEnvironmentsViewModel : ObservableModel
     private RuntimeEnvironmentRow? _selected;
     private ContainerProfileEditor? _containerEditor;
     private WslProfileEditor? _wslEditor;
-    private CancellationTokenSource? _run;
+    private readonly Dictionary<string, CancellationTokenSource> _runs = new(StringComparer.Ordinal);
     private string _announcement = string.Empty;
     private string _loadError = string.Empty;
     private string? _warning;
@@ -299,13 +299,13 @@ public sealed class RuntimeEnvironmentsViewModel : ObservableModel
     public async Task TestAsync(RuntimeEnvironmentRow row, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(row);
-        if (row.IsBusy)
+        if (row.IsBusy || _runs.ContainsKey(row.Id))
         {
             return;
         }
 
         using var run = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _run = run;
+        _runs[row.Id] = run;
         row.BeginTest();
         Announcement = "Testing " + row.DisplayName + ".";
         try
@@ -329,7 +329,7 @@ public sealed class RuntimeEnvironmentsViewModel : ObservableModel
         }
         finally
         {
-            _run = null;
+            _runs.Remove(row.Id);
         }
     }
 
@@ -341,13 +341,13 @@ public sealed class RuntimeEnvironmentsViewModel : ObservableModel
     public async Task<bool> StartContainerAsync(RuntimeEnvironmentRow row, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(row);
-        if (!row.CanStartContainer || row.Container is not { } container)
+        if (!row.CanStartContainer || row.Container is not { } container || _runs.ContainsKey(row.Id))
         {
             return false;
         }
 
         using var run = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _run = run;
+        _runs[row.Id] = run;
         row.BeginStart();
         Announcement = "Starting " + container.Container + ".";
         try
@@ -378,12 +378,21 @@ public sealed class RuntimeEnvironmentsViewModel : ObservableModel
         }
         finally
         {
-            _run = null;
+            _runs.Remove(row.Id);
         }
     }
 
-    /// <summary>Cancels the test or start that is running. It does nothing when none is.</summary>
-    public void CancelRun() => _run?.Cancel();
+    /// <summary>Cancels the test or start that is running on one environment. It does nothing when none is.</summary>
+    /// <param name="row">The environment.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="row"/> is null.</exception>
+    public void CancelRun(RuntimeEnvironmentRow row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        if (_runs.TryGetValue(row.Id, out var run))
+        {
+            run.Cancel();
+        }
+    }
 
     private HashSet<string> TakenIds() => new(_allProfiles.Select(profile => profile.Id), StringComparer.Ordinal);
 

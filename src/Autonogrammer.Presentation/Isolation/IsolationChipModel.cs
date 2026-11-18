@@ -48,8 +48,8 @@ public sealed class IsolationChipModel : ObservableModel
         LevelText = level + ", " + NetworkUnrestricted;
         DegradedSentence = degradedCode is null ? null : Sentence(degradedCode);
         NeedsConsent = needsConsent;
-        ContinueCommand = new ChipCommand(() => Answer = true);
-        StopCommand = new ChipCommand(() => Answer = false);
+        ContinueCommand = new ChipCommand(() => Decide(continueUnconfined: true));
+        StopCommand = new ChipCommand(() => Decide(continueUnconfined: false));
     }
 
     /// <summary>Gets the level text. It always includes <see cref="NetworkUnrestricted"/>.</summary>
@@ -84,6 +84,15 @@ public sealed class IsolationChipModel : ObservableModel
     {
         get => _answer;
         private set => SetProperty(ref _answer, value);
+    }
+
+    private void Decide(bool continueUnconfined)
+    {
+        // The first answer is final: a later click, for example a stale Continue after Stop, does not change it.
+        if (_answer is null)
+        {
+            Answer = continueUnconfined;
+        }
     }
 
     /// <summary>Formats a degraded code as the sentence the screen shows.</summary>
