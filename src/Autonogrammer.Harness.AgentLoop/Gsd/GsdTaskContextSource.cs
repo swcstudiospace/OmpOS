@@ -85,6 +85,12 @@ public sealed class GsdTaskContextSource : ITaskContextSource
             warnings.Add("Workflow phase is unknown: the read was interrupted.");
             return null;
         }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // A path failure can quote the workspace path, so only the exception type is shown.
+            warnings.Add(string.Create(CultureInfo.InvariantCulture, $"Workflow phase is unknown: the read failed ({exception.GetType().Name})."));
+            return null;
+        }
     }
 
     private async Task<SubstrateContextSnapshot?> ReadSubstrateAsync(StageObservationScope scope, List<string> warnings, CancellationToken cancellationToken)

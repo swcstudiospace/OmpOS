@@ -26,6 +26,9 @@ public sealed class FileUsageLedger
     private static readonly Action<ILogger, int, Exception?> AppendedMessage =
         LoggerMessage.Define<int>(LogLevel.Debug, new EventId(76070, "UsageLedgerAppended"), "Usage ledger rewrote {RowCount} rows.");
 
+    private static readonly Action<ILogger, int, Exception?> SkippedMessage =
+        LoggerMessage.Define<int>(LogLevel.Warning, new EventId(76071, "UsageLedgerRowsSkipped"), "Usage ledger held {Count} unreadable rows; they are dropped on the next write.");
+
     private readonly Lock _gate = new();
     private readonly string _directory;
     private readonly string _path;
@@ -97,6 +100,7 @@ public sealed class FileUsageLedger
         }
 
         var rows = new List<UsageLedgerEntry>();
+        var skipped = 0;
         foreach (var line in File.ReadAllLines(_path))
         {
             if (line.Length == 0)
@@ -104,10 +108,35 @@ public sealed class FileUsageLedger
                 continue;
             }
 
-            rows.Add(JsonSerializer.Deserialize(line, UsageJsonContext.Default.UsageLedgerEntry) ?? throw new JsonException("A usage ledger line was null."));
+            if (TryParse(line) is { } entry)
+            {
+                rows.Add(entry);
+            }
+            else
+            {
+                skipped++;
+            }
+        }
+
+        if (skipped > 0 && _logger is not null)
+        {
+            SkippedMessage(_logger, skipped, null);
         }
 
         return rows;
+    }
+
+    // A line that cannot be parsed is skipped, so one bad line does not fail every append and read. The next rewrite drops it.
+    private static UsageLedgerEntry? TryParse(string line)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize(line, UsageJsonContext.Default.UsageLedgerEntry);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private void WriteUnlocked(IReadOnlyList<UsageLedgerEntry> rows)

@@ -692,19 +692,21 @@ public sealed class HookBridgeServer : IAsyncDisposable
             : null;
     }
 
-    // Runs the handler and resolves an ask. Null means the server is stopping and the request must be answered with a 503.
+    // Runs the handler and resolves an ask. Null means the server is stopping and the request must be answered with a 503. The handler and
+    // the approval prompt of one request share one deadline, the handler timeout, which the extension waits for as well.
     private async Task<BridgeDecision?> DecideAsync(BridgeRequest request, CancellationToken stop)
     {
-        var (state, decision) = await GuardAsync(HandlerRole, request, ct => _handler.HandleAsync(request, ct), stop).ConfigureAwait(false);
+        var deadline = _clock.GetUtcNow() + _options.HandlerTimeout;
+        var (state, decision) = await GuardAsync(HandlerRole, request, ct => _handler.HandleAsync(request, ct), _options.HandlerTimeout, stop).ConfigureAwait(false);
         return state switch
         {
             GuardState.Stopped => null,
-            GuardState.Completed when decision is not null => await ResolveAskAsync(request, decision, stop).ConfigureAwait(false),
+            GuardState.Completed when decision is not null => await ResolveAskAsync(request, decision, deadline, stop).ConfigureAwait(false),
             _ => FailureDecision(request, state == GuardState.TimedOut),
         };
     }
 
-    private async Task<BridgeDecision?> ResolveAskAsync(BridgeRequest request, BridgeDecision decision, CancellationToken stop)
+    private async Task<BridgeDecision?> ResolveAskAsync(BridgeRequest request, BridgeDecision decision, DateTimeOffset deadline, CancellationToken stop)
     {
         if (!string.Equals(decision.Permission, BridgeDecision.PermissionAsk, StringComparison.OrdinalIgnoreCase))
         {
@@ -717,7 +719,13 @@ public sealed class HookBridgeServer : IAsyncDisposable
             return Deny(decision, NoPromptMessage);
         }
 
-        var (state, approved) = await GuardAsync(PromptRole, request, ct => prompt.AskAsync(request, decision, ct), stop).ConfigureAwait(false);
+        var budget = deadline - _clock.GetUtcNow();
+        if (budget <= TimeSpan.Zero)
+        {
+            return stop.IsCancellationRequested ? null : Deny(decision, PromptTimedOutMessage);
+        }
+
+        var (state, approved) = await GuardAsync(PromptRole, request, ct => prompt.AskAsync(request, decision, ct), budget, stop).ConfigureAwait(false);
         return state switch
         {
             GuardState.Stopped => null,
@@ -737,16 +745,16 @@ public sealed class HookBridgeServer : IAsyncDisposable
             }
             : new BridgeDecision { FailedOpen = true };
 
-    // Runs one piece of host code (the handler or the approval prompt) under the handler timeout and the server's stop token.
-    // The wait is abandoned when either fires, even if the code ignores its token, so a stuck handler cannot hold a slot or
-    // block disposal.
+    // Runs one piece of host code (the handler or the approval prompt) under its budget and the server's stop token. The wait is
+    // abandoned when either fires, even if the code ignores its token, so a stuck handler cannot hold a slot or block disposal.
     private async Task<(GuardState State, T? Value)> GuardAsync<T>(
         string role,
         BridgeRequest request,
         Func<CancellationToken, ValueTask<T>> work,
+        TimeSpan budget,
         CancellationToken stop)
     {
-        using var timeout = new CancellationTokenSource(_options.HandlerTimeout, _clock);
+        using var timeout = new CancellationTokenSource(budget, _clock);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(stop, timeout.Token);
         var call = RunGuardedAsync(role, request, work, linked.Token);
         try
@@ -774,7 +782,7 @@ public sealed class HookBridgeServer : IAsyncDisposable
             return (GuardState.Stopped, default);
         }
 
-        var timeoutMs = _options.HandlerTimeout.TotalMilliseconds;
+        var timeoutMs = budget.TotalMilliseconds;
         GuardTimedOut(_logger, role, SafeEventName(request.Event), timeoutMs, null);
         return (GuardState.TimedOut, default);
     }

@@ -50,28 +50,42 @@ public sealed class AgentSessionRegistry : ISessionCatalog
         TimeProvider timeProvider,
         ILogger? logger = null,
         AgentSessionRegistryOptions? options = null)
-        : this(stateFilePath, timeProvider, logger, options, loaded: null)
+        : this(CreateStateFile(stateFilePath, timeProvider, logger, options), timeProvider, logger, options, loaded: null)
     {
     }
 
     private AgentSessionRegistry(
-        string stateFilePath,
+        AgentSessionStateFile file,
         TimeProvider timeProvider,
         ILogger? logger,
         AgentSessionRegistryOptions? options,
         List<AgentSessionRecord>? loaded)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(stateFilePath);
-        ArgumentNullException.ThrowIfNull(timeProvider);
-        var fullPath = Path.GetFullPath(stateFilePath);
         _clock = timeProvider;
         _logger = logger ?? NullLogger.Instance;
         _options = options ?? new AgentSessionRegistryOptions();
-        _file = new AgentSessionStateFile(fullPath, ResolveStateRoot(fullPath, _options), _clock, _logger);
+        // The file that loads the records is the file that writes them, so a file that could not be read refuses every write.
+        _file = file;
         foreach (var record in loaded ?? _file.Load())
         {
             _records[record.Id] = record;
         }
+    }
+
+    private static AgentSessionStateFile CreateStateFile(
+        string stateFilePath,
+        TimeProvider timeProvider,
+        ILogger? logger,
+        AgentSessionRegistryOptions? options)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(stateFilePath);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+        var fullPath = Path.GetFullPath(stateFilePath);
+        return new AgentSessionStateFile(
+            fullPath,
+            ResolveStateRoot(fullPath, options ?? new AgentSessionRegistryOptions()),
+            timeProvider,
+            logger ?? NullLogger.Instance);
     }
 
     /// <inheritdoc />
@@ -91,14 +105,9 @@ public sealed class AgentSessionRegistry : ISessionCatalog
         AgentSessionRegistryOptions? options,
         CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(stateFilePath);
-        ArgumentNullException.ThrowIfNull(timeProvider);
-        var effective = logger ?? NullLogger.Instance;
-        var effectiveOptions = options ?? new AgentSessionRegistryOptions();
-        var fullPath = Path.GetFullPath(stateFilePath);
-        var file = new AgentSessionStateFile(fullPath, ResolveStateRoot(fullPath, effectiveOptions), timeProvider, effective);
+        var file = CreateStateFile(stateFilePath, timeProvider, logger, options);
         var loaded = await file.LoadAsync(cancellationToken).ConfigureAwait(false);
-        return new AgentSessionRegistry(fullPath, timeProvider, effective, effectiveOptions, loaded);
+        return new AgentSessionRegistry(file, timeProvider, logger, options, loaded);
     }
 
     /// <summary>Creates a session in the <see cref="SessionLifecycle.Created"/> state and persists it.</summary>
@@ -352,7 +361,14 @@ public sealed class AgentSessionRegistry : ISessionCatalog
         }
 
         var trimmed = title.Trim();
-        return trimmed.Length > MaxTitleLength ? trimmed[..MaxTitleLength] : trimmed;
+        if (trimmed.Length <= MaxTitleLength)
+        {
+            return trimmed;
+        }
+
+        // Never cut between the two halves of a surrogate pair: that would store a lone surrogate.
+        var length = char.IsHighSurrogate(trimmed[MaxTitleLength - 1]) ? MaxTitleLength - 1 : MaxTitleLength;
+        return trimmed[..length];
     }
 
     private List<AgentSessionRecord> Ordered()

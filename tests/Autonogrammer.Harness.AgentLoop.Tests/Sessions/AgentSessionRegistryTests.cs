@@ -625,4 +625,54 @@ public sealed partial class AgentSessionRegistryTests
         registry.TryGet(record.Id, out var stored).ShouldBeTrue();
         stored.ResumeReference.ShouldBeNull();
     }
+
+    private const string UnrecognisedWordsFile = """
+        {"schemaVersion":1,"sessions":[{"id":"s-future","title":"Future","lifecycle":"Archived","kind":"Hologram"}]}
+        """;
+
+    [Fact]
+    public async Task AnUnrecognisedLifecycleWordSurvivesAReadAndARewrite()
+    {
+        using var directory = new SessionTestDirectory();
+        await File.WriteAllTextAsync(directory.StatePath, UnrecognisedWordsFile, Token);
+        var registry = new AgentSessionRegistry(directory.StatePath, new SessionTestClock(Start));
+        var record = registry.SnapshotRecords().ShouldHaveSingleItem();
+        record.Lifecycle.ShouldBe(SessionLifecycle.Lost);
+        record.Kind.ShouldBe(SessionKind.Chat);
+
+        registry.Create("Written later", null);
+
+        var written = await File.ReadAllTextAsync(directory.StatePath, Token);
+        written.ShouldContain("\"lifecycle\": \"Archived\"", Case.Sensitive);
+        written.ShouldContain("\"kind\": \"Hologram\"", Case.Sensitive);
+    }
+
+    [Fact]
+    public async Task AChangeToAKnownLifecycleReplacesTheUnrecognisedWord()
+    {
+        using var directory = new SessionTestDirectory();
+        await File.WriteAllTextAsync(directory.StatePath, UnrecognisedWordsFile, Token);
+        var registry = new AgentSessionRegistry(directory.StatePath, new SessionTestClock(Start));
+
+        registry.SetLifecycle("s-future", SessionLifecycle.Paused).ShouldBeTrue();
+
+        var written = await File.ReadAllTextAsync(directory.StatePath, Token);
+        written.ShouldContain("\"lifecycle\": \"Paused\"", Case.Sensitive);
+        written.ShouldNotContain("Archived");
+    }
+
+    [Fact]
+    public void ATitleCutInsideASurrogatePairKeepsOnlyWholeCharacters()
+    {
+        using var directory = new SessionTestDirectory();
+        var registry = new AgentSessionRegistry(directory.StatePath, new SessionTestClock(Start));
+        var title = new string('a', 199) + "\U0001F600";
+
+        var created = registry.Create(title, null);
+        registry.Rename(created.Id, title).ShouldBeTrue();
+
+        created.Title.ShouldBe(new string('a', 199));
+        registry.TryGet(created.Id, out var stored).ShouldBeTrue();
+        stored.Title.ShouldBe(new string('a', 199));
+    }
 }
