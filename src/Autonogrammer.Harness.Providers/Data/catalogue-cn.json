@@ -2709,6 +2709,46 @@
       "note": "Docs body was empty. Free tier 2,000 calls/day per user, at most 200 per model; real-name verification.",
       "loginCommand": null,
       "plan": null
+    },
+    {
+      "id": "qwen-portal",
+      "displayName": "Qwen OAuth",
+      "region": "cn",
+      "country": null,
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "qwen-portal",
+      "apiKeyEnv": "QWEN_OAUTH_TOKEN",
+      "routes": [],
+      "urlVariables": [],
+      "docsUrl": "https://qwenlm.github.io/qwen-code-docs/en/users/configuration/auth/",
+      "keyPageUrl": null,
+      "sourceUrl": "https://qwenlm.github.io/qwen-code-docs/en/users/configuration/auth/",
+      "status": "unverified",
+      "statusDate": "2026-11-18",
+      "note": "Verify before use: Vendor describes a subscription plan; plan terms are not verified in this catalogue, so the row is listed as api.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "zenmux",
+      "displayName": "ZenMux",
+      "region": "cn",
+      "country": null,
+      "residencyNote": null,
+      "kind": "aggregator",
+      "ompProviderId": "zenmux",
+      "apiKeyEnv": "ZENMUX_API_KEY",
+      "routes": [],
+      "urlVariables": [],
+      "docsUrl": "https://zenmux.ai/docs/about/intro.html",
+      "keyPageUrl": "https://zenmux.ai/platform/pay-as-you-go",
+      "sourceUrl": "https://zenmux.ai/docs/guide/quickstart.html",
+      "status": "unverified",
+      "statusDate": "2026-11-18",
+      "note": "Verify before use: Omp-native: omp owns the endpoints; the key goes to omp by provider id. Region is not confirmed by the vendor page.",
+      "loginCommand": null,
+      "plan": null
     }
   ]
 }

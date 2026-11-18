@@ -51,7 +51,7 @@ public sealed record CatalogueRow(
     public bool VerifyBeforeUse => Status == CatalogueStatus.Unverified;
 
     /// <summary>Gets a value indicating whether the row takes an API key. Sign-in rows and keyless local rows do not.</summary>
-    public bool TakesApiKey => ApiKeyEnv is not null && Routes.Count > 0 && Routes[0].Auth != CatalogueAuthStyle.None;
+    public bool TakesApiKey => ApiKeyEnv is not null && (Routes.Count > 0 ? Routes[0].Auth != CatalogueAuthStyle.None : IsOmpNative);
 
     /// <summary>Gets a value indicating whether omp already knows the provider, so a key goes to omp and no <c>models.yml</c> block is needed.</summary>
     public bool IsOmpNative => OmpProviderId is not null;

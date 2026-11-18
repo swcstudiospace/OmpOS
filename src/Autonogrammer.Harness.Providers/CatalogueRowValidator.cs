@@ -113,9 +113,9 @@ public static partial class CatalogueRowValidator
 
     private static void CheckRoutes(CatalogueRow row, Action<string> bad)
     {
-        if (row.Routes.Count == 0 && row.LoginCommand is null)
+        if (row.Routes.Count == 0 && row.LoginCommand is null && !row.IsOmpNative)
         {
-            bad("a row needs a route or an omp sign-in command");
+            bad("a row needs a route, an omp sign-in command, or an omp provider id");
         }
 
         var declared = row.UrlVariables.Select(variable => variable.Name).ToHashSet(StringComparer.Ordinal);

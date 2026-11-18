@@ -79,7 +79,7 @@ public sealed partial class CatalogueRowsTests
         {
             row.SourceUrl.Scheme.ShouldBe(Uri.UriSchemeHttps, row.Id);
             row.StatusDate.ShouldBeGreaterThanOrEqualTo(new DateOnly(2026, 10, 22), row.Id);
-            row.StatusDate.ShouldBeLessThanOrEqualTo(new DateOnly(2026, 10, 27), row.Id);
+            row.StatusDate.ShouldBeLessThanOrEqualTo(new DateOnly(2026, 11, 18), row.Id);
         }
     }
 
