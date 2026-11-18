@@ -11513,7 +11513,8 @@
           "Ultrathink",
           "Swarm",
           "Substrate",
-          "Gsd"
+          "Gsd",
+          "Realm"
         ],
         "description": "The component of the agent loop that produced a StageEvent. The order of the members is the pipeline order:\nthe planner runs first, the orchestrator second, and the substrate and the workflow engine run alongside them."
       },
