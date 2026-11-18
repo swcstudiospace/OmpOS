@@ -40,4 +40,16 @@ public sealed class KnownSafeShellTests
     {
         KnownSafeShell.AllSegmentsMatchShellRules("ls > out.txt", ["ls"]).ShouldBeFalse();
     }
+
+    [Theory]
+    [InlineData("cat .e*")]
+    [InlineData("cat .[e]nv")]
+    [InlineData("cat {.env,README.md}")]
+    [InlineData("grep -f.e* README.md")]
+    [InlineData("grep --file=.e* README.md")]
+    [InlineData("cat ~root/.env")]
+    public void AnUnexpandedWordIsNotKnownSafeEvenWhenTheCallbackAllowsIt(string commandLine)
+    {
+        KnownSafeShell.IsKnownSafe(commandLine, static _ => true).ShouldBeFalse();
+    }
 }

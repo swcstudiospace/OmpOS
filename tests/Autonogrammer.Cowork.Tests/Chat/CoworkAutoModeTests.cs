@@ -49,6 +49,17 @@ public sealed class CoworkAutoModeTests
     }
 
     [Fact]
+    public async Task KnownSafeCommandWhoseGlobCouldReachAFileIsAskedFor()
+    {
+        using var world = new AutoWorld();
+        var audit = new RunModeAuditLog();
+        var resolver = world.Resolver(audit);
+        (await resolver.ResolveAsync(world.Execute("cat .e*"), CancellationToken.None)).ShouldBe(PermissionDecision.Allow);
+        world.Ask.Calls.ShouldBe(1);
+        audit.Snapshot().ShouldContain(entry => entry.Decision.Stage == RunModeStage.CoworkAutoRule && entry.Decision.Outcome == RunModeOutcome.Ask);
+    }
+
+    [Fact]
     public async Task ShellAllowRuleDoesNotApproveAChainWithAnUnmatchedSegment()
     {
         using var world = new AutoWorld();
