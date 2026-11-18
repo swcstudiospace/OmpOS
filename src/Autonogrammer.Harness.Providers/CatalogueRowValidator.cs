@@ -27,7 +27,7 @@ public static partial class CatalogueRowValidator
         ArgumentNullException.ThrowIfNull(rows);
         var problems = new List<string>();
         var ids = new HashSet<string>(StringComparer.Ordinal);
-        var ompIds = new HashSet<string>(StringComparer.Ordinal);
+        var ompIds = new Dictionary<string, bool>(StringComparer.Ordinal);
         foreach (var row in rows)
         {
             if (!ids.Add(row.Id))
@@ -41,7 +41,7 @@ public static partial class CatalogueRowValidator
         return problems;
     }
 
-    private static void CheckRow(CatalogueRow row, HashSet<string> ompIds, List<string> problems)
+    private static void CheckRow(CatalogueRow row, Dictionary<string, bool> ompIds, List<string> problems)
     {
         void Bad(string message) => problems.Add($"{row.Id}: {message}");
 
@@ -70,10 +70,7 @@ public static partial class CatalogueRowValidator
             Bad("the local kind and the local region go together");
         }
 
-        if (row.OmpProviderId is not null && !ompIds.Add(row.OmpProviderId))
-        {
-            Bad($"the omp provider id {row.OmpProviderId} is used by two rows");
-        }
+        CheckOmpProviderId(row, ompIds, problems);
 
         if (row.ApiKeyEnv is not null && !EnvPattern().IsMatch(row.ApiKeyEnv))
         {
@@ -102,6 +99,16 @@ public static partial class CatalogueRowValidator
 
         CheckRoutes(row, Bad);
         CheckPlan(row, Bad);
+    }
+
+    private static void CheckOmpProviderId(CatalogueRow row, Dictionary<string, bool> ompIds, List<string> problems)
+    {
+        // ADR-0019 (amended 2026-11-18): a repeated omp id is an error unless the later row is the key-less login row and the first holder has an API key.
+        if (row.OmpProviderId is { } ompId && !ompIds.TryAdd(ompId, row.ApiKeyEnv is not null)
+            && !(row.ApiKeyEnv is null && ompIds[ompId]))
+        {
+            problems.Add($"{row.Id}: the omp provider id {ompId} is used by two rows");
+        }
     }
 
     private static void CheckRoutes(CatalogueRow row, Action<string> bad)

@@ -77,7 +77,7 @@
       "country": "FR",
       "residencyNote": null,
       "kind": "codingPlan",
-      "ompProviderId": null,
+      "ompProviderId": "mistral",
       "apiKeyEnv": null,
       "routes": [
         {
