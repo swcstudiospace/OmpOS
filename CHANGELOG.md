@@ -8,6 +8,11 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.19.2] - 2026-11-18
+
+### Fixed
+- The offline retry test pins its jitter, so its retry schedule is deterministic and no longer depends on random jitter.
+
 ## [0.19.1] - 2026-11-18
 
 ### Added
@@ -468,7 +473,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.1...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.2...HEAD
+[0.19.2]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.1...v0.19.2
 [0.19.1]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.0...v0.19.1
 [0.19.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.17.0...v0.18.0

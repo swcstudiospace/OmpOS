@@ -225,6 +225,7 @@ public sealed class AccountSessionManagerTests
     public async Task OfflineRetriesStopAfterFifteenMinutesAndTheSessionStaysSignedIn()
     {
         using var harness = AccountsHarness.Create();
+        harness.Manager.Jitter = static interval => interval;
         await harness.Manager.SignInAsync(harness.Handler.IssueSession(Email), harness.Options.Issuer, Token).ConfigureAwait(true);
         harness.Time.Advance(TimeSpan.FromMinutes(50));
         harness.Handler.ScriptTransportFailure("token:refresh", times: 1000);
