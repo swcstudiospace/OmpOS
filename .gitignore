@@ -489,7 +489,8 @@ $RECYCLE.BIN/
 .env
 *.user
 TestResults/
-vuln.json  # CI scratch output (dotnet list --vulnerable; absolute runner paths would trip the rebrand verify gate)
+# CI scratch output (dotnet list --vulnerable; absolute runner paths would trip the rebrand verify gate)
+vuln.json
 
 # GSD runtime artifacts (regenerated)
 .planning/intel/
