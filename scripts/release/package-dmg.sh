@@ -8,7 +8,8 @@
 #   <output-dir>  Receives Autonogrammer-<version>-osx-arm64.dmg. An existing image of that name is replaced.
 #
 # The image holds a copy of the app and a link to /Applications. It is UDZO-compressed and checked with hdiutil verify before it
-# gets its final name. The app is not signed with a Developer ID and not notarized.
+# gets its final name. The app is ad-hoc signed by package-desktop.sh (codesign --sign -), not signed with a Developer ID and not notarized;
+# this script verifies that the signature is still intact on the copy it puts in the image.
 # Prints the absolute image path as the last line of stdout. Everything else goes to stderr.
 # hdiutil exists only on macOS, so this script cannot run elsewhere.
 set -euo pipefail
@@ -46,6 +47,7 @@ esac
 [ -f "$app/Contents/MacOS/Autonogrammer.Native" ] || die "$app has no Contents/MacOS/Autonogrammer.Native"
 
 command -v hdiutil >/dev/null 2>&1 || die "hdiutil is required and ships only with macOS"
+command -v codesign >/dev/null 2>&1 || die "codesign is required and ships only with macOS"
 
 mkdir -p "$out_dir"
 out_abs="$(cd "$out_dir" && pwd)"
@@ -61,6 +63,7 @@ cleanup() {
 trap cleanup EXIT
 
 ditto "$app" "$stage/Autonogrammer.app"
+codesign --verify --deep --strict --verbose=2 "$stage/Autonogrammer.app" >&2 || die "the ad-hoc signature of the app did not survive the copy (package-desktop.sh signs it before zipping)"
 ln -s /Applications "$stage/Applications"
 
 hdiutil create -volname "Autonogrammer ${version}" -srcfolder "$stage" -ov -format UDZO "$partial" >&2

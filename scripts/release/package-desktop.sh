@@ -8,7 +8,7 @@
 #   osx-arm64   Autonogrammer-<version>-osx-arm64.zip      an Autonogrammer.app bundle, zipped with ditto --keepParent
 #
 # <version> is MAJOR.MINOR.PATCH with an optional -prerelease suffix. An existing archive is replaced only with --force.
-# The macOS bundle is not signed with a Developer ID and not notarized. Its version keys carry the MAJOR.MINOR.PATCH part only, because
+# The macOS bundle is ad-hoc signed (codesign --sign -), not signed with a Developer ID and not notarized. Its version keys carry the MAJOR.MINOR.PATCH part only, because
 # CFBundleShortVersionString is a dotted-number string. The whole publish directory goes into Contents/MacOS, because a
 # self-contained app loads its runtime from beside its executable.
 # Prints the absolute archive path as the last line of stdout. Everything else goes to stderr.
@@ -22,6 +22,12 @@ usage() {
 die() {
   echo "error: $*" >&2
   exit 1
+}
+
+codesign_failed() {
+  echo "Mach-O files under $2/Contents/MacOS:" >&2
+  find "$2/Contents/MacOS" -type f -exec file {} + 2>&1 | grep -i 'mach-o' >&2 || true
+  die "codesign failed while $1 $2 (see the codesign output above)"
 }
 
 force=0
@@ -81,6 +87,8 @@ case "$rid" in
     ;;
   osx-arm64)
     command -v ditto >/dev/null 2>&1 || die "ditto is required for osx-arm64 (it ships with macOS)"
+    command -v codesign >/dev/null 2>&1 || die "codesign is required for osx-arm64 (it ships with macOS)"
+    command -v xattr >/dev/null 2>&1 || die "xattr is required for osx-arm64 (it ships with macOS)"
     ;;
 esac
 
@@ -133,6 +141,15 @@ case "$rid" in
 </dict>
 </plist>
 PLIST
+    # Ad-hoc signature (identity "-"): Apple Silicon refuses to launch unsigned arm64 code, and an unsigned download that carries the
+    # quarantine flag is reported as "damaged". With it, Gatekeeper shows the normal unidentified-developer prompt instead. This is
+    # NOT a Developer ID signature and NOT notarization, and the hardened runtime is not enabled (no entitlements exist). The bundle
+    # is signed here, before the zip is made, so the zip and the .dmg (which package-dmg.sh builds from this zip) carry the same app.
+    xattr -cr "$bundle"
+    # codesign prints its own diagnostics to stderr. On a failure, also list the Mach-O files in Contents/MacOS (the usual cause is
+    # nested code that --deep does not seal), so the first CI run shows what to adjust. The check itself is not weakened.
+    codesign --force --deep --sign - --timestamp=none "$bundle" >&2 || codesign_failed "signing" "$bundle"
+    codesign --verify --deep --strict --verbose=2 "$bundle" >&2 || codesign_failed "verifying" "$bundle"
     (cd "$stage" && ditto -c -k --keepParent Autonogrammer.app "$partial")
     ;;
   *)
