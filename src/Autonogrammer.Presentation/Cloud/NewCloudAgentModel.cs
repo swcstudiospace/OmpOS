@@ -452,17 +452,20 @@ public sealed class NewCloudAgentModel : ObservableModel
 
     private static CloudCreateResult Describe(Exception fault)
     {
-        var kind = CloudFailures.KindOf(fault);
-        return kind switch
-        {
-            CloudFailureKind.LimitReached => new CloudCreateResult(CloudCreateOutcome.LimitReached, CloudFailures.MessageOf(fault, CloudCopy.LimitReached)),
-            CloudFailureKind.QuotaExceeded => new CloudCreateResult(CloudCreateOutcome.QuotaExceeded, CloudFailures.MessageOf(fault, CloudCopy.QuotaExceeded)),
-            CloudFailureKind.Rejected or CloudFailureKind.Conflict or CloudFailureKind.NotFound => new CloudCreateResult(CloudCreateOutcome.Rejected, CloudFailures.MessageOf(fault, CloudCopy.CreateRejected)),
-            CloudFailureKind.NotConfigured => new CloudCreateResult(CloudCreateOutcome.Failed, CloudFailures.MessageOf(fault, CloudCopy.NotConfiguredShort)),
-            CloudFailureKind.Unauthorized => new CloudCreateResult(CloudCreateOutcome.Failed, CloudFailures.MessageOf(fault, CloudCopy.SignInNeeded)),
-            _ => new CloudCreateResult(CloudCreateOutcome.Failed, CloudFailures.MessageOf(fault, CloudCopy.CreateFailed)),
-        };
+        var handoff = CloudHandoff.Describe(fault);
+        return new CloudCreateResult(OutcomeOf(handoff.Outcome), handoff.Message);
     }
+
+    // Describe is the one failure mapping; this only renames its outcomes. It produces these five and nothing else.
+    private static CloudCreateOutcome OutcomeOf(CloudHandoffOutcome outcome) => outcome switch
+    {
+        CloudHandoffOutcome.LimitReached => CloudCreateOutcome.LimitReached,
+        CloudHandoffOutcome.QuotaExceeded => CloudCreateOutcome.QuotaExceeded,
+        CloudHandoffOutcome.Rejected => CloudCreateOutcome.Rejected,
+        CloudHandoffOutcome.NotAvailable => CloudCreateOutcome.NotAvailable,
+        CloudHandoffOutcome.Failed => CloudCreateOutcome.Failed,
+        _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, "Describe reports only refusals and failures."),
+    };
 
     private CloudAgentRequest ToRequest()
     {

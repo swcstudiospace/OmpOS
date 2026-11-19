@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Autonogrammer.Contracts.Artifacts;
+using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Cowork.Artifacts.Model;
 using Autonogrammer.Cowork.Artifacts.Rendering;
@@ -34,6 +35,7 @@ public sealed class ArtifactToolProvider : ICoworkToolProvider
     private readonly ArtifactWriteLimiter _limiter;
     private readonly IOptions<ArtifactOptions> _options;
     private readonly string? _storageFolder;
+    private readonly Action<string, ArtifactBlock>? _cardPublished;
     private readonly ConcurrentDictionary<string, IndexedArtifact> _index = new(StringComparer.Ordinal);
 
     /// <summary>Initializes a new instance of the <see cref="ArtifactToolProvider"/> class.</summary>
@@ -41,7 +43,8 @@ public sealed class ArtifactToolProvider : ICoworkToolProvider
     /// <param name="limiter">The per-session write limiter.</param>
     /// <param name="options">The bound limits.</param>
     /// <param name="storageFolder">The Storage folder, in addition to trusted folders, or null.</param>
-    public ArtifactToolProvider(ArtifactService service, ArtifactWriteLimiter limiter, IOptions<ArtifactOptions> options, string? storageFolder = null)
+    /// <param name="cardPublished">Receives the card of each successful create or update, with the session that made the call, or null.</param>
+    public ArtifactToolProvider(ArtifactService service, ArtifactWriteLimiter limiter, IOptions<ArtifactOptions> options, string? storageFolder = null, Action<string, ArtifactBlock>? cardPublished = null)
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(limiter);
@@ -50,6 +53,7 @@ public sealed class ArtifactToolProvider : ICoworkToolProvider
         _limiter = limiter;
         _options = options;
         _storageFolder = storageFolder;
+        _cardPublished = cardPublished;
     }
 
     /// <inheritdoc />
@@ -176,6 +180,7 @@ public sealed class ArtifactToolProvider : ICoworkToolProvider
 
         var allWarnings = warnings.Concat(RendererWarnings(kind, bytes)).ToArray();
         _index[created.Value.ArtifactId] = new IndexedArtifact(created.Value.ArtifactId, session.SessionId, kind);
+        _cardPublished?.Invoke(session.SessionId, Card(created.Value, ArtifactAction.Created));
         return CoworkToolResult.Text(Success(created.Value, allWarnings), isUntrusted: false);
     }
 
@@ -222,6 +227,7 @@ public sealed class ArtifactToolProvider : ICoworkToolProvider
 
         var allWarnings = warnings.Concat(RendererWarnings(updated.Value.Kind, bytes)).ToArray();
         _index[updated.Value.ArtifactId] = new IndexedArtifact(updated.Value.ArtifactId, session.SessionId, updated.Value.Kind);
+        _cardPublished?.Invoke(session.SessionId, Card(updated.Value, ArtifactAction.Updated));
         return CoworkToolResult.Text(Success(updated.Value, allWarnings), isUntrusted: false);
     }
 
@@ -528,6 +534,16 @@ public sealed class ArtifactToolProvider : ICoworkToolProvider
 
         return warnings;
     }
+
+    private static ArtifactBlock Card(ArtifactSnapshot snapshot, ArtifactAction action) => new()
+    {
+        Id = "artifact-card-" + snapshot.ArtifactId + "-" + snapshot.Number.ToString(CultureInfo.InvariantCulture),
+        ArtifactId = snapshot.ArtifactId,
+        Version = snapshot.Number,
+        Title = snapshot.Title,
+        ArtifactKind = snapshot.Kind,
+        Action = action,
+    };
 
     private static string Success(ArtifactSnapshot snapshot, IReadOnlyList<string> warnings)
     {

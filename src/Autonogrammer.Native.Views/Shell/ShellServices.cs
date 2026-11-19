@@ -24,6 +24,12 @@ public sealed record ShellServices
     /// <summary>Gets the remote environments host whose profiles the environment picker lists, or null for a window with no remote sessions.</summary>
     public IRemoteEnvironmentsHost? RemoteEnvironments { get; init; }
 
+    /// <summary>Gets the head's Remote environments model, whose test outcomes the picker shows, or null for a window without one.</summary>
+    public RemoteEnvironmentsViewModel? RemoteEnvironmentsModel { get; init; }
+
+    /// <summary>Gets the head's Containers and WSL model, whose test outcomes the picker shows, or null for a window without one.</summary>
+    public RuntimeEnvironmentsViewModel? RuntimeEnvironmentsModel { get; init; }
+
     /// <summary>Gets the shared record of what the next new session starts on (environment, workspace set folders), or null when the head cannot start sessions elsewhere.</summary>
     public PendingSessionTarget? NewSessionTarget { get; init; }
 

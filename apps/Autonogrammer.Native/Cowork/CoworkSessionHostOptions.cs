@@ -1,4 +1,5 @@
 using Autonogrammer.Accounts;
+using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Cowork;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
@@ -21,6 +22,9 @@ internal sealed class CoworkSessionHostOptions
 
     /// <summary>Gets the account session whose changes the host follows. Null keeps the host on the gate alone, as a head without account services does.</summary>
     public IAccountSession? AccountSession { get; init; }
+
+    /// <summary>Gets the callback that delivers an artifact card to the head's artifact panel, or null when the head has no artifact services.</summary>
+    public Func<ArtifactBlock, CancellationToken, Task<bool>>? ArtifactDelivered { get; init; }
 
     /// <summary>Gets the clock.</summary>
     public TimeProvider Clock { get; init; } = TimeProvider.System;

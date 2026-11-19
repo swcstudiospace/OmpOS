@@ -11,7 +11,7 @@ namespace Autonogrammer.Presentation.Cowork;
 public sealed class CoworkSessionListModel : ObservableModel, IDisposable
 {
     /// <summary>The most Cowork tasks the list reports as full.</summary>
-    public const int SessionCap = 200;
+    public const int SessionCap = CoworkSessionLimit.MaxSessions;
 
     /// <summary>The most characters kept of the filter text.</summary>
     public const int MaxFilterChars = 100;
@@ -44,7 +44,7 @@ public sealed class CoworkSessionListModel : ObservableModel, IDisposable
     /// <summary>Gets the filtered rows grouped by project. A project with no match is absent.</summary>
     public IReadOnlyList<CoworkSessionGroup> Groups => _groups;
 
-    /// <summary>Gets the filtered rows in catalog order.</summary>
+    /// <summary>Gets the filtered rows in group order: by project in first-seen order, then tasks with no project.</summary>
     public IReadOnlyList<CoworkSessionRow> Rows => _groups.SelectMany(group => group.Rows).ToArray();
 
     /// <summary>Gets the number of tasks, ignoring the filter.</summary>

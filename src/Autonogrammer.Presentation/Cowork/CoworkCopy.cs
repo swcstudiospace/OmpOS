@@ -1,3 +1,5 @@
+using Autonogrammer.Contracts.Cowork;
+
 namespace Autonogrammer.Presentation.Cowork;
 
 /// <summary>
@@ -14,8 +16,8 @@ public static class CoworkCopy
     /// <summary>The quiet mark when a summary could not be synced.</summary>
     public const string NotSynced = "Not synced";
 
-    /// <summary>The sentence a full Cowork list shows. It matches the registry cap message.</summary>
-    public const string SessionLimit = "You have 200 Cowork tasks. Delete or archive one to start another.";
+    /// <summary>The sentence a full Cowork list shows. It is the registry's own full message.</summary>
+    public static string SessionLimit => CoworkSessionLimit.FullMessage;
 
     /// <summary>The skip link that moves focus to the conversation.</summary>
     public const string SkipToConversation = "Skip to conversation";

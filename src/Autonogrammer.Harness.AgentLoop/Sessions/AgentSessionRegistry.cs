@@ -13,9 +13,6 @@ namespace Autonogrammer.Harness.AgentLoop.Sessions;
 /// </summary>
 public sealed class AgentSessionRegistry : ISessionCatalog
 {
-    /// <summary>The largest number of sessions the registry holds.</summary>
-    public const int MaxSessions = 200;
-
     /// <summary>The title of a session created or loaded without one.</summary>
     internal const string DefaultTitle = "New session";
 
@@ -115,7 +112,7 @@ public sealed class AgentSessionRegistry : ISessionCatalog
     /// <param name="workspaceRoot">The absolute path of the workspace, or null when unknown.</param>
     /// <param name="kind">What the session is. A chat behind the Agent Panel unless given.</param>
     /// <returns>The new record. Its identifier is <c>s-</c> and 26 lowercase base32 characters.</returns>
-    /// <exception cref="AgentSessionLimitException">The registry already holds <see cref="MaxSessions"/> sessions.</exception>
+    /// <exception cref="AgentSessionLimitException">The registry already holds <see cref="AgentSessionLimits.MaxSessions"/> sessions.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="kind"/> is not a defined session kind.</exception>
     public AgentSessionRecord Create(string? title, string? workspaceRoot, SessionKind kind = SessionKind.Chat)
     {
@@ -127,9 +124,9 @@ public sealed class AgentSessionRegistry : ISessionCatalog
         AgentSessionRecord record;
         lock (_gate)
         {
-            if (_records.Count >= MaxSessions)
+            if (_records.Count >= AgentSessionLimits.MaxSessions)
             {
-                throw new AgentSessionLimitException(MaxSessions);
+                throw new AgentSessionLimitException(AgentSessionLimits.MaxSessions);
             }
 
             var id = AgentSessionIds.New();

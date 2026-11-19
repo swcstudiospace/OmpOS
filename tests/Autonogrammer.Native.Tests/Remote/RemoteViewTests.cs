@@ -253,10 +253,10 @@ public sealed class RemoteViewTests
             view.Targets.SelectedItem = model.Options[2];
             ShellHarness.Settle(window);
             model.Selected!.Id.ShouldBe("cloud");
-            view.ValidationMessage.Text.ShouldBe(RemoteCopy.CloudUnavailable);
+            view.ValidationMessage.Text.ShouldBe(RemoteCopy.CloudNotConnected);
 
             view.Targets.SelectedItem = model.Options[1];
-            model.SetStatus("a", RemoteEnvironmentStatus.AuthFailed);
+            model.SetStatusSource(id => string.Equals(id, "a", StringComparison.Ordinal) ? RemoteEnvironmentStatus.AuthFailed : null);
             ShellHarness.Settle(window);
             model.Selected.Id.ShouldBe("ssh:a");
             view.ValidationMessage.Text.ShouldStartWith(RemoteCopy.TargetBlockedPrefix, Case.Sensitive);

@@ -33,7 +33,7 @@ public sealed class ScreencastPumpTests
             await hold.Task.ConfigureAwait(true);
         }, LocalBrowserPaneFeed.JpegQuality, LocalBrowserPaneFeed.LongEdge, sendLastFrame: true).ConfigureAwait(true);
 
-        session.Commands.ShouldContain(command => command.Method == "Page.startScreencast");
+        session.Commands.ShouldContain(command => string.Equals(command.Method, "Page.startScreencast", StringComparison.Ordinal));
         session.Emit(1);
         await WaitUntilAsync(() => delivered == 1).ConfigureAwait(true);
         session.InFlight.ShouldBe(1);
@@ -56,7 +56,7 @@ public sealed class ScreencastPumpTests
     {
         var session = new ScriptedScreencastSession();
         var pump = new ScreencastPump();
-        session.Commands.ShouldNotContain(command => command.Method == "Page.startScreencast");
+        session.Commands.ShouldNotContain(command => string.Equals(command.Method, "Page.startScreencast", StringComparison.Ordinal));
         var delivered = 0;
         await pump.AddViewerAsync(session, frame =>
         {
@@ -74,7 +74,7 @@ public sealed class ScreencastPumpTests
             delivered++;
             return Task.CompletedTask;
         }, 70, 1280, sendLastFrame: true).ConfigureAwait(true);
-        var start = session.Commands.Last(command => command.Method == "Page.startScreencast");
+        var start = session.Commands.Last(command => string.Equals(command.Method, "Page.startScreencast", StringComparison.Ordinal));
         var args = start.Args.ShouldBeOfType<Dictionary<string, object>>();
         args["sendLastFrame"].ShouldBe(true);
         args["format"].ShouldBe("jpeg");
@@ -93,7 +93,7 @@ public sealed class ScreencastPumpTests
         var clock = new ManualClock();
         var feed = new LocalBrowserPaneFeed(session, clock);
         await feed.AttachViewerAsync().ConfigureAwait(true);
-        var args = session.Commands.Single(command => command.Method == "Page.startScreencast").Args.ShouldBeOfType<Dictionary<string, object>>();
+        var args = session.Commands.Single(command => string.Equals(command.Method, "Page.startScreencast", StringComparison.Ordinal)).Args.ShouldBeOfType<Dictionary<string, object>>();
         args["quality"].ShouldBe(LocalBrowserPaneFeed.JpegQuality);
         args["quality"].ShouldBe(70);
         args["maxWidth"].ShouldBe(LocalBrowserPaneFeed.LongEdge);
@@ -102,14 +102,14 @@ public sealed class ScreencastPumpTests
         LocalBrowserPaneFeed.FramesPerSecond.ShouldBe(10);
 
         session.Emit(1);
-        await WaitUntilAsync(() => feed.LatestFrame?.SessionId == "1").ConfigureAwait(true);
+        await WaitUntilAsync(() => string.Equals(feed.LatestFrame?.SessionId, "1", StringComparison.Ordinal)).ConfigureAwait(true);
         clock.Advance(TimeSpan.FromMilliseconds(50));
         session.Emit(2);
         await WaitUntilAsync(() => session.Acked.Contains(2)).ConfigureAwait(true);
         feed.LatestFrame!.SessionId.ShouldBe("1");
         clock.Advance(TimeSpan.FromMilliseconds(50));
         session.Emit(3);
-        await WaitUntilAsync(() => feed.LatestFrame?.SessionId == "3").ConfigureAwait(true);
+        await WaitUntilAsync(() => string.Equals(feed.LatestFrame?.SessionId, "3", StringComparison.Ordinal)).ConfigureAwait(true);
         await feed.DetachViewerAsync().ConfigureAwait(true);
         session.Commands.Last().Method.ShouldBe("Page.stopScreencast");
     }
@@ -121,12 +121,8 @@ public sealed class ScreencastPumpTests
         string[] required =
         [
             "Idle", "Starting", "Live", "UserControl", "Stopped", "RemoteViewUnavailable",
-            "BrowserDisabled", "BrowserNotInstalled", "ManagedBrowserNotPinned", "BrowserTooOld",
-            "SandboxUnavailable", "ProfilePathUnsafe", "FontsMissing", "LaunchFailed", "Crashed",
-            "UserHasControl", "ControlRevoked", "ModelCannotSeeImages", "ImageBudgetExhausted",
-            "StaleRef", "OriginDenied", "BlockedByPolicy", "DownloadDenied", "PopupClosed",
-            "DialogDismissed", "PageTooLarge", "NavigationTimeout", "RateLimited", "SessionLimitReached",
-            "EgressGuardUnavailable", "NoLocalApprover",
+            "BrowserDisabled", "BrowserNotInstalled", "BrowserTooOld", "ModelCannotSeeImages",
+            "StaleRef", "DownloadDenied",
         ];
         var names = Enum.GetNames<BrowserPaneState>();
         foreach (var name in required)

@@ -60,16 +60,11 @@ public static class ChangeDiff
         return (added, removed);
     }
 
-    // The empty text has no lines; text ending in '\n' has no extra empty line after its final break.
+    // The lines of a text, shared with the hunk review so that both number the lines alike.
     private static SplitText Split(string text)
     {
-        if (text.Length == 0)
-        {
-            return new SplitText([], EndsWithNewline: true);
-        }
-
-        var endsWithNewline = text[^1] == '\n';
-        return new SplitText((endsWithNewline ? text[..^1] : text).Split('\n'), endsWithNewline);
+        var lines = TextLines.Split(text, out var endsWithNewline);
+        return new SplitText(lines, endsWithNewline);
     }
 
     // Two lines are the same when their text is and they agree on whether a line break follows. Only a last line can lack one.

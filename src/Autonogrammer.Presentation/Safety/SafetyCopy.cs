@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Autonogrammer.Presentation.Safety;
 
 /// <summary>Every text of the Run mode page, in one place so the view carries no literal.</summary>
@@ -45,7 +47,7 @@ public static class SafetyCopy
 
     /// <summary>The reason the classifier is not available.</summary>
     public const string ClassifierNote =
-        "In Cursor, Auto-review sends each call it cannot settle to a small hosted model that runs on Cursor's servers. Autonogrammer has no hosted model and sends nothing anywhere itself, "
+        "In Cursor, Auto-review sends each call it cannot settle to a small hosted model that runs on Cursor's servers. Autonogrammer has no hosted model to send a call to, "
         + "so a call that classifier would have reviewed asks you instead. The sentences under autoRun in a permissions file are kept and shown below; they are not enforced.";
 
     /// <summary>The honest statement about containment.</summary>
@@ -203,8 +205,11 @@ public static class SafetyCopy
     /// <summary>The message for an empty entry.</summary>
     public const string EntryEmpty = "Write an entry first.";
 
+    /// <summary>The longest entry, in characters, that the Run mode page accepts.</summary>
+    public const int MaxEntryLength = 512;
+
     /// <summary>The message for an entry that is too long.</summary>
-    public const string EntryTooLong = "An entry can have at most 512 characters.";
+    public static string EntryTooLong => "An entry can have at most " + MaxEntryLength.ToString(CultureInfo.InvariantCulture) + " characters.";
 
     /// <summary>The message for an entry that spans lines.</summary>
     public const string EntryMultiline = "An entry must be one line.";

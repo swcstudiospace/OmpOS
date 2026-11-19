@@ -106,6 +106,9 @@ public static class AutomationsCopy
     /// <summary>The target text of a cloud automation that names no repository.</summary>
     public const string CloudTargetNoRepository = "Cloud agent";
 
+    /// <summary>The label that leads the target text of a cloud automation with a repository; the repository path follows it.</summary>
+    public const string CloudTarget = "Cloud agent";
+
     /// <summary>The next run text of an automation that is not scheduled.</summary>
     public const string NextRunNotScheduled = "Next run: not scheduled";
 
@@ -295,14 +298,16 @@ public static class AutomationsCopy
     /// <summary>The message of an empty name.</summary>
     public const string NameRequired = "Enter a name.";
 
-    /// <summary>The message of a name over 100 characters.</summary>
-    public const string NameTooLong = "The name is longer than 100 characters.";
+    /// <summary>Builds the message of a name longer than the limit.</summary>
+    /// <param name="max">The longest name the editor accepts.</param>
+    public static string NameTooLong(int max) => string.Create(CultureInfo.InvariantCulture, $"The name is longer than {max} characters.");
 
     /// <summary>The message of an empty prompt.</summary>
     public const string PromptRequired = "Enter a prompt.";
 
-    /// <summary>The message of a prompt over 20000 characters.</summary>
-    public const string PromptTooLong = "The prompt is longer than 20000 characters.";
+    /// <summary>Builds the message of a prompt longer than the limit.</summary>
+    /// <param name="max">The longest prompt the editor accepts.</param>
+    public static string PromptTooLong(int max) => string.Create(CultureInfo.InvariantCulture, $"The prompt is longer than {max} characters.");
 
     /// <summary>The message of an automation without trigger.</summary>
     public const string TriggersRequired = "Add a schedule or turn on the webhook trigger so the automation can start.";
@@ -362,14 +367,16 @@ public static class AutomationsCopy
     /// <summary>The message of a cloud target without repository.</summary>
     public const string RepositoriesRequired = "Add at least one repository.";
 
-    /// <summary>The message of a cloud target with more than 16 repositories.</summary>
-    public const string RepositoriesTooMany = "Use at most 16 repositories.";
+    /// <summary>Builds the message of a cloud target with more repositories than the limit.</summary>
+    /// <param name="max">The most repositories a cloud automation holds.</param>
+    public static string RepositoriesTooMany(int max) => string.Create(CultureInfo.InvariantCulture, $"Use at most {max} repositories.");
 
     /// <summary>The message of a repository entry that is not valid.</summary>
     public const string RepositoryInvalid = "Every repository must be an https address without spaces or credentials, optionally followed by a branch and a base branch.";
 
-    /// <summary>The message of a secret name that is not valid.</summary>
-    public const string SecretNameInvalid = "A secret name starts with a letter or an underscore and holds only letters, digits and underscores, up to 64 characters.";
+    /// <summary>Builds the message of a secret name that is not valid.</summary>
+    /// <param name="maxLength">The longest secret name the editor accepts.</param>
+    public static string SecretNameInvalid(int maxLength) => string.Create(CultureInfo.InvariantCulture, $"A secret name starts with a letter or an underscore and holds only letters, digits and underscores, up to {maxLength} characters.");
 
     /// <summary>The message of a concurrent runs entry that is not valid.</summary>
     public const string ConcurrentRunsInvalid = "Concurrent runs must be a whole number from 1 to 4.";

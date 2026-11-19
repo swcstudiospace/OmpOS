@@ -88,7 +88,7 @@ internal static class WebInfoPages
                     "Where your prompts go",
                     isDemo
                         ? "Nothing leaves this browser tab in the Demo: every answer is produced by scripted fixtures inside the page, and no request is sent to a server."
-                        : $"Prompts and settings requests go to the Autonogrammer service at {apiHost}, which passes a turn to the provider that service is set up with. This page sends nothing anywhere else."),
+                        : $"Prompts and settings requests go to the Autonogrammer service at {apiHost}, which passes a turn to the provider that service is set up with."),
                 new InfoSettingsFact("What this browser keeps", "Your theme and motion choices are kept in this browser's local storage. The page keeps no provider key and no account credential."),
                 new InfoSettingsFact("Telemetry", "The web head runs no analytics and loads no third-party scripts."),
             ],

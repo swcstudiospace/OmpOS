@@ -21,7 +21,7 @@ public enum CatalogRowStatus
     [JsonStringEnumMemberName("queued")]
     Queued,
 
-    /// <summary>The session shows as running but no run has touched it for longer than a run lease lives.</summary>
+    /// <summary>The session is running or awaiting tool approval but has had no activity for longer than a run lease lives.</summary>
     [JsonStringEnumMemberName("lost")]
     Lost,
 

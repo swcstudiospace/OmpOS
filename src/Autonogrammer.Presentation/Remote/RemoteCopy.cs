@@ -175,8 +175,11 @@ public static class RemoteCopy
     /// <summary>The description of the cloud option.</summary>
     public const string CloudDetail = "A cloud agent on its own machine.";
 
-    /// <summary>Why the cloud option cannot be chosen yet.</summary>
-    public const string CloudUnavailable = "Cloud agents are not available in this build.";
+    /// <summary>Why the cloud option cannot be chosen when this app has no cloud agents service.</summary>
+    public const string CloudNotConnected = "Cloud agents are not connected to this app.";
+
+    /// <summary>Why the cloud option cannot be chosen when cloud agents are set up: this list starts sessions on this computer or a saved environment.</summary>
+    public const string CloudStartElsewhere = "Start a cloud agent with /in-cloud or in Settings > Cloud agents. This list starts sessions on this computer or a saved environment.";
 
     /// <summary>The message of a valid choice.</summary>
     public const string TargetOk = "Ready to start.";

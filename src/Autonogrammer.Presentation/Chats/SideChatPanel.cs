@@ -55,4 +55,28 @@ public sealed class SideChatPanel : ObservableModel
 
         Selected = chat;
     }
+
+    /// <summary>Removes a closed side chat from the list. When it was selected, the side chat that followed it is selected, or the one before it when it was last, or none.</summary>
+    /// <param name="chat">The side chat to remove.</param>
+    /// <returns><see langword="true"/> when the side chat was in the list and has been removed.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="chat"/> is null.</exception>
+    public bool Remove(SideChat chat)
+    {
+        ArgumentNullException.ThrowIfNull(chat);
+        var remaining = _chats.ToList();
+        var index = remaining.IndexOf(chat);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        remaining.RemoveAt(index);
+        Chats = remaining;
+        if (ReferenceEquals(_selected, chat))
+        {
+            Selected = remaining.Count == 0 ? null : remaining[Math.Min(index, remaining.Count - 1)];
+        }
+
+        return true;
+    }
 }

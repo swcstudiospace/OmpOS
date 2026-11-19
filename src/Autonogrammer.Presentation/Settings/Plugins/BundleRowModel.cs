@@ -88,7 +88,7 @@ public sealed class BundleRowModel : ObservableModel
     /// <summary>Gets the collision text, or <see langword="null"/>.</summary>
     public string? Collision { get; }
 
-    /// <summary>Gets the notice: a collision, <c>BundleProjectScopeOff</c>, or empty.</summary>
+    /// <summary>Gets the notice for the user: a collision, the project-scope-off sentence, or empty.</summary>
     public string Notice => _notice;
 
     /// <summary>Gets the skill switches.</summary>
@@ -117,6 +117,6 @@ public sealed class BundleRowModel : ObservableModel
             return collision;
         }
 
-        return projectScope && !enabled ? BundleSectionModel.ProjectScopeOff : string.Empty;
+        return projectScope && !enabled ? SettingsCopy.BundleProjectScopeOff : string.Empty;
     }
 }

@@ -16,7 +16,7 @@ public sealed class AgentRowStatusMapTests
     public static TheoryData<SessionLifecycle, RuntimeStatus?, bool, AgentRowStatus, RuntimeStatus?, AgentRowGroup> Cases => new()
     {
         { SessionLifecycle.Created, null, false, AgentRowStatus.Ready, RuntimeStatus.Queued, AgentRowGroup.Idle },
-        { SessionLifecycle.Created, null, true, AgentRowStatus.Ready, RuntimeStatus.Queued, AgentRowGroup.Idle },
+        { SessionLifecycle.Created, null, true, AgentRowStatus.Closed, RuntimeStatus.Queued, AgentRowGroup.Idle },
         { SessionLifecycle.Created, RuntimeStatus.Running, false, AgentRowStatus.Running, RuntimeStatus.Running, AgentRowGroup.Running },
         { SessionLifecycle.Created, RuntimeStatus.Queued, false, AgentRowStatus.Queued, RuntimeStatus.Queued, AgentRowGroup.Running },
         { SessionLifecycle.Running, null, false, AgentRowStatus.Running, RuntimeStatus.Running, AgentRowGroup.Running },
@@ -32,9 +32,12 @@ public sealed class AgentRowStatusMapTests
         { SessionLifecycle.Completed, null, false, AgentRowStatus.Completed, RuntimeStatus.Completed, AgentRowGroup.Finished },
         { SessionLifecycle.Completed, null, true, AgentRowStatus.Closed, RuntimeStatus.Completed, AgentRowGroup.Idle },
         { SessionLifecycle.Failed, null, false, AgentRowStatus.Failed, RuntimeStatus.Failed, AgentRowGroup.Finished },
-        { SessionLifecycle.Failed, null, true, AgentRowStatus.Failed, RuntimeStatus.Failed, AgentRowGroup.Finished },
+        { SessionLifecycle.Failed, null, true, AgentRowStatus.Closed, RuntimeStatus.Failed, AgentRowGroup.Idle },
         { SessionLifecycle.Lost, null, false, AgentRowStatus.Lost, RuntimeStatus.Unreachable, AgentRowGroup.Lost },
         { SessionLifecycle.Lost, RuntimeStatus.Running, false, AgentRowStatus.Lost, RuntimeStatus.Unreachable, AgentRowGroup.Lost },
+        { SessionLifecycle.Running, null, true, AgentRowStatus.Closed, RuntimeStatus.Running, AgentRowGroup.Idle },
+        { SessionLifecycle.Created, RuntimeStatus.Running, true, AgentRowStatus.Running, RuntimeStatus.Running, AgentRowGroup.Running },
+        { SessionLifecycle.Lost, null, true, AgentRowStatus.Lost, RuntimeStatus.Unreachable, AgentRowGroup.Lost },
         { (SessionLifecycle)99, null, false, AgentRowStatus.Unknown, null, AgentRowGroup.Idle },
         { SessionLifecycle.Running, (RuntimeStatus)99, false, AgentRowStatus.Unknown, null, AgentRowGroup.Idle },
     };

@@ -70,6 +70,15 @@ public sealed class ArtifactPanelModel : ObservableModel, IDockPanel, IDisposabl
     /// <summary>Gets why the surface is unavailable, or <see cref="ArtifactSurfaceReason.None"/>.</summary>
     public ArtifactSurfaceReason SurfaceReason => _surface.Reason;
 
+    /// <summary>Gets the version the host delivered last, with its bytes, or null. A view bound later shows it.</summary>
+    public ArtifactPanelDelivery? Delivered { get; private set; }
+
+    /// <summary>Gets the surface the panel loads into. A view attaches the surface it draws.</summary>
+    public IArtifactSurface Surface => _surface;
+
+    /// <summary>Occurs when <see cref="DeliverAsync"/> delivers a version, so a bound view shows its content.</summary>
+    public event EventHandler? DeliveryChanged;
+
     /// <summary>Gets every navigation the surface cancelled since the panel was last closed.</summary>
     public IReadOnlyList<Uri> BlockedNavigations => _blockedNavigations;
 
@@ -155,11 +164,28 @@ public sealed class ArtifactPanelModel : ObservableModel, IDockPanel, IDisposabl
         NotifyPanel();
     }
 
+    /// <summary>
+    /// Delivers one version the host read from the store and opens the panel on it. The bytes are kept, so a view bound later shows the same
+    /// content, and the surface loads the same document.
+    /// </summary>
+    /// <param name="delivery">The version and its bytes.</param>
+    /// <param name="cancellationToken">Cancels the load.</param>
+    /// <returns>A task that completes when the surface accepted the version and the views were told.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="delivery"/> is null.</exception>
+    public async ValueTask DeliverAsync(ArtifactPanelDelivery delivery, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(delivery);
+        Delivered = delivery;
+        await ShowAsync(delivery.Item, cancellationToken).ConfigureAwait(false);
+        DeliveryChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     /// <summary>Hides the panel and destroys the surface. Nothing is preserved; Show loads again.</summary>
     public void Hide()
     {
         _open = false;
         _current = null;
+        Delivered = null;
         DestroySurface();
         NotifyPanel();
     }

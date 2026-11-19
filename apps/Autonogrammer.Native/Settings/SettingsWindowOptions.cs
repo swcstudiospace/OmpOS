@@ -67,6 +67,12 @@ internal sealed class SettingsWindowOptions
     /// <summary>Gets the remote environments host the Remote page shows, or null for a window without a Remote page.</summary>
     public IRemoteEnvironmentsHost? RemoteEnvironments { get; init; }
 
+    /// <summary>Gets the head's Remote environments model the Remote page shows, or null to make a page of its own.</summary>
+    public RemoteEnvironmentsViewModel? RemoteEnvironmentsModel { get; init; }
+
+    /// <summary>Gets the head's Containers and WSL model the Remote page shows, or null to make one from the hosts when they are present.</summary>
+    public RuntimeEnvironmentsViewModel? RuntimeEnvironmentsModel { get; init; }
+
     /// <summary>Gets the cloud agents host the Cloud page shows. Null is a head without an API base address: the page then shows its not-configured state and no agent control.</summary>
     public ICloudAgentsHost? Cloud { get; init; }
 

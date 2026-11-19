@@ -39,9 +39,6 @@ public static class HandlerActionIds
     /// <summary><c>/about</c>: shows the About window.</summary>
     public const string AppAbout = "app.about";
 
-    /// <summary><c>/logs</c>: opens the log folder.</summary>
-    public const string AppLogs = "app.logs";
-
     /// <summary><c>/quit</c>, <c>/exit</c>: closes the application the way its close button does.</summary>
     public const string AppQuit = "app.quit";
 

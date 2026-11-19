@@ -1,6 +1,7 @@
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Customize;
+using Autonogrammer.Presentation.Settings.Privacy;
 using Autonogrammer.UI.Components.Settings;
 using Bunit;
 using Microsoft.AspNetCore.Components;
@@ -29,7 +30,7 @@ public sealed class SettingsPagesTests : UiTestContext
         cut.Find("#autonogrammer-setting-theme").GetAttribute("role").ShouldBe("group");
         cut.Find("#autonogrammer-setting-theme").GetAttribute("aria-labelledby").ShouldBe("autonogrammer-setting-theme-label");
         cut.Find("#autonogrammer-setting-theme-label").TextContent.ShouldBe(SettingsCopy.ThemeLabel);
-        cut.Find(".autonogrammer-settings-privacy").TextContent.ShouldBe(SettingsCopy.PrivacyStatement);
+        cut.Find(".autonogrammer-settings-privacy").TextContent.ShouldBe(PrivacyCopy.Summary);
         module.VerifyNotInvoke("setTheme");
         module.VerifyNotInvoke("setMotion");
         AssertAccessible(cut);

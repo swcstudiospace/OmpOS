@@ -69,7 +69,7 @@ public sealed class AutomationEditorValidationTests
         model.CanSave.ShouldBeTrue();
 
         model.Name = new string('a', 101);
-        model.Errors["name"].ShouldBe(AutomationsCopy.NameTooLong);
+        model.Errors["name"].ShouldBe(AutomationsCopy.NameTooLong(AutomationEditorModel.NameMaxLength));
         model.CanSave.ShouldBeFalse();
 
         model.Name = " " + new string('a', 100) + " ";
@@ -89,7 +89,7 @@ public sealed class AutomationEditorValidationTests
         model.Errors.ContainsKey("prompt").ShouldBeFalse();
 
         model.Prompt = new string('p', 20001);
-        model.Errors["prompt"].ShouldBe(AutomationsCopy.PromptTooLong);
+        model.Errors["prompt"].ShouldBe(AutomationsCopy.PromptTooLong(AutomationEditorModel.PromptMaxLength));
 
         model.Prompt = " \n ";
         model.Errors["prompt"].ShouldBe(AutomationsCopy.PromptRequired);
@@ -207,7 +207,7 @@ public sealed class AutomationEditorValidationTests
         model.CanSave.ShouldBeTrue();
 
         model.RepositoriesText = Repositories(17);
-        model.Errors["repositories"].ShouldBe(AutomationsCopy.RepositoriesTooMany);
+        model.Errors["repositories"].ShouldBe(AutomationsCopy.RepositoriesTooMany(AutomationEditorModel.MaxRepositories));
         model.CanSave.ShouldBeFalse();
 
         model.RepositoriesText = Repositories(16) + "\n\n  \n";
@@ -270,7 +270,7 @@ public sealed class AutomationEditorValidationTests
         model.CanSave.ShouldBe(valid);
         if (!valid)
         {
-            model.Errors["secrets"].ShouldBe(AutomationsCopy.SecretNameInvalid);
+            model.Errors["secrets"].ShouldBe(AutomationsCopy.SecretNameInvalid(AutomationEditorModel.SecretNameMaxLength));
         }
     }
 

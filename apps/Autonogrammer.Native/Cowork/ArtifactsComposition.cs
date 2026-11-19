@@ -1,4 +1,6 @@
 using Autonogrammer.Accounts;
+using Autonogrammer.Contracts.Artifacts;
+using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Cowork;
 using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Cowork.Artifacts;
@@ -35,6 +37,7 @@ internal sealed class ArtifactsComposition : IDisposable
     private readonly Lock _lock = new();
     private AccountArtifacts? _current;
     private int _disposed;
+    private readonly EmbeddedMermaidAssetProvider _mermaid = new();
 
     /// <summary>Builds the composition and brings it in line with the gate's current account.</summary>
     /// <param name="accountGate">The signed-in account as Cowork storage sees it. Its folder key names the store.</param>
@@ -63,7 +66,7 @@ internal sealed class ArtifactsComposition : IDisposable
         _time = TimeProvider.System;
         _limiter = new ArtifactWriteLimiter(_time);
         _panel = new ArtifactPanelModel(
-            new NativeWebViewArtifactSurface(static _ => ArtifactDocumentResult.Refused(ArtifactSurfaceReason.DocumentRefused)),
+            new NativeWebViewArtifactSurface(DocumentFor),
             new ArtifactPanelOptions(options.AutoOpen));
         try
         {
@@ -88,6 +91,17 @@ internal sealed class ArtifactsComposition : IDisposable
     /// Gets the provider the tool host holds for the whole head. While an account is signed in it offers the artifact tools; while signed out it offers none.
     /// </summary>
     public ICoworkToolProvider ToolProvider => _tools;
+
+    /// <summary>
+    /// Gets or sets the sink that receives the card of each successful artifact create or update, with the session that made the call. The
+    /// tools run on a background thread, so the sink marshals to its own thread. Null drops the cards.
+    /// </summary>
+    public Action<string, ArtifactBlock>? CardSink { get; set; }
+
+    /// <summary>Forwards a card from the account's tool provider to the sink.</summary>
+    /// <param name="sessionId">The session that made the call.</param>
+    /// <param name="card">The card.</param>
+    private void PublishCard(string sessionId, ArtifactBlock card) => CardSink?.Invoke(sessionId, card);
 
     /// <summary>Gets the account's store, or null while no account is signed in.</summary>
     public FileArtifactStore? Store
@@ -138,6 +152,64 @@ internal sealed class ArtifactsComposition : IDisposable
         }
     }
 
+    /// <summary>
+    /// Delivers the version an artifact card names to the panel. The version is read from the signed-in account's store. A card whose version
+    /// cannot be read, or that arrives while no account is signed in, leaves the panel as it was.
+    /// </summary>
+    /// <param name="block">The card the session stream carried.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>True when the panel shows the version.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="block"/> is null.</exception>
+    /// <exception cref="ObjectDisposedException">The composition is disposed.</exception>
+    public async Task<bool> DeliverAsync(ArtifactBlock block, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(block);
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        ArtifactService? service;
+        lock (_lock)
+        {
+            service = _current?.Service;
+        }
+
+        if (service is null)
+        {
+            return false;
+        }
+
+        var read = await service.ReadAllAsync(block.ArtifactId, cancellationToken).ConfigureAwait(true);
+        var versions = read.Value;
+        var version = versions?.FirstOrDefault(candidate => candidate.Number == block.Version);
+        if (versions is null || version is null)
+        {
+            return false;
+        }
+
+        var item = new ArtifactPanelItem(version.ArtifactId, version.Title, version.Kind, version.Number, versions.Count, version.ContentSha256, []);
+        await _panel.DeliverAsync(new ArtifactPanelDelivery(item, version.Content, version.Language, version.MediaType), cancellationToken).ConfigureAwait(true);
+        return true;
+    }
+
+    /// <summary>
+    /// Builds the document the surface loads. Only the version the panel delivered is built, and only for a surface kind whose request names it.
+    /// </summary>
+    /// <param name="request">The load request the panel made.</param>
+    /// <returns>The document, or the reason it is refused.</returns>
+    private ArtifactDocumentResult DocumentFor(ArtifactSurfaceRequest request)
+    {
+        var delivery = _panel.Delivered;
+        if (delivery is null
+            || request.Kind is not (ArtifactKind.Html or ArtifactKind.Svg or ArtifactKind.Mermaid)
+            || !string.Equals(delivery.Item.ArtifactId, request.ArtifactId, StringComparison.Ordinal)
+            || delivery.Item.Number != request.Number
+            || !string.Equals(delivery.Item.ContentSha256, request.ContentSha256, StringComparison.Ordinal))
+        {
+            return ArtifactDocumentResult.Refused(ArtifactSurfaceReason.DocumentRefused);
+        }
+
+        var content = new ArtifactContent(delivery.Item.Kind, delivery.Item.Title, delivery.Bytes, delivery.Language, delivery.MediaType);
+        return ArtifactDocumentBuilder.Build(content, request.ApprovedOrigins, _mermaid);
+    }
+
     /// <summary>Registers the panel with the shell, the same way the browser pane registers. The dock host shows the registered panels.</summary>
     /// <param name="shell">The Cowork shell that owns the dock.</param>
     /// <exception cref="ArgumentNullException"><paramref name="shell"/> is null.</exception>
@@ -174,11 +246,11 @@ internal sealed class ArtifactsComposition : IDisposable
     {
         var store = new FileArtifactStore(CoworkAccountFolder.AccountDirectory(_stateRoot, key), key);
         var service = new ArtifactService(store, _time, _options);
-        var tools = new ArtifactToolProvider(service, _limiter, _options);
+        var tools = new ArtifactToolProvider(service, _limiter, _options, cardPublished: PublishCard);
         var sync = _remoteClient is null
             ? null
             : new ArtifactSyncService(store, new HttpArtifactRemote(_remoteClient, _bearer));
-        return new AccountArtifacts(key, store, tools, sync);
+        return new AccountArtifacts(key, store, service, tools, sync);
     }
 
     private void TearDown()
@@ -193,7 +265,7 @@ internal sealed class ArtifactsComposition : IDisposable
         _panel.SignOut();
     }
 
-    private sealed record AccountArtifacts(string Key, FileArtifactStore Store, ArtifactToolProvider Tools, ArtifactSyncService? Sync);
+    private sealed record AccountArtifacts(string Key, FileArtifactStore Store, ArtifactService Service, ArtifactToolProvider Tools, ArtifactSyncService? Sync);
 
     /// <summary>
     /// The provider the host holds for the head's life. It forwards to the signed-in account's provider and offers nothing while signed out.

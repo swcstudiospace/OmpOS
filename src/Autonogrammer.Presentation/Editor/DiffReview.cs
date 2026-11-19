@@ -31,7 +31,7 @@ public sealed class DiffReview : ObservableModel
         ArgumentNullException.ThrowIfNull(diff);
 
         Original = original;
-        _originalLines = SplitText(original, out _originalEndsWithNewline);
+        _originalLines = TextLines.Split(original, out _originalEndsWithNewline);
 
         var reviews = new List<HunkReview>(diff.Hunks.Count);
         var cursor = 0;
@@ -133,18 +133,5 @@ public sealed class DiffReview : ObservableModel
         }
 
         return string.Join('\n', output) + (endsWithNewline ? "\n" : string.Empty);
-    }
-
-    // The empty text has no lines; text ending in '\n' has no extra empty line after its final break.
-    private static string[] SplitText(string text, out bool endsWithNewline)
-    {
-        if (text.Length == 0)
-        {
-            endsWithNewline = true;
-            return [];
-        }
-
-        endsWithNewline = text[^1] == '\n';
-        return (endsWithNewline ? text[..^1] : text).Split('\n');
     }
 }

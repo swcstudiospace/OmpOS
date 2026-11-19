@@ -10,9 +10,6 @@ public sealed class BundleSectionModel : ObservableModel
     /// <summary>The limit copy shown on the screen that lists hooks.</summary>
     public const string HooksListedNotRun = "hooks listed, not run";
 
-    /// <summary>The notice for a project-scope bundle that the user has not enabled.</summary>
-    public const string ProjectScopeOff = "BundleProjectScopeOff";
-
     private const string UnexpectedFailure = "The bundle change could not be completed.";
 
     private readonly IBundleManagementSource _source;

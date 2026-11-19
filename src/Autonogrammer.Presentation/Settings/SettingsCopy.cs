@@ -3,8 +3,8 @@ using System.Globalization;
 namespace Autonogrammer.Presentation.Settings;
 
 /// <summary>
-/// Every text the settings window shows outside the model providers and customize pages, in one place so a view carries no
-/// literal. Accessible names are plain sentences a screen reader can speak.
+/// The shared text of the settings window: its title, the navigation labels and the General page. A page with its own copy class (Privacy, Network and
+/// others) keeps its text there, so a view carries no literal. Accessible names are plain sentences a screen reader can speak.
 /// </summary>
 public static class SettingsCopy
 {
@@ -58,6 +58,9 @@ public static class SettingsCopy
 
     /// <summary>The limit on the Bundles screen. Hooks are listed and never run.</summary>
     public const string BundlesLimit = "hooks listed, not run";
+
+    /// <summary>The notice on a project-scope bundle that the user has not turned on for this project.</summary>
+    public const string BundleProjectScopeOff = "This bundle is off for this project. Turn it on to use its items.";
 
     /// <summary>The limit on the Connectors screen.</summary>
     public const string ConnectorsLimit = "Auto does not trust readOnlyHint";
@@ -191,13 +194,6 @@ public static class SettingsCopy
 
     /// <summary>The description of the choice that keeps all motion.</summary>
     public const string MotionFullDescription = "Keep every transition and animation.";
-
-    /// <summary>The heading of the privacy statement.</summary>
-    public const string PrivacyHeading = "Privacy";
-
-    /// <summary>The privacy statement. It is text only: there is no telemetry and so no telemetry switch.</summary>
-    public const string PrivacyStatement =
-        "Autonogrammer sends nothing anywhere itself. Requests to model providers are made by omp, with the providers and credentials you configure for omp.";
 
     /// <summary>The heading of the Agents page.</summary>
     public const string AgentsHeading = "Agents";

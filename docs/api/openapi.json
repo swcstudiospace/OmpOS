@@ -7570,7 +7570,7 @@
           },
           "isStale": {
             "type": "boolean",
-            "description": "Gets a value indicating whether the session shows as running but has had no activity for longer than a run lease lives."
+            "description": "Gets a value indicating whether the session is running or awaiting tool approval but has had no activity for longer than a run lease lives."
           },
           "closed": {
             "type": "boolean",
@@ -8891,7 +8891,7 @@
               "null",
               "boolean"
             ],
-            "description": "Gets whether to open a draft. When absent the pull request is ready for review. The server setting `Cloud:PullRequests:NeverDraft` overrides `true`."
+            "description": "Gets whether to open a draft. When absent the pull request is ready for review. The server setting `Cloud:Git:PullRequests:NeverDraft` overrides `true`."
           }
         },
         "description": "The body of `POST /cloud/agents/{id}/pull-request`."
@@ -9394,19 +9394,7 @@
         "description": "Body of `GET /dispatch/commands`."
       },
       "DispatchCommandState": {
-        "enum": [
-          "queued",
-          "delivered",
-          "received",
-          "awaiting_approval",
-          "accepted",
-          "running",
-          "completed",
-          "failed",
-          "cancelled",
-          "expired"
-        ],
-        "description": "Hub-side command states. The hub never marks DispatchCommandState.Completed on its own."
+        "description": "Hub-side command states. The hub never marks DispatchCommandState.Completed on its own. Wire names come from DispatchCommandStateWire."
       },
       "DispatchDeviceDto": {
         "required": [

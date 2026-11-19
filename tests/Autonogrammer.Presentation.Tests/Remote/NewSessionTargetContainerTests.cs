@@ -104,7 +104,7 @@ public sealed class NewSessionTargetContainerTests
         var model = new NewSessionTargetModel([Container("c")]);
         model.Select("container:c");
 
-        model.SetStatus("c", status);
+        model.SetStatusSource(id => string.Equals(id, "c", StringComparison.Ordinal) ? status : null);
 
         model.CanStart.ShouldBe(canStart);
         model.TryGetTarget(out _).ShouldBe(canStart);
@@ -134,7 +134,7 @@ public sealed class NewSessionTargetContainerTests
     public void TheStatusPersistsAcrossARefresh()
     {
         var model = new NewSessionTargetModel([Container("c")]);
-        model.SetStatus("c", RemoteEnvironmentStatus.NotRunning);
+        model.SetStatusSource(id => string.Equals(id, "c", StringComparison.Ordinal) ? RemoteEnvironmentStatus.NotRunning : null);
 
         model.SetProfiles([Container("c"), Container("d", "other")]);
 

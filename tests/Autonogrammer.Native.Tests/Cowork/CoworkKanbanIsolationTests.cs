@@ -133,7 +133,7 @@ public sealed class CoworkKanbanIsolationTests
         var cowork = OpenCowork(tree.State);
         cowork.Create("still writable").Status.ShouldBe(CoworkSessionStatus.Created);
         cowork.List().Count.ShouldBe(1);
-        code.Snapshot().Count.ShouldBe(AgentSessionRegistry.MaxSessions);
+        code.Snapshot().Count.ShouldBe(AgentSessionLimits.MaxSessions);
     }
 
     /// <summary>A full Cowork registry refuses a Cowork task and leaves the Code registry writable.</summary>
@@ -142,7 +142,7 @@ public sealed class CoworkKanbanIsolationTests
     {
         using var tree = new TempTree();
         var cowork = OpenCowork(tree.State);
-        for (var index = 0; index < AgentSessionRegistry.MaxSessions; index++)
+        for (var index = 0; index < AgentSessionLimits.MaxSessions; index++)
         {
             cowork.Create("task " + index);
         }
@@ -152,7 +152,7 @@ public sealed class CoworkKanbanIsolationTests
         var code = OpenCode(Path.Combine(tree.State, CodeFileName), tree.State);
         code.Create("still writable", null).Lifecycle.ShouldBe(SessionLifecycle.Created);
         code.Snapshot().Count.ShouldBe(1);
-        cowork.List().Count.ShouldBe(AgentSessionRegistry.MaxSessions);
+        cowork.List().Count.ShouldBe(AgentSessionLimits.MaxSessions);
     }
 
     /// <summary>A Crash-then-Recover pass on the Code side touches only Code rows, and the Cowork pass touches only Cowork rows.</summary>
@@ -203,7 +203,7 @@ public sealed class CoworkKanbanIsolationTests
 
     private static void FillCode(AgentSessionRegistry code)
     {
-        for (var index = 0; index < AgentSessionRegistry.MaxSessions; index++)
+        for (var index = 0; index < AgentSessionLimits.MaxSessions; index++)
         {
             code.Create("code " + index, null);
         }

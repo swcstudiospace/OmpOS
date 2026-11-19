@@ -24,17 +24,13 @@
         </div>
     </dl>
     <h2 class="autonogrammer-about-heading">@AboutViewCopy.LicenceHeading</h2>
-    <p>@AboutViewCopy.LicenceNotice</p>
+    <p>@AboutCopy.SourceOffer</p>
     <p>
         <a class="autonogrammer-about-link" href="@LicenceAddress" target="_blank" rel="noopener noreferrer">@AboutViewCopy.LicenceLinkLabel<span class="autonogrammer-sr-only"> @AboutViewCopy.NewTab</span></a>
     </p>
-    @if (SourceAddress is { } sourceAddress)
-    {
-        <p>@AboutViewCopy.SourceOffer</p>
-        <p>
-            <a class="autonogrammer-about-link" href="@sourceAddress" target="_blank" rel="noopener noreferrer">@AboutViewCopy.SourceLinkLabel<span class="autonogrammer-sr-only"> @AboutViewCopy.NewTab</span></a>
-        </p>
-    }
+    <p>
+        <a class="autonogrammer-about-link" href="@SourceAddress" target="_blank" rel="noopener noreferrer">@AboutViewCopy.SourceLinkLabel<span class="autonogrammer-sr-only"> @AboutViewCopy.NewTab</span></a>
+    </p>
 
     <h2 class="autonogrammer-about-heading">@AboutViewCopy.AccessibilityHeading</h2>
     <p>@AboutViewCopy.AccessibilityTarget</p>
@@ -46,7 +42,7 @@
 </section>
 
 @code {
-    /// <summary>Gets the licence and source facts the API reported (<c>GET /source</c>), or null while it has not answered or when not connected. The source link is hidden without them.</summary>
+    /// <summary>Gets the licence and source facts the API reported (<c>GET /source</c>), or null while it has not answered or when not connected. Without them the source link goes to the repository address.</summary>
     [Parameter]
     public SourceInfo? Source { get; set; }
 
@@ -56,7 +52,7 @@
 
     private string LicenceAddress => Source is { } source && IsWeb(source.LicenceUrl) ? source.LicenceUrl.AbsoluteUri : ShellInfo.LicenceUrl;
 
-    private string? SourceAddress => Source is { } source && IsWeb(source.SourceUrl) ? source.SourceUrl.AbsoluteUri : null;
+    private string SourceAddress => Source is { } source && IsWeb(source.SourceUrl) ? source.SourceUrl.AbsoluteUri : ShellInfo.SourceRepositoryUrl;
 
     // Only an absolute http or https address is drawn as a link; the API's answer is data, never a script address.
     private static bool IsWeb(Uri address) =>

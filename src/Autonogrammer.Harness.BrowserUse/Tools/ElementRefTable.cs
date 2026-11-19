@@ -1,3 +1,5 @@
+using Autonogrammer.Contracts.Cowork.Browser;
+
 namespace Autonogrammer.Harness.BrowserUse.Tools;
 
 /// <summary>Element refs from one accessibility snapshot. A mismatched generation is stale.</summary>
@@ -9,8 +11,8 @@ public sealed class ElementRefTable
     /// <summary>Gets the generation of the current snapshot.</summary>
     public int Generation => _generation;
 
-    /// <summary>The failure text for a stale ref.</summary>
-    public const string StaleRef = "StaleRef";
+    /// <summary>The failure text for a stale ref. It is the pane state name, so the model and the pane share one spelling.</summary>
+    public const string StaleRef = nameof(BrowserPaneState.StaleRef);
 
     /// <summary>Replaces the table from accessibility nodes that carry a backend node id.</summary>
     /// <param name="nodes">The nodes.</param>

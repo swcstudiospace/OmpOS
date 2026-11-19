@@ -1,8 +1,8 @@
 namespace Autonogrammer.Presentation.Settings;
 
 /// <summary>
-/// The General page: the theme and motion settings and a read-only privacy statement. The statement is text only; Autonogrammer sends nothing itself,
-/// so there is no telemetry switch to offer. Theme and motion are a draft until <see cref="EditableSettingsPage{TValues}.SaveAsync"/> writes it through the source.
+/// The General page: the theme and motion settings and a read-only privacy statement. The statement is text only, held in PrivacyCopy, so there is no telemetry switch to offer.
+/// Theme and motion are a draft until <see cref="EditableSettingsPage{TValues}.SaveAsync"/> writes it through the source.
 /// </summary>
 public sealed class GeneralPage : EditableSettingsPage<GeneralSettingsValues>
 {

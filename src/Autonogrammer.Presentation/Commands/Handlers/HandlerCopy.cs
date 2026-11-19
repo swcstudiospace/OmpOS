@@ -65,16 +65,6 @@ public static class HandlerCopy
     /// <returns>The sentence.</returns>
     public static string ClipboardRefused() => "The clipboard did not take it.";
 
-    /// <summary>Gets the sentence for a folder that opened.</summary>
-    /// <param name="path">The folder.</param>
-    /// <returns>The sentence.</returns>
-    public static string LogsOpened(string path) => "Opened the log folder: " + path;
-
-    /// <summary>Gets the sentence for a folder that did not open.</summary>
-    /// <param name="path">The folder.</param>
-    /// <returns>The sentence.</returns>
-    public static string LogsNotOpened(string path) => "Could not open the log folder: " + path;
-
     /// <summary>Gets the sentence for the feedback page.</summary>
     /// <returns>The sentence.</returns>
     public static string FeedbackOpened() => "Opened the issue form of Autonogrammer in your browser.";

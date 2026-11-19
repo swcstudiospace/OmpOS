@@ -149,7 +149,7 @@ public sealed class HostedAutomationRowModel
             return AutomationsCopy.CloudTargetNoRepository;
         }
 
-        var text = AutomationsCopy.CloudTargetNoRepository + ": " + RepositoryPath(draft.Repositories[0].Address);
+        var text = AutomationsCopy.CloudTarget + ": " + RepositoryPath(draft.Repositories[0].Address);
         return draft.Repositories.Count == 1
             ? text
             : text + " (+" + (draft.Repositories.Count - 1).ToString(CultureInfo.InvariantCulture) + " more)";

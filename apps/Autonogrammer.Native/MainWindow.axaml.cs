@@ -44,6 +44,8 @@ internal partial class MainWindow : Window
         {
             Hooks = services.Hooks,
             RemoteEnvironments = services.RemoteEnvironments,
+            RemoteEnvironmentsModel = services.RemoteEnvironmentsModel,
+            RuntimeEnvironmentsModel = services.RuntimeEnvironmentsModel,
             NewSessionTarget = services.NewSessionTarget,
             Checkpoints = services.CheckpointBackend,
             Worktrees = services.Worktrees,

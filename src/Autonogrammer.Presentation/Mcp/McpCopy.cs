@@ -247,7 +247,7 @@ public static class McpCopy
     {
         var listed = servers == 1 ? "1 server." : servers.ToString(CultureInfo.InvariantCulture) + " servers.";
         return attention == 0
-            ? listed + " A server is offered to a session only when it is on, complete and, for a project server that starts a process, approved."
+            ? listed + " A server is offered to a session only when it is on, complete and, for a project server that starts a process or reads an environment variable, approved."
             : listed + " " + attention.ToString(CultureInfo.InvariantCulture) + " need attention and are not offered.";
     }
 }

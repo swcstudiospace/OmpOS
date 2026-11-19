@@ -364,7 +364,7 @@ public static class SlashCommandCatalogue
             Make(
                 "open",
                 SlashCommandGroup.Cli,
-                "Opens the repository's Git root in Cursor.",
+                "Opens a workspace file in the Autonogrammer editor, at an optional line.",
                 SlashHandlerKind.NativeAction,
                 SlashCommandStatus.Partial,
                 "editor.open",
@@ -1316,7 +1316,7 @@ public static class SlashCommandCatalogue
             Make(
                 "best-of-n",
                 SlashCommandGroup.Chat,
-                "Runs one worktree per model and compares the results; never merges.",
+                "Runs n candidates of the current model, each in its own worktree, and compares the results; never merges.",
                 SlashHandlerKind.NativeAction,
                 SlashCommandStatus.Partial,
                 "worktree.bestofn",

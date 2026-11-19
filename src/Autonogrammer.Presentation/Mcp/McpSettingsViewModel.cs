@@ -4,9 +4,9 @@ namespace Autonogrammer.Presentation.Mcp;
 
 /// <summary>
 /// The MCP page: configured servers by scope and file with their status, the configuration problems, the consent prompt for a project server
-/// that starts a process, switch on and off, a connection check, add-from-template and an open-file seam. Every action changes the source,
-/// then the page is read again. The model starts no server itself: only <see cref="IMcpSettingsSource.CheckAsync"/> does, and only when the
-/// user presses the button.
+/// that starts a process or reads an environment variable, switch on and off, a connection check, add-from-template and an open-file seam.
+/// Every action changes the source, then the page is read again. The model starts no server itself: only <see cref="IMcpSettingsSource.CheckAsync"/>
+/// does, and only when the user presses the button.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -35,6 +35,7 @@ public sealed class McpSettingsViewModel : ObservableModel
     private string _actionResult = string.Empty;
     private string _templateName = string.Empty;
     private bool _loaded;
+    private bool _loadFailed;
     private int _pending;
     private int _actionVersion;
 
@@ -205,13 +206,15 @@ public sealed class McpSettingsViewModel : ObservableModel
         if (failure is null)
         {
             _loaded = true;
+            _loadFailed = false;
             _loadFailure = string.Empty;
             Refresh();
             return;
         }
 
+        _loadFailed = true;
         _loadFailure = failure;
-        _state = McpViewState.Error;
+        _state = StateFor(_snapshot);
         Publish();
     }
 
@@ -399,10 +402,7 @@ public sealed class McpSettingsViewModel : ObservableModel
             _pendingConsent = null;
         }
 
-        if (_loaded)
-        {
-            _state = ComputeState(snapshot);
-        }
+        _state = StateFor(snapshot);
 
         Publish();
     }
@@ -431,6 +431,17 @@ public sealed class McpSettingsViewModel : ObservableModel
             entries.Exists(entry => string.Equals(entry.Name, id, StringComparison.Ordinal)),
             CanAddTemplate,
             new McpActionCommand(() => AddPresetAsync(id, CancellationToken.None)));
+    }
+
+    // The one rule for the page state. A failed load holds Error until a load succeeds, so a refresh from the last snapshot cannot replace it.
+    private McpViewState StateFor(McpSettingsSnapshot snapshot)
+    {
+        if (_loadFailed)
+        {
+            return McpViewState.Error;
+        }
+
+        return _loaded ? ComputeState(snapshot) : _state;
     }
 
     private McpViewState ComputeState(McpSettingsSnapshot snapshot)

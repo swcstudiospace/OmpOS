@@ -11,6 +11,9 @@ internal static class PanelText
     /// <summary>The character that marks a cut.</summary>
     internal const char Ellipsis = '\u2026';
 
+    /// <summary>The most characters kept of a task or Graph identifier wherever the panel shows one.</summary>
+    internal const int MaxIdChars = 64;
+
     /// <summary>Returns <paramref name="value"/> as plain display text of at most <paramref name="maxChars"/> characters plus the ellipsis.</summary>
     /// <param name="value">The untrusted text. Null or white space gives an empty string.</param>
     /// <param name="maxChars">The most characters kept before the ellipsis. At least 1.</param>

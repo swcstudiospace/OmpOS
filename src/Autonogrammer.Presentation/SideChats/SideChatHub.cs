@@ -69,7 +69,7 @@ public sealed class SideChatHub : ObservableModel
         return null;
     }
 
-    /// <summary>Closes one side chat and removes it from <see cref="Open"/>. The other side chats and the parent session are not touched.</summary>
+    /// <summary>Closes one side chat and removes it from <see cref="Open"/> and from the panel's <see cref="SideChatPanel.Chats"/>, so both lists agree. The other side chats and the parent session are not touched.</summary>
     /// <param name="chat">The side chat.</param>
     /// <param name="cancellationToken">Cancels the close of the child conversation.</param>
     /// <returns>A task that completes when the side chat is closed.</returns>
@@ -77,10 +77,18 @@ public sealed class SideChatHub : ObservableModel
     public async Task CloseAsync(SideChatModel chat, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(chat);
-        await chat.CloseAsync(cancellationToken).ConfigureAwait(true);
-        if (_open.Remove(chat))
+        try
         {
-            NotifyPropertyChanged(nameof(Open));
+            await chat.CloseAsync(cancellationToken).ConfigureAwait(true);
+        }
+        finally
+        {
+            // A chat that is marked closed is no longer listed, even when the close was cancelled.
+            if (_open.Remove(chat))
+            {
+                _panel.Remove(chat.Chat);
+                NotifyPropertyChanged(nameof(Open));
+            }
         }
     }
 }

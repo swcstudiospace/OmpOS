@@ -434,4 +434,20 @@ public sealed class RuntimeEnvironmentsViewModelTests
         await page.LoadAsync(Token).ConfigureAwait(true);
         page.Rows[0].Status.ShouldBe(RemoteEnvironmentStatus.NotChecked);
     }
+
+    /// <summary>After a reload a row forgets its test outcome when the podman path changed, since the test ran the old executable.</summary>
+    [Fact]
+    public async Task AReloadForgetsTheOutcomeWhenThePodmanPathChanges()
+    {
+        var (page, store, runtime, _) = Create();
+        _ = store.With(Container() with { Container = new ContainerProfile { Container = "devbox", RemoteUser = "dev", WorkspaceFolder = "/workspaces/app", PodmanPath = "/usr/bin/podman" } });
+        runtime.ContainerReport = Failure(RemoteDiagnosisKind.OmpMissing);
+        await page.LoadAsync(Token).ConfigureAwait(true);
+        await page.TestAsync(page.Rows[0], Token).ConfigureAwait(true);
+        page.Rows[0].Status.ShouldBe(RemoteEnvironmentStatus.VersionMismatch);
+
+        await store.SaveProfileAsync(Container() with { Container = new ContainerProfile { Container = "devbox", RemoteUser = "dev", WorkspaceFolder = "/workspaces/app", PodmanPath = "/opt/podman/bin/podman" } }, Token).ConfigureAwait(true);
+        await page.LoadAsync(Token).ConfigureAwait(true);
+        page.Rows[0].Status.ShouldBe(RemoteEnvironmentStatus.NotChecked);
+    }
 }

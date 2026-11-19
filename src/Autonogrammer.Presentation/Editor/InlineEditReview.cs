@@ -99,8 +99,8 @@ public sealed class InlineEditReview
 
     private static UnifiedDiff BuildDiff(string original, string proposed)
     {
-        var oldLines = SplitText(original, out var oldEndsWithNewline);
-        var newLines = SplitText(proposed, out var newEndsWithNewline);
+        var oldLines = TextLines.Split(original, out var oldEndsWithNewline);
+        var newLines = TextLines.Split(proposed, out var newEndsWithNewline);
 
         // A change of the final line break alone has no line difference, so the last line is always compared as changed then.
         var breakChanged = oldEndsWithNewline != newEndsWithNewline;
@@ -281,19 +281,6 @@ public sealed class InlineEditReview
         }
 
         return hunks;
-    }
-
-    // The same split as DiffReview: the empty text has no lines, and text ending in '\n' has no extra empty line after its final break.
-    private static string[] SplitText(string text, out bool endsWithNewline)
-    {
-        if (text.Length == 0)
-        {
-            endsWithNewline = true;
-            return [];
-        }
-
-        endsWithNewline = text[^1] == '\n';
-        return (endsWithNewline ? text[..^1] : text).Split('\n');
     }
 
     // One line of the comparison with the zero-based index of the next original and new line it sits before.

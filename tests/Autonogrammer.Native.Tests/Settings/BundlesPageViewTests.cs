@@ -1,5 +1,6 @@
 #pragma warning disable MA0002
 using Autonogrammer.Native.Views.Settings;
+using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Plugins;
 using Avalonia.Controls;
 using Shouldly;
@@ -29,7 +30,7 @@ public sealed class BundlesPageViewTests
                 var texts = SettingsTree.Texts(view);
                 texts.ShouldContain("hooks listed, not run");
                 texts.ShouldContain("p");
-                texts.ShouldContain(BundleSectionModel.ProjectScopeOff);
+                texts.ShouldContain(SettingsCopy.BundleProjectScopeOff);
                 texts.ShouldContain("BundleComponentNotLoaded(hooks)");
                 SettingsTree.Has<TextBox>(view, "Bundle folder or zip path").ShouldBeTrue();
                 SettingsTree.Has<Button>(view, "Install bundle").ShouldBeTrue();

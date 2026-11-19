@@ -13,8 +13,6 @@ namespace Autonogrammer.Presentation.Settings.Models;
 /// </remarks>
 public sealed class ProviderCardModel : ObservableModel
 {
-    private const string Hidden = "[hidden]";
-
     private readonly IModelsSettingsSource _source;
     private readonly IProviderCardHost _host;
     private ProviderInfo _info;
@@ -215,7 +213,7 @@ public sealed class ProviderCardModel : ObservableModel
 
         if (!result.Succeeded)
         {
-            ErrorText = Hide(result.Message, key) ?? ModelsCopy.ActionFailed;
+            ErrorText = ProviderKeyScrubber.Hide(result.Message, key) ?? ModelsCopy.ActionFailed;
             return false;
         }
 
@@ -390,16 +388,6 @@ public sealed class ProviderCardModel : ObservableModel
         {
             row.IsDefault = string.Equals(row.Selector, defaultModel, StringComparison.Ordinal);
         }
-    }
-
-    private static string? Hide(string? message, string key)
-    {
-        if (string.IsNullOrWhiteSpace(message))
-        {
-            return null;
-        }
-
-        return key.Length == 0 ? message : message.Replace(key, Hidden, StringComparison.Ordinal);
     }
 
     private ProviderModelRow[] BuildRows() =>

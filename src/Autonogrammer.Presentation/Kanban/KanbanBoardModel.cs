@@ -25,8 +25,9 @@ namespace Autonogrammer.Presentation.Kanban;
 /// <para>
 /// State: <see cref="State"/> is Loading while the head says so (<see cref="KanbanBoardOptions.StartLoading"/>, <see cref="RetryCommand"/>), Error when the catalog
 /// could not be read and the board has nothing to show, Empty when there is no session, and Ready otherwise. A session that is closed or ended
-/// is never dropped by the board (DR-5b): it stays as a card in a terminal column (Completed, Failed or Archived), and a dropped engine shows as
-/// Disconnected, which is distinct from Failed. A card leaves the board only when the catalog itself forgets the session.
+/// is never dropped by the board (DR-5b). A closed session sits in Archived whatever its runtime status, and a drop out of Archived is refused.
+/// A session that ended by itself stays in Completed or Failed. A dropped engine shows as Disconnected, which is distinct from Failed. A card
+/// leaves the board only when the catalog itself forgets the session.
 /// </para>
 /// <para>Threading: every member runs on the context that owns the models; the catalog model already dispatches its own changes there.</para>
 /// </remarks>
@@ -215,7 +216,7 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
     /// <returns>True only for Backlog and Archived.</returns>
     public bool CanDrop(string columnKey) => _columns.FirstOrDefault(column => string.Equals(column.Key, columnKey, StringComparison.Ordinal))?.AcceptsDrop ?? false;
 
-    /// <summary>Drops a card on a column. Only Backlog and Archived accept it; a runtime column refuses and nothing changes.</summary>
+    /// <summary>Drops a card on a column. Only Backlog and Archived accept it; a runtime column refuses. A closed card accepts only Archived. A refused drop changes nothing.</summary>
     /// <param name="sessionId">The card's session identifier.</param>
     /// <param name="columnKey">The key of the target column.</param>
     /// <returns>What happened.</returns>
@@ -237,6 +238,11 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
         if (column.UserStatus is not { } target)
         {
             return KanbanMoveOutcome.RefusedRuntimeColumn;
+        }
+
+        if (entry.IsClosed && target != UserSettableStatus.Archived)
+        {
+            return KanbanMoveOutcome.RefusedClosed;
         }
 
         if (string.Equals(ColumnKeyOf(entry), column.Key, StringComparison.Ordinal))
@@ -270,19 +276,17 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
 
     private static DateTimeOffset Latest(DateTimeOffset left, DateTimeOffset right) => left >= right ? left : right;
 
+    /// <summary>The user-settable status that holds a card: a closed session is always Archived, whatever its runtime status or placement.</summary>
+    private static UserSettableStatus? UserStatusOf(Entry entry) => entry.IsClosed ? UserSettableStatus.Archived : entry.ActivePlacement?.Status;
+
     private static string ColumnKeyOf(Entry entry)
     {
-        if (entry.ActivePlacement is { } placement)
+        if (UserStatusOf(entry) is { } userStatus)
         {
-            return KanbanColumn.KeyOf(placement.Status);
+            return KanbanColumn.KeyOf(userStatus);
         }
 
-        return entry.State switch
-        {
-            { Status: RuntimeStatus.Paused } when entry.IsClosed => KanbanColumn.ArchivedKey,
-            { } state => KanbanColumn.KeyOf(state.Status),
-            _ => KanbanColumn.BacklogKey,
-        };
+        return entry.State is { } state ? KanbanColumn.KeyOf(state.Status) : KanbanColumn.BacklogKey;
     }
 
     private static string ModelProviderTextOf(string? model, string? provider)
@@ -584,7 +588,7 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
         var provider = Known(info?.Provider, MaxModelChars);
         var title = PanelText.Plain(entry.Title, MaxTitleChars);
         var state = entry.State;
-        var userStatus = entry.ActivePlacement?.Status;
+        var userStatus = UserStatusOf(entry);
         var statusText = state is { } known ? KanbanColumn.TitleOf(known.Status) : NoStatusText;
         var lastActivity = RelativeTimeText.Format(entry.LastActivity, now);
         var modelProvider = ModelProviderTextOf(model, provider);

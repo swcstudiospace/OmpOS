@@ -7,15 +7,13 @@ namespace Autonogrammer.Presentation.Remote;
 
 /// <summary>
 /// One saved ssh environment on the remote page: its name, where it points, when it was last used, its status in words (the outcome of the last
-/// connection test, or the live state of a session on it) and the findings of the last test, each with its fix.
+/// connection test) and the findings of the last test, each with its fix.
 /// </summary>
 public sealed class RemoteProfileRow : ObservableModel
 {
     private readonly ObservableCollection<RemoteDiagnosisRow> _diagnoses = [];
     private RemoteEnvironmentStatus _tested = RemoteEnvironmentStatus.NotChecked;
-    private RemoteEnvironmentStatus? _live;
     private bool _isTesting;
-    private int _reconnectAttempt;
     private string _environmentText = string.Empty;
     private readonly string _lastUsedText;
 
@@ -66,14 +64,14 @@ public sealed class RemoteProfileRow : ObservableModel
     /// <summary>Gets whether the last test produced findings.</summary>
     public bool HasDiagnoses => _diagnoses.Count > 0;
 
-    /// <summary>Gets the status the row shows: a running test, else the live session state, else the outcome of the last test.</summary>
-    public RemoteEnvironmentStatus Status => _isTesting ? RemoteEnvironmentStatus.Testing : _live ?? _tested;
+    /// <summary>Gets the status the row shows: a running test, else the outcome of the last test.</summary>
+    public RemoteEnvironmentStatus Status => _isTesting ? RemoteEnvironmentStatus.Testing : _tested;
 
     /// <summary>Gets the short label of <see cref="Status"/>.</summary>
     public string StatusLabel => RemoteStatusDescriber.LabelOf(Status);
 
     /// <summary>Gets the sentence that explains <see cref="Status"/> and what to do.</summary>
-    public string StatusDetail => RemoteStatusDescriber.DetailOf(Status, _reconnectAttempt);
+    public string StatusDetail => RemoteStatusDescriber.DetailOf(Status);
 
     /// <summary>Gets whether a connection test is running.</summary>
     public bool IsTesting => _isTesting;
@@ -141,48 +139,40 @@ public sealed class RemoteProfileRow : ObservableModel
         Refresh();
     }
 
-    internal void ApplyConnection(RemoteConnectionState state, int reconnectAttempt, bool turnInterrupted)
-    {
-        _live = RemoteStatusDescriber.FromConnection(state, turnInterrupted);
-        _reconnectAttempt = reconnectAttempt;
-        Refresh();
-    }
-
-    internal void ApplyAuthenticating()
-    {
-        _live = RemoteEnvironmentStatus.Authenticating;
-        Refresh();
-    }
-
-    internal void ClearConnection()
-    {
-        _live = null;
-        _reconnectAttempt = 0;
-        Refresh();
-    }
-
-    // After a reload the row keeps what it knew: the live session state always, the test outcome only while the host settings it was made with are unchanged.
+    // After a reload the row keeps the test outcome only while the ssh settings it was made with are unchanged.
     internal void CarryOver(RemoteProfileRow earlier)
     {
-        _live = earlier._live;
-        _reconnectAttempt = earlier._reconnectAttempt;
         _isTesting = earlier._isTesting;
-        var sameHost = string.Equals(Ssh.Alias, earlier.Ssh.Alias, StringComparison.Ordinal)
-            && string.Equals(Ssh.Hostname, earlier.Ssh.Hostname, StringComparison.Ordinal)
-            && Ssh.Port == earlier.Ssh.Port
-            && string.Equals(Ssh.User, earlier.Ssh.User, StringComparison.Ordinal)
-            && string.Equals(Ssh.RemoteWorkspaceRoot, earlier.Ssh.RemoteWorkspaceRoot, StringComparison.Ordinal)
-            && string.Equals(Ssh.RemoteOmpPath, earlier.Ssh.RemoteOmpPath, StringComparison.Ordinal);
-        if (sameHost)
+        if (!SameSshSettings(Ssh, earlier.Ssh))
         {
-            _tested = earlier._tested;
-            _environmentText = earlier._environmentText;
-            foreach (var diagnosis in earlier._diagnoses)
-            {
-                _diagnoses.Add(diagnosis);
-            }
+            return;
+        }
+
+        _tested = earlier._tested;
+        _environmentText = earlier._environmentText;
+        foreach (var diagnosis in earlier._diagnoses)
+        {
+            _diagnoses.Add(diagnosis);
         }
     }
+
+    // Every setting the connection test is made with: a change to any of them makes the outcome of the test stale.
+    private static bool SameSshSettings(SshProfile current, SshProfile earlier) =>
+        string.Equals(current.Alias, earlier.Alias, StringComparison.Ordinal)
+        && string.Equals(current.Hostname, earlier.Hostname, StringComparison.Ordinal)
+        && current.Port == earlier.Port
+        && string.Equals(current.User, earlier.User, StringComparison.Ordinal)
+        && string.Equals(current.IdentityFile, earlier.IdentityFile, StringComparison.Ordinal)
+        && string.Equals(current.ProxyJump, earlier.ProxyJump, StringComparison.Ordinal)
+        && SameOptions(current.Options, earlier.Options)
+        && current.ForwardAgent == earlier.ForwardAgent
+        && current.KeepAliveSeconds == earlier.KeepAliveSeconds
+        && string.Equals(current.RemoteWorkspaceRoot, earlier.RemoteWorkspaceRoot, StringComparison.Ordinal)
+        && string.Equals(current.RemoteOmpPath, earlier.RemoteOmpPath, StringComparison.Ordinal);
+
+    private static bool SameOptions(IReadOnlyDictionary<string, string> current, IReadOnlyDictionary<string, string> earlier) =>
+        current.Count == earlier.Count
+        && current.All(pair => earlier.TryGetValue(pair.Key, out var value) && string.Equals(pair.Value, value, StringComparison.Ordinal));
 
     private static string FormatLastUsed(DateTimeOffset? lastUsed) =>
         lastUsed is { } moment

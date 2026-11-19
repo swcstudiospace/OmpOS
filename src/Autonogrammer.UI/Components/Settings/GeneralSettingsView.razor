@@ -4,6 +4,7 @@
 @using Microsoft.JSInterop
 @using Autonogrammer.Presentation
 @using Autonogrammer.Presentation.Settings
+@using Autonogrammer.Presentation.Settings.Privacy
 @inject IJSRuntime JS
 <SettingsPageFrame Page="Page" Title="@SettingsCopy.GeneralHeading" Description="@SettingsCopy.GeneralDescription" Editable="@(Page.State == SettingsPageState.Ready)">
     @if (Page.State == SettingsPageState.Ready)
@@ -28,8 +29,8 @@
             </div>
             <p class="autonogrammer-settings-help">@Page.SelectedMotionOption.Description</p>
         </SettingsField>
-        <h4 class="autonogrammer-settings-section-title">@SettingsCopy.PrivacyHeading</h4>
-        <p class="autonogrammer-settings-privacy">@SettingsCopy.PrivacyStatement</p>
+        <h4 class="autonogrammer-settings-section-title">@PrivacyCopy.Heading</h4>
+        <p class="autonogrammer-settings-privacy">@PrivacyCopy.Summary</p>
     }
     else
     {

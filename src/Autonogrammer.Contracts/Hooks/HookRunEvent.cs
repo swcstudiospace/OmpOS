@@ -24,7 +24,7 @@ public sealed record HookRunEvent
     /// <summary>Gets where the hook comes from: <c>managed</c>, <c>project</c>, <c>user</c>, <c>claudeLocal</c>, <c>claudeProject</c>, <c>claudeUser</c> or <c>plugin</c>.</summary>
     public required string Scope { get; init; }
 
-    /// <summary>Gets what happened: <c>succeeded</c>, <c>denied</c>, <c>failed</c>, <c>timedOut</c>, <c>skipped</c>, <c>faulted</c>, <c>awaitingConsent</c>, <c>pluginQuarantined</c> or <c>invalidResponse</c>.</summary>
+    /// <summary>Gets what happened: one of the values in <see cref="HookRunStatusNames"/>.</summary>
     public required string Status { get; init; }
 
     /// <summary>Gets the hook's own verdict: <c>allow</c>, <c>ask</c>, <c>deny</c> or <c>none</c>.</summary>

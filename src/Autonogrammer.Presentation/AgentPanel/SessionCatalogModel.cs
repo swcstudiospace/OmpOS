@@ -33,7 +33,6 @@ public sealed class SessionCatalogModel : ObservableModel, IDisposable
     public const int MaxFilterChars = 100;
 
     private const int MaxTitleChars = 200;
-    private const int MaxTagChars = 40;
     private const int GraphTagChars = 8;
 
     private readonly ISessionCatalog _catalog;
@@ -431,9 +430,9 @@ public sealed class SessionCatalogModel : ObservableModel, IDisposable
         var lastActivity = RelativeTimeText.Format(summary.LastActivity, now);
         var quietMinutes = isStale ? Math.Max(1, (long)idle.TotalMinutes) : (long?)null;
         var quiet = quietMinutes is { } minutes ? string.Create(CultureInfo.InvariantCulture, $"Quiet for {minutes} min") : null;
-        var taskId = PanelText.Plain(summary.TaskId, MaxTagChars);
-        var graphId = PanelText.Plain(summary.GraphId, MaxTagChars);
-        var tag = taskId.Length > 0 ? $"Task {taskId}" : graphId.Length > 0 ? $"Graph {LastChars(graphId, GraphTagChars)}" : null;
+        var taskId = PanelText.Plain(summary.TaskId, PanelText.MaxIdChars);
+        var graphId = PanelText.Plain(summary.GraphId, PanelText.MaxIdChars);
+        var tag = taskId.Length > 0 ? $"Task {taskId}" : graphId.Length > 0 ? $"Graph {GraphTagOf(summary.GraphId)}" : null;
         var baseName = remoteState is { } state
             ? RemoteRailMap.AccessibleName(title, state, lastActivity)
             : cloud is not null
@@ -461,7 +460,12 @@ public sealed class SessionCatalogModel : ObservableModel, IDisposable
         };
     }
 
-    private static string LastChars(string value, int count) => value.Length <= count ? value : value[^count..];
+    /// <summary>The last characters of the whole Graph id, so a long id shows its tail rather than the cut marker.</summary>
+    private static string GraphTagOf(string? graphId)
+    {
+        var full = PanelText.Plain(graphId, int.MaxValue);
+        return full.Length <= GraphTagChars ? full : full[^GraphTagChars..];
+    }
 
     private static string AccessibleNameOf(string baseName, bool longRunning, long? quietMinutes, string? tag, bool terminal)
     {

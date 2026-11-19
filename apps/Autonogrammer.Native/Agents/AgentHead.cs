@@ -542,8 +542,9 @@ internal sealed class AgentHead : IAsyncDisposable
         }
     }
 
-    private static Task<CoworkHead> CreateCoworkAsync(SessionEngineSetOptions options, Autonogrammer.Native.Composition.HeadServices? services, ICoworkToolHost? coworkTools) =>
-        CoworkHead.CreateAsync(
+    private static async Task<CoworkHead> CreateCoworkAsync(SessionEngineSetOptions options, Autonogrammer.Native.Composition.HeadServices? services, ICoworkToolHost? coworkTools)
+    {
+        var cowork = await CoworkHead.CreateAsync(
             options.Loop.StateRoot,
             options.Loop.WorkspaceRoot,
             new SignedOutCoworkGate(),
@@ -555,7 +556,15 @@ internal sealed class AgentHead : IAsyncDisposable
             services?.Mcp,
             coworkTools,
             services is null ? null : ct => services.ResolveOmpForLaunchAsync(ct),
-            services?.AccountHost.Session);
+            services?.AccountHost.Session,
+            services is null ? null : (block, token) => services.Artifacts.DeliverAsync(block, token)).ConfigureAwait(true);
+        if (services is not null)
+        {
+            services.Artifacts.CardSink = cowork.PublishArtifactCard;
+        }
+
+        return cowork;
+    }
 
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
     private static async Task<AgentHead> BuildModelsAsync(SessionEngineSet host, HeadSettings settings, CoworkHead cowork, SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, Autonogrammer.Native.Composition.HeadServices? services, BrowserUseCompositionResult browser)

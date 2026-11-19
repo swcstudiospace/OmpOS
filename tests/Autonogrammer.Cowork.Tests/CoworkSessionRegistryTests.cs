@@ -15,14 +15,14 @@ public sealed class CoworkSessionRegistryTests
     {
         using var directory = new TempState();
         var registry = Open(directory.Path, "subject-full");
-        for (var index = 0; index < AgentSessionRegistry.MaxSessions; index++)
+        for (var index = 0; index < AgentSessionLimits.MaxSessions; index++)
         {
             registry.Create("task");
         }
 
         var exception = Should.Throw<CoworkSessionLimitException>(() => registry.Create("one more"));
         exception.Message.ShouldBe("You have 200 Cowork tasks. Delete or archive one to start another.");
-        registry.List().Count.ShouldBe(AgentSessionRegistry.MaxSessions);
+        registry.List().Count.ShouldBe(AgentSessionLimits.MaxSessions);
     }
 
     [Fact]

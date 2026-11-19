@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Autonogrammer.Accounts;
+using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Cowork;
 using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Harness.Abstractions;
@@ -30,6 +31,11 @@ internal sealed class CoworkHead : IAsyncDisposable
     /// <summary>Gets the session host.</summary>
     public CoworkSessionHost Sessions => _sessions;
 
+    /// <summary>Shows an artifact card in the session's stream. After dispose a closed session takes no card.</summary>
+    /// <param name="sessionId">The session that made the call.</param>
+    /// <param name="card">The card.</param>
+    public void PublishArtifactCard(string sessionId, ArtifactBlock card) => _sessions.PublishArtifactCard(sessionId, card);
+
     /// <summary>Gets whether this head has been disposed.</summary>
     public bool IsDisposed => Volatile.Read(ref _disposed) != 0;
 
@@ -52,6 +58,7 @@ internal sealed class CoworkHead : IAsyncDisposable
     /// <param name="coworkTools">The Cowork tool host the gateway serves, or null for registry tools only.</param>
     /// <param name="resolveOmpPath">Resolves the omp each session open runs, or null to run <paramref name="ompPath"/> as given.</param>
     /// <param name="accountSession">The account session the host follows, or null for a host that only reads the gate.</param>
+    /// <param name="artifactDelivered">Delivers an artifact card to the artifact panel, or null when the head has no artifact services.</param>
     /// <returns>The head. The gateway starts on the first session.</returns>
     [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: each owner is nulled once transferred to its composed holder; the finally disposes any owner still held directly.")]
     public static async Task<CoworkHead> CreateAsync(
@@ -66,7 +73,8 @@ internal sealed class CoworkHead : IAsyncDisposable
         McpServerCatalog? catalog,
         ICoworkToolHost? coworkTools = null,
         Func<CancellationToken, Task<string?>>? resolveOmpPath = null,
-        IAccountSession? accountSession = null)
+        IAccountSession? accountSession = null,
+        Func<ArtifactBlock, CancellationToken, Task<bool>>? artifactDelivered = null)
     {
         CoworkToolServer? tools = null;
         CoworkSessionHost? sessions = null;
@@ -88,6 +96,7 @@ internal sealed class CoworkHead : IAsyncDisposable
                 Catalog = catalog,
                 Tools = tools,
                 AccountSession = accountSession,
+                ArtifactDelivered = artifactDelivered,
             });
             var head = new CoworkHead(sessions, tools);
             sessions = null;

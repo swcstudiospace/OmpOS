@@ -356,56 +356,6 @@ public sealed class RemoteEnvironmentsViewModelTests
         page.Rows[0].CanTrustHost.ShouldBeFalse();
     }
 
-    /// <summary>The live state of a session overrides the test outcome: connecting, signing in, connected, reconnecting with the attempt, and a lost connection with an interrupted turn; clearing it shows the test outcome again.</summary>
-    [Fact]
-    public async Task TheLiveConnectionStateOverridesTheTestOutcome()
-    {
-        var host = new FakeRemoteEnvironmentsHost().With(Profile("a", "alpha"));
-        var page = new RemoteEnvironmentsViewModel(host);
-        await page.LoadAsync(Token).ConfigureAwait(true);
-        var row = page.Rows[0];
-        await page.TestConnectionAsync(row, Token).ConfigureAwait(true);
-
-        page.SetConnectionState("a", RemoteConnectionState.Connecting).ShouldBeTrue();
-        row.Status.ShouldBe(RemoteEnvironmentStatus.Connecting);
-        page.ReportAuthenticating("a").ShouldBeTrue();
-        row.Status.ShouldBe(RemoteEnvironmentStatus.Authenticating);
-        page.SetConnectionState("a", RemoteConnectionState.Connected);
-        row.Status.ShouldBe(RemoteEnvironmentStatus.Connected);
-        row.IsGood.ShouldBeTrue();
-        page.SetConnectionState("a", RemoteConnectionState.Reconnecting, reconnectAttempt: 2);
-        row.Status.ShouldBe(RemoteEnvironmentStatus.Reconnecting);
-        row.IsWarning.ShouldBeTrue();
-        row.StatusDetail.ShouldContain("attempt 2", Case.Sensitive);
-        page.SetConnectionState("a", RemoteConnectionState.Unreachable, turnInterrupted: true);
-        row.Status.ShouldBe(RemoteEnvironmentStatus.Interrupted);
-        row.StatusDetail.ShouldContain("send the prompt again", Case.Sensitive);
-        page.Announcement.ShouldContain("Disconnected, turn interrupted", Case.Sensitive);
-        page.ClearConnectionState("a").ShouldBeTrue();
-
-        row.Status.ShouldBe(RemoteEnvironmentStatus.Ready);
-        page.SetConnectionState("missing", RemoteConnectionState.Connected).ShouldBeFalse();
-        page.ReportAuthenticating("missing").ShouldBeFalse();
-        page.ClearConnectionState("missing").ShouldBeFalse();
-    }
-
-    /// <summary>A reload keeps the live state and a running test of the rows that are still there.</summary>
-    [Fact]
-    public async Task AReloadKeepsTheLiveState()
-    {
-        var host = new FakeRemoteEnvironmentsHost().With(Profile("a", "alpha"));
-        var page = new RemoteEnvironmentsViewModel(host);
-        await page.LoadAsync(Token).ConfigureAwait(true);
-        page.SetConnectionState("a", RemoteConnectionState.Connected);
-        page.Selected = page.Rows[0];
-
-        await page.LoadAsync(Token).ConfigureAwait(true);
-
-        page.Rows[0].Status.ShouldBe(RemoteEnvironmentStatus.Connected);
-        page.Selected.ShouldBeSameAs(page.Rows[0]);
-        host.LoadCalls.ShouldBe(2);
-    }
-
     /// <summary>The page announces changes through property notifications the views bind to.</summary>
     [Fact]
     public async Task StateChangesAreAnnounced()

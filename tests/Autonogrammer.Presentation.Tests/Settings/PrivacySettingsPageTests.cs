@@ -61,7 +61,7 @@ public sealed class PrivacySettingsPageTests
     public void DoesNotPromiseWhatAProviderDoes()
     {
         PrivacyCopy.LeavesText.ShouldContain("set by that provider", Case.Sensitive);
-        PrivacyCopy.PrivacyModeText.ShouldContain("Autonogrammer has no accounts", Case.Sensitive);
+        PrivacyCopy.PrivacyModeText.ShouldContain("Signing in is optional", Case.Sensitive);
         PrivacyCopy.IgnoreText.ShouldContain("engine's own file tools follow the engine's rules", Case.Sensitive);
     }
 }

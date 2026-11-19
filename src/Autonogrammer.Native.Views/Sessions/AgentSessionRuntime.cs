@@ -260,6 +260,17 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// <summary>Gets the correlation identifier of the last turn this runtime started, or null before the first one. A copy command offers it as the request identifier.</summary>
     public string? LastRequestId => _lastRequestId;
 
+    /// <summary>
+    /// Shows an artifact card that the session's artifact tools produced, through the same sink the stream uses. The card reaches the artifact
+    /// panel and never the transcript. Call it on the UI thread.
+    /// </summary>
+    /// <param name="card">The card.</param>
+    public void ShowArtifactCard(ArtifactBlock card)
+    {
+        ArgumentNullException.ThrowIfNull(card);
+        ShowTurnEvent(new UiBlockEvent(card), _lastRequestId ?? string.Empty);
+    }
+
     /// <summary>Gets the function that returns the file system of the ssh host the session runs on, or null for a local session.</summary>
     public Func<CancellationToken, Task<Autonogrammer.Presentation.Editor.IAsyncWorkspaceFileSystem>>? RemoteFiles => _options.RemoteFiles;
 
@@ -1015,6 +1026,44 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     }
 
     /// <summary>
+    /// Hands an artifact card to the artifact panel, which opens on the version it names. A version the panel cannot show is reported inline
+    /// under its turn.
+    /// </summary>
+    /// <param name="artifact">The card.</param>
+    /// <param name="correlationId">The correlation identifier of the turn.</param>
+    private void DeliverArtifact(ArtifactBlock artifact, string correlationId)
+    {
+        if (_options.ArtifactDelivered is not { } deliver)
+        {
+            ShowArtifactNotShown(correlationId);
+            return;
+        }
+
+        _ = ReportDeliveryAsync(deliver, artifact, correlationId);
+    }
+
+    private async Task ReportDeliveryAsync(Func<ArtifactBlock, CancellationToken, Task<bool>> deliver, ArtifactBlock artifact, string correlationId)
+    {
+        bool delivered;
+        try
+        {
+            delivered = await deliver(artifact, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not (OperationCanceledException or OutOfMemoryException))
+        {
+            delivered = false;
+        }
+
+        if (!delivered)
+        {
+            Dispatcher.UIThread.Post(() => ShowArtifactNotShown(correlationId));
+        }
+    }
+
+    private void ShowArtifactNotShown(string correlationId) =>
+        ShowTurnEvent(new DiagnosticEvent("The artifact version could not be shown."), correlationId);
+
+    /// <summary>
     /// Shows one host event: a permission request becomes a pending approval, and every event folds into the transcript through the
     /// shared harness projection.
     /// </summary>
@@ -1022,6 +1071,13 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// <param name="correlationId">The correlation identifier of the turn.</param>
     private void ShowTurnEvent(HarnessEvent evt, string correlationId)
     {
+        // An artifact card never enters the transcript: the artifact panel shows the version it names.
+        if (evt is UiBlockEvent { Block: ArtifactBlock artifact })
+        {
+            DeliverArtifact(artifact, correlationId);
+            return;
+        }
+
         // Usage is session state, not transcript content: it feeds the context ring and shows nothing in the thread.
         if (evt is ContextUsageEvent usage)
         {
