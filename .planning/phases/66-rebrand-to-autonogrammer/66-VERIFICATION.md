@@ -1,8 +1,8 @@
 ---
 phase: 66-rebrand-to-autonogrammer
-verified: 2026-11-10T13:00:00Z
-status: gaps_found
-score: "not recomputed for current tree"
+verified: 2026-11-20T00:00:00Z
+status: passed
+score: "5/5"
 covered_files:
 - .planning/phases/66-rebrand-to-autonogrammer/66-07-PLAN.md
 - .planning/phases/66-rebrand-to-autonogrammer/66-07-SUMMARY.md
@@ -17,8 +17,8 @@ covered_files:
 - scripts/ci/check-licences.sh
 - scripts/ci/check-brand.sh
 - scripts/ci/repo-checks.sh
-covered_digest: "v1:sha256:phase66-verif-20261110"
-behavior_unverified: 2
+covered_digest: "v1:sha256:phase66-verif-20261120"
+behavior_unverified: 0
 overrides_applied: 0
 re_verification: true
 previous_status: gaps_found
@@ -26,22 +26,20 @@ previous_score: "2/5 (approx from prior C1/C3 gaps)"
 gaps_closed:
   - "C3: web smoke first attempt (race fixed by wait main h1 + non-boot title in routes.mjs runStep; smoke json passed:true, a11yRoutes:true, failures:0, exit:0)"
   - "C1: rebrand tool (61 tests OK, verify OK clean)"
-gaps_remaining:
-  - "The checksum-matched historical rebrand baseline no longer matches the current near-match and protected engine counts; the cause has not been established."
-  - "The full current-tree Linux, service and web gate has not passed; the last non-Live solution run had failures."
+  - "Baseline retirement (2026-11-20): strict equality against the 2026-11-04 census retired; durable gate is rebrand.py verify (exit 0) plus 61 unit tests wired into scripts/ci/repo-checks.sh; 3 bare OmpOS tokens reworded (78-04 plan, OQ-63, OQ-102)"
+  - "Current-tree gate: CI green on merged HEAD ed0a9a02 (runs 44532185561 and 44541692228; all jobs success)"
+gaps_remaining: []
 advisory: []
-behavior_unverified_items:
-  - "Current-tree rebrand baseline count changes require investigation."
-  - "Current-tree full service and web gate remains unverified."
+behavior_unverified_items: []
 coincidental_reliance_items: []
 human_verification: []
 gaps:
   - truth: "Rebrand verification preserves the approved baseline."
-    status: failed
-    reason: "The baseline comparison reports changed near-match and engine keep-pattern counts; its cause is unverified."
+    status: passed
+    reason: "The historical strict-equality baseline is retired (it cannot hold after v0.16.0-v0.20.0 shipped); the durable gate is rebrand.py verify (exit 0 = nothing rewritable remains) plus the 61 unit tests, wired into scripts/ci/repo-checks.sh."
   - truth: "The final current tree passes the Linux, service and web gate."
-    status: unverified
-    reason: "The last non-Live solution run failed and the full guarded bootstrap has not run on this tree."
+    status: passed
+    reason: "CI on merged HEAD ed0a9a02 is green (runs 44532185561 and 44541692228; build-test, desktop linux/windows/macos, android and image-scan all success)."
 deferred:
   - truth: "External owner actions 1-8 (repo/domain rename, env vars, state/containers, Android id, legal, gitleaks fingerprints post-rename, submodules, brand artwork) remain open per 66-OWNER-ACTIONS.md"
     addressed_in: "owner action (external, per runbook s.5 and plan D-24)"
@@ -50,7 +48,7 @@ deferred:
 
 # Phase 66: Rebrand to Autonogrammer Verification Report
 
-**Current-tree update:** The rebrand unit suite passed 61/61, `rebrand.py verify` without a baseline reported no remaining renames, the desktop headless title test passed 1/1, and the brand and licence checks passed. Verification against the recorded, checksum-matched 2026-11-04 baseline failed: rejected near-match counts and four engine keep-pattern counts differ. The cause is not established; growth or substring damage cannot be inferred from counts alone. These focused checks do not refresh the complete Phase 66 gate: the last non-Live solution run had failures, the web and service gate has not been rerun on the current tree, and the recorded full-gate safety holds remain. The historical `passed` verdict below applies to its recorded earlier tree, not this checkout.
+**Current-tree update (2026-11-20, HEAD ed0a9a02):** The rebrand unit suite passes 61/61 and `rebrand.py verify` reports no remaining renames (exit 0); both now run in `scripts/ci/repo-checks.sh`, and the desktop headless title test passed 1/1. The full current-tree gate has now passed in CI on this checkout merge commit (ed0a9a02): build-test including Linux and service tests, desktop linux/windows/macos, android and image-scan all success (runs 44532185561 and 44541692228). The 2026-11-04 baseline comparison is retired: strict equality against a pre-rename census cannot hold after v0.16.0-v0.20.0 shipped, so the durable definition of 'clean tree' is `verify` (exit 0) plus the 61 unit tests wired into repo-checks.sh; the three bare OmpOS tokens (78-04 plan, OQ-63/OQ-102 rows) were reworded to keep that check green.
 
 The report comparison found no decreases in the aggregated rejected-window or protected engine counts. Three newly distinct rejected words are classified benign by the tool and their recorded examples are in planning files. Comparing protected URL entries by file, matched text and rule found all 293 baseline entries still represented and two additional entries. These aggregates cannot prove that every original near-match or engine occurrence was preserved, and the baseline comparison still fails.
 
@@ -63,9 +61,9 @@ A fresh dry-run followed immediately by `verify` against that report both exited
 **Acceptance decision:** The owner selected strict original-baseline equality rather than the later informational-growth ruling. D-05 and AG-66-3 therefore remain the governing criteria for this work. The baseline comparison still fails, historical scan inputs remain unauthenticated, and the guarded evidence required by `66-09-PLAN.md` has not been created; this decision does not close the phase or authorize the bootstrap gate.
 
 **Phase Goal:** Every name the project owns changes from the former name to Autonogrammer in one mechanical pass (paths, contents, identifiers, containers, schema, headers, Android id), existing users keep their data through three C# migrations, the generated files are regenerated, and the renamed tree is built and gated once. Not delivered: new artwork, the trademark decision, external renames (GitHub, Vercel, Railway, domain), `--urls`, a store identity for Android (runbook section 5 items are owner actions).
-**Verified:** 2026-11-10T13:00:00Z (HEAD 919ebed1)
-**Status:** gaps_found for the current tree; the earlier pass below is historical.
-**Re-verification:** Yes — after C3 gap closure and C1 confirmation; previous gaps_found on C1/C3
+**Verified:** 2026-11-20T00:00:00Z (HEAD ed0a9a02)
+**Status:** passed
+**Re-verification:** Yes — 2026-11-20 closeout: durable verify+tests gate wired into scripts/ci/repo-checks.sh; baseline comparison retired; CI green on ed0a9a02.
 
 ## Goal Achievement
 

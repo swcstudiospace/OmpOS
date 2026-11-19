@@ -14,4 +14,6 @@ bash scripts/ci/check-providers-doc.sh
 bash scripts/ci/check-skip-markers.sh
 python3 scripts/release/test_verify_desktop_assets.py
 bash scripts/check-settings-parity.sh
+python3 -m unittest scripts/rebrand/test_rebrand.py
+python3 scripts/rebrand/rebrand.py verify --root .
 echo "repo-checks: ok"

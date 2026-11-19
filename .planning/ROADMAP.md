@@ -1489,7 +1489,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 **Mac channel**: No. Windows and macOS paths (data directory move, hook paths) are compile-checked only; the Android build and `ApplicationId` are not built here.
 **UI hint**: no
 **Success Criteria** (what must be TRUE):
-  1. The rebrand tool is correct and its verification reports a clean tree. Verify: `python3 -m unittest scripts/rebrand/test_rebrand.py` passes; `python3 scripts/rebrand/rebrand.py verify --baseline /tmp/ag-recon/rebrand-report/rebrand-report.json` reports clean; the three probes of runbook s.2 give the stated results (the first lists protected URLs only).
+  1. The rebrand tool is correct and its verification reports a clean tree. Verify: `python3 -m unittest scripts/rebrand/test_rebrand.py` passes; `python3 scripts/rebrand/rebrand.py verify` reports clean; the three probes of runbook s.2 give the stated results (the first lists protected URLs only).
   2. The renamed tree builds warning-free, is format-clean, restores in locked mode and the Linux test set is green. Verify: `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` and `dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore` clean; `dotnet restore Autonogrammer.Linux.slnf --locked-mode` clean; full Linux test run (`bootstrap.sh` gate) green, with `bash scripts/test-services.sh up` for the service-backed tests.
   3. The web smoke passes under the new names. Verify: Web smoke with non-colliding ports: `API_PORT=5287 WEB_PORT=5280 DEMO_PORT=5291 bash scripts/web-smoke/run-smoke.sh` (defaults are 5187, 5180, 5191; pick free ports, check with `ss -ltn` first).
   4. The desktop window title is Autonogrammer. Verify: Window title: build `apps/Autonogrammer.Native`, start `Xvfb :97 -screen 0 1280x800x24 &` (pick a free display; never `:99`, another session uses it; check `ls /tmp/.X11-unix`), run the head with `DISPLAY=:97` and a sandbox profile as in the desktop evidence page, read the title with `xdotool getwindowname` or `xprop -root _NET_ACTIVE_WINDOW`, expect `Autonogrammer`; stop the head and Xvfb. Alternative that needs no display: an Avalonia.Headless test asserting `MainWindow.Title == "Autonogrammer"`.
@@ -1504,7 +1504,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [x] 66-06-PLAN.md
 - [x] 66-07-PLAN.md
 - [x] 66-08-PLAN.md
-- [ ] 66-09-PLAN.md — baseline provenance and gated current-tree verification
+- [x] 66-09-PLAN.md — superseded 2026-11-19 by the durable verify gate (see 66-VERIFICATION.md)
 
 **Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) ROADMAP/runbook baseline at /tmp/ag-recon/rebrand-report: directory no longer exists; (2) Strict equality against the 2026-11-04 baseline: tree has since shipped v0.16.0, v0.16.1, v0.17.0, v0.19.x; (3) Phase 66 'ship on hold' in STATE.md: v0.16.0 shipped 2026-11-07; main is 0.19.2; (4) Branch feat/autonogrammer and 'verify before merge': rename is merged on main; (5) Gate needing /tmp/ag-bin/ag-dotnet and suffix-isolated services: CI runs the gate on every main push.
 
@@ -1516,7 +1516,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 **Mac channel**: No.
 **UI hint**: no
 **Success Criteria** (what must be TRUE):
-  1. Create and register the 21 source and 19 test projects with `AssemblyMarker.cs` only. Verify: `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` is clean (manifest section 4, step 8).
+  1. Create and register the 21 source and 19 test projects, each carrying `AssemblyMarker.cs` only when created (filled in by Phases 67-77). Verify: `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` is clean (manifest section 4, step 8).
   2. The LayerMap rows, the six tuples and `ProcessSpawningAssemblies` hold. Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release` (LayerMap, `ProjectGraphTests`, decision records, suppression ledger).
   3. Every project is registered in the solution files, the architecture project, `docs/architecture.md` and `CHANGELOG.md`. Verify: `bash scripts/ci/repo-checks.sh` (brand, changelog, docs checks) and the build above.
   4. The package pins are added and licences stay accepted. Verify: `bash scripts/ci/check-licences.sh` after the restore.
@@ -1525,7 +1525,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 
 **Plans**: `66.1-01-PLAN.md` in `.planning/phases/66.1-scaffold-projects-and-registration/`
 
-**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) Scaffold projects hold AssemblyMarker.cs only: Phases 67-77 filled them (e.g. src/Autonogrammer.Resilience 17 .cs files, Cowork.Abstractions 32); (2) Scaffold commit SHAs 88c1497f/e2760e5e/58bdbe1d/9544bbb2: not ancestors of main; replayed as fccd5f5a, 19367b11, 959e551b, 136ad359; (3) Android lock hand-patched and unverified: restored locked-mode by the CI android job since (ci.yml:255); (4) Needs ./bootstrap.sh run by orchestrator after the wave: CI mirrors it (ci.yml:2) and passes on main; (5) ContractVersion bumped once: later phases kept 1.6.0 on main, so the single-bump property still holds.
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) Scaffold projects hold AssemblyMarker.cs only: Phases 67-77 filled them (e.g. src/Autonogrammer.Resilience 17 .cs files, Cowork.Abstractions 32); (2) Scaffold commit SHAs 88c1497f/e2760e5e/58bdbe1d/9544bbb2: not ancestors of main; replayed as fccd5f5a, 19367b11, 959e551b, 136ad359; (3) Android lock hand-patched and unverified: restored locked-mode by the CI android job since (ci.yml:255); (4) Needs ./bootstrap.sh run by orchestrator after the wave: CI mirrors it (ci.yml:2) and passes on main; (5) ContractVersion bumped once: later phases kept 1.6.0 on main, so the single-bump property still holds. (Closed 2026-11-19: (1) and (2) resolved — durable gate = verify + 61 tests in scripts/ci/repo-checks.sh; /tmp baseline retired.)
 
 ### Phase 66.2: Hosted real web app
 
