@@ -8,6 +8,14 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-11-20
+
+### Changed
+- Rebrand verification gate (Phase 66 closeout): `rebrand.py verify` (exit 0 means nothing rewritable remains) and the 61 rebrand unit tests now run from `scripts/ci/repo-checks.sh`, and the historical strict-equality comparison against the 2026-11-04 baseline census is retired — it cannot hold after v0.16.0-v0.20.0 shipped. The ROADMAP success criterion and the rebrand runbook now name the durable exit-0 check, and the three remaining bare old-name tokens (release plan, OQ-63, OQ-102) are reworded.
+
+### Fixed
+- CI: the `dotnet list --vulnerable` scratch output `vuln.json` is gitignored. Its absolute runner paths would otherwise appear as rewritable old-name tokens to the rebrand verify gate wired into repo-checks.
+
 ## [0.20.0] - 2026-11-19
 
 ### Added
@@ -523,7 +531,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.0...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.1...HEAD
+[0.20.1]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.0...v0.20.1
 [0.20.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.2...v0.20.0
 [0.19.2]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.1...v0.19.2
 [0.19.1]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.0...v0.19.1
