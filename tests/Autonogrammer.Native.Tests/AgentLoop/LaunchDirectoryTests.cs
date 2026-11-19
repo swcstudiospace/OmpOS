@@ -197,11 +197,11 @@ public sealed class LaunchDirectoryTests
         roots.Any(string.IsNullOrWhiteSpace).ShouldBeFalse();
         if (!OperatingSystem.IsWindows())
         {
-            roots.ShouldContain("/usr/bin");
-            roots.ShouldContain("/Applications");
-            roots.ShouldNotContain("/usr");
-            roots.ShouldNotContain("/opt");
-            roots.ShouldNotContain("/usr/local");
+            roots.Contains("/usr/bin", StringComparer.Ordinal).ShouldBeTrue();
+            roots.Contains("/Applications", StringComparer.Ordinal).ShouldBeTrue();
+            roots.Contains("/usr", StringComparer.Ordinal).ShouldBeFalse();
+            roots.Contains("/opt", StringComparer.Ordinal).ShouldBeFalse();
+            roots.Contains("/usr/local", StringComparer.Ordinal).ShouldBeFalse();
         }
     }
 
