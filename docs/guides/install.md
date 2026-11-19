@@ -4,7 +4,7 @@ description: "Install the Autonogrammer desktop app from a GitHub release on Win
 
 # Install Autonogrammer
 
-Status: The six desktop files are built by `desktop-release.yml`. The Windows installer is per machine and not signed; the macOS app is ad-hoc signed and not notarized. No step on this page was run on a real Windows or macOS machine. The installer smoke test has run once on a CI runner and has not passed yet, and the macOS signing step failed on its first CI run and was fixed; the fixed step has not run yet.
+Status: The six desktop files are built by `desktop-release.yml`. The Windows installer is per machine and not signed; the macOS app is ad-hoc signed and not notarized. The Windows installer smoke test ran end to end on a Windows runner and passed (Actions run 44514593485, 2026-11-19); the macOS leg has not yet produced a signed bundle on a runner. No step on this page was run on a real Windows or macOS machine.
 
 Last verified: 2026-11-19 (read against the installer script, the workflows and the app code; nothing was installed)
 
@@ -97,7 +97,7 @@ The app is ad-hoc signed: each Mach-O file in the bundle and then the bundle its
 4. If macOS still refuses, open System Settings, Privacy & Security, and choose **Open Anyway** for Autonogrammer.
 5. If the app is still blocked, remove the quarantine attribute the browser added: `xattr -dr com.apple.quarantine /Applications/Autonogrammer.app`.
 
-The `.zip` holds the same `Autonogrammer.app`: unzip it, move the app to `/Applications` and follow steps 3 to 5.
+The `.zip` holds the same `Autonogrammer.app`. Extract it with Finder (double-click) or with `ditto -x -k <zip> <folder>`, then move the app to `/Applications` and follow steps 3 to 5. Do not use the `unzip` command: it drops the extended attributes that hold the signatures of the bundled `.dll` files, and the app then fails the verification below, although it still starts.
 
 To uninstall, drag `Autonogrammer.app` to the Trash. Your data stays (see below) until you delete it.
 
@@ -171,7 +171,7 @@ Run these on a machine that never had Autonogrammer, and write down what you see
 | 1. Compute `shasum -a 256` of the `.dmg` and compare it with `SHA256SUMS-desktop`. | The hash equals the listed line. |
 | 2. Open the `.dmg`. | A window shows `Autonogrammer.app` and an `Applications` link. |
 | 3. Drag the app onto `Applications` and eject the disk image. | The app is in `/Applications`. |
-| 4. Run `codesign --verify --strict --verbose=2 /Applications/Autonogrammer.app` and `codesign -dv --verbose=2 /Applications/Autonogrammer.app`. | The first command reports no error. The second shows `Signature=adhoc`. Do not add `--deep`: the plugin folders inside the bundle are not nested bundles. Record the output; no job has run these commands on a built app. |
+| 4. Run `codesign --verify --deep --strict --verbose=2 /Applications/Autonogrammer.app`, `codesign -dv --verbose=2 /Applications/Autonogrammer.app`, and list `Contents/Resources/plugins`. | The first command reports no error (it prints `satisfies its Designated Requirement`) when the app was extracted with Finder or `ditto`. The second shows `Signature=adhoc`. The folder lists the bundled plugins. |
 | 5. Start the app by double-click. | Gatekeeper blocks it or shows an unidentified-developer prompt. Record the exact text. |
 | 6. Control-click the app, choose Open, confirm. | The app window opens. If not, try Privacy & Security, Open Anyway, and then the `xattr` command, and record which step worked. |
 | 7. Check the workspace the app shows. | Your home folder. A launch from Finder or the Dock may start the process in `/` or in the bundle, and the app replaces those with the home folder. |
