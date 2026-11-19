@@ -7,9 +7,9 @@
 # The noble (Ubuntu 24.04) variant is used rather than chiseled because the entrypoint runs /bin/sh
 # to map the platform PORT variable onto ASPNETCORE_URLS. Chiseled images contain no shell.
 
-# Digests resolved from mcr.microsoft.com (manifest-list digest, HTTP Docker-Content-Digest header): SDK 2026-10-29, runtime 2026-11-08. Refresh with the tag bump.
+# Digests resolved from mcr.microsoft.com (manifest-list digest, HTTP Docker-Content-Digest header): SDK 2026-10-29, runtime 2026-11-08; runtime re-resolved 2026-11-20 (the aspnet:10.0.15-noble tag was re-published with a new list digest, 12b1135f; SDK 10.0.402-noble still matches 747cbade). Refresh with the tag bump.
 ARG SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:10.0.402-noble@sha256:747cbade5bfd918a175ac32f8f1d931edec2c7d0d5397a3de72eaef1ac1f66d2
-ARG RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:10.0.15-noble@sha256:bfd912c83295ce66d4b706ebb8541b9f14259b0e76fbb88b2751f58ce2399d2e
+ARG RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:10.0.15-noble@sha256:12b1135f5f8b3c0a214f2a680ff2033dff4f684f445d6c697d9524ceeb303586
 
 FROM ${SDK_IMAGE} AS build
 WORKDIR /src
