@@ -27,7 +27,7 @@ Screenshots of the Agents, Kanban, About and Settings views under each emulation
 
 1. Settings > Accessibility > Contrast themes: choose "Aquatic", then repeat with "Night sky" and "Desert". (Windows 10: Settings > Ease of Access > High contrast.) Left Alt + Left Shift + Print Screen turns the last theme on and off.
 2. Reload the web head in Edge or Chrome (and Firefox, which has its own "Colors" override: Settings > General > Language and Appearance > Colors > Manage Colors).
-3. Walk the Agents view, a conversation, Kanban, Settings and the connect screen. Expected: all text is readable on the theme's background; every button, field and tab has a visible edge or is clearly a label; the focused element has a clearly visible outline in the theme's highlight colour; selected and current items (the selected tab, the current agent, the current Settings section) are still distinguishable; icons are visible; nothing is hidden or overlaps.
+3. Walk the Agents view, a conversation, Kanban, Settings and the sign-in view. Expected: all text is readable on the theme's background; every button, field and tab has a visible edge or is clearly a label; the focused element has a clearly visible outline in the theme's highlight colour; selected and current items (the selected tab, the current agent, the current Settings section) are still distinguishable; icons are visible; nothing is hidden or overlaps.
 4. Record anything that disappears: an icon that is only a background image, a status that is only a colour, a focus ring that vanishes.
 
 ## macOS: Increase contrast and Reduce motion

@@ -77,7 +77,7 @@ Purpose: confirm by hand what the scripted checks (`scripts/web-smoke/a11y`) can
 
 ## Flow 8: sign out (owner-token deployment)
 
-1. Tab to "Sign out" in the top bar and press Enter. Expected: the connect screen opens with its heading focused. Record whether the "Your session ended" message shows.
+1. Tab to "Sign out" in the top bar and press Enter. Expected: the sign-in view opens with its heading focused. Record whether the "Your session ended" message shows.
 2. Press the browser's Back button. Expected: the workbench does not show; you are sent back to connect.
 3. Look at the token field. Expected: empty. The token is not kept anywhere you can recover it by reload.
 

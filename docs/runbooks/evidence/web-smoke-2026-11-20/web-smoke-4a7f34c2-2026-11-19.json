@@ -1,0 +1,341 @@
+{
+  "app": "http://127.0.0.1:5180/",
+  "apiOrigin": "http://127.0.0.1:5187",
+  "commit": "4a7f34c2",
+  "axeCore": "4.14.0",
+  "startedAt": "2026-11-19T19:19:49.483Z",
+  "firstRender": {
+    "rendered": true,
+    "errorBarVisible": false,
+    "exceptionCount": 0,
+    "consoleErrorCount": 0,
+    "reflectionDisabledHits": 0,
+    "exceptionSample": [],
+    "consoleErrorSample": [],
+    "logErrorSample": [
+      "network: Failed to load resource: the server responded with a status of 404 (Not Found) http://127.0.0.1:5187/account/sessions"
+    ],
+    "state": "success",
+    "firstAttempt": true
+  },
+  "skipLinkInitial": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "BODY",
+    "targetExists": true
+  },
+  "shotInitial": "web-first-render-4a7f34c2-2026-11-19.png",
+  "skipLinkBeforeAxeEmpty": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "BODY",
+    "targetExists": true
+  },
+  "axeEmptyState": {
+    "axeVersion": "4.14.0",
+    "violations": [],
+    "incomplete": []
+  },
+  "iconButtonContrastEmptyState": {
+    "color": "rgb(28, 28, 26)",
+    "ownBackground": "rgba(0, 0, 0, 0)",
+    "effectiveBackground": "rgb(255, 255, 255)",
+    "contrastRatio": 17.07,
+    "outerHTML": "<button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-topbar-menu\" aria-label=\"Agents panel\" aria-controls=\"autonogrammer-rail\" aria-expanded=\"false\" _bl_3=\"\"><!--!--><svg width=\"18\" heigh"
+  },
+  "shotAxeEmpty": "web-axe-empty-4a7f34c2-2026-11-19.png",
+  "newConversationClicked": true,
+  "composerReady": true,
+  "promptTyped": true,
+  "sendClicked": true,
+  "responseCompleted": true,
+  "probeChecks": {
+    "appPresent": true,
+    "strong": 2,
+    "img": 0,
+    "script": 0,
+    "unsupported": false,
+    "userTurnEscaped": true,
+    "links": [
+      {
+        "href": "#autonogrammer-conversation",
+        "text": "Skip to conversation"
+      },
+      {
+        "href": "/",
+        "text": "Autonogrammer"
+      },
+      {
+        "href": "https://github.com/swcstudiospace/OmpOS",
+        "text": "Source"
+      },
+      {
+        "href": "https://example.com/",
+        "text": "site"
+      },
+      {
+        "href": "https://evil.example/x.png",
+        "text": "pic"
+      },
+      {
+        "href": "https://github.com/swcstudiospace/OmpOS",
+        "text": "Source code"
+      },
+      {
+        "href": "about",
+        "text": "About"
+      },
+      {
+        "href": "https://www.gnu.org/licenses/agpl-3.0.html",
+        "text": "AGPL-3.0-or-later"
+      }
+    ],
+    "announcement": "Response complete.",
+    "errorMessages": []
+  },
+  "errorBarAfterPrompt": false,
+  "consoleErrorsAfterPrompt": [],
+  "skipLinkBeforeAxeAfter": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "SECTION",
+    "targetExists": true
+  },
+  "axeAfterResponse": {
+    "axeVersion": "4.14.0",
+    "violations": [],
+    "incomplete": []
+  },
+  "iconButtonContrastAfterResponse": {
+    "color": "rgb(28, 28, 26)",
+    "ownBackground": "rgba(0, 0, 0, 0)",
+    "effectiveBackground": "rgb(255, 255, 255)",
+    "contrastRatio": 17.07,
+    "outerHTML": "<button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-topbar-menu\" aria-label=\"Agents panel\" aria-controls=\"autonogrammer-rail\" aria-expanded=\"false\" _bl_3=\"\"><!--!--><svg width=\"18\" heigh"
+  },
+  "shotAxeAfterResponse": "web-axe-after-response-4a7f34c2-2026-11-19.png",
+  "shotVerticalSlice": "web-vertical-slice-4a7f34c2-2026-11-19.webp",
+  "reload": {
+    "conversationItems": 1,
+    "openedIndex": 0,
+    "historyRendered": true,
+    "appPresent": true,
+    "strong": 2,
+    "img": 0,
+    "script": 0,
+    "unsupported": false,
+    "userTurnEscaped": true,
+    "links": [
+      {
+        "href": "#autonogrammer-conversation",
+        "text": "Skip to conversation"
+      },
+      {
+        "href": "/",
+        "text": "Autonogrammer"
+      },
+      {
+        "href": "https://github.com/swcstudiospace/OmpOS",
+        "text": "Source"
+      },
+      {
+        "href": "https://example.com/",
+        "text": "site"
+      },
+      {
+        "href": "https://evil.example/x.png",
+        "text": "pic"
+      },
+      {
+        "href": "https://github.com/swcstudiospace/OmpOS",
+        "text": "Source code"
+      },
+      {
+        "href": "about",
+        "text": "About"
+      },
+      {
+        "href": "https://www.gnu.org/licenses/agpl-3.0.html",
+        "text": "AGPL-3.0-or-later"
+      }
+    ],
+    "announcement": "Response complete.",
+    "errorMessages": [],
+    "errorBarVisible": false,
+    "consoleErrorsSinceReload": []
+  },
+  "skipLinkAfterTabFocus": {
+    "present": true,
+    "width": 158.90625,
+    "height": 33,
+    "clip": "auto",
+    "visibility": "visible",
+    "activeIsSkip": true,
+    "active": "A",
+    "targetExists": true
+  },
+  "shotSkipLinkFocused": "web-skip-link-focused-4a7f34c2-2026-11-19.png",
+  "shotErrorBanner": "web-error-banner-4a7f34c2-2026-11-19.png",
+  "errorBanner": {
+    "shape": {
+      "present": true,
+      "role": "alert",
+      "dismissTag": "BUTTON",
+      "dismissType": "button",
+      "dismissName": "Dismiss error"
+    },
+    "tabReachesDismiss": {
+      "activeIsDismiss": true,
+      "outlineStyle": "solid",
+      "outlineWidth": 2,
+      "clicks": 0
+    },
+    "clicksAfterEnterAndSpace": 2,
+    "axeShown": {
+      "axeVersion": "4.14.0",
+      "violations": [],
+      "incomplete": []
+    }
+  },
+  "a11y": {
+    "summary": {
+      "routes": {
+        "errors": 0,
+        "warnings": 0,
+        "infos": 1
+      },
+      "first-load-focus": {
+        "errors": 0,
+        "warnings": 0,
+        "infos": 1
+      },
+      "keyboard": {
+        "errors": 0,
+        "warnings": 1,
+        "infos": 2
+      },
+      "axe": {
+        "errors": 0,
+        "warnings": 8,
+        "infos": 7
+      },
+      "media": {
+        "errors": 0,
+        "warnings": 4,
+        "infos": 1
+      },
+      "reflow": {
+        "errors": 0,
+        "warnings": 19,
+        "infos": 6
+      },
+      "target-size": {
+        "errors": 0,
+        "warnings": 8,
+        "infos": 4
+      },
+      "text-spacing": {
+        "errors": 0,
+        "warnings": 8,
+        "infos": 4
+      }
+    },
+    "counters": {
+      "connect:views": 1,
+      "axe:runs": 22,
+      "reflow:views": 32,
+      "target-size:targets": 1445,
+      "text-spacing:views": 22,
+      "load:attempt:1:routes": 1,
+      "success:first-attempt:load:routes": 1,
+      "routes:head:titleElements=1": 9,
+      "routes:head:titleBeforeBase=false": 9,
+      "routes:head:titleLastChild=true": 9,
+      "routes:inapp": 9,
+      "load:attempt:1:first-load-focus": 1,
+      "success:first-attempt:load:first-load-focus": 1,
+      "first-load-focus:loads": 1,
+      "load:attempt:1:keyboard": 3,
+      "success:first-attempt:load:keyboard": 3,
+      "success:first-attempt:state:agents": 16,
+      "keyboard:states": 3,
+      "keyboard:stops": 104,
+      "dialog:tab-presses": 74,
+      "load:attempt:1:axe": 2,
+      "success:first-attempt:load:axe": 2,
+      "axe:states": 20,
+      "axe:state:loaded": 2,
+      "axe:state:empty": 2,
+      "success:first-attempt:state:kanban": 13,
+      "axe:state:success": 12,
+      "success:first-attempt:state:cowork-shell": 9,
+      "success:first-attempt:state:dispatch-devices": 9,
+      "success:first-attempt:state:about": 13,
+      "success:first-attempt:state:settings-dialog": 13,
+      "success:first-attempt:state:settings-models": 9,
+      "success:first-attempt:state:session-not-found": 9,
+      "axe:state:error": 4,
+      "success:first-attempt:state:page-not-found": 9,
+      "load:attempt:1:media": 2,
+      "success:first-attempt:load:media": 2,
+      "media:states": 16,
+      "media:forced-colors:controls": 117,
+      "media:forced-colors-stops": 22,
+      "media:prefers-contrast:controls": 117,
+      "media:reduced-motion:views": 4,
+      "media:dark:axe-runs": 4,
+      "load:attempt:1:reflow": 3,
+      "success:first-attempt:load:reflow": 3,
+      "reflow:states": 30,
+      "load:attempt:1:target-size": 2,
+      "success:first-attempt:load:target-size": 2,
+      "target-size:states": 20,
+      "load:attempt:1:text-spacing": 2,
+      "success:first-attempt:load:text-spacing": 2,
+      "text-spacing:states": 20
+    },
+    "skipped": [
+      {
+        "check": "routes",
+        "reason": "direct loads of /kanban, /sessions/<id>, /settings, /about and an unknown path: the static server of the real-bundle smoke has no SPA rewrite (covered by the Demo half)"
+      }
+    ],
+    "failures": []
+  },
+  "finishedAt": "2026-11-19T19:44:45.076Z",
+  "assertions": {
+    "firstRenderClean": true,
+    "responseCompleted": true,
+    "probeMarkupAsExpected": true,
+    "noErrorBarOrConsoleErrorsAfterPrompt": true,
+    "reloadHistoryRendersSame": true,
+    "axeEmptyClean": true,
+    "axeAfterResponseClean": true,
+    "iconContrastMeetsNonText": true,
+    "skipLinkFocusedOnTab": true,
+    "errorBannerAnnouncesAndDismissesByKeyboard": true,
+    "a11yConnect": true,
+    "a11yAxe": true,
+    "a11yReflow": true,
+    "a11yTargetSize": true,
+    "a11yTextSpacing": true,
+    "a11yRoutes": true,
+    "a11yFirstLoadFocus": true,
+    "a11yKeyboard": true,
+    "a11yDialog": true,
+    "a11yMedia": true
+  },
+  "passed": true
+}

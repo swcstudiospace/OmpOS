@@ -663,8 +663,8 @@ Evidence: `.planning/phases/66.3-web-accessibility-wcag-22-aa/66.3-VERIFICATION.
 - [x] **AG-AX-1**: Scripted checks (`scripts/web-smoke/a11y/`) cover titles, headings, landmarks and route announcements, the keyboard walk, focus visibility and obscuring, the Settings dialog, the drawer, axe on every reachable state, forced colours, increased contrast, reduced motion, the dark scheme, reflow, text spacing, target size and the connect screen.
 - [x] **AG-AX-2**: The web smoke runs the checks on both halves as assertions named `a11y<Group>` (the Demo bundle, and the real bundle against the in-memory API), and a report with counts can be written (`--a11y-report DIR`).
 - [x] **AG-AX-3**: The final runs of both halves report zero error findings; warnings are listed in the report and in the known issues.
-- [x] **AG-AX-4**: Every defect found in the web head is fixed (ten, F1 to F10 of `docs/accessibility/known-issues.md`: nine from the first runs of the checks, one from a screenshot) and each has a check or a test where one can be written (F9: a style test for system colours; F10: a measurement only, K14).
-- [x] **AG-AX-5**: The checks' own false findings were corrected with self-tests (`node --test scripts/web-smoke/a11y/*.test.mjs`, 42 tests), not by loosening a rule that finds a real defect.
+- [x] **AG-AX-4**: Every defect found in the web head is fixed (ten, F1 to F10 of `docs/accessibility/known-issues.md`: eight from the first runs of the checks, two from screenshots (F9, F10)) and each has a check or a test where one can be written (F9: a style test for system colours; F10: a measurement only, K14).
+- [x] **AG-AX-5**: The checks' own false findings were corrected with self-tests (`node --test scripts/web-smoke/a11y/*.test.mjs`, 48 tests, all four a11y test files plus the fixture self-test, run in CI), not by loosening a rule that finds a real defect.
 - [x] **AG-AX-6**: The conformance statement says "partially conformant", the 55-row table separates what a check showed from what nobody evaluated, and the known issues list every open item.
 - [x] **AG-AX-7**: A manual keyboard script, a screen-reader plan and a forced-colours and motion guide exist and are marked as not carried out.
 - [x] **AG-AX-8**: What is out of scope is recorded: the desktop head (OQ-179), a screen-reader and device pass (OQ-178), browsers other than Chrome, a real Windows High Contrast theme (K11).
@@ -960,7 +960,7 @@ Source: owner decisions of 2026-11-19 (Linear umbrella SPE-34831) and `.planning
 | AG-HW-12 | 66.2 | Met |
 | AG-AX-1 | 66.3 | Met |
 | AG-AX-2 | 66.3 | Met |
-| AG-AX-3 | 66.3 | Met (local final runs; the gate repeats them) |
+| AG-AX-3 | 66.3 | Met (final runs in CI on current main — rerun on 2026-11-19/20: all halves exit 0; gate repeats them) |
 | AG-AX-4 | 66.3 | Met |
 | AG-AX-5 | 66.3 | Met |
 | AG-AX-6 | 66.3 | Met (draft statement, partially conformant) |

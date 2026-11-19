@@ -1,0 +1,57 @@
+{
+  "commit": "4a7f34c2",
+  "runDate": "2026-11-19",
+  "origin": "http://127.0.0.1:39921",
+  "startedAt": "2026-11-19T19:48:50.582Z",
+  "frames": [
+    {
+      "kind": "html",
+      "fixture": "base-tag.html"
+    },
+    {
+      "kind": "html",
+      "fixture": "bridge-probe.html"
+    },
+    {
+      "kind": "html",
+      "fixture": "form-submit.html"
+    },
+    {
+      "kind": "html",
+      "fixture": "location-assign.html"
+    },
+    {
+      "kind": "html",
+      "fixture": "meta-refresh.html"
+    },
+    {
+      "kind": "html",
+      "fixture": "postmessage-probe.html"
+    },
+    {
+      "kind": "html",
+      "fixture": "window-open.html"
+    },
+    {
+      "kind": "mermaid",
+      "fixture": "init-directive.mmd"
+    }
+  ],
+  "counts": {
+    "frames": 8,
+    "outboundRequests": 0,
+    "frameNavigations": 0,
+    "parentAccesses": 0
+  },
+  "outbound": [],
+  "navigations": [],
+  "finishedAt": "2026-11-19T19:49:04.665Z",
+  "assertions": {
+    "artifactFixturesFramed": true,
+    "artifactNoOutboundRequest": true,
+    "artifactNoFrameNavigation": true,
+    "artifactNoParentAccess": true
+  },
+  "failures": [],
+  "passed": true
+}

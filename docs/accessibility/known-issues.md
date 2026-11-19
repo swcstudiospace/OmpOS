@@ -4,9 +4,9 @@ description: "Accessibility defects the scripted checks found and that were fixe
 
 # Accessibility known issues
 
-Status: Open. The scripted checks ran against built bundles on 2026-10-29 and found nine defects (F1 to F9, two of them seen in screenshots, not by a check); looking at the screenshots of the final bundles found a tenth (F10). All ten are fixed (section 1). Section 2 lists what is still open. Nothing here was observed with assistive technology.
+Status: Open. The scripted checks ran against built bundles on 2026-10-29 and found eight defects (F1 to F8, fixed in bd42c17a and 2493ef84); looking at the screenshots of those bundles found two more (F9 and F10). All ten are fixed (section 1). Re-verified on 2026-11-19 and 2026-11-20 (CI runs on the merged main and on PR #21's head: browser smoke all halves exit 0, 48 a11y node tests in CI and locally, fixture self-test pass) with zero error findings on both halves (Demo 12 warnings; real bundle 48 warnings, 36 of them the `state-unreachable` optional states of K18 below). Section 2 lists what is still open. Nothing here was observed with assistive technology.
 
-Last verified: 2026-10-29
+Last verified: 2026-11-20
 
 Evidence of the recorded runs is in [`docs/runbooks/evidence/web-accessibility-2026-10-29/`](../runbooks/evidence/web-accessibility-2026-10-29/README.md).
 
@@ -90,6 +90,10 @@ The non-modal Dispatch approval component exposes named actions, but no integrat
 ### K17: artifact access dialog focus is unverified
 
 `ArtifactAccessDialog.razor` installs the shared focus trap, focuses Deny, and releases the trap on disposal; standalone component tests pass for the lifecycle and Escape denial. No production web caller currently renders the dialog, so actual opener restoration, Tab containment, and screen-reader behavior remain unverified.
+
+### K18: four api-kind states are unreachable in the unsigned API smoke (account menu, Cowork approval, the Cowork dock tabs, the artifact panel)
+
+The `account-menu`, `cowork-approval`, `cowork-artifact` and `cowork-dock-tabs` states of `scripts/web-smoke/a11y/states.mjs` are `required: false`, `kinds: ["api"]`. They need a signed-in account or a pending app state the smoke will not fabricate (passwordless sign-in has no scriptable mouse path — OQ-312), so the check reports each of them as a `state-unreachable` warning (36 of the real bundle's 48 warnings of 2026-11-19 are exactly these 4 states x 9 viewports) instead of erroring. They are NOT axe-checked on either half today; the Dispatch page state (`dispatch-devices`) IS reached on the API half (no unreachable warning). Covered surfaces added after d0d0b879 are therefore: Dispatch (checked), account menu/Cowork approval/artifact panel (unreachable-warned, K18). Making them `required: true` needs the scriptable sign-in decision of OQ-312 (Phase 67) or seeded app state in the smoke.
 
 ## 3 How verified
 
