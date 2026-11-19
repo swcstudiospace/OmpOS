@@ -8,6 +8,12 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.3] - 2026-11-20
+
+### Changed
+- Phase 66.2 closeout (hosted real web app): the docs no longer claim an owner-token web sign-in — the web head signs in with Supabase passwordless since Phase 67 (the connect screen and `OwnerTokenSession` were retired by 4a234284; the API `OwnerToken` mode remains). `run-local.sh` (real `omp`) evidence re-run on HEAD (`docs/runbooks/evidence/hosted-web-2026-11-19/`, `result: passed`)
+- CI now runs `node scripts/hosted/selftest.mjs` and the `check-no-demo.sh` trio (real bundle passes; Demo bundle with `--expect-demo` passes; Demo bundle without the flag fails).
+
 ## [0.20.2] - 2026-11-20
 
 ### Changed
@@ -536,7 +542,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.2...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.3...HEAD
+[0.20.3]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.2...v0.20.3
 [0.20.2]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.1...v0.20.2
 [0.20.1]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.0...v0.20.1
 [0.20.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.2...v0.20.0
