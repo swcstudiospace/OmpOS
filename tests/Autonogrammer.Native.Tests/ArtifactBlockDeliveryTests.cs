@@ -79,7 +79,7 @@ public sealed class ArtifactBlockDeliveryTests
                 TrustedFolders = [root],
                 ModelReadsImages = false,
             };
-            var arguments = JsonDocument.Parse("""{"kind":"csv","title":"Quarterly","content":"name,total\nwidget,4\n"}""").RootElement;
+            var arguments = JsonDocument.Parse("""{"kind":"Csv","title":"Quarterly","content":"name,total\nwidget,4\n"}""").RootElement;
             var invocation = new CoworkToolInvocation("session-1", "call-1", "artifact_create", arguments, CoworkTurnOrigin.Local);
 
             var result = await composition.ToolProvider.InvokeAsync(context, invocation, ct).ConfigureAwait(true);
