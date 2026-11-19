@@ -2,21 +2,21 @@
 gsd_state_version: "1.0"
 milestone: v0.16.0
 milestone_name: "Autonogrammer: accounts, Cowork and Dispatch (planned, added 2026-10-28)"
-current_phase: "74.1"
-current_phase_name: Durable account-scoped memory idempotency migration and atomic replay
-status: blocked
-stopped_at: "Phase 74.1 plan 03 awaiting independent human runbook review; 75-12 held"
- last_updated: "2026-11-16T22:52:57Z"
- last_activity: 2026-11-16
- last_activity_desc: "Phase 74.1 local checks passed but human runbook review remains pending. Merged PR #13 (feat/autonogrammer-integration to main) via gh, tagged v0.17.0 release. Independent account-default, Cowork notice and Chromium pipe fixes received focused verification; guarded browsing and release gates remain open."
- state_head: bcbb5658e2d68ab32e1d48e51ca1ba1b26b062b8
+current_phase: "78"
+current_phase_name: Desktop release pipeline and per-machine Windows installer
+status: executing
+stopped_at: "Phase 78 planned 2026-11-19: code for plans 78-01 to 78-05 is written and reviewed in the worktree but no CI run has proven it; next is plan 78-06 (PR, rehearsal run, tag v0.20.0-rc.1, release asset check)"
+last_updated: "2026-11-19"
+last_activity: 2026-11-19
+last_activity_desc: "Reconciled phases 66 to 77 against the current tree and CI (2 complete, 7 substantially complete, 7 partial, 1 blocked on an owner action; 107 outstanding and 64 blocked items; no phase verified by a gate run). Added Phase 78 (desktop release pipeline and per-machine Windows installer, six plans, AG-78-1 to AG-78-11). PRs #16 and #17 are merged to main; this branch pins agent-swarm and agent-substrate to their AGPL LICENSE commits."
+state_head: 9e45b82e5b568a43fcf37dc160f78dc24c5be9f4
 progress:
-  total_phases: 17
-  completed_phases: 11
-  total_plans: 111
-  completed_plans: 85
-  percent: 65
-current_plan: 3
+  total_phases: 18
+  completed_phases: 0
+  total_plans: 155
+  completed_plans: 82
+  percent: 53
+current_plan: 6
 ---
 
 # Project State
@@ -26,13 +26,29 @@ current_plan: 3
 See: .planning/PROJECT.md (updated 2026-10-21)
 
 **Core value:** A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
+**Current focus:** Phase 78 (desktop release pipeline and per-machine Windows installer; milestone v0.16.0, release 0.20.0) in the worktree `/root/src/worktrees/ag-plugin-connector` on `fix/phase35-review-closure`. PRs #16 and #17 are merged to main (main is 0.19.2; this branch carries 0.20.0). The Phase 78 code (installer, installer smoke test, app readiness for Program Files, workflows, asset verifier, plugin pins, docs, changelog) is written and reviewed but no CI run has proven it; the next step is plan 78-06 (PR, dispatch rehearsal, tag `v0.20.0-rc.1`, release asset check). On 2026-11-19 a reconciliation of phases 66 to 77 against the current tree and CI replaced the older reading that stopped at a blocked Phase 74.1; see "Reconciliation 2026-11-19" below. No phase is verified by a gate run. The frontmatter counts are plans reconciled as done (82 of 155: the 149 plans of phases 66 to 77 plus the six Phase 78 plans, none of which is done), not verified completion; `completed_phases` is 0 because no VERIFICATION file says passed.
+
+## Current Position
+
+Phase: 78 (Desktop release pipeline and per-machine Windows installer)
+Plan: 06 is next (integration); 01 to 05 are written and reviewed in the worktree, none has run in CI
+Status: executing; no tag, release or publish has been made for 0.20.0. Linear umbrella SPE-34831.
+
+The branch `fix/phase35-review-closure` is at `9e45b82e` (pins `agent-swarm` and `agent-substrate` to commits that carry the AGPL-3.0-or-later LICENSE). Phase 74.1's independent human runbook review is still not recorded; the hold text written on 2026-11-16 is kept under History.
+
+### History
+
+The text below is kept as written before 2026-11-19. It names `/root/src/repos/autonogrammer`, `/root/src/repos/ompos` and the branch `feat/autonogrammer-integration`, which are not the current workspace, and reads Phase 74.1 as blocked. It is provenance, not current-tree proof.
+
+Previous current focus (as written 2026-11-16):
+
 **Current focus:** v0.16.0 in `/root/src/repos/autonogrammer` on `feat/autonogrammer-integration`. Phase 74.1 is implementing durable memory idempotency; 75-12 is held until its verification. Phase 72's locked browser restrictions and the final security and integration gates remain open. Generated frontmatter counts summarize artifact inventory, not verified phase completion; the current-tree completion count is not established.
 
 ### Historical focus (v0.15.0; retained provenance, not current-tree proof)
 
 **Current focus:** Milestone v0.15.0, Cursor completeness, brand and public launch (Phases 51 to 65), released 2026-10-28 as v0.15.0: `./bootstrap.sh` passed on a clean worktree of `e24e6851` (12215 tests, 0 failed, 2 skipped), `origin/main` was fast-forwarded to `9d4e0075`, the tag `v0.15.0` and the GitHub Release exist (https://github.com/swcstudiospace/OmpOS/releases/tag/v0.15.0). Five phases are complete (52, 53, 58, 64, 65; 52, 58, 64 and 65 with caveats), ten are Partial, and none is claimed that needs a live model turn, Windows, macOS, Android, a Railway deploy of the API or of a cloud agent, the sign-in authority or a GitBook publish (after the release a staged private worker was deployed to Railway and handshaken; see "Final position 2026-10-28"). The GitHub `ci` workflow failed for both release pushes at 'Start test services' (OQ-168); the local gate is the gate of record. The previous focus, v0.14.0 (audited at `d75fd88` on 2026-10-27), is in the section "Final position 2026-10-27". The audit of the final tree is `docs/quality/cursor-parity-audit-2026-10-28.md` (re-graded at `7535859`); the records are `.planning/phases/51-*` to `65-*`.
 
-## Current Position
+### Previous Current Position (as written 2026-11-16; historical)
 
 Phase: 74.1 (Durable account-scoped memory idempotency migration and atomic replay)
 Plan: 03 awaiting independent human runbook review; 01, 02 and 04 passed focused and integrated local checks
@@ -45,6 +61,28 @@ Phase 76: the Bubblewrap namespace probe was corrected and its unit class passed
 The following milestone-scope paragraph and consolidation record are historical provenance, not current-tree acceptance evidence. See the current focus above and the phase verification files for present blockers.
 
 Milestone scope: v0.16.0 (66 complete via 66-08 gap closure with SOTA a11y security states + C3 first-attempt smoke fix; 66.1 deferred human; 67-77). Phase 67 executed per assignment: library tests (Accounts), OS stores/keyring (Secrets.Os), API endpoints, account surfaces (UI/Web/Native), architecture, build, restore. Canonical `/root/src/repos/ompos` on `feat/autonogrammer-integration`. 66-08-SUMMARY created; 66-VERIFICATION ready. Artifact inventory 76/90. No VERIFICATION for 67 yet. Phase 69 SOTA update executed: 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md (explicit states per 66-SOTA, security isolation gates + behavioral, first-attempt clean per VERIF, graceful degradation) created as post-plan overlay; 6/6 plans summarized; VERIF 7/7 truths + 3 human_needed (a11y/visual/shortcuts) noted. Phase 77 SOTA update executed: 77-SOTA-HARDENING-DOCS-INTEGRATION.md created (explicit states/edge/first-attempt/fail-closed/graceful/a11y/operational applied to hardening/docs/parity/security/a11y/gate/integration per 66-SOTA + 77-VALIDATION/CONTEXT); 77-01 summarized, 02-08 pending full execution + gate; criteria 1-8 referenced in SOTA record; committed. Refs 77.
+
+## Reconciliation 2026-11-19
+
+A pool of reconciliation workers checked every plan of phases 66 to 77 (17 phases, 149 plans) against the current tree, the CI record of main (run on `e75db65f`, 2026-11-18) and each phase's own VERIFICATION file. For each phase they recorded a verdict, the outstanding and blocked items, the planning assumptions that are now obsolete, and the Linear issues to open. The verdicts are reconciliation records, not gate results.
+
+| Verdict | Phases |
+|---------|--------|
+| complete | 66.1, 69 |
+| substantially complete | 66, 66.2, 66.3, 66.4, 67, 68, 74.1 |
+| partial | 70, 71, 73, 74, 75, 76, 77 |
+| blocked on an owner action | 72 |
+
+Totals: 17 phases and 149 plans (82 done, 41 partial, 10 obsolete, 8 blocked, 8 not started); 107 outstanding items and 64 blocked items. Each phase's obsolete assumptions are in a "Reconciliation note 2026-11-19" line under its entry in `.planning/ROADMAP.md`, and the Progress (v0.16.0) table there carries the status and Linear parent of every phase.
+
+Linear: the map is `.planning/LINEAR-MAP.md` (project "Autonogrammer GSD roadmap (v0.16.0 phases 66-77)"). The owner decisions and credentials register is SPE-34972 (https://linear.app/swcstudio/issue/SPE-34972/owner-decisions-and-credentials-needed-by-the-v0160-phases). Phase 78 has the umbrella issue SPE-34831.
+
+Explicitly NOT done by this reconciliation:
+- No phase is verified by a gate run; `completed_phases` stays 0.
+- No VERIFICATION file was written or refreshed, and no Linear issue was moved to Done (an issue moves to Done only after the phase's VERIFICATION says passed).
+- Phase 78 has not run in CI: no rehearsal, no `v0.20.0-rc.1` tag and no release page exist yet, and the Windows and macOS installs have not been checked by a person.
+- The obsolete assumptions were recorded, not rewritten into the phase goals or plans.
+
 
 ## Consolidation record (2026-11-01)
 
