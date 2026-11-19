@@ -15,6 +15,7 @@ Facts read for this record (research `docs/plans/v0.15.0-research/11-agpl-audit.
 - Every licence in the locked NuGet graph (about 230 packages: MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0, PostgreSQL), the three bundled fonts (SIL OFL 1.1) and vendored Bootstrap (MIT) is compatible with version 3 of the GNU GPL and therefore of the AGPL. Apache-2.0 is compatible with GPL version 3 only, so a version-3 licence is required.
 - Two packages declare their licence as a file inside the package (`Avalonia.Angle.Windows.Natives`, `Unicode.net`); the vendor repositories give BSD-3-Clause and MIT.
 - The submodules `agent-swarm` and `agent-substrate` have no LICENSE file; `agent-substrate` is private.
+  - Update 2026-11-19: this fact is superseded. The owner decided that both submodules take `AGPL-3.0-or-later` (OQ-102). Each repository received one LICENSE-only commit on top of the commit that was pinned, the same change was merged to each default branch (swarm#49, substrate#221), and the pins moved by that one file. The decision text below is unchanged.
 - AGPL section 13 requires an operator of a modified version to prominently offer remote users the Corresponding Source from a network server at no charge, and section 6 requires the source (or an offer) with object code: desktop installers, the APK, container images and the WebAssembly payload sent to browsers.
 
 ## Candidate chosen
@@ -72,6 +73,7 @@ Run by the orchestrator; nothing below was run when this record was written exce
 - The owner may have meant `AGPL-3.0-only` (OQ-93): the change touches LICENSE-adjacent notices, `PackageLicenseExpression`, the README and `docs/licensing.md` together.
 - Ownership of all existing code by SWC Studio and the absence of third-party snippets in the git history are unverified; review before the first AGPL tag.
 - `agent-swarm` and `agent-substrate` have no licence (OQ-102); until that changes they are outside the source offer, and the private `agent-substrate` cannot be obtained by users of a public build.
+  - Update 2026-11-19: resolved for the licence (OQ-102), and the consequence is now concrete: the desktop packages bundle the plugins, so the source of the private `agent-substrate` repository is distributed inside the public installers under the AGPL. The decision text above is unchanged.
 - `TextMateSharp.Grammars` embeds third-party grammars whose licences the package does not state; the packages' native-code notices are reproduced from the packages but not otherwise audited.
 - Two web icons (`favicon.png`, `icon-192.png`) have unknown provenance and the name "Autonogrammer" is not cleared as a trademark.
 - App-store terms (Google Play) may conflict with AGPL section 10; the Android build ships through GitHub Releases or F-Droid until that is read.

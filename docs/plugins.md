@@ -61,6 +61,7 @@ Realm also needs a build before its extension loads: `npm ci && npm run build` i
 
 In CI, the `build-test` job in `.github/workflows/ci.yml` checks out the three public submodules always (`claude-ultrathink`, `agent-swarm` and `agent-realm`), and checks out the private one only when the repository secret `SUBMODULE_TOKEN` exists. The secret holds a read-only token for `swcstudiospace/substrate`. It reaches git only through a masked `http.https://github.com/.extraheader` setting for that one command. When the secret is missing, the job prints a warning and continues. Who provisions the token is open: [OQ-63](open-questions.md). The container build context ignores `plugins/` (`.containerignore`), so no image contains plugin source.
 
+The tag workflow `desktop-release.yml` (not `release.yml`, which checks out no plugin) reads the private repository with a different credential, resolved 2026-11-19 ([OQ-63](open-questions.md)): the repository secret `SUBSTRATE_DEPLOY_KEY`, the private half of a read-only deploy key on `swcstudiospace/substrate`. `SUBMODULE_TOKEN` stays accepted there as an alternative. A tag build of `desktop-release.yml` fails when neither secret exists, and so does a rehearsal (a manual run with `version_suffix` set); a plain manual run only warns. To revoke the access, delete the deploy key on `swcstudiospace/substrate` and delete the secret. The desktop packages bundle the plugins, so the source of the private `agent-substrate` repository is distributed inside the public installers (see Licence facts).
 ## Bumping a pin
 
 Run from the Autonogrammer repository root, for one plugin at a time:
@@ -186,7 +187,7 @@ These are facts, not legal advice. Autonogrammer itself is `AGPL-3.0-or-later` (
 
 - Autonogrammer and `plugins/gsd-core-omp` are `AGPL-3.0-or-later`.
 - `claude-ultrathink` is AGPL-3.0-or-later. `agent-swarm` and `agent-substrate` have no LICENSE file; `agent-substrate` is private.
-- The plugins are separate programs launched as omp extensions. They are pinned by reference. Their source is not copied or linked into Autonogrammer binaries, and the container build context excludes `plugins/`.
+- The plugins are separate programs launched as omp extensions. They are pinned by reference. Their source is not linked into Autonogrammer binaries, and the container build context excludes `plugins/`. The desktop packages do carry a copy of each plugin's source under `plugins/` beside the executable (`scripts/release/bundle-plugins.sh`).
 - `agent-realm` is `AGPL-3.0-only` (its `package.json` and `LICENSE`). Autonogrammer and the first-party plugin are `AGPL-3.0-or-later`. The plugin is a separate program launched as an omp extension, not linked. No owner decision on how the two identifiers combine in one distribution is recorded; the open licence questions are in [OQ-102](open-questions.md).
 
 ## Contract gate and upgrades

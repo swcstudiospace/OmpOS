@@ -99,10 +99,10 @@ Brand artwork under `assets/` is authored for Autonogrammer. Two web icons (`fav
 | Submodule | Licence |
 |---|---|
 | claude-ultrathink | AGPL-3.0-or-later (LICENSE read in that repository) |
-| agent-swarm | none published |
-| agent-substrate | none published; private repository |
+| agent-swarm | AGPL-3.0-or-later (LICENSE added 2026-11-19, OQ-102; swarm#49) |
+| agent-substrate | AGPL-3.0-or-later (LICENSE added 2026-11-19, OQ-102; substrate#221); private repository |
 
-Submodules are not included in GitHub source archives of Autonogrammer, so they are not part of the source offer. `plugins/gsd-core-omp` is Autonogrammer code and is AGPL-3.0-or-later. omp itself (`@oh-my-pi/pi-coding-agent`, MIT) is a separate program that Autonogrammer starts over ACP/RPC stdio; the API image conveys it with its LICENSE under `/licenses`. Whether that boundary counts as mere aggregation is a legal judgement this page does not make.
+Submodules are not included in GitHub source archives of Autonogrammer, so they are not part of the source offer made by those archives. The desktop packages differ: they carry a copy of each plugin's source under `plugins/` beside the executable, so the source of the private `agent-substrate` repository is distributed inside the public installers, under the licence above (owner decision of 2026-11-19, OQ-102: both plugins moved to `AGPL-3.0-or-later` by one LICENSE-only commit each on top of the previous pins). `plugins/gsd-core-omp` is Autonogrammer code and is AGPL-3.0-or-later. omp itself (`@oh-my-pi/pi-coding-agent`, MIT) is a separate program that Autonogrammer starts over ACP/RPC stdio; the API image conveys it with its LICENSE under `/licenses`. Whether that boundary counts as mere aggregation is a legal judgement this page does not make.
 
 ## Contributing
 
@@ -117,7 +117,6 @@ The licence grants no right to the name "Autonogrammer" or to its logo, banner o
 | Item | Why | Reference |
 |---|---|---|
 | Confirm `AGPL-3.0-or-later` (not `-only`) | The default taken for "AGL 3.0" reads it as the GNU Affero licence with the "or later" option. Changing it means editing LICENSE-adjacent notices, package metadata and README together. | OQ-93 |
-| Add a LICENSE to `agent-swarm` and `agent-substrate` and bump the pins, or keep them private and say so | Without a licence all rights are reserved, and `agent-substrate` is private, so public AGPL users cannot obtain it. | OQ-102 |
 | Confirm SWC Studio owns all existing code | The git history was written by people and agents; ownership and the absence of third-party snippets were not verified. Review `git shortlog` before the first AGPL tag. | audit section 6.8 |
 | Decide DCO versus CLA | DCO is the default; a CLA is only needed for dual licensing. | audit section 6.7 |
 | Search the name "Autonogrammer" before relying on it as a mark | Not cleared. | audit section 6.6 |

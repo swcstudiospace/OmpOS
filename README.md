@@ -78,6 +78,10 @@ Status words: **Built** = implemented, reachable from a head and covered by test
 | GitBook documentation site | Blocked | Published after the owner connects GitBook |
 | Cursor accounts, teams, billing | Omitted | No accounts by design |
 
+## Install
+
+Installers for the desktop app are attached to each [GitHub release](https://github.com/swcstudiospace/OmpOS/releases): a `-Setup.exe` for Windows x64, a `.dmg` for macOS arm64, and a `.deb` or `.tar.gz` for Linux x64, with `SHA256SUMS-desktop` to check them. The Windows installer is not signed and the macOS app is not notarized, so both systems warn on the first launch. Neither package contains `omp` or Bun; install them separately. Steps, checks and a manual test checklist: [docs/guides/install.md](docs/guides/install.md). To run from a source checkout instead, see Quick start below.
+
 ## Quick start
 
 Requirements: `bash`, `curl`, `git` and `python3`; `omp` on `PATH` (the engine); the plugin submodules (`git clone --recurse-submodules`, or `git submodule update --init --recursive`; `plugins/agent-substrate` is private and its plugin reports Unavailable without access); optional `podman` for the local sandbox. .NET is not a prerequisite: `./bootstrap.sh` installs the SDK pinned in `global.json` into `~/.dotnet`.
