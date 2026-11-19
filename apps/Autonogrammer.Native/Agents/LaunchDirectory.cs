@@ -34,7 +34,7 @@ internal static class LaunchDirectory
     /// <param name="homeDirectory">The user's home directory, returned when the current directory is refused.</param>
     /// <returns>The full current directory when it is usable, otherwise <paramref name="homeDirectory"/>. It never throws.</returns>
     internal static string Resolve(string? currentDirectory, string? baseDirectory, IReadOnlyList<string>? protectedRoots, string? homeDirectory) =>
-        Resolve(currentDirectory, baseDirectory, protectedRoots, homeDirectory, PlatformComparison);
+        ResolveWith(currentDirectory, baseDirectory, protectedRoots, homeDirectory, PlatformComparison);
 
     /// <summary>Resolves the workspace directory with an explicit path comparison, so each platform's rule can be checked on any host.</summary>
     /// <param name="currentDirectory">The process's current directory, possibly missing or empty.</param>
@@ -43,7 +43,7 @@ internal static class LaunchDirectory
     /// <param name="homeDirectory">The user's home directory, returned when the current directory is refused.</param>
     /// <param name="comparison">How two paths are compared: ordinal on Linux, ignoring case on Windows and macOS.</param>
     /// <returns>The full current directory without a trailing separator when it is usable, otherwise <paramref name="homeDirectory"/>. It never throws.</returns>
-    internal static string Resolve(
+    internal static string ResolveWith(
         string? currentDirectory,
         string? baseDirectory,
         IReadOnlyList<string>? protectedRoots,

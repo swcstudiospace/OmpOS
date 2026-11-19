@@ -20,7 +20,7 @@ public sealed class LaunchDirectoryTests
     }
 
     private static string Resolve(string current, string baseDirectory, string[] roots, StringComparison comparison = StringComparison.Ordinal) =>
-        LaunchDirectory.Resolve(current, baseDirectory, roots, Home, comparison);
+        LaunchDirectory.ResolveWith(current, baseDirectory, roots, Home, comparison);
 
     /// <summary>A launch from the folder the application is installed in must not make that folder the workspace.</summary>
     [Fact]
