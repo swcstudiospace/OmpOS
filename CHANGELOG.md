@@ -8,6 +8,11 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.2] - 2026-11-20
+
+### Changed
+- Phase 66.1 closeout: the scaffold-phase verification record (AG-SC-6) is closed by CI proof on the merged tree (runs 44532185561, 44541692228 on main; PR #19 head runs 44566723144, 44566709822): the CI android job restores the hand-patched Android lock in locked mode and builds green, and the `./bootstrap.sh` gate is mirrored by CI. Phase 66.1 is marked complete in ROADMAP.
+
 ## [0.20.1] - 2026-11-20
 
 ### Changed
@@ -531,7 +536,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.1...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.2...HEAD
+[0.20.2]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.1...v0.20.2
 [0.20.1]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.0...v0.20.1
 [0.20.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.2...v0.20.0
 [0.19.2]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.1...v0.19.2
