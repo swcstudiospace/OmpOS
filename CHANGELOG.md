@@ -8,6 +8,56 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-11-19
+
+### Added
+- Cowork artifact cards: a successful `artifact_create` or `artifact_update` opens its version in the artifact panel. Before this, the card reached the transcript, where no native view was mapped for it. Delivered versions run without network access, because artifact origins are not persisted yet; the web head does not show artifacts yet.
+- Windows installer: `Autonogrammer-<version>-win-x64-Setup.exe` installs like traditional software. Double-clicking it asks for administrator rights (UAC) and installs the 64-bit app to `C:\Program Files\Autonogrammer`, with a Start Menu entry for all users, an optional desktop shortcut, a licence page, a launch-after-install option, an Apps and Features entry and an uninstaller. The uninstaller asks whether to remove settings and sessions; the default is No. Installing a newer version over an older one keeps the folder and the user data, and an all-users install removes an older per-user install of Autonogrammer. `/CURRENTUSER` still installs per user without administrator rights, and `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART` installs silently. The installer is not signed with a publisher certificate, so Windows SmartScreen may warn. No job had run it on Windows when this was written (see `docs/runbooks/desktop-release.md`).
+- `scripts/release/windows/smoke-test-installer.ps1` installs the setup silently on a Windows runner, checks the files, the registry entry and the shortcuts, launches the app for 15 seconds, checks that it wrote nothing beside its executable, upgrades in place, uninstalls, and checks the per-user migration.
+- `scripts/release/verify_desktop_assets.py` checks the six desktop files (names, versions, sizes, file signatures and, for the tar.gz, zip, deb and exe, that the archive is structurally complete) and writes `SHA256SUMS-desktop`. Its 58 unit tests run in `repo-checks`.
+- `desktop-release` takes an optional `version_suffix` input to rehearse a prerelease from a branch. The run uses the prerelease file names and applies the same gates as a tag build (the private plugin credential and the plugin licence check), and it creates no release.
+- Install guide `docs/guides/install.md` with a manual test checklist for Windows and macOS.
+
+### Changed
+- Diff review: the line diff, the failed-call rule and the net-edit rule each have one implementation, shared by the Changes bar, the checkpoint timeline and the file-edit card.
+- Hook run status names are single-sourced in `HookRunStatusNames` and shared by the projector and the log.
+- Remote environment profiles: the three editors share one recompute path and one identifier rule.
+- Cowork: the 200-session cap is defined once in Contracts (`AgentSessionLimits.MaxSessions`), and the Cowork message derives from it.
+- Customize empty states list the folders discovery scans, read from `ConventionDirectories`, which moved to Contracts.
+- Cowork task rows are documented in group order, and the dispatch host failure message is documented as diagnostic, not shown.
+- Releases: `release.yml` creates the tag release as a draft, and `desktop-release.yml` publishes it only after the Windows, macOS and Linux files are attached and verified and the image archives, SBOM and checksums exist. A failed desktop build now leaves a hidden draft, not a public release without installers.
+- The private `agent-substrate` plugin is checked out in release builds with a read-only deploy key (`SUBSTRATE_DEPLOY_KEY`) or with `SUBMODULE_TOKEN`. A tag build fails when neither exists (OQ-63).
+- `agent-swarm` and `agent-substrate` carry the `AGPL-3.0-or-later` LICENSE (OQ-102). Each pin moved by that one file, and the plugin manifest now expects it. The source of the private `agent-substrate` repository ships inside public installers under the AGPL.
+- The macOS app bundle is ad-hoc signed before it is zipped and put into the `.dmg`. It is not notarized.
+- The app starts in your home folder when it is launched from its install folder, a system folder, a filesystem root or a missing folder, so a launch from Program Files does not make the install folder the workspace. The WebView2 data folder is `%LOCALAPPDATA%\Autonogrammer\webview2`, and MCP connection checks no longer use the install folder as their working directory.
+
+### Fixed
+- Agents rail: closing an agent that is not selected asks first when it is running, as the selected row does. A running agent that fails to open stays open with a status message.
+- Diff review: Apply cannot write another session's hunks after a session switch or when that session's pane is removed.
+- Install: a deferred, rolled-back, offline or up-to-date install shows its own message instead of "Install failed".
+- Queue: a queued message whose start fails reports the failure instead of stopping the queue silently.
+- New session picker: an environment whose last test failed shows the failure and cannot be chosen to start. The picker reads the same result as the Remote environments page. The cloud option gives the real reason (not set up, or configured).
+- Closed sessions land in the Archived column for every runtime status. A closed running session without an engine reads Closed.
+- Dispatch: a frame with a known type that fails validation no longer answers `unsupported_frame`.
+- Remote environments: an SSH test outcome carries over only when every field it depends on is unchanged. A container test outcome is invalidated when the podman path changes.
+- Cloud: the dialog and `/in-cloud` report the same outcome for an unconfigured host, and the failure-kind mapping lives in one place.
+- Privacy and About: the Privacy page no longer says Autonogrammer has no accounts. Privacy statements come from one source. The web About view offers the source with the desktop wording and always shows the source link.
+- Bundles and connectors: a project-scope notice shows user text, not an internal token. Connector labels round-trip to the stored policy.
+- Side chats: closing a side chat removes it from the panel list.
+- Automations: a failed change publishes its state the same way a failed load does. Validation text names the enforced limits.
+- Commands: the `/open` and best-of-n descriptions match what the commands do.
+- Safety: the entry-limit message names the enforced limit.
+- Catalog: the Lost group's documentation matches the projector rule, including stale approval-wait sessions.
+- Hook export names are exhaustive. An unlisted scope or outcome no longer exports as `plugin` or `invalidResponse`.
+- Tag runs of `desktop-release` for v0.17.0 and v0.19.1 failed at the private plugin checkout because no credential existed, so no release received the Windows installer or the `.dmg`.
+
+### Removed
+- The unwired hooks view chain (`HooksViewModel`, `HookRowModel`, `HooksViewState`, `HookBlockReason`) and the hooks source contract with its Web implementation (`IHooksSource`, `HookEntry`, `HookQuarantineEntry`, `HooksSourceException`, `WorkspaceHooksSource`).
+- The unused `/logs` handler (`LogsSlashHandler`) with its folder-opener interface and copy.
+- The Native diff entry types `DiffEntry` and `DiffEntryKind`.
+- Browser pane states that nothing published.
+- `AgentSessionRegistry.MaxSessions`, replaced by `AgentSessionLimits.MaxSessions`.
+
 ## [0.19.2] - 2026-11-18
 
 ### Fixed
@@ -473,7 +523,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.2...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.2...v0.20.0
 [0.19.2]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.1...v0.19.2
 [0.19.1]: https://github.com/swcstudiospace/OmpOS/compare/v0.19.0...v0.19.1
 [0.19.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.18.0...v0.19.0
