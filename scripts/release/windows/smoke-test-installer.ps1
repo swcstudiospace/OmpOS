@@ -215,6 +215,43 @@ function Write-LogTails([string]$Directory) {
   }
 }
 
+# Printed when the app exits before the liveness window ends. It never throws: a diagnostic must not hide the real failure.
+function Write-AppExitDiagnostics($App, [string]$StdoutPath, [string]$StderrPath) {
+  try {
+    $code = $null
+    try { $App.WaitForExit(5000) | Out-Null; $code = $App.ExitCode } catch { Write-Host "    could not read the app exit code: $_" }
+    Write-Host "    app exit code: $code"
+    foreach ($file in @($StdoutPath, $StderrPath)) {
+      if (Test-Path -LiteralPath $file -PathType Leaf) {
+        Write-Host "---- $file (last 40 lines) ----"
+        Get-Content -LiteralPath $file -Tail 40 -ErrorAction Continue | ForEach-Object { Write-Host $_ }
+        Write-Host "---- end of $(Split-Path -Leaf $file) ----"
+      } else {
+        Write-Host "    no output file: $file"
+      }
+    }
+    # Error (2) and Warning (3) events, plus Critical (1). Windows Error Reporting writes its crash report as an Information event, so
+    # events of that provider are listed whatever their level.
+    $providers = @('.NET Runtime', 'Application Error', 'Windows Error Reporting')
+    Write-Host '    Application event log, last 3 minutes (.NET Runtime, Application Error, Windows Error Reporting):'
+    try {
+      $events = @(Get-WinEvent -FilterHashtable @{ LogName = 'Application'; StartTime = (Get-Date).AddMinutes(-3) } -ErrorAction Stop |
+          Where-Object { ($providers -contains $_.ProviderName) -and (($_.Level -in 1, 2, 3) -or ($_.ProviderName -eq 'Windows Error Reporting')) } |
+          Select-Object -First 10)
+      if ($events.Count -eq 0) { Write-Host '    (no matching events)' }
+      foreach ($logEvent in $events) {
+        $text = ([string]$logEvent.Message) -replace '\s+', ' '
+        if ($text.Length -gt 600) { $text = $text.Substring(0, 600) }
+        Write-Host "    [$($logEvent.TimeCreated.ToString('s'))] $($logEvent.ProviderName) id $($logEvent.Id) $($logEvent.LevelDisplayName): $text"
+      }
+    } catch {
+      Write-Host "    could not read the Application event log: $_"
+    }
+  } catch {
+    Write-Host "    the diagnostics failed: $_"
+  }
+}
+
 function Test-Installer {
   Write-Step 'Preconditions: PowerShell 7 on 64-bit Windows as an administrator'
   Assert-True ($IsWindows) 'this smoke test runs on Windows only'
@@ -272,8 +309,12 @@ function Test-Installer {
     $refused = Start-Process -FilePath $setup -ArgumentList $refusalArgs -Wait -PassThru
     Write-Host "    exit code: $($refused.ExitCode)"
     Assert-True ($refused.ExitCode -ne 0) 'the installer accepted a folder that already holds other files'
-    # Setup Exit Codes (Inno Setup help): 7 = the Preparing to Install stage determined that Setup cannot proceed.
-    Assert-True ($refused.ExitCode -eq 7) "the installer exited with code $($refused.ExitCode), expected 7 (PrepareToInstall refused the folder)"
+    # Observed in GitHub Actions run 44508808964 (Inno Setup 6.7.1): a silent install still runs NextButtonClick for the hidden
+    # folder page. Its message box is suppressed, it returns False, and the Inno log says 'Failed to proceed to next wizard page;
+    # aborting.' The exit code is 1 (not 7: PrepareToInstall is not reached). The log text proves the refusal came from our guard.
+    $foreignLog = Join-Path $script:logDir 'foreign-folder.log'
+    Assert-True (Test-Path -LiteralPath $foreignLog -PathType Leaf) "the Inno log was not written: $foreignLog"
+    Assert-True (Select-String -LiteralPath $foreignLog -SimpleMatch 'already contains other files' -Quiet) "the refusal did not come from the folder guard: $foreignLog does not contain 'already contains other files'"
     Assert-True (Test-Path -LiteralPath $keepFile -PathType Leaf) "the installer removed $keepFile"
     Assert-True (@(Get-ChildItem -LiteralPath $foreignDir -Force).Count -eq 1) "the installer wrote into the refused folder $foreignDir"
     Assert-True (-not (Test-Path -LiteralPath (Join-Path $foreignDir $ExeName))) "the installer put $ExeName into the refused folder"
@@ -301,9 +342,14 @@ function Test-Installer {
   Write-Step '5. Launch the installed app for 15 seconds; it must not write beside its executable'
   $before = @(Get-FolderSnapshot $installDir)
   Write-Host "    $($before.Count) entries under $installDir"
-  $app = Start-Process -FilePath $exe -WorkingDirectory $env:USERPROFILE -PassThru
+  $appOut = Join-Path $script:logDir 'app-stdout.log'
+  $appErr = Join-Path $script:logDir 'app-stderr.log'
+  $app = Start-Process -FilePath $exe -WorkingDirectory $env:USERPROFILE -RedirectStandardOutput $appOut -RedirectStandardError $appErr -PassThru
+  # Reading the handle keeps it open so that ExitCode stays readable after the process exits.
+  $null = $app.Handle
   try {
     Start-Sleep -Seconds 15
+    if ($app.HasExited) { Write-AppExitDiagnostics $app $appOut $appErr }
     Assert-True (-not $app.HasExited) "$ExeName exited within 15 seconds with code $($app.ExitCode)"
   } finally {
     $childIds = @()

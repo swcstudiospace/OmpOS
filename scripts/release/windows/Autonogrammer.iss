@@ -12,8 +12,9 @@
 ;   - Installing the same or a newer version over an existing one keeps the install folder. Running copies
 ;     of the app are closed first and are not restarted. User data is never touched by an install.
 ;   - Install folder guard: uninstalling removes the whole install folder, so Setup refuses a folder that already holds
-;     other files and is not an Autonogrammer install. The wizard checks it on the folder page, and PrepareToInstall checks it
-;     again, so a silent install with /DIR=<folder with other files> stops with Setup exit code 7 and installs nothing.
+;     other files and is not an Autonogrammer install. NextButtonClick checks it on the folder page. A silent install with
+;     /DIR=<folder with other files> is stopped by that same check (observed in CI: exit code 1, nothing installed).
+;     PrepareToInstall is a backstop for installs that skip the folder page.
 ;   - Command line, for IT and for tests: /ALLUSERS (the default) and /CURRENTUSER (a per-user install under
 ;     %LOCALAPPDATA%\Programs\Autonogrammer, no administrator rights). Silent installs: /VERYSILENT
 ;     /SUPPRESSMSGBOXES /NORESTART /TASKS=desktopicon /LOG=<file>.
@@ -186,10 +187,11 @@ begin
   end;
 end;
 
-// Setup calls PrepareToInstall before it installs, in wizard mode and in silent mode (/VERYSILENT), unlike NextButtonClick
-// on the folder page, which a silent install never shows. A non-empty result stops Setup with exit code 7
-// (Inno Setup help: Event Functions, PrepareToInstall; Setup Exit Codes). Not compiled on a development machine:
-// the installer smoke test in CI (step 'Setup refuses a folder that holds other files') is what verifies this hook.
+// Backstop for installs that skip the folder page (for example an upgrade, which reuses the previous folder).
+// A silent install does not need it: Setup still runs NextButtonClick for the hidden folder page, which refuses the folder
+// (observed in GitHub Actions run 44508808964: Inno Setup 6.7.1, exit code 1, nothing installed).
+// Per the Inno Setup help (Event Functions), a non-empty result stops Setup at the Preparing to Install page. The installer
+// smoke test does not exercise this function.
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   Folder: String;
