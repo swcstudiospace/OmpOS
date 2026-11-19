@@ -8,6 +8,11 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.4] - 2026-11-20
+
+### Changed
+- Phase 66.3 closeout (web accessibility WCAG 2.2 AA): all 48 a11y node tests and the fixture self-test now run in CI (roadmap and AG-AX-5 say 48 tests); the conformance statement, the conformance table and the known issues are refreshed on the current tree (0 error findings on both halves; Demo 12 warnings, API 48 warnings of which 36 are the optional states of signed-in surfaces, K18); new surfaces (Dispatch checked in the API smoke; account menu, Cowork approval, dock tabs and the artifact panel reported as `state-unreachable` until a sign-in path exists, OQ-312); guide texts no longer say "connect screen"; OQ-191 (first-load flake) decided accepted-with-retry and the passing smoke JSON kept under `docs/runbooks/evidence/web-smoke-2026-11-20/`.
+
 ## [0.20.3] - 2026-11-20
 
 ### Changed
@@ -542,7 +547,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.3...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...HEAD
+[0.20.4]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.3...v0.20.4
 [0.20.3]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.2...v0.20.3
 [0.20.2]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.1...v0.20.2
 [0.20.1]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.0...v0.20.1

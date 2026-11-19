@@ -6,9 +6,9 @@ description: "Accessibility conformance statement of the Autonogrammer web head:
 
 Status: Draft for publication. The conformance status below is "partially conformant". The automated checks ran on built bundles on 2026-10-29 and found nine defects; looking at the screenshots of the final bundles found a tenth. All ten are fixed, and the final runs report no error finding; the first screen reader run, a real device and a Windows High Contrast check have not happened.
 
-Last verified: 2026-10-29
+Last verified: 2026-11-20
 
-Date of this statement: 2026-10-29
+Date of this statement: 2026-10-29 (refreshed 2026-11-20: the numbers below are the current run of 2026-11-19 on HEAD 4a7f34c2 — a commit whose app tree is byte-identical to the merged main for `apps/Autonogrammer.Web`, `src/Autonogrammer.UI` and `src/Autonogrammer.Presentation`; final runs reported 0 error findings on both halves, with 12 warnings on the Demo bundle and 48 on the real bundle (36 of the latter are `state-unreachable` warnings for the optional api-kind states of signed-in surfaces: account menu, Cowork approval, the Cowork dock tabs and the artifact panel — see known issues K18).
 
 ## Commitment
 
@@ -22,7 +22,7 @@ Web Content Accessibility Guidelines (WCAG) 2.2, level AA.
 
 This statement covers the Blazor WebAssembly web head at the URL where it is deployed and the shared UI library it is built from (`apps/Autonogrammer.Web`, `src/Autonogrammer.UI`, `src/Autonogrammer.Presentation`):
 
-- the connect screen of a deployment that uses an owner token;
+- the sign-in view (Supabase passwordless via `SignInPanel`: the former owner-token connect screen is retired since Phase 67);
 - the Agents view (agent list, conversation, composer, tool approvals, Changes review, terminal), the Kanban view, the Settings dialog, About, and the not-found pages;
 - the in-browser Demo, which uses the same screens with a simulated engine.
 
@@ -54,7 +54,7 @@ Not used: testing with a screen reader or any other assistive technology (a [pla
 
 - Not tested with NVDA, JAWS, VoiceOver, TalkBack or Orca. Announcements (route changes, live regions, alerts) are verified in the DOM only.
 - Checks are automated and ran in headless Chrome 153 on Linux; the gate repeats them, but no person has used the web head with a keyboard only, a screen reader, a magnifier or speech input for this statement.
-- Open issues: K2, K3, K7 to K12 ([known issues](known-issues.md)); K1 is cleared.
+- Open issues: K2, K3, K7 to K12, K14, K18 ([known issues](known-issues.md)); K1 is cleared.
 - States the Demo cannot reach are not covered by axe: an empty Kanban board, the Kanban or Agents error state, the loading state of the agent list, and the real engine's output.
 - The static server of the real-bundle smoke has no rewrite for deep links, so direct loads of `/kanban`, `/sessions/<id>`, `/settings` and `/about` are checked on the Demo bundle only.
 - The terminal (xterm.js, a vendored third-party component) draws into a canvas; axe cannot measure its colour contrast and its screen reader behaviour is unverified.

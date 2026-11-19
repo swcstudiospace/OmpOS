@@ -1,0 +1,81 @@
+{
+  "ok": true,
+  "provisional": false,
+  "basis": "Measured on a published wwwroot (80 boot files, raw 12434834, gzip 4779084, brotli 3784441 bytes) plus 10 percent.",
+  "bootFiles": 90,
+  "measured": {
+    "rawBytes": 13042898,
+    "gzipBytes": 5032542,
+    "brotliBytes": 3981254
+  },
+  "limits": {
+    "rawBytes": 13678318,
+    "gzipBytes": 5256993,
+    "brotliBytes": 4162886
+  },
+  "over": [],
+  "missing": [],
+  "largest": [
+    {
+      "path": "_framework/dotnet.native.wasm",
+      "rawBytes": 3001776,
+      "gzipBytes": 1195273,
+      "brotliBytes": 976249
+    },
+    {
+      "path": "_framework/System.Private.CoreLib.wasm",
+      "rawBytes": 1757461,
+      "gzipBytes": 678656,
+      "brotliBytes": 548008
+    },
+    {
+      "path": "_framework/icudt_CJK.dat",
+      "rawBytes": 956416,
+      "gzipBytes": 356658,
+      "brotliBytes": 248840
+    },
+    {
+      "path": "_framework/icudt_no_CJK.dat",
+      "rawBytes": 1107168,
+      "gzipBytes": 346775,
+      "brotliBytes": 222250
+    },
+    {
+      "path": "_framework/Autonogrammer.Contracts.wasm",
+      "rawBytes": 929045,
+      "gzipBytes": 264310,
+      "brotliBytes": 170545
+    },
+    {
+      "path": "_framework/Autonogrammer.Presentation.wasm",
+      "rawBytes": 529685,
+      "gzipBytes": 205706,
+      "brotliBytes": 165329
+    },
+    {
+      "path": "_framework/icudt_EFIGS.dat",
+      "rawBytes": 550832,
+      "gzipBytes": 219880,
+      "brotliBytes": 143983
+    },
+    {
+      "path": "_framework/System.Text.Json.wasm",
+      "rawBytes": 411925,
+      "gzipBytes": 160039,
+      "brotliBytes": 133038
+    },
+    {
+      "path": "_framework/Autonogrammer.UI.wasm",
+      "rawBytes": 441621,
+      "gzipBytes": 156345,
+      "brotliBytes": 125287
+    },
+    {
+      "path": "_framework/Autonogrammer.Web.wasm",
+      "rawBytes": 374037,
+      "gzipBytes": 151879,
+      "brotliBytes": 121161
+    }
+  ],
+  "wwwroot": "/tmp/tmp.3J5GxMjKQD/web/wwwroot"
+}
