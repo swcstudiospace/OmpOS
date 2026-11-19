@@ -7,22 +7,38 @@ Usage:
 
 VERSION is MAJOR.MINOR.PATCH with an optional prerelease (the tag without its leading "v"). The expected files are
 Autonogrammer-<VERSION>-<rid>.<ext> for the platforms selected. The check fails when a file is missing, empty, of a
-different version, unexpected, too small to be a real installer, or does not start (or, for the .dmg, end) with the magic
-bytes of its format. --write-sums writes a `sha256sum -c` compatible file for the verified files and re-reads it.
+different version, unexpected, too small to be a real installer, does not start (or, for the .dmg, end) with the magic
+bytes of its format, or is structurally broken:
+  .tar.gz  the gzip stream and every tar member are read to the end (CRC checked) and there is at least one member
+  .zip     the central directory parses, there is at least one entry and every member passes its CRC check
+  .deb     the ar container walks member by member to exactly the end of the file, starts with debian-binary and
+           holds control.tar* and data.tar*
+  .exe     e_lfanew (offset 0x3C) points inside the file at the PE signature
+  .dmg     the last 512 bytes begin with the UDIF trailer koly (no deeper parse)
+These are cheap integrity checks, not a proof that the package installs or runs. --write-sums writes a `sha256sum -c`
+compatible file for the verified files and re-reads it.
 
 Exit codes: 0 verified, 1 a problem was found (one `::error::` line each), 2 bad usage. Stdlib only, no network.
 """
 import argparse
+import gzip
 import hashlib
 import os
 import re
 import sys
+import tarfile
+import zipfile
+import zlib
 
 VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$")
 PLATFORMS = ("linux-x64", "win-x64", "osx-arm64")
 SUMS_NAME = "SHA256SUMS-desktop"
 ONE_MIB = 1024 * 1024
+CHUNK = 1024 * 1024
 DMG_TRAILER_SIZE = 512
+AR_MAGIC = b"!<arch>\n"
+AR_HEADER_SIZE = 60
+PE_OFFSET_FIELD = 0x3C
 
 # (platform, file-name suffix after the version, kind, the size must exceed this many bytes)
 FILE_SPECS = (
@@ -73,7 +89,7 @@ def human_size(n):
 def sha256_of(path):
     digest = hashlib.sha256()
     with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+        for chunk in iter(lambda: handle.read(CHUNK), b""):
             digest.update(chunk)
     return digest.hexdigest()
 
@@ -89,7 +105,7 @@ def magic_problem(path, kind, size):
         if kind == "tar.gz":
             return None if head.startswith(b"\x1f\x8b") else "does not start with the gzip bytes 1f 8b"
         if kind == "deb":
-            if head[:8] != b"!<arch>\n":
+            if head[:8] != AR_MAGIC:
                 return "does not start with the ar header !<arch>"
             if head[8:8 + 13] != b"debian-binary":
                 return "has no debian-binary member after the ar header"
@@ -100,6 +116,103 @@ def magic_problem(path, kind, size):
             handle.seek(size - DMG_TRAILER_SIZE)
             return None if handle.read(4) == b"koly" else "does not end with the UDIF trailer (koly)"
     return f"has unknown kind {kind}"
+
+
+def targz_problem(path):
+    """Read the whole gzip stream and every tar member; a truncated or corrupt archive raises."""
+    members = 0
+    try:
+        with gzip.open(path, "rb") as stream:
+            with tarfile.open(fileobj=stream, mode="r|") as archive:
+                for member in archive:
+                    members += 1
+                    if member.isreg():
+                        data = archive.extractfile(member)
+                        while data.read(CHUNK):
+                            pass
+            while stream.read(CHUNK):  # the tar end blocks stop short of the gzip trailer; read on so its CRC is checked
+                pass
+    except (tarfile.TarError, EOFError, OSError, zlib.error) as error:
+        return f"is not a complete tar.gz archive ({type(error).__name__}: {error})"
+    if members == 0:
+        return "is a tar.gz archive with no members"
+    return None
+
+
+def zip_problem(path):
+    """The central directory must parse, list at least one entry, and every member must pass its CRC."""
+    try:
+        with zipfile.ZipFile(path) as archive:
+            if not archive.namelist():
+                return "is a zip archive with no entries"
+            corrupt = archive.testzip()
+            if corrupt is not None:
+                return f"has a corrupt member {corrupt} (CRC check failed)"
+    except (zipfile.BadZipFile, EOFError, OSError, zlib.error, NotImplementedError) as error:
+        return f"is not a complete zip archive ({type(error).__name__}: {error})"
+    return None
+
+
+def deb_problem(path, size):
+    """Walk the ar members to exactly the end of the file; require debian-binary first plus control.tar* and data.tar*."""
+    names = []
+    with open(path, "rb") as handle:
+        handle.seek(len(AR_MAGIC))
+        offset = len(AR_MAGIC)
+        while offset < size:
+            header = handle.read(AR_HEADER_SIZE)
+            if len(header) < AR_HEADER_SIZE:
+                return f"has a truncated ar member header at offset {offset}"
+            if header[58:60] != b"`\n":
+                return f"has an ar member header without the end marker at offset {offset}"
+            name = header[:16].decode("ascii", "replace").strip().rstrip("/")
+            declared = header[48:58].strip()
+            if not re.fullmatch(rb"[0-9]+", declared):
+                return f"has a non-numeric size field for ar member {name} at offset {offset}"
+            length = int(declared)
+            body_end = offset + AR_HEADER_SIZE + length
+            if body_end > size:
+                return f"has ar member {name} declaring {length} bytes but the file ends {body_end - size} bytes short of it"
+            names.append(name)
+            offset = body_end + (length % 2)  # member data is padded to an even length
+            handle.seek(offset)
+    if offset != size:
+        return f"does not end on an ar member boundary (the last member is padded to {offset} bytes, the file has {size})"
+    if not names or names[0] != "debian-binary":
+        return "does not start with the debian-binary member"
+    if not any(name.startswith("control.tar") for name in names):
+        return "has no control.tar member"
+    if not any(name.startswith("data.tar") for name in names):
+        return "has no data.tar member"
+    return None
+
+
+def exe_problem(path, size):
+    """e_lfanew at 0x3C must point inside the file at the PE signature."""
+    with open(path, "rb") as handle:
+        field = handle.read(PE_OFFSET_FIELD + 4)[PE_OFFSET_FIELD:]
+        if len(field) < 4:
+            return "is too short to hold the DOS header e_lfanew field"
+        offset = int.from_bytes(field, "little")
+        if offset + 4 > size:
+            return f"has e_lfanew {offset} pointing past the end of the {size}-byte file"
+        handle.seek(offset)
+        if handle.read(4) != b"PE\x00\x00":
+            return f"has no PE signature at e_lfanew {offset}"
+    return None
+
+
+def structure_problem(path, kind, size):
+    """Return a description of the structural failure for a file that passed the magic check, or None."""
+    if kind == "tar.gz":
+        return targz_problem(path)
+    if kind == "zip":
+        return zip_problem(path)
+    if kind == "deb":
+        return deb_problem(path, size)
+    if kind == "exe":
+        return exe_problem(path, size)
+    return None  # dmg: the trailer check in magic_problem is the whole check
 
 
 def verify(directory, version, platform):
@@ -131,7 +244,7 @@ def verify(directory, version, platform):
         if size == 0:
             problems.append(f"{name} is empty")
             continue
-        found = magic_problem(path, kind, size)
+        found = magic_problem(path, kind, size) or structure_problem(path, kind, size)
         if found is not None:
             problems.append(f"{name} {found}")
             continue
@@ -179,7 +292,10 @@ def report(problems):
 def build_parser():
     parser = argparse.ArgumentParser(
         prog="verify_desktop_assets.py",
-        description="Verify the Autonogrammer desktop release files and optionally write SHA256SUMS-desktop.",
+        description=(
+            "Verify the Autonogrammer desktop release files (name, version, size, magic bytes and container structure of "
+            "the tar.gz, zip, deb and exe files) and optionally write SHA256SUMS-desktop."
+        ),
     )
     parser.add_argument("--dir", required=True, dest="directory", help="directory holding the downloaded release files")
     parser.add_argument("--version", required=True, help="MAJOR.MINOR.PATCH[-prerelease], the tag without the leading v")

@@ -1,4 +1,5 @@
-"""Unit tests for verify_desktop_assets.py. Stdlib only; the packages are minimal byte strings in temp directories.
+"""Unit tests for verify_desktop_assets.py. Stdlib only; the packages are tiny synthetic fixtures in temp directories
+(a real small tar.gz, a real small zip, a minimal .deb in the ar layout, a minimal MZ/PE stub and a dmg-shaped byte string).
 
 Run from the repo root: python3 scripts/release/test_verify_desktop_assets.py
 """
@@ -10,8 +11,10 @@ import os
 import pathlib
 import subprocess
 import sys
+import tarfile
 import tempfile
 import unittest
+import zipfile
 from unittest import mock
 
 SCRIPT = pathlib.Path(__file__).with_name("verify_desktop_assets.py")
@@ -22,10 +25,65 @@ spec.loader.exec_module(vda)
 MIB = 1024 * 1024
 VERSION = "0.20.0"
 
-GOOD_ZIP = b"PK\x03\x04" + b"\x00" * 16
-GOOD_GZ = b"\x1f\x8b\x08\x00" + b"\x00" * 16
-GOOD_DEB = b"!<arch>\n" + b"debian-binary/  " + b"0" * 44 + b"2.0\n"
-GOOD_EXE = b"MZ" + b"\x00" * MIB
+
+def payload(length):
+    """Deterministic, incompressible bytes, so a cut at half the file lands inside the body."""
+    blocks = (length + 31) // 32
+    return b"".join(hashlib.sha256(i.to_bytes(4, "big")).digest() for i in range(blocks))[:length]
+
+
+def make_tar_gz(files=None):
+    if files is None:
+        files = {"Autonogrammer-0.20.0-linux-x64/Autonogrammer.Native": payload(20000), "Autonogrammer-0.20.0-linux-x64/README": b"hello"}
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w:gz") as archive:
+        for name, data in files.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            archive.addfile(info, io.BytesIO(data))
+    return buffer.getvalue()
+
+
+def make_zip(files=None):
+    if files is None:
+        files = {"Autonogrammer/Autonogrammer.Native": payload(20000), "Autonogrammer/README": b"hello"}
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as archive:
+        for name, data in files.items():
+            archive.writestr(name, data)
+    return buffer.getvalue()
+
+
+def ar_member(name, data, declared=None):
+    """One ar member: a 60-byte header (name 16, mtime 12, uid 6, gid 6, mode 8, size 10, end marker) and padded data."""
+    declared = len(data) if declared is None else declared
+    header = (
+        name.encode().ljust(16) + b"0".ljust(12) + b"0".ljust(6) + b"0".ljust(6) + b"100644".ljust(8)
+        + str(declared).encode().ljust(10) + b"`\n"
+    )
+    assert len(header) == 60
+    return header + data + (b"\n" if len(data) % 2 else b"")
+
+
+def make_deb(members=None):
+    if members is None:
+        members = [("debian-binary", b"2.0\n", None), ("control.tar.gz", payload(2001), None), ("data.tar.gz", payload(20000), None)]
+    return b"!<arch>\n" + b"".join(ar_member(name, data, declared) for name, data, declared in members)
+
+
+def make_exe(total):
+    """A minimal MZ/PE stub of `total` bytes (at least 0x84): e_lfanew 0x80 followed by the PE signature."""
+    data = bytearray(max(total, 0x84))
+    data[0:2] = b"MZ"
+    data[0x3C:0x40] = (0x80).to_bytes(4, "little")
+    data[0x80:0x84] = b"PE\x00\x00"
+    return bytes(data)
+
+
+GOOD_ZIP = make_zip()
+GOOD_GZ = make_tar_gz()
+GOOD_DEB = make_deb()
+GOOD_EXE = make_exe(MIB + 1024)
 GOOD_DMG = b"\x00" * MIB + b"koly" + b"\x00" * 508
 
 GOOD_CONTENT = {
@@ -72,6 +130,16 @@ class Case(unittest.TestCase):
     def errors(self, output):
         return [line for line in output.splitlines() if line.startswith("::error::verify_desktop_assets: ")]
 
+    def assert_bad(self, suffix, data, fragment):
+        """Every file valid except `suffix`, which holds `data`: exactly one error, naming that file and containing fragment."""
+        self.populate(overrides={suffix: data})
+        code, out = self.run_main()
+        self.assertEqual(code, 1, out)
+        errors = self.errors(out)
+        self.assertEqual(len(errors), 1, out)
+        self.assertIn(name_for(suffix), errors[0])
+        self.assertIn(fragment, errors[0])
+
 
 class PresenceTests(Case):
     def test_all_present_passes(self):
@@ -112,7 +180,7 @@ class PresenceTests(Case):
         self.assertTrue(any(f"missing {name_for('linux-x64.deb')}" in line for line in errors))
 
     def test_prerelease_version_is_not_confused_with_its_base(self):
-        # 0.20.0-rc.1 files in a 0.20.0 run carry a different version; the reverse also fails.
+        # 0.20.0-rc.1 files in a 0.20.0 run carry a different version.
         self.populate("0.20.0-rc.1")
         code, out = self.run_main()
         self.assertEqual(code, 1)
@@ -147,15 +215,6 @@ class PresenceTests(Case):
 
 
 class MagicTests(Case):
-    def assert_bad(self, suffix, data, fragment):
-        self.populate(overrides={suffix: data})
-        code, out = self.run_main()
-        self.assertEqual(code, 1, out)
-        errors = self.errors(out)
-        self.assertEqual(len(errors), 1, out)
-        self.assertIn(name_for(suffix), errors[0])
-        self.assertIn(fragment, errors[0])
-
     def test_bad_zip_magic(self):
         self.assert_bad("win-x64.zip", b"XX" + b"\x00" * 16, "PK")
 
@@ -190,14 +249,91 @@ class MagicTests(Case):
         self.assert_bad("osx-arm64.dmg", b"koly", "smaller than the 512-byte UDIF trailer")
 
 
+class StructureTests(Case):
+    def test_valid_fixture_of_each_kind_passes(self):
+        for kind, data, check in (
+            ("tar.gz", GOOD_GZ, lambda path, size: vda.targz_problem(path)),
+            ("zip", GOOD_ZIP, lambda path, size: vda.zip_problem(path)),
+            ("deb", GOOD_DEB, vda.deb_problem),
+            ("exe", GOOD_EXE, vda.exe_problem),
+        ):
+            with self.subTest(kind=kind):
+                self.put("fixture", data)
+                path = os.path.join(self.dir, "fixture")
+                self.assertIsNone(vda.magic_problem(path, kind, len(data)))
+                self.assertIsNone(check(path, len(data)))
+                self.assertIsNone(vda.structure_problem(path, kind, len(data)))
+
+    def test_truncated_copy_of_each_kind_is_reported_naming_the_file(self):
+        for suffix, data, fragment in (
+            ("linux-x64.tar.gz", GOOD_GZ, "tar.gz archive"),
+            ("win-x64.zip", GOOD_ZIP, "not a complete zip archive"),
+            ("linux-x64.deb", GOOD_DEB, "declaring"),
+            ("win-x64-Setup.exe", GOOD_EXE, "is only"),
+        ):
+            with self.subTest(suffix=suffix):
+                self.assert_bad(suffix, data[: len(data) // 2], fragment)
+
+    def test_tar_gz_cut_inside_the_gzip_trailer_is_reported(self):
+        self.assert_bad("linux-x64.tar.gz", GOOD_GZ[:-4], "tar.gz archive")
+
+    def test_tar_gz_with_valid_magic_but_garbage_body_is_reported(self):
+        self.assert_bad("linux-x64.tar.gz", b"\x1f\x8b" + payload(500), "tar.gz archive")
+
+    def test_tar_gz_without_members_is_reported(self):
+        self.assert_bad("linux-x64.tar.gz", make_tar_gz({}), "tar.gz archive")
+
+    def test_zip_without_entries_is_reported(self):
+        self.assert_bad("win-x64.zip", make_zip({}), "no entries")
+
+    def test_zip_with_a_corrupt_member_is_reported(self):
+        data = bytearray(GOOD_ZIP)
+        body = payload(20000)
+        index = bytes(data).index(body[:32])
+        data[index + 10] ^= 0xFF
+        self.assert_bad("win-x64.zip", bytes(data), "corrupt member")
+
+    def test_deb_with_a_member_size_past_the_end_is_reported(self):
+        members = [("debian-binary", b"2.0\n", None), ("control.tar.gz", payload(2001), None), ("data.tar.gz", payload(20000), 99999999)]
+        self.assert_bad("linux-x64.deb", make_deb(members), "data.tar.gz declaring 99999999 bytes")
+
+    def test_deb_with_a_member_size_too_small_is_reported(self):
+        members = [("debian-binary", b"2.0\n", None), ("control.tar.gz", payload(2001), None), ("data.tar.gz", payload(20000), 100)]
+        self.populate(overrides={"linux-x64.deb": make_deb(members)})
+        code, out = self.run_main()
+        self.assertEqual(code, 1, out)
+        errors = self.errors(out)
+        self.assertEqual(len(errors), 1, out)
+        self.assertIn(name_for("linux-x64.deb"), errors[0])
+
+    def test_deb_missing_data_tar_is_reported(self):
+        members = [("debian-binary", b"2.0\n", None), ("control.tar.gz", payload(2001), None)]
+        self.assert_bad("linux-x64.deb", make_deb(members), "no data.tar member")
+
+    def test_deb_missing_control_tar_is_reported(self):
+        members = [("debian-binary", b"2.0\n", None), ("data.tar.xz", payload(2000), None)]
+        self.assert_bad("linux-x64.deb", make_deb(members), "no control.tar member")
+
+    def test_deb_with_trailing_junk_is_reported(self):
+        self.assert_bad("linux-x64.deb", GOOD_DEB + b"junk", "truncated ar member header")
+
+    def test_exe_with_e_lfanew_past_the_end_is_reported(self):
+        data = bytearray(GOOD_EXE)
+        data[0x3C:0x40] = (len(data) + 100).to_bytes(4, "little")
+        self.assert_bad("win-x64-Setup.exe", bytes(data), "e_lfanew")
+
+    def test_exe_without_pe_signature_is_reported(self):
+        self.assert_bad("win-x64-Setup.exe", b"MZ" + b"\x00" * MIB, "no PE signature")
+
+
 class SizeTests(Case):
     def test_stub_exe_is_a_failure(self):
-        self.populate(overrides={"win-x64-Setup.exe": b"MZ" + b"\x00" * 1000})
+        self.populate(overrides={"win-x64-Setup.exe": make_exe(1000)})
         code, out = self.run_main()
         self.assertEqual(code, 1)
         errors = self.errors(out)
         self.assertEqual(len(errors), 1, out)
-        self.assertIn("win-x64-Setup.exe is only 1002 bytes", errors[0])
+        self.assertIn("win-x64-Setup.exe is only 1000 bytes", errors[0])
 
     def test_stub_dmg_is_a_failure(self):
         self.populate(overrides={"osx-arm64.dmg": b"\x00" * 4096 + b"koly" + b"\x00" * 508})
@@ -208,7 +344,7 @@ class SizeTests(Case):
         self.assertIn("osx-arm64.dmg is only", errors[0])
 
     def test_exactly_one_mib_is_not_enough(self):
-        self.populate(overrides={"win-x64-Setup.exe": b"MZ" + b"\x00" * (MIB - 2)})
+        self.populate(overrides={"win-x64-Setup.exe": make_exe(MIB)})
         code, _out = self.run_main()
         self.assertEqual(code, 1)
 
@@ -218,7 +354,7 @@ class SizeTests(Case):
         self.assertEqual(code, 0)
         self.assertIn("1.00 MiB", out)
         self.assertIn(f"{len(GOOD_EXE)} bytes", out)
-        self.assertIn("20 B", out)
+        self.assertIn(f"{vda.human_size(len(GOOD_ZIP))}  {len(GOOD_ZIP)} bytes", out)
 
     def test_output_is_deterministic(self):
         self.populate()
@@ -319,6 +455,12 @@ class SumsTests(Case):
         self.assertEqual(code, 1)
         self.assertFalse(os.path.exists(self.sums_path()))
 
+    def test_corrupt_file_gets_no_sums(self):
+        self.populate(overrides={"linux-x64.tar.gz": GOOD_GZ[: len(GOOD_GZ) // 2]})
+        code, _out = self.run_main("--write-sums", self.sums_path())
+        self.assertEqual(code, 1)
+        self.assertFalse(os.path.exists(self.sums_path()))
+
     def test_tampered_file_fails_the_reread_check(self):
         self.populate()
         names = sorted(name_for(suffix) for suffix in GOOD_CONTENT)
@@ -371,6 +513,14 @@ class CliTests(Case):
         result = self.run_cli("--dir", self.dir, "--version", VERSION)
         self.assertEqual(result.returncode, 1)
         self.assertEqual(result.stdout.splitlines(), [f"::error::verify_desktop_assets: missing {name_for('osx-arm64.dmg')} in {self.dir}"])
+
+    def test_exit_1_on_a_truncated_package(self):
+        self.populate(overrides={"win-x64.zip": GOOD_ZIP[: len(GOOD_ZIP) // 2]})
+        result = self.run_cli("--dir", self.dir, "--version", VERSION)
+        self.assertEqual(result.returncode, 1)
+        lines = result.stdout.splitlines()
+        self.assertEqual(len(lines), 1, result.stdout)
+        self.assertTrue(lines[0].startswith(f"::error::verify_desktop_assets: {name_for('win-x64.zip')} "))
 
     def test_exit_2_on_missing_arguments_with_usage(self):
         result = self.run_cli("--version", VERSION)
