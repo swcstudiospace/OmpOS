@@ -3,7 +3,7 @@
   "pluginId": "substrate",
   "source": "submodule",
   "submodulePath": "plugins/agent-substrate",
-  "pinnedCommit": "754c51a17a9e6ffbc222d04bdaf4e783b4eca720",
+  "pinnedCommit": "70da6d80109eaea1dfdf3c55dff8847e090b46d4",
   "manifestPath": "packages/projector/package.json",
   "packageName": "@substrate/projector",
   "packageVersion": "0.1.0",

@@ -13,18 +13,18 @@
       "source": "https://github.com/swcstudiospace/swarm.git",
       "private": false,
       "requiredForRelease": true,
-      "expectedLicenseFile": false,
+      "expectedLicenseFile": true,
       "licenceAcceptedWithoutFile": false,
-      "licenseNote": "No LICENSE file upstream (OQ-102). The tag gate fails until the owner adds one upstream, or sets licenceAcceptedWithoutFile to true with a decision record."
+      "licenseNote": "AGPL-3.0-or-later LICENSE added upstream on 2026-11-19 (OQ-102, owner decision). The pinned commit is the previous pin plus that one file. The same LICENSE-only change was merged to the upstream default branch (swarm#49)."
     },
     {
       "dir": "agent-substrate",
       "source": "https://github.com/swcstudiospace/substrate.git",
       "private": true,
       "requiredForRelease": true,
-      "expectedLicenseFile": false,
+      "expectedLicenseFile": true,
       "licenceAcceptedWithoutFile": false,
-      "licenseNote": "No LICENSE file upstream (OQ-102). The repository is private and needs the SUBMODULE_TOKEN secret (OQ-63). The tag gate fails until the owner adds a licence upstream, or sets licenceAcceptedWithoutFile to true with a decision record."
+      "licenseNote": "AGPL-3.0-or-later LICENSE added upstream on 2026-11-19 (OQ-102, owner decision). The pinned commit is the previous pin plus that one file. The same LICENSE-only change was merged to the upstream default branch (substrate#221). The repository is private: the release workflows read it with the read-only deploy key SUBSTRATE_DEPLOY_KEY, or with SUBMODULE_TOKEN (OQ-63)."
     },
     {
       "dir": "gsd-core-omp",
