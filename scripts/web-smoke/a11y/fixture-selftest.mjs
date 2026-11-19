@@ -165,6 +165,14 @@ try {
   if (page) await page.close();
   child.kill();
   server.close();
-  rmSync(profile, { recursive: true, force: true });
+  // The browser must be gone before its user-data dir is removed: kill() alone races its file
+  // handles and rmSync fails with ENOTEMPTY on loaded runners (same race as the web-smoke profile cleanup).
+  await Promise.race([
+    new Promise((resolve) => child.once("exit", resolve)),
+    new Promise((resolve) => setTimeout(() => { child.kill("SIGKILL"); resolve(); }, 5000)),
+  ]);
+  for (let attempt = 0; attempt < 5 && existsSync(profile); attempt++) {
+    try { rmSync(profile, { recursive: true, force: true }); } catch { await new Promise((resolve) => setTimeout(resolve, 300)); }
+  }
 }
 process.exit(failed ? 1 : 0);
