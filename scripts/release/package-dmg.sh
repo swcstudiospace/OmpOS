@@ -8,8 +8,9 @@
 #   <output-dir>  Receives Autonogrammer-<version>-osx-arm64.dmg. An existing image of that name is replaced.
 #
 # The image holds a copy of the app and a link to /Applications. It is UDZO-compressed and checked with hdiutil verify before it
-# gets its final name. The app is ad-hoc signed by package-desktop.sh (codesign --sign -), not signed with a Developer ID and not notarized;
-# this script verifies that the signature is still intact on the copy it puts in the image.
+# gets its final name. The app is ad-hoc signed by package-desktop.sh (identity "-", not a Developer ID signature, no hardened runtime,
+# not notarized). This script checks, with verify_bundle_signature from macos-adhoc-sign.sh (no codesign --deep, see that file), that
+# the signatures are still intact on the copy it puts in the image.
 # Prints the absolute image path as the last line of stdout. Everything else goes to stderr.
 # hdiutil exists only on macOS, so this script cannot run elsewhere.
 set -euo pipefail
@@ -23,6 +24,8 @@ die() {
   echo "error: $*" >&2
   exit 1
 }
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 [ "$#" -eq 3 ] || { echo "error: expected 3 arguments, got $#" >&2; usage; }
 version="$1"
@@ -63,7 +66,9 @@ cleanup() {
 trap cleanup EXIT
 
 ditto "$app" "$stage/Autonogrammer.app"
-codesign --verify --deep --strict --verbose=2 "$stage/Autonogrammer.app" >&2 || die "the ad-hoc signature of the app did not survive the copy (package-desktop.sh signs it before zipping)"
+# shellcheck source=scripts/release/macos-adhoc-sign.sh
+source "$script_dir/macos-adhoc-sign.sh"
+verify_bundle_signature "$stage/Autonogrammer.app" || die "the ad-hoc signature of the app did not survive the copy (package-desktop.sh signs it before zipping)"
 ln -s /Applications "$stage/Applications"
 
 hdiutil create -volname "Autonogrammer ${version}" -srcfolder "$stage" -ov -format UDZO "$partial" >&2

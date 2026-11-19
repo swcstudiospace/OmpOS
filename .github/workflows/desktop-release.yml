@@ -12,8 +12,8 @@
 #                      minutes for release.yml's images, SBOM and SHA256SUMS-images (fails at once if release.yml's run for the
 #                      tag failed or was cancelled), and only then publishes the draft (--latest, or --prerelease for a -suffix
 #                      tag). The notes are never changed. The release stays a hidden draft until everything is present; after a
-#                      failure, re-run the failed jobs of the failed workflow run, then re-run the release job. Re-running it on an
-#                      already published release changes nothing.
+#                      failure, re-run the failed jobs of the failed workflow run, then re-run the release job. A re-run after
+#                      publication uploads, replaces and publishes nothing and succeeds (the job reads the release state first).
 #
 # Release files (six): the linux-x64 leg makes Autonogrammer-<version>-linux-x64.tar.gz and -linux-x64.deb, the win-x64 leg makes
 # -win-x64.zip and -win-x64-Setup.exe, and the osx-arm64 leg makes -osx-arm64.zip and -osx-arm64.dmg. The .deb comes from
@@ -325,10 +325,12 @@ jobs:
   # The only job that publishes, and it never creates a release: release.yml is the only workflow that does (a draft with the
   # changelog notes). Ordering, all in this one job, after all three package legs succeeded (needs: package fails when a leg fails):
   #   1. verify the six files and write SHA256SUMS-desktop;  2. wait up to 15 minutes for release.yml's draft of this tag;
-  #   3. attach the seven files (--clobber) and check the release lists them;  4. wait up to 150 minutes for release.yml's image
+  #   3. read the release state: an already published release ends the job here with success (steps 4 to 6 are skipped);
+  #   4. attach the seven files (--clobber) and check the release lists them;  5. wait up to 150 minutes for release.yml's image
   #   archives, SBOM and SHA256SUMS-images on the same release, failing at once if release.yml's run for this tag failed or was
-  #   cancelled;  5. publish (--draft=false; --latest, or --prerelease for a -suffix tag). The notes are never changed.
-  # Until step 5 the release is a draft nobody sees. Re-running the job on an already published release changes nothing.
+  #   cancelled;  6. publish (--draft=false; --latest, or --prerelease for a -suffix tag). The notes are never changed.
+  # Both wait loops stop after 5 consecutive failed gh calls instead of waiting for their deadline.
+  # Until step 6 the release is a draft nobody sees. A re-run after publication uploads, deletes and publishes nothing.
   release:
     name: attach desktop packages and publish
     needs: package
@@ -369,9 +371,36 @@ jobs:
               --jq "map(select(.headSha == \"$GITHUB_SHA\")) | .[0].conclusion // \"\""
           }
           deadline=$((SECONDS + 900))
-          # gh finds a draft release by its tag (cli/cli FetchRelease: published lookup plus GraphQL release(tagName) for drafts).
-          until gh release view "$TAG" >/dev/null 2>&1; do
-            conclusion="$(release_yml_conclusion || true)"
+          # Consecutive failed gh calls. "release not found" from gh release view is the expected answer until release.yml has created
+          # the draft; any other nonzero exit is an API, authentication or permission failure. Five in a row stop the job.
+          view_failures=0
+          run_failures=0
+          while true; do
+            # gh finds a draft release by its tag (cli/cli FetchRelease: published lookup plus GraphQL release(tagName) for drafts).
+            if out="$(gh release view "$TAG" --json isDraft 2>&1)"; then
+              break
+            fi
+            if [[ "$out" == *"release not found"* ]]; then
+              view_failures=0
+            else
+              view_failures=$((view_failures + 1))
+              echo "gh release view failed ($view_failures of 5 in a row): $out" >&2
+              if [ "$view_failures" -ge 5 ]; then
+                echo "::error::gh release view \"$TAG\" failed 5 times in a row (API, authentication or permission problem). Stopping instead of waiting for the deadline." >&2
+                exit 1
+              fi
+            fi
+            if conclusion="$(release_yml_conclusion)"; then
+              run_failures=0
+            else
+              run_failures=$((run_failures + 1))
+              conclusion=""
+              echo "gh run list failed ($run_failures of 5 in a row)." >&2
+              if [ "$run_failures" -ge 5 ]; then
+                echo "::error::gh run list --workflow release.yml failed 5 times in a row (API, authentication or permission problem). Stopping instead of waiting for the deadline." >&2
+                exit 1
+              fi
+            fi
             case "$conclusion" in
               failure | cancelled | timed_out)
                 echo "::error::release.yml ended with '$conclusion' and never created the release for $TAG. Its changelog check may have failed. Fix it, re-run release.yml, then re-run this job." >&2
@@ -385,7 +414,28 @@ jobs:
             echo "No release for $TAG yet; waiting 20 s for release.yml."
             sleep 20
           done
+      # A release that is already published (a re-run after publication) must not be touched: gh release upload --clobber deletes an
+      # existing asset before it uploads the new one, and a failed upload would leave the public release without that file. A gh
+      # failure here fails the step; it is not masked.
+      - name: Check whether the release is already published
+        id: state
+        shell: bash
+        run: |
+          set -euo pipefail
+          draft="$(gh release view "$TAG" --json isDraft --jq .isDraft)"
+          if [ "$draft" = "true" ]; then
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::The release for $TAG is already published. Nothing is re-uploaded, replaced or published."
+            {
+              echo "### Release $TAG"
+              echo ""
+              echo "The release was already published, so this run uploaded nothing and changed nothing."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Attach the packages to the release
+        if: steps.state.outputs.already_published != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -404,6 +454,7 @@ jobs:
             exit 1
           fi
       - name: Wait for the image archives, SBOM and checksums that release.yml attaches
+        if: steps.state.outputs.already_published != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -420,8 +471,21 @@ jobs:
           }
           deadline=$((SECONDS + 9000))
           success_misses=0
+          # Consecutive failed gh calls (a nonzero exit, not an empty result). Five in a row stop the job instead of waiting out the deadline.
+          view_failures=0
+          run_failures=0
           while true; do
-            listed="$(gh release view "$TAG" --json assets --jq '.assets[].name' || true)"
+            if listed="$(gh release view "$TAG" --json assets --jq '.assets[].name')"; then
+              view_failures=0
+            else
+              view_failures=$((view_failures + 1))
+              listed=""
+              echo "gh release view failed ($view_failures of 5 in a row)." >&2
+              if [ "$view_failures" -ge 5 ]; then
+                echo "::error::gh release view \"$TAG\" failed 5 times in a row (API, authentication or permission problem). Stopping instead of waiting for the deadline." >&2
+                exit 1
+              fi
+            fi
             missing=()
             for name in "${required[@]}"; do
               if ! grep -Fxq -- "$name" <<<"$listed"; then
@@ -432,7 +496,17 @@ jobs:
               echo "release.yml's assets are all on the release."
               break
             fi
-            conclusion="$(release_yml_conclusion || true)"
+            if conclusion="$(release_yml_conclusion)"; then
+              run_failures=0
+            else
+              run_failures=$((run_failures + 1))
+              conclusion=""
+              echo "gh run list failed ($run_failures of 5 in a row)." >&2
+              if [ "$run_failures" -ge 5 ]; then
+                echo "::error::gh run list --workflow release.yml failed 5 times in a row (API, authentication or permission problem). Stopping instead of waiting for the deadline." >&2
+                exit 1
+              fi
+            fi
             case "$conclusion" in
               failure | cancelled | timed_out)
                 echo "::error::release.yml ended with '$conclusion', so ${missing[*]} will not appear on the release. Re-run its failed jobs, then re-run this job. The release stays a draft." >&2
@@ -454,18 +528,14 @@ jobs:
             sleep 30
           done
       - name: Publish the release (only now)
+        if: steps.state.outputs.already_published != 'true'
         shell: bash
         run: |
           set -euo pipefail
-          draft="$(gh release view "$TAG" --json isDraft --jq .isDraft)"
-          if [ "$draft" != "true" ]; then
-            echo "The release for $TAG is already published; nothing to publish."
-          else
-            case "$TAG" in
-              *-*) gh release edit "$TAG" --draft=false --prerelease ;;
-              *) gh release edit "$TAG" --draft=false --latest ;;
-            esac
-          fi
+          case "$TAG" in
+            *-*) gh release edit "$TAG" --draft=false --prerelease ;;
+            *) gh release edit "$TAG" --draft=false --latest ;;
+          esac
           {
             echo "### Release $TAG"
             echo ""

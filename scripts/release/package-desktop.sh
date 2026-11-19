@@ -24,10 +24,10 @@ die() {
   exit 1
 }
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 codesign_failed() {
-  echo "Mach-O files under $2/Contents/MacOS:" >&2
-  find "$2/Contents/MacOS" -type f -exec file {} + 2>&1 | grep -i 'mach-o' >&2 || true
-  die "codesign failed while $1 $2 (see the codesign output above)"
+  die "ad-hoc signing failed while $1 $2 (see the output above)"
 }
 
 force=0
@@ -143,13 +143,18 @@ case "$rid" in
 PLIST
     # Ad-hoc signature (identity "-"): Apple Silicon refuses to launch unsigned arm64 code, and an unsigned download that carries the
     # quarantine flag is reported as "damaged". With it, Gatekeeper shows the normal unidentified-developer prompt instead. This is
-    # NOT a Developer ID signature and NOT notarization, and the hardened runtime is not enabled (no entitlements exist). The bundle
-    # is signed here, before the zip is made, so the zip and the .dmg (which package-dmg.sh builds from this zip) carry the same app.
+    # NOT a Developer ID signature and NOT notarization, and the hardened runtime is not enabled (no entitlements exist).
+    # No `codesign --deep`: the publish output, the plugin trees (with dot-directories such as .cursor) and the dylibs all sit flat in
+    # Contents/MacOS, and --deep treats those directories as nested code and fails ("bundle format unrecognized, invalid, or
+    # unsuitable", GitHub Actions run 44508808964). scripts/release/macos-adhoc-sign.sh signs each Mach-O file on its own and then the
+    # bundle, and verifies them; it prints the Mach-O files it considered when a step fails, so the log shows what to adjust.
+    # The bundle is signed here, before the zip is made, so the zip and the .dmg (which package-dmg.sh builds from this zip) carry the
+    # same app.
+    # shellcheck source=scripts/release/macos-adhoc-sign.sh
+    source "$script_dir/macos-adhoc-sign.sh"
     xattr -cr "$bundle"
-    # codesign prints its own diagnostics to stderr. On a failure, also list the Mach-O files in Contents/MacOS (the usual cause is
-    # nested code that --deep does not seal), so the first CI run shows what to adjust. The check itself is not weakened.
-    codesign --force --deep --sign - --timestamp=none "$bundle" >&2 || codesign_failed "signing" "$bundle"
-    codesign --verify --deep --strict --verbose=2 "$bundle" >&2 || codesign_failed "verifying" "$bundle"
+    adhoc_sign_bundle "$bundle" || codesign_failed "signing" "$bundle"
+    verify_bundle_signature "$bundle" || codesign_failed "verifying" "$bundle"
     (cd "$stage" && ditto -c -k --keepParent Autonogrammer.app "$partial")
     ;;
   *)
