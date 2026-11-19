@@ -2,59 +2,57 @@
 # Ad-hoc signing helpers for the Autonogrammer.app bundle. SOURCE this file; it has no side effects and changes no shell options:
 #
 #   source "$(dirname "${BASH_SOURCE[0]}")/macos-adhoc-sign.sh"
-#   adhoc_sign_bundle <bundle>          signs every Mach-O file under <bundle>/Contents/MacOS, then the bundle itself
-#   verify_bundle_signature <bundle>    checks those signatures
-#
-# Why not `codesign --deep`: the self-contained publish output, the bundled plugin trees (plugins/<dir>, with dot-directories such
-# as .cursor, .claude-plugin and .github) and the .NET dylibs all sit flat in Contents/MacOS. --deep walks every sub-directory
-# there and treats directory names that look like bundles as nested code, so it fails with "bundle format unrecognized, invalid,
-# or unsuitable ... In subcomponent: .../Contents/MacOS/plugins/agent-swarm/.cursor" (GitHub Actions run 44508808964). The layout
-# cannot change, because the app finds its plugins beside its executable. So each Mach-O file is signed on its own, and the bundle
-# is then signed WITHOUT --deep, which binds Contents/Info.plist and the main executable.
+#   adhoc_sign_bundle <bundle>          guards the layout, then signs the bundle with `codesign --force --deep --sign -`
+#   verify_bundle_signature <bundle>    `codesign --verify --deep --strict --verbose=2` (fatal), then prints what was signed
 #
 # The signature is ad hoc (identity "-"): not a Developer ID signature, no hardened runtime, not notarized.
+#
+# Evidence (a probe on a macos-26 arm64 runner, GitHub Actions runs 44516324587 and 44516778775, 13 bundle layouts):
+#   1. Signing each Mach-O file and then the bundle without --deep fails ("code object is not signed at all In subcomponent:
+#      .../System.Diagnostics.Contracts.dll"): every non-Mach-O file in Contents/MacOS counts as nested code that must be signed.
+#   2. `codesign --force --deep --sign - --timestamp=none <bundle>` fails only when Contents/MacOS holds a directory whose NAME
+#      STARTS WITH A DOT ("bundle format unrecognized, invalid, or unsuitable"; GitHub Actions run 44508808964 failed on
+#      .../Contents/MacOS/plugins/agent-swarm/.cursor). Plain sub-directories (runtimes/osx-arm64) and dot-FILES are fine.
+#   3. What works: the flat publish output in Contents/MacOS, the plugin tree in Contents/Resources/plugins, then --deep signing.
+#      After it `codesign --verify --deep --strict --verbose=2` passes, the executable runs (also with the quarantine flag), a
+#      `ditto -c -k --keepParent` zip round trip extracted with `ditto -x -k` verifies, and a dmg round trip (ditto into a stage
+#      directory, hdiutil create UDZO, hdiutil verify, attach, verify the mounted copy, ditto out, verify, run) passes. Changing or
+#      adding a file in the sealed plugin folder makes verification fail.
+#   4. Caveat: --deep stores the signatures of non-Mach-O files (the .dll files) as extended attributes. Extracting the zip with the
+#      plain `unzip` command drops them, so `codesign --verify --deep --strict` then fails on a .dll although the app still starts.
+#      Finder and `ditto -x -k` restore them. This is documented, not fixed.
+#
 # Only bash 3.2 features are used (macOS ships bash 3.2). All output goes to stderr; stdout stays free for the callers' results.
 # Both functions return non-zero on failure and check every command themselves, so a caller may use `fn || handler`.
 
-# Prints the regular files under $1/Contents/MacOS that `file -b` identifies as Mach-O (thin and universal), NUL-separated.
-_adhoc_macho_files() {
-  local f
-  while IFS= read -r -d '' f; do
-    case "$(file -b "$f")" in
-      *Mach-O*) printf '%s\0' "$f" ;;
-    esac
-  done < <(find "$1/Contents/MacOS" -type f -print0)
-}
-
-# Failure diagnostic: the Mach-O files that were considered.
+# Failure diagnostic: the Mach-O files (thin and universal, per `file -b`) under $1/Contents/MacOS.
 _adhoc_list_machos() {
   local f
   echo "Mach-O files under $1/Contents/MacOS:" >&2
   while IFS= read -r -d '' f; do
-    echo "  $f" >&2
-  done < <(_adhoc_macho_files "$1")
+    case "$(file -b "$f")" in
+      *Mach-O*) echo "  $f" >&2 ;;
+    esac
+  done < <(find "$1/Contents/MacOS" -type f -print0)
 }
 
 adhoc_sign_bundle() {
-  local bundle="$1" f count=0
+  local bundle="$1" dots
   if [ ! -d "$bundle/Contents/MacOS" ]; then
     echo "adhoc_sign_bundle: $bundle/Contents/MacOS not found" >&2
     return 1
   fi
-  while IFS= read -r -d '' f; do
-    if ! codesign --force --sign - --timestamp=none "$f" >&2; then
-      echo "adhoc_sign_bundle: codesign failed for $f" >&2
-      _adhoc_list_machos "$bundle"
-      return 1
-    fi
-    count=$((count + 1))
-  done < <(_adhoc_macho_files "$bundle")
-  if [ "$count" -eq 0 ]; then
-    echo "adhoc_sign_bundle: no Mach-O file found under $bundle/Contents/MacOS" >&2
+  dots="$(find "$bundle/Contents/MacOS" -mindepth 1 -type d -name '.*')"
+  if [ -n "$dots" ]; then
+    echo "adhoc_sign_bundle: a directory whose name starts with a dot in Contents/MacOS makes codesign fail with 'bundle format unrecognized, invalid, or unsuitable' (probe run 44516778775). Move such content to Contents/Resources. Offenders:" >&2
+    echo "$dots" >&2
     return 1
   fi
-  echo "ad-hoc signed $count Mach-O files under $bundle/Contents/MacOS" >&2
-  if ! codesign --force --sign - --timestamp=none "$bundle" >&2; then
+  if [ -e "$bundle/Contents/MacOS/plugins" ]; then
+    echo "adhoc_sign_bundle: $bundle/Contents/MacOS/plugins exists; the plugin tree belongs in Contents/Resources/plugins (its dot-directories break codesign in Contents/MacOS)" >&2
+    return 1
+  fi
+  if ! codesign --force --deep --sign - --timestamp=none "$bundle" >&2; then
     echo "adhoc_sign_bundle: codesign failed for the bundle $bundle" >&2
     _adhoc_list_machos "$bundle"
     return 1
@@ -68,33 +66,18 @@ verify_bundle_signature() {
     echo "verify_bundle_signature: $bundle/Contents/MacOS not found" >&2
     return 1
   fi
-  # (a) every Mach-O file carries a valid signature
-  while IFS= read -r -d '' f; do
-    if ! codesign --verify --strict "$f" >&2; then
-      echo "verify_bundle_signature: $f does not verify" >&2
-      _adhoc_list_machos "$bundle"
-      return 1
-    fi
-    count=$((count + 1))
-  done < <(_adhoc_macho_files "$bundle")
-  if [ "$count" -eq 0 ]; then
-    echo "verify_bundle_signature: no Mach-O file found under $bundle/Contents/MacOS" >&2
-    return 1
-  fi
-  echo "verified $count Mach-O files under $bundle/Contents/MacOS" >&2
-  # (b) the bundle itself (no --deep)
-  if ! codesign --verify --verbose=2 "$bundle" >&2; then
-    echo "verify_bundle_signature: the bundle $bundle does not verify" >&2
+  if ! codesign --verify --deep --strict --verbose=2 "$bundle" >&2; then
+    echo "verify_bundle_signature: the bundle $bundle does not verify (codesign --verify --deep --strict)" >&2
     _adhoc_list_machos "$bundle"
     return 1
   fi
-  # (c) non-fatal diagnostic: the strict check also flags unsealed content in the bundle
-  if codesign --verify --strict --verbose=2 "$bundle" >&2; then
-    echo "strict bundle verification: ok" >&2
-  else
-    echo "strict bundle verification: FAILED (not fatal, see output above)" >&2
-  fi
-  # (d) show the signature kind in the log (expect Signature=adhoc)
-  codesign -dv --verbose=2 "$bundle" 2>&1 | grep -E 'Signature|Identifier|Format' >&2 || true
+  while IFS= read -r -d '' f; do
+    case "$(file -b "$f")" in
+      *Mach-O*) count=$((count + 1)) ;;
+    esac
+  done < <(find "$bundle/Contents/MacOS" -type f -print0)
+  echo "verified $bundle: $count Mach-O files under Contents/MacOS" >&2
+  # Show the signature kind in the log (expect Signature=adhoc).
+  codesign -dv --verbose=2 "$bundle" 2>&1 | grep -E 'Signature|Identifier|Format|Sealed' >&2 || true
   return 0
 }

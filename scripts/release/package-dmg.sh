@@ -9,8 +9,8 @@
 #
 # The image holds a copy of the app and a link to /Applications. It is UDZO-compressed and checked with hdiutil verify before it
 # gets its final name. The app is ad-hoc signed by package-desktop.sh (identity "-", not a Developer ID signature, no hardened runtime,
-# not notarized). This script checks, with verify_bundle_signature from macos-adhoc-sign.sh (no codesign --deep, see that file), that
-# the signatures are still intact on the copy it puts in the image.
+# not notarized). This script checks, with verify_bundle_signature from macos-adhoc-sign.sh (codesign --verify --deep --strict), that
+# the signature is still intact on the copy it puts in the image.
 # Prints the absolute image path as the last line of stdout. Everything else goes to stderr.
 # hdiutil exists only on macOS, so this script cannot run elsewhere.
 set -euo pipefail
@@ -68,7 +68,7 @@ trap cleanup EXIT
 ditto "$app" "$stage/Autonogrammer.app"
 # shellcheck source=scripts/release/macos-adhoc-sign.sh
 source "$script_dir/macos-adhoc-sign.sh"
-verify_bundle_signature "$stage/Autonogrammer.app" || die "the ad-hoc signature of the app did not survive the copy (package-desktop.sh signs it before zipping)"
+verify_bundle_signature "$stage/Autonogrammer.app" || die "the ad-hoc signature of the app (codesign --verify --deep --strict) failed on the copy for the image; package-desktop.sh signs the app before zipping, and the zip must be extracted with ditto -x -k, not unzip"
 ln -s /Applications "$stage/Applications"
 
 hdiutil create -volname "Autonogrammer ${version}" -srcfolder "$stage" -ov -format UDZO "$partial" >&2

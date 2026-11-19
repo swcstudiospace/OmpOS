@@ -8,9 +8,10 @@
 #   osx-arm64   Autonogrammer-<version>-osx-arm64.zip      an Autonogrammer.app bundle, zipped with ditto --keepParent
 #
 # <version> is MAJOR.MINOR.PATCH with an optional -prerelease suffix. An existing archive is replaced only with --force.
-# The macOS bundle is ad-hoc signed (codesign --sign -), not signed with a Developer ID and not notarized. Its version keys carry the MAJOR.MINOR.PATCH part only, because
+# The macOS bundle is ad-hoc signed (codesign --deep --sign -), not signed with a Developer ID and not notarized. Its version keys carry the MAJOR.MINOR.PATCH part only, because
 # CFBundleShortVersionString is a dotted-number string. The whole publish directory goes into Contents/MacOS, because a
-# self-contained app loads its runtime from beside its executable.
+# self-contained app loads its runtime from beside its executable, EXCEPT plugins/, which goes into Contents/Resources/plugins
+# because codesign rejects dot-directories in Contents/MacOS (see scripts/release/macos-adhoc-sign.sh).
 # Prints the absolute archive path as the last line of stdout. Everything else goes to stderr.
 set -euo pipefail
 
@@ -119,6 +120,13 @@ case "$rid" in
     bundle="$stage/Autonogrammer.app"
     mkdir -p "$bundle/Contents/MacOS"
     cp -a "$publish/." "$bundle/Contents/MacOS/"
+    # codesign rejects dot-directories (.cursor, .claude-plugin, .github) in Contents/MacOS, so the bundled plugin tree goes to
+    # Contents/Resources/plugins, where it is sealed as a resource. The app looks it up there.
+    if [ -e "$bundle/Contents/MacOS/plugins" ]; then
+      mkdir -p "$bundle/Contents/Resources" || die "cannot create $bundle/Contents/Resources"
+      mv "$bundle/Contents/MacOS/plugins" "$bundle/Contents/Resources/plugins" || die "cannot move the plugin tree to Contents/Resources/plugins"
+    fi
+    [ ! -e "$bundle/Contents/MacOS/plugins" ] || die "$bundle/Contents/MacOS/plugins still exists after the move"
     cat > "$bundle/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -144,12 +152,13 @@ PLIST
     # Ad-hoc signature (identity "-"): Apple Silicon refuses to launch unsigned arm64 code, and an unsigned download that carries the
     # quarantine flag is reported as "damaged". With it, Gatekeeper shows the normal unidentified-developer prompt instead. This is
     # NOT a Developer ID signature and NOT notarization, and the hardened runtime is not enabled (no entitlements exist).
-    # No `codesign --deep`: the publish output, the plugin trees (with dot-directories such as .cursor) and the dylibs all sit flat in
-    # Contents/MacOS, and --deep treats those directories as nested code and fails ("bundle format unrecognized, invalid, or
-    # unsuitable", GitHub Actions run 44508808964). scripts/release/macos-adhoc-sign.sh signs each Mach-O file on its own and then the
-    # bundle, and verifies them; it prints the Mach-O files it considered when a step fails, so the log shows what to adjust.
+    # `codesign --deep` fails when Contents/MacOS holds a directory whose name starts with a dot ("bundle format unrecognized,
+    # invalid, or unsuitable", GitHub Actions run 44508808964, on plugins/agent-swarm/.cursor), and signing without --deep fails
+    # because every non-Mach-O file in Contents/MacOS counts as unsigned nested code (probe run 44516778775). So the plugin tree
+    # was moved to Contents/Resources/plugins above, and macos-adhoc-sign.sh signs with --deep and verifies with --deep --strict.
     # The bundle is signed here, before the zip is made, so the zip and the .dmg (which package-dmg.sh builds from this zip) carry the
-    # same app.
+    # same app. Extract the zip with ditto -x -k or Finder: the plain unzip command drops the extended attributes that hold the
+    # signatures of the non-Mach-O files, and the signature then no longer verifies (the app still starts).
     # shellcheck source=scripts/release/macos-adhoc-sign.sh
     source "$script_dir/macos-adhoc-sign.sh"
     xattr -cr "$bundle"
