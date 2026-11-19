@@ -5,7 +5,8 @@ namespace Autonogrammer.Contracts.Dispatch;
 
 /// <summary>
 /// Admits one Dispatch text frame: valid UTF-8, exactly one JSON object, no duplicate property names, <c>v</c> and a known <c>t</c>.
-/// Binary-shaped input is refused. Unknown <c>t</c> is an <c>err</c> of <c>unsupported_frame</c> at the type level.
+/// Binary-shaped input is refused. Only an unknown <c>t</c> is an <c>err</c> of <c>unsupported_frame</c> at the type level;
+/// a known <c>t</c> that fails a later check is refused with its type and no error code.
 /// </summary>
 public static class DispatchFrameGuard
 {
@@ -21,11 +22,13 @@ public static class DispatchFrameGuard
             return false;
         }
 
-        if (!TryRead(text, out var type, out var known))
+        if (!TryRead(text, out var type))
         {
-            if (!known && type is not null)
+            // Only an unknown t is unsupported_frame. A known t that fails a later check keeps its type and carries no code, so the hub closes it as invalid_frame instead of striking.
+            if (type is not null)
             {
-                admission = new DispatchFrameAdmission(false, type, DispatchFrameTypes.UnsupportedFrame);
+                var code = DispatchFrameTypes.IsKnown(type) ? null : DispatchFrameTypes.UnsupportedFrame;
+                admission = new DispatchFrameAdmission(false, type, code);
             }
 
             return false;
@@ -47,10 +50,9 @@ public static class DispatchFrameGuard
     private static bool IsText(ReadOnlySpan<byte> text) =>
         !text.IsEmpty && text.Length <= DispatchFrameTypes.MaxFrameBytes && Utf8.IsValid(text) && text.IndexOf((byte)0) < 0;
 
-    private static bool TryRead(ReadOnlySpan<byte> text, out string? type, out bool knownType)
+    private static bool TryRead(ReadOnlySpan<byte> text, out string? type)
     {
         type = null;
-        knownType = false;
         var sawVersion = false;
         var reader = new Utf8JsonReader(text, new JsonReaderOptions { CommentHandling = JsonCommentHandling.Disallow });
         var names = new Stack<HashSet<string>?>();
@@ -71,8 +73,7 @@ public static class DispatchFrameGuard
             return false;
         }
 
-        knownType = DispatchFrameTypes.IsKnown(type);
-        return knownType;
+        return DispatchFrameTypes.IsKnown(type);
     }
 
     private static bool Walk(ref Utf8JsonReader reader, Stack<HashSet<string>?> names, ref string? type, ref bool sawVersion)

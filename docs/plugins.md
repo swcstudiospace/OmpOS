@@ -32,8 +32,8 @@ prompt -> Ultrathink (plan) -> Swarm (subagents) -> Substrate (session state, st
 | Path | Remote URL | Pin | Licence | Visibility |
 | ---- | ---------- | --- | ------- | ---------- |
 | `plugins/claude-ultrathink` | `https://github.com/swcstudiospace/ultrathink.git` | `71101ed069a66b3862fa5da5b01995a60c2160c2` (tracks `main`) | AGPL-3.0-or-later | public |
-| `plugins/agent-swarm` | `https://github.com/swcstudiospace/swarm.git` | `1944a6bbbf4a09ffe6569843af7f85bf1937527a` (on branch `fix/taskstore-update-allowlist`, not `main`; the gitlink on `main` pins it) | no LICENSE file in the repository | public |
-| `plugins/agent-substrate` | `https://github.com/swcstudiospace/substrate.git` | `754c51a17a9e6ffbc222d04bdaf4e783b4eca720` (tracks `main`) | no LICENSE file in the repository | private |
+| `plugins/agent-swarm` | `https://github.com/swcstudiospace/swarm.git` | `59f12c8d3a28265652ab0e64e52bb153b55157b1` (on branch `chore/agpl-license-on-pin`; it is the previous pin `1944a6bbbf4a09ffe6569843af7f85bf1937527a` plus one LICENSE-only commit, and that previous pin was on branch `fix/taskstore-update-allowlist`, not `main`; the gitlink on `main` pins it) | AGPL-3.0-or-later LICENSE file added 2026-11-19 ([OQ-102](open-questions.md)) | public |
+| `plugins/agent-substrate` | `https://github.com/swcstudiospace/substrate.git` | `70da6d80109eaea1dfdf3c55dff8847e090b46d4` (on branch `chore/agpl-license-on-pin`; it is the previous pin `754c51a17a9e6ffbc222d04bdaf4e783b4eca720`, a commit on `main`, plus one LICENSE-only commit) | AGPL-3.0-or-later LICENSE file added 2026-11-19 ([OQ-102](open-questions.md)) | private |
 | `plugins/agent-realm` | `https://github.com/swcstudiospace/realm.git` | `f28a3acc319d9805c2d2487c05d12a075a2c8ad7` (tracks `main`) | AGPL-3.0-only (`package.json` and `LICENSE`) | not checked |
 | `plugins/gsd-core-omp` | tracked in this repository, not a submodule | n/a | Autonogrammer-owned; `AGPL-3.0-or-later` like Autonogrammer (see Licence facts) | n/a |
 
@@ -59,7 +59,9 @@ Realm also needs a build before its extension loads: `npm ci && npm run build` i
 
 `swcstudiospace/substrate` is private. A clone without read access fails on that one submodule. Fix: authenticate to GitHub (for example `gh auth login`) with an account that can read `swcstudiospace/substrate`, then run `git submodule update --init --recursive plugins/agent-substrate`. Without it the substrate plugin stays Unavailable and sessions run without shared memory, leases or a steering record.
 
-In CI, the `build-test` job in `.github/workflows/ci.yml` checks out the three public submodules always (`claude-ultrathink`, `agent-swarm` and `agent-realm`), and checks out the private one only when the repository secret `SUBMODULE_TOKEN` exists. The secret holds a read-only token for `swcstudiospace/substrate`. It reaches git only through a masked `http.https://github.com/.extraheader` setting for that one command. When the secret is missing, the job prints a warning and continues. Who provisions the token is open: [OQ-63](open-questions.md). The container build context ignores `plugins/` (`.containerignore`), so no image contains plugin source.
+In CI, the `build-test` job in `.github/workflows/ci.yml` checks out the three public submodules always (`claude-ultrathink`, `agent-swarm` and `agent-realm`), and checks out the private one only when the repository secret `SUBMODULE_TOKEN` exists. The secret holds a read-only token for `swcstudiospace/substrate`. It reaches git only through a masked `http.https://github.com/.extraheader` setting for that one command. When the secret is missing, the job prints a warning and continues. The container build context ignores `plugins/` (`.containerignore`), so no image contains plugin source.
+
+The tag workflow `desktop-release.yml` (not `release.yml`, which checks out no plugin) reads the private repository with a different credential, resolved 2026-11-19 ([OQ-63](open-questions.md)): the repository secret `SUBSTRATE_DEPLOY_KEY`, the private half of a read-only deploy key on `swcstudiospace/substrate`. `SUBMODULE_TOKEN` stays accepted there as an alternative. A tag build of `desktop-release.yml` fails when neither secret exists, and so does a rehearsal (a manual run with `version_suffix` set); a plain manual run only warns. To revoke the access, delete the deploy key on `swcstudiospace/substrate` and delete the secret. The desktop packages bundle the plugins, so the source of the private `agent-substrate` repository is distributed inside the public installers (see Licence facts).
 
 ## Bumping a pin
 
@@ -182,12 +184,12 @@ Verified without a model turn: the inbox against the real omp in both modes (hea
 
 ## Licence facts
 
-These are facts, not legal advice. Autonogrammer itself is `AGPL-3.0-or-later` ([ADR-0018](decisions/ADR-0018-licence-agpl-and-source-offer.md), [licensing](licensing.md)). The licence of the two submodules without a licence file is an open owner decision: [OQ-102](open-questions.md).
+These are facts, not legal advice. Autonogrammer itself is `AGPL-3.0-or-later` ([ADR-0018](decisions/ADR-0018-licence-agpl-and-source-offer.md), [licensing](licensing.md)). `agent-swarm` and `agent-substrate` carry the same licence since 2026-11-19 ([OQ-102](open-questions.md), resolved by an owner decision).
 
 - Autonogrammer and `plugins/gsd-core-omp` are `AGPL-3.0-or-later`.
-- `claude-ultrathink` is AGPL-3.0-or-later. `agent-swarm` and `agent-substrate` have no LICENSE file; `agent-substrate` is private.
-- The plugins are separate programs launched as omp extensions. They are pinned by reference. Their source is not copied or linked into Autonogrammer binaries, and the container build context excludes `plugins/`.
-- `agent-realm` is `AGPL-3.0-only` (its `package.json` and `LICENSE`). Autonogrammer and the first-party plugin are `AGPL-3.0-or-later`. The plugin is a separate program launched as an omp extension, not linked. No owner decision on how the two identifiers combine in one distribution is recorded; the open licence questions are in [OQ-102](open-questions.md).
+- `claude-ultrathink` is AGPL-3.0-or-later. `agent-swarm` and `agent-substrate` are AGPL-3.0-or-later since 2026-11-19: each carries a LICENSE file from a LICENSE-only commit on top of its previous pin (the same change was merged to each default branch, swarm#49 and substrate#221), and the pins moved by that one file. `agent-substrate` is private. The desktop packages bundle the plugins, so its source is distributed inside the public installers under the AGPL.
+- The plugins are separate programs launched as omp extensions. They are pinned by reference. Their source is not linked into Autonogrammer binaries, and the container build context excludes `plugins/`. The desktop packages do carry a copy of each plugin's source under `plugins/` beside the executable (`scripts/release/bundle-plugins.sh`).
+- `agent-realm` is `AGPL-3.0-only` (its `package.json` and `LICENSE`). Autonogrammer and the first-party plugin are `AGPL-3.0-or-later`. The plugin is a separate program launched as an omp extension, not linked. No owner decision on how the two identifiers combine in one distribution is recorded; the licence questions that remain open are in [the register](open-questions.md).
 
 ## Contract gate and upgrades
 

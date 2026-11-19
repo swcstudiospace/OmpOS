@@ -238,7 +238,7 @@ public static class HooksCopy
         HookScopeKind.ClaudeProject => "Claude project settings",
         HookScopeKind.ClaudeUser => "Claude user settings",
         HookScopeKind.Plugin => "Plugins",
-        _ => "Other",
+        _ => throw new ArgumentOutOfRangeException(nameof(scope), scope, "The hook scope has no heading."),
     };
 
     /// <summary>Returns the word for the state of a hook row.</summary>
@@ -293,7 +293,7 @@ public static class HooksCopy
         HookRunOutcome.AwaitingConsent => "Waiting for approval",
         HookRunOutcome.Quarantined => "Quarantined",
         HookRunOutcome.InvalidResponse => "Invalid answer",
-        _ => "Unknown",
+        _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, "The hook run outcome has no label."),
     };
 
     /// <summary>Returns the last-run text of a hook row.</summary>

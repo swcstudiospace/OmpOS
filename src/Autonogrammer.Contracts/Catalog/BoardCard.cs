@@ -18,7 +18,7 @@ public sealed record BoardCard
     /// <summary>Gets the time of the last activity of the session.</summary>
     public required DateTimeOffset LastActivityAt { get; init; }
 
-    /// <summary>Gets a value indicating whether the session shows as running but has had no activity for longer than a run lease lives.</summary>
+    /// <summary>Gets a value indicating whether the session is running or awaiting tool approval but has had no activity for longer than a run lease lives.</summary>
     public required bool IsStale { get; init; }
 
     /// <summary>Gets a value indicating whether the operator closed the session.</summary>

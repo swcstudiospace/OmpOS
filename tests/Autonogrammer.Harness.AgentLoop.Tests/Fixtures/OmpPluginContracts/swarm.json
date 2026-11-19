@@ -3,7 +3,7 @@
   "pluginId": "swarm",
   "source": "submodule",
   "submodulePath": "plugins/agent-swarm",
-  "pinnedCommit": "1944a6bbbf4a09ffe6569843af7f85bf1937527a",
+  "pinnedCommit": "59f12c8d3a28265652ab0e64e52bb153b55157b1",
   "manifestPath": "omp/package.json",
   "packageName": "agent-swarm-omp",
   "packageVersion": null,

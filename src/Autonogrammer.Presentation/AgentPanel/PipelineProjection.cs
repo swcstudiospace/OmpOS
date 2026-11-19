@@ -211,7 +211,7 @@ internal static class PipelineProjection
             IconKey = AgentPanelCopy.StageStatusIcon(stage.Status),
             Detail = detail.Length == 0 ? null : detail,
             EffectText = known ? AgentPanelCopy.StageEffect(stage.Source, stage.Status) : null,
-            GraphId = string.IsNullOrWhiteSpace(stage.GraphId) ? null : PanelText.Plain(stage.GraphId, 64),
+            GraphId = string.IsNullOrWhiteSpace(stage.GraphId) ? null : PanelText.Plain(stage.GraphId, PanelText.MaxIdChars),
             Timestamp = stage.Timestamp,
             CanRetry = retryable,
             RetryName = $"Retry {title} stage",

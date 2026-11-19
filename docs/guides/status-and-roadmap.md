@@ -37,7 +37,7 @@ The row-by-row truth is the [Cursor parity audit of 2026-10-28](../quality/curso
 | Desktop app on Linux: Agents window, thread, composer, Kanban, omp terminals, Changes bar, steering, Settings (21 pages), slash palette | Built | Verified on Linux without a model turn. Windows and macOS not run. |
 | The five plugins loop (Ultrathink, Swarm, Substrate, Realm, GSD-Core) | Partial | Four plugins connected against the real omp 18.12.6 without a model turn (2026-10-26). Realm was added on 2026-11-17: its extension and contract are recorded, and no run has connected it yet. |
 | White-and-Purple brand, Light default, logo set | Built | Owner sign-off of the look is open. |
-| AGPL-3.0-or-later licence and the source offer | Built | Licence of two submodules is open (OQ-102). |
+| AGPL-3.0-or-later licence and the source offer | Built | `agent-swarm` and `agent-substrate` carry the same licence since 2026-11-19 (OQ-102, resolved). The desktop installers bundle the plugins, so the source of the private `agent-substrate` repository is distributed inside them under the AGPL. |
 | Web Demo | Built | Deployed; simulated engine; checked in a browser (see above). |
 | Web app: shell, rail, thread, composer, Changes, Kanban, Settings (18 pages) | Partial | Tested components over the API; real Models page; Hooks, MCP and Plugins pages read-only; no hosted API (OD-03); no image attach. |
 | Model provider catalogue: 103 rows (EU, US, CN, global, local) | Partial | Data, writer and both Models pages built; omp accepts every route in a read-only experiment; no row was called with a real credential; 49 rows are only Partial-verified. |
@@ -80,7 +80,6 @@ Milestone v0.15.0 ("Cursor completeness, brand and public launch") covers phases
 - **Provider credentials:** supply test credentials so live validation of providers can run (OQ-71).
 - **Windows, macOS and Android runs:** the desktop on Windows and macOS, the Android head on a device or emulator (OQ-74).
 - **Sign-in authority for a public API** (OD-03), and the Railway deploy decisions: what else may be deployed beyond the staged worker (OQ-100), whether to keep the `ompos-staging` project, which bills usage (OQ-171) and whether Railway permits an agent-driven desktop (OQ-73).
-- **Licence of `agent-swarm` and `agent-substrate`** (OQ-102).
 - **Trademark clearance** of the name "Autonogrammer" (none has been made, see [Licensing](../licensing.md)) and sign-off of the logo.
 - **Code of conduct:** a contact for conduct reports beyond GitHub's private reporting.
 

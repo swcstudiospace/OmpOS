@@ -396,7 +396,7 @@ public sealed partial class AgentSessionRegistryTests
         using var directory = new SessionTestDirectory();
         var registry = new AgentSessionRegistry(directory.StatePath, new SessionTestClock(Start));
         var first = registry.Create("0", null);
-        for (var index = 1; index < AgentSessionRegistry.MaxSessions; index++)
+        for (var index = 1; index < AgentSessionLimits.MaxSessions; index++)
         {
             registry.Create(index.ToString(System.Globalization.CultureInfo.InvariantCulture), null);
         }
@@ -576,7 +576,7 @@ public sealed partial class AgentSessionRegistryTests
 
         records.ShouldAllBe(record => IdPattern().IsMatch(record.Id));
         records.Select(record => record.Id).Distinct(StringComparer.Ordinal).Count().ShouldBe(20);
-        records.ShouldAllBe(record => record.Title == "New session" && record.WorkspaceRoot == null);
+        records.ShouldAllBe(record => string.Equals(record.Title, "New session", StringComparison.Ordinal) && record.WorkspaceRoot == null);
         registry.Create(new string('t', 500), null).Title.Length.ShouldBe(200);
         Should.Throw<ArgumentException>(() => registry.Rename(records[0].Id, " "));
     }

@@ -11,14 +11,14 @@ public sealed class QueuedMessagesSteeringAdapter
 {
     private readonly QueuedMessagesModel _queue;
     private readonly SteeringInputModel _steering;
-    private readonly Func<string, CancellationToken, Task> _startTurn;
+    private readonly Func<string, CancellationToken, Task<bool>> _startTurn;
 
     /// <summary>Creates the adapter of one session.</summary>
     /// <param name="queue">The session's queue.</param>
     /// <param name="steering">The session's steering input. Its <c>SubmitAsync</c> delivers a steer into the running turn.</param>
-    /// <param name="startTurn">Starts a message as a new prompt after the run ended. It throws when the prompt was not accepted; the message then returns to the front of the queue.</param>
+    /// <param name="startTurn">Starts a message as a new prompt after the run ended. It returns <see langword="true"/> when the prompt was accepted and <see langword="false"/> when it was refused (the runtime shows why); it throws on a fault. A message that did not start returns to the front of the queue.</param>
     /// <exception cref="ArgumentNullException">An argument is null.</exception>
-    public QueuedMessagesSteeringAdapter(QueuedMessagesModel queue, SteeringInputModel steering, Func<string, CancellationToken, Task> startTurn)
+    public QueuedMessagesSteeringAdapter(QueuedMessagesModel queue, SteeringInputModel steering, Func<string, CancellationToken, Task<bool>> startTurn)
     {
         ArgumentNullException.ThrowIfNull(queue);
         ArgumentNullException.ThrowIfNull(steering);
@@ -55,7 +55,8 @@ public sealed class QueuedMessagesSteeringAdapter
 
     /// <summary>Starts the first queued message as a new turn. The head calls it when a run completes.</summary>
     /// <param name="cancellationToken">Cancels the start.</param>
-    /// <returns><see langword="true"/> when a message was started; <see langword="false"/> when the queue was empty or the start failed (the message is back at the front).</returns>
+    /// <returns><see langword="true"/> when a message was started; <see langword="false"/> when the queue was empty or the start was refused. A message that did not start is back at the front.
+    /// A fault in the start propagates to the caller after the message is back at the front, so the head can show it.</returns>
     public async Task<bool> DispatchNextAsync(CancellationToken cancellationToken)
     {
         var next = _queue.TakeNext();
@@ -64,20 +65,18 @@ public sealed class QueuedMessagesSteeringAdapter
             return false;
         }
 
+        var started = false;
         try
         {
-            await _startTurn(next.Text, cancellationToken).ConfigureAwait(true);
-            return true;
+            started = await _startTurn(next.Text, cancellationToken).ConfigureAwait(true);
+            return started;
         }
-        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+        finally
         {
-            _queue.PutBack(next);
-            return false;
-        }
-        catch (OperationCanceledException)
-        {
-            _queue.PutBack(next);
-            throw;
+            if (!started)
+            {
+                _queue.PutBack(next);
+            }
         }
     }
 }

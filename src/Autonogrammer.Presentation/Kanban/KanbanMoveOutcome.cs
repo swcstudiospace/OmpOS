@@ -12,6 +12,9 @@ public enum KanbanMoveOutcome
     /// <summary>The column shows a runtime status, which only a runtime signal sets; the drop is refused and the card is unchanged.</summary>
     RefusedRuntimeColumn,
 
+    /// <summary>The session is closed and stays in the Archived column; the drop is refused and the card is unchanged.</summary>
+    RefusedClosed,
+
     /// <summary>No card has that identifier.</summary>
     UnknownCard,
 

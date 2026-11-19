@@ -15,14 +15,6 @@ public static class AboutViewCopy
     /// <summary>The heading of the licence section.</summary>
     public const string LicenceHeading = "Licence and source code";
 
-    /// <summary>The licence notice.</summary>
-    public const string LicenceNotice =
-        "Autonogrammer is free software under the GNU Affero General Public License, version 3 or, at your option, any later version (AGPL-3.0-or-later). "
-        + "Everyone who uses it, on their own computer or through a network, may have its complete source code at no charge.";
-
-    /// <summary>The sentence before the source link, shown when the API reported where the source is.</summary>
-    public const string SourceOffer = "The source code of the version this server runs is here:";
-
     /// <summary>The visible label of the source link.</summary>
     public const string SourceLinkLabel = "Source code of this version";
 

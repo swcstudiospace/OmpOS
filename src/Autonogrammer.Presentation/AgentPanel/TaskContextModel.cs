@@ -319,7 +319,7 @@ public sealed class TaskContextModel : ObservableModel, IDisposable
                 .Where(warning => warning.Length > 0)
                 .Take(MaxWarnings)
                 .ToList();
-            var taskId = PanelText.Plain(context.TaskId, 80);
+            var taskId = PanelText.Plain(context.TaskId, PanelText.MaxIdChars);
             var kanban = PanelText.Plain(context.KanbanStatus, 80);
             var hasContent = taskId.Length > 0 || kanban.Length > 0 || context.Phase is not null
                 || context.SharedMemory.Count > 0 || context.Lessons.Count > 0;
@@ -329,7 +329,7 @@ public sealed class TaskContextModel : ObservableModel, IDisposable
             }
 
             var title = PanelText.Plain(context.Title, 200);
-            var graphId = PanelText.Plain(context.GraphId, 64);
+            var graphId = PanelText.Plain(context.GraphId, PanelText.MaxIdChars);
             return new ContextView
             {
                 State = warnings.Count == 0 ? TaskContextState.Ready : TaskContextState.Partial,

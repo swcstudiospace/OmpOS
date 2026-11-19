@@ -9,8 +9,6 @@ namespace Autonogrammer.Presentation.Safety;
 /// </summary>
 public sealed class RunModeSettingsPage : EditableSettingsPage<RunModeValues>
 {
-    private const int MaxEntryLength = 512;
-
     private static readonly IReadOnlyList<RunModeOption> ModeOptions =
     [
         new(RunModeChoice.AutoReview, SafetyCopy.AutoReviewTitle, SafetyCopy.AutoReviewSummary),
@@ -247,7 +245,7 @@ public sealed class RunModeSettingsPage : EditableSettingsPage<RunModeValues>
         var entry = text?.Trim() ?? string.Empty;
         var error = !canEdit ? SafetyCopy.NoTarget
             : entry.Length == 0 ? SafetyCopy.EntryEmpty
-            : entry.Length > MaxEntryLength ? SafetyCopy.EntryTooLong
+            : entry.Length > SafetyCopy.MaxEntryLength ? SafetyCopy.EntryTooLong
             : entry.Contains('\n', StringComparison.Ordinal) || entry.Contains('\r', StringComparison.Ordinal) ? SafetyCopy.EntryMultiline
             : current.Contains(entry, StringComparer.Ordinal) ? SafetyCopy.EntryDuplicate
             : problem(entry);

@@ -8,7 +8,7 @@ namespace Autonogrammer.Presentation.Remote;
 /// The Remote environments settings page: the saved ssh environments with their status and findings, the hosts of the user's ssh config that can be
 /// added, an add and edit form, the connection test and the host trust terminal. Nothing connects at load: a host is contacted only when the user presses
 /// Test connection or starts a session. The model never throws out of a command: a failure becomes the announcement (a polite live region) and, for a
-/// test, a finding on the row. Session heads report the live state of their connection with <see cref="SetConnectionState"/>.
+/// test, a finding on the row.
 /// </summary>
 public sealed class RemoteEnvironmentsViewModel : ObservableModel
 {
@@ -264,8 +264,18 @@ public sealed class RemoteEnvironmentsViewModel : ObservableModel
         finally
         {
             _testRuns.Remove(row.Id);
+            StatusesChanged?.Invoke(this, EventArgs.Empty);
         }
     }
+
+    /// <summary>Raised when a connection test ended, so a view that shows the outcome (the New session picker) reads it again.</summary>
+    public event EventHandler? StatusesChanged;
+
+    /// <summary>Gets the status an environment shows: a running test, else the outcome of the last test.</summary>
+    /// <param name="profileId">The identifier of the environment.</param>
+    /// <returns>The status, or null when the environment is not listed.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="profileId"/> is null.</exception>
+    public RemoteEnvironmentStatus? StatusOf(string profileId) => Find(profileId)?.Status;
 
     /// <summary>Cancels the connection test of one environment that is running. It does nothing when none is.</summary>
     /// <param name="row">The environment.</param>
@@ -302,48 +312,6 @@ public sealed class RemoteEnvironmentsViewModel : ObservableModel
             Announcement = RemoteCopy.TrustHostUnavailable + " " + fault.Message;
             return false;
         }
-    }
-
-    /// <summary>Shows the live state of the connection of a session running on an environment.</summary>
-    /// <param name="profileId">The identifier of the environment.</param>
-    /// <param name="state">The connection state of the session.</param>
-    /// <param name="reconnectAttempt">The retry number while reconnecting, or 0.</param>
-    /// <param name="turnInterrupted">Whether the connection was lost while a turn was running.</param>
-    /// <returns><see langword="true"/> when the environment is listed.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="profileId"/> is null.</exception>
-    public bool SetConnectionState(string profileId, RemoteConnectionState state, int reconnectAttempt = 0, bool turnInterrupted = false)
-    {
-        var row = Find(profileId);
-        if (row is null)
-        {
-            return false;
-        }
-
-        row.ApplyConnection(state, reconnectAttempt, turnInterrupted);
-        Announcement = row.DisplayName + ": " + row.StatusLabel + ".";
-        return true;
-    }
-
-    /// <summary>Shows that ssh is signing in for a session on an environment.</summary>
-    /// <param name="profileId">The identifier of the environment.</param>
-    /// <returns><see langword="true"/> when the environment is listed.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="profileId"/> is null.</exception>
-    public bool ReportAuthenticating(string profileId)
-    {
-        var row = Find(profileId);
-        row?.ApplyAuthenticating();
-        return row is not null;
-    }
-
-    /// <summary>Removes the live state of an environment, so its row shows the outcome of the last test again.</summary>
-    /// <param name="profileId">The identifier of the environment.</param>
-    /// <returns><see langword="true"/> when the environment is listed.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="profileId"/> is null.</exception>
-    public bool ClearConnectionState(string profileId)
-    {
-        var row = Find(profileId);
-        row?.ClearConnection();
-        return row is not null;
     }
 
     private RemoteProfileRow? Find(string profileId)

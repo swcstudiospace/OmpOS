@@ -16,7 +16,7 @@ namespace Autonogrammer.Presentation.AgentPanel;
 /// <para>
 /// Precedence: (1) a lifecycle outside <see cref="SessionLifecycle"/> is <see cref="AgentRowStatus.Unknown"/>; (2) while the lifecycle is
 /// Created or Running and the head reports a live runtime status, the live status wins, because the engine knows more than the last
-/// persisted write (a pending approval, an awaited message); (3) a Paused or Completed session without an engine is Closed; (4) Created
+/// persisted write (a pending approval, an awaited message); (3) a closed session without an engine is Closed, whatever its lifecycle except Lost, which always reads Lost; (4) Created
 /// with no live status is Ready; (5) otherwise the lifecycle's own runtime status decides. Lost always shows as Lost.
 /// </para>
 /// <para>
@@ -44,7 +44,7 @@ public static class AgentRowStatusMap
             return FromRuntime(liveStatus);
         }
 
-        if (isClosed && lifecycle is SessionLifecycle.Paused or SessionLifecycle.Completed)
+        if (isClosed && lifecycle != SessionLifecycle.Lost)
         {
             return new AgentRowMapping(AgentRowStatus.Closed, persisted, AgentRowGroup.Idle);
         }

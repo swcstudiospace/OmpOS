@@ -1,4 +1,5 @@
 using Autonogrammer.Contracts.Catalog;
+using Autonogrammer.Presentation.About;
 using Autonogrammer.UI.Components.About;
 using Autonogrammer.UI.Components.Shell;
 using Bunit;
@@ -7,7 +8,7 @@ using Xunit;
 
 namespace Autonogrammer.UI.Tests.Shell;
 
-/// <summary>The About view: the product and version, the AGPL notice, the source offer when the API reported it, and the accessibility commitment with the way to report a problem.</summary>
+/// <summary>The About view: the product and version, the licence, the source offer shared with the desktop window, and the accessibility commitment with the way to report a problem.</summary>
 public sealed class AboutViewTests : UiTestContext
 {
     private static SourceInfo Source(string source = "https://github.com/swcstudiospace/OmpOS") => new()
@@ -19,9 +20,9 @@ public sealed class AboutViewTests : UiTestContext
         Version = "0.15.0+0123456789abcdef",
     };
 
-    /// <summary>The view has one h1, the version the API reported, the licence notice, the source link and two accessibility paragraphs with the issue link.</summary>
+    /// <summary>The view has one h1, the version the API reported, the source offer, the source link and two accessibility paragraphs with the issue link.</summary>
     [Fact]
-    public void WhenConnectedTheViewShowsTheVersionTheNoticeAndTheSourceLink()
+    public void WhenConnectedTheViewShowsTheVersionTheOfferAndTheSourceLink()
     {
         var cut = Render<AboutView>(parameters => parameters.Add(p => p.Source, Source()));
 
@@ -40,16 +41,15 @@ public sealed class AboutViewTests : UiTestContext
         issue.TextContent.ShouldContain(AboutViewCopy.NewTab, Case.Sensitive);
     }
 
-    /// <summary>Without the API's answer the source offer is hidden, the version is the running assembly's, and the rest still shows.</summary>
+    /// <summary>Without the API's answer the offer still shows, the source link goes to the repository address, the version is the running assembly's, and the rest still shows.</summary>
     [Fact]
-    public void WhenNotConnectedTheSourceOfferIsHiddenGracefully()
+    public void WhenNotConnectedTheOfferShowsWithTheRepositoryAddress()
     {
         var cut = Render<AboutView>();
 
-        cut.FindAll("a").Select(static link => link.GetAttribute("href")).ShouldNotContain("https://github.com/swcstudiospace/OmpOS", StringComparer.Ordinal);
-        cut.Markup.ShouldNotContain(AboutViewCopy.SourceOffer);
+        cut.Find("a[href='https://github.com/swcstudiospace/OmpOS']").TextContent.ShouldContain(AboutViewCopy.SourceLinkLabel, Case.Sensitive);
+        cut.Markup.ShouldContain(AboutCopy.SourceOffer, Case.Sensitive);
         cut.Markup.ShouldContain(ShellInfo.CurrentVersion, Case.Sensitive);
-        cut.Markup.ShouldContain(AboutViewCopy.LicenceNotice, Case.Sensitive);
         cut.Find("h1").TextContent.ShouldBe("About Autonogrammer");
     }
 
@@ -60,6 +60,6 @@ public sealed class AboutViewTests : UiTestContext
         var cut = Render<AboutView>(parameters => parameters.Add(p => p.Source, Source("ftp://example.test/source")));
 
         cut.Markup.ShouldNotContain("ftp://");
-        cut.Markup.ShouldNotContain(AboutViewCopy.SourceOffer);
+        cut.Markup.ShouldContain(AboutCopy.SourceOffer, Case.Sensitive);
     }
 }

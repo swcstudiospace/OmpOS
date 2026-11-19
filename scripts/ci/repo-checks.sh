@@ -12,5 +12,6 @@ bash scripts/ci/check-changelog.sh
 bash scripts/ci/check-docs.sh
 bash scripts/ci/check-providers-doc.sh
 bash scripts/ci/check-skip-markers.sh
+python3 scripts/release/test_verify_desktop_assets.py
 bash scripts/check-settings-parity.sh
 echo "repo-checks: ok"

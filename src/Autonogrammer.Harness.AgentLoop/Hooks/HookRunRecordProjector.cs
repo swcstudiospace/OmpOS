@@ -59,15 +59,15 @@ public static class HookRunRecordProjector
 
     private static string StatusName(HookRunStatus status) => status switch
     {
-        HookRunStatus.Succeeded => "succeeded",
-        HookRunStatus.Denied => "denied",
-        HookRunStatus.Failed => "failed",
-        HookRunStatus.TimedOut => "timedOut",
-        HookRunStatus.Skipped => "skipped",
-        HookRunStatus.Faulted => "faulted",
-        HookRunStatus.AwaitingConsent => "awaitingConsent",
-        HookRunStatus.PluginQuarantined => "pluginQuarantined",
-        HookRunStatus.InvalidResponse => "invalidResponse",
-        _ => status.ToString(),
+        HookRunStatus.Succeeded => HookRunStatusNames.Succeeded,
+        HookRunStatus.Denied => HookRunStatusNames.Denied,
+        HookRunStatus.Failed => HookRunStatusNames.Failed,
+        HookRunStatus.TimedOut => HookRunStatusNames.TimedOut,
+        HookRunStatus.Skipped => HookRunStatusNames.Skipped,
+        HookRunStatus.Faulted => HookRunStatusNames.Faulted,
+        HookRunStatus.AwaitingConsent => HookRunStatusNames.AwaitingConsent,
+        HookRunStatus.PluginQuarantined => HookRunStatusNames.PluginQuarantined,
+        HookRunStatus.InvalidResponse => HookRunStatusNames.InvalidResponse,
+        _ => throw new ArgumentOutOfRangeException(nameof(status), status, "The hook run status has no wire name."),
     };
 }

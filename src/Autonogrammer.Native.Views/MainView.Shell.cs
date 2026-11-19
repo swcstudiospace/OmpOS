@@ -50,6 +50,7 @@ public partial class MainView
     private WorktreeCommandsView? _worktreesView;
     private QueuedMessagesRegistry? _queues;
     private EventHandler? _cloudChanged;
+    private EventHandler? _statusChanged;
     private bool _syncingWorktrees;
     private bool _syncingCheckpoints;
 
@@ -180,6 +181,19 @@ public partial class MainView
         if (_services.Cloud is { } cloud && _cloudChanged is not null)
         {
             cloud.Changes -= _cloudChanged;
+        }
+
+        if (_statusChanged is not null)
+        {
+            if (_services.RemoteEnvironmentsModel is { } page)
+            {
+                page.StatusesChanged -= _statusChanged;
+            }
+
+            if (_services.RuntimeEnvironmentsModel is { } containers)
+            {
+                containers.StatusesChanged -= _statusChanged;
+            }
         }
     }
 
@@ -385,16 +399,17 @@ public partial class MainView
         }
     }
 
+    // An install that did not fail leaves the omp in place, so the card shows the omp as it now is with the outcome's notice, the same as the update check. Only a failure is an install failure.
     private void FinishInstall(CodeLandingModel landing, LocalOmpUpdate update)
     {
-        if (update.State == LocalOmpUpdateState.Updated)
+        if (update.State == LocalOmpUpdateState.Failed)
         {
-            landing.SetLocalUpdate(update);
-            _ = RefreshLocalOmpAsync();
+            landing.SetLocal(LocalOmpStatus.InstallFailed(update.Reason ?? string.Empty));
             return;
         }
 
-        landing.SetLocal(LocalOmpStatus.InstallFailed(update.Reason ?? string.Empty));
+        landing.SetLocalUpdate(update);
+        _ = RefreshLocalOmpAsync();
     }
 
     // The landing shows while no session is selected and the panel has no loading or error to show. Its tool and Agents views cover it through the transcript host.
@@ -468,6 +483,17 @@ public partial class MainView
         }
 
         _targetModel = new NewSessionTargetModel([]);
+        _targetModel.SetStatusSource(StatusOfEnvironment);
+        _statusChanged = (_, _) => Dispatcher.UIThread.Post(() => _targetModel?.RefreshStatuses());
+        if (_services.RemoteEnvironmentsModel is { } page)
+        {
+            page.StatusesChanged += _statusChanged;
+        }
+
+        if (_services.RuntimeEnvironmentsModel is { } containers)
+        {
+            containers.StatusesChanged += _statusChanged;
+        }
         _targetView = new EnvironmentPickerView { DataContext = _targetModel };
         _targetView.ManageRequested += OnManageEnvironmentsRequested;
         _targetModel.PropertyChanged += OnTargetModelChanged;
@@ -488,12 +514,35 @@ public partial class MainView
         {
             var list = await host.LoadProfilesAsync(CancellationToken.None).ConfigureAwait(true);
             _targetModel.SetProfiles(list.Profiles.Select(static stored => stored.Profile));
+            _targetModel.SetCloud(await ReadCloudSetupAsync().ConfigureAwait(true));
             _landing?.SetRemote(RemoteLoadState.Loaded);
         }
         catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
         {
             Trace.TraceWarning($"Autonogrammer could not read the remote environments ({exception.GetType().Name}).");
             _landing?.SetRemote(RemoteLoadState.Failed);
+        }
+    }
+
+    // The picker reads each environment's last test outcome from the Remote page's model, the one place that runs the tests.
+    private RemoteEnvironmentStatus? StatusOfEnvironment(string profileId) =>
+        _services.RemoteEnvironmentsModel?.StatusOf(profileId) ?? _services.RuntimeEnvironmentsModel?.StatusOf(profileId);
+
+    // The picker's cloud option says what the cloud agents service reports; a head without the service has none.
+    private async Task<CloudSetup?> ReadCloudSetupAsync()
+    {
+        if (_services.Cloud is not { } cloud)
+        {
+            return null;
+        }
+
+        try
+        {
+            return await cloud.GetSetupAsync(CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (CloudHostException failure)
+        {
+            return CloudSetup.NotConfigured(failure.Message);
         }
     }
 

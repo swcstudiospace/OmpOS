@@ -126,7 +126,7 @@ public sealed class ShellEnvironmentPickerTests
             button.IsEnabled.ShouldBeTrue();
 
             model.Select("ssh:box-1");
-            model.SetStatus("box-1", RemoteEnvironmentStatus.AuthFailed);
+            model.SetStatusSource(id => string.Equals(id, "box-1", StringComparison.Ordinal) ? RemoteEnvironmentStatus.AuthFailed : null);
             ShellHarness.Settle(fixture.ServicesWindow!);
 
             model.CanStart.ShouldBeFalse();

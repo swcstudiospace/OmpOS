@@ -1,14 +1,13 @@
+using Autonogrammer.Contracts.Cowork;
+
 namespace Autonogrammer.Cowork;
 
-/// <summary>The Cowork registry already holds 200 tasks, so another cannot be started.</summary>
+/// <summary>The Cowork registry already holds the most tasks, so another cannot be started.</summary>
 public sealed class CoworkSessionLimitException : InvalidOperationException
 {
-    /// <summary>The message a full Cowork registry shows.</summary>
-    public const string FullMessage = "You have 200 Cowork tasks. Delete or archive one to start another.";
-
-    /// <summary>Initializes a new instance of the <see cref="CoworkSessionLimitException"/> class with <see cref="FullMessage"/>.</summary>
+    /// <summary>Initializes a new instance of the <see cref="CoworkSessionLimitException"/> class with <see cref="CoworkSessionLimit.FullMessage"/>.</summary>
     public CoworkSessionLimitException()
-        : base(FullMessage)
+        : base(CoworkSessionLimit.FullMessage)
     {
     }
 
@@ -27,10 +26,10 @@ public sealed class CoworkSessionLimitException : InvalidOperationException
     {
     }
 
-    /// <summary>Initializes a new instance of the <see cref="CoworkSessionLimitException"/> class with <see cref="FullMessage"/>.</summary>
+    /// <summary>Initializes a new instance of the <see cref="CoworkSessionLimitException"/> class with <see cref="CoworkSessionLimit.FullMessage"/>.</summary>
     /// <param name="innerException">The registry failure that was translated.</param>
     public CoworkSessionLimitException(Exception innerException)
-        : this(FullMessage, innerException)
+        : this(CoworkSessionLimit.FullMessage, innerException)
     {
     }
 }

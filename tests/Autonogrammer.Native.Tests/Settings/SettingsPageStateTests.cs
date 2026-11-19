@@ -3,6 +3,7 @@ using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Customize;
 using Autonogrammer.Presentation.Settings.Models;
+using Autonogrammer.Presentation.Settings.Privacy;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Shouldly;
@@ -229,7 +230,7 @@ public sealed class SettingsPageStateTests
                 texts.ShouldContain(option.Description, StringComparer.Ordinal);
             }
 
-            texts.ShouldContain(SettingsCopy.PrivacyStatement, StringComparer.Ordinal);
+            texts.ShouldContain(PrivacyCopy.Summary, StringComparer.Ordinal);
             view.Motion.SelectedItem.ShouldBeSameAs(items[0]);
 
             view.Motion.SelectedItem = items[2];

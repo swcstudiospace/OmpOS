@@ -57,7 +57,7 @@ public sealed class NewSessionTargetModelTests
 
         model.Selected!.IsAvailable.ShouldBeFalse();
         model.CanStart.ShouldBeFalse();
-        model.Validation.Message.ShouldBe(RemoteCopy.CloudUnavailable);
+        model.Validation.Message.ShouldBe(RemoteCopy.CloudNotConnected);
         model.TryGetTarget(out var target).ShouldBeFalse();
         target.ShouldBeNull();
     }
@@ -92,7 +92,7 @@ public sealed class NewSessionTargetModelTests
         var model = new NewSessionTargetModel([Ssh("a")]);
         model.Select("ssh:a");
 
-        model.SetStatus("a", status);
+        model.SetStatusSource(id => string.Equals(id, "a", StringComparison.Ordinal) ? status : null);
 
         model.CanStart.ShouldBeFalse();
         model.Validation.Message.ShouldStartWith(RemoteCopy.TargetBlockedPrefix, Case.Sensitive);
@@ -100,7 +100,7 @@ public sealed class NewSessionTargetModelTests
         model.Options[1].StatusLabel.ShouldBe(RemoteStatusDescriber.LabelOf(status));
         model.TryGetTarget(out _).ShouldBeFalse();
 
-        model.SetStatus("a", RemoteEnvironmentStatus.Ready);
+        model.SetStatusSource(id => string.Equals(id, "a", StringComparison.Ordinal) ? RemoteEnvironmentStatus.Ready : null);
 
         model.CanStart.ShouldBeTrue();
         model.Validation.Message.ShouldBe(RemoteCopy.TargetOk);
@@ -119,7 +119,7 @@ public sealed class NewSessionTargetModelTests
         var model = new NewSessionTargetModel([Ssh("a")]);
         model.Select("ssh:a");
 
-        model.SetStatus("a", status);
+        model.SetStatusSource(id => string.Equals(id, "a", StringComparison.Ordinal) ? status : null);
 
         model.CanStart.ShouldBeTrue();
         string.Equals(model.Validation.Message, RemoteCopy.TargetUntested, StringComparison.Ordinal).ShouldBe(status == RemoteEnvironmentStatus.NotChecked);
@@ -152,7 +152,7 @@ public sealed class NewSessionTargetModelTests
         var model = new NewSessionTargetModel([Ssh("a"), Ssh("b")]);
         Should.Throw<ArgumentException>(() => model.Select("ssh:zzz"));
         model.Select("ssh:b");
-        model.SetStatus("b", RemoteEnvironmentStatus.Unreachable);
+        model.SetStatusSource(id => string.Equals(id, "b", StringComparison.Ordinal) ? RemoteEnvironmentStatus.Unreachable : null);
         var notified = new List<string?>();
         model.PropertyChanged += (_, e) => notified.Add(e.PropertyName);
 
@@ -176,10 +176,10 @@ public sealed class NewSessionTargetModelTests
     public void TheAccessibleNameSaysEverythingTheRowShows()
     {
         var model = new NewSessionTargetModel([Ssh("a")]);
-        model.SetStatus("a", RemoteEnvironmentStatus.Ready);
+        model.SetStatusSource(id => string.Equals(id, "a", StringComparison.Ordinal) ? RemoteEnvironmentStatus.Ready : null);
 
         model.Options[1].AccessibleName.ShouldBe("ssh: Box a. alias-a Folder on the host: /srv/app. Ready");
-        model.Options[2].AccessibleName.ShouldContain(RemoteCopy.CloudUnavailable, Case.Sensitive);
+        model.Options[2].AccessibleName.ShouldContain(RemoteCopy.CloudNotConnected, Case.Sensitive);
         model.Options[0].AccessibleName.ShouldBe(RemoteCopy.LocalLabel + ". " + RemoteCopy.LocalDetail);
     }
 
@@ -188,7 +188,7 @@ public sealed class NewSessionTargetModelTests
     public void NullArgumentsAreRefused()
     {
         Should.Throw<ArgumentNullException>(() => new NewSessionTargetModel(null!));
-        Should.Throw<ArgumentNullException>(() => new NewSessionTargetModel([]).SetStatus(null!, RemoteEnvironmentStatus.Ready));
+        Should.Throw<ArgumentNullException>(() => new NewSessionTargetModel([]).SetStatusSource(null!));
         Should.Throw<ArgumentNullException>(() => new NewSessionTargetModel([]).Select(null!));
     }
 }

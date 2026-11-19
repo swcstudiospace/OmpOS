@@ -40,23 +40,7 @@ public sealed class MultiRootWorkspaceTree : ObservableModel
     /// <exception cref="ArgumentException">Two roots share an identifier or a name (ignoring case), or a name is blank. Nothing is changed.</exception>
     public void Open(IReadOnlyList<WorkspaceRootSource> sources)
     {
-        ArgumentNullException.ThrowIfNull(sources);
-        var ids = new HashSet<string>(StringComparer.Ordinal);
-        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var source in sources)
-        {
-            if (source is null || source.Open is null)
-            {
-                throw new ArgumentException("A root source and its open delegate must not be null.", nameof(sources));
-            }
-
-            ArgumentException.ThrowIfNullOrWhiteSpace(source.Id, nameof(sources));
-            ArgumentException.ThrowIfNullOrWhiteSpace(source.DisplayName, nameof(sources));
-            if (!ids.Add(source.Id) || !names.Add(source.DisplayName.Trim()))
-            {
-                throw new ArgumentException($"The root '{source.DisplayName}' repeats an identifier or a name.", nameof(sources));
-            }
-        }
+        RequireDistinctRoots(sources, source => (source?.Id, source?.DisplayName, source?.Open is not null));
 
         var opened = sources.Select(source => new WorkspaceRootTree(source)).ToList();
         foreach (var root in opened)
@@ -97,23 +81,7 @@ public sealed class MultiRootWorkspaceTree : ObservableModel
     /// <exception cref="ArgumentException">Two roots share an identifier or a name (ignoring case), or a name is blank. Nothing is changed.</exception>
     public async Task OpenAsync(IReadOnlyList<AsyncWorkspaceRootSource> sources, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(sources);
-        var ids = new HashSet<string>(StringComparer.Ordinal);
-        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var source in sources)
-        {
-            if (source is null || source.Open is null)
-            {
-                throw new ArgumentException("A root source and its open delegate must not be null.", nameof(sources));
-            }
-
-            ArgumentException.ThrowIfNullOrWhiteSpace(source.Id, nameof(sources));
-            ArgumentException.ThrowIfNullOrWhiteSpace(source.DisplayName, nameof(sources));
-            if (!ids.Add(source.Id) || !names.Add(source.DisplayName.Trim()))
-            {
-                throw new ArgumentException($"The root '{source.DisplayName}' repeats an identifier or a name.", nameof(sources));
-            }
-        }
+        RequireDistinctRoots(sources, source => (source?.Id, source?.DisplayName, source?.Open is not null));
 
         var opened = sources.Select(source => new WorkspaceRootTree(source)).ToList();
         foreach (var root in opened)
@@ -209,6 +177,29 @@ public sealed class MultiRootWorkspaceTree : ObservableModel
         }
 
         return false;
+    }
+
+    // Checks every root before any is opened: each has an identifier and a name, the name is unique ignoring case and surrounding spaces, and it can open.
+    private static void RequireDistinctRoots<T>(IReadOnlyList<T> sources, Func<T, (string? Id, string? DisplayName, bool HasOpen)> describe)
+    {
+        ArgumentNullException.ThrowIfNull(sources);
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var source in sources)
+        {
+            var (id, displayName, hasOpen) = describe(source);
+            if (!hasOpen)
+            {
+                throw new ArgumentException("A root source and its open delegate must not be null.", nameof(sources));
+            }
+
+            ArgumentException.ThrowIfNullOrWhiteSpace(id, nameof(sources));
+            ArgumentException.ThrowIfNullOrWhiteSpace(displayName, nameof(sources));
+            if (!ids.Add(id) || !names.Add(displayName.Trim()))
+            {
+                throw new ArgumentException($"The root '{displayName}' repeats an identifier or a name.", nameof(sources));
+            }
+        }
     }
 
     private WorkspaceRootTree RequireRoot(string rootId)

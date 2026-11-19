@@ -120,7 +120,7 @@ public sealed class NativeWebViewArtifactSurface : IArtifactSurface
         Enter(ArtifactSurfaceState.Idle, ArtifactSurfaceReason.None);
     }
 
-    /// <summary>Applies the environment switches the platform exposes: devtools off, and a private non-persistent store.</summary>
+    /// <summary>Applies the environment switches the platform exposes: devtools off, a private non-persistent store, and on Windows a per-user WebView2 data folder instead of one beside the executable.</summary>
     /// <param name="args">The environment request of the platform adapter.</param>
     internal static void ConfigureEnvironment(WebViewEnvironmentRequestedEventArgs args)
     {
@@ -130,6 +130,7 @@ public sealed class NativeWebViewArtifactSurface : IArtifactSurface
         {
             case WindowsWebView2EnvironmentRequestedEventArgs windows:
                 windows.IsInPrivateModeEnabled = true;
+                windows.UserDataFolder = WebView2UserDataFolder();
                 break;
             case AppleWKWebViewEnvironmentRequestedEventArgs apple:
                 apple.NonPersistentDataStore = true;
@@ -139,6 +140,21 @@ public sealed class NativeWebViewArtifactSurface : IArtifactSurface
                 break;
         }
     }
+
+    /// <summary>
+    /// Computes the WebView2 user-data folder: <c>Autonogrammer/webview2</c> under the per-user local application data folder. Without an
+    /// explicit folder WebView2 keeps its data beside the executable, which a normal user cannot write when the application is installed under
+    /// Program Files. This method never throws, because it runs inside an event handler.
+    /// </summary>
+    /// <returns>The folder path.</returns>
+    internal static string WebView2UserDataFolder() =>
+        WebView2UserDataFolder(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+
+    /// <summary>Computes the WebView2 user-data folder below an explicit local application data folder, or below the temporary folder when that folder is null or blank.</summary>
+    /// <param name="localApplicationData">The per-user local application data folder, or null or blank when the platform reports none.</param>
+    /// <returns>The folder path.</returns>
+    internal static string WebView2UserDataFolder(string? localApplicationData) =>
+        Path.Combine(string.IsNullOrWhiteSpace(localApplicationData) ? Path.GetTempPath() : localApplicationData, "Autonogrammer", "webview2");
 
     /// <summary>Decides one navigation. The first navigation to <see cref="DocumentBase"/> after a load is the host document; all else is cancelled and reported.</summary>
     /// <param name="target">The requested target.</param>

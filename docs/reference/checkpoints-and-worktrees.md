@@ -118,6 +118,6 @@ A **side chat** (`/side`, `/btw`) is a child conversation. `SideChatHub.OpenAsyn
 | `CustomModeModel` | `IModeSkillSource` over `ConventionCatalog`; every prompt sent through `IPromptPreamble.Apply` | `ConventionModeSkillSource`; `AgentSessionRuntime.PromptPreamble` |
 | `SideChatHub` | `ISideChatEngine` (a second omp session) | `OmpSideChatEngine` (a second omp with `--approval-mode always-ask` that admits no tool kind) |
 | `ForkModel` | `ISessionForker` over `session/fork` | `SessionForker` over the engine's `session/fork` (`IOmpSessionFork`) |
-| Slash handlers | `ISlashSessionContext`, `IClipboardWriter`, `IAboutLauncher`, `IFolderOpener`, `IApplicationLifetime`, `IUrlLauncher`, `IEditorOpener`, `IChangesBarOpener`, `IWorkspaceSetsBackend`, `IDisplaySettingsStore` | the adapters of `src/Autonogrammer.Native.Views/Shell/`; `IFolderOpener` is not provided (there is no log folder to open) |
+| Slash handlers | `ISlashSessionContext`, `IClipboardWriter`, `IAboutLauncher`, `IApplicationLifetime`, `IUrlLauncher`, `IEditorOpener`, `IChangesBarOpener`, `IWorkspaceSetsBackend`, `IDisplaySettingsStore` | the adapters of `src/Autonogrammer.Native.Views/Shell/` |
 
 `SlashActionHandlerHost` routes the actions of these handlers and passes every other action to the head's own `ISlashActionHost`.

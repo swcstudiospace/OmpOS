@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Autonogrammer.Contracts.Environments;
+using Autonogrammer.Presentation.Cloud;
 using Autonogrammer.Presentation.Observable;
 
 namespace Autonogrammer.Presentation.Remote;
@@ -22,8 +23,9 @@ public sealed class NewSessionTargetModel : ObservableModel
     private const string WslPrefix = "wsl:";
 
     private readonly ObservableCollection<NewSessionTargetOption> _options = [];
-    private readonly Dictionary<string, RemoteEnvironmentStatus> _statuses = new(StringComparer.Ordinal);
+    private Func<string, RemoteEnvironmentStatus?> _statusOf = static _ => null;
     private IReadOnlyList<EnvironmentProfile> _profiles = [];
+    private CloudSetup? _cloud;
     private NewSessionTargetOption? _selected;
     private bool _includeWsl = OperatingSystem.IsWindows();
 
@@ -120,26 +122,37 @@ public sealed class NewSessionTargetModel : ObservableModel
             }
         }
 
-        _options.Add(new NewSessionTargetOption(CloudId, SessionTargetKind.Cloud, RemoteCopy.CloudLabel, RemoteCopy.CloudDetail, profile: null, unavailableReason: RemoteCopy.CloudUnavailable));
+        _options.Add(new NewSessionTargetOption(CloudId, SessionTargetKind.Cloud, RemoteCopy.CloudLabel, RemoteCopy.CloudDetail, profile: null, unavailableReason: CloudUnavailableReason()));
         Selected = _options.FirstOrDefault(option => string.Equals(option.Id, chosen, StringComparison.Ordinal)) ?? _options[0];
     }
 
-    /// <summary>Records what is known about an ssh environment (the outcome of its last test or the state of its session), so the picker shows it and validates against it.</summary>
-    /// <param name="profileId">The identifier of the environment.</param>
-    /// <param name="status">The status.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="profileId"/> is null.</exception>
-    public void SetStatus(string profileId, RemoteEnvironmentStatus status)
+    /// <summary>Replaces what the head knows about cloud agents, which decides why the cloud option cannot be chosen.</summary>
+    /// <param name="setup">The setup the cloud agents service reported, or null when the head has no such service.</param>
+    public void SetCloud(CloudSetup? setup)
     {
-        ArgumentNullException.ThrowIfNull(profileId);
-        _statuses[profileId] = status;
-        var option = _options.FirstOrDefault(candidate => string.Equals(candidate.Profile?.Id, profileId, StringComparison.Ordinal));
-        if (option is not null)
-        {
-            option.Status = status;
-            NotifyPropertyChanged(nameof(Validation));
-            NotifyPropertyChanged(nameof(CanStart));
-        }
+        _cloud = setup;
+        SetProfiles(_profiles);
     }
+
+    private string CloudUnavailableReason() => _cloud switch
+    {
+        null => RemoteCopy.CloudNotConnected,
+        { IsConfigured: false } setup => setup.NotConfiguredReason is { Length: > 0 } reason ? reason : CloudCopy.NotConfiguredShort,
+        _ => RemoteCopy.CloudStartElsewhere,
+    };
+
+    /// <summary>Sets where the picker reads the last test result of each environment: the page that tests them, which the picker must not copy.</summary>
+    /// <param name="statusOf">Returns the status of an environment by its identifier, or null when nothing is known.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="statusOf"/> is null.</exception>
+    public void SetStatusSource(Func<string, RemoteEnvironmentStatus?> statusOf)
+    {
+        ArgumentNullException.ThrowIfNull(statusOf);
+        _statusOf = statusOf;
+        RefreshStatuses();
+    }
+
+    /// <summary>Rebuilds the options from the status source, so a test that finished gates and labels its environment at once.</summary>
+    public void RefreshStatuses() => SetProfiles(_profiles);
 
     /// <summary>Chooses an option.</summary>
     /// <param name="id">The identifier of the option.</param>
@@ -189,16 +202,13 @@ public sealed class NewSessionTargetModel : ObservableModel
             return new NewSessionTargetValidation(false, RemoteCopy.TargetBlockedPrefix + issues[0].Message + " Edit it in Remote environments.");
         }
 
-        return ValidateStatus(_selected.Status);
+        return ValidateStatus(_statusOf(profile.Id));
     }
 
     private void AddOption(string id, SessionTargetKind kind, string label, string detail, EnvironmentProfile profile)
     {
         var option = new NewSessionTargetOption(id, kind, label, detail, profile, unavailableReason: null);
-        if (_statuses.TryGetValue(profile.Id, out var status))
-        {
-            option.Status = status;
-        }
+        option.Status = _statusOf(profile.Id);
 
         _options.Add(option);
     }

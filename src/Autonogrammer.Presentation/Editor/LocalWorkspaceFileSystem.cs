@@ -43,7 +43,7 @@ public sealed class LocalWorkspaceFileSystem : IWorkspaceFileSystem
     {
         var normalized = WorkspacePath.Normalize(relativeDirectory);
         var directory = Path.GetFullPath(Path.Combine(_rootFull, normalized.Replace('/', Path.DirectorySeparatorChar)));
-        if (!IsWithinRoot(directory) || HasSymlinkEscape(directory))
+        if (!IsContained(directory))
         {
             throw new UnauthorizedAccessException("The directory resolves outside the workspace root.");
         }
@@ -58,7 +58,7 @@ public sealed class LocalWorkspaceFileSystem : IWorkspaceFileSystem
         {
             var name = Path.GetFileName(path);
             var child = Path.Combine(directory, name);
-            if (!IsWithinRoot(child) || HasSymlinkEscape(child))
+            if (!IsContained(child))
             {
                 continue;
             }
@@ -163,7 +163,7 @@ public sealed class LocalWorkspaceFileSystem : IWorkspaceFileSystem
         }
 
         var file = Path.GetFullPath(Path.Combine(_rootFull, normalized.Replace('/', Path.DirectorySeparatorChar)));
-        if (!IsWithinRoot(file) || HasSymlinkEscape(file))
+        if (!IsContained(file))
         {
             throw new UnauthorizedAccessException("The file resolves outside the workspace root.");
         }
@@ -221,6 +221,9 @@ public sealed class LocalWorkspaceFileSystem : IWorkspaceFileSystem
         File.Delete(file);
     }
 
+    // A path is contained when it is inside the root and no link on its way leaves the root.
+    private bool IsContained(string candidate) => IsWithinRoot(candidate) && !HasSymlinkEscape(candidate);
+
     private bool IsWithinRoot(string candidate)
     {
         if (candidate.Length < _rootFull.Length || !candidate.StartsWith(_rootFull, RootComparison))
@@ -271,7 +274,7 @@ public sealed class LocalWorkspaceFileSystem : IWorkspaceFileSystem
         }
 
         var file = Path.GetFullPath(Path.Combine(_rootFull, normalized.Replace('/', Path.DirectorySeparatorChar)));
-        if (!IsWithinRoot(file) || HasSymlinkEscape(file))
+        if (!IsContained(file))
         {
             throw new UnauthorizedAccessException("The file resolves outside the workspace root.");
         }

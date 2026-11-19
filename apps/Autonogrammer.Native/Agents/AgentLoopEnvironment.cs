@@ -70,7 +70,11 @@ internal sealed class AgentLoopEnvironment
     /// <summary>Gets the absolute root of all session state.</summary>
     public string StateRoot { get; }
 
-    /// <summary>Gets the absolute workspace root, which is the current directory.</summary>
+    /// <summary>
+    /// Gets the absolute workspace root. For the running process it is the launch directory chosen by <see cref="LaunchDirectory"/>: the current
+    /// directory of a terminal launch inside a project, or the user's home directory when the process started in the install folder, a system
+    /// folder, a filesystem root or a directory that no longer exists.
+    /// </summary>
     public string WorkspaceRoot { get; }
 
     /// <summary>Gets the validated Substrate endpoint, or null when none is configured or the configured address was refused.</summary>
@@ -98,7 +102,7 @@ internal sealed class AgentLoopEnvironment
         Func<string, string?> getVariable = static name => Environment.GetEnvironmentVariable(name);
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         _ = EnsureStateRootMigrated(getVariable, home);
-        return Resolve(getVariable, AppContext.BaseDirectory, Environment.CurrentDirectory, home);
+        return Resolve(getVariable, AppContext.BaseDirectory, LaunchDirectory.Resolve(), home);
     }
 
     /// <summary>
@@ -123,7 +127,7 @@ internal sealed class AgentLoopEnvironment
     /// <summary>Resolves an environment from injected process facts, so the precedence rules can be checked without touching the process.</summary>
     /// <param name="getVariable">Reads an environment variable, returning null when it is unset.</param>
     /// <param name="baseDirectory">The directory of the running application. A <c>plugins</c> directory beside it is used first; otherwise the search for the repository starts here.</param>
-    /// <param name="currentDirectory">The current directory. It is the workspace root, the second search start and the base of relative paths.</param>
+    /// <param name="currentDirectory">The launch directory to use as the workspace root (the native startup path passes the result of <see cref="LaunchDirectory.Resolve()"/>, not the raw process current directory). It is also the second search start and the base of relative paths.</param>
     /// <param name="homeDirectory">The user's home directory.</param>
     /// <returns>The resolved environment.</returns>
     /// <exception cref="ArgumentNullException">A delegate or a directory is null.</exception>
@@ -201,10 +205,17 @@ internal sealed class AgentLoopEnvironment
             return Path.GetFullPath(configured, workspace);
         }
 
-        // A packaged install ships the plugins beside the executable, so an existing plugins directory there is the root.
+        // A packaged install ships the plugins beside the executable (Windows and Linux), so an existing plugins directory there is the root.
         if (!string.IsNullOrWhiteSpace(baseDirectory) && Directory.Exists(Path.Combine(Path.GetFullPath(baseDirectory), "plugins")))
         {
             return Path.Combine(Path.GetFullPath(baseDirectory), "plugins");
+        }
+
+        // A macOS app bundle keeps the plugin tree in Contents/Resources/plugins: codesign rejects the dot-directories it holds (.cursor, .github,
+        // .claude-plugin) inside Contents/MacOS, where the executable runs from.
+        if (BundleResourcesPlugins(baseDirectory) is { } bundled)
+        {
+            return bundled;
         }
 
         foreach (var start in new[] { baseDirectory, workspace })
@@ -217,6 +228,33 @@ internal sealed class AgentLoopEnvironment
 
         // No repository was found: the plugin stages report the missing directory instead of the window failing to open.
         return Path.Combine(workspace, "plugins");
+    }
+
+    /// <summary>
+    /// Finds the plugin directory of a macOS app bundle. The base directory must have the shape <c>&lt;bundle&gt;/Contents/MacOS</c> (the last
+    /// two segments compared ordinally and case-sensitively), and <c>Contents/Resources/plugins</c> must exist. The test is structural, so it holds on
+    /// any host and cannot match an ordinary Windows or Linux layout by accident.
+    /// </summary>
+    /// <param name="baseDirectory">The directory of the running application.</param>
+    /// <returns>The absolute <c>Contents/Resources/plugins</c> directory, or null when the base directory is not shaped like that or the directory does not exist.</returns>
+    private static string? BundleResourcesPlugins(string baseDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(baseDirectory))
+        {
+            return null;
+        }
+
+        var executableDirectory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(baseDirectory));
+        var contents = Path.GetDirectoryName(executableDirectory);
+        if (contents is null
+            || !string.Equals(Path.GetFileName(executableDirectory), "MacOS", StringComparison.Ordinal)
+            || !string.Equals(Path.GetFileName(contents), "Contents", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var bundled = Path.Combine(contents, "Resources", "plugins");
+        return Directory.Exists(bundled) ? bundled : null;
     }
 
     private static string? FindRepositoryRoot(string start)

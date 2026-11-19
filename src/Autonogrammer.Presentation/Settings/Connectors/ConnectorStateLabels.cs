@@ -19,10 +19,18 @@ public static class ConnectorStateLabels
     /// <summary>Returns the state of a label.</summary>
     /// <param name="label">The label.</param>
     /// <returns>The state. An unknown label is <see cref="ConnectorToolState.NeedsApproval"/>.</returns>
-    public static ConnectorToolState Parse(string? label) => label switch
+    public static ConnectorToolState Parse(string? label)
     {
-        "Always allow" => ConnectorToolState.AlwaysAllow,
-        "Blocked" => ConnectorToolState.Blocked,
-        _ => ConnectorToolState.NeedsApproval,
-    };
+        if (string.Equals(label, All[0], StringComparison.Ordinal))
+        {
+            return ConnectorToolState.AlwaysAllow;
+        }
+
+        if (string.Equals(label, All[2], StringComparison.Ordinal))
+        {
+            return ConnectorToolState.Blocked;
+        }
+
+        return ConnectorToolState.NeedsApproval;
+    }
 }

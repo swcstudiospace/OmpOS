@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Autonogrammer.Presentation.Tests.Commands.Handlers;
 
-/// <summary>Verifies the handlers that work through host seams: copy, about, logs, quit, feedback, open, changes and saved workspaces.</summary>
+/// <summary>Verifies the handlers that work through host seams: copy, about, quit, feedback, open, changes and saved workspaces.</summary>
 public sealed class HostSeamSlashHandlerTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -107,38 +107,17 @@ public sealed class HostSeamSlashHandlerTests
         }
     }
 
-    private sealed class Folders : IFolderOpener
-    {
-        public List<string> Opened { get; } = [];
-
-        public bool Works { get; set; } = true;
-
-        public Task<bool> OpenAsync(string folder, CancellationToken cancellationToken)
-        {
-            Opened.Add(folder);
-            return Task.FromResult(Works);
-        }
-    }
-
     [Fact]
-    public async Task AboutAndQuitCallTheirSeamsOnceAndLogsOpensTheFolderOrSaysItFailed()
+    public async Task AboutAndQuitCallTheirSeamsOnce()
     {
         var about = new About();
         var lifetime = new Lifetime();
-        var folders = new Folders();
 
         (await new AboutSlashHandler(about).RunAsync(Typed(string.Empty), Token).ConfigureAwait(true)).Outcome.ShouldBe(SlashActionOutcome.Completed);
         (await new QuitSlashHandler(lifetime).RunAsync(Typed(string.Empty), Token).ConfigureAwait(true)).Message.ShouldBe(HandlerCopy.Quitting);
-        var logs = new LogsSlashHandler(folders, () => "/state/logs");
-        var opened = await logs.RunAsync(Typed(string.Empty), Token).ConfigureAwait(true);
-        folders.Works = false;
-        var failed = await logs.RunAsync(Typed(string.Empty), Token).ConfigureAwait(true);
 
         about.Shown.ShouldBe(1);
         lifetime.Requests.ShouldBe(1);
-        folders.Opened.ShouldBe(["/state/logs", "/state/logs"]);
-        opened.Message.ShouldBe("Opened the log folder: /state/logs");
-        failed.Outcome.ShouldBe(SlashActionOutcome.Failed);
     }
 
     private sealed class Urls : IUrlLauncher

@@ -138,6 +138,8 @@ internal sealed class HeadSettings : IAsyncDisposable
             Display = services?.Display,
             WorkspaceSets = services?.WorkspaceSets,
             RemoteEnvironments = services?.RemoteEnvironments,
+            RemoteEnvironmentsModel = services?.RemoteEnvironmentsModel,
+            RuntimeEnvironmentsModel = services?.RuntimeEnvironmentsModel,
             Cloud = services?.Cloud,
             Connectors = services is null ? null : ConnectorsSettingsPageFactory.Create(services, engines.Loop.WorkspaceRoot),
             ContainerEnvironments = services?.ContainerEnvironments,

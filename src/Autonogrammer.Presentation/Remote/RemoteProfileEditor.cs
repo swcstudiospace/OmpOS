@@ -321,22 +321,8 @@ public sealed class RemoteProfileEditor : ObservableModel
     {
         var found = new List<RemoteFieldIssue>();
         var candidate = Candidate(found);
-        var reported = new HashSet<string>(found.Select(issue => issue.Field), StringComparer.Ordinal);
-        foreach (var issue in EnvironmentProfileValidator.Validate(candidate))
-        {
-            var field = FieldOf(issue.Property);
-            if (reported.Add(field))
-            {
-                found.Add(new RemoteFieldIssue(field, issue.Message));
-            }
-        }
-
-        _issues.Clear();
-        foreach (var issue in found)
-        {
-            _issues.Add(issue);
-        }
-
+        RemoteFieldIssues.AppendValidation(found, candidate, FieldOf);
+        RemoteFieldIssues.Replace(_issues, found);
         NotifyPropertyChanged(nameof(IsValid));
     }
 }

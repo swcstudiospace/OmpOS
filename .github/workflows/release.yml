@@ -1,4 +1,5 @@
-# Autonogrammer release (Phase 52). A pushed tag v* creates the GitHub Release.
+# Autonogrammer release (Phase 52). A pushed tag v* creates the GitHub Release as a DRAFT with the CHANGELOG notes; this is the only
+# workflow that creates it. desktop-release.yml publishes it once the six desktop files and this workflow's images, SBOM and checksums are attached.
 # Runs on ubuntu-24.04, like ci.yml. The Omega pool is not used (OQ-168).
 # The only credential is the job's GITHUB_TOKEN; `contents: write` is granted to the release job alone.
 # The `artifacts` job builds both images reproducibly, generates the SBOM and attests provenance and the SBOM.
@@ -56,7 +57,12 @@ jobs:
             echo "::error::CHANGELOG.md has no non-empty section for $BASE_VERSION" >&2
             exit 1
           fi
-      - name: Create the GitHub Release
+      # This is the ONLY workflow that creates the release, always as a DRAFT, and it never publishes. desktop-release.yml waits for
+      # this draft, attaches the six desktop files, waits for the files of the artifacts job below, and then publishes. A failed
+      # desktop build or a failed artifacts job therefore leaves a hidden draft, never a public release without installers. If the
+      # release already exists as a draft (a re-run), only its title and notes are updated. If it is already published, nothing is
+      # changed: a re-run must not rewrite public notes.
+      - name: Create the draft GitHub Release (or update the notes of the existing draft)
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
@@ -64,10 +70,14 @@ jobs:
           set -euo pipefail
           pre=()
           case "$TAG" in *-*) pre=(--prerelease) ;; esac
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --title "Autonogrammer $TAG" --notes-file "$RUNNER_TEMP/notes.md" "${pre[@]}"
+          if draft="$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null)"; then
+            if [ "$draft" = "true" ]; then
+              gh release edit "$TAG" --title "Autonogrammer $TAG" --notes-file "$RUNNER_TEMP/notes.md" ${pre[@]+"${pre[@]}"}
+            else
+              echo "::notice::The release for $TAG is already published; its title and notes are left unchanged."
+            fi
           else
-            gh release create "$TAG" --verify-tag --title "Autonogrammer $TAG" --notes-file "$RUNNER_TEMP/notes.md" "${pre[@]}"
+            gh release create "$TAG" --draft --verify-tag --title "Autonogrammer $TAG" --notes-file "$RUNNER_TEMP/notes.md" ${pre[@]+"${pre[@]}"}
           fi
 
   artifacts:
@@ -121,7 +131,19 @@ jobs:
         with:
           subject-path: 'dist/autonogrammer-api-${{ github.ref_name }}.tar'
           sbom-path: 'dist/autonogrammer-${{ github.ref_name }}.spdx.json'
-      - name: Attach to the GitHub Release
+      # The release is a draft until desktop-release publishes it, and gh finds a draft by its tag: `gh release upload` calls
+      # FetchRelease in cli/cli, which looks up published releases and, through GraphQL release(tagName), drafts. desktop-release
+      # waits for the four files this step uploads (the two image archives, the SPDX SBOM and SHA256SUMS-images) before it publishes;
+      # keep their names in step with its "Wait for the image archives" step. A release that is already published (a re-run after
+      # publication) is not touched: gh release upload --clobber deletes an existing asset first, and a failed upload would lose it.
+      - name: Attach to the GitHub Release (a draft; desktop-release publishes it)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+        run: |
+          set -euo pipefail
+          draft="$(gh release view "$GITHUB_REF_NAME" --json isDraft --jq .isDraft)"
+          if [ "$draft" != "true" ]; then
+            echo "::notice::The release for $GITHUB_REF_NAME is already published; the assets are not uploaded again."
+            exit 0
+          fi
+          gh release upload "$GITHUB_REF_NAME" dist/* --clobber

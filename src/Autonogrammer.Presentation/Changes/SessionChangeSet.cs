@@ -15,8 +15,6 @@ namespace Autonogrammer.Presentation.Changes;
 /// </remarks>
 public sealed class SessionChangeSet
 {
-    private static readonly string[] FailedStatuses = ["failed", "cancelled", "canceled"];
-
     private SessionChangeSet(IReadOnlyList<SessionChange> changes, IReadOnlyList<string> refusedPaths)
     {
         Changes = changes;
@@ -46,21 +44,9 @@ public sealed class SessionChangeSet
         var root = Path.GetFullPath(rootPath);
         var materialized = blocks as IReadOnlyList<UiBlock> ?? blocks.ToList();
 
-        var failedCalls = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var call in materialized.OfType<ToolCallBlock>())
-        {
-            if (FailedStatuses.Contains(call.Status, StringComparer.OrdinalIgnoreCase))
-            {
-                failedCalls.Add(call.CallId);
-            }
-            else
-            {
-                failedCalls.Remove(call.CallId);
-            }
-        }
-
-        var accumulators = new Dictionary<string, Accumulator>(StringComparer.Ordinal);
-        var order = new List<Accumulator>();
+        var failedCalls = FailedToolCalls.Of(materialized);
+        var accumulators = new Dictionary<string, FileNetEdit>(StringComparer.Ordinal);
+        var order = new List<FileNetEdit>();
         var refused = new List<string>();
         foreach (var edit in materialized.OfType<FileEditBlock>())
         {
@@ -82,18 +68,16 @@ public sealed class SessionChangeSet
 
             if (!accumulators.TryGetValue(path, out var accumulator))
             {
-                accumulator = new Accumulator(path, edit.OldText);
+                accumulator = new FileNetEdit(path, edit.OldText);
                 accumulators.Add(path, accumulator);
                 order.Add(accumulator);
             }
 
-            accumulator.NewText = edit.NewText;
-            accumulator.LastBlockId = edit.Id;
-            accumulator.EditCount++;
+            accumulator.Add(edit);
         }
 
         var changes = order
-            .Where(static item => item.OldText is null || !string.Equals(item.OldText, item.NewText, StringComparison.Ordinal))
+            .Where(static item => item.HasNetChange)
             .Select(static item => new SessionChange(item.Path, item.OldText, item.NewText, item.EditCount, item.LastBlockId))
             .ToList();
         return changes.Count == 0 && refused.Count == 0 ? Empty : new SessionChangeSet(changes.AsReadOnly(), refused.AsReadOnly());
@@ -137,18 +121,5 @@ public sealed class SessionChangeSet
         {
             return null;
         }
-    }
-
-    private sealed class Accumulator(string path, string? oldText)
-    {
-        public string Path { get; } = path;
-
-        public string? OldText { get; } = oldText;
-
-        public string NewText { get; set; } = string.Empty;
-
-        public string LastBlockId { get; set; } = string.Empty;
-
-        public int EditCount { get; set; }
     }
 }

@@ -169,6 +169,19 @@ public sealed class RunModeSettingsPageTests
         page.HasEntryError.ShouldBeFalse();
     }
 
+    /// <summary>The message names the limit the page enforces: the longest accepted entry is the limit, one more character is refused.</summary>
+    [Fact]
+    public async Task TheTooLongMessageNamesTheLimitThatIsEnforced()
+    {
+        var (page, _) = await ReadyAsync();
+
+        page.AddTerminalEntry(new string('a', SafetyCopy.MaxEntryLength)).ShouldBeTrue();
+        page.AddTerminalEntry(new string('b', SafetyCopy.MaxEntryLength + 1)).ShouldBeFalse();
+
+        page.EntryError.ShouldBe(SafetyCopy.EntryTooLong);
+        page.EntryError.ShouldBe($"An entry can have at most {SafetyCopy.MaxEntryLength} characters.");
+    }
+
     [Theory]
     [InlineData("github")]
     [InlineData(":tool")]

@@ -280,7 +280,7 @@ public sealed class CodeLandingModelTests
     public void AnEnvironmentThatIsBlockedIsListedButDisabled()
     {
         var targets = Targets(Ssh("box-1"), Ssh("box-2"));
-        targets.SetStatus("box-2", RemoteEnvironmentStatus.AuthFailed);
+        targets.SetStatusSource(id => string.Equals(id, "box-2", StringComparison.Ordinal) ? RemoteEnvironmentStatus.AuthFailed : null);
 
         var card = Card(Cards(Inputs(remote: RemoteLoadState.Loaded), targets), CodeLandingCardKind.Remote);
 
@@ -296,7 +296,7 @@ public sealed class CodeLandingModelTests
 
         cards.Where(static card => card.Kind != CodeLandingCardKind.LocalMachine)
             .Select(static card => card.OmpText)
-            .ShouldAllBe(static text => text == CodeLandingCopy.OmpNotChecked);
+            .ShouldAllBe(static text => string.Equals(text, CodeLandingCopy.OmpNotChecked, StringComparison.Ordinal));
     }
 
     /// <summary>A card's accessible name says its title, its state and its Omp status, in that order.</summary>

@@ -76,10 +76,10 @@ internal static class SettingsWindowFactory
         pages.Add(new IgnoreSettingsPage(new IgnoreSettingsSource(options.Store, options.WorkspaceRoot)));
         if (options.RemoteEnvironments is { } remote)
         {
-            var runtimeModel = options.ContainerEnvironments is { } containers && options.ContainerLister is { } lister
+            var runtimeModel = options.RuntimeEnvironmentsModel ?? (options.ContainerEnvironments is { } containers && options.ContainerLister is { } lister
                 ? new RuntimeEnvironmentsViewModel(remote, containers, lister)
-                : null;
-            pages.Add(new RemoteEnvironmentsSettingsPage(new RemoteEnvironmentsViewModel(remote), runtimeModel));
+                : null);
+            pages.Add(new RemoteEnvironmentsSettingsPage(options.RemoteEnvironmentsModel ?? new RemoteEnvironmentsViewModel(remote), runtimeModel));
         }
 
         AddTailPages(pages, options);

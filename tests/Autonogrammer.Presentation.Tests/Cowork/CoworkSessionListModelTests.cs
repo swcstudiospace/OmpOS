@@ -26,6 +26,21 @@ public sealed class CoworkSessionListModelTests
         model.Groups[2].Heading.ShouldBe(CoworkCopy.NoProject);
     }
 
+    /// <summary>Rows follow the group order the rail binds: a project's tasks stay together and tasks with no project come last.</summary>
+    [Fact]
+    public void RowsFollowGroupOrderWithNoProjectLast()
+    {
+        var catalog = new ScriptedCatalog(
+        [
+            Row("a", "Alpha notes", "proj-a"),
+            Row("b", "Loose notes", null),
+            Row("c", "Alpha follow-up", "proj-a"),
+        ]);
+        using var model = new CoworkSessionListModel(catalog);
+
+        model.Rows.Select(row => row.Id).ShouldBe(["a", "c", "b"]);
+    }
+
     /// <summary>The filter keeps matching titles and the selection tracks one row.</summary>
     [Fact]
     public void FilterNarrowsRowsAndSelectionTracksOneRow()

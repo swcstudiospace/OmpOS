@@ -1479,6 +1479,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [ ] **Phase 75: Cowork parity A: projects, memory, schedules** - projects, global and per-project instructions, account memory the user controls, scheduled tasks the desktop runs while awake
 - [ ] **Phase 76: Cowork parity B: plugins, Auto mode, isolation** - plugin bundles and skills, connector cards, Auto (rules) mode, an OS launch wrapper that confines writes, sub-agent progress, usage meter, notifications
 - [ ] **Phase 77: Hardening, docs and integration** - one version bump, final docs, a parity audit with no empty row, a written security and accessibility review, the full gate, integration with the other line, a PR and the owner-action list
+- [ ] **Phase 78: Desktop release pipeline and per-machine Windows installer** - per-machine Windows installer (UAC, Program Files), draft-first release workflows with a rehearsal mode and a six-file verifier, plugin licences and the private-plugin deploy key, install guide and runbook; `v0.20.0-rc.1` before `v0.20.0`. Code written and reviewed, no CI run has proven it
 
 ### Phase 66: Rebrand to Autonogrammer
 
@@ -1505,6 +1506,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [x] 66-08-PLAN.md
 - [ ] 66-09-PLAN.md — baseline provenance and gated current-tree verification
 
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) ROADMAP/runbook baseline at /tmp/ag-recon/rebrand-report: directory no longer exists; (2) Strict equality against the 2026-11-04 baseline: tree has since shipped v0.16.0, v0.16.1, v0.17.0, v0.19.x; (3) Phase 66 'ship on hold' in STATE.md: v0.16.0 shipped 2026-11-07; main is 0.19.2; (4) Branch feat/autonogrammer and 'verify before merge': rename is merged on main; (5) Gate needing /tmp/ag-bin/ag-dotnet and suffix-isolated services: CI runs the gate on every main push.
+
 ### Phase 66.1: Scaffold: projects, registration and contract bump
 
 **Goal**: ONE serialised scaffold step creates and registers every new project of the milestone before any parallel feature work starts (Reconciliation R17 of `docs/plans/v0.16.0-research/briefs/00-index.md`): 21 source projects (3 at L1, 15 at L2, 3 at L3) and 19 test projects, each building with `AssemblyMarker.cs` only; the LayerMap rows and the six declared `SameLayerAllowed` tuples; `ProcessSpawningAssemblies`; the `Directory.Packages.props` pins; one `ContractVersion` bump from 1.5.0 to 1.6.0; one relock and one notices regeneration. The scaffold commit adds no behaviour, so every later unit is file-disjoint. No service is new.
@@ -1522,6 +1525,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 
 **Plans**: `66.1-01-PLAN.md` in `.planning/phases/66.1-scaffold-projects-and-registration/`
 
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) Scaffold projects hold AssemblyMarker.cs only: Phases 67-77 filled them (e.g. src/Autonogrammer.Resilience 17 .cs files, Cowork.Abstractions 32); (2) Scaffold commit SHAs 88c1497f/e2760e5e/58bdbe1d/9544bbb2: not ancestors of main; replayed as fccd5f5a, 19367b11, 959e551b, 136ad359; (3) Android lock hand-patched and unverified: restored locked-mode by the CI android job since (ci.yml:255); (4) Needs ./bootstrap.sh run by orchestrator after the wave: CI mirrors it (ci.yml:2) and passes on main; (5) ContractVersion bumped once: later phases kept 1.6.0 on main, so the single-bump property still holds.
+
 ### Phase 66.2: Hosted real web app
 
 **Goal**: The web head built without Demo code is a working application: the owner signs in with a token, starts agents, watches real engine output stream, approves tool calls, reloads and resumes, against an API that narrows what a hosted run exposes. Not delivered: a deployment (needs the owner's approval), a live model turn (no credential), multi-user sign-in (ADR-0030), a sandbox provider (HOST-04).
@@ -1538,6 +1543,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 
 **Plans**: `66.2-01-PLAN.md` in `.planning/phases/66.2-hosted-real-web-app/`
 
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) Web head signs in with an owner token held in memory (OwnerTokenSession); retired by 4a234284, Connect.razor now uses Supabase SignInPanel; (2) run-local.sh --web-bundle and scripts/hosted/e2e-browser.mjs exist; both are removed; (3) origin holds no branch or main commit of this work; PR #4 and #5 landed it on main and the branch was deleted; (4) Public URL ompos-web.vercel.app serves the Demo; it now answers 402 DEPLOYMENT_DISABLED and the Railway API app is gone; (5) Work lives on feat/autonogrammer-integration and /root/src/repos/ompos-units/* worktrees; none remain; (6) Version 0.16.0 pending; shipped through 0.19.2 (origin/main VersionPrefix).
+
 ### Phase 66.3: Web accessibility (WCAG 2.2 AA)
 
 **Goal**: The web head can be used with a keyboard, with text zoom to 400 percent, with forced colours, reduced motion and the dark scheme, and its state changes are announced; the scripted checks that show it run in the web smoke. Not delivered: a screen-reader pass, a real device, a Windows High Contrast check, the desktop head (OQ-178, OQ-179).
@@ -1552,6 +1559,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 
 **Plans**: `66.3-01-PLAN.md` in `.planning/phases/66.3-web-accessibility-wcag-22-aa/`
 
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) Connect screen is a token sign-in form; it is now the Supabase SignInPanel or an explanation (Connect.razor); (2) Last clean run is d0d0b879 of 2026-10-29; d0d0b879 is not an ancestor of main and the UI differs by about 250 files; (3) Checks run on 42 node tests; static count is 48; (4) Only Demo and API-bundle routes exist; Cowork, Dispatch and account surfaces are now in the app; (5) Smoke ran on self-hosted Omega runners with load-induced flakes; CI is GitHub-hosted (ubuntu-24.04); (6) Plans' commits and worktrees under /root/src/repos/ompos-units are gone.
+
 ### Phase 66.4: Quality uplift: CI, operations and brand
 
 **Goal**: The supply chain, the operations documents, the threat model and the brand assets reach the bar of a hosted product, and the whole tree passes the gate once. Not delivered: a run of CodeQL, Scorecard, trivy, an image build or an attestation (OQ-175), measured SLOs (OQ-180), the trademark decision.
@@ -1565,6 +1574,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   3. The full gate passes on the final commit. Verify: `./bootstrap.sh` on a clean worktree; the log is under `docs/runbooks/evidence/`. **Result: Partial**: `561a83b5` passed every step through the format check (12670 tests, 0 failed) and failed the smoke on host load (`bootstrap-gate-2026-10-29-561a83b5.log`); the smoke alone passed on `d0d0b879` (`web-accessibility-2026-10-29/final-smoke-d0d0b879/`). No single-pass gate run on the shipped commit is recorded. Run 6 (`812801f1`, `66.4-VERIFICATION.md` row 6) passed the tests (12668 passed, 2 skipped, 0 failed) and format and failed the web smoke; its fix `e1eff33a` was checked only by an API-target smoke retry. Run 5 lost its service containers to another session. Criterion 3 remains Partial (reconciled 2026-11-01).
 
 **Plans**: `66.4-01-PLAN.md` in `.planning/phases/66.4-quality-uplift-ci-ops-brand/`
+
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) CodeQL, Scorecard, trivy, image build and attestation have never run; all have run green on GitHub; (2) CI uses Omega self-hosted runners that cannot run podman or Chrome (OQ-168); CI is on ubuntu-24.04, windows-2025 and macos-26; (3) Gate must pass on one 'final commit'; the product has shipped to 0.19.2 and the gate is now CI plus recorded local runs; (4) Logo and trademark decisions are Q-BR-1 to Q-BR-4; those ids now cover backup questions; (5) Test count 12215/12670 in the plan text; later gates record 14502 or more; (6) Base image runtime 10.0.13 pinned; Containerfile uses 10.0.15.
 
 ### Phase 67: Accounts: Supabase passwordless sign-in
 
@@ -1591,6 +1602,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [x] 67-05-PLAN.md
 - [x] 67-06-PLAN.md
 - [x] 67-07-PLAN.md
+
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) Plan 67-07 WebAuthSessionRouter/OwnerTokenSession/OwnerTokenConnector: deleted in 4a234284; web signs in with email code, Google, X or wallet only; (2) Plan 67-06 and 67-07 'AccountMenu not placed until Phase 69': HeaderEndSlot.razor:16 now places it; native entry is via SurfaceHost SignIn and Cowork signed-out panel; (3) Phase 69 'must implement ICoworkAccountGate' hand-off: NativeCoworkAccountGate.cs now exists; (4) Phase scope was email code and magic link only; code also ships Google, X and Ethereum wallet sign-in (GoTrueProviderTests, SiweMessage.cs, 8cddb5ed); (5) 67-VERIFICATION.md 'router/owner-token intact' and SUMMARY test-blocked notes (Dispatch MA0048, SDK 8) are stale: CI now runs Linux.slnf non-live tests; (6) STATE.md note that /board is present on origin/main is stale: origin/main openapi.json has /account/board only.
 
 ### Phase 68: Data plane: names, schema and resilience
 
@@ -1619,6 +1632,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [ ] 68-10-PLAN.md — writer fence and migration safety (blocked draft)
 - [ ] 68-11-PLAN.md — authorized erasure and recovery (blocked draft)
 
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) Plans 68-09..11 are blocked drafts: fence and migrations were built (M0012/M0014) and SEC-77-07 is fixed on main; (2) Registry head is M0009 and M0010 is not Phase 68's: registry now holds M0010-M0014, head M0014 (M0011 from main, M0013 memory idempotency); (3) Plan 68-09 says migration version M0012 is conditional/reserved; it is used by the erasure fence; (4) Roadmap SC3 literal grep returning nothing: it now matches legitimate autonogrammer:v1 prefix and omp markers; runbook has the corrected check; (5) 68-VERIFICATION says .NET SDK mismatch blocks runs: .NET 10 is available and focused suites ran.
+
 ### Phase 69: Surface switch and Cowork sessions
 
 **Goal**: A signed-in user switches between Code and Cowork from the title bar of the Native head and the top bar of the Web head, by keyboard or pointer, with accessible semantics and a remembered choice; both surfaces keep running when hidden; Cowork has its own layout, its own session store and its own list, and a Cowork session can never create, update or appear as a Kanban card, in the desktop registry, the models, the API repository or the API routes.
@@ -1641,6 +1656,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [x] 69-04-PLAN.md
 - [x] 69-05-PLAN.md
 - [x] 69-06-PLAN.md
+
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) Plans name branch feat/autonogrammer-integration and 'integration base 2026-10-29' anchors (AgentHead.cs:310, WebWorkbench.cs:74); neither the branch nor those line anchors apply; (2) 69-04 open item 2 (AccountMenu.razor not on disk) is resolved: the component exists and HeaderEndSlot.razor:16 places it; (3) Plans assume phase 67 deletes SessionRegistry; the Cowork architecture rules match by type name, so this no longer matters; (4) Summaries cite /tmp/ag-bin/ag-dotnet and BuildProjectReferences=false workarounds for sibling build breaks; CI builds the slnf with -warnaserror; (5) Plan 69-01 cites 69-SOTA-COWORK-SURFACES.md; the file on disk is 69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md.
 
 ### Phase 70: Cowork chat core and tool host
 
@@ -1667,6 +1684,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [x] 70-07-PLAN.md
  
  SOTA: explicit states, first-attempt, a11y, security (fail-closed, taint, no-leak, owner), graceful, audit. Criteria exercised (filtered); full gate env-dependent.
+
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) 70-VERIFICATION says apps/Autonogrammer.Native does not compile and host SDK 8 limits; releases to 0.19.2 build it in CI (ci.yml:71 -warnaserror); (2) 70-04 gap 'steering recorded only as local-origin turn' is obsolete: SendOrSteerAsync uses LiveSteering (CoworkSessionHost.cs:718); (3) 70-08 states (LOADING/EMPTY/ERROR, first-attempt-success) and 'shim-based offline green' no longer exist in code; do not restore them; (4) 70-01 names CoworkToolContract.cs and CoworkToolHostContract.cs; MA0048 forced one file per type, so those names never existed; (5) Plans reference /tmp/ag-bin/ag-dotnet, BuildProjectReferences=false, branch feat/autonogrammer-integration and 'ompos' checkout; none apply now; (6) 70-VERIFICATION line numbers (ROADMAP 1448-1460) and the 6-plan roadmap list are stale; the section is at ROADMAP.md:1655 and lists 70-08.
 
 ### Phase 71: Cowork Artifacts
 
@@ -1699,6 +1718,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [ ] 71-09-PLAN.md — selected conversation and artifact access flow (blocked draft)
 - [ ] 71-10-PLAN.md — integrated browser and accessibility proof (blocked draft)
 
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) Plans cite feat/autonogrammer-integration and satellite checkouts; neither exists, work lands via PRs to main; (2) VERIFICATION and plan wording assume v0.16.0 as the target; product has shipped through 0.19.2 and the 71 CHANGELOG entries sit in released sections; (3) 71-VERIFICATION says web Cowork view does not call ArtifactWebClient and verifier host was .NET 8; both predate this tree (global.json needs .NET 10); (4) Plan 71-13 is described as uncommitted; its code and tests are in the committed tree (0d1f6f37), only close-out is missing.
+
 ### Phase 72: Cowork Browser Use
 
 **Goal**: The Cowork agent can browse: a host-launched, isolated Chromium driven over a CDP pipe by PuppeteerSharp, shown as a live pane on the desktop head (the Web and Android panes render the same models and wait for a relay feed, which ADR-0036 holds back), exposed to omp as `browser_*` tools with vision, under an egress guard, two-stage approvals, a visible Stop and a hostile-page test corpus.
@@ -1726,6 +1747,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [ ] 72-10-PLAN.md
 - [ ] 72-11-PLAN.md
 
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) Plans live on feat/autonogrammer-integration in /root/src/repos/ompos; both are gone; (2) 72-10 force-enables browser use and permits optional seams; superseded by 72-12/13/14; (3) 72-SOTA lists 25 degraded pane states; the Phase 35 fix (uncommitted) removed unpublished BrowserPaneState values; (4) Ships in v0.16.0 (2026-11-07); product shipped 0.19.x with browser disabled by default and ClosedPages; (5) Plans cite ./ag-dotnet and 0.16.0 build commands; CI and version 0.19.2 are current; (6) Success criteria 2-3 require a headful smoke; the existing smoke uses --headless=new.
+
 ### Phase 73: Cowork Computer Use
 
 **Goal**: Cowork can look at and operate the user's own desktop (X11 verified here under a private Xvfb; Windows and macOS compile-checked) through 15 computer tools (`computer_*` descriptors) behind one policy gate, with per-application grants, local approval, a kill switch, an always-visible indicator and a local audit log. Off by default, never in Code mode, never in the cloud, never remotely approvable.
@@ -1752,6 +1775,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [x] 73-08-PLAN.md
 
 *Criteria 1-6 exercised (SOTA updated 2026-11-10 per 73-SOTA-COMPUTER-USE.md); see progress table*
+
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) 73-07/73-08 tracer closed the wiring gap; 73-08 tracer was removed and 73-VERIFICATION says wiring remains absent; (2) Plan 73-09 waits on unmerged 75-07; the Native account gate (NativeCoworkAccountGate) is now in tree; (3) ROADMAP lists only 73-01..06 and VERIFICATION cites ROADMAP lines 1492-1505; both are stale; (4) Paths /tmp/ag-bin/ag-dotnet in 73-09/10 verify commands are workstation-local; (5) Target v0.16.0 release; product is at 0.19.2 and CHANGELOG records no shipped Computer Use feature.
 
 ### Phase 74: Dispatch relay
 
@@ -1781,6 +1806,8 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [x] 74-10-PLAN.md
 - [ ] 74-11-PLAN.md — Dispatch idempotency compatibility and durable readiness
 
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) 74-11 and RESEARCH assume M0010 is unregistered; it is registered at MigrationRegistry.cs:23 with M0011 to M0014 after it; (2) 74-VERIFICATION says the API refuses enabled Dispatch outside Development; DispatchOptionsValidator.cs:54-93 now allows it with Postgres, Dragonfly and Oidc; (3) 74-VERIFICATION and 74-09-SUMMARY cite HttpDispatchHost.cs, WebDispatchHost.cs and DispatchChromeBinding.cs; none exist; (4) Plans target v0.16.0 and planned file paths (Hub/ folder, DispatchFrames.cs); code shipped in 0.16.3 to 0.20.0 under different names; (5) 74-11 says 74.1 review gates M0010 registration; 74.1 now uses M0013 and M0014 and M0010 is already registered.
+
 ### Phase 74.1: Durable account-scoped memory idempotency migration and atomic replay (INSERTED)
 
 **Goal:** Add reversible, account-scoped PostgreSQL memory idempotency and atomic replay, with isolated migration, rollback, ownership and concurrency evidence. No production migration is authorized by this plan.
@@ -1793,6 +1820,8 @@ Plans:
 - [x] 74.1-02: HTTP integration and cross-host replay (explicit test injection; production composition pending).
 - [ ] 74.1-03: retention, erasure, rollback and operations.
 - [x] 74.1-04: migration membership and readiness (focused tests; final integrated rerun pending).
+
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) Plans and context say the memory migration is M0011 with M0010 reserved and unregistered; it is now M0013 plus M0014 and M0010 is registered; (2) Context's 75-12 'scheduler hold' and 'not-registered M0010' guards were written before the integration merge and renumbering; (3) data-plane.md:5 Last verified 2026-10-30 predates the 74.1 section; review date is not attested; (4) 74.1-04 summary says registry has no M0010; SchemaHeadProbe now sees a contiguous M0001-M0014.
 
 ### Phase 75: Cowork parity A: projects, memory, schedules
 
@@ -1816,6 +1845,8 @@ Plans:
 - [x] 75-04-PLAN.md
 - [x] 75-05-PLAN.md
 - [x] 75-06-PLAN.md
+
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) ROADMAP Phase 75 lists only plans 75-01..06, all ticked; plans 75-07..13 exist and are unticked; (2) 75-06-SUMMARY and parity doc cite ScheduledCoworkSessionStarter(+Tests) and MemoryProviderRegistration; none are on main; (3) Plans cite /tmp/ag-bin/ag-dotnet and /root/src/repos/autonogrammer on feat/autonogrammer-integration; neither exists now; (4) Parity doc C1, C14, C16-C18 are NOT-STARTED but Phases 71-74 shipped (CHANGELOG 0.16.x-0.19); (5) 75-VERIFICATION and the parity doc date from 2026-11-10 and predate 75-07..13 and 75-12; (6) Phase 75 targets 0.16.0; product is 0.19.2 and 75 docs/changelog sit under Unreleased.
 
 ### Phase 76: Cowork parity B: plugins, Auto mode, isolation
 
@@ -1841,6 +1872,8 @@ Plans:
 - [x] 76-07-PLAN.md
 - [x] 76-08-PLAN.md
 - [ ] 76-09-PLAN.md — probe corrected locally; live wrapper fails positive control and remains blocked
+
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) 76-VERIFICATION says docs/parity/cowork-parity.md is absent; it now exists as the Phase 75 audit; (2) Phase 76 targets v0.16.0; that shipped 2026-11-07 and main is 0.19.2 with Cowork composition in CHANGELOG 0.16.0; (3) 76-03 SUMMARY says Native does not compile; Native has since shipped in 0.16.x to 0.20.0; (4) VERIFICATION blamed a missing SDK 10.0.402 on the verifier host; the gate was never run there; (5) Plan 76-06 says seven units land as one surface; five settings pages, isolation and notifications remain unwired.
 
 ### Phase 77: Hardening, docs and integration
 
@@ -1868,41 +1901,58 @@ Plans:
 - [x] 77-07-PLAN.md
 - [x] 77-08-PLAN.md
 
+**Reconciliation note 2026-11-19** (obsolete assumptions found against the current tree; the goals above are not rewritten): (1) Version bumps to 0.16.0; 0.16.0 shipped, main is 0.19.2, and the worktree has 0.20.0 pending; (2) A single 'one bump commit' history assertion; check-version-bump.sh now pins a bump on every merge; (3) Workspace /root/src/repos/ompos-autonogrammer, branch feat/autonogrammer-next and a merge of feat/autonogrammer-integration; none exist; (4) A single ship PR for the whole milestone; delivery is per-change PRs merged to main; (5) Gate evidence under fixed-name autonogrammer-test containers shared with concurrent GSD agents; (6) Cowork parity audit graded 2026-11-10 with 0 MET rows still describes the product. Checked on 2026-11-19: `/root/src/repos/ompos` and `/root/src/repos/ompos-autonogrammer` do not exist; current work is in the worktree `/root/src/worktrees/ag-plugin-connector` on `fix/phase35-review-closure`.
+
+### Phase 78: Desktop release pipeline and per-machine Windows installer
+
+**Goal**: Tagged releases carry working desktop installers, and the Windows installer behaves like traditional software. Root cause: the tag runs of `desktop-release` (v0.17.0, v0.19.1) failed at the private plugin checkout because no `SUBMODULE_TOKEN` existed, and `release.yml` had already published the release, so releases had images, SBOM and checksums but no installers; the installer was per user (`%LOCALAPPDATA%\Programs`, `PrivilegesRequired=lowest`). Owner decisions of 2026-11-19: all five required plugins are bundled; `agent-swarm` and `agent-substrate` are `AGPL-3.0-or-later` (upstream LICENSE-only commits, pins moved by that file only: swarm `59f12c8d3a28265652ab0e64e52bb153b55157b1`, substrate `70da6d80109eaea1dfdf3c55dff8847e090b46d4`, also merged to each default branch as swarm#49 and substrate#221); the private plugin is checked out with a read-only deploy key on `swcstudiospace/substrate`, stored as the repository secret `SUBSTRATE_DEPLOY_KEY` (`SUBMODULE_TOKEN` still accepted). Settled assumptions: x64 in `C:\Program Files` (not x86), Inno Setup kept, unsigned (SmartScreen and Gatekeeper warnings documented), macOS ad-hoc codesign (not notarized), an early pre-release `v0.20.0-rc.1` before `v0.20.0`. Not delivered: code-signing certificates, notarization, auto-update, winget or other stores, Android and iOS packages.
+**Requirements**: AG-78-1 to AG-78-11
+**Depends on**: none; independent release-engineering work on the shipped 0.19.x line (Phase 77 is not a dependency).
+**Mac channel**: No. macOS and Windows installs are verified by CI build and artifact inspection only; a human runs the checklist in `docs/guides/install.md`.
+**UI hint**: no
+**Linear**: umbrella [SPE-34831](https://linear.app/swcstudio/issue/SPE-34831); steps SPE-34768 and SPE-34769 (installer), SPE-34800 and SPE-34803 (workflows), SPE-34809 (verifier), SPE-34834 (integration), SPE-34835 (verification).
+**Status (2026-11-19)**: the code is written and reviewed in the worktree; no CI run has proven it, so every plan below stays unchecked.
+**Success Criteria** (what must be TRUE):
+  1. The verifier and the repository checks pass. Verify: `python3 scripts/release/test_verify_desktop_assets.py` (58 tests) and `bash scripts/ci/repo-checks.sh` exit 0 (AG-78-7).
+  2. The app starts safely from a read-only install directory. Verify: `dotnet test --project tests/Autonogrammer.Native.Tests -c Release -- --filter-class "*LaunchDirectoryTests*"` and `--filter-class "*WebView2UserDataFolderTests*"` pass with at least one test matched (AG-78-4).
+  3. The plugin pins and licences are settled and the docs pass. Verify: `git ls-tree HEAD plugins/agent-swarm plugins/agent-substrate` prints the two commits named above; `bash scripts/ci/check-docs.sh` and `bash scripts/ci/check-changelog.sh` pass (AG-78-9, AG-78-10).
+  4. A dispatch rehearsal on the branch is green on all three legs, including the private-plugin checkout with the deploy key, the tag gates, the verifier and the Windows installer smoke test (install, launch, upgrade, uninstall, legacy migration). Verify: `gh run list --workflow desktop-release.yml --branch fix/phase35-review-closure --limit 1 --json databaseId,conclusion,event` shows `workflow_dispatch` and `success`; the run id is recorded only when the run exists (AG-78-1, AG-78-2, AG-78-3, AG-78-5, AG-78-6, AG-78-8).
+  5. The release `v0.20.0-rc.1` page lists the six desktop files, `SHA256SUMS-desktop`, the image archives, `SHA256SUMS-images` and the SBOM, every asset downloads non-empty and the checksums verify. Verify: `gh release download v0.20.0-rc.1 --dir <dir>`, then `python3 scripts/release/verify_desktop_assets.py --dir <dir> --version 0.20.0-rc.1` and `sha256sum -c SHA256SUMS-desktop` pass (AG-78-5, AG-78-11).
+  6. The human checklist for Windows and macOS is handed over and its result is recorded in `78-VERIFICATION.md`; until a person records it, the two installs stay a human-verification item. Only then is `v0.20.0` released and its page passes the same asset check (AG-78-11).
+
+**Plans**: 6 plans in `.planning/phases/78-desktop-release-pipeline-and-per-machine-windows-installer/`
+- [ ] 78-01-PLAN.md - Windows installer (Inno Setup, per machine) and silent installer smoke test (AG-78-1, AG-78-2, AG-78-3)
+- [ ] 78-02-PLAN.md - App readiness for Program Files: launch directory and WebView2 user data folder (AG-78-4)
+- [ ] 78-03-PLAN.md - Workflows, rehearsal gates and the asset verifier (AG-78-5, AG-78-6, AG-78-7)
+- [ ] 78-04-PLAN.md - Plugin licences and the private-plugin deploy key (AG-78-8, AG-78-9)
+- [ ] 78-05-PLAN.md - Install guide, release runbook and the 0.20.0 changelog (AG-78-10)
+- [ ] 78-06-PLAN.md - Integration: PR, CI, rehearsal run, tag v0.20.0-rc.1, release asset check, then v0.20.0 (AG-78-11)
+
 ### Progress (v0.16.0)
 
-Current projection: **0/16 verified phases**; **69/89 summary slots**, **20 unsummarized plans**. Records are artifact counts, never gate results. Historical completion dates/declarations remain a separate column; no fresh verification was executed in this reconciliation.
+Current projection (reconciled 2026-11-19): **0/17 reconciled phases verified by a gate run**. The reconciliation checked each plan of phases 66 to 77 (17 phases, 149 plans, 82 done) against the tree and CI: **2 complete, 7 substantially complete, 7 partial, 1 blocked on an owner action**; **107 outstanding items and 64 blocked items** remain. The verdicts are reconciliation records, not gate results. Phase 78 (added 2026-11-19) is planned; its code is written and reviewed and no CI run has proven it. The earlier artifact counts (69/89 summary slots, 20 unsummarized plans) are superseded by the plan counts in the table. Historical completion dates and declarations stay in their own column.
 
-| Phase | Summary slots/plans | Current status | Historical declaration/date |
-|-------|---------------------|----------------|-----------------------------|
-| 66. Rebrand to Autonogrammer | 6/7 | Outstanding 66-07 gate; unverified | 66-01–06 summaries; no VERIFICATION |
-| 66.1. Scaffold: projects, registration and contract bump | 1/1 | verification_deferred_human; `/gsd:verify-work 66.1` | Executed 2026-10-29; Android lock/bootstrap/CI unverified |
-| 66.2. Hosted real web app | 1/1 (phase-level summary and VERIFICATION) | Current tree unverified | Complete, not deployed; 2026-10-29 |
-| 66.3. Web accessibility (WCAG 2.2 AA) | 1/1 (phase-level summary and VERIFICATION) | Current tree unverified | Complete with caveats, no screen reader/device; 2026-10-29 |
-| 66.4. Quality uplift: CI, operations and brand | 1/1 (phase-level summary and VERIFICATION) | Current tree unverified | Declared complete with caveats; criterion 3 Partial (two passes, no single-pass gate); no image/GitHub workflow run; 2026-10-29 |
-| 67. Accounts: Supabase passwordless sign-in | 7/7 | Criteria 1-8 executed 2026-11-10 (licence+changelog PASSED via checks; full suite per 67-VALIDATION attempted; SOTA updated) | Criteria exercised; unverified full gate |
-|
-|## Phase 67 criteria execution note (added 2026-11-10)
-|Criteria 1-8 from success list exercised:
-|1-8 library/OS/keyring/API/surfaces/arch/build/restore via ag-dotnet wrapper + scripts/ci/check-*.sh (licence PASSED, changelog PASSED). See updated .planning/phases/67-accounts-supabase-passwordless-sign-in/67-SOTA-AUTH-SURFACES.md#Criteria 1-8 Execution Record. Full non-live + live + services gate recommended for verifier (per 67-VALIDATION). 
-|
-|## (end note)
-|
-| 68. Data plane: names, schema and resilience | 7/7 | Summary artifacts; unverified, no VERIFICATION | Previously Planned |
-|
-| 69. Surface switch and Cowork sessions | 5/6 | 69-06 unsummarized; unverified | Previously Planned |
-|
-| 70. Cowork chat core and tool host | 6/6 | Summary artifacts; unverified, no VERIFICATION | Previously Planned |
-| 71. Cowork Artifacts | 4/6 | 71-05/06 unsummarized; unverified | Previously Planned |
-| 72. Cowork Browser Use | 8/8 | Summary artifacts; unverified, no VERIFICATION | Previously Planned |
-| 73. Cowork Computer Use | 6/6 | Unverified; Dispatch-facing closure after 74; SOTA updated 2026-11-10 per 73-SOTA-COMPUTER-USE.md | Previously Planned |
-| 74. Dispatch relay | 4/10 | 74-04–09 unsummarized; 74-10 summary does not close gaps | Previously Planned |
-| 75. Cowork parity A: projects, memory, schedules | 5/6 | Criteria 1-8 executed 2026-11-10 (licence+changelog PASSED via checks; full suite per 75-VALIDATION attempted; SOTA updated) | Criteria exercised (targeted); 75-06 impl open |
-|
-|## Phase 75 criteria execution note (added 2026-11-10)
-|Criteria 1-8 from success list exercised:
-|1-8 build/restore + postgres memory + Cowork/memory/automations/agentloop/presentation/native/ui/web/api tests + architecture + repo/licence/format + full gate + parity MET only with named test via targeted reads + gsd + scripts/ci/check-*.sh (licence PASSED, changelog PASSED). See updated .planning/phases/75-cowork-parity-projects-memory-schedules/75-SOTA-COWORK-PARITY.md#Criteria 1-8 Execution Record. Full non-live + live + services gate recommended for verifier (per 75-VALIDATION). 
-|
-|## (end note)
-|
-| 76. Cowork parity B: plugins, Auto mode, isolation | 8/8 | Criteria 1-8 executed 2026-11-10 (all 14 AG-76 covered by named tests; SOTA states + isolation + first-attempt + graceful + a11y/ops); see 76-SOTA-COWORK-PARITY-PLUGINS-AUTO-ISOLATION.md | Criteria exercised; unverified full gate + live bwrap (owner) |
-| 77. Hardening, docs and integration | 8/8 | Plans 77-01..08 listed (integration, parity-audit, security-review, a11y-pass, docs, bump, gate, PR); SOTA states for a11y/security/verification/gate + docs/.planning files | Planned with SOTA (2026-11-10) |
+| Phase | Summary slots/plans | Current status (reconciled 2026-11-19) | Linear parent | Historical declaration |
+|-------|---------------------|----------------------------------------|---------------|------------------------|
+| 66. Rebrand to Autonogrammer | 8/9 plans done (1 obsolete) | Substantially complete; 66-VERIFICATION.md frontmatter gaps_found (2026-11-10): body contradicts it (says no gaps); baseline-equality and full-gate gaps open. No 66-09 summary. 4 outstanding, 6 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34890](https://linear.app/swcstudio/issue/SPE-34890/phase-66-closeout-durable-rebrand-guard-and-verification-refresh) | 66-01–06 summaries; no VERIFICATION |
+| 66.1. Scaffold: projects, registration and contract bump | 1/1 plans done | Complete; 66.1-VERIFICATION.md status human_needed (2026-10-29): only the full ./bootstrap.sh gate and the Android lock restore were unrun. Both are now covered by CI on main. 2 outstanding, 0 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34953](https://linear.app/swcstudio/issue/SPE-34953/phase-661-closeout-record-scaffold-verification-as-passed) | Executed 2026-10-29; Android lock/bootstrap/CI unverified |
+| 66.2. Hosted real web app | 9/12 plans done (3 partial) | Substantially complete; Never verified complete. 66.2-VERIFICATION.md (2026-10-29) says Met on another commit; 66.2-VERIFICATION-2026-11-08.md says gaps on b52708fc. HEAD e75db65f has no verify-work record; CI run 44318204271 on it is green. 5 outstanding, 5 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34956](https://linear.app/swcstudio/issue/SPE-34956/phase-662-closeout-hosted-real-web-app-on-current-main) | Complete, not deployed; 2026-10-29 |
+| 66.3. Web accessibility (WCAG 2.2 AA) | 3/4 plans done (1 partial) | Substantially complete; Never verified complete. 66.3-VERIFICATION.md (2026-10-29, d0d0b879) and 66.3-VERIFICATION-2026-11-08.md (gaps G1-G11, b52708fc). CI browser smoke with a11y checks is green on HEAD e75db65f. 6 outstanding, 5 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34960](https://linear.app/swcstudio/issue/SPE-34960/phase-663-closeout-web-accessibility-checks-and-statement-on-current) | Complete with caveats, no screen reader/device; 2026-10-29 |
+| 66.4. Quality uplift: CI, operations and brand | 5/6 plans done (1 partial) | Substantially complete; Never verified complete. 66.4-VERIFICATION.md (2026-10-29) and -2026-11-08 (gaps; CodeQL, release, image scan then never run). Since then they ran green. CI run 44318204271 on HEAD e75db65f: build-test, image-scan, android, desktop all success. 6 outstanding, 4 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34893](https://linear.app/swcstudio/issue/SPE-34893/phase-664-closeout-record-the-ci-supply-chain-and-ops-state-on-current) | Declared complete with caveats; criterion 3 Partial (two passes, no single-pass gate); no image/GitHub workflow run; 2026-10-29 |
+| 67. Accounts: Supabase passwordless sign-in | 6/7 plans done (1 partial) | Substantially complete; human_needed (67-VERIFICATION.md 2026-11-10: static source review only, SDK 10 absent, no gate command run; stale vs. later code). 7 outstanding, 5 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34964](https://linear.app/swcstudio/issue/SPE-34964/phase-67-closeout-accounts-sign-in-verification-and-review-debt) | Criteria exercised 2026-11-10; unverified full gate |
+| 68. Data plane: names, schema and resilience | 9/11 plans done (1 obsolete, 1 blocked) | Substantially complete; 68-VERIFICATION.md (2026-11-10) is stale: frontmatter gaps_found, body human_needed 9/12; its only gap (SEC-77-07) was fixed in code later (7dadceb5, on origin/main). No fresh verification written. 6 outstanding, 3 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34897](https://linear.app/swcstudio/issue/SPE-34897/phase-68-closure-reconcile-data-plane-planning-state-and-verify-the) | Previously Planned |
+| 69. Surface switch and Cowork sessions | 6/6 plans done | Complete; 69-VERIFICATION.md (2026-11-10) status human_needed, 7/7 truths, 3 human items. Roadmap 69-01..06 are [x]; REQUIREMENTS AG-69-1..13 still [ ] and 'Planned'. No full-suite run on current main is recorded. 4 outstanding, 2 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34900](https://linear.app/swcstudio/issue/SPE-34900/phase-69-close-out-verify-and-record-surface-switch-and-cowork) | Previously Planned |
+| 70. Cowork chat core and tool host | 5/8 plans done (2 partial, 1 obsolete) | Partial; 70-VERIFICATION.md status gaps_found (2026-11-03, notes to 11-10): SC3 Native *Cowork* and SC5 ProjectGraph/warning-free build never shown passing. Roadmap lists 70-08 as [ ]; REQUIREMENTS AG-70-1,2,5..10,12..14 still [ ]. 6 outstanding, 3 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34905](https://linear.app/swcstudio/issue/SPE-34905/phase-70-close-out-wire-the-cowork-conversation-into-the-native-head) | Previously Planned |
+| 71. Cowork Artifacts | 6/13 plans done (1 partial, 1 not-started, 5 blocked) | Partial; 71-VERIFICATION.md (2026-11-10) status gaps_found, 2 behavior_unverified; no test/smoke run recorded (verifier host had .NET 8). Stale: predates 0.16.1-0.19.2 and this session's Native producer. 8 outstanding, 6 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34910](https://linear.app/swcstudio/issue/SPE-34910/phase-71-cowork-artifacts-close-out-native-producer-web-path-and) | Previously Planned |
+| 72. Cowork Browser Use | 2/14 plans done (7 partial, 1 obsolete, 3 not-started, 1 blocked) | Blocked on an owner action; 72-VERIFICATION.md (2026-11-10) status gaps_found, score 2/7; no later verification; ROADMAP criteria 1-5 not signed. 9 outstanding, 3 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34915](https://linear.app/swcstudio/issue/SPE-34915/phase-72-close-cowork-browser-use-production-path-and-verification) | Previously Planned |
+| 73. Cowork Computer Use | 5/10 plans done (1 partial, 2 obsolete, 2 not-started) | Partial; gaps_found (73-VERIFICATION 2026-11-03, updated 2026-11-10); no run of the six ROADMAP criteria observed; ADR-0035 still Proposed. 9 outstanding, 4 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34920](https://linear.app/swcstudio/issue/SPE-34920/phase-73-wire-cowork-computer-use-into-the-production-head) | Previously Planned |
+| 74. Dispatch relay | 8/11 plans done (2 partial, 1 not-started) | Partial; gaps_found; 74-VERIFICATION.md (2026-11-10) says 'has not passed'; never re-verified; no 74-11-SUMMARY.md. 7 outstanding, 3 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34925](https://linear.app/swcstudio/issue/SPE-34925/phase-74-finish-dispatch-controller-and-desktop-wiring-and-re-verify) | Previously Planned |
+| 74.1. Durable account-scoped memory idempotency migration and atomic replay | 3/4 plans done (1 partial) | Substantially complete; none: no 74.1-VERIFICATION.md; 74.1-03 status human_review_required; independent human runbook review not recorded. 4 outstanding, 2 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34931](https://linear.app/swcstudio/issue/SPE-34931/phase-741-record-review-and-integrated-verification-for-memory) | Inserted phase; no row in the earlier table |
+| 75. Cowork parity A: projects, memory, schedules | 4/13 plans done (8 partial, 1 not-started) | Partial; 75-VERIFICATION.md status gaps_found (2026-11-10); no gate passed. Written before plans 07-13 ran; ROADMAP lists only 01-06 and ticks them. 8 outstanding, 5 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34934](https://linear.app/swcstudio/issue/SPE-34934/phase-75-finish-cowork-parity-a-projects-memory-schedules-on-main) | Criteria exercised (targeted) 2026-11-10; 75-06 impl open |
+| 76. Cowork parity B: plugins, Auto mode, isolation | 1/9 plans done (8 partial) | Partial; 76-VERIFICATION.md 2026-11-10 gaps_found 11/18, written on a host without SDK 10.0.402 and without any test run; stale. No gate run recorded since. ROADMAP checks 76-01..08, leaves 76-09 open. 7 outstanding, 4 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34940](https://linear.app/swcstudio/issue/SPE-34940/phase-76-closure-wire-cowork-plugins-isolation-usage-and-notifications) | Criteria exercised 2026-11-10; unverified full gate + live bwrap (owner) |
+| 77. Hardening, docs and integration | 1/11 plans done (5 partial, 4 obsolete, 1 blocked) | Partial; No 77-VERIFICATION.md. 0/11 plans verified. Gate evidence (2026-11-10) records bootstrap BLOCKED at the container pre-check; no passing bootstrap exists. Docs, changelog and parity checks pass today. 9 outstanding, 4 blocked items (reconciled 2026-11-19, not a gate result) | [SPE-34946](https://linear.app/swcstudio/issue/SPE-34946/phase-77-final-hardening-docs-and-gate-for-the-019x020x-line) | Planned with SOTA (2026-11-10) |
+| 78. Desktop release pipeline and per-machine Windows installer | 0/6 plans checked (code written and reviewed, none run in CI) | Planned 2026-11-19; no CI run has proven any plan (reconciled 2026-11-19, not a gate result) | [SPE-34831](https://linear.app/swcstudio/issue/SPE-34831) | Added 2026-11-19; no earlier declaration |
+
+**Phase 67 criteria execution note (added 2026-11-10).** Criteria 1-8 from the success list exercised: 1-8 library/OS/keyring/API/surfaces/arch/build/restore via the ag-dotnet wrapper and `scripts/ci/check-*.sh` (licence PASSED, changelog PASSED). See the updated `.planning/phases/67-accounts-supabase-passwordless-sign-in/67-SOTA-AUTH-SURFACES.md#Criteria 1-8 Execution Record`. A full non-live, live and services gate is recommended for the verifier (per 67-VALIDATION).
+
+**Phase 75 criteria execution note (added 2026-11-10).** Criteria 1-8 from the success list exercised: 1-8 build/restore, postgres memory, Cowork/memory/automations/agentloop/presentation/native/ui/web/api tests, architecture, repo/licence/format, full gate, and parity MET only with a named test via targeted reads, gsd and `scripts/ci/check-*.sh` (licence PASSED, changelog PASSED). See the updated `.planning/phases/75-cowork-parity-projects-memory-schedules/75-SOTA-COWORK-PARITY.md#Criteria 1-8 Execution Record`. A full non-live, live and services gate is recommended for the verifier (per 75-VALIDATION).

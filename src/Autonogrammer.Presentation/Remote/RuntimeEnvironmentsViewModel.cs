@@ -48,6 +48,15 @@ public sealed class RuntimeEnvironmentsViewModel : ObservableModel
     /// <summary>Gets the picker of running containers.</summary>
     public RunningContainerPicker Picker { get; }
 
+    /// <summary>Raised when a test or a start ended, so a view that shows the outcome (the New session picker) reads it again.</summary>
+    public event EventHandler? StatusesChanged;
+
+    /// <summary>Gets the status an environment shows: a running test, else the outcome of the last test.</summary>
+    /// <param name="profileId">The identifier of the environment.</param>
+    /// <returns>The status, or null when the environment is not listed.</returns>
+    public RemoteEnvironmentStatus? StatusOf(string profileId) =>
+        Rows.FirstOrDefault(row => string.Equals(row.Id, profileId, StringComparison.Ordinal))?.Status;
+
     /// <summary>Gets whether WSL environments can be added and used on this computer.</summary>
     public bool SupportsWsl => _runtime.SupportsWsl;
 
@@ -330,6 +339,7 @@ public sealed class RuntimeEnvironmentsViewModel : ObservableModel
         finally
         {
             _runs.Remove(row.Id);
+            StatusesChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -379,6 +389,7 @@ public sealed class RuntimeEnvironmentsViewModel : ObservableModel
         finally
         {
             _runs.Remove(row.Id);
+            StatusesChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 

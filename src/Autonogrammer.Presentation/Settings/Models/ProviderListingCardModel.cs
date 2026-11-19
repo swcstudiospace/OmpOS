@@ -15,8 +15,6 @@ namespace Autonogrammer.Presentation.Settings.Models;
 /// </remarks>
 public sealed class ProviderListingCardModel : ObservableModel
 {
-    private const string Hidden = "[hidden]";
-
     private readonly IModelsSettingsSource _source;
     private readonly IProviderCardHost _host;
     private readonly Dictionary<string, ProviderListingUrlInput> _inputsByName = new(StringComparer.Ordinal);
@@ -384,7 +382,7 @@ public sealed class ProviderListingCardModel : ObservableModel
         var result = await SendAsync(request, key, draft, cancellationToken).ConfigureAwait(true);
         if (!result.Succeeded)
         {
-            ErrorText = Hide(result.Message, key) ?? ModelsCopy.ActionFailed;
+            ErrorText = ProviderKeyScrubber.Hide(result.Message, key) ?? ModelsCopy.ActionFailed;
             return false;
         }
 
@@ -483,16 +481,6 @@ public sealed class ProviderListingCardModel : ObservableModel
         }
 
         return ids;
-    }
-
-    private static string? Hide(string? message, string key)
-    {
-        if (string.IsNullOrWhiteSpace(message))
-        {
-            return null;
-        }
-
-        return key.Length == 0 ? message : message.Replace(key, Hidden, StringComparison.Ordinal);
     }
 
     private string? FormProblem()

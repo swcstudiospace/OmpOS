@@ -41,6 +41,9 @@ public sealed class AutomationEditorModel : ObservableModel
     /// <summary>The most repositories a cloud target may have.</summary>
     public const int MaxRepositories = 16;
 
+    /// <summary>The longest secret name, in characters.</summary>
+    public const int SecretNameMaxLength = 64;
+
     /// <summary>How many next runs a cron preview asks for.</summary>
     public const int PreviewCount = 5;
 
@@ -50,7 +53,6 @@ public sealed class AutomationEditorModel : ObservableModel
     private const string GithubFlavour = "github";
     private const string CloudKind = "cloud";
     private const string HttpsPrefix = "https://";
-    private const int SecretNameMaxLength = 64;
     private const int FilterMaxLength = 64;
     private const int BranchMaxLength = 255;
     private const int AddressMaxLength = 2048;
@@ -983,7 +985,7 @@ public sealed class AutomationEditorModel : ObservableModel
         }
         else if (name.Length > NameMaxLength)
         {
-            errors[AutomationsCopy.FieldName] = AutomationsCopy.NameTooLong;
+            errors[AutomationsCopy.FieldName] = AutomationsCopy.NameTooLong(NameMaxLength);
         }
 
         if (_prompt.Trim().Length == 0)
@@ -992,7 +994,7 @@ public sealed class AutomationEditorModel : ObservableModel
         }
         else if (_prompt.Length > PromptMaxLength)
         {
-            errors[AutomationsCopy.FieldPrompt] = AutomationsCopy.PromptTooLong;
+            errors[AutomationsCopy.FieldPrompt] = AutomationsCopy.PromptTooLong(PromptMaxLength);
         }
     }
 
@@ -1051,7 +1053,7 @@ public sealed class AutomationEditorModel : ObservableModel
         }
         else if (lines > MaxRepositories)
         {
-            errors[AutomationsCopy.FieldRepositories] = AutomationsCopy.RepositoriesTooMany;
+            errors[AutomationsCopy.FieldRepositories] = AutomationsCopy.RepositoriesTooMany(MaxRepositories);
         }
         else if (!valid || repositories.Count != lines)
         {
@@ -1060,7 +1062,7 @@ public sealed class AutomationEditorModel : ObservableModel
 
         if (!SplitList(_secretRefsText).All(IsSecretName))
         {
-            errors[AutomationsCopy.FieldSecrets] = AutomationsCopy.SecretNameInvalid;
+            errors[AutomationsCopy.FieldSecrets] = AutomationsCopy.SecretNameInvalid(SecretNameMaxLength);
         }
     }
 

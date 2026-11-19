@@ -19,6 +19,7 @@ public partial class ArtifactPanelView : UserControl
 {
     private ArtifactPanelModel? _model;
     private PropertyChangedEventHandler? _modelChanged;
+    private EventHandler? _deliveryChanged;
     private ArtifactContent? _content;
     private NativeWebViewArtifactSurface? _surface;
     private FrameKey? _frameKey;
@@ -208,15 +209,50 @@ public partial class ArtifactPanelView : UserControl
             _model.PropertyChanged -= _modelChanged;
         }
 
+        if (_model is not null && _deliveryChanged is not null)
+        {
+            _model.DeliveryChanged -= _deliveryChanged;
+        }
+
         _model = model;
         _modelChanged = null;
+        _deliveryChanged = null;
         if (model is not null)
         {
             _modelChanged = (_, _) => Refresh();
             model.PropertyChanged += _modelChanged;
+            _deliveryChanged = (_, _) => ApplyDelivery(model);
+            model.DeliveryChanged += _deliveryChanged;
+            ApplyDelivery(model);
         }
 
         Refresh();
+    }
+
+    /// <summary>
+    /// Shows the version the model holds as delivered: a content kind through <see cref="ShowContent"/>, a surface kind through
+    /// <see cref="AttachSurface"/> with the model's own surface.
+    /// </summary>
+    /// <param name="model">The bound model.</param>
+    private void ApplyDelivery(ArtifactPanelModel model)
+    {
+        var delivery = model.Delivered;
+        if (delivery is null)
+        {
+            return;
+        }
+
+        if (IsSurfaceKind(delivery.Item.Kind))
+        {
+            if (model.Surface is NativeWebViewArtifactSurface surface)
+            {
+                AttachSurface(surface);
+            }
+
+            return;
+        }
+
+        ShowContent(new ArtifactContent(delivery.Item.Kind, delivery.Item.Title, delivery.Bytes, delivery.Language, delivery.MediaType));
     }
 
     private void Raise(ArtifactCommand command) => CommandRequested?.Invoke(this, new ArtifactCommandEventArgs(command));

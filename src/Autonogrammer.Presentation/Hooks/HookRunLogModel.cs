@@ -129,20 +129,22 @@ public sealed class HookRunLogModel : ObservableModel
         HookScopeKind.ClaudeLocal => "claudeLocal",
         HookScopeKind.ClaudeProject => "claudeProject",
         HookScopeKind.ClaudeUser => "claudeUser",
-        _ => "plugin",
+        HookScopeKind.Plugin => "plugin",
+        _ => throw new ArgumentOutOfRangeException(nameof(scope), scope, "The hook scope has no export name."),
     };
 
     private static string OutcomeName(HookRunOutcome outcome) => outcome switch
     {
-        HookRunOutcome.Succeeded => "succeeded",
-        HookRunOutcome.Denied => "denied",
-        HookRunOutcome.Failed => "failed",
-        HookRunOutcome.TimedOut => "timedOut",
-        HookRunOutcome.Skipped => "skipped",
-        HookRunOutcome.Faulted => "faulted",
-        HookRunOutcome.AwaitingConsent => "awaitingConsent",
-        HookRunOutcome.Quarantined => "pluginQuarantined",
-        _ => "invalidResponse",
+        HookRunOutcome.Succeeded => HookRunStatusNames.Succeeded,
+        HookRunOutcome.Denied => HookRunStatusNames.Denied,
+        HookRunOutcome.Failed => HookRunStatusNames.Failed,
+        HookRunOutcome.TimedOut => HookRunStatusNames.TimedOut,
+        HookRunOutcome.Skipped => HookRunStatusNames.Skipped,
+        HookRunOutcome.Faulted => HookRunStatusNames.Faulted,
+        HookRunOutcome.AwaitingConsent => HookRunStatusNames.AwaitingConsent,
+        HookRunOutcome.Quarantined => HookRunStatusNames.PluginQuarantined,
+        HookRunOutcome.InvalidResponse => HookRunStatusNames.InvalidResponse,
+        _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, "The hook run outcome has no export name."),
     };
 
     private void Trim()

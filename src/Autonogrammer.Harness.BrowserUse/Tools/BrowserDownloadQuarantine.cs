@@ -1,3 +1,4 @@
+using Autonogrammer.Contracts.Cowork.Browser;
 using Autonogrammer.Harness.BrowserUse.Options;
 
 namespace Autonogrammer.Harness.BrowserUse.Tools;
@@ -7,6 +8,8 @@ public sealed class BrowserDownloadQuarantine
 {
     /// <summary>The byte cap.</summary>
     public const long MaxBytes = 50L * 1024 * 1024;
+
+    private const string DownloadDeniedRefusal = nameof(BrowserPaneState.DownloadDenied);
 
     private static readonly HashSet<string> RefusedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -52,19 +55,19 @@ public sealed class BrowserDownloadQuarantine
         LastRefusal = null;
         if (mode == DownloadMode.Deny)
         {
-            LastRefusal = "DownloadDenied";
+            LastRefusal = DownloadDeniedRefusal;
             return null;
         }
 
         if (IsExecutable(fileName))
         {
-            LastRefusal = "DownloadDenied";
+            LastRefusal = DownloadDeniedRefusal;
             return null;
         }
 
         if (bytes.Length > MaxBytes)
         {
-            LastRefusal = "DownloadDenied";
+            LastRefusal = DownloadDeniedRefusal;
             return null;
         }
 

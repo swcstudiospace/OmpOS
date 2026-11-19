@@ -83,7 +83,8 @@ public sealed class CloudHandoff : ICloudHandoff
         }
     }
 
-    private static CloudHandoffResult Describe(Exception fault) => CloudFailures.KindOf(fault) switch
+    /// <summary>Maps a failed host call to the hand-off outcome and sentence. The new-agent dialog uses the same mapping so both report one failure the same way.</summary>
+    internal static CloudHandoffResult Describe(Exception fault) => CloudFailures.KindOf(fault) switch
     {
         CloudFailureKind.LimitReached => new CloudHandoffResult(CloudHandoffOutcome.LimitReached, CloudFailures.MessageOf(fault, CloudCopy.LimitReached)),
         CloudFailureKind.QuotaExceeded => new CloudHandoffResult(CloudHandoffOutcome.QuotaExceeded, CloudFailures.MessageOf(fault, CloudCopy.QuotaExceeded)),

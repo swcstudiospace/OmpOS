@@ -43,6 +43,8 @@ The chosen design adds no package. The components that sit on either side of the
 | Swarm and Substrate plugins | NOASSERTION (no LICENSE file upstream) | https://github.com/swcstudiospace/swarm and https://github.com/swcstudiospace/substrate | Recorded in `docs/plugins.md`; not re-read in this session |
 | Autonogrammer plugin host (`Autonogrammer.Harness.Plugins`) | AGPL-3.0-or-later (decided in [ADR-0018](ADR-0018-licence-agpl-and-source-offer.md); it was NOASSERTION when this record was written) | `LICENSE`, `docs/plugins.md`, "Licence facts" | Resolved for Autonogrammer; the two submodules stay open: [OQ-102](../open-questions.md) |
 
+Update 2026-11-19: the Swarm and Substrate row above is superseded. Both repositories now carry an `AGPL-3.0-or-later` LICENSE file (owner decision, [OQ-102](../open-questions.md), resolved): one LICENSE-only commit on top of each previous pin, merged to each default branch (swarm#49, substrate#221), and the pins moved by that one file. The record above is left as written.
+
 The plugins stay separate programs launched by reference, so tier 1 does not link their code into Autonogrammer. Whether that satisfies the AGPL is a legal question this record does not answer ([OQ-62](../open-questions.md)).
 
 ## Decision
@@ -73,6 +75,7 @@ Run by the orchestrator; none of the tests below was run when this record was wr
 5. **Not wired into a running head.** The host and runner are built only in tests, so the boundary is enforced by the library, not yet by the applications. Until a head constructs them, no hook runs in the product.
 6. **Tier 1 has no boundary of its own.** An omp plugin has everything the omp child has. It reaches Autonogrammer only through files and HTTP that it writes, which Autonogrammer treats as untrusted (ADR-0012 D9). A pin bump trusts the new commit; its review is a human step, and this record found no automated check of it.
 7. **Licences of tier 1 plugins**: `claude-ultrathink` is AGPL-3.0-or-later; two of three plugins (`agent-swarm`, `agent-substrate`) still have no LICENSE file ([OQ-102](../open-questions.md)). Autonogrammer itself became AGPL-3.0-or-later after this record ([ADR-0018](ADR-0018-licence-agpl-and-source-offer.md)).
+   Update 2026-11-19: `agent-swarm` and `agent-substrate` now have a LICENSE file (`AGPL-3.0-or-later`, [OQ-102](../open-questions.md) resolved). The text above is the state when the record was written.
 8. **A symlink or executable swap between consent and spawn** is not guarded. The same window is recorded for the terminal gate in ADR-0006.
 
 ## Owner decisions needed

@@ -77,6 +77,9 @@ public partial class MainView : UserControl, IDisposable
     /// <summary>The status line text prefix after a composer action faults. The fault's own message follows it.</summary>
     public const string FaultedStatus = "Something went wrong.";
 
+    /// <summary>The status line text when a running agent cannot be closed because it did not open, so it has no confirmation to show.</summary>
+    public const string UnopenedRunningStatus = "This running agent did not open, so it stays open.";
+
     /// <summary>The status line text prefix after a workspace tool cannot open. The tool's name and the reason follow it.</summary>
     public const string ToolFailedStatus = "Could not open";
 
@@ -480,6 +483,11 @@ public partial class MainView : UserControl, IDisposable
 
         _current = viewModel is null ? null : GetPane(viewModel);
         var pane = _current;
+        if (IsStaleDiffReview(_reviewPane, pane))
+        {
+            ClearDiffReview();
+        }
+
         ThreadHeaderHost.Content = pane?.Header;
         TranscriptHost.Content = pane is null ? _landingView : pane.TerminalView ?? (Control)pane.Transcript;
         PipelineHost.Content = pane?.Strip;
@@ -555,10 +563,34 @@ public partial class MainView : UserControl, IDisposable
         var live = _panel.Catalog.Sessions.Select(row => row.Id).ToHashSet(StringComparer.Ordinal);
         foreach (var id in _panes.Keys.Where(known => !live.Contains(known) && !ReferenceEquals(_panes[known], _current)).ToList())
         {
+            if (ReferenceEquals(_panes[id], _reviewPane))
+            {
+                ClearDiffReview();
+            }
+
             _panes[id].Dispose();
             _panes.Remove(id);
         }
     }
+
+    // The Diff review tool shows the review of one session's changes. It is emptied when another session is shown or that session's pane
+    // is disposed, so Apply cannot write the hunks of a session that is not on screen.
+    private void ClearDiffReview()
+    {
+        _reviewPane = null;
+        if (_diffTool?.View is DiffReviewView view)
+        {
+            view.ReviewPath = null;
+            view.DataContext = null;
+            view.ShowResult(string.Empty);
+        }
+    }
+
+    /// <summary>Tells whether the Diff review shown for <paramref name="reviewPane"/> must be cleared now that <paramref name="shownPane"/> is the selected pane.</summary>
+    /// <param name="reviewPane">The pane whose changes the Diff review holds, or null when it holds none.</param>
+    /// <param name="shownPane">The pane the thread shows, or null when none is shown.</param>
+    /// <returns>True when the review belongs to a pane other than the shown one, so Apply would write another session's hunks.</returns>
+    internal static bool IsStaleDiffReview(object? reviewPane, object? shownPane) => reviewPane is not null && !ReferenceEquals(reviewPane, shownPane);
 
     // A terminal session shows omp in the thread and steers it from a steer-only composer. The views are kept with the pane, so
     // another tab or session never restarts omp: the runtime keeps omp running and stops it when the session closes.
@@ -720,13 +752,50 @@ public partial class MainView : UserControl, IDisposable
     // Delete on a row and the menu's Close agent land here. A running agent asks first; a quiet one closes at once.
     private void OnRailCloseRequested(object? sender, AgentRowEventArgs e)
     {
-        var sessionId = e.SessionId;
-        if (!string.Equals(_panel.Selected?.Id, sessionId, StringComparison.Ordinal))
+        if (string.Equals(_panel.Selected?.Id, e.SessionId, StringComparison.Ordinal))
         {
-            _ = CloseUnselectedAsync(sessionId);
+            CloseSelected();
             return;
         }
 
+        _ = SelectToCloseAsync(e.SessionId);
+    }
+
+    // The confirmation bar belongs to its session's thread, so a session that is not shown is selected first. The panel publishes its
+    // selection once the session opens, so the catalog can hold the selection while the panel still reports none.
+    private async Task SelectToCloseAsync(string sessionId)
+    {
+        if (!_panel.SelectSession(sessionId))
+        {
+            return;
+        }
+
+        var load = _panel.SelectionLoad;
+        await load.WaitAsync(CancellationToken.None).ConfigureAwait(true);
+        if (_closed)
+        {
+            return;
+        }
+
+        if (string.Equals(_panel.Selected?.Id, sessionId, StringComparison.Ordinal))
+        {
+            CloseSelected();
+            return;
+        }
+
+        // A session that did not open has no confirmation bar. A running one stays open rather than closing unasked.
+        var row = _panel.Catalog.Sessions.FirstOrDefault(candidate => string.Equals(candidate.Id, sessionId, StringComparison.Ordinal));
+        if (row is { Group: AgentRowGroup.Running or AgentRowGroup.NeedsYou })
+        {
+            SetStatus(UnopenedRunningStatus);
+            return;
+        }
+
+        await CloseUnopenedAsync(sessionId).ConfigureAwait(true);
+    }
+
+    private void CloseSelected()
+    {
         if (_current is not { } pane)
         {
             return;
@@ -742,7 +811,7 @@ public partial class MainView : UserControl, IDisposable
         }
     }
 
-    private async Task CloseUnselectedAsync(string sessionId)
+    private async Task CloseUnopenedAsync(string sessionId)
     {
         try
         {

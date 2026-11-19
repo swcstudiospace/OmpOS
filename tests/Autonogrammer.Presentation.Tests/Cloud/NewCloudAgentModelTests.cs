@@ -237,8 +237,8 @@ public sealed class NewCloudAgentModelTests
     [InlineData(CloudFailureKind.Rejected, CloudCreateOutcome.Rejected)]
     [InlineData(CloudFailureKind.Conflict, CloudCreateOutcome.Rejected)]
     [InlineData(CloudFailureKind.Unavailable, CloudCreateOutcome.Failed)]
-    [InlineData(CloudFailureKind.Unauthorized, CloudCreateOutcome.Failed)]
-    [InlineData(CloudFailureKind.NotConfigured, CloudCreateOutcome.Failed)]
+    [InlineData(CloudFailureKind.Unauthorized, CloudCreateOutcome.NotAvailable)]
+    [InlineData(CloudFailureKind.NotConfigured, CloudCreateOutcome.NotAvailable)]
     public async Task AServiceRefusalKeepsTheDialogOpenWithItsOutcome(CloudFailureKind kind, CloudCreateOutcome outcome)
     {
         var host = CloudFixtures.Host(_clock);

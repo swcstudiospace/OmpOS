@@ -75,7 +75,7 @@ It leaves the merge methods (squash, merge commit, rebase) as they are, and it c
   ```
 
   Add the GitBook app and the owner as bypass actors if GitBook Git Sync is connected. Do not add required pull requests, required status checks, linear history or push restrictions: they reject direct fast-forward pushes.
-- **Secrets.** The release workflow needs no secret beyond the job's `GITHUB_TOKEN`. The CI secret `SUBMODULE_TOKEN` (read access to the private `swcstudiospace/substrate`) is separate and is documented in `docs/plugins.md`.
+- **Secrets.** The `release` workflow needs no secret beyond the job's `GITHUB_TOKEN`. The tag build of `desktop-release` needs `SUBSTRATE_DEPLOY_KEY`, the private half of a read-only deploy key on the private `swcstudiospace/substrate` (resolved 2026-11-19, OQ-63); `SUBMODULE_TOKEN`, an HTTPS read token, is still accepted, and a tag build fails when neither secret exists. The CI job `build-test` still reads `SUBMODULE_TOKEN` only. Details are in `docs/plugins.md`; the full pipeline is in `docs/runbooks/desktop-release.md`.
 
 ## Dependabot and the lock files
 
@@ -101,10 +101,10 @@ Done 2026-10-28 (recorded): the steps below ran for v0.15.0 and the Release exis
    git push origin v0.15.0
    ```
 
-5. The `release` workflow runs on the self-hosted pool: it checks the tag format, that the tag equals `VersionPrefix`, that the commit is reachable from `origin/main`, runs the changelog check, takes the `## [0.15.0]` section as the release notes and creates the GitHub Release (a tag with a `-suffix`, such as `v0.15.0-rc.1`, becomes a pre-release and uses the `0.15.0` notes). If the pool is offline, create the release by hand with the same notes: `gh release create v0.15.0 --verify-tag --title "Autonogrammer v0.15.0" --notes-file notes.md`.
+5. The `release` workflow runs on `ubuntu-24.04`: it checks the tag format, that the tag equals `VersionPrefix`, that the commit is reachable from `origin/main`, runs the changelog check, takes the `## [0.15.0]` section as the release notes and creates the GitHub Release as a **draft** (a tag with a `-suffix`, such as `v0.15.0-rc.1`, becomes a pre-release and uses the `0.15.0` notes). It does not publish. The `desktop-release` workflow attaches the desktop files, waits for the image archives, the SBOM and `SHA256SUMS-images` that `release` attaches, and then publishes the draft ([desktop release runbook](desktop-release.md)). If either workflow fails, the release stays a draft: re-run the failed jobs.
 6. Verify: `gh release view v0.15.0` and `gh run list --workflow release.yml --limit 1`.
 
-GitHub's automatic "Source code" archives never contain submodules, and `plugins/agent-swarm` and `plugins/agent-substrate` carry no licence file: do not attach an archive that bundles them to the public release without a licence decision (see OQ-93 and the licensing facts in the research file).
+GitHub's automatic "Source code" archives never contain submodules. `plugins/agent-swarm` and `plugins/agent-substrate` carry the `AGPL-3.0-or-later` LICENSE file since 2026-11-19 (OQ-102), and the desktop packages bundle their source under that licence. Do not attach any other archive that bundles them to the release without checking that the tag gate of `scripts/release/bundle-plugins.sh` passed.
 
 The compare links in `CHANGELOG.md` for the milestones before 0.15.0 point to tags that do not exist (the only tag is `v0.15.0`, recorded 2026-10-28; OQ-108): they work once those tags are created. Tagging historical commits is an owner decision; the only commit the records identify for sure is `cbbe22d`, the merge of PR #1 that shipped v0.9.1.
 

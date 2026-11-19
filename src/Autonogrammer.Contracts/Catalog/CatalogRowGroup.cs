@@ -13,7 +13,7 @@ public enum CatalogRowGroup
     [JsonStringEnumMemberName("running")]
     Running,
 
-    /// <summary>Sessions that lost their engine.</summary>
+    /// <summary>Sessions that are running or awaiting tool approval but have had no activity for longer than a run lease lives. The group is assigned from staleness alone, with no engine check.</summary>
     [JsonStringEnumMemberName("lost")]
     Lost,
 

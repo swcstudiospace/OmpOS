@@ -3,6 +3,7 @@ using System.Runtime.ExceptionServices;
 using System.Text.Json;
 using Autonogrammer.Accounts;
 using Autonogrammer.Contracts.Agents;
+using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Cowork;
 using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Cowork.Chat;
@@ -499,6 +500,26 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Shows an artifact card in the session's stream on the UI thread, where the runtime hands it to the artifact panel. A session that is not
+    /// open takes no card; the artifact itself stays stored.
+    /// </summary>
+    /// <param name="sessionId">The session that made the create or update call.</param>
+    /// <param name="card">The card.</param>
+    public void PublishArtifactCard(string sessionId, ArtifactBlock card)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            Slot? slot;
+            lock (_gate)
+            {
+                _ = _slots.TryGetValue(sessionId, out slot);
+            }
+
+            slot?.Runtime.ShowArtifactCard(card);
+        });
+    }
+
     // Requires a signed-in account. A registry belongs to the account it opened for: a signed-out or switched account gets none from this host.
     private (CoworkSessionRegistry Registry, string AccountDirectory) EnsureRegistry(CancellationToken cancellationToken)
     {
@@ -682,6 +703,7 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         Stages = new IdleStages(),
         Context = new IdleContext(),
         TimeProvider = _options.Clock,
+        ArtifactDelivered = _options.ArtifactDelivered,
     };
     // The runtime and its run input are UI-affine: the held-message queue has no lock, and change notifications
     // reach the views on the UI thread. Every send, steer and retry therefore runs there, whichever thread its caller is on.

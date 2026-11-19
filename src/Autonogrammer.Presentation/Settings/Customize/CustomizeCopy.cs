@@ -1,5 +1,6 @@
 using System.Globalization;
 using Autonogrammer.Presentation.Commands;
+using Autonogrammer.Workspace.Conventions;
 
 namespace Autonogrammer.Presentation.Settings.Customize;
 
@@ -25,10 +26,18 @@ public static class CustomizeCopy
     public const string CommandsIntro = "The slash commands you can type in the composer: Autonogrammer and Cursor commands, and the commands and subagents found in the workspace and in your home folder.";
 
     /// <summary>The empty state of the Rules page.</summary>
-    public const string RulesEmpty = "No rules found. Add .mdc or .md files to a rules folder inside .autonogrammer, .omp, .cursor, .claude, .codex or .agents (in the workspace or in your home folder), or add an AGENTS.md or CLAUDE.md file.";
+    public static string RulesEmpty => $"No rules found. Add .mdc or .md files to a rules folder inside {ConventionFolderList()} (in the workspace or in your home folder), or add an AGENTS.md or CLAUDE.md file.";
 
     /// <summary>The empty state of the Skills page.</summary>
-    public const string SkillsEmpty = "No skills found. Add a folder with a SKILL.md file to a skills folder inside .autonogrammer, .omp, .cursor, .claude, .codex or .agents (in the workspace or in your home folder).";
+    public static string SkillsEmpty => $"No skills found. Add a folder with a SKILL.md file to a skills folder inside {ConventionFolderList()} (in the workspace or in your home folder).";
+
+    /// <summary>Returns the convention folder names in precedence order, the last one joined by "or".</summary>
+    /// <returns>The folder names, comma-separated, with "or" before the last one.</returns>
+    private static string ConventionFolderList()
+    {
+        var names = ConventionDirectories.Names;
+        return string.Join(", ", names.Take(names.Count - 1)) + " or " + names[^1];
+    }
 
     /// <summary>The empty state of the Commands page.</summary>
     public const string CommandsEmpty = "No slash commands are registered.";

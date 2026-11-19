@@ -143,6 +143,84 @@ public sealed class AgentLoopEnvironmentTests
         environment.PluginsRoot.ShouldBe(configured);
     }
 
+    private static (string Executable, string Resources) MacBundle(TempTree tree, string parent = "")
+    {
+        var contents = Path.Combine(tree.Root, parent, "Autonogrammer.app", "Contents");
+        var executable = Directory.CreateDirectory(Path.Combine(contents, "MacOS")).FullName;
+        return (executable, Path.Combine(contents, "Resources", "plugins"));
+    }
+
+    /// <summary>A macOS app bundle keeps its plugins in <c>Contents/Resources/plugins</c>; the root is found from <c>Contents/MacOS</c> with or without a trailing separator.</summary>
+    [Fact]
+    public void AMacBundlesResourcesPluginsDirectoryIsTheRoot()
+    {
+        using var tree = new TempTree();
+        var (executable, resources) = MacBundle(tree);
+        Directory.CreateDirectory(resources);
+
+        Resolve(Variables(), executable, tree.Workspace).PluginsRoot.ShouldBe(resources);
+        Resolve(Variables(), executable + Path.DirectorySeparatorChar, tree.Workspace).PluginsRoot.ShouldBe(resources);
+    }
+
+    /// <summary>A plugins directory beside the executable wins over the bundle's <c>Resources/plugins</c>.</summary>
+    [Fact]
+    public void APluginsDirectoryBesideTheExecutableWinsOverTheBundleResources()
+    {
+        using var tree = new TempTree();
+        var (executable, resources) = MacBundle(tree);
+        Directory.CreateDirectory(resources);
+        var beside = Directory.CreateDirectory(Path.Combine(executable, "plugins")).FullName;
+
+        Resolve(Variables(), executable, tree.Workspace).PluginsRoot.ShouldBe(beside);
+    }
+
+    /// <summary>The plugins-root variable wins over both the directory beside the executable and the bundle's <c>Resources/plugins</c>.</summary>
+    [Fact]
+    public void ThePluginsRootVariableWinsOverTheBundleResources()
+    {
+        using var tree = new TempTree();
+        var (executable, resources) = MacBundle(tree);
+        Directory.CreateDirectory(resources);
+        Directory.CreateDirectory(Path.Combine(executable, "plugins"));
+        var configured = Path.Combine(tree.Root, "elsewhere", "plugins");
+
+        var environment = Resolve(Variables((AgentLoopEnvironment.PluginsRootVariable, configured)), executable, tree.Workspace);
+
+        environment.PluginsRoot.ShouldBe(configured);
+    }
+
+    /// <summary>Only the exact <c>Contents/MacOS</c> shape counts: a sibling <c>Resources/plugins</c> is ignored for any other base directory.</summary>
+    [Fact]
+    public void ABaseDirectoryThatIsNotContentsMacOsIgnoresASiblingResourcesPlugins()
+    {
+        using var tree = new TempTree();
+        var contents = Path.Combine(tree.Root, "Autonogrammer.app", "Contents");
+        Directory.CreateDirectory(Path.Combine(contents, "Resources", "plugins"));
+        var other = Directory.CreateDirectory(Path.Combine(contents, "Other")).FullName;
+        var lowerCase = Directory.CreateDirectory(Path.Combine(contents, "macos")).FullName;
+        var withoutContents = Directory.CreateDirectory(Path.Combine(tree.Root, "Autonogrammer.app", "Frameworks", "MacOS")).FullName;
+        Directory.CreateDirectory(Path.Combine(tree.Root, "Autonogrammer.app", "Frameworks", "Resources", "plugins"));
+        var expected = Path.Combine(tree.Workspace, "plugins");
+
+        Resolve(Variables(), other, tree.Workspace).PluginsRoot.ShouldBe(expected);
+        Resolve(Variables(), lowerCase, tree.Workspace).PluginsRoot.ShouldBe(expected);
+        Resolve(Variables(), withoutContents, tree.Workspace).PluginsRoot.ShouldBe(expected);
+        Resolve(Variables(), withoutContents + Path.DirectorySeparatorChar, tree.Workspace).PluginsRoot.ShouldBe(expected);
+    }
+
+    /// <summary>The bundle shape without an existing <c>Resources/plugins</c> falls through to the repository search, and then to the workspace fallback, exactly as before.</summary>
+    [Fact]
+    public void ABundleWithoutResourcesPluginsFallsThroughToTheSearchAndTheWorkspace()
+    {
+        using var tree = new TempTree();
+        var (bare, _) = MacBundle(tree);
+        tree.Write("repo/.gitmodules", string.Empty);
+        var (inRepository, _) = MacBundle(tree, "repo");
+
+        Resolve(Variables(), bare, tree.Workspace).PluginsRoot.ShouldBe(Path.Combine(tree.Workspace, "plugins"));
+        Resolve(Variables(), inRepository, tree.Workspace).PluginsRoot.ShouldBe(Path.Combine(tree.Root, "repo", "plugins"));
+    }
+
     /// <summary>The workspace root is the current directory.</summary>
     [Fact]
     public void TheWorkspaceRootIsTheCurrentDirectory()

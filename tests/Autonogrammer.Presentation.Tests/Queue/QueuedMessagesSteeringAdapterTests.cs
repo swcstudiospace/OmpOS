@@ -29,8 +29,13 @@ public sealed class QueuedMessagesSteeringAdapterTests
                     throw new InvalidOperationException("no session");
                 }
 
+                if (RefuseStart)
+                {
+                    return Task.FromResult(false);
+                }
+
                 Started.Add(text);
-                return Task.CompletedTask;
+                return Task.FromResult(true);
             });
         }
 
@@ -47,6 +52,8 @@ public sealed class QueuedMessagesSteeringAdapterTests
         public List<string> Started { get; } = [];
 
         public bool FailStart { get; set; }
+
+        public bool RefuseStart { get; set; }
 
         public void Dispose() => Steering.Dispose();
     }
@@ -98,12 +105,26 @@ public sealed class QueuedMessagesSteeringAdapterTests
     }
 
     [Fact]
-    public async Task AStartThatFailsPutsTheMessageBackAtTheFront()
+    public async Task AStartThatFaultsPutsTheMessageBackAtTheFrontAndReachesTheCaller()
     {
         using var fixture = new Fixture();
         fixture.Queue.Enqueue("a");
         fixture.Queue.Enqueue("b");
         fixture.FailStart = true;
+
+        await Should.ThrowAsync<InvalidOperationException>(() => fixture.Adapter.DispatchNextAsync(Token)).ConfigureAwait(true);
+
+        fixture.Queue.Messages.Select(message => message.Text).ShouldBe(["a", "b"]);
+        fixture.Started.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task ARefusedStartPutsTheMessageBackAtTheFrontAndReportsNotStarted()
+    {
+        using var fixture = new Fixture();
+        fixture.Queue.Enqueue("a");
+        fixture.Queue.Enqueue("b");
+        fixture.RefuseStart = true;
 
         (await fixture.Adapter.DispatchNextAsync(Token).ConfigureAwait(true)).ShouldBeFalse();
 

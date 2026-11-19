@@ -21,7 +21,7 @@ public sealed record CreateCloudPullRequestRequest
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? BaseBranch { get; init; }
 
-    /// <summary>Gets whether to open a draft. When absent the pull request is ready for review. The server setting <c>Cloud:PullRequests:NeverDraft</c> overrides <see langword="true"/>.</summary>
+    /// <summary>Gets whether to open a draft. When absent the pull request is ready for review. The server setting <c>Cloud:Git:PullRequests:NeverDraft</c> overrides <see langword="true"/>.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public bool? Draft { get; init; }
 }

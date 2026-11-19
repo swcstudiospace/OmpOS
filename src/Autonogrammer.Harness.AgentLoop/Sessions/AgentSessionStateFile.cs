@@ -352,14 +352,14 @@ internal sealed class AgentSessionStateFile
             return Quarantine();
         }
 
-        var records = new List<AgentSessionRecord>(Math.Min(entries.Count, AgentSessionRegistry.MaxSessions));
+        var records = new List<AgentSessionRecord>(Math.Min(entries.Count, AgentSessionLimits.MaxSessions));
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var skipped = 0;
         foreach (var entry in entries)
         {
             if (entry is null
                 || !AgentSessionIds.IsValid(entry.Id)
-                || records.Count >= AgentSessionRegistry.MaxSessions
+                || records.Count >= AgentSessionLimits.MaxSessions
                 || !seen.Add(entry.Id))
             {
                 skipped++;

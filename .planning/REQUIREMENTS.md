@@ -906,6 +906,22 @@ Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.m
 - [ ] **AG-77-16**: One PR (or the repo's stacked equivalent) with the template completed (gate, tests, docs, CHANGELOG, OQ rows, DCO sign-off, light and dark screenshots for UI), CI green on every required check, every review thread (including Greptile, if it reviewed) answered; the PR description states what was not verified.
 - [ ] **AG-77-17**: `docs/runbooks/v0.16.0-owner-actions.md` lists every owner action in the ADR-0030 table form (action and place, needed for, what the product does when it is not done) and the PR performs none of them.
 
+### Desktop release pipeline and per-machine Windows installer (78) (AG-78)
+
+Source: owner decisions of 2026-11-19 (Linear umbrella SPE-34831) and `.planning/phases/78-desktop-release-pipeline-and-per-machine-windows-installer/78-CONTEXT.md`. The code for these requirements is written and reviewed in the worktree; none is verified until a CI run has executed it (plan 78-06). Out of scope: code-signing certificates, notarization, auto-update, winget or other stores, Android and iOS packages.
+
+- [ ] **AG-78-1**: The Windows installer is per machine: it asks for administrator rights (UAC), installs the x64 app to `C:\Program Files\Autonogrammer`, adds Start Menu and desktop shortcuts, shows the licence page, registers an all-users uninstall entry and starts the app as the original user after setup. The uninstaller keeps user data by default.
+- [ ] **AG-78-2**: Installing the same or a newer version over an existing one upgrades in place and keeps the install folder, and an all-users install silently replaces the legacy per-user install (`%LOCALAPPDATA%\Programs`, same AppId) without touching user data.
+- [ ] **AG-78-3**: `scripts/release/windows/smoke-test-installer.ps1` installs the setup silently on a Windows runner, checks files, the uninstall entry and the shortcuts, launches the app for 15 seconds, upgrades in place, uninstalls and checks the legacy migration; it fails with the installer log when a step fails and runs in `desktop-release` on `windows-2025`.
+- [ ] **AG-78-4**: The Native app writes nothing beside its executable and never uses the install directory, a system location or a filesystem root as its workspace (`LaunchDirectory`); the WebView2 user data folder is under the per-user local application data folder.
+- [ ] **AG-78-5**: `release.yml` creates the tag release as a draft. `desktop-release.yml` builds the six desktop files (Windows, Linux, macOS ad-hoc codesigned, not notarized), attaches them with `SHA256SUMS-desktop`, waits for the release.yml assets (image archives, SBOM, checksums) and publishes only when all six files verify.
+- [ ] **AG-78-6**: A `workflow_dispatch` run of `desktop-release` with `version_suffix` is a rehearsal: it uses the prerelease file names, enforces the tag gates (private-plugin credential, bundle-plugins checks), runs the verifier and the installer smoke test, uploads workflow artifacts and creates or changes no release.
+- [ ] **AG-78-7**: `scripts/release/verify_desktop_assets.py` checks names, versions, sizes and file signatures of the six files, writes a `sha256sum -c` compatible `SHA256SUMS-desktop`, and its 42 tests run in `scripts/ci/repo-checks.sh`.
+- [ ] **AG-78-8**: All five required plugins are bundled, and the private `agent-substrate` plugin is checked out in release builds with the read-only deploy key `SUBSTRATE_DEPLOY_KEY` (`SUBMODULE_TOKEN` still accepted); a tag build or a rehearsal fails when neither exists, and neither value is echoed (OQ-63).
+- [ ] **AG-78-9**: `agent-swarm` and `agent-substrate` carry the `AGPL-3.0-or-later` LICENSE; each pin moved by that one upstream commit only (swarm `59f12c8d3a28265652ab0e64e52bb153b55157b1`, substrate `70da6d80109eaea1dfdf3c55dff8847e090b46d4`) (OQ-102).
+- [ ] **AG-78-10**: `docs/guides/install.md` (install, checksum verification, the SmartScreen and Gatekeeper warnings of unsigned packages, a manual test checklist for Windows and macOS), `docs/runbooks/desktop-release.md` and the CHANGELOG `## [0.20.0]` section exist and pass the docs and changelog checks.
+- [ ] **AG-78-11**: A dispatch rehearsal on the branch is green including the Windows smoke test; the release `v0.20.0-rc.1` lists the six desktop files, `SHA256SUMS-desktop`, the image archives and the SBOM, every asset downloads non-empty and the checksums verify; the human checklist for Windows and macOS is handed over (human-verification); only then is `v0.20.0` released.
+
 ### Traceability (AG)
 
 | REQ-ID | Phase | Status (2026-10-28) |
@@ -1147,3 +1163,14 @@ Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.m
 | AG-77-15 | 77 | Planned |
 | AG-77-16 | 77 | Planned |
 | AG-77-17 | 77 | Planned |
+| AG-78-1 | 78 | Planned |
+| AG-78-2 | 78 | Planned |
+| AG-78-3 | 78 | Planned |
+| AG-78-4 | 78 | Planned |
+| AG-78-5 | 78 | Planned |
+| AG-78-6 | 78 | Planned |
+| AG-78-7 | 78 | Planned |
+| AG-78-8 | 78 | Planned |
+| AG-78-9 | 78 | Planned |
+| AG-78-10 | 78 | Planned |
+| AG-78-11 | 78 | Planned |

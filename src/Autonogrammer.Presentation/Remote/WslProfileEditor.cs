@@ -172,22 +172,8 @@ public sealed class WslProfileEditor : ObservableModel
     private void Recompute()
     {
         var found = new List<RemoteFieldIssue>();
-        var reported = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var issue in EnvironmentProfileValidator.Validate(Candidate()))
-        {
-            var field = FieldOf(issue.Property);
-            if (reported.Add(field))
-            {
-                found.Add(new RemoteFieldIssue(field, issue.Message));
-            }
-        }
-
-        _issues.Clear();
-        foreach (var issue in found)
-        {
-            _issues.Add(issue);
-        }
-
+        RemoteFieldIssues.AppendValidation(found, Candidate(), FieldOf);
+        RemoteFieldIssues.Replace(_issues, found);
         NotifyPropertyChanged(nameof(IsValid));
     }
 }

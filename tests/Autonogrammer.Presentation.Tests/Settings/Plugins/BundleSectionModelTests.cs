@@ -1,4 +1,5 @@
 #pragma warning disable MA0002, CA1001
+using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Plugins;
 using Shouldly;
 using Xunit;
@@ -28,7 +29,7 @@ public sealed class BundleSectionModelTests
         model.LimitCopy.ShouldBe("hooks listed, not run");
         var row = model.Rows.Single();
         row.Enabled.ShouldBeFalse();
-        row.Notice.ShouldBe(BundleSectionModel.ProjectScopeOff);
+        row.Notice.ShouldBe(SettingsCopy.BundleProjectScopeOff);
         row.ComponentStates.ShouldContain("BundleComponentNotLoaded(hooks)");
 
         row.ToggleCommand.Execute(null);

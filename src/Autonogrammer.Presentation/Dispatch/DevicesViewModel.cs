@@ -25,8 +25,8 @@ public sealed record DevicesViewModel(DispatchPhase? Phase, string StatusText, I
     }
 
     /// <summary>Gets the state when the devices could not be read.</summary>
-    /// <param name="failure">The failure.</param>
-    /// <returns>The phase the failure means.</returns>
+    /// <param name="failure">The failure. Its message is diagnostic; the state shows the copy for the phase it maps to.</param>
+    /// <returns>The state for the phase the failure means.</returns>
     public static DevicesViewModel Failed(DispatchHostException failure)
     {
         ArgumentNullException.ThrowIfNull(failure);

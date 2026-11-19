@@ -1,8 +1,9 @@
 namespace Autonogrammer.Presentation.Dispatch;
 
 /// <summary>
-/// An expected failure of an <see cref="IDispatchHost"/> or <see cref="IThisDeviceHost"/> call. The message is shown to the user, so a host
-/// must never put a token, a secret or a device address in it.
+/// An expected failure of an <see cref="IDispatchHost"/> or <see cref="IThisDeviceHost"/> call. The message is for diagnostics and is never shown
+/// on its own: a Dispatch surface shows the copy for the phase that <see cref="DispatchPhaseMap.ForHostFailure"/> maps the <see cref="Kind"/> to.
+/// A host must never put a token, a secret or a device address in it.
 /// </summary>
 public sealed class DispatchHostException : Exception
 {
@@ -13,7 +14,7 @@ public sealed class DispatchHostException : Exception
     }
 
     /// <summary>Initializes a new instance of the <see cref="DispatchHostException"/> class with <see cref="DispatchHostFailureKind.Unavailable"/>.</summary>
-    /// <param name="message">The message shown to the user.</param>
+    /// <param name="message">The diagnostic message.</param>
     public DispatchHostException(string message)
         : base(message)
     {
@@ -21,7 +22,7 @@ public sealed class DispatchHostException : Exception
     }
 
     /// <summary>Initializes a new instance of the <see cref="DispatchHostException"/> class with <see cref="DispatchHostFailureKind.Unavailable"/>.</summary>
-    /// <param name="message">The message shown to the user.</param>
+    /// <param name="message">The diagnostic message.</param>
     /// <param name="innerException">The cause.</param>
     public DispatchHostException(string message, Exception innerException)
         : base(message, innerException)
@@ -31,7 +32,7 @@ public sealed class DispatchHostException : Exception
 
     /// <summary>Initializes a new instance of the <see cref="DispatchHostException"/> class.</summary>
     /// <param name="kind">Why the call failed.</param>
-    /// <param name="message">The message shown to the user.</param>
+    /// <param name="message">The diagnostic message.</param>
     public DispatchHostException(DispatchHostFailureKind kind, string message)
         : base(message)
     {
@@ -47,7 +48,7 @@ public sealed class DispatchHostException : Exception
     /// </summary>
     /// <param name="status">The HTTP status.</param>
     /// <param name="code">The error code in the body, when there is one.</param>
-    /// <param name="message">The message shown to the user.</param>
+    /// <param name="message">The diagnostic message.</param>
     /// <returns>The exception to throw.</returns>
     public static DispatchHostException FromStatus(int status, string? code, string message) =>
         status == 404 && string.Equals(code, "dispatch_disabled", StringComparison.Ordinal)

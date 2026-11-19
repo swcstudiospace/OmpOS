@@ -74,6 +74,8 @@ internal sealed class HeadServices : IAsyncDisposable
     private readonly OmpManagedInstall? _ompManaged;
     private readonly ILogger? _logger;
     private readonly ContainerHosts _containers;
+    private RemoteEnvironmentsViewModel? _remoteEnvironmentsModel;
+    private RuntimeEnvironmentsViewModel? _runtimeEnvironmentsModel;
     private int _disposed;
 
     private HeadServices(
@@ -193,6 +195,12 @@ internal sealed class HeadServices : IAsyncDisposable
 
     /// <summary>Gets the lister of the running containers the Remote page offers to add.</summary>
     public IContainerLister ContainerLister => _containers.Lister;
+
+    /// <summary>Gets the one Remote environments page model of this head. The Remote page and the New session picker read the same connection test outcomes from it.</summary>
+    public RemoteEnvironmentsViewModel RemoteEnvironmentsModel => _remoteEnvironmentsModel ??= new RemoteEnvironmentsViewModel(RemoteEnvironments);
+
+    /// <summary>Gets the one Containers and WSL model of this head, for the same reason as <see cref="RemoteEnvironmentsModel"/>.</summary>
+    public RuntimeEnvironmentsViewModel RuntimeEnvironmentsModel => _runtimeEnvironmentsModel ??= new RuntimeEnvironmentsViewModel(RemoteEnvironments, ContainerEnvironments, ContainerLister);
 
     /// <summary>Gets the automations of this computer: their file, their scheduler and the manager of the Automations page. The head starts the scheduler once it is open.</summary>
     public AutomationsHost Automations { get; }

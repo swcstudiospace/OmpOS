@@ -1,4 +1,5 @@
 using Autonogrammer.Contracts.Agents;
+using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.AgentLoop.Steering;
 using Autonogrammer.Native.Engine;
@@ -139,4 +140,10 @@ public sealed class AgentSessionRuntimeOptions
     /// session read and write through it.
     /// </summary>
     public Func<CancellationToken, Task<IAsyncWorkspaceFileSystem>>? RemoteFiles { get; init; }
+
+    /// <summary>
+    /// Gets the callback that delivers an artifact card to the artifact panel. It returns true when the panel shows the version the card names,
+    /// or null when no panel is bound. The runtime reports a card the panel does not show.
+    /// </summary>
+    public Func<ArtifactBlock, CancellationToken, Task<bool>>? ArtifactDelivered { get; init; }
 }

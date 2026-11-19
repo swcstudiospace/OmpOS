@@ -8,7 +8,9 @@
 #   <output-dir>  Receives Autonogrammer-<version>-osx-arm64.dmg. An existing image of that name is replaced.
 #
 # The image holds a copy of the app and a link to /Applications. It is UDZO-compressed and checked with hdiutil verify before it
-# gets its final name. The app is not signed with a Developer ID and not notarized.
+# gets its final name. The app is ad-hoc signed by package-desktop.sh (identity "-", not a Developer ID signature, no hardened runtime,
+# not notarized). This script checks, with verify_bundle_signature from macos-adhoc-sign.sh (codesign --verify --deep --strict), that
+# the signature is still intact on the copy it puts in the image.
 # Prints the absolute image path as the last line of stdout. Everything else goes to stderr.
 # hdiutil exists only on macOS, so this script cannot run elsewhere.
 set -euo pipefail
@@ -22,6 +24,8 @@ die() {
   echo "error: $*" >&2
   exit 1
 }
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 [ "$#" -eq 3 ] || { echo "error: expected 3 arguments, got $#" >&2; usage; }
 version="$1"
@@ -46,6 +50,7 @@ esac
 [ -f "$app/Contents/MacOS/Autonogrammer.Native" ] || die "$app has no Contents/MacOS/Autonogrammer.Native"
 
 command -v hdiutil >/dev/null 2>&1 || die "hdiutil is required and ships only with macOS"
+command -v codesign >/dev/null 2>&1 || die "codesign is required and ships only with macOS"
 
 mkdir -p "$out_dir"
 out_abs="$(cd "$out_dir" && pwd)"
@@ -61,6 +66,9 @@ cleanup() {
 trap cleanup EXIT
 
 ditto "$app" "$stage/Autonogrammer.app"
+# shellcheck source=scripts/release/macos-adhoc-sign.sh
+source "$script_dir/macos-adhoc-sign.sh"
+verify_bundle_signature "$stage/Autonogrammer.app" || die "the ad-hoc signature of the app (codesign --verify --deep --strict) failed on the copy for the image; package-desktop.sh signs the app before zipping, and the zip must be extracted with ditto -x -k, not unzip"
 ln -s /Applications "$stage/Applications"
 
 hdiutil create -volname "Autonogrammer ${version}" -srcfolder "$stage" -ov -format UDZO "$partial" >&2

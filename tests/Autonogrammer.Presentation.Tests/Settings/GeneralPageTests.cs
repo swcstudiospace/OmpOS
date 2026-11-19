@@ -198,15 +198,13 @@ public sealed class GeneralPageTests
         Should.Throw<ArgumentOutOfRangeException>(() => page.SetMotion((MotionPreference)42));
     }
 
-    /// <summary>The page offers exactly the three motion choices and no telemetry control; the privacy statement says nothing is sent by Autonogrammer.</summary>
+    /// <summary>The page offers exactly the three motion choices and no telemetry control.</summary>
     [Fact]
-    public void OffersMotionOnlyAndAStatementOfPrivacy()
+    public void OffersMotionOnly()
     {
         GeneralPage.MotionOptions.Select(option => option.Value).ToArray()
             .ShouldBe([MotionPreference.System, MotionPreference.Reduced, MotionPreference.Full]);
         GeneralPage.MotionOptions.ShouldAllBe(option => option.Label.Length > 0 && option.Description.Length > 0);
-        SettingsCopy.PrivacyStatement.ShouldContain("sends nothing anywhere itself", Case.Sensitive);
-        SettingsCopy.PrivacyStatement.ShouldContain("omp", Case.Sensitive);
         typeof(GeneralPage).GetProperties().Select(property => property.Name)
             .ShouldNotContain(name => name.Contains("Telemetry", StringComparison.OrdinalIgnoreCase));
     }

@@ -267,6 +267,7 @@ public sealed class RuntimeEnvironmentRow : ObservableModel
                 && string.Equals(container.Container, before.Container, StringComparison.Ordinal)
                 && string.Equals(container.RemoteUser, before.RemoteUser, StringComparison.Ordinal)
                 && string.Equals(container.WorkspaceFolder, before.WorkspaceFolder, StringComparison.Ordinal)
+                && string.Equals(container.PodmanPath, before.PodmanPath, StringComparison.Ordinal)
                 && string.Equals(container.OmpPath, before.OmpPath, StringComparison.Ordinal)
             : earlier.Wsl is { } wasWsl
                 && string.Equals(Wsl!.Distro, wasWsl.Distro, StringComparison.Ordinal)

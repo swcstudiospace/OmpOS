@@ -1,5 +1,7 @@
 using System.Globalization;
 using Autonogrammer.Contracts.Ui;
+using Autonogrammer.Presentation.Changes;
+using Autonogrammer.Presentation.Editor;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -39,9 +41,9 @@ internal partial class FileEditBlockView : UserControl
         var operation = block.OldText is null ? CreatedLabel : EditedLabel;
         OperationText.Text = operation;
 
-        var entries = LineDiff.Compute(block.OldText, block.NewText);
-        var added = entries.Count(static entry => entry.Kind == DiffEntryKind.Added);
-        var removed = entries.Count(static entry => entry.Kind == DiffEntryKind.Removed);
+        var entries = ChangeDiffLines.Numbered(block.OldText, block.NewText);
+        var added = entries.Count(static entry => entry.Kind == DiffLineKind.Added);
+        var removed = entries.Count(static entry => entry.Kind == DiffLineKind.Removed);
         AddedCount.Text = BlockText.AddedCount(added);
         AddedCount.IsVisible = added > 0;
         RemovedCount.Text = BlockText.RemovedCount(removed);
@@ -60,7 +62,7 @@ internal partial class FileEditBlockView : UserControl
         AutomationProperties.SetName(this, $"File edit {block.Path}, {operation}");
     }
 
-    private static Border LineRow(DiffEntry entry)
+    private static Border LineRow(NumberedDiffLine entry)
     {
         var number = new TextBlock
         {
@@ -75,18 +77,18 @@ internal partial class FileEditBlockView : UserControl
         {
             Text = entry.Kind switch
             {
-                DiffEntryKind.Added => BlockText.AddedSign,
-                DiffEntryKind.Removed => BlockText.RemovedSign,
+                DiffLineKind.Added => BlockText.AddedSign,
+                DiffLineKind.Removed => BlockText.RemovedSign,
                 _ => string.Empty,
             },
             TextAlignment = TextAlignment.Center,
         };
         BlockControls.AsMono(sign);
-        if (entry.Kind == DiffEntryKind.Added)
+        if (entry.Kind == DiffLineKind.Added)
         {
             sign.Classes.Add("diff-added");
         }
-        else if (entry.Kind == DiffEntryKind.Removed)
+        else if (entry.Kind == DiffLineKind.Removed)
         {
             sign.Classes.Add("diff-removed");
         }
@@ -105,11 +107,11 @@ internal partial class FileEditBlockView : UserControl
 
         var row = new Border { Child = grid };
         row.Classes.Add("diff-line");
-        if (entry.Kind == DiffEntryKind.Added)
+        if (entry.Kind == DiffLineKind.Added)
         {
             row.Classes.Add("added");
         }
-        else if (entry.Kind == DiffEntryKind.Removed)
+        else if (entry.Kind == DiffLineKind.Removed)
         {
             row.Classes.Add("removed");
         }

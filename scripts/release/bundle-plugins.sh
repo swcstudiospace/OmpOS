@@ -131,7 +131,7 @@ while IFS=$'\t' read -r dir source private required expected accepted <&3; do
   fi
   if [ -n "$reason" ]; then
     if [ "$private" = true ]; then
-      reason="$reason; the private submodule needs the SUBMODULE_TOKEN secret"
+      reason="$reason; the private submodule needs the SUBSTRATE_DEPLOY_KEY or the SUBMODULE_TOKEN secret"
     fi
     if [ "$mode" = tag ] && [ "$required" = true ]; then
       fail_plugin "$dir" "$reason. A tag build needs every plugin whose requiredForRelease is true"

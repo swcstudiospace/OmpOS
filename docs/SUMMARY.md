@@ -2,6 +2,7 @@
 
 ## Get started
 
+* [Install Autonogrammer](guides/install.md)
 * [Getting started](guides/getting-started.md)
 * [Local development and the gate](runbooks/local-dev.md)
 * [Run the desktop app](runbooks/running-the-desktop-app.md)

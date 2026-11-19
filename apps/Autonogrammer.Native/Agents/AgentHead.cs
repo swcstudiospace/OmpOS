@@ -82,6 +82,9 @@ internal sealed class AgentHead : IAsyncDisposable
     /// <summary>Gets the shared services (hooks, remote environments, MCP catalog, checkpoints, run mode, cloud) the shell and the Settings window read, or null for a head built without them. The head disposes them.</summary>
     public Autonogrammer.Native.Composition.HeadServices? Services { get; private init; }
 
+    /// <summary>Gets the workspace root the head resolved at startup (see <see cref="AgentLoopEnvironment.WorkspaceRoot"/>): the launch directory when it is usable, otherwise the user's home directory. The main window and the engines share this one value.</summary>
+    public string WorkspaceRoot { get; private init; } = string.Empty;
+
     /// <summary>Gets the Cowork head. Disposed before <see cref="Host"/>.</summary>
     public CoworkHead? Cowork { get; private set; }
 
@@ -542,8 +545,9 @@ internal sealed class AgentHead : IAsyncDisposable
         }
     }
 
-    private static Task<CoworkHead> CreateCoworkAsync(SessionEngineSetOptions options, Autonogrammer.Native.Composition.HeadServices? services, ICoworkToolHost? coworkTools) =>
-        CoworkHead.CreateAsync(
+    private static async Task<CoworkHead> CreateCoworkAsync(SessionEngineSetOptions options, Autonogrammer.Native.Composition.HeadServices? services, ICoworkToolHost? coworkTools)
+    {
+        var cowork = await CoworkHead.CreateAsync(
             options.Loop.StateRoot,
             options.Loop.WorkspaceRoot,
             new SignedOutCoworkGate(),
@@ -555,7 +559,15 @@ internal sealed class AgentHead : IAsyncDisposable
             services?.Mcp,
             coworkTools,
             services is null ? null : ct => services.ResolveOmpForLaunchAsync(ct),
-            services?.AccountHost.Session);
+            services?.AccountHost.Session,
+            services is null ? null : (block, token) => services.Artifacts.DeliverAsync(block, token)).ConfigureAwait(true);
+        if (services is not null)
+        {
+            services.Artifacts.CardSink = cowork.PublishArtifactCard;
+        }
+
+        return cowork;
+    }
 
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
     private static async Task<AgentHead> BuildModelsAsync(SessionEngineSet host, HeadSettings settings, CoworkHead cowork, SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, Autonogrammer.Native.Composition.HeadServices? services, BrowserUseCompositionResult browser)
@@ -675,6 +687,7 @@ internal sealed class AgentHead : IAsyncDisposable
             Bundles = bundles,
             BrowserUse = browser,
             Services = services,
+            WorkspaceRoot = options.Loop.WorkspaceRoot,
         };
     }
 

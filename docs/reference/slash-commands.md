@@ -85,7 +85,7 @@ A native command whose action the window cannot run is listed disabled. The web 
 | `/setup-terminal` | CLI | Configures terminal newline keybindings. | Unavailable | - | Unavailable | Configures the Cursor CLI's newline keys. |
 | `/help` | CLI | Shows help, or details for one command. | NativeAction | `help.show` | Built | Opens the slash palette, filtered by the text after the command. |
 | `/feedback` | CLI | Sends feedback to the team. | NativeAction | `app.feedback` | Partial | Opens the Autonogrammer issue form in the browser with the typed title; nothing is sent from the app. |
-| `/open` | CLI | Opens the repository's Git root in Cursor. | NativeAction | `editor.open` | Partial | Opens a file of the workspace in the Autonogrammer editor, at the line after the colon; it does not open Cursor. |
+| `/open` | CLI | Opens a workspace file in the Autonogrammer editor, at an optional line. | NativeAction | `editor.open` | Partial | Opens a file of the workspace in the Autonogrammer editor, at the line after the colon; it does not open Cursor. |
 | `/copy-request-id` | CLI | Copies the last request ID. | NativeAction | `chat.copyRequestId` | Partial | Copies the id of the last turn's request when the engine session reports one; says so when it has none. |
 | `/copy-conversation-id` | CLI | Copies the conversation ID. | NativeAction | `chat.copyConversationId` | Built | Copies this session's omp session id to the clipboard. |
 | `/logout` | CLI | Signs out of Cursor. | Unavailable | - | Unavailable | Signs out of a Cursor account; Autonogrammer has no Cursor account. |
@@ -153,7 +153,7 @@ A native command whose action the window cannot run is listed disabled. The web 
 | `/worktree` | Chat | Runs the rest of the chat in a separate checkout. | OmpDelegated | `/worktree (omp /wt)` | Delegated | Sent to omp as typed; omp's /worktree (alias of /wt) moves the session into a new worktree with its changes and takes an optional branch. |
 | `/apply-worktree` | Chat | Brings worktree changes into the main checkout. | NativeAction | `worktree.apply` | Built | Applies the changes of a worktree run to the main checkout as a patch against their merge base; 'merge' uses a three-way merge and lists conflicts. Opens the Worktrees panel with the outcome. |
 | `/delete-worktree` | Chat | Deletes the isolated checkout. | NativeAction | `worktree.delete` | Built | Asks to delete a worktree run and its checkout; nothing is deleted until you confirm in the Worktrees panel. |
-| `/best-of-n` | Chat | Runs one worktree per model and compares the results; never merges. | NativeAction | `worktree.bestofn` | Partial | Runs the task n times, each in its own worktree with the current model, and lists the candidates for you to compare; it never merges. Cursor runs one candidate per model; Autonogrammer runs n candidates of one model. |
+| `/best-of-n` | Chat | Runs n candidates of the current model, each in its own worktree, and compares the results; never merges. | NativeAction | `worktree.bestofn` | Partial | Runs the task n times, each in its own worktree with the current model, and lists the candidates for you to compare; it never merges. Cursor runs one candidate per model; Autonogrammer runs n candidates of one model. |
 | `/remote-control` | Chat | Hands the local session to a worker on this machine. | Unavailable | - | Unavailable | Needs a Cursor remote worker; Autonogrammer remote sessions arrive with the remote and cloud phases. |
 
 ## Open-ended forms

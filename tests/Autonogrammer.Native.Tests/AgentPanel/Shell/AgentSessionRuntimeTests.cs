@@ -252,7 +252,7 @@ public sealed class AgentSessionRuntimeTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    private static AgentSessionRuntime Create(IPromptChannel prompts, ScriptedStageSource? stages = null, string sessionId = "session-1", TaskContext? context = null)
+    internal static AgentSessionRuntime Create(IPromptChannel prompts, ScriptedStageSource? stages = null, string sessionId = "session-1", TaskContext? context = null, Func<ArtifactBlock, CancellationToken, Task<bool>>? artifactDelivered = null)
     {
         var now = DateTimeOffset.UnixEpoch;
         var row = AgentRowFor(sessionId, now);
@@ -269,6 +269,7 @@ public sealed class AgentSessionRuntimeTests
             },
             Stages = stages ?? new ScriptedStageSource(),
             Context = new ScriptedTaskContext(context),
+            ArtifactDelivered = artifactDelivered,
         });
     }
 

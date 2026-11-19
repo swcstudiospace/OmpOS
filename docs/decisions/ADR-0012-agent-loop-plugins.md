@@ -18,6 +18,7 @@ Observed facts that constrain the design:
 - omp fails `session/new` if any MCP server in the request is unreachable.
 - Substrate on its default branch has no live steering delivery.
 - The substrate repository is private; two of the three siblings have no LICENSE file and the third is AGPL-3.0-or-later.
+  - Update 2026-11-19: `agent-swarm` and `agent-substrate` now carry the `AGPL-3.0-or-later` LICENSE file (owner decision, [OQ-102](../open-questions.md) resolved; one LICENSE-only commit on top of each previous pin, merged to each default branch as swarm#49 and substrate#221). The statement above is the state when the record was written.
 
 ## Decision
 
@@ -34,6 +35,7 @@ Observed facts that constrain the design:
 ## Consequences
 
 - Cloning needs `--recurse-submodules`. The private substrate submodule needs read access locally and the `SUBMODULE_TOKEN` secret in CI ([OQ-63](../open-questions.md)). Without it the substrate plugin is Unavailable and the build still passes.
+  - Update 2026-11-19: the tag workflow `desktop-release.yml` checks out the private substrate repository with the read-only deploy key held in the secret `SUBSTRATE_DEPLOY_KEY`; `SUBMODULE_TOKEN` is still accepted ([OQ-63](../open-questions.md) resolved). The `build-test` job of `ci.yml` still reads `SUBMODULE_TOKEN` only. The decision text is unchanged.
 - A pin bump is a commit in Autonogrammer. Sibling changes land in the sibling repository first ([plugins guide](../plugins.md)).
 - The architecture layer map gains `Autonogrammer.Harness.AgentLoop` (L2) and the Contracts `Agents` types ([architecture](../architecture.md)).
 - Stage visibility depends on files and HTTP the plugins write. A plugin that changes those formats degrades its stage until the observer is updated; unknown fields are ignored and malformed files yield a Degraded event.

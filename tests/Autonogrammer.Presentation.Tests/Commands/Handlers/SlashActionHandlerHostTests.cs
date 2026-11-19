@@ -62,16 +62,16 @@ public sealed class SlashActionHandlerHostTests
     [Fact]
     public async Task AnExceptionFromAHandlerIsAFailedResultAndCancellationStillPropagates()
     {
-        var handler = new RecordingSlashActionHandler(HandlerActionIds.AppLogs) { Failure = new IOException("disk gone") };
+        var handler = new RecordingSlashActionHandler(HandlerActionIds.AppAbout) { Failure = new IOException("disk gone") };
         var host = new SlashActionHandlerHost([handler]);
 
-        var result = await host.RunAsync(Request(HandlerActionIds.AppLogs), Token).ConfigureAwait(true);
+        var result = await host.RunAsync(Request(HandlerActionIds.AppAbout), Token).ConfigureAwait(true);
 
         result.Outcome.ShouldBe(SlashActionOutcome.Failed);
         result.Message.ShouldContain("disk gone", Case.Sensitive);
 
         handler.Failure = new OperationCanceledException();
-        await Should.ThrowAsync<OperationCanceledException>(() => host.RunAsync(Request(HandlerActionIds.AppLogs), Token)).ConfigureAwait(true);
+        await Should.ThrowAsync<OperationCanceledException>(() => host.RunAsync(Request(HandlerActionIds.AppAbout), Token)).ConfigureAwait(true);
     }
 
     [Fact]

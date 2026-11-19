@@ -167,6 +167,7 @@ public sealed class AutomationsViewModel : ObservableModel
         catch (Exception)
         {
             _pending--;
+            Publish();
             throw;
         }
 

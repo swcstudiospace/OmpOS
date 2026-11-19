@@ -23,4 +23,7 @@ public enum CloudCreateOutcome
 
     /// <summary>The request was sent and then interrupted before the service answered, so the agent may or may not exist. Check the list before a retry.</summary>
     Unknown = 6,
+
+    /// <summary>Cloud agents are not set up, or the user is not signed in.</summary>
+    NotAvailable = 7,
 }
