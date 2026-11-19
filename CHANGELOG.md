@@ -8,6 +8,15 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.5] - 2026-11-19
+
+Phase 66.4 closeout: CI quality and supply-chain records brought up to date.
+
+- The omp dependency snapshot `deploy/omp-deps.lock.json` is real (25 direct deps of omp 18.18.1, `pending: false`); the drift gate now compares instead of warning. `scripts/ci/snapshot-omp-deps.sh` derives the list from package.json `dependencies` plus installed node_modules versions because `bun pm ls` refuses without the lockfile a `--production` install never writes.
+- Base image digests re-resolved: the `aspnet:10.0.15-noble` tag had been re-published (new list digest), so the API and worker Containerfiles were re-pinned; the SDK digest is unchanged.
+- CodeQL and OpenSSF Scorecard have run and both findings are dismissed as false positives with recorded mitigations; the five Scorecard advisory signals are dismissed as wont-fix. Zero open alerts remain.
+- AG-QU-2, AG-QU-3 and AG-QU-7 are marked met with their CI evidence.
+  
 ## [0.20.4] - 2026-11-20
 
 ### Changed

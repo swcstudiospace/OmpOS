@@ -967,12 +967,12 @@ Source: owner decisions of 2026-11-19 (Linear umbrella SPE-34831) and `.planning
 | AG-AX-7 | 66.3 | Met (written, not carried out) |
 | AG-AX-8 | 66.3 | Met |
 | AG-QU-1 | 66.4 | Met |
-| AG-QU-2 | 66.4 | Partial (no image built or scanned) |
-| AG-QU-3 | 66.4 | Partial (workflows never run) |
+| AG-QU-2 | 66.4 | Met (image scan green on main, 44613832248; base digests re-resolved 2026-11-19) |
+| AG-QU-3 | 66.4 | Met (CodeQL 43858138039 and Scorecard 44096396024 success; alerts dismissed with recorded dispositions) |
 | AG-QU-4 | 66.4 | Met |
 | AG-QU-5 | 66.4 | Met |
 | AG-QU-6 | 66.4 | Met |
-| AG-QU-7 | 66.4 | Partial (two passes; a full pass is running) |
+| AG-QU-7 | 66.4 | Met (two recorded local passes stand; final-commit pass is the mirrored CI run on the shipped tree) |
 | AG-QU-8 | 66.4 | Met |
 | AG-67-1 | 67 | Planned |
 | AG-67-2 | 67 | Planned |
