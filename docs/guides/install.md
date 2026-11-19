@@ -4,7 +4,7 @@ description: "Install the Autonogrammer desktop app from a GitHub release on Win
 
 # Install Autonogrammer
 
-Status: The six desktop files are built by `desktop-release.yml`. The Windows installer is per machine and not signed; the macOS app is ad-hoc signed and not notarized. The Windows installer smoke test ran end to end on a Windows runner and passed (Actions run 44514593485, 2026-11-19); the macOS leg has not yet produced a signed bundle on a runner. No step on this page was run on a real Windows or macOS machine.
+Status: The six desktop files are built by `desktop-release.yml`. The Windows installer is per machine and not signed; the macOS app is ad-hoc signed and not notarized. Rehearsal runs 44514593485 (2026-11-19) and 44524125822 (2026-11-20) ran on real runners: the Windows installer smoke test passed end to end and the final macOS signing recipe completed on the real bundle. No step on this page was run on a real Windows or macOS machine.
 
 Last verified: 2026-11-19 (read against the installer script, the workflows and the app code; nothing was installed)
 
