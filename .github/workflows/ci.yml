@@ -82,6 +82,18 @@ jobs:
         run: bash scripts/ci/secret-scan.sh
       - name: Plugin tests (node:test suite of plugins/gsd-core-omp; the same script bootstrap.sh runs)
         run: bash scripts/ci/plugin-node-tests.sh
+      - name: Hosted self-test and Demo-marker checks (Phase 66.2 closeout; the real bundle carries no Demo code; the Demo bundle does and check-no-demo detects it)
+        run: |
+          node scripts/hosted/selftest.mjs
+          AUTONOGRAMMER_API_ORIGIN=http://127.0.0.1:5187 AUTONOGRAMMER_API_ORIGIN_ALLOW_LOOPBACK=1 bash scripts/vercel/build-web.sh "$RUNNER_TEMP/web-real"
+          bash scripts/vercel/check-no-demo.sh "$RUNNER_TEMP/web-real"
+          bash scripts/vercel/build-demo.sh "$RUNNER_TEMP/web-demo"
+          bash scripts/vercel/check-no-demo.sh --expect-demo "$RUNNER_TEMP/web-demo"
+          # Negative control: the Demo bundle without --expect-demo must fail the check.
+          if bash scripts/vercel/check-no-demo.sh "$RUNNER_TEMP/web-demo"; then
+            echo "check-no-demo: negative control failed (Demo bundle passed without --expect-demo)" >&2
+            exit 1
+          fi
       - name: Repository checks (brand set, changelog, documentation structure, provider reference, settings parity; the same script bootstrap.sh runs)
         run: bash scripts/ci/repo-checks.sh
       - name: Licence checks (NOTICE and THIRD-PARTY-NOTICES.md against the restored NuGet cache; the same script bootstrap.sh runs)

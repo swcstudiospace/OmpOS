@@ -42,7 +42,7 @@ Every step below ends with a status. "Not yet executed against a real deployment
 |--------------|-------|
 | Owner decision on the Railway project for the API: a new project, or `Ultrathink` (threat model Q-TM-1) | Open |
 | Owner decision on the database role and the shared TimescaleDB (Q-TM-2, Q-BR-1) | Open |
-| Units api-auth, api-hosting and engine-isolation of program 66 merged, so that `Api__Auth__Mode=OwnerToken`, the `Hosting__*` and `Harness__Acp__*` names exist in the image | Merged on the branch `feat/autonogrammer-integration`, not yet on `main`: pushing it and opening the pull request need the owner's approval |
+| Units api-auth, api-hosting and engine-isolation of program 66 merged, so that `Api__Auth__Mode=OwnerToken`, the `Hosting__*` and `Harness__Acp__*` names exist in the image | Merged to `main` via reviewed PRs #4 and #5; the branch was deleted (2026-11-19 note) |
 | An owner token generated and its digest computed ([Incident response](incident-response.md), "Rotate the owner token") | Not done |
 | A separate Vercel project (or an explicit decision to replace the Demo at `https://ompos-web.vercel.app`) for the real web head | Open (Q-DEP-1) |
 | A model credential (HOST-04) | Not available; the smoke below cannot complete an agent turn without it |
