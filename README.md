@@ -105,7 +105,7 @@ scripts/web-demo/serve-demo.sh      # http://127.0.0.1:5190/
 
 **Web with a local API:** see [docs/runbooks/web-demo.md](docs/runbooks/web-demo.md). **Everything (build, test, format, web smoke):** `./bootstrap.sh`, see [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md).
 
-**Real web app against a local API (owner token, real omp, scripted model).** `scripts/hosted/run-local.sh --web-bundle <dir>` builds nothing itself: build `services/Autonogrammer.Api` in Release, and publish the bundle with `AUTONOGRAMMER_API_ORIGIN=http://127.0.0.1:5187 AUTONOGRAMMER_API_ORIGIN_ALLOW_LOOPBACK=1 scripts/vercel/build-web.sh <dir>`. See [scripts/hosted/README.md](scripts/hosted/README.md).
+**Real web app against a local API (real omp, scripted model).** `bash scripts/hosted/run-local.sh --out <dir>` builds nothing itself: build `services/Autonogrammer.Api` in Release, and publish the bundle with `AUTONOGRAMMER_API_ORIGIN=http://127.0.0.1:5187 AUTONOGRAMMER_API_ORIGIN_ALLOW_LOOPBACK=1 scripts/vercel/build-web.sh <dir>`. The web head signs in with Supabase passwordless (Phase 67); the browser flow has no scriptable sign-in yet (OQ-312). See [scripts/hosted/README.md](scripts/hosted/README.md).
 
 The desktop head reads these variables (`apps/Autonogrammer.Native/Agents/AgentLoopEnvironment.cs`):
 

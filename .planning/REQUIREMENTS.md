@@ -643,13 +643,13 @@ Added 2026-10-29 from the owner request "ultrathink orchestrate workflowz" and t
 
 - [x] **AG-HW-1**: The web head builds as a real application with no Demo code (`scripts/vercel/build-web.sh`), and `scripts/vercel/check-no-demo.sh` asserts it, with a positive control on the Demo bundle (`--expect-demo`).
 - [x] **AG-HW-2**: `Api:Auth:Mode=OwnerToken` accepts a bearer token whose SHA-256 digest is configured (constant-time comparison, rotation by two digests), throttles failures with a 429 and `Retry-After`, and `GET /auth/config` tells a client the mode without a credential.
-- [x] **AG-HW-3**: The web head has a connect screen and an auth gate, holds the token in memory only (no web storage, no cookie), ends the session on a 401 that answers a request that carried it, and has a sign-out.
+- [x] **AG-HW-3**: The web head has a connect screen and an auth gate, holds the sign-in token in memory only (no web storage, no cookie), ends the session on a 401 that answers a request that carried it, and has a sign-out. (The sign-in is Supabase passwordless since Phase 67 / ADR-0030; the former owner-token connect screen and `OwnerTokenSession` were retired by 4a234284. The API `OwnerToken` mode (AG-HW-2) remains for non-web clients and tests.)
 - [x] **AG-HW-4**: `Api:Auth:AllowedSubjects` and `AllowAnyAuthenticatedUser` decide who may use an OIDC deployment (403 `subject_not_allowed`), and all six rate-limit policies partition per subject.
 - [x] **AG-HW-5**: Hosting hardening under `Hosting:*`: forwarded headers, HSTS outside Development, security headers with a strict content-security policy for API responses, Kestrel limits, request timeouts that answer a 504 problem (event streams exempt), `GET /health/startup`, a readiness check that turns unhealthy at shutdown, SSE keep-alive comments.
 - [x] **AG-HW-6**: The engine child gets an allow-listed environment outside Development, a 0700 workspace per session, and a non-dumpable API process; failing to make the process non-dumpable stops the start outside Development.
 - [x] **AG-HW-7**: `Harness:Acp:Approval` (kinds, grantable tools, decision timeout) lets the tool-approval endpoints grant a tool on the direct run path; the default denies everything.
 - [x] **AG-HW-8**: The web shell has routes (`/`, `/kanban`, `/sessions/{id}`, `/settings[/{page}]`, `/about`, `/connect`), a title per view, a route announcer that speaks the title of the view the app changes to, route focus, an error boundary and a not-found page; the transcript renders the latest 50 turns with a button for earlier ones; an offline shell never caches cross-origin, `Authorization`, event-stream or `/auth/*` requests.
-- [x] **AG-HW-9**: The hosted path runs end to end on one machine with the real `omp acp` and a scripted model: sign-in, a streamed answer, an approved tool call, resume, the rate limit, and a browser flow with no console error, no failed request and no unsupported content in the transcript (`scripts/hosted/`, `docs/runbooks/evidence/hosted-web-2026-10-29/`).
+- [x] **AG-HW-9**: The hosted path runs end to end on one machine with the real `omp acp` and a scripted model: sign-in, a streamed answer, an approved tool call, resume, the rate limit, and a browser flow with no console error, no failed request and no unsupported content in the transcript. (The API path is proven by `scripts/hosted/run-local.sh` with the real `omp`, result `passed` on 2026-11-20, evidence `docs/runbooks/evidence/hosted-web-2026-11-19/`; the browser flow has no scriptable sign-in — `e2e-browser.mjs` was removed by 3382c666 and the gap is tracked by OQ-312, awaiting an owner decision on a test sign-in. `scripts/hosted/`, `docs/runbooks/evidence/hosted-web-2026-10-29/`).
 - [x] **AG-HW-10**: The findings of the read-only security and quality reviews are fixed or recorded as open questions with a default (OQ-184 to OQ-190, threat model rows T4.7 and T1.4).
 - [x] **AG-HW-11**: Nothing is pushed, merged, deployed or provisioned and no secret changes without the owner's approval; the deploy runbook, its readiness checklist and the exact smoke steps exist (`docs/runbooks/deploy-and-rollback.md`).
 - [x] **AG-HW-12**: The Demo remains a build-time variant that is not mistaken for the real application: the public URL still serves the Demo until the owner approves the switch, and the real bundle carries no Demo code.
@@ -954,7 +954,7 @@ Source: owner decisions of 2026-11-19 (Linear umbrella SPE-34831) and `.planning
 | AG-HW-6 | 66.2 | Met (the effect inside a container is not observed) |
 | AG-HW-7 | 66.2 | Met |
 | AG-HW-8 | 66.2 | Met |
-| AG-HW-9 | 66.2 | Met (scripted model, one machine) |
+| AG-HW-9 | 66.2 | Met (API flow, real omp, scripted model, one machine; run 2026-11-20 — browser flow deferred, no scriptable sign-in per OQ-312) |
 | AG-HW-10 | 66.2 | Met |
 | AG-HW-11 | 66.2 | Met (nothing deployed; the owner's approval is pending) |
 | AG-HW-12 | 66.2 | Met |

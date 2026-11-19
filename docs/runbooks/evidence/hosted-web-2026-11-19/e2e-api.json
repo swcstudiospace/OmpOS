@@ -1,0 +1,63 @@
+{
+  "api": "http://127.0.0.1:5187",
+  "startedAt": "2026-11-19T19:03:51.110Z",
+  "mode": "owner-token",
+  "steps": [
+    {
+      "name": "auth-config",
+      "status": "passed",
+      "ms": 143,
+      "mode": "owner-token"
+    },
+    {
+      "name": "unauthenticated",
+      "status": "passed",
+      "ms": 18,
+      "wwwAuthenticate": "Bearer"
+    },
+    {
+      "name": "bad-token",
+      "status": "passed",
+      "ms": 14,
+      "contentType": null
+    },
+    {
+      "name": "text-turn",
+      "status": "passed",
+      "ms": 6964,
+      "sessionId": "4740f26586894bab80b1930a5e4e4803",
+      "events": 11,
+      "eventKinds": "prompt_accepted,text_delta,context_usage,completed",
+      "firstSeq": 1,
+      "lastSeq": 11,
+      "userMessageEvent": false
+    },
+    {
+      "name": "tool-turn",
+      "status": "passed",
+      "ms": 1344,
+      "approval": "approved",
+      "requestId": "88f524b0f3de4198a2135489b3e4dff8:0",
+      "toolCallEvents": true,
+      "reply": "done: 18",
+      "eventKinds": "prompt_accepted,tool_approval_requested,tool_approval_approved,tool_call,tool_call_update,text_delta,context_usage,completed"
+    },
+    {
+      "name": "resume",
+      "status": "passed",
+      "ms": 5210,
+      "firstConnectionEvents": 2,
+      "resumedFrom": 25,
+      "resumedEvents": 15,
+      "sessionLogEvents": 40
+    },
+    {
+      "name": "rate-limit",
+      "status": "skipped",
+      "detail": "skipped by --skip"
+    }
+  ],
+  "finishedAt": "2026-11-19T19:04:04.803Z",
+  "sessionId": "4740f26586894bab80b1930a5e4e4803",
+  "result": "passed"
+}

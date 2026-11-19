@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Self-test of the hosted end-to-end harness: the SSE reader and the scripted fake model server are exercised over
-// loopback with fetch. It needs neither omp nor the API nor the .NET build, and it is not wired into CI.
+// loopback with fetch. It needs neither omp nor the API nor the .NET build, and it is wired into CI (feeds Phase 66.2 criterion coverage).
 //
 //   node scripts/hosted/selftest.mjs
 
