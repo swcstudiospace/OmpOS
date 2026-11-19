@@ -31,7 +31,7 @@ cd /path/to/worktree                       # must be a git work tree, clean unle
 python3 scripts/rebrand/rebrand.py                       # same as: dry-run
 python3 scripts/rebrand/rebrand.py dry-run --report-dir /tmp/ag-recon/rebrand-report
 python3 scripts/rebrand/rebrand.py apply                 # git mv + rewrite, no commit
-python3 scripts/rebrand/rebrand.py verify --baseline /tmp/ag-recon/rebrand-report/rebrand-report.json
+python3 scripts/rebrand/rebrand.py verify
 ```
 
 | Flag | Meaning |
@@ -42,7 +42,7 @@ python3 scripts/rebrand/rebrand.py verify --baseline /tmp/ag-recon/rebrand-repor
 | `--engine-adapters {keep,rename}` | `keep` (default): engine-integration identifiers stay. `rename`: `Omp*` identifiers and `omp*` camel prefixes become `Autonogrammer*`/`autonogrammer*`; bare `omp`, `OMP_*`, `omp://`, `~/.omp`, `models.yml` and every other keep pattern still stay. Not recommended: it renames `OmpLauncher` to `AutonogrammerLauncher`, which misdescribes the class |
 | `--report-dir DIR` | where `rebrand-report.md` and `rebrand-report.json` go (default `/tmp/ag-recon/rebrand-report`; refused when inside `--root`) |
 | `--allow-dirty` | apply on a tree with uncommitted changes (the diff will mix) |
-| `--baseline FILE` | `verify`: the JSON a dry-run wrote before apply |
+| `--baseline FILE` | `verify`: compare against a dry-run report JSON (historic gate; retired 2026-11-19 — the durable gate is `verify` without `--baseline`) |
 
 Reading the dry-run report (`rebrand-report.md`): headline numbers; every distinct matched casing with count, file count and two examples; counts per zone, per kind of occurrence (env var, header, dot directory, kebab/CSS, namespace, identifier, prose) and per excluded class; every rejected `ompos` near-match with its reason (`benign` = compose family, `suspect` = needs a human: for example `IOmpOS` with an uppercase left edge, or a casing outside the token map); the engine census (kept tokens, kept first-party `Omp*` identifiers, product abbreviations); the path plan (all moves, collision check); every protected URL; owner actions; ambiguous items. Exit code 2 means collisions.
 
