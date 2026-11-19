@@ -82,6 +82,9 @@ internal sealed class AgentHead : IAsyncDisposable
     /// <summary>Gets the shared services (hooks, remote environments, MCP catalog, checkpoints, run mode, cloud) the shell and the Settings window read, or null for a head built without them. The head disposes them.</summary>
     public Autonogrammer.Native.Composition.HeadServices? Services { get; private init; }
 
+    /// <summary>Gets the workspace root the head resolved at startup (see <see cref="AgentLoopEnvironment.WorkspaceRoot"/>): the launch directory when it is usable, otherwise the user's home directory. The main window and the engines share this one value.</summary>
+    public string WorkspaceRoot { get; private init; } = string.Empty;
+
     /// <summary>Gets the Cowork head. Disposed before <see cref="Host"/>.</summary>
     public CoworkHead? Cowork { get; private set; }
 
@@ -684,6 +687,7 @@ internal sealed class AgentHead : IAsyncDisposable
             Bundles = bundles,
             BrowserUse = browser,
             Services = services,
+            WorkspaceRoot = options.Loop.WorkspaceRoot,
         };
     }
 

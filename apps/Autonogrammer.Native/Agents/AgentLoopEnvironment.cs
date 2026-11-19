@@ -70,7 +70,11 @@ internal sealed class AgentLoopEnvironment
     /// <summary>Gets the absolute root of all session state.</summary>
     public string StateRoot { get; }
 
-    /// <summary>Gets the absolute workspace root, which is the current directory.</summary>
+    /// <summary>
+    /// Gets the absolute workspace root. For the running process it is the launch directory chosen by <see cref="LaunchDirectory"/>: the current
+    /// directory of a terminal launch inside a project, or the user's home directory when the process started in the install folder, a system
+    /// folder, a filesystem root or a directory that no longer exists.
+    /// </summary>
     public string WorkspaceRoot { get; }
 
     /// <summary>Gets the validated Substrate endpoint, or null when none is configured or the configured address was refused.</summary>
@@ -98,7 +102,7 @@ internal sealed class AgentLoopEnvironment
         Func<string, string?> getVariable = static name => Environment.GetEnvironmentVariable(name);
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         _ = EnsureStateRootMigrated(getVariable, home);
-        return Resolve(getVariable, AppContext.BaseDirectory, Environment.CurrentDirectory, home);
+        return Resolve(getVariable, AppContext.BaseDirectory, LaunchDirectory.Resolve(), home);
     }
 
     /// <summary>
@@ -123,7 +127,7 @@ internal sealed class AgentLoopEnvironment
     /// <summary>Resolves an environment from injected process facts, so the precedence rules can be checked without touching the process.</summary>
     /// <param name="getVariable">Reads an environment variable, returning null when it is unset.</param>
     /// <param name="baseDirectory">The directory of the running application. A <c>plugins</c> directory beside it is used first; otherwise the search for the repository starts here.</param>
-    /// <param name="currentDirectory">The current directory. It is the workspace root, the second search start and the base of relative paths.</param>
+    /// <param name="currentDirectory">The launch directory to use as the workspace root (the native startup path passes the result of <see cref="LaunchDirectory.Resolve()"/>, not the raw process current directory). It is also the second search start and the base of relative paths.</param>
     /// <param name="homeDirectory">The user's home directory.</param>
     /// <returns>The resolved environment.</returns>
     /// <exception cref="ArgumentNullException">A delegate or a directory is null.</exception>

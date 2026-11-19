@@ -147,7 +147,7 @@ public sealed class McpConnectionChecker : IMcpConnectionChecker
                 new McpStdioServerOptions(
                     server.Command,
                     server.Args,
-                    AppContext.BaseDirectory,
+                    StdioWorkingDirectory(),
                     environment,
                     mode,
                     _options.EnvironmentAllowList),
@@ -160,6 +160,16 @@ public sealed class McpConnectionChecker : IMcpConnectionChecker
         }
 
         return await McpClientConnector.ConnectHttpAsync(server.Url, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The working directory of a server the checker starts. The checker knows no workspace, and the application's own directory is not
+    /// writable when it is installed under Program Files, so the user's home directory is used (the temporary directory when none is reported).
+    /// </summary>
+    private static string StdioWorkingDirectory()
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        return string.IsNullOrWhiteSpace(home) ? Path.GetTempPath() : home;
     }
 
     private static McpConnectionResult Failed(string reason) =>
