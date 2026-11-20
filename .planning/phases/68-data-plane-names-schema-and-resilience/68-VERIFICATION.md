@@ -31,7 +31,7 @@ gaps_closed:
   - "old-name check (criterion 3): corrected grep + DataPlaneGuardTests now clean and asserted"
   - "erasure scope: matches D-11 (presence/rl tenant only; lease/idem/auth reconstructible/TTL per doc+impl+test)"
   - "stores: presence/rl/auth domains have key builders + Dragonfly* impls wired to resilience degraded states"
-  - "M0010: removed from MigrationRegistry + explicit test + 74 ownership comment; head M0009"
+  - "M0010: removed from MigrationRegistry + explicit test + 74 ownership comment; head M0009 (at the time; registry now M0010-M0014, head M0014)"
   - "SUP: SUP-019 kept with matching justification; no new unreconciled in 68-touched; ledger tests logic satisfied"
   - "ArchTests: duplicate SelfPath removed (build blocker fixed); SOTA states embedded in DataPlaneGuardTests"
   - "gate: partial runnable (licences, repo-checks, corrected check) pass; full documented in runbook + SOTA"
@@ -145,7 +145,7 @@ gaps:
 | Corrected criterion-3 no old names | grep ... (as in runbook) | (no output - clean) | ✓ PASS |
 | Licences | bash scripts/ci/check-licences.sh | "licence checks passed" | ✓ PASS |
 | Repo checks (markdown) | bash scripts/ci/repo-checks.sh | WARN + 1 error (pre-existing orphan) | ✓ PASS (partial) |
-| M0010 absent in registry | static read + test source assert | Matches "M0010 removed ... head M0009" | ✓ PASS |
+| M0010 absent in registry | static read + test source assert | Matches "M0010 removed ... head M0009 (at the time)" | ✓ PASS |
 | Erasure scope | static read Dragonfly* | Only tenant patterns for presence/rl; doc + test confirm | ✓ PASS |
 | SOTA embedding | grep SotaLoading/ERROR/SUCCESS in touched | Present in 5+ files + _= usage | ✓ PASS |
 | SUP-019 justification match | grep source + open-questions | Exact match, kept | ✓ PASS |

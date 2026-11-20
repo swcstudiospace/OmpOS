@@ -1619,7 +1619,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
   4. Telemetry reaches the GreptimeDB database `autonogrammer` (live, gated to a machine with podman). Verify: `AUTONOGRAMMER_LIVE_GREPTIME=1 dotnet test --project tests/Autonogrammer.Api.IntegrationTests -c Release --no-build --filter-trait "Category=Live"` after `bash scripts/test-services.sh up --with-greptime` passes on a machine with podman.
   5. ADR-0031 is indexed and the decision-record tests pass. Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*DecisionRecordTests*"` passes with ADR-0031 indexed.
 
-**Plans**: `68-01-PLAN.md` through `68-11-PLAN.md` in `.planning/phases/68-data-plane-names-schema-and-resilience/`. Plans 09–11 are blocked drafts: the account-erasure writer fence, migration boundaries and authorized invocation remain unresolved; SEC-77-07 is open.
+**Plans**: `68-01-PLAN.md` through `68-11-PLAN.md` in `.planning/phases/68-data-plane-names-schema-and-resilience/`. Plans 09–11: the account-erasure writer fence and migration boundaries were built (M0012/M0014) and SEC-77-07 is fixed on main; remaining items need owner decisions (production erasure entry point and revocation) and are not claimed here.
 - [x] 68-01-PLAN.md
 - [x] 68-02-PLAN.md
 - [x] 68-03-PLAN.md
