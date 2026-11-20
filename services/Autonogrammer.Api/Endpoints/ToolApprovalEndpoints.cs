@@ -31,6 +31,7 @@ internal static class ToolApprovalEndpoints
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         endpoints.MapPost("/sessions/{id}/tool-approvals/{requestId}", DecideAsync)
+            .WithName("DecideToolApproval")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)

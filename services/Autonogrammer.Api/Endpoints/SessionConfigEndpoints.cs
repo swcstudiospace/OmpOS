@@ -27,10 +27,12 @@ internal static class SessionConfigEndpoints
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         endpoints.MapGet("/sessions/{id}/config-options", OptionsAsync)
+            .WithName("GetSessionConfigOptions")
             .WithTags("Session configuration")
             .WithSummary("Reads the model, mode and thinking options the engine reports for the session.")
             .ProducesProblem(StatusCodes.Status404NotFound);
         endpoints.MapPut("/sessions/{id}/config-options/{optionId}", SetAsync)
+            .WithName("PutSessionConfigOption")
             .WithTags("Session configuration")
             .WithSummary("Changes one option of a session whose run holds a live engine session.")
             .Accepts<SetConfigOptionRequest>("application/json")
@@ -43,6 +45,7 @@ internal static class SessionConfigEndpoints
             .ProducesProblem(StatusCodes.Status502BadGateway)
             .RequireRateLimiting(SessionEndpoints.PromptsPolicy);
         endpoints.MapGet("/sessions/{id}/commands", CommandsAsync)
+            .WithName("GetSessionCommands")
             .WithTags("Session configuration")
             .WithSummary("Lists the slash commands the engine advertises for the session.")
             .ProducesProblem(StatusCodes.Status404NotFound);

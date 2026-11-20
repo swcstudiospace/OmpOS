@@ -18,6 +18,7 @@ internal static class DispatchEventEndpoints
     {
         ArgumentNullException.ThrowIfNull(routes);
         routes.MapGet("/dispatch/events", Feed)
+            .WithName("GetDispatchEvents")
             .WithTags("Dispatch")
             .WithSummary("Streams the caller's device, command and approval events as server-sent events. Resume with Last-Event-ID, or with ?since= when that header is absent.")
             .Produces(StatusCodes.Status200OK, contentType: "text/event-stream")

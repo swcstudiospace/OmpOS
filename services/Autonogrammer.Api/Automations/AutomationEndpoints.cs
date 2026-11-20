@@ -42,6 +42,7 @@ internal static class AutomationEndpoints
     private static void MapCollectionRoutes(RouteGroupBuilder routes)
     {
         routes.MapPost("/automations", CreateAsync)
+            .WithName("CreateAutomation")
             .WithTags("Automations")
             .WithSummary("Creates an automation: a prompt, triggers (cron, webhook) and a target. A webhook secret is generated and shown once in the answer.")
             .Accepts<SaveAutomationRequest>("application/json")
@@ -52,16 +53,19 @@ internal static class AutomationEndpoints
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
         routes.MapGet("/automations/definitions", ListAsync)
+            .WithName("ListAutomationDefinitions")
             .WithTags("Automations")
             .WithSummary("Lists the caller's automations with their next run and last run, newest first.")
             .Produces<AutomationListResponse>()
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
         routes.MapGet("/automations/cron-preview", CronPreview)
+            .WithName("GetAutomationCronPreview")
             .WithTags("Automations")
             .WithSummary("Shows the next occurrences of a cron expression in a time zone.")
             .Produces<AutomationCronPreviewResponse>()
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
         routes.MapGet("/automations/{id}", GetAsync)
+            .WithName("GetAutomation")
             .WithTags("Automations")
             .WithSummary("Reads one automation.")
             .Produces<AutomationInfo>()
@@ -72,6 +76,7 @@ internal static class AutomationEndpoints
     private static void MapItemRoutes(RouteGroupBuilder routes)
     {
         routes.MapPut("/automations/{id}", ReplaceAsync)
+            .WithName("ReplaceAutomation")
             .WithTags("Automations")
             .WithSummary("Replaces an automation's definition. The webhook secret is kept; one is generated when the first webhook trigger is added.")
             .Accepts<SaveAutomationRequest>("application/json")
@@ -80,12 +85,14 @@ internal static class AutomationEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
         routes.MapDelete("/automations/{id}", DeleteAsync)
+            .WithName("DeleteAutomation")
             .WithTags("Automations")
             .WithSummary("Deletes an automation with its history and its webhook secret.")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
         routes.MapPut("/automations/{id}/enabled", SetEnabledAsync)
+            .WithName("SetAutomationEnabled")
             .WithTags("Automations")
             .WithSummary("Turns an automation's triggers on or off. A run by hand stays possible while it is off.")
             .Accepts<SetAutomationEnabledRequest>("application/json")
@@ -93,6 +100,7 @@ internal static class AutomationEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
         routes.MapPost("/automations/{id}/webhook-secret", RotateSecretAsync)
+            .WithName("RotateAutomationWebhookSecret")
             .WithTags("Automations")
             .WithSummary("Replaces the webhook secret. The new secret is shown once; the old one stops working at once.")
             .Produces<AutomationSaveResponse>()
@@ -100,6 +108,7 @@ internal static class AutomationEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
         routes.MapPost("/automations/{id}/runs", RunNowAsync)
+            .WithName("CreateAutomationRun")
             .WithTags("Automations")
             .WithSummary("Runs an automation now, whether or not it is enabled. The run continues in the background.")
             .Produces<AutomationRunInfo>(StatusCodes.Status202Accepted)
@@ -107,6 +116,7 @@ internal static class AutomationEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
         routes.MapGet("/automations/{id}/runs", RunsAsync)
+            .WithName("ListAutomationRuns")
             .WithTags("Automations")
             .WithSummary("Reads an automation's run history, newest first.")
             .Produces<AutomationRunListResponse>()
@@ -117,6 +127,7 @@ internal static class AutomationEndpoints
     private static void MapWebhookReceiver(RouteGroupBuilder routes)
     {
         routes.MapPost("/hooks/automations/{id}", ReceiveAsync)
+            .WithName("ReceiveAutomationWebhook")
             .WithTags("Automations")
             .WithSummary("The webhook receiver. Anonymous, authenticated by HMAC-SHA256 signature; every authentication failure answers the same 401.")
             .AllowAnonymous()

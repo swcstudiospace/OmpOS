@@ -8,6 +8,12 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.8] - 2026-11-20
+
+### Changed
+- GAP-OP-1 closed: every operation in the API contract now carries an operationId (WithName in source, 80 added) and the contract is 1.1.0 (additive, minor). The build-time document is regenerated from source in CI; the committed docs/api/openapi.json is synced to the same 114 operationIds.
+- Preserved dirty auth hardening: JwtBearer metadata refresh is explicitly 30 s (automatic refresh 10 min), bounding the post-rotation 401 window.
+
 ## [0.20.7] - 2026-11-20
 
 Phase 68 closeout: planning state reconciled. On the facts: 68-09/68-10 are superseded (their work items moved to planner drafts and owners); the account-erasure writer fence and migrations M0012/M0014 are built and SEC-77-07 is fixed on main; the stale HEAD-M0009 note now reads M0010-M0014 (head M0014).

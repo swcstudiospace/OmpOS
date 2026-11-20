@@ -17,6 +17,7 @@ internal static class SourceEndpoints
         ArgumentNullException.ThrowIfNull(endpoints);
         endpoints.MapGet("/source", static (SourceInfoProvider provider) => TypedResults.Ok(provider.Info))
             .AllowAnonymous()
+            .WithName("GetSourceInfo")
             .WithTags("Source")
             .WithSummary("Names the licence and the source repository of this running service (AGPL-3.0-or-later section 13).")
             .Produces<SourceInfo>(StatusCodes.Status200OK);

@@ -24,11 +24,13 @@ internal static class ChangeReviewEndpoints
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         endpoints.MapGet("/sessions/{id}/changes", ListAsync)
+            .WithName("ListSessionChanges")
             .WithTags("Changes")
             .WithSummary("Lists the files the session's runs edited, with their before and after text and review state.")
             .ProducesProblem(StatusCodes.Status404NotFound);
         endpoints.MapPost("/sessions/{id}/changes/{path}/accept", (string id, string path, ISessionRepository repository, ChangeDecisionStore decisions, WorkspaceLocator workspace, IUserContext user, CancellationToken ct) =>
                 DecideAsync(id, path, true, repository, decisions, workspace, user, ct))
+            .WithName("AcceptSessionChange")
             .WithTags("Changes")
             .WithSummary("Accepts the change of one file. The path is URL-encoded.")
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -39,6 +41,7 @@ internal static class ChangeReviewEndpoints
             .RequireRateLimiting(SessionEndpoints.PromptsPolicy);
         endpoints.MapPost("/sessions/{id}/changes/{path}/reject", (string id, string path, ISessionRepository repository, ChangeDecisionStore decisions, WorkspaceLocator workspace, IUserContext user, CancellationToken ct) =>
                 DecideAsync(id, path, false, repository, decisions, workspace, user, ct))
+            .WithName("RejectSessionChange")
             .WithTags("Changes")
             .WithSummary("Rejects the change of one file and restores its text before the edit. The path is URL-encoded.")
             .ProducesProblem(StatusCodes.Status400BadRequest)

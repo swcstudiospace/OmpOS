@@ -39,6 +39,7 @@ internal static class CloudAgentEndpoints
 
         var routes = endpoints.MapGroup(string.Empty).WithMetadata(CloudRouteMarker.Instance);
         routes.MapPost("/cloud/agents", CreateAsync)
+            .WithName("CreateCloudAgent")
             .WithTags("Cloud")
             .WithSummary("Creates a cloud agent bound to repositories, a branch and secret references, and starts provisioning its worker.")
             .Accepts<CreateCloudAgentRequest>("application/json")
@@ -51,15 +52,18 @@ internal static class CloudAgentEndpoints
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .RequireRateLimiting(SessionEndpoints.CreationPolicy);
         routes.MapGet("/cloud/agents", ListAsync)
+            .WithName("ListCloudAgents")
             .WithTags("Cloud")
             .WithSummary("Lists the caller's cloud agents, newest first.")
             .Produces<CloudAgentListResponse>();
         routes.MapGet("/cloud/agents/{id}", GetAsync)
+            .WithName("GetCloudAgent")
             .WithTags("Cloud")
             .WithSummary("Reads one cloud agent.")
             .Produces<CloudAgentResponse>()
             .ProducesProblem(StatusCodes.Status404NotFound);
         routes.MapPost("/cloud/agents/{id}/prompts", PromptAsync)
+            .WithName("PromptCloudAgent")
             .WithTags("Cloud")
             .WithSummary("Sends a prompt to a cloud agent. The run executes on the agent's worker; its events stream from /cloud/agents/{id}/events.")
             .Accepts<CloudPromptRequest>("application/json")
@@ -78,18 +82,21 @@ internal static class CloudAgentEndpoints
     private static IEndpointRouteBuilder MapLifecycleEndpoints(IEndpointRouteBuilder routes)
     {
         routes.MapPost("/cloud/agents/{id}/cancel", CancelAsync)
+            .WithName("CancelCloudAgent")
             .WithTags("Cloud")
             .WithSummary("Cancels the run in flight on this server instance.")
             .Produces<CloudAgentResponse>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
         routes.MapPost("/cloud/agents/{id}/stop", StopAsync)
+            .WithName("StopCloudAgent")
             .WithTags("Cloud")
             .WithSummary("Stops a cloud agent: cancels its run and lets its worker sleep. A wake request starts it again.")
             .Produces<CloudAgentResponse>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
         routes.MapPost("/cloud/agents/{id}/wake", WakeAsync)
+            .WithName("WakeCloudAgent")
             .WithTags("Cloud")
             .WithSummary("Wakes an idle, stopped, failed or orphaned cloud agent. The worker comes up in the background; poll the agent until it is running.")
             .Produces<CloudAgentResponse>(StatusCodes.Status202Accepted)
@@ -98,6 +105,7 @@ internal static class CloudAgentEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
         routes.MapDelete("/cloud/agents/{id}", DeleteAsync)
+            .WithName("DeleteCloudAgent")
             .WithTags("Cloud")
             .WithSummary("Deletes a cloud agent and removes its worker and volume. The session log stays.")
             .Produces(StatusCodes.Status204NoContent)
@@ -105,12 +113,14 @@ internal static class CloudAgentEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status502BadGateway);
         routes.MapGet("/cloud/agents/{id}/events", EventsAsync)
+            .WithName("GetCloudAgentEvents")
             .WithTags("Cloud")
             .WithSummary("Streams the agent's events: the same kinds, ids and resume rules as GET /sessions/{id}/events.")
             .Produces(StatusCodes.Status200OK, contentType: "text/event-stream")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound);
         routes.MapPost("/cloud/agents/{id}/pull-request", PullRequestAsync)
+            .WithName("CreateCloudAgentPullRequest")
             .WithTags("Cloud")
             .WithSummary("Opens a pull request from the agent's branch. It is ready for review unless a draft is requested and allowed.")
             .Accepts<CreateCloudPullRequestRequest>("application/json")
@@ -127,15 +137,18 @@ internal static class CloudAgentEndpoints
     private static IEndpointRouteBuilder MapSecretEndpoints(IEndpointRouteBuilder routes)
     {
         routes.MapGet("/cloud/secrets", ListSecretsAsync)
+            .WithName("ListCloudSecrets")
             .WithTags("Cloud")
             .WithSummary("Lists the caller's secrets by name. Values are never returned.")
             .Produces<CloudSecretListResponse>();
         routes.MapGet("/cloud/secrets/{name}", GetSecretAsync)
+            .WithName("GetCloudSecret")
             .WithTags("Cloud")
             .WithSummary("Tells whether a secret exists and when it was written. The value is write-only.")
             .Produces<CloudSecretInfo>()
             .ProducesProblem(StatusCodes.Status404NotFound);
         routes.MapPut("/cloud/secrets/{name}", PutSecretAsync)
+            .WithName("PutCloudSecret")
             .WithTags("Cloud")
             .WithSummary("Stores or replaces a secret. It reaches an agent's environment only at provisioning and is redacted from output.")
             .Accepts<CloudSecretValueRequest>("application/json")
@@ -145,11 +158,13 @@ internal static class CloudAgentEndpoints
             .ProducesProblem(StatusCodes.Status415UnsupportedMediaType)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
         routes.MapDelete("/cloud/secrets/{name}", DeleteSecretAsync)
+            .WithName("DeleteCloudSecret")
             .WithTags("Cloud")
             .WithSummary("Deletes a secret. Agents that were already provisioned keep the value in their environment until they are deleted.")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status404NotFound);
         routes.MapGet("/cloud/limits", LimitsAsync)
+            .WithName("GetCloudLimits")
             .WithTags("Cloud")
             .WithSummary("Reports the caller's caps and how much of them is used.")
             .Produces<CloudLimitsResponse>();

@@ -25,10 +25,12 @@ internal static class StageEndpoints
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         endpoints.MapGet("/sessions/{id}/stages", StagesAsync)
+            .WithName("GetSessionStages")
             .WithTags("Stages")
             .WithSummary("Reads the latest event of every stage of the session.")
             .ProducesProblem(StatusCodes.Status404NotFound);
         endpoints.MapGet("/sessions/{id}/context", ContextAsync)
+            .WithName("GetSessionContext")
             .WithTags("Stages")
             .WithSummary("Reads the task context of the session: task, Graph, workflow phase, shared memory and lessons.")
             .ProducesProblem(StatusCodes.Status404NotFound);
