@@ -8,6 +8,13 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.8] - 2026-11-20
+
+Follow-up to the Phase 68 closeout (#25/#26): the synthesis docs carry the `Autonogrammer` product name (the brand gate is green), and this entry exists to satisfy the version-bump gate.
+
+  (No code change in this entry.)
+
+  
 ## [0.20.7] - 2026-11-20
 
 Phase 68 closeout: planning state reconciled. On the facts: 68-09/68-10 are superseded (their work items moved to planner drafts and owners); the account-erasure writer fence and migrations M0012/M0014 are built and SEC-77-07 is fixed on main; the stale HEAD-M0009 note now reads M0010-M0014 (head M0014).
@@ -577,6 +584,7 @@ Foundation through verified handoff (Phases 1 to 5).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
 [Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...HEAD
+[0.20.8]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.7...v0.20.8
 [0.20.7]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.6...v0.20.7
 [0.20.6]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.5...v0.20.6
 [0.20.5]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...v0.20.5
