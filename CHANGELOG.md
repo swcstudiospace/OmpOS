@@ -583,6 +583,7 @@ Foundation through verified handoff (Phases 1 to 5).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
 [Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...HEAD
+[0.20.8]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.7...v0.20.8
 [0.20.7]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.6...v0.20.7
 [0.20.6]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.5...v0.20.6
 [0.20.5]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...v0.20.5
