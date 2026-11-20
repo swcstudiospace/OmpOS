@@ -974,30 +974,30 @@ Source: owner decisions of 2026-11-19 (Linear umbrella SPE-34831) and `.planning
 | AG-QU-6 | 66.4 | Met |
 | AG-QU-7 | 66.4 | Partial (two passes; a full pass is running) |
 | AG-QU-8 | 66.4 | Met |
-| AG-67-1 | 67 | Planned |
-| AG-67-2 | 67 | Planned |
-| AG-67-3 | 67 | Planned |
-| AG-67-4 | 67 | Planned |
-| AG-67-5 | 67 | Planned |
-| AG-67-6 | 67 | Planned |
-| AG-67-7 | 67 | Planned |
-| AG-67-8 | 67 | Planned |
-| AG-67-9 | 67 | Planned |
-| AG-67-10 | 67 | Planned |
-| AG-67-11 | 67 | Planned |
-| AG-67-12 | 67 | Planned |
-| AG-67-13 | 67 | Planned |
-| AG-67-14 | 67 | Planned |
-| AG-67-15 | 67 | Planned |
-| AG-67-16 | 67 | Planned |
-| AG-67-17 | 67 | Planned |
-| AG-67-18 | 67 | Planned |
-| AG-67-19 | 67 | Planned |
-| AG-67-20 | 67 | Planned |
-| AG-67-21 | 67 | Planned |
-| AG-67-22 | 67 | Planned |
-| AG-67-23 | 67 | Planned |
-| AG-67-24 | 67 | Planned |
+| AG-67-1 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-2 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-3 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-4 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-5 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-6 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-7 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-8 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-9 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-10 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-11 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-12 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-13 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-14 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-15 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-16 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-17 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-18 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-19 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-20 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-21 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-22 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-23 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
+| AG-67-24 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
 | AG-68-1 | 68 | Planned |
 | AG-68-2 | 68 | Planned |
 | AG-68-3 | 68 | Planned |
