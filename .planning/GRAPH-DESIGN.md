@@ -163,7 +163,7 @@ Grounding (verified 2026-11-20 against the worktree tree, not assumed):
 
 ## 8. Rule for counting a phase done (from GRAPH-CRITIQUE gaps 1-2)
 
-1. Repo scope is the current repo (OmpOS/Autonogrammer monorepo); archive
+1. Repo scope is the current repo (Autonogrammer/Autonogrammer monorepo); archive
    phases under `.planning/milestones/` are closed history, never gate
    evidence.
 2. A phase is done only when its success criteria are observable AND the
