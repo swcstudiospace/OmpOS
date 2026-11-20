@@ -17,7 +17,12 @@ internal sealed class FixedServersTransformer : IOpenApiDocumentTransformer
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(context);
         document.Servers = [new OpenApiServer { Url = "/" }];
-        document.Info = new OpenApiInfo { Title = document.Info?.Title ?? "Autonogrammer.Api | v1", Version = "1.1.0" };
+        document.Info ??= new OpenApiInfo { Title = "Autonogrammer.Api | v1", Version = "1.1.0" };
+        document.Info.Version = "1.1.0";
+        if (string.IsNullOrWhiteSpace(document.Info.Title))
+        {
+            document.Info.Title = "Autonogrammer.Api | v1";
+        }
         return Task.CompletedTask;
     }
 }

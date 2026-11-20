@@ -33,6 +33,14 @@ internal static class ProvidersEndpoints
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         var group = endpoints.MapGroup(string.Empty).WithTags("Providers").RequireRateLimiting(RateLimitPolicy);
+        MapCatalogueRoutes(group);
+        MapCustomAndTestRoutes(group);
+        return endpoints;
+    }
+
+    private static void MapCatalogueRoutes(IEndpointRouteBuilder group)
+    {
+        ArgumentNullException.ThrowIfNull(group);
         group.MapGet("/providers", ListAsync)
             .WithName("ListProviders")
             .WithSummary("Lists the provider catalogue, filtered by region, kind and search text, with whether the service has a key for each provider. No key is ever returned.")
@@ -56,6 +64,11 @@ internal static class ProvidersEndpoints
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+    }
+
+    private static void MapCustomAndTestRoutes(IEndpointRouteBuilder group)
+    {
+        ArgumentNullException.ThrowIfNull(group);
         group.MapPut("/models/default", SetDefaultModelAsync)
             .WithName("PutDefaultModel")
             .WithSummary("Makes a model the default for new chats. Disabled unless the operator sets Providers:AllowConfigWrite.")
@@ -92,7 +105,6 @@ internal static class ProvidersEndpoints
             .WithSummary("Asks whether something answers at the provider's address. Sends no key; skipped unless the operator sets Providers:AllowLiveTest.")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
-        return endpoints;
     }
 
     private static async Task<Results<Ok<ProvidersResponse>, ProblemHttpResult>> ListAsync(

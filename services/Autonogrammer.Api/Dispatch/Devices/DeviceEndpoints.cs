@@ -30,6 +30,16 @@ internal static partial class DeviceEndpoints
         }
 
         var routes = endpoints.MapGroup(string.Empty).WithMetadata(DispatchRouteMarker.Instance);
+        MapPairingAndConnectRoutes(routes);
+        MapDeviceLifecycleRoutes(routes);
+        CommandEndpoints.Map(routes);
+        DispatchEventEndpoints.Map(routes);
+        return endpoints;
+    }
+
+    private static void MapPairingAndConnectRoutes(IEndpointRouteBuilder routes)
+    {
+        ArgumentNullException.ThrowIfNull(routes);
         routes.MapPost("/dispatch/devices", PairAsync)
             .WithName("PairDispatchDevice")
             .WithTags("Dispatch")
@@ -50,6 +60,11 @@ internal static partial class DeviceEndpoints
             .RequireAuthorization(DispatchDeviceScheme.PolicyName)
             .RequireRateLimiting(DispatchRateLimits.DispatchConnectRateLimiterPolicy.PolicyName)
             .WithRequestTimeout(HostingPolicies.NoTimeout);
+    }
+
+    private static void MapDeviceLifecycleRoutes(IEndpointRouteBuilder routes)
+    {
+        ArgumentNullException.ThrowIfNull(routes);
         routes.MapGet("/dispatch/devices", ListDevicesAsync)
             .WithName("ListDispatchDevices")
             .WithTags("Dispatch")
@@ -85,9 +100,6 @@ internal static partial class DeviceEndpoints
             .WithSummary("Revokes every device the caller owns.")
             .Produces(StatusCodes.Status204NoContent)
             .RequireRateLimiting(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName);
-        CommandEndpoints.Map(routes);
-        DispatchEventEndpoints.Map(routes);
-        return endpoints;
     }
 
     private static async Task<Results<JsonHttpResult<PairingReply>, ProblemHttpResult>> PairAsync(
