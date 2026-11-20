@@ -570,6 +570,71 @@ public sealed class AccountSessionManagerTests
     }
 
     [Fact]
+    public void ConcurrentMutationsDeliverStateChangedInMutationOrder()
+    {
+        using var harness = AccountsHarness.Create();
+        AccountState first = AccountState.SignedOut with { Connectivity = AccountConnectivity.Offline };
+        AccountState second = AccountState.SignedOut with { Connectivity = AccountConnectivity.Online };
+        var seen = new List<AccountState>();
+        var seenGate = new Lock();
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        int deliveries = 0;
+        harness.Manager.StateChanged += (_, e) =>
+        {
+            lock (seenGate)
+            {
+                seen.Add(e.State);
+            }
+
+            if (Interlocked.Increment(ref deliveries) == 1)
+            {
+                entered.Set();
+                _ = release.Wait(TimeSpan.FromSeconds(30));
+            }
+        };
+
+        Exception? firstError = null, secondError = null;
+        var firstThread = MutationThread(harness, first, error => firstError = error);
+        var secondThread = MutationThread(harness, second, error => secondError = error);
+
+        RunScenario(entered, release, firstThread, secondThread);
+
+        firstError.ShouldBeNull();
+        secondError.ShouldBeNull();
+        lock (seenGate)
+        {
+            seen.ShouldBe([first, second]);
+        }
+    }
+
+    private static Thread MutationThread(AccountsHarness harness, AccountState next, Action<Exception> report)
+    {
+        System.Reflection.MethodInfo mutate = typeof(AccountSessionManager).GetMethod("Mutate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        return new Thread(() =>
+        {
+            try
+            {
+                mutate.Invoke(harness.Manager, [(Func<AccountState, AccountState>)(_ => next)]);
+            }
+            catch (Exception exception) when (exception is not (OperationCanceledException or OutOfMemoryException))
+            {
+                report(exception);
+            }
+        });
+    }
+
+    private static void RunScenario(ManualResetEventSlim entered, ManualResetEventSlim release, Thread firstThread, Thread secondThread)
+    {
+        firstThread.Start();
+        entered.Wait(TimeSpan.FromSeconds(30)).ShouldBeTrue();
+        secondThread.Start();
+        release.Set();
+        firstThread.Join(TimeSpan.FromSeconds(30)).ShouldBeTrue();
+        secondThread.Join(TimeSpan.FromSeconds(30)).ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task SignOutRefusesAnUndefinedScopeAsAProgrammingError()
     {
         using var harness = AccountsHarness.Create();

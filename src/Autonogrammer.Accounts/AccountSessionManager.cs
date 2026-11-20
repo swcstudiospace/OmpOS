@@ -77,6 +77,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
     private readonly CancellationTokenSource _lifetime = new();
     private readonly SemaphoreSlim _mutation = new(1, 1);
     private readonly Lock _stateGate = new();
+    private readonly Lock _raiseGate = new();
     private readonly Lock _flightGate = new();
 
     private AccountState _state = AccountState.SignedOut;
@@ -947,19 +948,24 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
 
     private void Mutate(Func<AccountState, AccountState> change)
     {
-        AccountState next;
-        lock (_stateGate)
+        // The raise gate is taken before the state gate and held across the update and the delivery, so concurrent mutators deliver
+        // StateChanged in mutation order. Handlers run under the raise gate but not the state gate, so a handler may still read State.
+        lock (_raiseGate)
         {
-            next = change(_state);
-            if (next.Equals(_state))
+            AccountState next;
+            lock (_stateGate)
             {
-                return;
+                next = change(_state);
+                if (next.Equals(_state))
+                {
+                    return;
+                }
+
+                _state = next;
             }
 
-            _state = next;
+            StateChanged?.Invoke(this, new AccountStateChangedEventArgs(next));
         }
-
-        StateChanged?.Invoke(this, new AccountStateChangedEventArgs(next));
     }
 
     private void Publish(AccountState next) => Mutate(_ => next);

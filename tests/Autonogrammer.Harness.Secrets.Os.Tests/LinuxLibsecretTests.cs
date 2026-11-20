@@ -27,6 +27,31 @@ public sealed class LinuxLibsecretTests
     }
 
     [Fact]
+    public void ACancelledGioErrorWithALiveCallerTokenIsLockedNotCancelled()
+    {
+        SecretStoreException exception = Should.Throw<SecretStoreException>(() => LibsecretNativeApi.ThrowForError(LibsecretErrorDomain.Gio, 19, CancellationToken.None));
+
+        exception.Failure.ShouldBe(SecretStoreFailure.Locked);
+    }
+
+    [Fact]
+    public void ACancelledGioErrorWithACancelledCallerTokenIsCancelled()
+    {
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+
+        Should.Throw<OperationCanceledException>(() => LibsecretNativeApi.ThrowForError(LibsecretErrorDomain.Gio, 19, cancelled.Token));
+    }
+
+    [Fact]
+    public void ANonCancelledGioErrorStillMapsByCode()
+    {
+        SecretStoreException denied = Should.Throw<SecretStoreException>(() => LibsecretNativeApi.ThrowForError(LibsecretErrorDomain.Gio, 14, CancellationToken.None));
+
+        denied.Failure.ShouldBe(SecretStoreFailure.Denied);
+    }
+
+    [Fact]
     public void ALockedCollectionIsLockedAndAnAbsentServiceIsUnavailable()
     {
         LinuxLibsecretStore.ClassifyFailure(LibsecretErrorDomain.Secret, 2).ShouldBe(SecretStoreFailure.Locked);

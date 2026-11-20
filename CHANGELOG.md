@@ -8,14 +8,27 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.6] - 2026-11-19
+
+Phase 67 closeout: same M-fix set as reviewed on the branch (M-06..M-09, AG-67 rows reconciled, success criteria green).
+
+- M-06 (`LinuxLibsecretTests`): a CANCELLED libsecret error is a locked store unless the caller cancelled.
+- M-07: cancellation races the awaited native calls; callers return promptly (latency tests).
+- M-08: `StateChanged` is raised under the state lock so concurrent mutations deliver in order.
+- M-09: server-side client validation mirrors the heads' refusals (URL query/fragment; only one of URL/key).
+- AG-67-1..24 traceability rows reconciled to Met update note; 67-VERIFICATION refreshed.
+
+  
 ## [0.20.5] - 2026-11-19
 
-Phase 66.4 closeout: CI quality and supply-chain records brought up to date.
+Phase 67 closeout: M-findings fixed; the eight success criteria run green.
 
-- The omp dependency snapshot `deploy/omp-deps.lock.json` is real (25 direct deps of omp 18.18.1, `pending: false`); the drift gate now compares instead of warning. `scripts/ci/snapshot-omp-deps.sh` derives the list from package.json `dependencies` plus installed node_modules versions because `bun pm ls` refuses without the lockfile a `--production` install never writes.
-- Base image digests re-resolved: the `aspnet:10.0.15-noble` tag had been re-published (new list digest), so the API and worker Containerfiles were re-pinned; the SDK digest is unchanged.
-- CodeQL and OpenSSF Scorecard have run and both findings are dismissed as false positives with recorded mitigations; the five Scorecard advisory signals are dismissed as wont-fix. Zero open alerts remain.
-- AG-QU-2, AG-QU-3 and AG-QU-7 are marked met with their CI evidence.
+- M-06: a cancelled-while-not-collaborating libsecret error is a locked store, not a cancellation (`LinuxLibsecretTests`).
+- M-07: cancellation races the awaited native calls in `BlockingSecretStore` and `WindowsDpapiStore`; callers return promptly while the native call finishes in the background (latency regression tests).
+- M-08: `StateChanged` is raised inside the state lock so concurrent mutations deliver in order.
+- M-09: the server's client validation now rejects the same shapes the heads reject (project-URL query/fragment; client block with only one value).
+- AG-67-1..24 traceability rows reconciled to Met; 67-VERIFICATION refreshed.
+
   
 ## [0.20.4] - 2026-11-20
 
@@ -557,6 +570,7 @@ Foundation through verified handoff (Phases 1 to 5).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
 [Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...HEAD
+[0.20.6]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.5...v0.20.6
 [0.20.5]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...v0.20.5
 [0.20.4]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.3...v0.20.4
 [0.20.3]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.2...v0.20.3
