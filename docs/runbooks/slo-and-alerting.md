@@ -164,6 +164,10 @@ Probe rules:
 - Require 3 consecutive failures before alerting, to ride out a deploy.
 - Record the probe's own location and outages; a probe outage is not an API outage.
 
+## Closeout 2026-11-19 (Phase 66.4)
+
+OQ-180 is closed with a non-blocking default. The proposed objectives stay proposals until measurement: SLI-1 (external probe) and SLI-2 (edge 5xx ratio) are measurable as soon as the API is deployed; SLI-3 and SLI-5 are measurable by the SQL already in this runbook (not yet executed — the API is not deployed); SLI-4 has no metric. The missing metrics to add before any target is enforced are specified at each SLI's definition (SLI-3 `autonogrammer.run.first_event.latency`, SLI-4 `autonogrammer.sse.connections` plus an up-down counter for active streams, SLI-5 `autonogrammer.runs.completed` with an `outcome` tag). Concrete candidate targets: SLO-1 99.5% readiness probes (30 d), SLO-2 99% non-5xx (30 d), SLO-3 p95 prompt-to-first-event under 30 s (30 d), SLO-4 98% completed (30 d) — recorded as proposals; adoption is one owner decision (OQ-180).
+
 ## Status page
 
 There is no status page. For one operator the owner writes the status update in the incident communication template ([Incident response](incident-response.md)) and posts it where the users are. A public status page is optional and not required before the first public domain.
