@@ -1,4 +1,4 @@
-# GRAPH-UNITS — v0.16.0 decomposition into execution units (SPE-35246, Wave 2 · n2)
+# GRAPH-UNITS — v0.16.0 decautonogrammerition into execution units (SPE-35246, Wave 2 · n2)
 
 Date: 2026-11-20. Sequencing source (SOLE): `.planning/GRAPH-STATE-discovery.md`
 (Wave 1 output). Scope source (verbatim outstanding/blocked items):
@@ -51,7 +51,7 @@ Files: `.planning/ROADMAP.md`, `.planning/STATE.md`, 68 plan files,
 
 Scope — outstanding items (verbatim, 8):
 1. `Commit the Native ArtifactBlock producer wiring (ArtifactToolProvider card
-   callback, ArtifactsComposition.DeliverAsync, AgentSessionRuntime.ShowArtifactCard,
+   callback, ArtifactsCautonogrammerition.DeliverAsync, AgentSessionRuntime.ShowArtifactCard,
    panel DeliverAsync, ArtifactBlockDeliveryTests)` (code, S)
 2. `Mount web artifact UI: route ArtifactBlock to ArtifactCard, open panel with
    ArtifactBody/ArtifactFrame via ArtifactWebClient in the Cowork web view` (code, M)
@@ -84,7 +84,7 @@ Files: `ArtifactToolProvider.cs`, `ArtifactPanelModel.cs`, `ArtifactGrants.cs`,
 ## Unit 3 — Phase 73: Cowork Computer Use (partial; 5/10 plans done)
 
 Scope — outstanding items (verbatim, 9):
-1. `Register ComputerToolProvider (ComputerUseToolsComposition.AddTools) into the
+1. `Register ComputerToolProvider (ComputerUseToolsCautonogrammerition.AddTools) into the
    Cowork tool host in AgentHead/CoworkHead for enabled desktop Cowork; Build()
    is never called in production` (code, L; unblocked — 75-07 account gate landed)
 2. `Replace the empty indicator chrome callback with the real indicator window
@@ -95,7 +95,7 @@ Scope — outstanding items (verbatim, 9):
 4. `Local vs Dispatch eligibility: build DispatchComputerUseConfig from Cowork
    options, enforce AllowDispatchSessions, tool class and command-level local
    approval` (code, M; Phase 74 verification is gaps_found → follows Unit 4)
-5. `Head-level integration tests: real composed host, controllable backend, local
+5. `Head-level integration tests: real cautonogrammered host, controllable backend, local
    opt-in, approval, audit before injection, negative matrix (Code/API/web/cloud,
    revoked, remote approve)` (test, L)
 6. `Run the six ROADMAP criteria commands and record results; X11 live under
@@ -112,7 +112,7 @@ Blocked (stays open): ADR-0035 acceptance (owner); Windows/macOS live validation
 (needs Unit 4 verification closed); Wayland/AT-SPI (owner unsupported-or-fund).
 
 Owners: agent (1–8) / owner+hardware (9, blocked).
-Files: `ComputerUseHeadComposition.cs`, `apps/.../AgentHead.cs`, `CoworkHead`,
+Files: `ComputerUseHeadCautonogrammerition.cs`, `apps/.../AgentHead.cs`, `CoworkHead`,
 `ComputerIndicatorViewModel`, `ComputerApprovalViewModel`, `DispatchComputerUseConfig`,
 `73-VERIFICATION.md`, `.planning/ROADMAP.md`, `docs/reference/`, `CHANGELOG.md`.
 
@@ -188,8 +188,8 @@ Files: branch `origin/gsd/v0.10.0-cross-platform-ui` port set,
 Scope — outstanding items (verbatim, 7):
 1. `Add Bundles, CoworkPermissions, Isolation, Usage, Notifications settings pages
    to SettingsWindowOptions in HeadSettings.cs with sources from
-   BundleComposition, Activity and isolation` (code, M)
-2. `Start Cowork sessions through IsolationComposition.PrepareAsync: probe,
+   BundleCautonogrammerition, Activity and isolation` (code, M)
+2. `Start Cowork sessions through IsolationCautonogrammerition.PrepareAsync: probe,
    consent prompt, chip, wrapper and grants to CoworkEngineRequest; Code stays
    None` (code, L)
 3. `Wire notifications: build NotificationPolicy + OsNotificationSink
@@ -212,7 +212,7 @@ notifications/isolation chip.
 
 Owners: agent (1–7) / owner+hardware (blocked).
 Files: `apps/.../Native/Settings/HeadSettings.cs`, `AgentHead.cs`,
-`IsolationComposition.cs`, `NotificationBridge`, `docs/parity/cowork-parity.md`,
+`IsolationCautonogrammerition.cs`, `NotificationBridge`, `docs/parity/cowork-parity.md`,
 `docs/runbooks/cowork-isolation.md`, `76-VERIFICATION.md`, `CHANGELOG.md`,
 `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`.
 
@@ -233,7 +233,7 @@ Scope — outstanding items (verbatim, 9):
    2026-10-28) and README to the shipped version` (docs, S)
 6. `Re-run and re-date the security review for the current tree; close or
    OQ-record SEC-77-04 (memory idempotency) and SEC-77-09 (erasure entry point)`
-   (code, L; SEC-77-04 needs production composition)
+   (code, L; SEC-77-04 needs production cautonogrammerition)
 7. `Close accessibility matrix Pending cells: run named bUnit/headless tests for
    Account menu, Devices, Dispatch; add browser keyboard walks` (test, M)
 8. `Run the full gate (./bootstrap.sh) at the final head under the flock wrapper

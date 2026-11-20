@@ -13,7 +13,7 @@ locally (`94d64280`).
 |---|---|---|
 | 1. Reviewable phase-scoped diffs | **Pass.** Each unit = one phase (68/71/73/74/75/76/77), one branch/PR, one VERIFICATION.md + SUMMARY. Reviewer judges one phase's criteria; ROADMAP checkboxes move per phase. Matches `per-phase` completion rule (GRAPH-CRITIQUE gap 2: gate pass at HEAD). | **Fail.** One diff spans 54 outstanding items across 7 phases + 29 blocked rows; unreviewable, violates phase-scoped review. Single failure blocks all phases; CODEOWNERS review (`@SomeRandmGuyy`, gap 5) cannot sign off piecemeal. |
 | 2. Rollback feasibility | **Pass.** Per-PR revert; each unit is append-only to shared files in declared serialization order (ROADMAP/STATE one writer at a time; parity doc 75→76→77; CHANGELOG one writer per wave; 73 before 76). Reverted unit leaves other units green. | **Fail.** Rollback = revert 7 phases atomically; no bisect point. Shared-file edits (AgentHead, CoworkEngineRequest, parity doc) interleave with no clean inverse. |
-| 3. Green-CI gating (repo's own definition) | **Pass.** Every unit's gate is independently runnable at its HEAD via `bootstrap.sh` (local) and `ci.yml` `build-test` (remote). A failing unit blocks only itself. PR-only gates (OpenAPI breaking, version-bump) evaluated per-PR against `origin/main`. | **Fail.** One red step (e.g. browser-smoke gate, SBOM, compose boot) blocks all 7 phases for days; `concurrency.cancel-in-progress` cancels superseded PR runs, so big-bang gets no partial signal. `image-scan`/`android`/`desktop` need `build-test` first — one broken link silences the rest. |
+| 3. Green-CI gating (repo's own definition) | **Pass.** Every unit's gate is independently runnable at its HEAD via `bootstrap.sh` (local) and `ci.yml` `build-test` (remote). A failing unit blocks only itself. PR-only gates (OpenAPI breaking, version-bump) evaluated per-PR against `origin/main`. | **Fail.** One red step (e.g. browser-smoke gate, SBOM, cautonogrammere boot) blocks all 7 phases for days; `concurrency.cancel-in-progress` cancels superseded PR runs, so big-bang gets no partial signal. `image-scan`/`android`/`desktop` need `build-test` first — one broken link silences the rest. |
 | 4. Failure blast radius / bisectability | **Pass.** Failures localize to one phase/project/service (e.g. `Dispatch.Client` new project in Unit 4; isolation `bwrap` in Unit 6). Per-gate run-owned podman services (`AUTONOGRAMMER_TEST_SERVICES_NAME=gate-$$`) keep concurrent gates isolated. | **Fail.** Single failure domain: post-mortem cannot attribute (68 docs vs 74 dispatch vs 76 isolation share CI, shared files, shared services). |
 
 ## Chosen default
@@ -32,7 +32,7 @@ Single atomic unit requiring HITL approval before merge: **Unit 1 item 5 —
 resumable coordinator (`PostgresAccountErasure`)**. It is owner-decision
 gated (Candidate A/B + IdP revocation/denial design + independent security
 review via 74.1; SEC-77-09). It lands as one atomic, non-splittable unit
-(schema/fence + composition change — partial landing is unsafe) and merges
+(schema/fence + cautonogrammerition change — partial landing is unsafe) and merges
 only after explicit owner HITL approval recorded in the PR (AskUserQuestion
 channel per GRAPH-CRITIQUE gap 6; `human_verify_mode: end-of-phase`). All
 other units are stacked increments; no other atomic/HITL exception is
@@ -72,8 +72,8 @@ bash scripts/test-services.sh down
 # 5. Full local gate + browser smoke (axe) — Unit 7 evidence command
 ./bootstrap.sh   # flock-wrapped at final HEAD, no Live tests
 
-# 6. Compose backend validation (CI only)
-podman-compose --profile backend -f deploy/compose.yaml config -q
+# 6. Cautonogrammere backend validation (CI only)
+podman-cautonogrammere --profile backend -f deploy/cautonogrammere.yaml config -q
 ```
 
 Per-unit proof: its `*-VERIFICATION.md` at HEAD states `passed` (GRAPH-CRITIQUE

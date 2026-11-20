@@ -6,7 +6,7 @@ evidence) → GRAPH-APPROACH (Wave 3 · n3, SPE-35248) → GRAPH-DESIGN (Wave 3 
 SPE-35247, quality/verification design S1–S10) → GRAPH-SAFEGUARDS (Wave 4 · n6,
 SPE-35249, guards G1–G7).
 
-Repo scope = current monorepo only (`swcstudiospace/OmpOS`); archived phases under
+Repo scope = current monorepo only (`swcstudiospace/Autonogrammer`); archived phases under
 `.planning/milestones/` are closed history, never gate evidence. A phase is done
 only when its success criteria are observable AND the gate passes at the phase
 HEAD AND a fresh `<phase>-VERIFICATION.md` records `passed` at that HEAD
@@ -19,7 +19,7 @@ HEAD `94d64280`; main at `f5d453d1` (66.4 merged, PR #23); 67 closing via PR #24
 **Stacked independently-verifiable increments** (GRAPH-APPROACH Approach A):
 7 units, one phase / one branch / one PR / one VERIFICATION.md each, in Waves
 A→D below. Single atomic exception: **68-11 production account-erasure entry
-point** (schema/fence + composition, partial landing unsafe) — lands as one
+point** (schema/fence + cautonogrammerition, partial landing unsafe) — lands as one
 non-splittable PR and merges only after explicit owner HITL approval recorded in
 the PR (AskUserQuestion channel, `human_verify_mode: end-of-phase`). All other
 units are PR-review + green-CI gated. Blocked rows stay OPEN per unit with the
@@ -57,7 +57,7 @@ ROADMAP/STATE/CHANGELOG — those files are written by one writer at a time.
 
 | # | Unit | Tracker | Verification (exact) | Hold points | Merge gate (G1–G7) |
 |---|---|---|---|---|---|
-| C1 | **Phase 76 Cowork parity B** (Unit 6 items 1–7): five SettingsWindowOptions pages in HeadSettings.cs, IsolationComposition.PrepareAsync + chip + grants (Code stays None), NotificationBridge + OsNotificationSink + NotificationsView + sub-agent panel, IsolationLiveTests (bwrap positive control), grade C3–C6, C11–C13, C23, C24, C26, K04, K10, K16, K19, K20 with named test classes, phase gate, mark AG-76-1..12 + AG-76-14 in REQUIREMENTS, check 76-09 in ROADMAP | SPE-34833 | Locked restore `-p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13` + `-warnaserror` build (DESIGN §10.1), `dotnet format ... --verify-no-changes`, 11 test projects non-Live (§10.4), `bash scripts/ci/repo-checks.sh`, `bash scripts/ci/check-licences.sh`, IsolationLiveTests on a host with user namespaces (`/usr/bin/bwrap`) | macOS Seatbelt + osascript (owner Mac host) · Windows job-object containment + notification display (runner + owner decision) · omp-flag-dependent rows (owner OD-07 live omp run) · human desktop check of notifications / isolation chip | G1 · G2 · **G3 (bwrap positive-control failure preserved, never graded MET)** · **G5 (75 before 76 on `CoworkEngineRequest`)** · G6 · G7 |
+| C1 | **Phase 76 Cowork parity B** (Unit 6 items 1–7): five SettingsWindowOptions pages in HeadSettings.cs, IsolationCautonogrammerition.PrepareAsync + chip + grants (Code stays None), NotificationBridge + OsNotificationSink + NotificationsView + sub-agent panel, IsolationLiveTests (bwrap positive control), grade C3–C6, C11–C13, C23, C24, C26, K04, K10, K16, K19, K20 with named test classes, phase gate, mark AG-76-1..12 + AG-76-14 in REQUIREMENTS, check 76-09 in ROADMAP | SPE-34833 | Locked restore `-p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13` + `-warnaserror` build (DESIGN §10.1), `dotnet format ... --verify-no-changes`, 11 test projects non-Live (§10.4), `bash scripts/ci/repo-checks.sh`, `bash scripts/ci/check-licences.sh`, IsolationLiveTests on a host with user namespaces (`/usr/bin/bwrap`) | macOS Seatbelt + osascript (owner Mac host) · Windows job-object containment + notification display (runner + owner decision) · omp-flag-dependent rows (owner OD-07 live omp run) · human desktop check of notifications / isolation chip | G1 · G2 · **G3 (bwrap positive-control failure preserved, never graded MET)** · **G5 (75 before 76 on `CoworkEngineRequest`)** · G6 · G7 |
 
 ### Wave D — 77 last, then milestone closeout (SPE-34836)
 
@@ -72,7 +72,7 @@ Separate, non-splittable PR for `PostgresAccountErasure` entry point /
 credential-session revocation / resumable coordinator. Owner decision required:
 Candidate A/B + IdP revocation/denial design + independent security review via
 74.1 (SEC-77-09); owner acceptance of SEC-77-09 Low risk or the fence decision
-for Dragonfly keys outside the erasure fence. Gate: G5 + G7 (schema/composition):
+for Dragonfly keys outside the erasure fence. Gate: G5 + G7 (schema/cautonogrammerition):
 additive-only migration, `DecisionRecordTests`, rollback = previous migration +
 previous image, plus **mandatory owner HITL approval recorded in the PR before
 merge**. Blocked rows on this unit stay OPEN until the decision lands.
@@ -89,7 +89,7 @@ merge**. Blocked rows on this unit stay OPEN until the decision lands.
   blocked until it lands.
 - **Credential / placement choices** — `SUBMODULE_TOKEN` (private
   `plugins/agent-substrate`), Railway deploy scope beyond the staged worker,
-  billed `ompos-staging` project (OQ-171), live model turn OD-07.
+  billed `autonogrammer-staging` project (OQ-171), live model turn OD-07.
 - 74-11 legacy-row idempotency (owner + read-only production counts); enabling
   Dispatch outside Development (owner, after 74-11 + 74-09/04); OQ-420
   (Railway) / OQ-429 (Android devices); ADR-0035 (owner); 74.1-03 runbook
@@ -128,7 +128,7 @@ bash scripts/test-services.sh down
 python3 scripts/ci/test_check_openapi_breaking.py
 python3 scripts/ci/check-openapi-breaking.py --base origin/main
 bash scripts/ci/check-version-bump.sh --base origin/main
-podman-compose --profile backend -f deploy/compose.yaml config -q
+podman-cautonogrammere --profile backend -f deploy/cautonogrammere.yaml config -q
 gh run list --branch <pr-branch> --limit 20 --json databaseId,headSha,workflowName,status,conclusion,event,displayTitle
 gh api repos/{owner}/{repo}/commits/<HEAD_SHA>/check-runs --paginate --jq '.check_runs[] | "\(.name) status=\(.status) conclusion=\(.conclusion) run_id=\(.details_url)"'
 ./bootstrap.sh
