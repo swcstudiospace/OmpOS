@@ -25,6 +25,7 @@ public static class MigrationRegistry
         new M0012_AccountErasureFence(),
         new M0013_MemoryIdempotency(),
         new M0014_MemoryIdempotencyFence(),
+        new M0015_SessionOwnerSurfaceIndex(),
     ];
     /// <summary>Gets the version of the last step: the schema version this build expects.</summary>
     public static int Head => All[^1].Version;
