@@ -8,6 +8,17 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.6] - 2026-11-19
+
+Phase 67 closeout: same M-fix set as reviewed on the branch (M-06..M-09, AG-67 rows reconciled, success criteria green).
+
+- M-06 (`LinuxLibsecretTests`): a CANCELLED libsecret error is a locked store unless the caller cancelled.
+- M-07: cancellation races the awaited native calls; callers return promptly (latency tests).
+- M-08: `StateChanged` is raised under the state lock so concurrent mutations deliver in order.
+- M-09: server-side client validation mirrors the heads' refusals (URL query/fragment; only one of URL/key).
+- AG-67-1..24 traceability rows reconciled to Met update note; 67-VERIFICATION refreshed.
+
+  
 ## [0.20.5] - 2026-11-19
 
 Phase 67 closeout: M-findings fixed; the eight success criteria run green.
@@ -559,6 +570,7 @@ Foundation through verified handoff (Phases 1 to 5).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
 [Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...HEAD
+[0.20.6]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.5...v0.20.6
 [0.20.5]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...v0.20.5
 [0.20.4]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.3...v0.20.4
 [0.20.3]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.2...v0.20.3
