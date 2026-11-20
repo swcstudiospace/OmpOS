@@ -15,6 +15,7 @@ internal sealed class LibsecretNativeApi : ILibsecretApi
     private const int SearchAll = 2;
     private const int SearchUnlock = 4;
     private const int GioErrorCancelled = 19;
+    private const int SecretErrorIsLocked = 2;
     private const int SchemaAttributeCapacity = 32;
     private const int SchemaReservedPointers = 7;
 
@@ -204,10 +205,20 @@ internal sealed class LibsecretNativeApi : ILibsecretApi
         {
             domain = LibsecretErrorDomain.DBus;
         }
+        ThrowForError(domain, code, cancellationToken);
+    }
 
+    /// <summary>Translates a libsecret <c>GError</c> domain and code into the exception the call reports. A <c>G_IO_ERROR_CANCELLED</c> only cancels the call when the caller's token is cancelled; otherwise it is a dismissed unlock prompt, which is a store failure (<c>Locked</c>), never an <see cref="OperationCanceledException"/>.</summary>
+    /// <param name="domain">The error domain.</param>
+    /// <param name="code">The code within the domain.</param>
+    /// <param name="cancellationToken">The caller's token.</param>
+    internal static void ThrowForError(LibsecretErrorDomain domain, int code, CancellationToken cancellationToken)
+    {
         if (domain == LibsecretErrorDomain.Gio && code == GioErrorCancelled)
         {
-            throw new OperationCanceledException(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            throw LinuxLibsecretStore.Failed(LibsecretErrorDomain.Secret, SecretErrorIsLocked);
         }
 
         throw LinuxLibsecretStore.Failed(domain, code);

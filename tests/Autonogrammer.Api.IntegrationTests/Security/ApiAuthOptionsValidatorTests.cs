@@ -221,8 +221,10 @@ public sealed class ApiAuthOptionsValidatorTests
     [Theory]
     [InlineData("http://project.supabase.co")]
     [InlineData("https://user:pass@project.supabase.co")]
+    [InlineData("https://project.supabase.co?x=y")]
+    [InlineData("https://project.supabase.co#frag")]
     [InlineData("not a url")]
-    public void Client_BadProjectUrl_FailsNamingKeyWithoutEchoingIt(string candidate)
+    public static void Client_BadProjectUrl_FailsNamingKeyWithoutEchoingIt(string candidate)
     {
         var options = ValidOidc();
         options.Client = new ApiAuthClientOptions { ProjectUrl = candidate, PublishableKey = "sb_publishable_abc" };
@@ -231,6 +233,26 @@ public sealed class ApiAuthOptionsValidatorTests
 
         failures.ShouldContain(static m => m.Contains("Api:Auth:Client:ProjectUrl", StringComparison.Ordinal));
         failures.ShouldNotContain(static m => m.Contains("pass@", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies a client block with exactly one of the two connection values fails naming the missing key, as the heads refuse it.</summary>
+    [Fact]
+    public void Client_OnlyProjectUrl_FailsNamingPublishableKey()
+    {
+        var options = ValidOidc();
+        options.Client = new ApiAuthClientOptions { ProjectUrl = "https://project.supabase.co" };
+
+        Failures(options).ShouldContain(static m => m.Contains("Api:Auth:Client:PublishableKey", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies a client block with a key but no project URL fails naming the URL key.</summary>
+    [Fact]
+    public void Client_OnlyPublishableKey_FailsNamingProjectUrl()
+    {
+        var options = ValidOidc();
+        options.Client = new ApiAuthClientOptions { PublishableKey = "sb_publishable_abc" };
+
+        Failures(options).ShouldContain(static m => m.Contains("Api:Auth:Client:ProjectUrl", StringComparison.Ordinal));
     }
 
     /// <summary>Verifies the link method without the code method fails naming both keys.</summary>

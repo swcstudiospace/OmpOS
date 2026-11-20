@@ -129,6 +129,13 @@ internal sealed class ApiAuthOptionsValidator : IValidateOptions<ApiAuthOptions>
 
     private static void ValidateClient(ApiAuthClientOptions client, List<string> failures)
     {
+        ValidatePublishableKey(client, failures);
+        ValidateClientEndpoints(client, failures);
+        ValidateClientOptions(client, failures);
+    }
+
+    private static void ValidatePublishableKey(ApiAuthClientOptions client, List<string> failures)
+    {
         var key = client.PublishableKey?.Trim();
         if (!string.IsNullOrEmpty(key))
         {
@@ -141,15 +148,29 @@ internal sealed class ApiAuthOptionsValidator : IValidateOptions<ApiAuthOptions>
                 failures.Add("Api:Auth:Client:PublishableKey must be a publishable key, not a service-role token.");
             }
         }
+    }
+
+    private static void ValidateClientEndpoints(ApiAuthClientOptions client, List<string> failures)
+    {
+        // Mirror GoTrueOptions: the heads refuse a project URL with a query or fragment and a block with only one of URL and key.
+        if (client.HasAny && (string.IsNullOrWhiteSpace(client.ProjectUrl) || string.IsNullOrWhiteSpace(client.PublishableKey)))
+        {
+            failures.Add("Api:Auth:Client requires both Api:Auth:Client:ProjectUrl and Api:Auth:Client:PublishableKey.");
+        }
 
         if (!string.IsNullOrWhiteSpace(client.ProjectUrl)
             && (!Uri.TryCreate(client.ProjectUrl, UriKind.Absolute, out var url)
                 || !string.Equals(url.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal)
-                || url.UserInfo.Length > 0))
+                || url.UserInfo.Length > 0
+                || url.Query.Length > 0
+                || url.Fragment.Length > 0))
         {
-            failures.Add("Api:Auth:Client:ProjectUrl must be an absolute https URI without user information.");
+            failures.Add("Api:Auth:Client:ProjectUrl must be an absolute https URI without user information, query or fragment.");
         }
+    }
 
+    private static void ValidateClientOptions(ApiAuthClientOptions client, List<string> failures)
+    {
         if (client.MagicLinkEnabled && !client.EmailCodeEnabled)
         {
             failures.Add("Api:Auth:Client:MagicLinkEnabled requires Api:Auth:Client:EmailCodeEnabled.");

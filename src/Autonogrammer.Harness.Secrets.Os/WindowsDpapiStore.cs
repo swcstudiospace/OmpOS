@@ -263,7 +263,16 @@ internal sealed class WindowsDpapiStore : ISecretStore
         T result;
         try
         {
-            result = await work().ConfigureAwait(false);
+            // The body runs on a thread-pool thread, off the caller's thread: its first stretch (encode, protect, directory creation) is
+            // synchronous, and the token races the whole call, so a slow protector or file I/O cannot delay cancellation. An abandoned call
+            // finishes in the background, its result discarded.
+            Task<T> call = Task.Run(() => work(), CancellationToken.None);
+            _ = call.ContinueWith(
+                static finished => { _ = finished.Exception; },
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+            result = await call.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (SecretStoreException exception)
         {

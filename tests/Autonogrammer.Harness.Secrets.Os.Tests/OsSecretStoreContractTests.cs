@@ -153,9 +153,60 @@ public sealed class OsSecretStoreContractTests
     {
         var fake = new InMemoryLibsecretFake { BlockUntilCancelled = true };
         var store = new LinuxLibsecretStore(fake, null, null);
-        using var cancellation = new CancellationTokenSource();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Token);
 
         await AssertCancelledAsync(() => store.GetAsync("key", cancellation.Token), cancellation.CancelAsync).ConfigureAwait(true);
+    }
+
+    [Fact]
+    public async Task AKeychainCallBlockedOnAPromptEndsWhenTheTokenIsCancelledWithoutWaitingForIt()
+    {
+        var keychain = new FakeKeychain { BlockCopy = true };
+        var store = new MacosKeychainStore(keychain, null, null);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Token);
+
+        Task<SecretString?> pending = store.GetAsync("key", cancellation.Token);
+        keychain.CopyEntered.Wait(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ShouldBeTrue();
+        System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        await cancellation.CancelAsync().ConfigureAwait(true);
+
+        await Task.WhenAny(pending).ConfigureAwait(true);
+        pending.IsCanceled.ShouldBeTrue();
+
+        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(5));
+        keychain.CopyCompleted.IsSet.ShouldBeFalse();
+        keychain.ReleaseCopy.Set();
+    }
+
+    [Fact]
+    public async Task ADpapiCallBlockedInTheProtectorEndsWhenTheTokenIsCancelledWithoutWaitingForIt()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "ag-os-secrets-" + Guid.NewGuid().ToString("N"));
+        var protector = new BlockingProtector();
+        var store = new WindowsDpapiStore(directory, protector, null, null);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Token);
+
+        try
+        {
+            Task pending = store.SetAsync("key", new SecretString("value"), cancellation.Token);
+            protector.Entered.Wait(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ShouldBeTrue();
+            System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            await cancellation.CancelAsync().ConfigureAwait(true);
+
+            await Task.WhenAny(pending).ConfigureAwait(true);
+            pending.IsCanceled.ShouldBeTrue();
+
+            stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(5));
+            protector.Completed.IsSet.ShouldBeFalse();
+        }
+        finally
+        {
+            protector.Release.Set();
+            if (System.IO.Directory.Exists(directory))
+            {
+                System.IO.Directory.Delete(directory, recursive: true);
+            }
+        }
     }
 
     [Theory]
@@ -545,6 +596,14 @@ public sealed class OsSecretStoreContractTests
             }
         }
 
+        public bool BlockCopy { get; set; }
+
+        public ManualResetEventSlim CopyEntered { get; } = new();
+
+        public ManualResetEventSlim ReleaseCopy { get; } = new();
+
+        public ManualResetEventSlim CopyCompleted { get; } = new();
+
         public int Add(string account, SecretString secret)
         {
             lock (_gate)
@@ -584,6 +643,15 @@ public sealed class OsSecretStoreContractTests
 
         public int Copy(string account, out SecretString? secret)
         {
+            if (BlockCopy)
+            {
+                CopyEntered.Set();
+                _ = ReleaseCopy.Wait(TimeSpan.FromSeconds(30));
+                CopyCompleted.Set();
+                secret = null;
+                return MacosKeychainStore.ItemNotFound;
+            }
+
             lock (_gate)
             {
                 _threads.Add((Thread.CurrentThread, Thread.CurrentThread.IsThreadPoolThread));
@@ -621,6 +689,27 @@ public sealed class OsSecretStoreContractTests
                 return _items.Count == 0 ? MacosKeychainStore.ItemNotFound : MacosKeychainStore.Success;
             }
         }
+    }
+
+
+    /// <summary>A stand-in for DPAPI whose <c>Protect</c> waits until released, like a slow system protector.</summary>
+    private sealed class BlockingProtector : IDpapiProtector
+    {
+        public ManualResetEventSlim Entered { get; } = new();
+
+        public ManualResetEventSlim Release { get; } = new();
+
+        public ManualResetEventSlim Completed { get; } = new();
+
+        public byte[] Protect(byte[] plain)
+        {
+            Entered.Set();
+            _ = Release.Wait(TimeSpan.FromSeconds(30));
+            Completed.Set();
+            return plain;
+        }
+
+        public byte[] Unprotect(byte[] protectedBytes) => protectedBytes;
     }
 
     /// <summary>A reversible stand-in for DPAPI: a marker byte followed by the bytes xor-ed with a constant. Unprotect refuses bytes without the marker.</summary>

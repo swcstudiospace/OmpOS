@@ -176,3 +176,27 @@ All must-haves hold via static verification + test source inspection. Phase goal
 
 _Verified: 2026-11-10T12:00:00Z_
 _Verifier: gsd-verifier (gsd-verify-67)_
+
+## Re-verification 2026-11-19
+
+All eight ROADMAP success criteria were run on SDK 10.0.402 (runtime 10.0.13):
+
+| # | Command | Result |
+|---|---------|--------|
+| 1 | `dotnet test tests/Autonogrammer.Accounts.Tests --filter "Category!=Live"` | Passed |
+| 2 | `dotnet test tests/Autonogrammer.Harness.Secrets.Os.Tests --filter "Category!=Live"` | Passed: 83 total, 0 failed since the M-07 latency tests were restructured |
+| 3 | `AUTONOGRAMMER_LIVE_KEYRING=1 dotnet test tests/Autonogrammer.Harness.Secrets.Os.Tests --filter "Category=Live"` | Skipped with reason: no Secret Service daemon answers on this host (`The Linux Secret Service reported an error`) — criterion allows this form |
+| 4 | `dotnet test tests/Autonogrammer.Api.IntegrationTests --filter "Category!=Live"` (services from `scripts/test-services.sh` with their exported connection strings) | Passed: 1577 total, 0 failed |
+| 5 | Presentation, Native, UI and Web test suites | All passed |
+| 6 | `dotnet test tests/Autonogrammer.ArchitectureTests` | Passed |
+| 7 | `dotnet build Autonogrammer.Linux.slnf -c Release -warnaserror` and `bash scripts/ci/check-licences.sh` | Clean build and licence check |
+| 8 | `CI=true dotnet restore Autonogrammer.Linux.slnf --locked-mode` | Passed |
+
+### M-findings closed (from 67-REVIEW.md)
+- **M-06** `LibsecretNativeApi.cs`: G_IO_ERROR_CANCELLED only becomes `OperationCanceledException` when the caller's token is cancelled; otherwise the dismissed prompt maps to `Lock` — two regression tests.
+- **M-07** `BlockingSecretStore.cs:92`, `WindowsDpapiStore.cs`: cancellation races the awaited native call; callers return promptly without waiting for the blocked call — two latency regression tests (cancel < 5 s against a 30 s blocked fake).
+- **M-08** `AccountSessionManager.cs:948-969`: `StateChanged` is raised inside the state lock, so concurrent mutations deliver events in mutation order — one ordering regression test.
+- **M-09** `ApiAuthOptionsValidator.cs`: server rejects the same client shapes the heads refuse (URL with query/fragment; block with only URL or only key) — new validator rows.
+- **M-05** (`JwtBearerSetup.cs`): partially open. The trivial part (RefreshInterval 30 s, AutomaticRefreshInterval 10 min) plus a loopback-JWKS test and head-side behaviour are NOT in this branch (two concurrent fixers disagreed; the on-disk tree carries the non-M-05 parts). Recorded as open in the REVIEW tracker; do not claim it as fixed.
+
+The `CA2250`, `MA0051`, `CA2000`, `MA0158`, `VSTHRD003`, `xUnit1051`, `xUnit1008/1013` and `CA1822` analyzer violations introduced along the way were fixed at the cause (helpers, `ThrowIfCancellationRequested`, `TestContext.Current.CancellationToken`, theory attribute).

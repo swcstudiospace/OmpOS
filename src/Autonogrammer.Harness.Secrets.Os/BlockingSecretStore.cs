@@ -89,7 +89,15 @@ internal abstract class BlockingSecretStore(ILogger? logger, TimeProvider? timeP
         T result;
         try
         {
-            result = await Task.Factory.StartNew(work, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).ConfigureAwait(false);
+            // The native call cannot be interrupted once it starts (an unlock prompt may wait indefinitely), so the token races it instead:
+            // when the token fires the caller is released with a cancellation and the abandoned call finishes in the background, its result discarded.
+            Task<T> call = Task.Factory.StartNew(work, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            _ = call.ContinueWith(
+                static finished => { _ = finished.Exception; },
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+            result = await call.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (SecretStoreException exception)
         {
