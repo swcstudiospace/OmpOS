@@ -1,5 +1,7 @@
 # Traceability matrix T77d9-req
 
+Status: Record (traceability matrix for T77d9-req)
+
 Coverage: 27 of 27. Every story and every NFR links to at least
 one artifact. Unknown links: 0. Criterion tokens are omitted here on
 purpose: the matrix links by story identifier and phase. The

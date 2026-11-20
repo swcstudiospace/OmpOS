@@ -1,5 +1,7 @@
 # User stories T77d9-req
 
+Status: Record (user stories for T77d9-req)
+
 Each story carries stable identifier, role, capability, dependencies,
 estimate and MoSCoW class. Estimates are points 1 to 8. The set has 22
 stories, so ordering is by WSJF value computed from stakeholder scores.

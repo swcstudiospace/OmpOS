@@ -1,5 +1,7 @@
 # Non-functional requirements T77d9-req
 
+Status: Record (non-functional requirements for T77d9-req)
+
 Five categories. Every target carries a number and a checker.
 
 NFR-P1 kind: perf target: health and status responses answer in p95

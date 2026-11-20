@@ -1,5 +1,7 @@
 # Acceptance criteria T77d9-req
 
+Status: Record (acceptance criteria AC-101..AC-122 for T77d9-req)
+
 One criterion per story. Each block carries story, Given, When, Then,
 check and automated flag. A block that cannot be checked by a
 machine stays out of this file and moves to open questions.

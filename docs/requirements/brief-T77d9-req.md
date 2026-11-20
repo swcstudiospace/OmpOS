@@ -1,5 +1,7 @@
 # Cleaned brief T77d9-req
 
+Status: Record (cleaned brief for T77d9-req)
+
 Source: task.assign T77d9-req, correlation 77d97ef8-56a4-4b53-ae66-5b8c5e5d659e.
 PII scan: found none. Ambiguity: score 0.0 (8 sentences, 0 flagged).
 Note: origin/main at 434e214e is the baseline. Local main is 93 commits behind

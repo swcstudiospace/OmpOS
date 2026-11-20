@@ -1,5 +1,7 @@
 # Preserved dirty files — T77d9-fe conflict record (AC-119)
 
+Status: Record (conflict record for T77d9-fe, AC-119)
+
 Baseline: branch `swarm/T77d9-fe` from `origin/main` at `434e214e`.
 Local `main` was 93 behind with 11 tracked dirty files. Tracked changes were
 stashed, the branch was created from `origin/main`, and the stash was applied.

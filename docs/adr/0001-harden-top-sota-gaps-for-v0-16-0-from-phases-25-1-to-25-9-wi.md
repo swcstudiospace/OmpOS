@@ -1,5 +1,7 @@
 # ADR-0001. Harden top SOTA gaps for v0.16.0 from phases 25.1 to 25.9 without new conventions
 
+Status: accepted
+
 - **Status:** accepted
 - **Date:** 2026-11-20
 - **Deciders:** A03

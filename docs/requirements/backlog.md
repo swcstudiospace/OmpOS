@@ -1,5 +1,7 @@
 # Ranked backlog T77d9-req
 
+Status: Record (ranked backlog for T77d9-req)
+
 22 stories. Method: WSJF (22 exceeds 20). Scores are provisional:
 the brief carries no stakeholder numbers, so values follow MoSCoW
 class, reconciliation verdict and dependency depth from the brief.

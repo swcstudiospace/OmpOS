@@ -1,5 +1,7 @@
 # Requirements specification T77d9-req
 
+Status: Record (requirements specification for T77d9-req)
+
 ## 1. Goal
 
 Close milestone v0.16.0 phases 66 to 78 on origin main at 434e214e.
