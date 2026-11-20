@@ -13,7 +13,7 @@ namespace Autonogrammer.Api.IntegrationTests;
 /// </summary>
 public sealed class OpenApiOperationIdTests
 {
-    private static readonly string[] HttpMethods = ["get", "post", "put", "patch", "delete", "head", "options"];
+    private static readonly string[] HttpMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 
     /// <summary>Every operation in docs/api/openapi.json has a non-empty operationId.</summary>
     [Fact]
@@ -57,7 +57,7 @@ public sealed class OpenApiOperationIdTests
         {
             foreach (var operation in path.Value.EnumerateObject())
             {
-                if (!HttpMethods.Contains(operation.Name.ToLowerInvariant()))
+                if (!HttpMethods.Contains(operation.Name.ToUpperInvariant()))
                 {
                     continue;
                 }
@@ -82,7 +82,7 @@ public sealed class OpenApiOperationIdTests
         {
             foreach (var operation in path.Value.EnumerateObject())
             {
-                if (!HttpMethods.Contains(operation.Name.ToLowerInvariant()))
+                if (!HttpMethods.Contains(operation.Name.ToUpperInvariant()))
                 {
                     continue;
                 }
