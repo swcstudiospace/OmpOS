@@ -1,8 +1,8 @@
 ---
 phase: 68-data-plane-names-schema-and-resilience
-verified: 2026-11-10T14:12:00Z
+verified: 2026-11-21T00:00:00Z
 status: gaps_found
-score: "not recomputed for current tree"
+score: "2026-11-10 9/12; 2026-11-21 re-check: SEC-77-07 closed, live/full-gate gaps remain (see tail)"
 covered_files:
   - .planning/ROADMAP.md (Phase 68, lines 1419-1431)
   - .planning/phases/68-data-plane-names-schema-and-resilience/68-01..68-08-PLAN.md
@@ -69,8 +69,14 @@ human_verification:
     why_human: "Ledger scan + source match verified static; full test run human"
 gaps:
   - truth: "Account erasure is safely fenced against concurrent account-owned writes."
+    status: passed
+    reason: "SEC-77-07 fixed on main: M0012 account_erasure_fence + M0014 trigger (17 tables + claim table), advisory-lock admission, resumable family deletes; 2026-11-10 High/open gap superseded by c4e6fe2e/332660ee/7dadceb5 (see 68-10-SUMMARY.md)."
+  - truth: "Account erasure has an authorized production entry point with credential revocation; Dragonfly coordination keys are fenced."
     status: unverified
-    reason: "SEC-77-07 remains High/open: the eraser uses separate family transactions, requires external quiescence, and no production caller or complete cross-writer fence was established."
+    reason: "SEC-77-09 (Low, open): no production caller (PostgresAccountErasure matches only its own file at HEAD); Dragonfly keys live <=24h unfenced; typed refusal mapping missing for some stores. Owner entry-point decision still pending."
+  - truth: "Whole Linux test set and live Greptime telemetry pass at current HEAD."
+    status: unverified
+    reason: "Focused Suites re-run in 2026-11-21 re-check (see tail); full-solution non-Live run and AUTONOGRAMMER_LIVE_GREPTIME=1 live runs remain human items, never claimed."
 ---
 
 # Phase 68 verification: Data plane: names, schema and resilience (RE-VERIFICATION)
@@ -183,3 +189,41 @@ Remaining human_needed for full executable gate, live telemetry, full arch test 
 _Verified: 2026-11-10T14:12:00Z_
 _Verifier: gsd-verifier (re-verif mode, static + targeted greps/runs)_
 _See 68-08-SUMMARY.md and 68-SOTA-DATA-PLANE.md for executor details._
+## Re-verification 2026-11-21 (HEAD c04095ba) — gaps_found (supersedes 2026-11-10 where noted)
+
+Goal-backward from ROADMAP Phase 68 success criteria 1-5 (ROADMAP.md:1615-1620). The
+2026-11-10 record (status gaps_found, score 9/12, SEC-77-07 High/open, plans 68-09..68-11
+"blocked drafts") is superseded on one point by committed code: SEC-77-07 is fixed on main
+(`c4e6fe2e` M0012/M0014, `332660ee` fenced resumable erasure, `7dadceb5` security-review
+closure; see 68-10-SUMMARY.md / 68-11-SUMMARY.md). What remains open is SEC-77-09 (Low: no
+production erasure caller, Dragonfly keys unfenced ≤24 h TTL) plus the live/full-gate items
+below. Main CI at c04095ba (44955765885) was in progress when this was written; the last three
+completed main runs failed; no CI-green claim is made for this HEAD.
+
+### Re-proven / re-checked at c04095ba in this pass
+
+| # | Criterion | Result here | Exact evidence |
+|---|-----------|-------------|----------------|
+| 1 | Build + locked restore, no new package in licence check (SC1) | RE-PROVEN | `dotnet restore Autonogrammer.Linux.slnf --locked-mode` exit 0; `dotnet build ... -c Release --no-restore -warnaserror` → Build succeeded, 0 warnings, 0 errors (incremental re-run; first full build harness-killed at 900 s, immediate re-run clean — torn-state artifact, not reproduced); `bash scripts/ci/check-licences.sh` → passed (notices `--check` up to date). Format exit NOT claimed (did not complete before host disk filled; see 66-VERIFICATION.md SC2). |
+| 2 | Whole Linux test set against throwaway services (SC2) | INCONCLUSIVE (disk full) | Attempted with scoped throwaway TimescaleDB 2.13.1 / Dragonfly v1.27.1 (manually started `*phases6668c` after `scripts/test-services.sh up` failed 3x on Dragonfly readiness within 90 s under load; CI shape ci.yml:144-154): `dotnet test --project tests/Autonogrammer.Sessions.Postgres.Tests -c Release --no-build -- --filter-class '*AccountErasureFence*'` → run 1: 17 total, 4 failed (one stack `AccountErasureFenceTests.cs:268`); run 2: 14 failed; run 3 (single class): `Unhandled exception: No space left on device`. `df -h /` → 387 G / 387 G used, 0 avail (100%). The failures are environmental (Postgres writes to the same full disk), NOT a code pass and NOT a code failure: the runs are inconclusive. The recorded proof of SEC-77-07 remains the security-review run (Sessions.Postgres 148/148 incl. fence 10/10 + migration 7/7, quoted in 68-10-SUMMARY.md). Full-solution run NOT executed: carried as gap. My `phases6668c` containers could not be removed afterward (`database or disk is full` on `podman rm -f`) and are left stopped-by-failure for the operator to clean. |
+| 3 | No old physical data name (SC3) | RE-PROVEN (corrected check) | Runbook check (docs/runbooks/data-plane.md:19-32): old-names grep over src/services/tests/scripts/deploy/.env.example excluding the rename-tool allow-list returns no output; scoped `"autonogrammer:` key literals all `"autonogrammer:v1:"`. The ROADMAP literal grep is retired (it matches the new prefix). `DataPlaneGuardTests` covers the same rules in-build but was not re-executed in this pass (disk-full, see SC2). |
+| 4 | Telemetry to GreptimeDB `autonogrammer` live (SC4) | HUMAN NEEDED, NOT CLAIMED | Requires `bash scripts/test-services.sh up --with-greptime` + `AUTONOGRAMMER_LIVE_GREPTIME=1 dotnet test --filter-trait "Category=Live"` on a podman host. Not executed here (different risk: live traffic; wardrobe rule: live-only stays a gap). Static rest: GreptimeDB config + status service present (68-VERIFICATION 2026-11-10 table), unchanged by this pass. |
+| 5 | ADR-0031 indexed, DecisionRecord tests pass (SC5) | DOCS RE-CHECKED / TEST PENDING | `docs/SUMMARY.md:129` links `decisions/ADR-0031-data-plane-namespaces-and-resilience.md`; file present (48 KB, indexed). `DecisionRecordTests` execution was not completed (disk-full SC2 runs inconclusive): human item. |
+| — | SEC-77-07 (was High/open) | FIXED in code; re-execution inconclusive | M0012 `account_erasure_fence` + M0014 trigger (17 tables + claim table), advisory-lock admission, digest tombstone, AE001-AE005, resumable family deletes (`PostgresAccountErasure`); security review: SEC-77-07 fixed + 12-item design note, evidence quoted in 68-10-SUMMARY.md. Fresh execution at c04095ba is inconclusive (disk full, SC2 row) — the review's recorded run remains the proof. |
+| — | SEC-77-09 (Low) | OPEN, never claimed | No production caller (grep: `PostgresAccountErasure` matches only its own file at HEAD); Dragonfly keys unfenced; typed refusal mapping missing for memory/projects/artifacts/accounts stores. Owner decision (operator command vs self-service route + IdP revocation) still pending per 68-11-SUMMARY.md. |
+
+### Human verification required
+
+- SC4 live Greptime telemetry (podman host, exact command in SC4 row above).
+- SC2 full-solution non-Live run (CI command above) on a clean tree + services; currently
+  focused suites only.
+- Live production database migration, deployment, and Dragonfly erasure (security review's own
+  "never exercised" sentence) — owner-approved environment only; do not run against production.
+- Owner decision on the erasure entry point + credential revocation (SEC-77-09), and the 74.1
+  independent human review / 75-12 hold (untouched, still in force).
+
+### Gaps summary
+
+gaps_found: SEC-77-07 closed (M0012 fence + tests); live Greptime (SC4), full-gate suite (SC2
+full), production erasure (SEC-77-09) remain human/owner items. 2026-11-10 "SEC-77-07
+High/open" gap is superseded by the c4e6fe2e/332660ee evidence above.
