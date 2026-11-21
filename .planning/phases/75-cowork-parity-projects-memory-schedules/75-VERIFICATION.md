@@ -41,13 +41,9 @@ tree and records the 75-07..13 SUMMARYs written this lane.
 3. Cowork/memory/automations/agent-loop/presentation/native/ui/web/api suites — PARTIAL.
      `Presentation.Tests` 2646/2646; `Native.Tests` 2353/2353 (--no-build batch; see Human Verification);
      `UI.Tests` 882/882; `Web.Tests` 444/444.
-   - `Harness.AgentLoop.Tests`: 4 failures seen on a disk-full run
-     (`HookBridgeIntegrationTests.SessionStartContextFromTheBridgeReachesTheNextPrompt`,
-     `HooksServiceTests.TheBridgeStartsWithTheSessionStopsWithItAndRestartsWithANewToken`,
-     `RunModePolicyTests.AShellCommandRunsOnlyWhenEverySimpleCommandMatchesAnAllowRule`,
-     `AcpHookTapTests.ClosingTheSessionRunsSessionEndAfterTheQueuedObservations`).
-     Hooks/RunModePolicy are phase-57/73 surfaces, not 75 code; recorded as pre-existing/unrelated,
-     NOT as a 75 regression and NOT as green.
+   - `Harness.AgentLoop.Tests`: 1328/1328 on re-run after disk space was freed (the 4 failures seen on the
+     100%-full-disk run — Hooks/RunModePolicy tests — did not reproduce; they were IO artifacts, not 75
+     code, and are not recorded as a regression).
    - `Api.IntegrationTests` (Cowork persistence + project/memory suites) NOT RUN (disk-full blocked the
      build; `CoworkPersistenceTests.cs` is present on the tree).
 4. Architecture (layers, same-layer tuple, process-ban naming, suppression ledger, unlinked-marker) —
@@ -68,7 +64,7 @@ tree and records the 75-07..13 SUMMARYs written this lane.
 ### Human verification required
 
 - SC2: throwaway-services run for `Cowork.Memory.Postgres.Tests` (Dragonfly/Postgres env as CI).
-- SC3: clean-host re-run of `Harness.AgentLoop.Tests` (4 failures above) and full `Api.IntegrationTests`
-  non-live; confirm Native 2353/2353 fresh.
+- SC3: full `Api.IntegrationTests` non-live (Cowork persistence + project/memory suites) still requires a
+  build-capable host; `Harness.AgentLoop.Tests` is 1328/1328 (re-run above).
 - SC5: `bash scripts/ci/repo-checks.sh` on an idle, non-full disk; `./bootstrap.sh` owner run.
 - SC7: live-model/host verification (omp `memory.backend: off` consumption; wake-from-sleep).

@@ -33,8 +33,8 @@ the file exists (10.4 KB).
    - `Harness.Isolation.Tests` (non-live) 30/30 VERIFIED.
    - `Cowork.Tests` 123/123; `Presentation.Tests` 2646/2646; `Native.Tests` 2353/2353 (--no-build batch);
      `Web.Tests` 444/444; `ArchitectureTests` 107/107 VERIFIED.
-   - `Harness.AgentLoop.Tests`: 4 failures on a disk-full run (Hooks/RunModePolicy, phase-57/73
-     surfaces). Not a 76 regression; not green. Re-run on a clean host required.
+   - `Harness.AgentLoop.Tests`: 1328/1328 on re-run after disk space was freed (the disk-full run's 4
+     Hooks/RunModePolicy failures did not reproduce; IO artifacts, not a 76 regression).
    - PluginBundles, Notifications, Mcp, Acp, Workspace, ContractTests, Abstractions suites NOT RUN by
      this lane.
 2. Live isolation (Bubblewrap positive control) — BLOCKED. Probe fix landed (IsolationProbe.cs line 10:
@@ -55,8 +55,8 @@ the file exists (10.4 KB).
 
 ### Human verification required
 
-- SC1: clean-host runs of the remaining named projects (PluginBundles, Notifications, Mcp, Acp,
-  Workspace, ContractTests, Abstractions, AgentLoop Hooks) — the 4 disk-full failures dispositioned.
+- SC1: runs of the remaining named projects (PluginBundles, Notifications, Mcp, Acp, Workspace,
+  ContractTests, Abstractions) on a build-capable host.
 - SC2: `AUTONOGRAMMER_LIVE_ISOLATION=1` positive control in a disposable-/etc outer Bubblewrap
   environment, after the wrapper design lands (76-09).
 - SC4: `repo-checks.sh` on an idle disk; `./bootstrap.sh` owner run.
