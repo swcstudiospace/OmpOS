@@ -247,3 +247,43 @@ Railway project `Ultrathink`, environment `production`. The service list, variab
 - [ADR-0004](decisions/ADR-0004-cross-platform-ui.md): cross-platform UI. Accepted 2026-10-21: Avalonia UI for the five native heads; the web head stays Blazor WebAssembly on the shared presentation layer. The MAUI head retires after parity (v0.10.0 Phase 25).
 - [Temporal removal and Railway topology (2026-10-21)](handoff.md#temporal-removal-and-railway-topology-2026-10-21): the decision text and its supersessions.
 - [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md): agent loop plugins. Accepted 2026-10-26: Ultrathink, Swarm and Substrate as pinned submodules and `plugins/gsd-core-omp` as a tracked plugin, launched inside `omp acp` with `-e`. Update 2026-10-26: no additional Agent Panel and no inspector (DR-1), plugins in every app-started omp process, engine session and terminals (DR-2), live steering required; implemented as omp's native `_session/steering` for chat sessions and the Autonogrammer inbox for terminals and as the fallback, Substrate records only (DR-4, OQ-81).
+
+## v0.16.0 blueprint addendum — phases 66–78 (2026-11-20, A03)
+
+Baseline: `origin/main` at `434e214e`. Local `main` is 93 behind with 10 dirty auth/secrets files; A01 branches from `origin/main`, preserves the 10 dirty files onto that branch, and keeps `main` clean. No direct commits to `main`. Merge only on all-green CI. Proof runs in CI only (no local .NET 10.0.402 SDK; do not install it, do not edit `global.json`). STATE.md/ROADMAP.md update happens after merge (AC-122, downstream of A03). Decision: [ADR-0001 (swarm)](adr/0001-harden-top-sota-gaps-for-v0-16-0-from-phases-25-1-to-25-9-wi.md), L2, accepted.
+
+### Containers and relations (C4, budget 5)
+
+Containers: Web, Native, Api, Contracts, Harness, CoworkAccounts, DataPlane, Presentation. Relations: Web→Api, Web→Presentation, Native→Api, Native→Presentation, Native→Harness, Api→Harness, Api→CoworkAccounts, Api→DataPlane, Api→Contracts, Harness→Contracts, CoworkAccounts→Contracts, CoworkAccounts→DataPlane, Presentation→Contracts. Fan-out check (`arch_c4_fanout`): 8 containers, 13 relations, max fan-out 4, over-budget none, isolated none.
+
+Layer order (outermost → innermost): Heads → Api → Libraries → Abstractions → Contracts → Data. Assignments: Web, Native → Heads; Api → Api; Harness, CoworkAccounts, Presentation → Libraries; ParserAbstractions → Abstractions; Contracts → Contracts; DataPlane → Data. Layer check (`arch_layer_violations`): 15 edges, 0 violations, 0 unassigned. Cycle check (`arch_cycle_check`): acyclic, 0 cyclic components. Authoritative enforcement stays in `tests/Autonogrammer.ArchitectureTests` (`LayerMap`, `ProjectGraphChecker`, ArchUnitNET); any CI violation on main blocks further downstream CLAIMED tasks.
+
+v0.16.0 additions inside those containers (no new layer, no new convention): `Accounts` (Supabase passwordless, phase 67), `Harness.Secrets.Os` (phase 67), `Resilience` + data-plane namespaces/migrations M0001–M0010 (phase 68), `Cowork` registry + `SessionSurface` separation (phase 69), chat core + tool host (phase 70), artifacts + stores (phase 71), `Harness.BrowserUse` desktop-only (phase 72, blocked), Computer Use backends (phase 73), `Dispatch` relay (phase 74) + memory idempotency (74.1), parity A/B (phases 75–76), hardening/docs/integration (phase 77), desktop release pipeline (phase 78). Phase 72 stays blocked on an owner decision (SPE-34915, register SPE-34972); no production browser grants.
+
+### NFR bindings (coverage 100%, `arch_nfr_allocation`)
+
+| NFR | Target | Binding |
+|-----|--------|---------|
+| NFR-P1 (perf) | health/status p95 < 300 ms at 50 rps, 0 timeouts in 60 s | component budget `Autonogrammer.Api:health+status` 300 ms (A08.load) |
+| NFR-S1 (security) | gitleaks 0 findings on 100% diffs; rate partitions on 100% authed routes | component budget `ci:gitleaks+rate-limits` 0 findings (A10.sast) |
+| NFR-A1 (a11y) | axe 0 errors across 68 runs (light/dark × 3 viewports) | component budget `web-smoke:axe` 0 errors, 48/48 node (A08.a11y) |
+| NFR-I1 (i18n) | 100% user strings from EN resource table, 0 literals | contract clause `RepoHygieneTests:resource-table` 0 literals (A08.lint) |
+| NFR-C1 (compliance) | erasure deletes 100% owner rows (4 tables + tenant keys) in 24 h, 0 emails left | component budget `data-plane:4 tables` 100% (A10.compliance, non-negotiable) |
+
+No measured values were supplied, so no `arch_nfr_budget` run; all five stay unmeasured until CI provides numbers. No assumed defaults were needed — every NFR already carried a number.
+
+### API contract
+
+`ApiContract` v1.0.0, OpenAPI 3.1.1, `docs/api/openapi.json` (114 operations, 91 paths). Contract check (`arch_contract_check.py`, file vs origin baseline): 0 breaking, 0 new required params, 0 removed responses/schemas. Field check on the auth-config response shape: no breaking, no additive (`arch_field_breaks`, `breaking_change: false`). Version check (`arch_semver_bump` 1.0.0→1.0.0, no breaking, no additive): bump `none`, `compliant: true`. Contract verdict is `fail` on structure only: 80 of 114 operations lack `operationId` (34 have it; identical on origin baseline, so pre-existing, not introduced here). GAP-OP-1: A05 adds `WithName` (operationId) to those 80 in source and bumps info.version to 1.1.0 (additive, minor). The contract file is build-generated (`Microsoft.Extensions.ApiDescription.Server`); CI regenerates it from source — never hand-edit. Consumers (A05/A06/A08) pin to the digest in the A03 handover and keep N-1 compatibility for the 30-day deprecation window.
+
+### Tech stack selection (catalog-confirmed, no change)
+
+net10.0 (SDK 10.0.402 pinned, `rollForward: disable`), nullable + warnings-as-errors + analyzers (`Directory.Build.props`), STJ source generation (`JsonSerializerIsReflectionEnabledByDefault: false`), xUnit v3 on Microsoft Testing Platform, Shouldly (not FluentAssertions 8.x), ArchUnitNET, bUnit, central package management with locked restores (`RestoreLockedMode` on CI), podman-only (no Docker tooling), no Newtonsoft. Catalog miss: none — no new pattern, infrastructure or first-party dependency is introduced, so this stays L2. Supply chain: SBOM regenerated in CI (`docs/legal/sbom.spdx.json`), dependency allowlist = central pins in `Directory.Packages.props`, licence matrix in `THIRD-PARTY-NOTICES.md` + `LICENSES/` (AGPL-3.0-or-later, MIT, OFL-1.1); NuGetAudit `all` at `low`.
+
+### Fitness functions (CI must enforce)
+
+1. `ArchitectureTests` layering + suppression ledger + repo hygiene (AC-101/108/120).
+2. Contract check: breaking list must stay empty; GAP-OP-1 tracked until 1.1.0.
+3. Locked restore + format + analyzers with warnings-as-errors; gitleaks 0 findings (NFR-S1).
+4. Web-smoke axe + i18n hygiene + data-plane/compliance gates per NFR bindings (A08/A10).
+5. Full gate at head with 0 failed tests before merge (AC-117); merge only when every CI job is green (AC-121).

@@ -37,16 +37,16 @@ public sealed class AccountErasureFenceMigrationTests(PostgresServerFixture serv
              + (SELECT count(*) FROM pg_class AS c JOIN pg_namespace AS n ON n.oid = c.relnamespace WHERE n.nspname = @schema AND c.relname = 'account_erasure_fence')
         """;
 
-    /// <summary>The registry places the fence at 12, the memory claims at 13 and the claims' fence at 14, and the memory claims keep the checksum they had as version 12.</summary>
+    /// <summary>The registry places the fence at 12, the memory claims at 13 and the claims' fence at 14, followed by the session owner-surface index at 15, and the memory claims keep the checksum they had as version 12.</summary>
     [Fact]
     public void RegistryOrdersTheFenceBeforeTheMemoryClaimsAndKeepsTheirChecksum()
     {
         MigrationRegistry.All.Where(static step => step.Version >= 12).Select(static step => (step.Version, step.Name)).ShouldBe(
-            [(12, "account_erasure_fence"), (13, "memory_idempotency"), (14, "memory_idempotency_fence")]);
+            [(12, "account_erasure_fence"), (13, "memory_idempotency"), (14, "memory_idempotency_fence"), (15, "session_owner_surface")]);
         MigrationRunner.ChecksumOf(MigrationRegistry.All.Single(static step => step.Version == 13)).ShouldBe(MemoryIdempotencyChecksum);
     }
 
-    /// <summary>The fence steps apply over a schema that already holds data at version 11, keep every row, and a second run applies nothing.</summary>
+    /// <summary>The steps since version 11 (the fence at 12, the memory claims at 13 and their fence at 14, plus the session owner-surface index at 15) apply over a schema that already holds data, keep every row, and a second run applies nothing.</summary>
     [Fact]
     public async Task FenceStepsApplyOverExistingDataAndRepeat()
     {
@@ -65,9 +65,9 @@ public sealed class AccountErasureFenceMigrationTests(PostgresServerFixture serv
             }
 
             var runner = new MigrationRunner(dataSource, schema.SchemaName);
-            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([12, 13, 14]);
+            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([12, 13, 14, 15]);
             (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBeEmpty();
-            (await runner.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(14);
+            (await runner.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(15);
             (await ScalarAsync(dataSource, "SELECT (SELECT count(*) FROM sessions) + (SELECT count(*) FROM dispatch_devices)", schema.SchemaName, ct).ConfigureAwait(true)).ShouldBe(2L);
             var applied = await runner.ListAppliedAsync(ct).ConfigureAwait(true);
             foreach (var step in MigrationRegistry.All.Where(static step => step.Version >= 12))
@@ -81,7 +81,7 @@ public sealed class AccountErasureFenceMigrationTests(PostgresServerFixture serv
         }
     }
 
-    /// <summary>With no erasure record, the three steps revert in reverse order, leave no function, trigger or table of the fence behind, and apply again.</summary>
+    /// <summary>With no erasure record, the steps since version 11 (the fence at 12, the memory claims at 13 and their fence at 14, plus the session owner-surface index at 15) revert in reverse order, leave no function, trigger or table of the fence behind, and apply again.</summary>
     [Fact]
     public async Task FenceStepsRevertAndReapplyWhenNothingWasErased()
     {
@@ -93,10 +93,10 @@ public sealed class AccountErasureFenceMigrationTests(PostgresServerFixture serv
             var runner = new MigrationRunner(dataSource, schema.SchemaName);
             (await ScalarAsync(dataSource, FenceObjectsSql, schema.SchemaName, ct).ConfigureAwait(true)).ShouldNotBe(0L);
 
-            (await runner.DownAsync(11, ct).ConfigureAwait(true)).ShouldBe([14, 13, 12]);
+            (await runner.DownAsync(11, ct).ConfigureAwait(true)).ShouldBe([15, 14, 13, 12]);
             (await ScalarAsync(dataSource, FenceObjectsSql, schema.SchemaName, ct).ConfigureAwait(true)).ShouldBe(0L);
 
-            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([12, 13, 14]);
+            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([12, 13, 14, 15]);
             (await ScalarAsync(dataSource, UnfencedTablesSql, schema.SchemaName, ct).ConfigureAwait(true)).ShouldBeNull();
         }
         finally

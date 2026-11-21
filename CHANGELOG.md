@@ -13,6 +13,7 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 ### Changed
 - GAP-OP-1 closed: every operation in the API contract now carries an operationId (WithName in source, 80 added) and the contract is 1.1.0 (additive, minor). The build-time document is regenerated from source in CI; the committed docs/api/openapi.json is synced to the same 114 operationIds.
 - Preserved dirty auth hardening: JwtBearer metadata refresh is explicitly 30 s (automatic refresh 10 min), bounding the post-rotation 401 window.
+- T77d9-fe (PR #28) for v0.16.0 phases 66 to 78: preserved dirty auth/secrets files onto swarm/T77d9-fe from origin/main; gweb heads declare lang="en" and the artifact SVG fallback is labelled; upstream A02/A03/A04 artifacts indexed in docs/SUMMARY.md; session owner+surface index migration M0015.
 
 ## [0.20.7] - 2026-11-20
 
