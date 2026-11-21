@@ -27,21 +27,26 @@ internal static class CatalogEndpoints
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         endpoints.MapGet("/sessions", ListAsync)
+            .WithName("ListSessions")
             .WithTags(Tag)
             .WithSummary("Lists the caller's Code sessions with their catalog fields.");
         endpoints.MapGet("/sessions/{id}/card-details", CardDetailsAsync)
+            .WithName("GetSessionCardDetails")
             .WithTags(Tag)
             .WithSummary("Reads what the substrate knows about the session behind a card.")
             .ProducesProblem(StatusCodes.Status404NotFound);
         endpoints.MapPost("/sessions/{id}/close", CloseAsync)
+            .WithName("CloseSession")
             .WithTags(Tag)
             .WithSummary("Closes a session: stops its live run and moves it to the archived column.")
             .ProducesProblem(StatusCodes.Status404NotFound);
         endpoints.MapPost("/sessions/{id}/reopen", ReopenAsync)
+            .WithName("ReopenSession")
             .WithTags(Tag)
             .WithSummary("Reopens a closed session.")
             .ProducesProblem(StatusCodes.Status404NotFound);
         endpoints.MapPost("/sessions/{id}/resume", ResumeAsync)
+            .WithName("ResumeSession")
             .WithTags(Tag)
             .WithSummary("Settles the orphaned run of a lost session so it accepts a new prompt.")
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -49,6 +54,7 @@ internal static class CatalogEndpoints
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .RequireRateLimiting(SessionEndpoints.PromptsPolicy);
         endpoints.MapGet("/workspace", WorkspaceAsync)
+            .WithName("GetWorkspace")
             .WithTags(Tag)
             .WithSummary("Reads the workspace name, its folder name and the plugin check for the top bar.");
         return endpoints;

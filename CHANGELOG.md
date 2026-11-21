@@ -8,9 +8,17 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.9] - 2026-11-21
+
+### Changed
+- T77d9-be (PR #29) for v0.16.0 phases 66 to 78: GAP-OP-1 closed (80 operationIds, contract 1.1.0); JwtBearerSetup duplicate-definition merge fix from PR #28 sequencing.
+
 ## [0.20.8] - 2026-11-20
 
-T77d9-fe (PR #28) for v0.16.0 phases 66 to 78: preserved dirty auth/secrets files onto swarm/T77d9-fe from origin/main; gweb heads declare lang="en" and the artifact SVG fallback is labelled; upstream A02/A03/A04 artifacts indexed in docs/SUMMARY.md; session owner+surface index migration M0015.
+### Changed
+- GAP-OP-1 closed: every operation in the API contract now carries an operationId (WithName in source, 80 added) and the contract is 1.1.0 (additive, minor). The build-time document is regenerated from source in CI; the committed docs/api/openapi.json is synced to the same 114 operationIds.
+- Preserved dirty auth hardening: JwtBearer metadata refresh is explicitly 30 s (automatic refresh 10 min), bounding the post-rotation 401 window.
+- T77d9-fe (PR #28) for v0.16.0 phases 66 to 78: preserved dirty auth/secrets files onto swarm/T77d9-fe from origin/main; gweb heads declare lang="en" and the artifact SVG fallback is labelled; upstream A02/A03/A04 artifacts indexed in docs/SUMMARY.md; session owner+surface index migration M0015.
 
 ## [0.20.7] - 2026-11-20
 
@@ -581,6 +589,7 @@ Foundation through verified handoff (Phases 1 to 5).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
 [Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...HEAD
+[0.20.9]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.8...v0.20.9
 [0.20.8]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.7...v0.20.8
 [0.20.7]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.6...v0.20.7
 [0.20.6]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.5...v0.20.6

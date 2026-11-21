@@ -40,6 +40,7 @@ internal static class SessionEndpoints
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         endpoints.MapPost("/sessions", CreateSessionAsync)
+            .WithName("CreateSession")
             .Accepts<CreateSessionRequest>(isOptional: true, contentType: "application/json")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
@@ -47,8 +48,10 @@ internal static class SessionEndpoints
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .RequireRateLimiting(CreationPolicy);
         endpoints.MapGet("/sessions/{id}", GetSessionAsync)
+            .WithName("GetSession")
             .ProducesProblem(StatusCodes.Status404NotFound);
         endpoints.MapPost("/sessions/{id}/prompts", SubmitPromptAsync)
+            .WithName("SubmitPrompt")
             .Accepts<PromptRequest>("application/json")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)

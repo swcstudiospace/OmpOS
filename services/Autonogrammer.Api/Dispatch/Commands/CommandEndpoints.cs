@@ -34,6 +34,7 @@ internal static class CommandEndpoints
     {
         ArgumentNullException.ThrowIfNull(routes);
         routes.MapPost("/dispatch/devices/{id}/commands", EnqueueAsync)
+            .WithName("EnqueueDispatchCommand")
             .WithTags("Dispatch")
             .WithSummary("Queues a command for a device the caller owns.")
             .Accepts<CreateDispatchCommandRequest>("application/json")
@@ -45,18 +46,21 @@ internal static class CommandEndpoints
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
             .RequireRateLimiting(DispatchRateLimits.DispatchCommandRateLimiterPolicy.PolicyName);
         routes.MapGet("/dispatch/commands", ListAsync)
+            .WithName("ListDispatchCommands")
             .WithTags("Dispatch")
             .WithSummary("Lists the caller's commands, newest first.")
             .Produces<DispatchCommandListResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .RequireRateLimiting(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName);
         routes.MapGet("/dispatch/commands/{id}", GetAsync)
+            .WithName("GetDispatchCommand")
             .WithTags("Dispatch")
             .WithSummary("Reads one command the caller owns.")
             .Produces<DispatchCommandDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireRateLimiting(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName);
         routes.MapPost("/dispatch/commands/{id}/cancel", CancelAsync)
+            .WithName("CancelDispatchCommand")
             .WithTags("Dispatch")
             .WithSummary("Cancels a command that has not finished.")
             .Produces<DispatchCommandDto>(StatusCodes.Status200OK)

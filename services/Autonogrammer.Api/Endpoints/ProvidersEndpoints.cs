@@ -33,15 +33,26 @@ internal static class ProvidersEndpoints
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         var group = endpoints.MapGroup(string.Empty).WithTags("Providers").RequireRateLimiting(RateLimitPolicy);
+        MapCatalogueRoutes(group);
+        MapCustomAndTestRoutes(group);
+        return endpoints;
+    }
+
+    private static void MapCatalogueRoutes(IEndpointRouteBuilder group)
+    {
+        ArgumentNullException.ThrowIfNull(group);
         group.MapGet("/providers", ListAsync)
+            .WithName("ListProviders")
             .WithSummary("Lists the provider catalogue, filtered by region, kind and search text, with whether the service has a key for each provider. No key is ever returned.")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
         group.MapGet("/providers/{id}", GetAsync)
+            .WithName("GetProvider")
             .WithSummary("Reads one catalogue provider with whether the service has a key for it.")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
         group.MapPut("/providers/{id}/credential", SetCredentialAsync)
+            .WithName("PutProviderCredential")
             .WithSummary("Hands an API key to omp. Write-only; disabled unless the operator sets Providers:AllowCredentialWrite.")
             .Accepts<SetCredentialRequest>("application/json")
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -53,7 +64,13 @@ internal static class ProvidersEndpoints
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+    }
+
+    private static void MapCustomAndTestRoutes(IEndpointRouteBuilder group)
+    {
+        ArgumentNullException.ThrowIfNull(group);
         group.MapPut("/models/default", SetDefaultModelAsync)
+            .WithName("PutDefaultModel")
             .WithSummary("Makes a model the default for new chats. Disabled unless the operator sets Providers:AllowConfigWrite.")
             .Accepts<SetDefaultModelRequest>("application/json")
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -64,6 +81,7 @@ internal static class ProvidersEndpoints
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
         group.MapPost("/providers/custom", AddCustomAsync)
+            .WithName("CreateCustomProvider")
             .WithSummary("Adds an OpenAI- or Anthropic-compatible endpoint to omp. https is required except on this machine; link-local and metadata addresses and user information are refused. Disabled unless the operator sets Providers:AllowConfigWrite.")
             .Accepts<CustomProviderRequest>("application/json")
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -75,6 +93,7 @@ internal static class ProvidersEndpoints
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
         group.MapDelete("/providers/custom/{id}", RemoveCustomAsync)
+            .WithName("DeleteCustomProvider")
             .WithSummary("Removes a custom endpoint the caller added. Disabled unless the operator sets Providers:AllowConfigWrite.")
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -82,10 +101,10 @@ internal static class ProvidersEndpoints
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
         group.MapPost("/providers/{id}/test", TestAsync)
+            .WithName("TestProvider")
             .WithSummary("Asks whether something answers at the provider's address. Sends no key; skipped unless the operator sets Providers:AllowLiveTest.")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
-        return endpoints;
     }
 
     private static async Task<Results<Ok<ProvidersResponse>, ProblemHttpResult>> ListAsync(

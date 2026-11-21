@@ -22,6 +22,7 @@ internal static class CatalogEventEndpoints
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         endpoints.MapGet("/events", Handle)
+            .WithName("GetCatalogEvents")
             .WithTags("Catalog")
             .WithSummary("Streams catalog, session status and stage events of the caller's sessions. The stream does not end at a terminal session event.")
             .Produces(StatusCodes.Status200OK, contentType: "text/event-stream")

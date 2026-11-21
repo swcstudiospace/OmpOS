@@ -25,12 +25,12 @@ internal sealed class JwtBearerSetup : IPostConfigureOptions<JwtBearerOptions>
     /// <summary>Gets the claim type that marks an anonymous sign-in.</summary>
     public const string AnonymousClaimType = "is_anonymous";
 
-    private static readonly TimeSpan ClockSkew = TimeSpan.FromSeconds(30);
-
     // Explicit: the configuration manager rate-limits RequestRefresh by RefreshInterval (5 minutes by default), so after a signing-key
     // rotation new tokens can be answered 401 for minutes. 30 s bounds that window; automatic refresh stays at 10 minutes.
     private static readonly TimeSpan MetadataRefreshInterval = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan AutomaticMetadataRefreshInterval = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan ClockSkew = TimeSpan.FromSeconds(30);
+
 
     private readonly IOptions<ApiAuthOptions> _auth;
 

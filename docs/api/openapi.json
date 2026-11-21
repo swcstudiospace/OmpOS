@@ -2,7 +2,7 @@
   "openapi": "3.1.1",
   "info": {
     "title": "Autonogrammer.Api | v1",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "servers": [
     {
@@ -39,7 +39,7 @@
             }
           }
         },
-        "security": [ ]
+        "security": []
       }
     },
     "/status/data-plane": {
@@ -112,6 +112,7 @@
         "tags": [
           "SessionEndpoints"
         ],
+        "operationId": "CreateSession",
         "requestBody": {
           "content": {
             "application/json": {
@@ -185,6 +186,7 @@
           "Catalog"
         ],
         "summary": "Lists the caller's Code sessions with their catalog fields.",
+        "operationId": "ListSessions",
         "responses": {
           "200": {
             "description": "OK",
@@ -213,6 +215,7 @@
         "tags": [
           "SessionEndpoints"
         ],
+        "operationId": "GetSession",
         "parameters": [
           {
             "name": "id",
@@ -258,6 +261,7 @@
         "tags": [
           "SessionEndpoints"
         ],
+        "operationId": "SubmitPrompt",
         "parameters": [
           {
             "name": "id",
@@ -374,6 +378,7 @@
         "tags": [
           "ToolApprovalEndpoints"
         ],
+        "operationId": "DecideToolApproval",
         "parameters": [
           {
             "name": "id",
@@ -467,6 +472,7 @@
         "tags": [
           "EventStreamEndpoints"
         ],
+        "operationId": "GetSessionEvents",
         "parameters": [
           {
             "name": "id",
@@ -515,6 +521,7 @@
         "tags": [
           "RunEndpoints"
         ],
+        "operationId": "CreateSessionRun",
         "parameters": [
           {
             "name": "id",
@@ -620,6 +627,7 @@
         "tags": [
           "RunEndpoints"
         ],
+        "operationId": "GetSessionRun",
         "parameters": [
           {
             "name": "id",
@@ -673,6 +681,7 @@
         "tags": [
           "RunEndpoints"
         ],
+        "operationId": "GetSessionRunOutput",
         "parameters": [
           {
             "name": "id",
@@ -726,6 +735,7 @@
         "tags": [
           "RunEndpoints"
         ],
+        "operationId": "CancelSessionRun",
         "parameters": [
           {
             "name": "id",
@@ -790,6 +800,7 @@
           "Catalog"
         ],
         "summary": "Reads what the substrate knows about the session behind a card.",
+        "operationId": "GetSessionCardDetails",
         "parameters": [
           {
             "name": "id",
@@ -836,6 +847,7 @@
           "Catalog"
         ],
         "summary": "Closes a session: stops its live run and moves it to the archived column.",
+        "operationId": "CloseSession",
         "parameters": [
           {
             "name": "id",
@@ -882,6 +894,7 @@
           "Catalog"
         ],
         "summary": "Reopens a closed session.",
+        "operationId": "ReopenSession",
         "parameters": [
           {
             "name": "id",
@@ -928,6 +941,7 @@
           "Catalog"
         ],
         "summary": "Settles the orphaned run of a lost session so it accepts a new prompt.",
+        "operationId": "ResumeSession",
         "parameters": [
           {
             "name": "id",
@@ -994,6 +1008,7 @@
           "Catalog"
         ],
         "summary": "Reads the workspace name, its folder name and the plugin check for the top bar.",
+        "operationId": "GetWorkspace",
         "responses": {
           "200": {
             "description": "OK",
@@ -1020,6 +1035,7 @@
           "Catalog"
         ],
         "summary": "Streams catalog, session status and stage events of the caller's sessions. The stream does not end at a terminal session event.",
+        "operationId": "GetCatalogEvents",
         "responses": {
           "200": {
             "description": "OK"
@@ -1049,6 +1065,7 @@
           "Stages"
         ],
         "summary": "Reads the latest event of every stage of the session.",
+        "operationId": "GetSessionStages",
         "parameters": [
           {
             "name": "id",
@@ -1095,6 +1112,7 @@
           "Stages"
         ],
         "summary": "Reads the task context of the session: task, Graph, workflow phase, shared memory and lessons.",
+        "operationId": "GetSessionContext",
         "parameters": [
           {
             "name": "id",
@@ -1141,6 +1159,7 @@
           "Steering"
         ],
         "summary": "Sends a message to the active turn, now or as a queued follow-up, and reports how it was delivered.",
+        "operationId": "SteerSession",
         "parameters": [
           {
             "name": "id",
@@ -1247,6 +1266,7 @@
           "Steering"
         ],
         "summary": "Lists the tool approvals that wait for a decision.",
+        "operationId": "ListPendingToolApprovals",
         "parameters": [
           {
             "name": "id",
@@ -1293,6 +1313,7 @@
           "Session configuration"
         ],
         "summary": "Reads the model, mode and thinking options the engine reports for the session.",
+        "operationId": "GetSessionConfigOptions",
         "parameters": [
           {
             "name": "id",
@@ -1339,6 +1360,7 @@
           "Session configuration"
         ],
         "summary": "Changes one option of a session whose run holds a live engine session.",
+        "operationId": "PutSessionConfigOption",
         "parameters": [
           {
             "name": "id",
@@ -1463,6 +1485,7 @@
           "Session configuration"
         ],
         "summary": "Lists the slash commands the engine advertises for the session.",
+        "operationId": "GetSessionCommands",
         "parameters": [
           {
             "name": "id",
@@ -1509,6 +1532,7 @@
           "Changes"
         ],
         "summary": "Lists the files the session's runs edited, with their before and after text and review state.",
+        "operationId": "ListSessionChanges",
         "parameters": [
           {
             "name": "id",
@@ -1555,6 +1579,7 @@
           "Changes"
         ],
         "summary": "Accepts the change of one file. The path is URL-encoded.",
+        "operationId": "AcceptSessionChange",
         "parameters": [
           {
             "name": "id",
@@ -1649,6 +1674,7 @@
           "Changes"
         ],
         "summary": "Rejects the change of one file and restores its text before the edit. The path is URL-encoded.",
+        "operationId": "RejectSessionChange",
         "parameters": [
           {
             "name": "id",
@@ -1743,6 +1769,7 @@
           "Source"
         ],
         "summary": "Names the licence and the source repository of this running service (AGPL-3.0-or-later section 13).",
+        "operationId": "GetSourceInfo",
         "responses": {
           "200": {
             "description": "OK",
@@ -1755,7 +1782,7 @@
             }
           }
         },
-        "security": [ ]
+        "security": []
       }
     },
     "/workspace/conventions": {
@@ -1764,6 +1791,7 @@
           "Workspace settings"
         ],
         "summary": "Lists the commands, skills, rules, subagents, hooks files and MCP files of the server workspace, with precedence and diagnostics.",
+        "operationId": "GetWorkspaceConventions",
         "responses": {
           "200": {
             "description": "OK",
@@ -1810,6 +1838,7 @@
           "Workspace settings"
         ],
         "summary": "Reads the effective limits and options of the API as read-only values.",
+        "operationId": "GetRuntimeSettings",
         "responses": {
           "200": {
             "description": "OK",
@@ -1856,6 +1885,7 @@
           "Workspace settings"
         ],
         "summary": "Reads the plugin connection check and the plugin inventory of the API.",
+        "operationId": "GetPluginSettings",
         "responses": {
           "200": {
             "description": "OK",
@@ -1902,6 +1932,7 @@
           "Workspace settings"
         ],
         "summary": "Lists the upstreams the API is configured for. The API sends no request, so nothing is checked.",
+        "operationId": "GetNetworkSettings",
         "responses": {
           "200": {
             "description": "OK",
@@ -1948,6 +1979,7 @@
           "Workspace settings"
         ],
         "summary": "Reads the effective hooks, the files they came from, the loading problems and the consent state. No hook is started.",
+        "operationId": "GetHooks",
         "responses": {
           "200": {
             "description": "OK",
@@ -1994,6 +2026,7 @@
           "Workspace settings"
         ],
         "summary": "Reads the automations of the host, or reports that none is configured. No run is started.",
+        "operationId": "GetAutomations",
         "responses": {
           "200": {
             "description": "OK",
@@ -2038,6 +2071,7 @@
           "Automations"
         ],
         "summary": "Creates an automation: a prompt, triggers (cron, webhook) and a target. A webhook secret is generated and shown once in the answer.",
+        "operationId": "CreateAutomation",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2114,6 +2148,7 @@
           "Workspace settings"
         ],
         "summary": "Lists one folder of the server workspace. Secret files and links that leave the workspace are not listed.",
+        "operationId": "GetWorkspaceTree",
         "parameters": [
           {
             "name": "path",
@@ -2189,6 +2224,7 @@
           "Workspace settings"
         ],
         "summary": "Reads one UTF-8 text file of the server workspace, up to 1 MiB. Binary and secret files are refused.",
+        "operationId": "GetWorkspaceFile",
         "parameters": [
           {
             "name": "path",
@@ -2906,7 +2942,7 @@
             }
           }
         },
-        "security": [ ]
+        "security": []
       }
     },
     "/cowork/projects": {
@@ -4171,6 +4207,7 @@
           "Providers"
         ],
         "summary": "Lists the provider catalogue, filtered by region, kind and search text, with whether the service has a key for each provider. No key is ever returned.",
+        "operationId": "ListProviders",
         "parameters": [
           {
             "name": "region",
@@ -4240,6 +4277,7 @@
           "Providers"
         ],
         "summary": "Reads one catalogue provider with whether the service has a key for it.",
+        "operationId": "GetProvider",
         "parameters": [
           {
             "name": "id",
@@ -4296,6 +4334,7 @@
           "Providers"
         ],
         "summary": "Hands an API key to omp. Write-only; disabled unless the operator sets Providers:AllowCredentialWrite.",
+        "operationId": "PutProviderCredential",
         "parameters": [
           {
             "name": "id",
@@ -4429,6 +4468,7 @@
           "Providers"
         ],
         "summary": "Makes a model the default for new chats. Disabled unless the operator sets Providers:AllowConfigWrite.",
+        "operationId": "PutDefaultModel",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4532,6 +4572,7 @@
           "Providers"
         ],
         "summary": "Adds an OpenAI- or Anthropic-compatible endpoint to omp. https is required except on this machine; link-local and metadata addresses and user information are refused. Disabled unless the operator sets Providers:AllowConfigWrite.",
+        "operationId": "CreateCustomProvider",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4645,6 +4686,7 @@
           "Providers"
         ],
         "summary": "Removes a custom endpoint the caller added. Disabled unless the operator sets Providers:AllowConfigWrite.",
+        "operationId": "DeleteCustomProvider",
         "parameters": [
           {
             "name": "id",
@@ -4721,6 +4763,7 @@
           "Providers"
         ],
         "summary": "Asks whether something answers at the provider's address. Sends no key; skipped unless the operator sets Providers:AllowLiveTest.",
+        "operationId": "TestProvider",
         "parameters": [
           {
             "name": "id",
@@ -4777,6 +4820,7 @@
           "Cloud"
         ],
         "summary": "Creates a cloud agent bound to repositories, a branch and secret references, and starts provisioning its worker.",
+        "operationId": "CreateCloudAgent",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4871,6 +4915,7 @@
           "Cloud"
         ],
         "summary": "Lists the caller's cloud agents, newest first.",
+        "operationId": "ListCloudAgents",
         "responses": {
           "200": {
             "description": "OK",
@@ -4897,6 +4942,7 @@
           "Cloud"
         ],
         "summary": "Reads one cloud agent.",
+        "operationId": "GetCloudAgent",
         "parameters": [
           {
             "name": "id",
@@ -4941,6 +4987,7 @@
           "Cloud"
         ],
         "summary": "Deletes a cloud agent and removes its worker and volume. The session log stays.",
+        "operationId": "DeleteCloudAgent",
         "parameters": [
           {
             "name": "id",
@@ -5000,6 +5047,7 @@
           "Cloud"
         ],
         "summary": "Sends a prompt to a cloud agent. The run executes on the agent's worker; its events stream from /cloud/agents/{id}/events.",
+        "operationId": "PromptCloudAgent",
         "parameters": [
           {
             "name": "id",
@@ -5106,6 +5154,7 @@
           "Cloud"
         ],
         "summary": "Cancels the run in flight on this server instance.",
+        "operationId": "CancelCloudAgent",
         "parameters": [
           {
             "name": "id",
@@ -5162,6 +5211,7 @@
           "Cloud"
         ],
         "summary": "Stops a cloud agent: cancels its run and lets its worker sleep. A wake request starts it again.",
+        "operationId": "StopCloudAgent",
         "parameters": [
           {
             "name": "id",
@@ -5218,6 +5268,7 @@
           "Cloud"
         ],
         "summary": "Wakes an idle, stopped, failed or orphaned cloud agent. The worker comes up in the background; poll the agent until it is running.",
+        "operationId": "WakeCloudAgent",
         "parameters": [
           {
             "name": "id",
@@ -5294,6 +5345,7 @@
           "Cloud"
         ],
         "summary": "Streams the agent's events: the same kinds, ids and resume rules as GET /sessions/{id}/events.",
+        "operationId": "GetCloudAgentEvents",
         "parameters": [
           {
             "name": "id",
@@ -5343,6 +5395,7 @@
           "Cloud"
         ],
         "summary": "Opens a pull request from the agent's branch. It is ready for review unless a draft is requested and allowed.",
+        "operationId": "CreateCloudAgentPullRequest",
         "parameters": [
           {
             "name": "id",
@@ -5449,6 +5502,7 @@
           "Cloud"
         ],
         "summary": "Lists the caller's secrets by name. Values are never returned.",
+        "operationId": "ListCloudSecrets",
         "responses": {
           "200": {
             "description": "OK",
@@ -5475,6 +5529,7 @@
           "Cloud"
         ],
         "summary": "Tells whether a secret exists and when it was written. The value is write-only.",
+        "operationId": "GetCloudSecret",
         "parameters": [
           {
             "name": "name",
@@ -5519,6 +5574,7 @@
           "Cloud"
         ],
         "summary": "Stores or replaces a secret. It reaches an agent's environment only at provisioning and is redacted from output.",
+        "operationId": "PutCloudSecret",
         "parameters": [
           {
             "name": "name",
@@ -5603,6 +5659,7 @@
           "Cloud"
         ],
         "summary": "Deletes a secret. Agents that were already provisioned keep the value in their environment until they are deleted.",
+        "operationId": "DeleteCloudSecret",
         "parameters": [
           {
             "name": "name",
@@ -5642,6 +5699,7 @@
           "Cloud"
         ],
         "summary": "Reports the caller's caps and how much of them is used.",
+        "operationId": "GetCloudLimits",
         "responses": {
           "200": {
             "description": "OK",
@@ -5668,6 +5726,7 @@
           "Automations"
         ],
         "summary": "Lists the caller's automations with their next run and last run, newest first.",
+        "operationId": "ListAutomationDefinitions",
         "responses": {
           "200": {
             "description": "OK",
@@ -5694,6 +5753,7 @@
           "Automations"
         ],
         "summary": "Shows the next occurrences of a cron expression in a time zone.",
+        "operationId": "GetAutomationCronPreview",
         "parameters": [
           {
             "name": "expression",
@@ -5748,6 +5808,7 @@
           "Automations"
         ],
         "summary": "Reads one automation.",
+        "operationId": "GetAutomation",
         "parameters": [
           {
             "name": "id",
@@ -5792,6 +5853,7 @@
           "Automations"
         ],
         "summary": "Replaces an automation's definition. The webhook secret is kept; one is generated when the first webhook trigger is added.",
+        "operationId": "ReplaceAutomation",
         "parameters": [
           {
             "name": "id",
@@ -5856,6 +5918,7 @@
           "Automations"
         ],
         "summary": "Deletes an automation with its history and its webhook secret.",
+        "operationId": "DeleteAutomation",
         "parameters": [
           {
             "name": "id",
@@ -5895,6 +5958,7 @@
           "Automations"
         ],
         "summary": "Turns an automation's triggers on or off. A run by hand stays possible while it is off.",
+        "operationId": "SetAutomationEnabled",
         "parameters": [
           {
             "name": "id",
@@ -5951,6 +6015,7 @@
           "Automations"
         ],
         "summary": "Replaces the webhook secret. The new secret is shown once; the old one stops working at once.",
+        "operationId": "RotateAutomationWebhookSecret",
         "parameters": [
           {
             "name": "id",
@@ -6007,6 +6072,7 @@
           "Automations"
         ],
         "summary": "Runs an automation now, whether or not it is enabled. The run continues in the background.",
+        "operationId": "CreateAutomationRun",
         "parameters": [
           {
             "name": "id",
@@ -6061,6 +6127,7 @@
           "Automations"
         ],
         "summary": "Reads an automation's run history, newest first.",
+        "operationId": "ListAutomationRuns",
         "parameters": [
           {
             "name": "id",
@@ -6107,6 +6174,7 @@
           "Automations"
         ],
         "summary": "The webhook receiver. Anonymous, authenticated by HMAC-SHA256 signature; every authentication failure answers the same 401.",
+        "operationId": "ReceiveAutomationWebhook",
         "parameters": [
           {
             "name": "id",
@@ -6179,7 +6247,7 @@
             }
           }
         },
-        "security": [ ]
+        "security": []
       }
     },
     "/dispatch/devices": {
@@ -6188,6 +6256,7 @@
           "Dispatch"
         ],
         "summary": "Pairs a desktop and returns a device credential.",
+        "operationId": "PairDispatchDevice",
         "requestBody": {
           "content": {
             "application/json": {
@@ -6249,6 +6318,7 @@
           "Dispatch"
         ],
         "summary": "Lists the caller's devices with capability snapshots, presence and last-seen time.",
+        "operationId": "ListDispatchDevices",
         "responses": {
           "200": {
             "description": "OK",
@@ -6273,6 +6343,7 @@
           "Dispatch"
         ],
         "summary": "Revokes every device the caller owns.",
+        "operationId": "RevokeAllDispatchDevices",
         "responses": {
           "204": {
             "description": "No Content"
@@ -6292,6 +6363,7 @@
           "Dispatch"
         ],
         "summary": "Opens the device connection. The hub is not registered yet.",
+        "operationId": "ConnectDispatchDevice",
         "parameters": [
           {
             "name": "id",
@@ -6336,7 +6408,7 @@
         },
         "security": [
           {
-            "DispatchDevice": [ ]
+            "DispatchDevice": []
           }
         ]
       }
@@ -6347,6 +6419,7 @@
           "Dispatch"
         ],
         "summary": "Reads one device the caller owns.",
+        "operationId": "GetDispatchDevice",
         "parameters": [
           {
             "name": "id",
@@ -6391,6 +6464,7 @@
           "Dispatch"
         ],
         "summary": "Renames a device the caller owns.",
+        "operationId": "RenameDispatchDevice",
         "parameters": [
           {
             "name": "id",
@@ -6448,6 +6522,7 @@
           "Dispatch"
         ],
         "summary": "Revokes one device; its unfinished commands are cancelled or failed.",
+        "operationId": "RevokeDispatchDevice",
         "parameters": [
           {
             "name": "id",
@@ -6487,6 +6562,7 @@
           "Dispatch"
         ],
         "summary": "Queues a command for a device the caller owns.",
+        "operationId": "EnqueueDispatchCommand",
         "parameters": [
           {
             "name": "id",
@@ -6583,6 +6659,7 @@
           "Dispatch"
         ],
         "summary": "Lists the caller's commands, newest first.",
+        "operationId": "ListDispatchCommands",
         "parameters": [
           {
             "name": "deviceId",
@@ -6640,6 +6717,7 @@
           "Dispatch"
         ],
         "summary": "Reads one command the caller owns.",
+        "operationId": "GetDispatchCommand",
         "parameters": [
           {
             "name": "id",
@@ -6686,6 +6764,7 @@
           "Dispatch"
         ],
         "summary": "Cancels a command that has not finished.",
+        "operationId": "CancelDispatchCommand",
         "parameters": [
           {
             "name": "id",
@@ -6742,6 +6821,7 @@
           "Dispatch"
         ],
         "summary": "Streams the caller's device, command and approval events as server-sent events. Resume with Last-Event-ID, or with ?since= when that header is absent.",
+        "operationId": "GetDispatchEvents",
         "responses": {
           "200": {
             "description": "OK"
@@ -12135,7 +12215,7 @@
   },
   "security": [
     {
-      "bearerAuth": [ ]
+      "bearerAuth": []
     }
   ],
   "tags": [

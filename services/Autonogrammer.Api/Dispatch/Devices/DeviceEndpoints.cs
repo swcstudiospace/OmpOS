@@ -30,7 +30,18 @@ internal static partial class DeviceEndpoints
         }
 
         var routes = endpoints.MapGroup(string.Empty).WithMetadata(DispatchRouteMarker.Instance);
+        MapPairingAndConnectRoutes(routes);
+        MapDeviceLifecycleRoutes(routes);
+        CommandEndpoints.Map(routes);
+        DispatchEventEndpoints.Map(routes);
+        return endpoints;
+    }
+
+    private static void MapPairingAndConnectRoutes(IEndpointRouteBuilder routes)
+    {
+        ArgumentNullException.ThrowIfNull(routes);
         routes.MapPost("/dispatch/devices", PairAsync)
+            .WithName("PairDispatchDevice")
             .WithTags("Dispatch")
             .WithSummary("Pairs a desktop and returns a device credential.")
             .Accepts<PairingBody>("application/json")
@@ -40,6 +51,7 @@ internal static partial class DeviceEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .RequireRateLimiting(DispatchRateLimits.DispatchPairingRateLimiterPolicy.PolicyName);
         routes.MapGet("/dispatch/devices/{id}/connect", ConnectAsync)
+            .WithName("ConnectDispatchDevice")
             .WithTags("Dispatch")
             .WithSummary("Opens the device connection. The hub is not registered yet.")
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -48,18 +60,26 @@ internal static partial class DeviceEndpoints
             .RequireAuthorization(DispatchDeviceScheme.PolicyName)
             .RequireRateLimiting(DispatchRateLimits.DispatchConnectRateLimiterPolicy.PolicyName)
             .WithRequestTimeout(HostingPolicies.NoTimeout);
+    }
+
+    private static void MapDeviceLifecycleRoutes(IEndpointRouteBuilder routes)
+    {
+        ArgumentNullException.ThrowIfNull(routes);
         routes.MapGet("/dispatch/devices", ListDevicesAsync)
+            .WithName("ListDispatchDevices")
             .WithTags("Dispatch")
             .WithSummary("Lists the caller's devices with capability snapshots, presence and last-seen time.")
             .Produces<DispatchDeviceListResponse>(StatusCodes.Status200OK)
             .RequireRateLimiting(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName);
         routes.MapGet("/dispatch/devices/{id}", GetDeviceAsync)
+            .WithName("GetDispatchDevice")
             .WithTags("Dispatch")
             .WithSummary("Reads one device the caller owns.")
             .Produces<DispatchDeviceDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireRateLimiting(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName);
         routes.MapPatch("/dispatch/devices/{id}", RenameDeviceAsync)
+            .WithName("RenameDispatchDevice")
             .WithTags("Dispatch")
             .WithSummary("Renames a device the caller owns.")
             .Accepts<RenameDispatchDeviceRequest>("application/json")
@@ -68,19 +88,18 @@ internal static partial class DeviceEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireRateLimiting(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName);
         routes.MapDelete("/dispatch/devices/{id}", RevokeDeviceAsync)
+            .WithName("RevokeDispatchDevice")
             .WithTags("Dispatch")
             .WithSummary("Revokes one device; its unfinished commands are cancelled or failed.")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireRateLimiting(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName);
         routes.MapDelete("/dispatch/devices", RevokeAllDevicesAsync)
+            .WithName("RevokeAllDispatchDevices")
             .WithTags("Dispatch")
             .WithSummary("Revokes every device the caller owns.")
             .Produces(StatusCodes.Status204NoContent)
             .RequireRateLimiting(DispatchRateLimits.DispatchReadRateLimiterPolicy.PolicyName);
-        CommandEndpoints.Map(routes);
-        DispatchEventEndpoints.Map(routes);
-        return endpoints;
     }
 
     private static async Task<Results<JsonHttpResult<PairingReply>, ProblemHttpResult>> PairAsync(

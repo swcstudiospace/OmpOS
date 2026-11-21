@@ -21,16 +21,16 @@ internal static class WorkspaceSettingsEndpoints
     public static IEndpointRouteBuilder MapWorkspaceSettingsEndpoints(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
-        Describe(endpoints.MapGet("/workspace/conventions", ConventionsAsync), "Lists the commands, skills, rules, subagents, hooks files and MCP files of the server workspace, with precedence and diagnostics.");
-        Describe(endpoints.MapGet("/settings/runtime", Runtime), "Reads the effective limits and options of the API as read-only values.");
-        Describe(endpoints.MapGet("/settings/plugins", PluginsAsync), "Reads the plugin connection check and the plugin inventory of the API.");
-        Describe(endpoints.MapGet("/settings/network", Network), "Lists the upstreams the API is configured for. The API sends no request, so nothing is checked.");
-        Describe(endpoints.MapGet("/hooks", HooksAsync), "Reads the effective hooks, the files they came from, the loading problems and the consent state. No hook is started.");
-        Describe(endpoints.MapGet("/automations", AutomationsAsync), "Reads the automations of the host, or reports that none is configured. No run is started.");
-        Describe(endpoints.MapGet("/workspace/tree", Tree), "Lists one folder of the server workspace. Secret files and links that leave the workspace are not listed.")
+        Describe(endpoints.MapGet("/workspace/conventions", ConventionsAsync), "Lists the commands, skills, rules, subagents, hooks files and MCP files of the server workspace, with precedence and diagnostics.").WithName("GetWorkspaceConventions");
+        Describe(endpoints.MapGet("/settings/runtime", Runtime), "Reads the effective limits and options of the API as read-only values.").WithName("GetRuntimeSettings");
+        Describe(endpoints.MapGet("/settings/plugins", PluginsAsync), "Reads the plugin connection check and the plugin inventory of the API.").WithName("GetPluginSettings");
+        Describe(endpoints.MapGet("/settings/network", Network), "Lists the upstreams the API is configured for. The API sends no request, so nothing is checked.").WithName("GetNetworkSettings");
+        Describe(endpoints.MapGet("/hooks", HooksAsync), "Reads the effective hooks, the files they came from, the loading problems and the consent state. No hook is started.").WithName("GetHooks");
+        Describe(endpoints.MapGet("/automations", AutomationsAsync), "Reads the automations of the host, or reports that none is configured. No run is started.").WithName("GetAutomations");
+        Describe(endpoints.MapGet("/workspace/tree", Tree), "Lists one folder of the server workspace. Secret files and links that leave the workspace are not listed.").WithName("GetWorkspaceTree")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
-        Describe(endpoints.MapGet("/workspace/file", FileAsync), "Reads one UTF-8 text file of the server workspace, up to 1 MiB. Binary and secret files are refused.")
+        Describe(endpoints.MapGet("/workspace/file", FileAsync), "Reads one UTF-8 text file of the server workspace, up to 1 MiB. Binary and secret files are refused.").WithName("GetWorkspaceFile")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
             .ProducesProblem(StatusCodes.Status415UnsupportedMediaType)

@@ -24,6 +24,7 @@ internal static class EventStreamEndpoints
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         endpoints.MapGet("/sessions/{id}/events", HandleAsync)
+            .WithName("GetSessionEvents")
             .Produces(StatusCodes.Status200OK, contentType: "text/event-stream")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound);

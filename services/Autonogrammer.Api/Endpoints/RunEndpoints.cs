@@ -37,6 +37,7 @@ internal static class RunEndpoints
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         endpoints.MapPost("/sessions/{id}/runs", CreateRunAsync)
+            .WithName("CreateSessionRun")
             .Accepts<PromptRequest>("application/json")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -46,10 +47,13 @@ internal static class RunEndpoints
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .RequireRateLimiting(SessionEndpoints.PromptsPolicy);
         endpoints.MapGet("/sessions/{id}/runs/{runId}", GetRunAsync)
+            .WithName("GetSessionRun")
             .ProducesProblem(StatusCodes.Status404NotFound);
         endpoints.MapGet("/sessions/{id}/runs/{runId}/output", GetRunOutputAsync)
+            .WithName("GetSessionRunOutput")
             .ProducesProblem(StatusCodes.Status404NotFound);
         endpoints.MapPost("/sessions/{id}/runs/{runId}/cancel", CancelRunAsync)
+            .WithName("CancelSessionRun")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
         return endpoints;

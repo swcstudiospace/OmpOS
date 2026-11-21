@@ -32,6 +32,7 @@ internal static class SteeringEndpoints
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         endpoints.MapPost("/sessions/{id}/steer", SteerAsync)
+            .WithName("SteerSession")
             .WithTags("Steering")
             .WithSummary("Sends a message to the active turn, now or as a queued follow-up, and reports how it was delivered.")
             .Accepts<SteerRequest>("application/json")
@@ -43,6 +44,7 @@ internal static class SteeringEndpoints
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .RequireRateLimiting(SessionEndpoints.PromptsPolicy);
         endpoints.MapGet("/sessions/{id}/tool-approvals", PendingAsync)
+            .WithName("ListPendingToolApprovals")
             .WithTags("Steering")
             .WithSummary("Lists the tool approvals that wait for a decision.")
             .ProducesProblem(StatusCodes.Status404NotFound);
