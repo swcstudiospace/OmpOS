@@ -120,7 +120,7 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
         }
     }
 
-    /// <summary>M0013 (and its fence trigger, M0014) preserves preexisting data through repeat, rollback and reapplication.</summary>
+    /// <summary>M0013 (and its fence trigger, M0014, with the session owner-surface index M0015 on top) preserves preexisting data through repeat, rollback and reapplication.</summary>
     [Fact]
     public async Task MemoryClaimsExpandAndRollbackPreserveMemory()
     {
@@ -139,9 +139,9 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
                 await seed.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
             }
             var runner = new MigrationRunner(dataSource, schema.SchemaName);
-            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([13, 14]);
+            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([13, 14, 15]);
             (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBeEmpty();
-            (await runner.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(14);
+            (await runner.GetCurrentVersionAsync(ct).ConfigureAwait(true)).ShouldBe(15);
             var applied = await runner.ListAppliedAsync(ct).ConfigureAwait(true);
             applied.Single(static step => step.Version == 13).Checksum.ShouldBe(MigrationRunner.ChecksumOf(MigrationRegistry.All.Single(static step => step.Version == 13)));
             using (var claim = dataSource.CreateCommand("""
@@ -150,13 +150,13 @@ public sealed class MigrationRunnerTests(PostgresServerFixture server)
             {
                 await claim.ExecuteNonQueryAsync(ct).ConfigureAwait(true);
             }
-            (await runner.DownAsync(12, ct).ConfigureAwait(true)).ShouldBe([14, 13]);
+            (await runner.DownAsync(12, ct).ConfigureAwait(true)).ShouldBe([15, 14, 13]);
             (await ExistsAsync(dataSource, schema.SchemaName + ".cowork_memory_idempotency", ct).ConfigureAwait(true)).ShouldBeFalse();
             using (var preserved = dataSource.CreateCommand("SELECT p.name || ':' || m.content FROM cowork_projects p JOIN cowork_memory_entries m ON m.project_id = p.id"))
             {
                 (await preserved.ExecuteScalarAsync(ct).ConfigureAwait(true)).ShouldBe("project:kept");
             }
-            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([13, 14]);
+            (await runner.MigrateAsync(ct).ConfigureAwait(true)).ShouldBe([13, 14, 15]);
             using var count = dataSource.CreateCommand("SELECT count(*) FROM cowork_memory_idempotency");
             (await count.ExecuteScalarAsync(ct).ConfigureAwait(true)).ShouldBe(0L);
         }

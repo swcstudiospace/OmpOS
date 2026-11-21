@@ -27,6 +27,11 @@ internal sealed class JwtBearerSetup : IPostConfigureOptions<JwtBearerOptions>
 
     private static readonly TimeSpan ClockSkew = TimeSpan.FromSeconds(30);
 
+    // Explicit: the configuration manager rate-limits RequestRefresh by RefreshInterval (5 minutes by default), so after a signing-key
+    // rotation new tokens can be answered 401 for minutes. 30 s bounds that window; automatic refresh stays at 10 minutes.
+    private static readonly TimeSpan MetadataRefreshInterval = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan AutomaticMetadataRefreshInterval = TimeSpan.FromMinutes(10);
+
     private readonly IOptions<ApiAuthOptions> _auth;
 
     /// <summary>Initializes a new instance of the <see cref="JwtBearerSetup"/> class.</summary>
@@ -42,6 +47,8 @@ internal sealed class JwtBearerSetup : IPostConfigureOptions<JwtBearerOptions>
         ArgumentNullException.ThrowIfNull(options);
         var auth = _auth.Value;
         options.Authority = string.IsNullOrWhiteSpace(auth.Authority) ? null : auth.Authority;
+        options.RefreshInterval = MetadataRefreshInterval;
+        options.AutomaticRefreshInterval = AutomaticMetadataRefreshInterval;
         options.MapInboundClaims = false;
         options.TokenValidationParameters.ValidAudience = auth.Audience;
         options.TokenValidationParameters.ValidIssuer = string.IsNullOrWhiteSpace(auth.ValidIssuer) ? null : auth.ValidIssuer;
