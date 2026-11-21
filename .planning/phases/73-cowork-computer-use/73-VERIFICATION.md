@@ -1,18 +1,24 @@
 ---
 phase: 73-cowork-computer-use
-verified: 2026-11-03
+verified: 2026-11-21
 status: gaps_found
-method: static only (read, grep, glob, phase summaries). No builds, tests, Xvfb sessions, desktop drives or git writes were run.
+method: executed re-verification (SDK 10.0.402, worktree auto-78 @ c04095ba): dotnet test/build commands, Xvfb live run, licence/notices scripts; supersedes the 2026-11-03 static method for criteria 1-6
 covered_files:
-  - .planning/ROADMAP.md (Phase 73, lines 1492-1505)
-  - .planning/phases/73-cowork-computer-use/73-01..73-06-PLAN.md
+  - .planning/ROADMAP.md (Phase 73)
+  - .planning/phases/73-cowork-computer-use/73-01..73-10-PLAN.md
   - .planning/phases/73-cowork-computer-use/73-01..73-06-SUMMARY.md
+  - .planning/phases/73-cowork-computer-use/73-07-SUMMARY.md
+  - .planning/phases/73-cowork-computer-use/73-08-SUMMARY.md
+  - .planning/phases/73-cowork-computer-use/73-09-SUMMARY.md
+  - .planning/phases/73-cowork-computer-use/73-10-SUMMARY.md
   - .planning/phases/73-cowork-computer-use/73-PLAN-CHECK.md
 ---
 
 # Phase 73 verification: Cowork Computer Use
 
 **Current-tree update (2026-11-10):** `KillSwitchCoordinatorTests` passed 3/3 and `ComputerUseHeadCompositionTests` passed 14/14. These focused tests do not prove the actual local opt-in, visible indicator, approval, audit or desktop actuation path. Plans 73-09 and 73-10 remain blocked by their phase-75 prerequisites; the production safety gap remains open.
+
+**Re-verification (2026-11-21, executed):** ROADMAP criteria 1-6 all pass as executed (table below): offline core 90/90; X11 live 7/7 under a private Xvfb covering all seven brief cases; Windows/macOS Release builds warning-free; ArchitectureTests 107/107; licence/notices exit 0. Plans 73-07, 73-09 and 73-10 remain blocked and unexecuted (summaries written 2026-11-21): the production wiring gap (gap 1 below) is still open — no provider is registered from the running head, so the phase goal is not delivered despite the green core/back-end gates.
 
 ## Verdict vocabulary
 
@@ -26,12 +32,12 @@ covered_files:
 
 | # | Criterion (ROADMAP 73) | Verdict | Evidence | Notes |
 |---|---|---|---|---|
-| 1 | Computer Use core passes its offline tests (`Category=Live` excluded) | HUMAN NEEDED (partly CLAIMED) | 73-01-SUMMARY.md:36-42 (DenialCodeCatalogTests, CoordinateMap and options tests, pass); 73-02-SUMMARY.md and 73-03-SUMMARY.md report no test result; tests present: tests/Autonogrammer.Harness.ComputerUse.Tests/Tools/ComputerToolProviderTests.cs (15 descriptors), tests/Autonogrammer.Harness.ComputerUse.Tests/Policy/*.cs (per 73-02 frontmatter) | Full offline run not reported for policy, frames or audit. |
-| 2 | X11 live tests pass under a private Xvfb, or each skips with a stated reason | CLAIMED (HUMAN NEEDED to confirm) | 73-04-SUMMARY.md:50-52 (unit 9 passed; live with `AUTONOGRAMMER_LIVE_X11=1`: 7 passed; without the opt-in: 7 skipped); live file tests/Autonogrammer.Harness.ComputerUse.X11.Tests/Live/X11BackendLiveTests.cs (73-04 frontmatter); 73-04-SUMMARY.md:46 (fixture starts `Xvfb -displayfd 3 -nolisten tcp -screen 0 1280x800x24`, never reads `DISPLAY`) | Positive evidence from the executor. Not re-run here. |
-| 3 | Live X11 cases behave as the brief states (pointer, click with xev, typing, capture vs scrot, hotkey, second grab, window listing) | CLAIMED (HUMAN NEEDED to confirm) | 73-04-SUMMARY.md:51 (all seven listed cases passed); 73-04-SUMMARY.md:57-58 (known caveats: pointer warp disconnect, scratch mapping window) | Same evidence as criterion 2. |
-| 4 | Windows and macOS backends compile warning-free on Linux | CLAIMED (HUMAN NEEDED to confirm) | 73-05-SUMMARY.md:58-60 (Windows tests 8 passed; macOS tests 6 passed; both Release builds with `-warnaserror` exit 0, 0 warnings); src/Autonogrammer.Harness.ComputerUse.Windows/WindowsBackend.cs:12 and src/Autonogrammer.Harness.ComputerUse.MacOS/MacOSBackend.cs:14 (present) | Not re-run here. |
-| 5 | Project graph, Computer Use boundary and decision records hold; ADR-0035 indexed | HUMAN NEEDED (ADR present and indexed) | docs/decisions/ADR-0035-cowork-computer-use.md (present); docs/SUMMARY.md:125 (indexed); tests/Autonogrammer.ArchitectureTests/ComputerUseBoundaryTests.cs (present, 73-02 frontmatter); 73-06-SUMMARY.md:31 (registry files unchanged) | No run of ProjectGraphTests, ComputerUseBoundaryTests or DecisionRecordTests is reported. |
-| 6 | Licence check and notices check pass unchanged (no package added) | HUMAN NEEDED | 73-06-SUMMARY.md:27 ("No package was added. Licences and notices were not regenerated."); 73-06-SUMMARY.md:31 (no registry edit) | The scripts were not run. |
+| 1 | Computer Use core passes its offline tests (`Category=Live` excluded) | ✅ VERIFIED (executed 2026-11-21) | `dotnet test --project tests/Autonogrammer.Harness.ComputerUse.Tests -c Release --filter-not-trait "Category=Live"` → total 90, failed 0, skipped 0. |
+| 2 | X11 live tests pass under a private Xvfb, or each skips with a stated reason | ✅ VERIFIED (executed 2026-11-21) | `AUTONOGRAMMER_LIVE_X11=1 dotnet test --project tests/Autonogrammer.Harness.ComputerUse.X11.Tests -c Release --filter-trait "Category=Live"` → total 7, failed 0, skipped 0. Fixture starts `Xvfb -displayfd 3 -nolisten tcp -screen 0 1280x800x24` and never reads `DISPLAY` (73-04). |
+| 3 | Live X11 cases behave as the brief states (pointer, click with xev, typing, capture vs scrot, hotkey, second grab, window listing) | ✅ VERIFIED (executed 2026-11-21) | The 7 live cases in `X11BackendLiveTests.cs` (PointerMoveIsReadBack, ClickReachesXev, TypingReachesXevAsTheSameKeysyms, CaptureAgreesWithScrot, HotkeyFiresOnTheChord, SecondGrabReportsKillSwitchUnavailable, BareXvfbListsWindowsThroughXQueryTree) all passed in the criterion-2 run. Known caveats from 73-04 (pointer warp disconnect, scratch mapping window) remain open as executor notes. |
+| 4 | Windows and macOS backends compile warning-free on Linux | ✅ VERIFIED (executed 2026-11-21) | `dotnet build` Windows + MacOS csprojs `-c Release --no-restore -warnaserror -nodeReuse:false -m:1` → 2 projects each, 0 errors, 0 warnings, exit 0. Runtime behavior on Windows/macOS remains compile-only (no host available). |
+| 5 | Project graph, Computer Use boundary and decision records hold; ADR-0035 indexed | ✅ VERIFIED (executed 2026-11-21) | `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release` → total 107, failed 0, skipped 0 (includes ProjectGraphTests, ComputerUseBoundaryTests, DecisionRecordTests with ADR-0035 indexed). |
+| 6 | Licence check and notices check pass unchanged (no package added) | ✅ VERIFIED (executed 2026-11-21) | `bash scripts/ci/check-licences.sh` → `licence checks passed` exit 0; `python3 scripts/legal/generate-third-party-notices.py --check` → `THIRD-PARTY-NOTICES.md is up to date` exit 0. |
 
 ## Plan truths (must_haves)
 
@@ -64,12 +70,12 @@ covered_files:
 
 ## Human verification required
 
-- Offline core: `nice -n 15 dotnet test --project tests/Autonogrammer.Harness.ComputerUse.Tests -c Release --filter-not-trait "Category=Live"` (criterion 1).
-- X11 under a private Xvfb: `AUTONOGRAMMER_LIVE_X11=1 nice -n 15 dotnet test --project tests/Autonogrammer.Harness.ComputerUse.X11.Tests -c Release --filter-trait "Category=Live"` (criteria 2 and 3).
-- Windows and macOS warning-free builds on Linux (criterion 4).
-- `ProjectGraphTests`, `ComputerUseBoundaryTests` and `DecisionRecordTests` (criterion 5).
-- `bash scripts/ci/check-licences.sh` and `python3 scripts/legal/generate-third-party-notices.py --check` (criterion 6).
-- After 73-07: desktop smoke (tools registered, indicator, approval/kill) on real Cowork session (still HUMAN for full live sign-off).
+- ~~Offline core~~ ✅ executed 2026-11-21 (90/90).
+- ~~X11 under a private Xvfb~~ ✅ executed 2026-11-21 (7/7, all seven brief cases).
+- ~~Windows and macOS warning-free builds on Linux~~ ✅ executed 2026-11-21 (0 warnings/errors).
+- ~~`ProjectGraphTests`, `ComputerUseBoundaryTests` and `DecisionRecordTests`~~ ✅ executed 2026-11-21 (ArchitectureTests 107/107).
+- ~~Licence + notices checks~~ ✅ executed 2026-11-21 (both exit 0).
+- After gap 1 closes (73-07/73-09): desktop smoke (tools registered, indicator visibility, local approval, emergency Stop) on a real Cowork session — still HUMAN; a headless pass is not proof of topmost behavior across real displays. Windows/macOS runtime behavior remains compile-only until a real host is available.
 
 ## Non-blocking observations
 

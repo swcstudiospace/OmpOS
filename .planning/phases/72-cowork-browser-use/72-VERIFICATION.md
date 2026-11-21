@@ -1,24 +1,32 @@
 ---
 phase: 72-cowork-browser-use
-verified: 2026-11-10T12:00:00Z
+verified: 2026-11-21
 status: gaps_found
-score: 2/7 must-haves verified
+score: "3/5 runnable criteria pass as executed; live CDP fails on this host; production wiring absent"
 covered_files:
   - .planning/ROADMAP.md (Phase 72, lines 1681-1720)
   - .planning/phases/72-cowork-browser-use/72-01..72-11-PLAN.md
   - .planning/phases/72-cowork-browser-use/72-01..72-08-SUMMARY.md
   - .planning/phases/72-cowork-browser-use/72-09-PLAN.md
-  - .planning/phases/72-cowork-browser-use/72-10-PLAN.md
+  - .planning/phases/72-cowork-browser-use/72-09-SUMMARY.md
   - .planning/phases/72-cowork-browser-use/72-11-PLAN.md
+  - .planning/phases/72-cowork-browser-use/72-11-SUMMARY.md
+  - .planning/phases/72-cowork-browser-use/72-12-PLAN.md
+  - .planning/phases/72-cowork-browser-use/72-12-SUMMARY.md
+  - .planning/phases/72-cowork-browser-use/72-13-PLAN.md
+  - .planning/phases/72-cowork-browser-use/72-13-SUMMARY.md
+  - .planning/phases/72-cowork-browser-use/72-14-PLAN.md
+  - .planning/phases/72-cowork-browser-use/72-14-SUMMARY.md
+  - .planning/phases/72-cowork-browser-use/72-10-PLAN.md (superseded, not executed)
   - .planning/phases/72-cowork-browser-use/72-SOTA-SUMMARY.md
   - .planning/phases/72-cowork-browser-use/72-VERIFICATION.md
   - apps/Autonogrammer.Native/Cowork/BrowserUseComposition.cs
   - apps/Autonogrammer.Native/Agents/AgentHead.cs
   - tests/Autonogrammer.Harness.BrowserUse.Tests/Live/PipeConnectLiveTests.cs
   - tests/Autonogrammer.Harness.BrowserUse.Tests/Live/HeadfulSmokeLiveTests.cs
-  - tests/Autonogrammer.Harness.BrowserUse.Tests/Site/SiteLiveTests.cs
-  - tests/Autonogrammer.Harness.BrowserUse.Tests/Corpus/HostileCorpusLiveTests.cs
-  - tests/Autonogrammer.Harness.BrowserUse.Tests/Live/ScreenshotLadderLiveTests.cs
+  - tests/Autonogrammer.Harness.BrowserUse.Tests/Site/SiteTests.cs
+  - tests/Autonogrammer.Harness.BrowserUse.Tests/Corpus/CorpusPagesInventoryTests.cs
+  - tests/Autonogrammer.Harness.BrowserUse.Tests/Vision/ScreenshotLadderTests.cs
   - tests/Autonogrammer.Native.Tests/Browser/BrowserUseCompositionTests.cs
 covered_digest: "v1:sha256:manual-verif-72-20261110"
 behavior_unverified: 3
@@ -28,37 +36,34 @@ previous_status: gaps_found
 previous_score: 1/5
 gaps_closed: []
 gaps_remaining:
-  - "Production AgentHead call to Wire still omits Configure (Enabled stays false default) and Pages; no browser_* tools offered in desktop Cowork head"
-  - "CoworkToolHost uses fixed Skip policy, DenyingBroker, SwallowingAudit and MemoryGrantStore; user consent and audit are not wired from the head."
-  - "Corpus/site/screenshot live bodies remain vacuous placeholders; headful smoke now has a real launch and frame assertion but has not been run."
-  - "Production egress proxy and browser session are not wired. The invented proxy construction and allowing broker were removed; the provider now uses DenyingBroker."
-  - "Full offline/live/headful/arch build not re-confirmed (runner builds timed out >90s; static only)"
-  - "Native/UI/Presentation/Arch tests for heads not run (sibling compile deps noted in prior)"
+  - "Production AgentHead call to Wire (AgentHead.cs:110,230) still omits Configure (Enabled stays false) and Pages (ClosedPages); no browser_* tools offered in desktop Cowork head"
+  - "Live browser tests fail on this host: PuppeteerSharp 'Failed to create connection' (2 failed, 0 passed) with the ROADMAP env gates; headful smoke under the ROADMAP command (no CHROME_BIN) runs zero tests, 1 skipped"
+  - "Production egress proxy and browser session are not wired (72-12 unexecuted; requires 75-11 chain)"
+  - "72-13 required browser audit and 72-14 Native composition unexecuted (72-13 blocked on 75 chain; 72-14 blocked on D-12/D-13 BlockList-vs-Strict incompatibility)"
+  - "Native/UI full suites now executed clean (Native 2353 passed + 5 skipped; UI 882/882); full-disk corruption of the first Native run recorded here and superseded by the clean rerun"
 gaps:
   - truth: "Live browser tests drive real Chromium and assert without unconditional skip"
-    status: partial
-    reason: "The vacuous site, corpus and screenshot tests were removed; these scenarios have no live tests. A headless Chromium smoke passed with a test-only no-sandbox opt-in after fixing pipe receive-loop startup; it does not establish guarded production browsing."
+    status: failed
+    reason: "Re-verified 2026-11-21: with the ROADMAP env gates the only two live classes (PipeConnectLiveTests, HeadfulSmokeLiveTests) fail — PuppeteerSharp 'Failed to create connection' (total 2, failed 2, skipped 0). The Site/Corpus/Screenshot live classes named by 72-09 do not exist; 72-09 is unexecuted. No live behavior is proven."
     artifacts:
       - path: "tests/Autonogrammer.Harness.BrowserUse.Tests/Live/HeadfulSmokeLiveTests.cs"
         issue: "real host launch and frame assertion added; not verified"
-      - path: "tests/Autonogrammer.Harness.BrowserUse.Tests/Site/SiteLiveTests.cs"
-        issue: "placeholder comment only"
-      - path: "tests/Autonogrammer.Harness.BrowserUse.Tests/Corpus/HostileCorpusLiveTests.cs"
-        issue: "placeholder comment only"
-      - path: "tests/Autonogrammer.Harness.BrowserUse.Tests/Live/ScreenshotLadderLiveTests.cs"
-        issue: "placeholder comment only"
+      - path: "tests/Autonogrammer.Harness.BrowserUse.Tests/Site/SiteTests.cs"
+        issue: "offline test only; no SiteLiveTests exists (72-09 unexecuted)"
+      - path: "tests/Autonogrammer.Harness.BrowserUse.Tests/Corpus/CorpusPagesInventoryTests.cs"
+        issue: "offline inventory only; no HostileCorpusLiveTests exists (72-09 unexecuted)"
+      - path: "tests/Autonogrammer.Harness.BrowserUse.Tests/Vision/ScreenshotLadderTests.cs"
+        issue: "offline ladder only; no ScreenshotLadderLiveTests exists (72-09 unexecuted)"
     missing:
       - "Implement drive bodies using BrowserSessionHost + provider + asserts for invariants and SOTA states per 72-09 plan"
   - truth: "In production desktop head, real BrowserSessionHost / ChromiumProcessLauncher / EgressGuardProxy / NavigationGate / BrowserToolProvider are constructed and registered when Enabled; real broker/audit/grant used; Enabled set true"
     status: failed
-    reason: "AgentHead does not enable or supply browser pages; fake proxy construction and the allowing broker were removed. The remaining baseline uses fixed Skip, DenyingBroker and SwallowingAudit; real approval, audit, session and egress wiring are absent."
+    reason: "Unchanged 2026-11-21: AgentHead wires only StateDirectory + Artifacts (no Configure, no Pages, no Shell), so the provider receives ClosedPages/ClosedPorts with Enabled default false and offerTools stays false. Composition does build a real CoworkApprovalBroker/FileCoworkGrantStore/FileCoworkToolAudit (72-08), but they are unreachable for browser tools. 72-12/13/14 unexecuted."
     artifacts:
-      - path: "apps/Autonogrammer.Native/Agents/AgentHead.cs:107,226"
-        issue: "Wire call lacks Configure: o => o.Enabled = true , Pages"
-      - path: "apps/Autonogrammer.Native/Cowork/BrowserUseComposition.cs:229,249,251,380+"
-        issue: "Fixed Skip, DenyingBroker, SwallowingAudit and in-memory grants are not the required production policy and audit path."
-      - path: "apps/Autonogrammer.Native/Cowork/BrowserUseComposition.cs:215"
-        issue: "offerTools = options.Enabled && ..."
+      - path: "apps/Autonogrammer.Native/Agents/AgentHead.cs:110,230"
+        issue: "Wire call lacks Configure: o => o.Enabled = true, Pages"
+      - path: "apps/Autonogrammer.Native/Cowork/BrowserUseComposition.cs:237,244-247"
+        issue: "offerTools = options.Enabled && ...; provider gets request.Pages ?? new ClosedPages() and new ClosedPorts() — no guarded session."
     missing:
       - "Pass Configure and real Pages/broker/audit from AgentHead/Cowork per 72-10 plan"
       - "Rewrite composition Build to accept/forward real ICoworkApprovalBroker, ICoworkToolAudit, ICoworkGrantStore from request for prod path (keep fakes only under Force/Closed for tests)"
@@ -72,7 +77,7 @@ gaps:
       - "Wire egress port/credentials into launch and CDP in prod path; remove silent catch or log"
   - truth: "Full ROADMAP criteria 1-5 (offline green, live gated, headful gated, heads+arch green, runbook) and 72-11 SOTA a11y/security states"
     status: failed
-    reason: "Offline/live/headful not re-run to green (ag-dotnet builds/tests timed out >60-120s); prod path not offering tools; Native/Arch head tests not exercised (prior sibling blocks noted); live omp still stated-not-run in runbook."
+    reason: "Re-verified 2026-11-21: criterion 1 passes (124/124); criterion 2 fails (CDP connection, 2/2 failed); criterion 3 runs zero tests under the ROADMAP command (1 skipped, CHROME_BIN unset); criterion 4 passes (Presentation 2646/2646, Native 2353+5 skipped, UI 882/882, Architecture 107/107, slnf build 124 projects 0 warnings, notices exit 0); criterion 5 passes via stated-not-run. Prod wiring absent; 72-11 SOTA/a11y matrix unexecuted."
     artifacts:
       - path: "tests/Autonogrammer.Harness.BrowserUse.Tests"
         issue: "offline run not confirmed this verif"
@@ -95,18 +100,18 @@ behavior_unverified_items:
     why_human: "Code paths exist under offerTools but the prod call sites and host ctor still hard-wire the denying/swallowing seams; only live exercise of tool dispatch from CoworkToolHost shows the seam actually used"
 coincidental_reliance_items: []
 human_verification:
-  - test: "Run offline: /tmp/ag-bin/ag-dotnet test tests/Autonogrammer.Harness.BrowserUse.Tests -c Release --filter-not-trait \"Category=Live\""
-    expected: "All non-live tests pass (green)"
-    why_human: "Build/test runner is slow on host (timed out in verif); static presence of tests is not behavioral proof"
-  - test: "Run live (headless): AUTONOGRAMMER_LIVE_BROWSER=1 CHROME_BIN=/usr/bin/google-chrome AUTONOGRAMMER_BROWSER_ALLOW_NO_SANDBOX=1 /tmp/ag-bin/ag-dotnet test tests/Autonogrammer.Harness.BrowserUse.Tests -c Release --filter-trait \"Category=Live\""
-    expected: "Live classes pass (drive real Chromium, assert invariants, SOTA states)"
-    why_human: "Live Chromium + CDP required; cannot be simulated by grep; xvfb not for headless"
-  - test: "Run headful smoke: AUTONOGRAMMER_LIVE_BROWSER=1 AUTONOGRAMMER_BROWSER_ALLOW_NO_SANDBOX=1 xvfb-run -a /tmp/ag-bin/ag-dotnet test ... --filter-class \"*HeadfulSmokeLiveTests*\""
-    expected: "Headful smoke passes under private display"
-    why_human: "Requires Xvfb + real headed Chromium launch; presence of xvfb-run call in docs != execution success"
-  - test: "After sibling fixes, run: /tmp/ag-bin/ag-dotnet test tests/Autonogrammer.Presentation.Tests -c Release; tests/Autonogrammer.Native.Tests; tests/Autonogrammer.UI.Tests; tests/Autonogrammer.ArchitectureTests -- --filter-class \"*ProjectGraphTests*\"; ...DecisionRecordTests; dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror; python3 scripts/legal/generate-third-party-notices.py --check"
-    expected: "All green, warning-free"
-    why_human: "Compile and head tests depend on other phases' outputs; static check insufficient for full gate"
+  - test: "Run offline: dotnet test tests/Autonogrammer.Harness.BrowserUse.Tests -c Release --filter-not-trait \"Category=Live\""
+    expected: "All non-live tests pass (green) — EXECUTED 2026-11-21: 124/124 passed"
+    why_human: "Closed by execution; retained for traceability"
+  - test: "Run live (headless): AUTONOGRAMMER_LIVE_BROWSER=1 CHROME_BIN=/usr/bin/google-chrome AUTONOGRAMMER_BROWSER_ALLOW_NO_SANDBOX=1 dotnet test tests/Autonogrammer.Harness.BrowserUse.Tests -c Release --filter-trait \"Category=Live\""
+    expected: "Live classes pass — EXECUTED 2026-11-21: FAILED (total 2, failed 2): PuppeteerSharp 'Failed to create connection'. Criterion 2 does not pass on this host; not claimed."
+    why_human: "Needs a host where the CDP pipe connects to the downloaded/launched Chromium; also needs 72-09 live bodies (Site/Corpus/Ladder do not exist)."
+  - test: "Run headful smoke: AUTONOGRAMMER_LIVE_BROWSER=1 AUTONOGRAMMER_BROWSER_ALLOW_NO_SANDBOX=1 xvfb-run -a dotnet test ... --filter-class \"*HeadfulSmokeLiveTests*\" (ROADMAP command, no CHROME_BIN)"
+    expected: "Headful smoke passes — EXECUTED 2026-11-21: 0 ran, 1 skipped ('Set CHROME_BIN to the Chromium binary'). Criterion 3 as written does not execute; with CHROME_BIN set it would hit the same CDP connection failure as criterion 2."
+    why_human: "ROADMAP command omits CHROME_BIN which the test requires; headed behavior unproven either way (test uses --headless=new)."
+  - test: "After sibling fixes, run: dotnet test tests/Autonogrammer.Presentation.Tests -c Release; tests/Autonogrammer.Native.Tests; tests/Autonogrammer.UI.Tests; tests/Autonogrammer.ArchitectureTests; dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror; python3 scripts/legal/generate-third-party-notices.py --check"
+    expected: "All green, warning-free — EXECUTED 2026-11-21: Presentation 2646/2646, Native 2353+5 skipped, UI 882/882, Architecture 107/107, build 124 projects 0 warnings, notices exit 0"
+    why_human: "Closed by execution; retained for traceability"
   - test: "Verify runbook: cat docs/runbooks/browser-use.md | grep -E 'live omp|OD-07|browser.enabled: false'"
     expected: "Documents the live omp or states not run"
     why_human: "Owner-approved live run with gateway+image is external; static file check + stated-not-run is per criterion"
@@ -118,10 +123,10 @@ human_verification:
 # Phase 72: Cowork Browser Use Verification Report
 
 **Phase Goal:** The Cowork agent can browse: a host-launched, isolated Chromium driven over a CDP pipe by PuppeteerSharp, shown as a live pane on the desktop head (the Web and Android panes render the same models and wait for a relay feed, which ADR-0036 holds back), exposed to omp as `browser_*` tools with vision, under an egress guard, two-stage approvals, a visible Stop and a hostile-page test corpus.
-**Verified:** 2026-11-10T12:00:00Z
+**Verified:** 2026-11-21 (re-verification; supersedes 2026-11-10 where they conflict)
 **Status:** gaps_found
-**Re-verification:** Yes — after gap-closure plans 72-09/10/11 written (partial code landing from 72-08 + SOTA); unconditional-skip gap closed, prod wiring and live drive bodies remain open
-**Score:** 2/7 (presence of gated live entry + partial offerTools logic; behavior + prod wiring + full commands unverified due to timeout + incomplete wiring)
+**Re-verification:** Yes — 2026-11-21 executed re-verification (see table); plans 72-09/72-11/72-12/72-13/72-14 blocked and unexecuted, 72-10 superseded
+**Score:** 1/5 runnable criteria pass as executed; live CDP fails; prod wiring absent
 
 ## Goal Achievement
 
@@ -129,15 +134,15 @@ human_verification:
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | Browser library passes its offline tests (`dotnet test ... --filter-not-trait "Category=Live"`) | PASSED | 122/122 passed, 0 failed and 0 skipped on the current tree. |
-| 2 | Live browser tests pass with headless Chromium on this host | PARTIAL | One headless pipe/version/frame smoke passed under Xvfb with an explicit test-only no-sandbox wrapper. Vacuous site, corpus and screenshot tests were removed; full live coverage remains incomplete. |
-| 3 | Headful smoke passes under private Xvfb | NOT VERIFIED | The passing smoke uses `--headless=new`; it does not establish headed behavior. |
-| 4 | Heads, architecture graph, notices and decision records pass; build warning-free | ? UNCERTAIN (NOT RUN) | UI/Presentation/Native/Arch browser-related tests exist (BrowserPane*, BrowserUseCompositionTests). Prior summaries noted sibling ComputerUse compile blocks. Build attempted but timed out. No new TODO debt markers in phase files. |
+| 1 | Browser library passes its offline tests (`dotnet test ... --filter-not-trait "Category=Live"`) | ✅ PASSED (executed 2026-11-21) | Total 124, failed 0, skipped 0. |
+| 2 | Live browser tests pass with headless Chromium on this host | ❌ FAILED (executed 2026-11-21) | `AUTONOGRAMMER_LIVE_BROWSER=1 CHROME_BIN=/usr/bin/google-chrome AUTONOGRAMMER_BROWSER_ALLOW_NO_SANDBOX=1 dotnet test ... --filter-trait "Category=Live"` → total 2, failed 2, skipped 0: `PuppeteerSharp.ProcessException: Failed to create connection` (+ Shouldly assertion). Recorded as failure, not pass. |
+| 3 | Headful smoke passes under private Xvfb | ⚠️ SKIPPED (executed 2026-11-21, ROADMAP command as written) | ROADMAP command (no CHROME_BIN) under `xvfb-run -a` → 0 ran, 1 skipped ('Set CHROME_BIN to the Chromium binary'). Headed behavior unproven (test uses `--headless=new` in any case). |
+| 4 | Heads, architecture graph, notices and decision records pass; build warning-free | ✅ PASSED (executed 2026-11-21) | Presentation full 2646/2646; Native full 2353 passed + 5 skipped, 0 failed (clean rerun after freeing disk; first run's 244 failures were full-disk corruption — build exit -532462766); UI full 882/882; Architecture full 107/107 (incl. ProjectGraph + DecisionRecord); slnf build 124 projects 0 warnings/errors; notices `--check` exit 0. |
 | 5 | Live omp turn with gateway, image result and `browser.enabled: false` recorded or stated not run | STATIC-OK (stated-not-run) | docs/runbooks/browser-use.md present; prior verif noted "the live omp turn was not run; OD-07 was not approved". Criterion allows stated branch. |
-| 6 | Live tests drive real Chromium and assert host invariants | PARTIAL | One isolated headless smoke passed; site, corpus, screenshot and guarded production assertions remain unproved. |
-| 7 | In production desktop head, real ... are constructed and registered when Enabled; Egress started; real ICowork* broker/audit/grant (not Denying/Swallowing); Enabled=true via Configure in AgentHead; provider reaches CoworkToolHost; browser_* tools offered; SOTA states reported | FAILED (core prod path gap remains) | See gaps section. AgentHead Wire call unchanged (no Configure). Composition always hard-wires denying/swallowing in CoworkToolHost ctor. offerTools path exists but unreachable. |
+| 6 | Live tests drive real Chromium and assert host invariants | ❌ FAILED (see criterion 2) | Site/Corpus/Screenshot live classes do not exist (72-09 unexecuted); the two existing live classes fail at CDP connection. No invariants proven live. |
+| 7 | In production desktop head, real ... are constructed and registered when Enabled; Egress started; real ICowork* broker/audit/grant (not Denying/Swallowing); Enabled=true via Configure in AgentHead; provider reaches CoworkToolHost; browser_* tools offered; SOTA states reported | ❌ FAILED (unchanged 2026-11-21) | `AgentHead.cs:110,230` Wire call passes only StateDirectory + Artifacts; provider gets `ClosedPages`/`ClosedPorts`; `offerTools` false. Composition builds real broker/grant/audit but unreachable for browser tools. 72-12/13/14 unexecuted (75-chain missing; D-12/D-13 incompatibility). |
 
-**Score:** 2/7 truths verified (static gate removal + partial offer logic); 3 behavior-unverified; 2 failed.
+**Score (re-verification):** criteria 1, 4 and 5 pass; criteria 2, 6, 7 fail; criterion 3 skipped. Phase goal not delivered (live CDP broken on this host; production wiring absent).
 
 ### Deferred Items
 

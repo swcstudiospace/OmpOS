@@ -1,8 +1,8 @@
 ---
 phase: 71-cowork-artifacts
-verified: 2026-11-10T14:30:00Z
+verified: 2026-11-21
 status: gaps_found
-score: "not recomputed for current tree"
+score: "7/7 runnable roadmap criteria executed 2026-11-21; integrated access-flow gap remains"
 covered_files:
   - ".planning/phases/71-cowork-artifacts/71-01-PLAN.md"
   - ".planning/phases/71-cowork-artifacts/71-01-SUMMARY.md"
@@ -16,6 +16,20 @@ covered_files:
   - ".planning/phases/71-cowork-artifacts/71-05-SUMMARY.md"
   - ".planning/phases/71-cowork-artifacts/71-06-PLAN.md"
   - ".planning/phases/71-cowork-artifacts/71-06-SUMMARY.md"
+  - ".planning/phases/71-cowork-artifacts/71-07-PLAN.md"
+  - ".planning/phases/71-cowork-artifacts/71-07-SUMMARY.md"
+  - ".planning/phases/71-cowork-artifacts/71-08-PLAN.md"
+  - ".planning/phases/71-cowork-artifacts/71-08-SUMMARY.md"
+  - ".planning/phases/71-cowork-artifacts/71-09-PLAN.md"
+  - ".planning/phases/71-cowork-artifacts/71-09-SUMMARY.md"
+  - ".planning/phases/71-cowork-artifacts/71-10-PLAN.md"
+  - ".planning/phases/71-cowork-artifacts/71-10-SUMMARY.md"
+  - ".planning/phases/71-cowork-artifacts/71-11-PLAN.md"
+  - ".planning/phases/71-cowork-artifacts/71-11-SUMMARY.md"
+  - ".planning/phases/71-cowork-artifacts/71-12-PLAN.md"
+  - ".planning/phases/71-cowork-artifacts/71-12-SUMMARY.md"
+  - ".planning/phases/71-cowork-artifacts/71-13-PLAN.md"
+  - ".planning/phases/71-cowork-artifacts/71-13-SUMMARY.md"
   - ".planning/phases/71-cowork-artifacts/71-CONTEXT.md"
   - ".planning/phases/71-cowork-artifacts/71-PLAN-CHECK.md"
   - ".planning/phases/71-cowork-artifacts/71-RESEARCH.md"
@@ -50,61 +64,36 @@ covered_files:
 covered_digest: "v3:sha256:64822e826a99fe1a9425a67449a6745c1b4af29ccc3a46516d65a4d8ef793f4a"
 behavior_unverified: 2
 overrides_applied: 0
-re_verification: false
+re_verification: true
 gaps:
   - truth: "The actual web Cowork flow opens an artifact access review and safely applies the selected grant."
     status: unverified
     reason: "The standalone dialog has no production web opener; selected-session wiring, persisted request metadata and a verified destination-enforcement boundary are not established."
 deferred: []
 advisory:
-  - finding: "Full dotnet test runs (non-live + stores with services) and web-smoke for artifact page not executed in this env due to .NET SDK 10 requirement and service setup; static code inspection + test existence + logic paths verify the behaviors"
+  - finding: "Re-verified 2026-11-21 on SDK 10.0.402 (worktree auto-78, c04095ba): every runnable roadmap criterion was executed (see report body). The 2026-11-10 SDK-mismatch advisory is superseded."
     category: "operational"
-    reason: "Dev host has dotnet 8; project global.json requires 10; services/test-services.sh not runnable without full setup per SOTA notes"
-    evidence_status: "none provided (file+grep evidence instead)"
+    reason: "global.json pin 10.0.402 now installed at ~/.dotnet; throwaway TimescaleDB/Dragonfly started via podman with the same containers/env as scripts/test-services.sh (that script's /dev/tcp probe cannot run in this sandbox, so the identical containers were started manually with a distinct name suffix)"
+    evidence_status: "executed runs below"
   - finding: "ArtifactSurfaceLiveTests.cs present but skipped (Category=Live or Assert.Skip)"
     category: "other"
     reason: "Per SOTA/VALIDATION: live surface human recommended; env limits"
     evidence_status: "none provided"
 behavior_unverified_items:
-  - truth: "Every hostile corpus entry is rendered inert and the artifact library passes (roadmap SC1)"
-    test: "Run `dotnet test --project tests/Autonogrammer.Cowork.Artifacts.Tests -c Release --filter-not-trait \"Category=Live\"` (includes HostileCorpusTests.EveryHostileFixtureHasAnAssertedOutcome and per-renderer hostile tests)"
-    expected: "All pass; every fixture has asserted outcome and renderers produce no executable script/nav from hostile inputs"
-    why_human: "Requires running the test suite which exercises render paths on corpus; static presence of tests+fixtures+assert logic confirms but full execution not performed here"
-  - truth: "The artifact page of the web smoke makes no outbound request, no navigation and no parent access from the hostile fixtures (roadmap SC6)"
-    test: "OUT_DIR=... bash scripts/web-smoke/run-smoke.sh with artifact target (artifact-page.mjs + hostile fixtures)"
-    expected: "Exit 0; CDP reports zero exfil, zero frame nav after load 1, zero parent contentDocument access under sandbox"
-    why_human: "Requires headless browser CDP run against published web head + demo policy; script and fixture wiring verified statically"
+  - truth: "Live artifact surface (ArtifactSurfaceLiveTests, Category=Live) destroys and rebuilds correctly on hide/stop/signout/second load"
+    test: "Run the Category=Live artifact surface tests on a host with the platform WebView plus a human walk of the Artifact panel"
+    expected: "Surface destroyed (no preserved state), frame removed on nav/signout; labelled region operable, polite Announcement, contrast ok"
+    why_human: "Requires platform WebView / screen reader; the non-live suite (32/32) and web smoke (exit 0) do not exercise the live surface or AT"
 coincidental_reliance_items: []
 human_verification:
-  - test: "Run full non-live artifact library tests including hostile corpus on .NET 10 host"
-    expected: "All pass with no failures on inert rendering of every corpus entry for all kinds"
-    why_human: "SDK mismatch on verifier host (dotnet 8 vs required 10); tests exist and logic paths (DisableHtml, sanitizer, CSP, no-eval) prevent execution"
-  - test: "Run stores tests with `scripts/test-services.sh up` (Postgres roundtrip, integrity, caps, sync)"
-    expected: "Pass; re-verify hash/parent, owner filter, 5MiB cap throws typed, sync off-by-default idempotent"
-    why_human: "Requires throwaway Postgres service; static code in PostgresArtifactStore + ArtifactService shows re-verify + account_id filters"
-  - test: "Run API integration artifact tests and confirm fresh openapi.json"
-    expected: "Artifact* tests pass; owner 404, ticket HMAC 60s, render headers have CSP+sandbox, openapi updated"
-    why_human: "Integration tests require services or in-mem; endpoints code + RenderTickets show owner scope + HMAC"
-  - test: "Run heads artifact panel/filter tests (Presentation, Native, UI, Web) and architecture tests"
-    expected: "Artifact* filters pass; LayerMap/Decision/Suppression pass for Cowork.Artifacts isolation"
-    why_human: "Native/UI tests may need UI harness; architecture verified by LayerMap inclusion + allowed edges + isolation test presence"
-  - test: "Run full web-smoke artifact target: OUT_DIR=... SMOKE_TARGETS=artifact bash scripts/web-smoke/run-smoke.sh"
-    expected: "Zero outbound, zero post-load nav, zero parent access from hostile Html/Mermaid; CSP/demo policy applied"
-    why_human: "Requires browser+CDP; artifact-page.mjs + frame sandbox + hostPage verified by read"
-  - test: "Run licence and notices checks"
-    expected: "bash scripts/ci/check-licences.sh && python3 scripts/legal/generate-third-party-notices.py --check exit 0 (Mermaid handled per OQ-400)"
-    why_human: "Scripts exist; Mermaid admission in SOTA/71-06 with notices ownership"
-  - test: "Visual/keyboard/a11y live check of Artifact panel (labelled ChromeLabel region, polite Announcement, access dialog keyboard, no colour literals, reduced motion)"
-    expected: "Operable, announced, contrast ok, forced-colors visible, import order artifacts before a11y"
-    why_human: "Static: ChromeLabel, polite LiveSetting, aria in dialog, css no literals + import before a11y.css, but real screenreader/contrast needs human"
-  - test: "Live surface destroy (hide/stop/signout) and second-load destroy; network grant per-version/session"
-    expected: "Surface destroyed (no preserved state), frame removed on nav/signout, grants respected in rebuild"
-    why_human: "NativeWebView + web iframe destroy paths + model Hide/Stop/Apply logic inspected; live probe recommended per VALIDATION"
+  - test: "Live surface destroy + visual/keyboard/a11y check of Artifact panel (ChromeLabel region, polite Announcement, access dialog keyboard, no colour literals, reduced motion)"
+    expected: "Operable, announced, contrast ok, forced-colors visible, import order artifacts before a11y; frame destroyed on nav/signout/second load"
+    why_human: "Static + non-live tests cover logic, but real screenreader/contrast/platform WebView needs a human; network grants per-version/session remain unproven until plans 71-07/71-08 land"
 ---
 
 # Phase 71: Cowork Artifacts Verification Report
 
-**Current-tree evidence:** A later non-Live Linux solution run passed the artifact library and artifact store test modules against an isolated local service; the run as a whole failed other checks and did not report per-module case counts. The .NET SDK mismatch cited below no longer explains those particular checks. The standalone artifact-access dialog has component-level focus tests but no production web opener, so its integrated flow remains unverified. No artifact browser smoke, live model, screen-reader or platform result is claimed here.
+**Re-verification (2026-11-21, SDK 10.0.402, worktree auto-78 @ c04095ba):** every runnable ROADMAP success criterion was executed; all 7 pass (table below). Plans 71-07..71-12 were not executed (blocked: rollout gate, identity proof, destination enforcement — see their SUMMARYs); 71-13 shipped and is verified. The standalone artifact-access dialog still has no production web opener, so the integrated access flow remains the single open gap. The 2026-11-10 static inspection below is retained as historical record; its "not executed" verdicts are superseded by the executed results in this re-verification.
 
 **Sync-off privacy repair:** The local sender no longer serializes the `grants` field or retains the unused internal grant list. `ArtifactSyncServiceTests` passed 3/3, including the actual sync-off sender and retry; `ArtifactWireRoundTripTests` passed 2/2 against the current authenticated API, including preservation of an existing grant. The endpoint's metadata-only response does not prove listing persistence, and compatibility with older deployed receivers is unverified. These focused results do not close Phase 71. Rolling out new per-version requests before compatible senders and receivers can silently lose them; plans 71-07 and 71-12 remain blocked on a safe rollout boundary.
 
@@ -121,15 +110,15 @@ human_verification:
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | Every hostile corpus entry is rendered inert and the artifact library passes. Verify: `dotnet test --project tests/Autonogrammer.Cowork.Artifacts.Tests -c Release --filter-not-trait "Category=Live"` passes, including every hostile corpus entry. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | HostileCorpusTests.cs + per-renderer tests + fixtures exist; Markdown (DisableHtml), SVG (allowlist), CSV (text only), Image (magic+no-svg), Code (escaped), Html/Mermaid (CSP sandbox only) logic in renderers + ArtifactService integrity paths prevent exec. Test not executed (SDK 10 req). See behavior_unverified_items |
-| 2 | The Postgres artifact stores pass against the throwaway services. Verify: `dotnet test --project tests/Autonogrammer.Cowork.Artifacts.Stores.Tests -c Release --filter-not-trait "Category=Live"` passes with `scripts/test-services.sh up` sourced. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | PostgresArtifactStore.cs + FileArtifactStore.cs implement IArtifactStore; every read path re-verifies hash+parent (throws ArtifactIntegrityException mapped to Integrity failure); account_id in all queries; 5MiB cap; sync off-by-default + fork on 409. Services not started. |
-| 3 | The artifact endpoints pass and the OpenAPI document is fresh. Verify: `dotnet test --project tests/Autonogrammer.Api.IntegrationTests -c Release -- --filter-class "*Artifact*"` passes and `docs/api/openapi.json` is fresh. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | ArtifactEndpoints.cs + ArtifactRenderTickets.cs + ArtifactAccountDirectory; owner-scoped (404 foreign), content attachment, ticket HMAC 60s bound to (account,artifact,ver,hash), re-read+recheck on render, CSP+sandbox+referrer in response headers. openapi.json present (modified in 71-04 SUMMARY). Tests require API host. |
-| 4 | The heads' artifact panels pass their tests. Verify: `dotnet test --project tests/Autonogrammer.Presentation.Tests`, `Native.Tests`, `UI.Tests`, `Web.Tests` with `-- --filter-class "*Artifact*"` pass. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | ArtifactPanelModel.cs (states, grants, Show/Hide/Stop/Apply/Revoke), IArtifactSurface, NativeWebViewArtifactSurface.cs (destroy, first-load only, cancel post-load nav, no bridge subscribe, private store), web ArtifactFrame.razor (sandbox iframe, destroy on 2nd load/signout), UI/Web tests exist. |
-| 5 | The architecture tests pass (LayerMap, graph, decision records, suppression ledger). Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release` passes (LayerMap, graph, decision records, suppression ledger). | VERIFIED (inspection) | LayerMap.cs explicitly lists Cowork.Artifacts (layer 2), .Stores, allowed edges ("intentional: the artifact stores...", "web UI renders..."); CoworkSurfaceIsolationTests.cs; DecisionRecordTests presence for ADR-0033. |
-| 6 | The artifact page of the web smoke makes no outbound request, no navigation and no parent access from the hostile fixtures. Verify: `OUT_DIR="$(mktemp -d)" bash scripts/web-smoke/run-smoke.sh` passes with the artifact page: no outbound request, no navigation, no parent access from the hostile fixtures. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | scripts/web-smoke/artifact-page.mjs + run-smoke.sh target hostile fixtures (html/mermaid) in frames under DEMO_CSP; host page no script; CDP checks outbound/nav/parent. ArtifactFrame.razor uses exact sandbox="allow-scripts" referrerpolicy="no-referrer" allow="" + destroy on nav 2+. Script read verifies. Browser run not executed. |
-| 7 | The licence check and the notices check exit 0. Verify: `bash scripts/ci/check-licences.sh` and `python3 scripts/legal/generate-third-party-notices.py --check` exit 0. | VERIFIED (inspection) | Scripts present per 71-06 SUMMARY and SOTA; Mermaid vendored with OQ-400 owner decision + notices ownership in 71-06; no debt markers found. |
+| 1 | Every hostile corpus entry is rendered inert and the artifact library passes. Verify: `dotnet test --project tests/Autonogrammer.Cowork.Artifacts.Tests -c Release --filter-not-trait "Category=Live"` passes, including every hostile corpus entry. | ✅ VERIFIED (executed 2026-11-21) | Passed: total 32, failed 0, skipped 0 (includes HostileCorpusTests + per-renderer hostile tests). |
+| 2 | The Postgres artifact stores pass against the throwaway services. Verify: `dotnet test --project tests/Autonogrammer.Cowork.Artifacts.Stores.Tests -c Release --filter-not-trait "Category=Live"` passes with `scripts/test-services.sh up` sourced. | ✅ VERIFIED (executed 2026-11-21) | Passed: total 17, failed 0, skipped 0 against throwaway TimescaleDB/Dragonfly (same containers/env as test-services.sh; /dev/tcp probe unavailable in this sandbox so containers started manually with distinct suffix). Includes 71-13 `ArtifactSyncServiceTests` 3/3 (exact allowlist property set, no content/grant in body or headers). |
+| 3 | The artifact endpoints pass and the OpenAPI document is fresh. Verify: `dotnet test --project tests/Autonogrammer.Api.IntegrationTests -c Release -- --filter-class "*Artifact*"` passes and `docs/api/openapi.json` is fresh. | ✅ VERIFIED (executed 2026-11-21) | Artifact integration: total 22, failed 0, skipped 0. Freshness: `GuardTests` total 12, failed 0 (committed openapi.json matches generated document); `python3 -m json.tool docs/api/openapi.json` valid. Note: test builds regenerate openapi.json with `[]`→`[ ]` whitespace only; that churn was reverted, content unchanged. |
+| 4 | The heads' artifact panels pass their tests. Verify: `dotnet test --project tests/Autonogrammer.Presentation.Tests`, `Native.Tests`, `UI.Tests`, `Web.Tests` with `-- --filter-class "*Artifact*"` pass. | ✅ VERIFIED (executed 2026-11-21) | Presentation Artifact: 26/26. Native Artifact: 31 passed + 3 skipped, 0 failed. UI Artifact: 20/20. Web Artifact: 15/15. |
+| 5 | The architecture tests pass (LayerMap, graph, decision records, suppression ledger). Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release` passes (LayerMap, graph, decision records, suppression ledger). | ✅ VERIFIED (executed 2026-11-21) | Passed: total 107, failed 0, skipped 0 (includes LayerMap, ProjectGraph, CoworkSurfaceIsolation, DecisionRecord with ADR-0033). |
+| 6 | The artifact page of the web smoke makes no outbound request, no navigation and no parent access from the hostile fixtures. Verify: `OUT_DIR="$(mktemp -d)" bash scripts/web-smoke/run-smoke.sh` passes with the artifact page: no outbound request, no navigation, no parent access from the hostile fixtures. | ✅ VERIFIED (executed 2026-11-21) | `OUT_DIR="$(mktemp -d)" SMOKE_TARGETS=artifact bash scripts/web-smoke/run-smoke.sh` → commit c04095ba, `artifact smoke exit=0`. |
+| 7 | The licence check and the notices check exit 0. Verify: `bash scripts/ci/check-licences.sh` and `python3 scripts/legal/generate-third-party-notices.py --check` exit 0. | ✅ VERIFIED (executed 2026-11-21) | `licence checks passed` exit 0; `THIRD-PARTY-NOTICES.md is up to date` exit 0. |
 
-**Score:** 38/40 truths verified (2 present, behavior-unverified from roadmap SCs 1+6; SOTA states/security/a11y/sandbox/destroy all match code by inspection)
+**Score (re-verification):** 7/7 runnable ROADMAP criteria pass as executed. (The 2026-11-10 score "38/40 truths verified" counted SOTA/plan truths by inspection; those inspection findings are retained below and remain true, but the behavior-unverified labels on SC1/SC6 are superseded by the executed runs above.)
 
 **SOTA overlay verified:** Yes. 71-SOTA-COWORK-ARTIFACTS.md accurately documents:
 - States: Idle/Loading/Running/Stopped/NavigationBlocked/Unavailable + sync-off 404/static view + destroy (model Hide/Stop/Destroy + web/native impl)
@@ -203,17 +192,17 @@ None blocking.
 - No new-scope unevidenced beyond the advisory (SOTA is doc overlay, accurate).
 
 ### Human Verification Required
-See `human_verification:` frontmatter (8 items): full test runs (library, stores+services, api, heads, smoke, licences), visual a11y/live surface destroy+grants, OQ notes.
+See `human_verification:` frontmatter (1 item): live surface destroy + visual/keyboard/a11y check.
 
-(Also the 2 behavior_unverified_items require the same runs.)
+(The 1 behavior_unverified_item requires the live/platform run.)
 
 ### Gaps Summary
-No code gaps. All must-haves (roadmap SCs + plan truths + SOTA categories: states, sandbox, destroy, a11y, security, first-attempt, graceful, isolation) are observably present and wired in the codebase via file existence, substantive logic (re-verify, CSP, destroy, polite, owner scope, hostile corpus, inert renderers), and key links.
+One open gap (frontmatter `gaps`): the integrated web Cowork access flow — the standalone dialog has no production web opener, and plans 71-07..71-12 (request metadata, grant store, identity, destination enforcement, web client, composition, browser proof) are blocked and unexecuted (summaries written 2026-11-21 record the blockers: rollout gate, device/session proof protocol, private-address/DNS-rebinding enforcement). Plan 71-13 (sync-off privacy) shipped and is verified above. AG-71-17 remains open. OQ-400 (Mermaid admission) and OQ-401 remain owner decisions.
 
-Automated verification limited by host environment (SDK version, no services, no browser CDP). Code inspection + test fixture presence + explicit SOTA match provide strong evidence. Full gate runs recommended on capable CI/host before ship.
+Automated verification in the re-verification was executed on SDK 10.0.402 with throwaway services (see advisory). Remaining human confirmation is live/platform-only (WebView destroy, screen reader, contrast).
 
-**Phase goal achieved in the codebase (with human confirmation of live runs recommended).**
+**Phase goal partially achieved:** the artifact library, stores, API, panels, architecture, hostile smoke and licence gates pass as executed; the signed-in access-grant flow is not delivered (gap above).
 
 ---
-_Verified: 2026-11-10T14:30:00Z_
+_Re-verified: 2026-11-21 (SDK 10.0.402, worktree auto-78 @ c04095ba; supersedes 2026-11-10 verdicts where they conflict)_
 _Verifier: gsd-verify-71 (Claude per gsd-verifier process)_
