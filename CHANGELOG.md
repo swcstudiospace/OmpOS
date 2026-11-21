@@ -8,6 +8,11 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.11] - 2026-11-21
+
+### Changed
+- Phase 78 closeout: 78-VERIFICATION.md (rehearsal 44524125822 success; rc.1 + v0.20.0 assets verified); STATE.md updated; human checklist handed over as human-verification item.
+
 ## [0.20.10] - 2026-11-21
 
 ### Changed
@@ -594,6 +599,7 @@ Foundation through verified handoff (Phases 1 to 5).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
 [Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...HEAD
+[0.20.11]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.10...v0.20.11
 [0.20.10]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.9...v0.20.10
 [0.20.9]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.8...v0.20.9
 [0.20.8]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.7...v0.20.8

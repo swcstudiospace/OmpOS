@@ -5,11 +5,11 @@ milestone_name: "Autonogrammer: accounts, Cowork and Dispatch (planned, added 20
 current_phase: "78"
 current_phase_name: Desktop release pipeline and per-machine Windows installer
 status: executing
-stopped_at: "T77d9 quality/Linear wave merged: PR #28 (aa4e184b) and PR #29 (96ccf540) on main at 0.20.9; CI green (build-test/desktop/android SUCCESS, image-scan skipped on PR runs, pre-existing npm drift on push). SDK 10.0.402 installed. Phase 78 plan 78-06 remains next."
+stopped_at: "Phase 78 VERIFIED 2026-11-21: rehearsal 44524125822 success; v0.20.0-rc.1 + v0.20.0 released with 6 desktop assets verified; 78-VERIFICATION.md written. This PR (0.20.11) closes 78; 66-77 verification debt remains; no new tag."
 last_updated: "2026-11-21"
 last_activity: 2026-11-21
-last_activity_desc: "T77d9 wave (correlation 77d97ef8-56a4-4b53-ae66-5b8c5e5d659e): FE #28 merged (preserved dirty auth/secrets, gweb lang=en, ArtifactBody a11y, M0015); BE #29 merged (GAP-OP-1 80 operationIds, contract 1.1.0) after fixing JwtBearerSetup duplicate consts + 0.20.9 version bump + changelog link ref. Linear map 66-78 on main (SPE-34890..SPE-34946, umbrella SPE-34831); requirements/acceptance AC-101..AC-122 in docs/. Local QA fail was infra-only (QF-001 target ambiguity, Dragonfly env, workspace security debt 198 findings 0 in-diff); human accepted CI evidence (L4, merge-ci). No tag/release made."
-state_head: 96ccf540
+last_activity_desc: "Phase 78 closeout: verifier 58/58, repo-checks/docs/changelog green, LaunchDirectory 18/18, WebView2 3/3, pins 59f12c8d/70da6d80, rc desktop assets 6/6 exit 0. Human checklist handed over as human-verification item (AG-78-11). T77d9 PRs #28/#29 merged at 0.20.9, #30 STATE at 0.20.10 (prior)."
+state_head: 08601167
 progress:
   total_phases: 18
   completed_phases: 0
