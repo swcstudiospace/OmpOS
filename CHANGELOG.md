@@ -8,6 +8,11 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.9] - 2026-11-21
+
+### Changed
+- T77d9-be (PR #29) for v0.16.0 phases 66 to 78: GAP-OP-1 closed (80 operationIds, contract 1.1.0); JwtBearerSetup duplicate-definition merge fix from PR #28 sequencing.
+
 ## [0.20.8] - 2026-11-20
 
 ### Changed
