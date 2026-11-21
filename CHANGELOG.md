@@ -8,6 +8,10 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.12] - 2026-11-21
+
+### Changed
+- Merge phases 66-78 docs lanes onto docs/verify-66-78: 44 SUMMARYs added, VERIFICATIONs completed for 66/66.2-66.4/68/71-77 (2 new, 11 re-verified); tree now 194 SUMMARYs, 47 VERIFICATIONs, 179 PLANs (every 66-78 phase has a VERIFICATION; only 72-10 lacks a SUMMARY as it is superseded by 72-12..14). Verification verdicts stay gaps_found where live/host criteria are unproven; no product code changed and no new tag.
 ## [0.20.11] - 2026-11-21
 
 ### Changed
@@ -599,6 +603,7 @@ Foundation through verified handoff (Phases 1 to 5).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
 [Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...HEAD
+[0.20.12]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.11...v0.20.12
 [0.20.11]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.10...v0.20.11
 [0.20.10]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.9...v0.20.10
 [0.20.9]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.8...v0.20.9
