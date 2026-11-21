@@ -1,8 +1,8 @@
 ---
 phase: 66-rebrand-to-autonogrammer
-verified: 2026-11-20T00:00:00Z
-status: passed
-score: "5/5"
+verified: 2026-11-21T00:00:00Z
+status: gaps_found
+score: "2026-11-20 passed 5/5 at ed0a9a02; 2026-11-21 re-check at c04095ba partial (see tail)"
 covered_files:
 - .planning/phases/66-rebrand-to-autonogrammer/66-07-PLAN.md
 - .planning/phases/66-rebrand-to-autonogrammer/66-07-SUMMARY.md
@@ -21,18 +21,24 @@ covered_digest: "v1:sha256:phase66-verif-20261120"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification: true
-previous_status: gaps_found
-previous_score: "2/5 (approx from prior C1/C3 gaps)"
+previous_status: passed
+previous_score: "5/5 at ed0a9a02 (2026-11-20)"
 gaps_closed:
   - "C3: web smoke first attempt (race fixed by wait main h1 + non-boot title in routes.mjs runStep; smoke json passed:true, a11yRoutes:true, failures:0, exit:0)"
   - "C1: rebrand tool (61 tests OK, verify OK clean)"
   - "Baseline retirement (2026-11-20): strict equality against the 2026-11-04 census retired; durable gate is rebrand.py verify (exit 0) plus 61 unit tests wired into scripts/ci/repo-checks.sh; 3 bare OmpOS tokens reworded (78-04 plan, OQ-63, OQ-102)"
   - "Current-tree gate: CI green on merged HEAD ed0a9a02 (runs 44532185561 and 44541692228; all jobs success)"
-gaps_remaining: []
+gaps_remaining:
+  - "SC2 full Linux suite against throwaway services not re-run at c04095ba (build/format pending at write time)"
+  - "SC3 web smoke not re-run at c04095ba (Chrome/ports, ~90 min); prior evidence quoted, not claimed"
+  - "SC4 headless title test not executed in this pass (static assert only)"
+  - "No current-tree CI-green claim: main CI 44955765885 in progress; 44860704074/44872419265/44877775564 failed"
 advisory: []
-behavior_unverified_items: []
+behavior_unverified_items:
+  - "Web smoke, headless title, full Linux suite at c04095ba"
 coincidental_reliance_items: []
-human_verification: []
+human_verification:
+  - "Full Linux suite (CI shape) + web smoke first attempt + Native headless title test; owner actions 1-8 remain owner work"
 gaps:
   - truth: "Rebrand verification preserves the approved baseline."
     status: passed
@@ -165,3 +171,39 @@ _Verifier: gsd-verify-66 (following gsd-core verifier process, goal-backward, re
 _C3 first attempt confirmed via smoke run + json evidence + code fix._
 _External handled (open per owner-actions, not phase blockers)._
 _READY for next (66.1 human deferred noted in STATE)._
+## Re-verification 2026-11-21 (HEAD c04095ba, SDK 10.0.402) — gaps_found
+
+Method: goal-backward from ROADMAP Phase 66 success criteria 1-5 (see ROADMAP.md:1491-1496),
+constraints: no product code touched, no fabricated evidence. The 2026-11-20 `passed` record was
+for merged HEAD ed0a9a02. That HEAD is no longer current: worktree HEAD is c04095ba (PR #31 merge,
+v0.20.11). CI on main at c04095ba (run 44955765885) was in progress when this was written; the
+last three completed main CI runs (44860704074 PR #28, 44872419265 PR #29, 44877775564 PR #30)
+failed. No CI-green claim is made for c04095ba from this pass.
+
+### Re-proven at c04095ba in this pass
+
+| # | Criterion | Result here | Exact evidence |
+|---|-----------|-------------|----------------|
+| 1 | Rebrand tool correct, verify clean (ROADMAP SC1) | RE-PROVEN | `python3 -m unittest scripts/rebrand/test_rebrand.py` → Ran 61 tests, OK (19 s); `python3 scripts/rebrand/rebrand.py verify` → `verify OK: nothing left to rename (327 URL tokens still protected)`, exit 0. Both commands also run inside `bash scripts/ci/repo-checks.sh` → `repo-checks: ok` (with brand, changelog 29 versions, docs 224 files 0 errors, skip markers 94/92, 58-test script suite). Token count differs from the ed0a9a02 record (294) because the tree grew; the gate is the exit code. |
+| 2 | Build warning-free, format-clean, locked restore, Linux tests green (SC2) | PARTIAL | `dotnet restore Autonogrammer.Linux.slnf --locked-mode` → All projects up-to-date, exit 0. `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` → Build succeeded, 0 Warning(s), 0 Error(s) (incremental re-run; the first full build was harness-timeout-killed at 900 s with a torn-state `2 Error(s)` tail that the re-run did not reproduce). `dotnet format ... --verify-no-changes --no-restore`: started but did not complete before the host disk filled; format exit NOT claimed. Full Bootstrap suite and service-backed tests: NOT re-run in this pass (focused fence attempts inconclusive — disk 100% full, `df -h /` 0 avail; see 68-VERIFICATION.md SC2). |
+| 3 | Web smoke passes under new names (SC3) | NOT RE-RUN | `bash scripts/web-smoke/run-smoke.sh` not executed here (private ports + Chrome, ~90 min). Prior evidence quoted in this file (smoke JSON passed:true, a11yRoutes:true) stands as history, not as a c04095ba result. |
+| 4 | Desktop title "Autonogrammer" (SC4) | STATIC ONLY | `tests/Autonogrammer.Native.Tests/Branding/MainWindowTitleTests.cs:23` asserts `window.Title.ShouldBe("Autonogrammer")` (headless route). The test binary was not executed in this pass. |
+| 5 | Licence + brand checks pass; leak-scan fingerprints recorded (SC5) | RE-PROVEN except fingerprints | `bash scripts/ci/check-licences.sh` → passed; notices `--check` up to date; `bash scripts/ci/check-brand.sh` → `check-brand: ok (28 PNGs, 9 SVGs, 18 other files)`; `bash scripts/ci/check-sbom.sh` → `sbom: ok`. Post-rename `.gitleaksignore` frame fingerprints remain owner action 6 (runbook s.5) — open as recorded. |
+
+### Human verification required (carried, never claimed passed)
+
+- Full Linux suite against throwaway TimescaleDB/Dragonfly (SC2): run
+  `TEST_SERVICES_ENV=$(bash scripts/test-services.sh up); source $TEST_SERVICES_ENV; dotnet test
+  Autonogrammer.Linux.slnf -c Release --no-build --max-parallel-test-modules 2 -- --filter-not-trait
+  "Category=Live"` (CI ci.yml:151-154 shape), then `bash scripts/test-services.sh down`.
+- Web smoke first attempt on free ports (SC3) and the Native headless title test (SC4):
+  a person runs them and records the result; CI's browser-smoke step does not replace the
+  headless-title run.
+- External owner actions 1-8 (66-OWNER-ACTIONS.md): the phase goal explicitly excludes them;
+  each needs the owner outside this repo.
+
+### Gaps summary
+
+gaps_found: SC2 partial (build/format/tests pending or not run), SC3 not re-run, SC4 static-only.
+The 2026-11-20 supersession of the 2026-11-04 baseline (66-09-SUMMARY.md) is unchanged —
+strict-equality comparison remains retired; the durable gate above is the criterion.
