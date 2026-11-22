@@ -91,7 +91,7 @@ internal static class ModelsTestData
     public static ProviderInfo OpenAi(CredentialState credential = CredentialState.Present) => new(
         "openai",
         "OpenAI",
-        ProviderGroup.OmpBuiltIn,
+        ProviderGroup.EngineBuiltIn,
         string.Empty,
         ProviderAuthKind.ApiKey,
         credential,
@@ -106,7 +106,7 @@ internal static class ModelsTestData
     public static ProviderInfo SignInOnly() => new(
         "anthropic",
         "Anthropic",
-        ProviderGroup.OmpBuiltIn,
+        ProviderGroup.EngineBuiltIn,
         string.Empty,
         ProviderAuthKind.OAuth,
         CredentialState.Absent,

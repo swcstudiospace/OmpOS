@@ -22,7 +22,7 @@ public sealed class PluginsPageTests
         page.Rows.Select(row => row.IsFound).ToArray().ShouldBe([true, true, false, true]);
         SettingsCopy.PluginSummary(page.Rows[2]).ShouldContain("Missing", Case.Sensitive);
         SettingsCopy.PluginSummary(page.Rows[2]).ShouldContain("submodule not initialised", Case.Sensitive);
-        SettingsCopy.PluginsAlwaysOnNote.ShouldContain("every omp process Autonogrammer starts", Case.Sensitive);
+        SettingsCopy.PluginsAlwaysOnNote.ShouldContain("every engine process Autonogrammer starts", Case.Sensitive);
     }
 
     /// <summary>A source that reports nothing leaves the page ready and empty.</summary>

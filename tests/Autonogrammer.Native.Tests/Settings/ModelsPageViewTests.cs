@@ -28,7 +28,7 @@ public sealed class ModelsPageViewTests
             var view = (ModelsPageView)fixture.Show(SettingsSection.Models);
 
             view.CardViews.Select(static card => card.Card!.Id).ShouldBe(CardOrder);
-            var groups = new[] { ProviderGroup.Local, ProviderGroup.Cloud, ProviderGroup.CodingPlan, ProviderGroup.Custom, ProviderGroup.OmpBuiltIn };
+            var groups = new[] { ProviderGroup.Local, ProviderGroup.Cloud, ProviderGroup.CodingPlan, ProviderGroup.Custom, ProviderGroup.EngineBuiltIn };
             var texts = SettingsTree.Texts(view);
             texts.Where(text => groups.Any(group => string.Equals(ModelsCopy.GroupTitle(group), text, StringComparison.Ordinal)))
                 .ShouldBe(groups.Select(ModelsCopy.GroupTitle));

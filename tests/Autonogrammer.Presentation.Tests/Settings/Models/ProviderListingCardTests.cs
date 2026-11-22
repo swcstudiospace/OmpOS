@@ -97,7 +97,7 @@ public sealed class ProviderListingCardTests
         var (_, _, card) = await OpenAsync("anthropic-subscription").ConfigureAwait(true);
 
         card.IsSignInOnly.ShouldBeTrue();
-        card.SignInText.ShouldBe("Sign in inside omp with /login anthropic. Autonogrammer never stores this credential and shows no key field for it.");
+        card.SignInText.ShouldBe("Sign in inside the engine with /login anthropic. Autonogrammer never stores this credential and shows no key field for it.");
         card.CanSetUp.ShouldBeFalse();
         card.CanBeginSetup.ShouldBeFalse();
         card.TakesKey.ShouldBeFalse();
@@ -137,7 +137,7 @@ public sealed class ProviderListingCardTests
     {
         var (_, _, card) = await OpenAsync("ollama").ConfigureAwait(true);
 
-        card.UsesOmpKey.ShouldBeTrue();
+        card.UsesEngineKey.ShouldBeTrue();
         card.TakesKey.ShouldBeFalse();
         card.CanSetUp.ShouldBeFalse();
     }
@@ -147,8 +147,8 @@ public sealed class ProviderListingCardTests
     {
         var token = TestContext.Current.CancellationToken;
         var (page, source, card) = await OpenAsync("mistral").ConfigureAwait(true);
-        card.UsesOmpKey.ShouldBeTrue();
-        card.KeyStorageNote.ShouldBe(ModelsCopy.OmpKeyStorageNote);
+        card.UsesEngineKey.ShouldBeTrue();
+        card.KeyStorageNote.ShouldBe(ModelsCopy.EngineKeyStorageNote);
         card.BeginSetup();
         var draft = card.ApiKey.ShouldNotBeNull();
         draft.Entry = $"  {Key}\n";
@@ -162,9 +162,9 @@ public sealed class ProviderListingCardTests
         draft.Entry.ShouldBeEmpty();
         card.IsSetupOpen.ShouldBeFalse();
         card.ApiKey.ShouldBeNull();
-        card.ActionText.ShouldBe("Mistral AI La Plateforme was added to omp.");
-        card.ConfiguredText.ShouldBe("Set up: omp holds a credential.");
-        page.Announcement.ShouldBe("Mistral AI La Plateforme was added to omp.");
+        card.ActionText.ShouldBe("Mistral AI La Plateforme was added to this workspace.");
+        card.ConfiguredText.ShouldBe("Set up: the engine holds a credential.");
+        page.Announcement.ShouldBe("Mistral AI La Plateforme was added to this workspace.");
         SecretScan.ShouldNotHold(page, Key);
     }
 
@@ -180,7 +180,7 @@ public sealed class ProviderListingCardTests
     }
 
     [Fact]
-    public async Task ARoutelessKeyedOmpNativeRowSavesItsKeyByOmpProviderId()
+    public async Task ARoutelessKeyedOmpNativeRowSavesItsKeyByEngineProviderId()
     {
         var token = TestContext.Current.CancellationToken;
         var listing = ListingTestData.Mistral() with { Routes = [] };
@@ -190,7 +190,7 @@ public sealed class ProviderListingCardTests
 
         (await card.SaveAsync(token).ConfigureAwait(true)).ShouldBeTrue();
 
-        source.OmpKeys.ShouldHaveSingleItem().ProviderId.ShouldBe(listing.OmpProviderId);
+        source.OmpKeys.ShouldHaveSingleItem().ProviderId.ShouldBe(listing.EngineProviderId);
     }
 
     [Fact]
@@ -198,7 +198,7 @@ public sealed class ProviderListingCardTests
     {
         var token = TestContext.Current.CancellationToken;
         var (page, source, card) = await OpenAsync("infomaniak-ai-tools").ConfigureAwait(true);
-        card.UsesOmpKey.ShouldBeFalse();
+        card.UsesEngineKey.ShouldBeFalse();
         card.KeyStorageNote.ShouldBe(ModelsCopy.AutonogrammerKeyStorageNote);
         card.BaseAddressText.ShouldBe("https://api.infomaniak.com/2/ai/{product_id}/openai/v1");
         card.BeginSetup();
@@ -219,7 +219,7 @@ public sealed class ProviderListingCardTests
         request.ModelIds.ShouldBe(["llama3", "mistral3"]);
         request.ToString().ShouldNotContain(Key, Case.Sensitive);
         source.OmpKeys.ShouldBeEmpty();
-        card.ConfiguredText.ShouldBe("Set up: omp holds a credential.");
+        card.ConfiguredText.ShouldBe("Set up: the engine holds a credential.");
         SecretScan.ShouldNotHold(page, Key);
     }
 
@@ -283,7 +283,7 @@ public sealed class ProviderListingCardTests
         var (_, source, card) = await OpenAsync("deepseek").ConfigureAwait(true);
         card.HasRouteChoice.ShouldBeTrue();
         card.SelectedRoute.ShouldBe(card.Routes[0]);
-        card.UsesOmpKey.ShouldBeTrue();
+        card.UsesEngineKey.ShouldBeTrue();
         card.NeedsModelIds.ShouldBeFalse();
         card.BeginSetup();
         var names = PropertyChangeRecorder.Record(card);
@@ -291,7 +291,7 @@ public sealed class ProviderListingCardTests
         card.SelectedRoute = card.Routes[1];
 
         card.BaseAddressText.ShouldBe("https://api.deepseek.com/anthropic");
-        card.UsesOmpKey.ShouldBeFalse();
+        card.UsesEngineKey.ShouldBeFalse();
         card.NeedsModelIds.ShouldBeTrue();
         card.KeyStorageNote.ShouldBe(ModelsCopy.AutonogrammerKeyStorageNote);
         names.ShouldContain(nameof(ProviderListingCardModel.BaseAddressText), StringComparer.Ordinal);

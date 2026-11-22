@@ -4,7 +4,7 @@ using Autonogrammer.Presentation.Observable;
 namespace Autonogrammer.Presentation.Settings.Models;
 
 /// <summary>
-/// The Models page of the settings window: every provider omp can use, grouped (local, cloud, coding plan, custom, omp built-in)
+/// The Models page of the settings window: every provider the engine can use, grouped (local, cloud, coding plan, custom, engine built-in)
 /// and filterable by a search box, with the actions the <see cref="IModelsSettingsSource"/> can back. The only edit the page
 /// drafts is a custom provider; every other action (add or replace a key, use as default, test, remove) is written when the user
 /// takes it. Saving the page writes the custom provider draft; <see cref="Reset"/> and <see cref="Discard"/> close it.
@@ -25,7 +25,7 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
         ProviderGroup.Cloud,
         ProviderGroup.CodingPlan,
         ProviderGroup.Custom,
-        ProviderGroup.OmpBuiltIn,
+        ProviderGroup.EngineBuiltIn,
     ];
 
     private readonly IModelsSettingsSource _source;
@@ -250,6 +250,10 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
         {
             result = ModelsActionResult.Failure(exception.Message);
         }
+        catch (OperationCanceledException)
+        {
+            result = ModelsActionResult.Failure(ModelsCopy.ActionCancelled);
+        }
         finally
         {
             _isSaving = false;
@@ -331,6 +335,10 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
         {
             SetNotice(ModelsCopy.RefreshFailed(exception.Message));
         }
+        catch (OperationCanceledException)
+        {
+            SetNotice(ModelsCopy.RefreshFailed(ModelsCopy.ActionCancelled));
+        }
 
         Announce(announcement);
     }
@@ -342,7 +350,7 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
         {
             if (!seen.Add(info.Id))
             {
-                throw new SettingsSourceException("omp listed provider " + info.Id + " twice.");
+                throw new SettingsSourceException("The engine listed provider " + info.Id + " twice.");
             }
         }
     }

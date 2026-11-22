@@ -129,7 +129,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
 
         if (!OmpProviderId.IsValid(providerId))
         {
-            return ModelsActionResult.Failure("This provider id is not one omp accepts.");
+            return ModelsActionResult.Failure("This provider id is not one the engine accepts.");
         }
 
         await _writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -192,9 +192,9 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
             return ModelsActionResult.Failure(problem);
         }
 
-        if (OmpBuiltInProviders.Find(form.Id) is not null || OmpBuiltInProviders.FindLocalEngine(form.Id) is not null)
+        if (BuiltInProviders.Find(form.Id) is not null || BuiltInProviders.FindLocalRuntime(form.Id) is not null)
         {
-            return ModelsActionResult.Failure("omp already has a provider with this id of its own. Choose another id.");
+            return ModelsActionResult.Failure("The engine already has a provider with this id of its own. Choose another id.");
         }
 
         var keyVariable = ProviderKeyEnvironment.EnvNameFor(form.Id);
@@ -276,7 +276,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
         ArgumentNullException.ThrowIfNull(providerId);
         if (!OmpProviderId.IsValid(providerId))
         {
-            return ModelsActionResult.Failure("This provider id is not one omp accepts.");
+            return ModelsActionResult.Failure("This provider id is not one the engine accepts.");
         }
 
         await _writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -323,7 +323,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
                 : NotTested;
         }
 
-        if (OmpBuiltInProviders.FindLocalEngine(providerId) is { } engine)
+        if (BuiltInProviders.FindLocalRuntime(providerId) is { } engine)
         {
             return await ProbeAsync(engine.Id, engine.Endpoint, ProviderAuthType.None, cancellationToken).ConfigureAwait(false);
         }
@@ -342,7 +342,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
         ConcurrentDictionary<string, OmpCredentialPresence> presence)
     {
         var providers = new List<ProviderInfo>();
-        foreach (var engine in OmpBuiltInProviders.LocalEngines)
+        foreach (var engine in BuiltInProviders.LocalEngines)
         {
             if (modelsByProvider.TryGetValue(engine.Id, out var engineModels) && !managedIds.Contains(engine.Id))
             {
@@ -350,7 +350,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
             }
         }
 
-        foreach (var builtIn in OmpBuiltInProviders.All)
+        foreach (var builtIn in BuiltInProviders.All)
         {
             if (!managedIds.Contains(builtIn.Id))
             {
@@ -360,7 +360,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
 
         foreach (var id in listedOrder)
         {
-            if (!managedIds.Contains(id) && OmpBuiltInProviders.Find(id) is null && OmpBuiltInProviders.FindLocalEngine(id) is null)
+            if (!managedIds.Contains(id) && BuiltInProviders.Find(id) is null && BuiltInProviders.FindLocalRuntime(id) is null)
             {
                 providers.Add(UnknownCard(id, modelsByProvider[id], presence));
             }
@@ -378,7 +378,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
         return providers;
     }
 
-    private static ProviderInfo LocalCard(OmpLocalEngine engine, IReadOnlyList<string> models) =>
+    private static ProviderInfo LocalCard(LocalRuntime engine, IReadOnlyList<string> models) =>
         new(
             engine.Id,
             engine.DisplayName,
@@ -391,13 +391,13 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
             RetrievedOn: null,
             Plan: null,
             IsAutonogrammerManaged: false,
-            "omp finds this engine on its default address unless an environment variable moves it. The connection test checks that address.");
+            "The engine finds this runtime on its default address unless an environment variable moves it. The connection test checks that address.");
 
-    private static ProviderInfo BuiltInCard(OmpBuiltInProvider provider, IReadOnlyList<string> models, ConcurrentDictionary<string, OmpCredentialPresence> presence) =>
+    private static ProviderInfo BuiltInCard(BuiltInProvider provider, IReadOnlyList<string> models, ConcurrentDictionary<string, OmpCredentialPresence> presence) =>
         new(
             provider.Id,
             provider.DisplayName,
-            ProviderGroup.OmpBuiltIn,
+            ProviderGroup.EngineBuiltIn,
             string.Empty,
             ProviderAuthKind.ApiKey,
             StateOf(presence, provider.Id),
@@ -412,7 +412,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
         new(
             id,
             id,
-            ProviderGroup.OmpBuiltIn,
+            ProviderGroup.EngineBuiltIn,
             string.Empty,
             ProviderAuthKind.Unknown,
             StateOf(presence, id),
@@ -523,7 +523,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
             IsAutonogrammerManaged: true,
             block.NoAuthentication
                 ? null
-                : "Autonogrammer keeps this provider's key as plain text in a file only your account can read, and gives it to every omp it starts. Removing the provider deletes the key.",
+                : "Autonogrammer keeps this provider's key as plain text in a file only your account can read, and gives it to every engine process it starts. Removing the provider deletes the key.",
             form);
     }
 
@@ -535,8 +535,8 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
     {
         var presence = new ConcurrentDictionary<string, OmpCredentialPresence>(StringComparer.Ordinal);
         var ask = new List<string>();
-        var shown = OmpBuiltInProviders.All.Select(static provider => provider.Id)
-            .Concat(listedOrder.Where(static id => OmpBuiltInProviders.FindLocalEngine(id) is null))
+        var shown = BuiltInProviders.All.Select(static provider => provider.Id)
+            .Concat(listedOrder.Where(static id => BuiltInProviders.FindLocalRuntime(id) is null))
             .Where(id => !managedIds.Contains(id))
             .Distinct(StringComparer.Ordinal);
         foreach (var id in shown)
@@ -611,7 +611,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
         }
         catch (SecretStoreException exception)
         {
-            return ModelsActionResult.Failure("The provider was changed in omp, but Autonogrammer could not delete its stored key. " + exception.Message);
+            return ModelsActionResult.Failure("The provider was changed in the engine, but Autonogrammer could not delete its stored key. " + exception.Message);
         }
     }
 

@@ -158,7 +158,7 @@ internal static class ListingTestData
     {
         Id = "localai",
         DisplayName = "LocalAI",
-        OmpProviderId = null,
+        EngineProviderId = null,
         Routes = [Route("openai", "openai-completions", "http://localhost:8080/v1", takesKey: false)],
     };
 

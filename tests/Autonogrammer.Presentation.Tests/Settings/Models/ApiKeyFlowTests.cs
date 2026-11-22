@@ -78,7 +78,7 @@ public sealed class ApiKeyFlowTests
         card.IsApiKeyEditorOpen.ShouldBeFalse();
         card.ErrorText.ShouldBeNull();
         card.ApiKeyActionLabel.ShouldBe(ModelsCopy.ReplaceApiKeyLabel);
-        card.StatusLine.ShouldContain("credential present in omp", Case.Sensitive);
+        card.StatusLine.ShouldContain("credential present in the engine", Case.Sensitive);
         source.LoadCalls.ShouldBe(2);
         page.Announcement.ShouldBe(ModelsCopy.KeySaved("Perplexity"));
         SecretScan.ShouldNotHold(page, Key);
@@ -223,12 +223,12 @@ public sealed class ApiKeyFlowTests
         var ompNote = omp.ApiKey.ShouldNotBeNull().KeyStorageNote;
         var customNote = custom.ApiKey.ShouldNotBeNull().KeyStorageNote;
 
-        ompNote.ShouldBe(ModelsCopy.OmpKeyStorageNote);
-        ompNote.ShouldContain("omp keeps the key in its own credential database", Case.Sensitive);
+        ompNote.ShouldBe(ModelsCopy.EngineKeyStorageNote);
+        ompNote.ShouldContain("The engine keeps the key in its own credential database", Case.Sensitive);
         ompNote.ShouldContain("does not keep it", Case.Sensitive);
         customNote.ShouldBe(ModelsCopy.AutonogrammerKeyStorageNote);
         customNote.ShouldContain("Autonogrammer keeps the key in secrets/secrets.json", Case.Sensitive);
-        customNote.ShouldContain("omp keeps no copy", Case.Sensitive);
+        customNote.ShouldContain("The engine keeps no copy", Case.Sensitive);
         customNote.ShouldNotContain("does not keep it", Case.Sensitive);
     }
 }

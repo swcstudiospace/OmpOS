@@ -63,7 +63,7 @@ public sealed class ModelsCopyTests
     [Fact]
     public void StatusLineJoinsAuthAndCredential()
     {
-        ModelsCopy.StatusLine(ProviderAuthKind.OAuth, CredentialState.Unknown).ShouldBe("Sign-in through omp, credential state unknown");
+        ModelsCopy.StatusLine(ProviderAuthKind.OAuth, CredentialState.Unknown).ShouldBe("Sign-in through the engine, credential state unknown");
         ModelsCopy.StatusLine(ProviderAuthKind.None, CredentialState.NotRequired).ShouldBe("No authentication, no credential needed");
     }
 

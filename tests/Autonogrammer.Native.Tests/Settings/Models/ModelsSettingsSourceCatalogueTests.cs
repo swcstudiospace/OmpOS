@@ -249,7 +249,7 @@ public sealed class ModelsSettingsSourceCatalogueTests
     }
 
     [Fact]
-    public async Task ABlockOmpRefusesIsOmpRejectedAndTheFileAndKeyStoreAreAsTheyWere()
+    public async Task ABlockOmpRefusesIsEngineRejectedAndTheFileAndKeyStoreAreAsTheyWere()
     {
         SkipUnlessLinux();
         using var fake = new ModelsFakeOmp();
@@ -257,7 +257,7 @@ public sealed class ModelsSettingsSourceCatalogueTests
 
         var outcome = await Source(composition).AddCatalogueAsync(Request("zai-api", "openai", models: ["BADMODEL"]), ModelsForms.Canary, planRuleAccepted: false, Token).ConfigureAwait(true);
 
-        outcome.Status.ShouldBe(CatalogueAddStatus.OmpRejected);
+        outcome.Status.ShouldBe(CatalogueAddStatus.EngineRejected);
         outcome.Message.ShouldNotBeNullOrWhiteSpace();
         outcome.Message.ShouldNotBeNull().ShouldNotContain(fake.Root, Case.Sensitive);
         (fake.ReadModelsYml() ?? string.Empty).ShouldNotContain("zai-api", Case.Sensitive);
@@ -265,7 +265,7 @@ public sealed class ModelsSettingsSourceCatalogueTests
     }
 
     [Fact]
-    public async Task AProviderOutsideAnAutonogrammerBlockWithTheSameIdIsOmpRejectedAndLeftAlone()
+    public async Task AProviderOutsideAnAutonogrammerBlockWithTheSameIdIsEngineRejectedAndLeftAlone()
     {
         SkipUnlessLinux();
         using var fake = new ModelsFakeOmp();
@@ -275,7 +275,7 @@ public sealed class ModelsSettingsSourceCatalogueTests
 
         var outcome = await Source(composition).AddCatalogueAsync(Request("moonshot-cn", "openai"), ModelsForms.Canary, planRuleAccepted: false, Token).ConfigureAwait(true);
 
-        outcome.Status.ShouldBe(CatalogueAddStatus.OmpRejected);
+        outcome.Status.ShouldBe(CatalogueAddStatus.EngineRejected);
         fake.ReadModelsYml().ShouldBe(Existing);
         File.Exists(fake.SecretsPath).ShouldBeFalse();
     }

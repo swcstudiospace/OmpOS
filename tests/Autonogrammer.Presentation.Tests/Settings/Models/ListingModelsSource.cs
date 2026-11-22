@@ -45,6 +45,7 @@ internal sealed class ListingModelsSource : IModelsSettingsSource
     /// <inheritdoc/>
     public Task<ModelsActionResult> SaveApiKeyAsync(string providerId, string apiKey, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         OmpKeys.Add((providerId, apiKey));
         _providers.Add(Provider(providerId, CredentialState.Present));
         return Task.FromResult(ModelsActionResult.Success);

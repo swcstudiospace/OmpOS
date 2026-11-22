@@ -149,7 +149,7 @@ internal sealed class StageAnnouncer
     private static FrozenDictionary<(StageSource Source, StageStatus Status), string> BuildSentences()
     {
         var sentences = new Dictionary<(StageSource Source, StageStatus Status), string>();
-        Add(sentences, StageSource.Omp, "The engine is running.", "The engine is ready.", "The engine is running with reduced function.", "The engine failed.", "The engine was skipped.", "The omp engine is not available.");
+        Add(sentences, StageSource.Omp, "The engine is running.", "The engine is ready.", "The engine is running with reduced function.", "The engine failed.", "The engine was skipped.", "The engine is not available.");
         Add(sentences, StageSource.Ultrathink, "Ultrathink is planning the prompt.", "Ultrathink planned.", "Ultrathink fell back to a plain spec.", "Ultrathink planning failed. The prompt ran as written.", "Ultrathink is off. Prompts run as written.", "Ultrathink is not available. Prompts run as written.");
         Add(sentences, StageSource.Swarm, "Swarm started.", "Swarm finished.", "Swarm is running with reduced function.", "Swarm stopped. Work continues as a single agent.", "Swarm is off. This agent runs alone.", "Swarm is not available. This agent runs alone.");
         Add(sentences, StageSource.Substrate, "Substrate is checking.", "Substrate is ok.", "Substrate answered with errors.", "Substrate failed. Steering is not recorded.", "Substrate is off. Steering is not recorded.", "Substrate is not reachable. Steering is not recorded.");

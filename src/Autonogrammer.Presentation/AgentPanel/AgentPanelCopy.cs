@@ -404,7 +404,7 @@ public static class AgentPanelCopy
         {
             [(StageSource.Omp, StageStatus.Degraded)] = "The engine is running with reduced function.",
             [(StageSource.Omp, StageStatus.Failed)] = "The engine failed. See the error above the transcript.",
-            [(StageSource.Omp, StageStatus.Unavailable)] = "The omp engine is not available.",
+            [(StageSource.Omp, StageStatus.Unavailable)] = "The engine is not available.",
             [(StageSource.Ultrathink, StageStatus.Skipped)] = "Planning is off. Prompts run as written.",
             [(StageSource.Ultrathink, StageStatus.Degraded)] = "The planner fell back to a plain spec. No graph was created.",
             [(StageSource.Ultrathink, StageStatus.Failed)] = "Planning failed. The prompt ran as written.",

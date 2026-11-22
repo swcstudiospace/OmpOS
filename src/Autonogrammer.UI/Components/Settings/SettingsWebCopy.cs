@@ -78,7 +78,7 @@ public static class SettingsWebCopy
     public const string HooksTitle = "Hooks";
 
     /// <summary>The sentence under the heading of the Hooks page.</summary>
-    public const string HooksDescription = "Scripts the workspace asks omp to run at fixed points of a session, such as before a tool call or after a file edit.";
+    public const string HooksDescription = "Scripts the workspace asks the engine to run at fixed points of a session, such as before a tool call or after a file edit.";
 
     /// <summary>The note of the Hooks page that says it only lists.</summary>
     public const string HooksReadOnly = "Read-only. This page lists the hook files found in the workspace and what they define; it does not run or change a hook. Review and consent are decisions of the desktop app.";

@@ -204,10 +204,10 @@ public sealed class ProviderListingCardModel : ObservableModel
     public bool HasUrlInputs => _urlInputs.Count > 0;
 
     /// <summary>Gets a value indicating whether the form asks for model ids: omp keeps the models of a provider it knows, so only a provider Autonogrammer writes to <c>models.yml</c> takes them.</summary>
-    public bool HasModelIdsField => !UsesOmpKey;
+    public bool HasModelIdsField => !UsesEngineKey;
 
     /// <summary>Gets a value indicating whether the user has to name a model id before the provider can be added.</summary>
-    public bool NeedsModelIds => !UsesOmpKey && (_selectedRoute?.NeedsUserModels ?? false);
+    public bool NeedsModelIds => !UsesEngineKey && (_selectedRoute?.NeedsUserModels ?? false);
 
     /// <summary>Gets the sentence under the model id field.</summary>
     public string ModelIdsHelp => NeedsModelIds ? ProviderListingCopy.ModelIdsNeededText : ProviderListingCopy.ModelIdsOptionalText;
@@ -229,19 +229,19 @@ public sealed class ProviderListingCardModel : ObservableModel
     /// Gets a value indicating whether the key goes to omp itself: omp knows the provider by id, the listing has no placeholder and
     /// the default route is chosen, so no <c>models.yml</c> block is needed.
     /// </summary>
-    public bool UsesOmpKey =>
-        _listing.OmpProviderId is not null
+    public bool UsesEngineKey =>
+        _listing.EngineProviderId is not null
         && _listing.Variables.Count == 0
         && (_listing.Routes.Count == 0 || ReferenceEquals(_selectedRoute, _listing.Routes[0]));
 
     /// <summary>Gets a value indicating whether the listing can be set up from here: it is not a sign-in listing and, when omp knows it, takes a key.</summary>
-    public bool CanSetUp => !IsSignInOnly && (_selectedRoute is not null || UsesOmpKey) && (!UsesOmpKey || TakesKey);
+    public bool CanSetUp => !IsSignInOnly && (_selectedRoute is not null || UsesEngineKey) && (!UsesEngineKey || TakesKey);
 
     /// <summary>Gets a value indicating whether the Set up action is offered: the listing can be set up and its form is closed.</summary>
     public bool CanBeginSetup => CanSetUp && !_isSetupOpen;
 
     /// <summary>Gets the sentence that says where the key is kept, or null when the chosen route takes none.</summary>
-    public string? KeyStorageNote => TakesKey ? ModelsCopy.KeyStorageNote(!UsesOmpKey) : null;
+    public string? KeyStorageNote => TakesKey ? ModelsCopy.KeyStorageNote(!UsesEngineKey) : null;
 
     /// <summary>Gets the open key entry, or null while the form is closed or the route takes no key.</summary>
     public ApiKeyDraft? ApiKey => _apiKey;
@@ -343,7 +343,7 @@ public sealed class ProviderListingCardModel : ObservableModel
     /// <returns>True when omp now has the provider.</returns>
     public async Task<bool> SaveAsync(CancellationToken cancellationToken = default)
     {
-        if (!_isSetupOpen || _isBusy || (_selectedRoute is null && !UsesOmpKey))
+        if (!_isSetupOpen || _isBusy || (_selectedRoute is null && !UsesEngineKey))
         {
             return false;
         }
@@ -409,8 +409,8 @@ public sealed class ProviderListingCardModel : ObservableModel
         try
         {
             // The continuation must run on the context that owns the model, so the context is captured.
-            return UsesOmpKey
-                ? await _source.SaveApiKeyAsync(_listing.OmpProviderId!, key, cancellationToken).ConfigureAwait(true)
+            return UsesEngineKey
+                ? await _source.SaveApiKeyAsync(_listing.EngineProviderId!, key, cancellationToken).ConfigureAwait(true)
                 : request is null
                     ? ModelsActionResult.Failure(ModelsCopy.ActionFailed)
                     : await _source.AddCatalogueProviderAsync(request, key, cancellationToken).ConfigureAwait(true);
@@ -418,6 +418,10 @@ public sealed class ProviderListingCardModel : ObservableModel
         catch (SettingsSourceException exception)
         {
             return ModelsActionResult.Failure(exception.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            return ModelsActionResult.Failure(ModelsCopy.ActionCancelled);
         }
         finally
         {
@@ -463,10 +467,10 @@ public sealed class ProviderListingCardModel : ObservableModel
         }
     }
 
-    /// <summary>Gets the id the listing has in omp once set up: the omp provider id, or the id of its <c>models.yml</c> block.</summary>
+    /// <summary>Gets the id the listing has in the engine once set up: the engine provider id, or the id of its <c>models.yml</c> block.</summary>
     public string ConfiguredId =>
-        UsesOmpKey
-            ? _listing.OmpProviderId!
+        UsesEngineKey
+            ? _listing.EngineProviderId!
             : _selectedRoute is null || ReferenceEquals(_selectedRoute, _listing.Routes[0]) ? _listing.Id : $"{_listing.Id}-{_selectedRoute.Id}";
 
     private static List<string> ParseModelIds(string text)
@@ -561,7 +565,7 @@ public sealed class ProviderListingCardModel : ObservableModel
 
     private void ResetKeyDraft()
     {
-        SetApiKey(TakesKey ? new ApiKeyDraft(_listing.Id, _listing.DisplayName, !UsesOmpKey) : null);
+        SetApiKey(TakesKey ? new ApiKeyDraft(_listing.Id, _listing.DisplayName, !UsesEngineKey) : null);
     }
 
     private void SetApiKey(ApiKeyDraft? draft)
@@ -583,7 +587,7 @@ public sealed class ProviderListingCardModel : ObservableModel
         NotifyPropertyChanged(nameof(HasModelIdsField));
         NotifyPropertyChanged(nameof(ModelIdsHelp));
         NotifyPropertyChanged(nameof(TakesKey));
-        NotifyPropertyChanged(nameof(UsesOmpKey));
+        NotifyPropertyChanged(nameof(UsesEngineKey));
         NotifyPropertyChanged(nameof(CanSetUp));
         NotifyPropertyChanged(nameof(CanBeginSetup));
         NotifyPropertyChanged(nameof(KeyStorageNote));

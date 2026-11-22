@@ -104,6 +104,7 @@ internal sealed class ScriptedModelsSource : IModelsSettingsSource
     /// <inheritdoc/>
     public async Task<ModelsActionResult> SaveApiKeyAsync(string providerId, string apiKey, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         KeysReceived.Add((providerId, apiKey));
         if (KeyGate is { } gate)
         {
@@ -128,6 +129,7 @@ internal sealed class ScriptedModelsSource : IModelsSettingsSource
     /// <inheritdoc/>
     public Task<ModelsActionResult> SetDefaultModelAsync(string selector, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         DefaultsRequested.Add(selector);
         if (DefaultResult.Succeeded)
         {
@@ -140,6 +142,7 @@ internal sealed class ScriptedModelsSource : IModelsSettingsSource
     /// <inheritdoc/>
     public Task<ModelsActionResult> SaveCustomProviderAsync(CustomProviderForm form, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         CustomSaved.Add(form);
         if (!CustomResult.Succeeded)
         {
@@ -176,6 +179,7 @@ internal sealed class ScriptedModelsSource : IModelsSettingsSource
     /// <inheritdoc/>
     public Task<ModelsActionResult> RemoveCustomProviderAsync(string providerId, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         Removed.Add(providerId);
         if (RemoveResult.Succeeded)
         {
@@ -188,6 +192,7 @@ internal sealed class ScriptedModelsSource : IModelsSettingsSource
     /// <inheritdoc/>
     public async Task<ProviderTestOutcome> TestAsync(string providerId, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         Tested.Add(providerId);
         if (TestGate is { } gate)
         {

@@ -71,7 +71,7 @@ internal sealed partial class ModelsSettingsSource
         await _writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            return (route is null || UsesOmpCredential(row, route))
+            return (route is null || UsesEngineCredential(row, route))
                 ? await ImportCredentialAsync(row, key, cancellationToken).ConfigureAwait(false)
                 : await WriteBlockAsync(row, route, request, key, keyed, cancellationToken).ConfigureAwait(false);
         }
@@ -81,7 +81,7 @@ internal sealed partial class ModelsSettingsSource
         }
     }
 
-    private static bool UsesOmpCredential(CatalogueRow row, CatalogueRoute? route) =>
+    private static bool UsesEngineCredential(CatalogueRow row, CatalogueRoute? route) =>
         row.IsOmpNative
         && (row.Routes.Count == 0
             || (row.UrlVariables.Count == 0
@@ -100,7 +100,7 @@ internal sealed partial class ModelsSettingsSource
         var imported = await _omp.Credentials.ImportApiKeyAsync(row.OmpProviderId!, new SecretString(key), cancellationToken).ConfigureAwait(false);
         if (!imported.IsImported)
         {
-            return CatalogueAddOutcome.Refused(CatalogueAddStatus.OmpRejected, PlainText.WithoutPaths(imported.Message));
+            return CatalogueAddOutcome.Refused(CatalogueAddStatus.EngineRejected, PlainText.WithoutPaths(imported.Message));
         }
 
         return new CatalogueAddOutcome(had ? CatalogueAddStatus.Updated : CatalogueAddStatus.Added);
@@ -142,7 +142,7 @@ internal sealed partial class ModelsSettingsSource
         if (keyVariable is not null && managed.Providers.Any(provider => !string.Equals(provider.Id, blockId, StringComparison.Ordinal)
             && string.Equals(provider.ApiKeyEnvName, keyVariable, StringComparison.Ordinal)))
         {
-            return CatalogueAddOutcome.Refused(CatalogueAddStatus.OmpRejected, CatalogueAddCopy.KeyVariableTaken);
+            return CatalogueAddOutcome.Refused(CatalogueAddStatus.EngineRejected, CatalogueAddCopy.KeyVariableTaken);
         }
 
         var write = await _omp.ModelsFile.UpsertAsync(built.Provider, cancellationToken).ConfigureAwait(false);
@@ -170,9 +170,9 @@ internal sealed partial class ModelsSettingsSource
 
     private static CatalogueAddOutcome Refuse(OmpModelsWriteResult write) => write.Status switch
     {
-        OmpModelsWriteStatus.Conflict => CatalogueAddOutcome.Refused(CatalogueAddStatus.OmpRejected, CatalogueAddCopy.NotOwned),
-        OmpModelsWriteStatus.Failed => CatalogueAddOutcome.Refused(CatalogueAddStatus.Unavailable, DescribeOrDefault(write, CatalogueAddCopy.OmpUnavailable)),
-        _ => CatalogueAddOutcome.Refused(CatalogueAddStatus.OmpRejected, DescribeOrDefault(write, ModelsCopy.ActionFailed)),
+        OmpModelsWriteStatus.Conflict => CatalogueAddOutcome.Refused(CatalogueAddStatus.EngineRejected, CatalogueAddCopy.NotOwned),
+        OmpModelsWriteStatus.Failed => CatalogueAddOutcome.Refused(CatalogueAddStatus.Unavailable, DescribeOrDefault(write, CatalogueAddCopy.EngineUnavailable)),
+        _ => CatalogueAddOutcome.Refused(CatalogueAddStatus.EngineRejected, DescribeOrDefault(write, ModelsCopy.ActionFailed)),
     };
 
     private static string DescribeOrDefault(OmpModelsWriteResult write, string fallback) =>

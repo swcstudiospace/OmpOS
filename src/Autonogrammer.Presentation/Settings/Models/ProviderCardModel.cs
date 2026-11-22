@@ -192,6 +192,8 @@ public sealed class ProviderCardModel : ObservableModel
         var key = draft.TakeKey();
         ErrorText = null;
         ActionText = null;
+        TestText = null;
+        TestStatus = null;
         IsBusy = true;
         draft.IsSaving = true;
         ModelsActionResult result;
@@ -203,6 +205,10 @@ public sealed class ProviderCardModel : ObservableModel
         catch (SettingsSourceException exception)
         {
             result = ModelsActionResult.Failure(exception.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            result = ModelsActionResult.Failure(ModelsCopy.ActionCancelled);
         }
         finally
         {
@@ -238,6 +244,8 @@ public sealed class ProviderCardModel : ObservableModel
 
         ErrorText = null;
         ActionText = null;
+        TestText = null;
+        TestStatus = null;
         IsBusy = true;
         ModelsActionResult result;
         try
@@ -247,6 +255,10 @@ public sealed class ProviderCardModel : ObservableModel
         catch (SettingsSourceException exception)
         {
             result = ModelsActionResult.Failure(exception.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            result = ModelsActionResult.Failure(ModelsCopy.ActionCancelled);
         }
         finally
         {
@@ -277,6 +289,8 @@ public sealed class ProviderCardModel : ObservableModel
         IsTesting = true;
         TestStatus = null;
         TestText = null;
+        ErrorText = null;
+        ActionText = null;
         ProviderTestOutcome outcome;
         try
         {
@@ -285,6 +299,10 @@ public sealed class ProviderCardModel : ObservableModel
         catch (SettingsSourceException exception)
         {
             outcome = new ProviderTestOutcome(ProviderTestStatus.Failed, exception.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            outcome = new ProviderTestOutcome(ProviderTestStatus.Failed, ModelsCopy.TestCancelled);
         }
         finally
         {
@@ -329,6 +347,9 @@ public sealed class ProviderCardModel : ObservableModel
             return false;
         }
 
+        ErrorText = null;
+        TestText = null;
+        TestStatus = null;
         IsBusy = true;
         ModelsActionResult result;
         try
@@ -338,6 +359,10 @@ public sealed class ProviderCardModel : ObservableModel
         catch (SettingsSourceException exception)
         {
             result = ModelsActionResult.Failure(exception.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            result = ModelsActionResult.Failure(ModelsCopy.ActionCancelled);
         }
         finally
         {

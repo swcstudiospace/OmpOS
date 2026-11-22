@@ -211,7 +211,7 @@ public sealed class ProviderDirectoryModel : ObservableModel
     private static bool MatchesSearch(ProviderListingCardModel card, string text) =>
         Contains(card.DisplayName, text)
         || Contains(card.Id, text)
-        || (card.Listing.OmpProviderId is { } omp && Contains(omp, text))
+        || (card.Listing.EngineProviderId is { } engineId && Contains(engineId, text))
         || (card.Listing.Country is { } code && (Contains(code, text) || Contains(ProviderListingCopy.CountryName(code), text)))
         || (card.Listing.ResidencyNote is { } residency && Contains(residency, text))
         || (card.Note is { } note && Contains(note, text))

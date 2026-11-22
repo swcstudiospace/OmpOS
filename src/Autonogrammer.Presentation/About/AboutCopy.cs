@@ -10,7 +10,7 @@ public static class AboutCopy
     public const string WindowTitle = "About Autonogrammer";
 
     /// <summary>The sentence under the product name.</summary>
-    public const string Tagline = "A workspace for coding agents, built on omp.";
+    public const string Tagline = "A workspace for coding agents.";
 
     /// <summary>The copyright line, the same as <c>NOTICE</c>.</summary>
     public const string Copyright = "Copyright (C) 2026 SWC Studio";

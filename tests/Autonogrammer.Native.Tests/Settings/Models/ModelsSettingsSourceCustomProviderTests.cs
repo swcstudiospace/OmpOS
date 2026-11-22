@@ -114,7 +114,7 @@ public sealed class ModelsSettingsSourceCustomProviderTests
         var ollama = await composition.Source.SaveCustomProviderAsync(ModelsForms.Local("ollama"), Token).ConfigureAwait(true);
 
         openai.Succeeded.ShouldBeFalse();
-        openai.Message.ShouldNotBeNull().ShouldContain("omp already has a provider", Case.Sensitive);
+        openai.Message.ShouldNotBeNull().ShouldContain("The engine already has a provider", Case.Sensitive);
         ollama.Succeeded.ShouldBeFalse();
         fake.ReadModelsYml().ShouldBeNull();
     }
