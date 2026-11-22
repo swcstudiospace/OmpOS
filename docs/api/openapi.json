@@ -39,7 +39,7 @@
             }
           }
         },
-        "security": []
+        "security": [ ]
       }
     },
     "/status/data-plane": {
@@ -1782,7 +1782,7 @@
             }
           }
         },
-        "security": []
+        "security": [ ]
       }
     },
     "/workspace/conventions": {
@@ -2942,7 +2942,7 @@
             }
           }
         },
-        "security": []
+        "security": [ ]
       }
     },
     "/cowork/projects": {
@@ -6247,7 +6247,7 @@
             }
           }
         },
-        "security": []
+        "security": [ ]
       }
     },
     "/dispatch/devices": {
@@ -6408,7 +6408,7 @@
         },
         "security": [
           {
-            "DispatchDevice": []
+            "DispatchDevice": [ ]
           }
         ]
       }
@@ -10474,7 +10474,7 @@
               "null",
               "string"
             ],
-            "description": "Gets the reason for a skipped, blocked or unreachable outcome, or null."
+            "description": "Gets exactly one sentence naming the outcome, for every status."
           }
         },
         "description": "The answer of `POST /providers/{id}/test`."
@@ -11577,7 +11577,7 @@
       },
       "StageSource": {
         "enum": [
-          "Omp",
+          "Engine",
           "Ultrathink",
           "Swarm",
           "Substrate",
@@ -12215,7 +12215,7 @@
   },
   "security": [
     {
-      "bearerAuth": []
+      "bearerAuth": [ ]
     }
   ],
   "tags": [
