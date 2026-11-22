@@ -38,4 +38,19 @@ public sealed class HttpProviderProbeTests
 
         result.Status.ShouldBe(ProviderTestStatus.Blocked);
     }
+
+    [Theory]
+    [InlineData(System.Net.HttpStatusCode.OK)]
+    [InlineData(System.Net.HttpStatusCode.NotFound)]
+    public void AReachableAnswerCarriesASingleSentenceReason(System.Net.HttpStatusCode status)
+    {
+        var classify = typeof(HttpProviderProbe).GetMethod("Classify", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        classify.ShouldNotBeNull();
+
+        var result = (ProviderProbeResult)classify!.Invoke(null, [status])!;
+
+        result.Status.ShouldBe(ProviderTestStatus.Reachable);
+        result.Reason.ShouldBe("Something answered at the address.");
+        result.Reason!.Count(static c => c == '.').ShouldBe(1);
+    }
 }

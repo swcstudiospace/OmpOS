@@ -24,9 +24,9 @@ internal sealed class ProvidersOptions
     [Range(1, 100_000, ErrorMessage = "Providers:RequestsPerMinute must be between 1 and 100000.")]
     public int RequestsPerMinute { get; set; } = 60;
 
-    /// <summary>Gets or sets the seconds a live test waits for an answer. Defaults to 8.</summary>
+    /// <summary>Gets or sets the seconds a live test waits for an answer, one probe step. Defaults to 5 (NFR-P1: each Settings probe step completes or cancels within 5 seconds).</summary>
     [Range(1, 30, ErrorMessage = "Providers:TestTimeoutSeconds must be between 1 and 30.")]
-    public int TestTimeoutSeconds { get; set; } = 8;
+    public int TestTimeoutSeconds { get; set; } = 5;
 
     /// <summary>Gets or sets the seconds the configured state of the providers is reused. Defaults to 15.</summary>
     [Range(0, 3600, ErrorMessage = "Providers:StateCacheSeconds must be between 0 and 3600.")]

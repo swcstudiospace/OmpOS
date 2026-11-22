@@ -11,7 +11,7 @@ public sealed record ProviderTestResponse
     /// <summary>Gets the outcome.</summary>
     public required ProviderTestStatus Status { get; init; }
 
-    /// <summary>Gets the reason for a skipped, blocked or unreachable outcome, or null.</summary>
+    /// <summary>Gets exactly one sentence naming the outcome, for every status.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Reason { get; init; }
 }
