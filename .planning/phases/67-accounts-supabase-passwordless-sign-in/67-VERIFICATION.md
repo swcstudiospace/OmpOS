@@ -1,6 +1,6 @@
 ---
 phase: 67-accounts-supabase-passwordless-sign-in
-verified: 2026-11-22T01:53:17Z
+verified: 2026-11-22T12:00:00Z
 status: human_needed
 score: "offline pass; live remains human"
 covered_files:
@@ -32,7 +32,7 @@ overrides_applied: 0
 re_verification: true
 previous_status: human_needed
 previous_score: "human_needed"
-commits: ["b46fd81f"]
+commits: ["52eb2c55"]
 human_verification:
   - "Live Supabase sign-in (real key + test email) or recorded skip."
   - "Keyring round-trip (AUTONOGRAMMER_LIVE_KEYRING=1) or skip reason."
@@ -210,3 +210,21 @@ All eight ROADMAP success criteria were run on SDK 10.0.402 (runtime 10.0.13):
 - **M-05** (`JwtBearerSetup.cs`): partially open. The trivial part (RefreshInterval 30 s, AutomaticRefreshInterval 10 min) plus a loopback-JWKS test and head-side behaviour are NOT in this branch (two concurrent fixers disagreed; the on-disk tree carries the non-M-05 parts). Recorded as open in the REVIEW tracker; do not claim it as fixed.
 
 The `CA2250`, `MA0051`, `CA2000`, `MA0158`, `VSTHRD003`, `xUnit1051`, `xUnit1008/1013` and `CA1822` analyzer violations introduced along the way were fixed at the cause (helpers, `ThrowIfCancellationRequested`, `TestContext.Current.CancellationToken`, theory attribute).
+
+## Refresh 2026-11-22 (T8783-be, HEAD 52eb2c55, SDK 10.0.402)
+
+*Evidence first, then verdict (ADR-0002/ADR-0003). No product code touched. Restore+build once (-warnaserror clean), then --no-build runs. Fresh test-services up blocked by stale unowned containers; DB suites ran vs existing healthy throwaway set ag67-8382 (/tmp/autonogrammer-test-services.Hufrbx, PG 33233 / Dragonfly 38491) per precedent. No live-model/CDP/install/Railway/sign-in/screen-reader claimed.*
+
+*Status: human_needed — offline 7/8 re-proven; live Supabase keyring + sign-in remain human.*
+
+| Check | Command | Result |
+|---|---|---|
+| build | `dotnet build Autonogrammer.Linux.slnf -c Release -warnaserror` | 0 warnings, 0 errors, exit 0 |
+| SC1 | Accounts.Tests non-Live | 215/215 exit 0 |
+| SC2 | Secrets.Os 83 + Desktop 47 non-Live | both exit 0 |
+| SC3 | `AUTONOGRAMMER_LIVE_KEYRING=1` Secrets.Os Live | FAILED 1/1 exit 2: `SecretStoreException: The Linux Secret Service reported an error` (LibsecretNativeApi.Store) — neither passed nor skipped; stays human_verification |
+| SC4 | Api.IntegrationTests non-Live (incl GuardTests OpenAPI equality) | 1580/1580 exit 0 vs ag67-8382 |
+| SC5 | Presentation 2646 / Native / UI 882 / Web 444 | all exit 0 |
+| SC6 | ArchitectureTests | 107/107 exit 0 |
+| SC7 | build above + `check-licences.sh` | exit 0, licence checks passed |
+| SC8 | `CI=true dotnet restore --locked-mode` | exit 0 |

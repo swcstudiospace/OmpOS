@@ -1,6 +1,6 @@
 ---
 phase: 69-surface-switch-and-cowork-sessions
-verified: 2026-11-22T01:53:17Z
+verified: 2026-11-22T12:00:00Z
 status: human_needed
 score: "unit pass; assistive/visual human"
 covered_files:
@@ -29,7 +29,7 @@ overrides_applied: 0
 re_verification: true
 previous_status: human_needed
 previous_score: "human_needed"
-commits: ["b46fd81f"]
+commits: ["52eb2c55"]
 human_verification:
   - "Screen-reader pass Native+Web incl. hidden-surface announcement."
   - "Pointer/visual check 1280x800."
@@ -180,3 +180,18 @@ No gaps. Roadmap SC1-6 and phase goal achieved by code. All 7 truths VERIFIED. 3
 _Verified: 2026-11-10T12:00:00Z_
 _Verifier: Claude (gsd-verifier)_
 _Re-verification after SOTA for assistive/pointer/shortcuts_
+
+## Refresh 2026-11-22 (T8783-be, HEAD 52eb2c55, SDK 10.0.402)
+
+*Evidence first, then verdict (ADR-0002/ADR-0003). No product code touched. Restore+build once (-warnaserror clean), then --no-build runs vs throwaway set ag67-8382 (see phase 67 refresh). No screen-reader/pointer/visual claimed.*
+
+*Status: human_needed — 6/6 offline criteria re-proven; screen-reader/pointer/visual stay human.*
+
+| Check | Command | Result |
+|---|---|---|
+| SC1 | ArchitectureTests `*CoworkSurfaceIsolationTests*` + `*ProjectGraphTests*` | 10/10 + 4/4; full ArchitectureTests 107/107 exit 0 |
+| SC2 | Cowork.Tests 123 + Presentation.Tests 2646 | exit 0 |
+| SC3 | Native `*Surface*` 6 pass + 3 Live-skipped (ArtifactSurfaceLiveTests), `*CoworkKanbanIsolationTests*` 7/7, `*Cowork*` 67/67; KanbanHead 4/4, SettingsEntry 7/7; literal `*HeadMotionTests*` matched 0 — motion suite is ReducedMotionTests 6/6 | exit 0 |
+| SC4 | UI.Tests 882 + Web.Tests 444 | exit 0 |
+| SC5 | Api.IntegrationTests vs ag67-8382 (CoworkSessionEndpointsTests, AccountBoardSurfaceTests inside full run) | 1580/1580 exit 0 |
+| SC6 | `dotnet build -c Release --no-restore -warnaserror` + `generate-third-party-notices.py --check` | exit 0 + exit 0 |

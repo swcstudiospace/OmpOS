@@ -1,6 +1,6 @@
 ---
 phase: 66-rebrand-to-autonogrammer
-verified: 2026-11-22T01:53:17Z
+verified: 2026-11-22T12:00:00Z
 status: gaps_found
 score: "SC1/SC4/SC5 + build/format/restore re-proven; SC2 full suite + SC3 smoke not re-run"
 covered_files:
@@ -37,11 +37,11 @@ overrides_applied: 0
 re_verification: true
 previous_status: gaps_found
 previous_score: "2026-11-20 passed 5/5 at ed0a9a02; 2026-11-21 re-check at c04095ba partial (see tail)"
-commits: ["b46fd81f"]
+commits: ["52eb2c55"]
 gaps:
   - truth: "SC2 full Linux suite (61 projects) not run; only targeted projects ran."
     status: unverified
-    closing_step: "Run test-services up; source env; dotnet test Autonogrammer.Linux.slnf -c Release --no-build -- --filter-not-trait "Category=Live"; down."
+    closing_step: "Run test-services up; source env; dotnet test Autonogrammer.Linux.slnf -c Release --no-build -- --filter-not-trait 'Category=Live'; down."
   - truth: "SC3 web smoke not re-run (~90 min, budget). Node a11y 48/48 only."
     status: unverified
     closing_step: "OUT_DIR=<dir> bash scripts/web-smoke/run-smoke.sh --a11y-report <dir>/a11y on free ports; record bundle."
@@ -245,3 +245,9 @@ failed. No CI-green claim is made for c04095ba from this pass.
 gaps_found: SC2 partial (build/format/tests pending or not run), SC3 not re-run, SC4 static-only.
 The 2026-11-20 supersession of the 2026-11-04 baseline (66-09-SUMMARY.md) is unchanged —
 strict-equality comparison remains retired; the durable gate above is the criterion.
+
+## Refresh 2026-11-22 (T8783-be, HEAD 52eb2c55, SDK 10.0.402)
+
+*Evidence first, then verdict (ADR-0002/ADR-0003). Full suite NOT re-run by design (budget); targeted suites re-run under phases 67/69/70 freshness. Uncommitted YAML fix kept: SC2 closing_step `Category=Live` single-quote fix (line 44). `covered_digest` recomputed with recovered formula (sha256 over concatenated contents of covered_files excluding self, listed order) = v1:sha256:d8d2255e... (unchanged, self excluded).*
+
+*Status: gaps_found — 2 unverified gaps carried (SC2 full suite, SC3 smoke); frontmatter commits updated to [52eb2c55].*

@@ -8,6 +8,10 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.14] - 2026-11-22
+
+### Changed
+- Verifier re-runs for phases 67/69/70/78 at 52eb2c55 (T8783, SDK 10.0.402) plus the phase 66 YAML frontmatter fix (now parseable): 70 passed 5/5; 67/69 stay human_needed; 78 stays gaps_found with SC6-only human checklist gaps (SC1-5 re-proven); all covered_digests recomputed to v1:sha256 (64-hex). Docs-only, no product code under src/services/apps and no new tag.
 ## [0.20.13] - 2026-11-22
 
 ### Changed
@@ -607,6 +611,7 @@ Foundation through verified handoff (Phases 1 to 5).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
 [Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...HEAD
+[0.20.14]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.13...v0.20.14
 [0.20.13]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.12...v0.20.13
 [0.20.12]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.11...v0.20.12
 [0.20.11]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.10...v0.20.11

@@ -5,11 +5,11 @@ milestone_name: "Autonogrammer: accounts, Cowork and Dispatch (planned, added 20
 current_phase: "78"
 current_phase_name: Desktop release pipeline and per-machine Windows installer
 status: executing
-stopped_at: "T855b-be verification refresh 2026-11-22 (b46fd81f, 0.20.13): 16 VERIFICATIONs (66, 66.2-66.4, 67-77, 74.1) refreshed with fresh targeted evidence (70 passed, 67/69 human_needed, rest gaps_found); 77 PLAN/SUMMARY 11/11; version bumped to 0.20.13; PR pending CI."
+stopped_at: "T8783 verifier re-runs 2026-11-22 (52eb2c55, 0.20.14): 67/69/70/78 VERIFICATIONs refreshed, 66 YAML fix committed; 70 passed 5/5, 67/69 human_needed, 78 gaps_found SC6-only; version bumped to 0.20.14; PR pending CI."
 last_updated: "2026-11-22"
 last_activity: 2026-11-22
-last_activity_desc: "T855b-be refresh: build 124/0/0, format clean, Arch 107/107, Coord 87/87 + PG 148/148, Dispatch 127/127, Native 2353/2353; 70 passed (5/5), 67/69 human_needed, others gaps_found with exact steps; digests v1:sha256; 0.20.13 bump; no product code."
-state_head: b46fd81f
+last_activity_desc: "T8783 re-runs: 67/69/70/78 refreshed at 52eb2c55, 66 YAML fix parseable, 78 gaps_found SC6-only (SC1-5 re-proven); digests v1:sha256; 0.20.14 bump; no product code."
+state_head: 52eb2c55
 progress:
   total_phases: 18
   completed_phases: 0
@@ -26,6 +26,7 @@ current_plan: 6
 See: .planning/PROJECT.md (updated 2026-10-21)
 
 **Core value:** A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
+**Current focus (2026-11-22, T8783 re-runs 0.20.14):** 67/69/70/78 VERIFICATIONs refreshed at 52eb2c55 (SDK 10.0.402) plus the 66 YAML frontmatter fix (now parseable): 70 passed 5/5; 67/69 stay human_needed; 78 stays gaps_found with SC6-only human checklist gaps (SC1-5 re-proven); all covered_digests recomputed to v1:sha256 64-hex. Version bumped 0.20.13 to 0.20.14; docs-only (src/services/apps unchanged); PR merges only on all-Green CI.
 **Current focus (2026-11-22, T855b-be refresh 0.20.13):** 16 VERIFICATIONs (66, 66.2, 66.3, 66.4, 67, 68, 69, 70, 71, 72, 73, 74, 74.1, 75, 76, 77) refreshed from fresh targeted evidence at b46fd81f (SDK 10.0.402): 70 upgraded to passed (5/5 ROADMAP criteria executed); 67/69 stay human_needed; the rest stay gaps_found with exact closing steps (full Linux suite, web-smoke bundles, prod wiring 72/73, 74-11, 74.1-03, SEC-77 findings, missing runbooks/elevation); all covered_digests recomputed to v1:sha256 64-hex; 77 PLAN/SUMMARY verified 11/11 (no new SUMMARY; only 72-10 lacks a SUMMARY by supersession). Tree now 194 SUMMARYs, 47 VERIFICATIONs, 179 PLANs. Version bumped 0.20.12 to 0.20.13; docs-only (src/services/apps unchanged); PR merges only on all-Green CI.
 **Current focus (retained 2026-11-21 T77d9 text):** T77d9 wave merged to main at 0.20.9: PR #28 (FE, aa4e184b: preserved dirty auth/secrets, gweb lang=en, ArtifactBody a11y, M0015, docs) + PR #29 (BE, 96ccf540: GAP-OP-1 80 operationIds, contract 1.1.0, JwtBearerSetup dup fix, 0.20.9 bump). CI green on both PR runs (build-test/desktop/android SUCCESS; image-scan skipped on PR runs). SDK 10.0.402 installed (verified). Linear map 66-78 + AC-101..AC-122 on main. Human L4 accept-risk merge-ci: local QA infra fails (QF-001/QF-101/Dragonfly + 198 workspace security findings, 0 in-diff) waived as CI evidence. Phase 78 plan 78-06 since completed (rehearsal 44524125822, 0.20.11).
 
