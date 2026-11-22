@@ -1,18 +1,93 @@
 ---
 phase: 73-cowork-computer-use
-verified: 2026-11-21
+verified: 2026-11-22T01:53:17Z
 status: gaps_found
-method: executed re-verification (SDK 10.0.402, worktree auto-78 @ c04095ba): dotnet test/build commands, Xvfb live run, licence/notices scripts; supersedes the 2026-11-03 static method for criteria 1-6
+score: "criteria 1-6 pass; prod wiring gap remains"
 covered_files:
-  - .planning/ROADMAP.md (Phase 73)
-  - .planning/phases/73-cowork-computer-use/73-01..73-10-PLAN.md
-  - .planning/phases/73-cowork-computer-use/73-01..73-06-SUMMARY.md
-  - .planning/phases/73-cowork-computer-use/73-07-SUMMARY.md
-  - .planning/phases/73-cowork-computer-use/73-08-SUMMARY.md
-  - .planning/phases/73-cowork-computer-use/73-09-SUMMARY.md
-  - .planning/phases/73-cowork-computer-use/73-10-SUMMARY.md
-  - .planning/phases/73-cowork-computer-use/73-PLAN-CHECK.md
+  - ".planning/phases/73-cowork-computer-use/73-01-PLAN.md"
+  - ".planning/phases/73-cowork-computer-use/73-01-SUMMARY.md"
+  - ".planning/phases/73-cowork-computer-use/73-02-PLAN.md"
+  - ".planning/phases/73-cowork-computer-use/73-02-SUMMARY.md"
+  - ".planning/phases/73-cowork-computer-use/73-03-PLAN.md"
+  - ".planning/phases/73-cowork-computer-use/73-03-SUMMARY.md"
+  - ".planning/phases/73-cowork-computer-use/73-04-PLAN.md"
+  - ".planning/phases/73-cowork-computer-use/73-04-SUMMARY.md"
+  - ".planning/phases/73-cowork-computer-use/73-05-PLAN.md"
+  - ".planning/phases/73-cowork-computer-use/73-05-SUMMARY.md"
+  - ".planning/phases/73-cowork-computer-use/73-06-PLAN.md"
+  - ".planning/phases/73-cowork-computer-use/73-06-SUMMARY.md"
+  - ".planning/phases/73-cowork-computer-use/73-07-PLAN.md"
+  - ".planning/phases/73-cowork-computer-use/73-07-SUMMARY.md"
+  - ".planning/phases/73-cowork-computer-use/73-08-PLAN.md"
+  - ".planning/phases/73-cowork-computer-use/73-08-SUMMARY.md"
+  - ".planning/phases/73-cowork-computer-use/73-09-PLAN.md"
+  - ".planning/phases/73-cowork-computer-use/73-09-SUMMARY.md"
+  - ".planning/phases/73-cowork-computer-use/73-10-PLAN.md"
+  - ".planning/phases/73-cowork-computer-use/73-10-SUMMARY.md"
+  - ".planning/phases/73-cowork-computer-use/73-CONTEXT.md"
+  - ".planning/phases/73-cowork-computer-use/73-PLAN-CHECK.md"
+  - ".planning/phases/73-cowork-computer-use/73-RESEARCH.md"
+  - ".planning/phases/73-cowork-computer-use/73-SOTA-A11Y.md"
+  - ".planning/phases/73-cowork-computer-use/73-SOTA-COMPUTER-USE.md"
+  - ".planning/phases/73-cowork-computer-use/73-SOTA-SECURITY.md"
+  - ".planning/phases/73-cowork-computer-use/73-SOTA-STATES.md"
+  - ".planning/phases/73-cowork-computer-use/73-SOTA-SUMMARY.md"
+  - ".planning/phases/73-cowork-computer-use/73-VALIDATION.md"
+  - ".planning/phases/73-cowork-computer-use/73-VERIFICATION.md"
+covered_digest: "v1:sha256:d23c446fb62a9b3b9737ac2ddf80a4c4cb8b0880e30ba3dcd93491c6d7966c42"
+behavior_unverified: 1
+overrides_applied: 0
+re_verification: true
+previous_status: gaps_found
+previous_score: "gaps_found"
+commits: ["b46fd81f"]
+gaps:
+  - truth: "No provider registered from head; kill/indicator unverified; 73-07/09/10 blocked."
+    status: unverified
+    closing_step: "Register provider + kill wiring; record gate; desktop smoke."
+human_verification:
+  - "Real-display topmost/approval/Stop; Win/macOS runtime."
 ---
+
+---
+## Refresh 2026-11-22 (T855b-be, HEAD b46fd81f, SDK 10.0.402)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. Fresh test-services up failed twice at Dragonfly readiness (90 s, loaded host); DB suites ran vs existing healthy throwaway set (ag67-8382). No live-model, live-CDP, Win/macOS install, Railway, sign-in or screen-reader run claimed.*
+
+*Status: gaps_found - criteria 1-6 pass; prod wiring gap remains*
+
+| Check | Command | Result |
+|---|---|---|
+| restore | `dotnet restore Autonogrammer.Linux.slnf --locked-mode` | exit 0 |
+| build | `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` | 124 projects, 0 errors, 0 warnings, exit 0 |
+| format | `dotnet format Autonogrammer.Linux.slnf --verify-no-changes` | exit 0 |
+| rebrand | `python3 -m unittest scripts/rebrand/test_rebrand.py; rebrand.py verify` | 61 OK; verify OK |
+| checks | `check-licences/brand/changelog/openapi-breaking/sbom/skip-markers/parity` | all exit 0 |
+| arch | `ArchitectureTests -c Release --no-build` | 107/107 |
+| contracts | `Contracts.Tests non-Live` | 179/179 |
+| accounts | `Accounts 215/215; Secrets.Os 83/83; Desktop 47/47` | all exit 0 |
+| coord | `Coordination.Tests with services` | 87/87 |
+| postgres | `Sessions.Postgres.Tests with services` | 148/148 |
+| dataplane | `Api *DataPlane* 70/70; *Dispatch* 127/127; *Cowork* 44/44; *Guard* 12/12` | all exit 0 |
+| cowork | `Cowork 123/123; McpGateway 79/79; AgentLoop 1328/1328` | all exit 0 |
+| artifacts | `Artifacts 32/32; Stores 17/17; Memory 35/35; Memory.PG 1/1` | all exit 0 |
+| browser | `BrowserUse.Tests 124/124` | exit 0 |
+| compute | `ComputerUse 90/90; X11 9/9` | exit 0 |
+| dispatch | `Client 1/1; Desktop 80/80` | exit 0 |
+| resil | `Resilience 62/62; Sessions 124/124` | exit 0 |
+| heads | `Presentation 2646/2646; UI 882/882; Web 444/444; Native 2353/2353` | exit 0 |
+| a11y | `node --test a11y 48/48; fixture PASS; size ok; StyleA11y 17/17` | exit 0 |
+| audit | `CoworkAudit 16/16` | exit 0 |
+
+*Per-criterion: ComputerUse 90/90 X11 9/9 Arch/build pass. Gap 1 unchanged.*
+
+*Gaps:*
+- No provider registered from head; kill/indicator unverified; 73-07/09/10 blocked. -> Register provider + kill wiring; record gate; desktop smoke.
+
+*Human (never automated):*
+- Real-display topmost/approval/Stop; Win/macOS runtime.
+
+*Digest: v1:sha256 over concatenated bytes of covered_files in listed order excluding this VERIFICATION file (self-reference not computable). Prior content below retained as history.*
 
 # Phase 73 verification: Cowork Computer Use
 

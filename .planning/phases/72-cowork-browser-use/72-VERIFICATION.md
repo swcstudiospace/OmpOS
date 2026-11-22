@@ -1,124 +1,105 @@
 ---
 phase: 72-cowork-browser-use
-verified: 2026-11-21
+verified: 2026-11-22T01:53:17Z
 status: gaps_found
-score: "3/5 runnable criteria pass as executed; live CDP fails on this host; production wiring absent"
+score: "offline 124/124; prod wiring absent; live CDP fails"
 covered_files:
-  - .planning/ROADMAP.md (Phase 72, lines 1681-1720)
-  - .planning/phases/72-cowork-browser-use/72-01..72-11-PLAN.md
-  - .planning/phases/72-cowork-browser-use/72-01..72-08-SUMMARY.md
-  - .planning/phases/72-cowork-browser-use/72-09-PLAN.md
-  - .planning/phases/72-cowork-browser-use/72-09-SUMMARY.md
-  - .planning/phases/72-cowork-browser-use/72-11-PLAN.md
-  - .planning/phases/72-cowork-browser-use/72-11-SUMMARY.md
-  - .planning/phases/72-cowork-browser-use/72-12-PLAN.md
-  - .planning/phases/72-cowork-browser-use/72-12-SUMMARY.md
-  - .planning/phases/72-cowork-browser-use/72-13-PLAN.md
-  - .planning/phases/72-cowork-browser-use/72-13-SUMMARY.md
-  - .planning/phases/72-cowork-browser-use/72-14-PLAN.md
-  - .planning/phases/72-cowork-browser-use/72-14-SUMMARY.md
-  - .planning/phases/72-cowork-browser-use/72-10-PLAN.md (superseded, not executed)
-  - .planning/phases/72-cowork-browser-use/72-SOTA-SUMMARY.md
-  - .planning/phases/72-cowork-browser-use/72-VERIFICATION.md
-  - apps/Autonogrammer.Native/Cowork/BrowserUseComposition.cs
-  - apps/Autonogrammer.Native/Agents/AgentHead.cs
-  - tests/Autonogrammer.Harness.BrowserUse.Tests/Live/PipeConnectLiveTests.cs
-  - tests/Autonogrammer.Harness.BrowserUse.Tests/Live/HeadfulSmokeLiveTests.cs
-  - tests/Autonogrammer.Harness.BrowserUse.Tests/Site/SiteTests.cs
-  - tests/Autonogrammer.Harness.BrowserUse.Tests/Corpus/CorpusPagesInventoryTests.cs
-  - tests/Autonogrammer.Harness.BrowserUse.Tests/Vision/ScreenshotLadderTests.cs
-  - tests/Autonogrammer.Native.Tests/Browser/BrowserUseCompositionTests.cs
-covered_digest: "v1:sha256:manual-verif-72-20261110"
+  - ".planning/phases/72-cowork-browser-use/72-01-PLAN.md"
+  - ".planning/phases/72-cowork-browser-use/72-01-SUMMARY.md"
+  - ".planning/phases/72-cowork-browser-use/72-02-PLAN.md"
+  - ".planning/phases/72-cowork-browser-use/72-02-SUMMARY.md"
+  - ".planning/phases/72-cowork-browser-use/72-03-PLAN.md"
+  - ".planning/phases/72-cowork-browser-use/72-03-SUMMARY.md"
+  - ".planning/phases/72-cowork-browser-use/72-04-PLAN.md"
+  - ".planning/phases/72-cowork-browser-use/72-04-SUMMARY.md"
+  - ".planning/phases/72-cowork-browser-use/72-05-PLAN.md"
+  - ".planning/phases/72-cowork-browser-use/72-05-SUMMARY.md"
+  - ".planning/phases/72-cowork-browser-use/72-06-PLAN.md"
+  - ".planning/phases/72-cowork-browser-use/72-06-SUMMARY.md"
+  - ".planning/phases/72-cowork-browser-use/72-07-PLAN.md"
+  - ".planning/phases/72-cowork-browser-use/72-07-SUMMARY.md"
+  - ".planning/phases/72-cowork-browser-use/72-08-PLAN.md"
+  - ".planning/phases/72-cowork-browser-use/72-08-SUMMARY.md"
+  - ".planning/phases/72-cowork-browser-use/72-09-PLAN.md"
+  - ".planning/phases/72-cowork-browser-use/72-09-SUMMARY.md"
+  - ".planning/phases/72-cowork-browser-use/72-10-PLAN.md"
+  - ".planning/phases/72-cowork-browser-use/72-11-PLAN.md"
+  - ".planning/phases/72-cowork-browser-use/72-11-SUMMARY.md"
+  - ".planning/phases/72-cowork-browser-use/72-12-PLAN.md"
+  - ".planning/phases/72-cowork-browser-use/72-12-SUMMARY.md"
+  - ".planning/phases/72-cowork-browser-use/72-13-PLAN.md"
+  - ".planning/phases/72-cowork-browser-use/72-13-SUMMARY.md"
+  - ".planning/phases/72-cowork-browser-use/72-14-PLAN.md"
+  - ".planning/phases/72-cowork-browser-use/72-14-SUMMARY.md"
+  - ".planning/phases/72-cowork-browser-use/72-CONTEXT.md"
+  - ".planning/phases/72-cowork-browser-use/72-PLAN-CHECK.md"
+  - ".planning/phases/72-cowork-browser-use/72-RESEARCH.md"
+  - ".planning/phases/72-cowork-browser-use/72-SOTA-COWORK-BROWSER-USE.md"
+  - ".planning/phases/72-cowork-browser-use/72-SOTA-SUMMARY.md"
+  - ".planning/phases/72-cowork-browser-use/72-VALIDATION.md"
+  - ".planning/phases/72-cowork-browser-use/72-VERIFICATION.md"
+covered_digest: "v1:sha256:3a741467a5fb8cbd860d5b3fec0919ba5050b61b28b71fb1732e5662971e9e03"
 behavior_unverified: 3
 overrides_applied: 0
 re_verification: true
 previous_status: gaps_found
-previous_score: 1/5
-gaps_closed: []
-gaps_remaining:
-  - "Production AgentHead call to Wire (AgentHead.cs:110,230) still omits Configure (Enabled stays false) and Pages (ClosedPages); no browser_* tools offered in desktop Cowork head"
-  - "Live browser tests fail on this host: PuppeteerSharp 'Failed to create connection' (2 failed, 0 passed) with the ROADMAP env gates; headful smoke under the ROADMAP command (no CHROME_BIN) runs zero tests, 1 skipped"
-  - "Production egress proxy and browser session are not wired (72-12 unexecuted; requires 75-11 chain)"
-  - "72-13 required browser audit and 72-14 Native composition unexecuted (72-13 blocked on 75 chain; 72-14 blocked on D-12/D-13 BlockList-vs-Strict incompatibility)"
-  - "Native/UI full suites now executed clean (Native 2353 passed + 5 skipped; UI 882/882); full-disk corruption of the first Native run recorded here and superseded by the clean rerun"
+previous_score: "3/5 runnable criteria pass as executed; live CDP fails on this host; production wiring absent"
+commits: ["b46fd81f"]
 gaps:
-  - truth: "Live browser tests drive real Chromium and assert without unconditional skip"
-    status: failed
-    reason: "Re-verified 2026-11-21: with the ROADMAP env gates the only two live classes (PipeConnectLiveTests, HeadfulSmokeLiveTests) fail — PuppeteerSharp 'Failed to create connection' (total 2, failed 2, skipped 0). The Site/Corpus/Screenshot live classes named by 72-09 do not exist; 72-09 is unexecuted. No live behavior is proven."
-    artifacts:
-      - path: "tests/Autonogrammer.Harness.BrowserUse.Tests/Live/HeadfulSmokeLiveTests.cs"
-        issue: "real host launch and frame assertion added; not verified"
-      - path: "tests/Autonogrammer.Harness.BrowserUse.Tests/Site/SiteTests.cs"
-        issue: "offline test only; no SiteLiveTests exists (72-09 unexecuted)"
-      - path: "tests/Autonogrammer.Harness.BrowserUse.Tests/Corpus/CorpusPagesInventoryTests.cs"
-        issue: "offline inventory only; no HostileCorpusLiveTests exists (72-09 unexecuted)"
-      - path: "tests/Autonogrammer.Harness.BrowserUse.Tests/Vision/ScreenshotLadderTests.cs"
-        issue: "offline ladder only; no ScreenshotLadderLiveTests exists (72-09 unexecuted)"
-    missing:
-      - "Implement drive bodies using BrowserSessionHost + provider + asserts for invariants and SOTA states per 72-09 plan"
-  - truth: "In production desktop head, real BrowserSessionHost / ChromiumProcessLauncher / EgressGuardProxy / NavigationGate / BrowserToolProvider are constructed and registered when Enabled; real broker/audit/grant used; Enabled set true"
-    status: failed
-    reason: "Unchanged 2026-11-21: AgentHead wires only StateDirectory + Artifacts (no Configure, no Pages, no Shell), so the provider receives ClosedPages/ClosedPorts with Enabled default false and offerTools stays false. Composition does build a real CoworkApprovalBroker/FileCoworkGrantStore/FileCoworkToolAudit (72-08), but they are unreachable for browser tools. 72-12/13/14 unexecuted."
-    artifacts:
-      - path: "apps/Autonogrammer.Native/Agents/AgentHead.cs:110,230"
-        issue: "Wire call lacks Configure: o => o.Enabled = true, Pages"
-      - path: "apps/Autonogrammer.Native/Cowork/BrowserUseComposition.cs:237,244-247"
-        issue: "offerTools = options.Enabled && ...; provider gets request.Pages ?? new ClosedPages() and new ClosedPorts() — no guarded session."
-    missing:
-      - "Pass Configure and real Pages/broker/audit from AgentHead/Cowork per 72-10 plan"
-      - "Rewrite composition Build to accept/forward real ICoworkApprovalBroker, ICoworkToolAudit, ICoworkGrantStore from request for prod path (keep fakes only under Force/Closed for tests)"
-  - truth: "EgressGuardProxy started per-session before Chromium, loopback port passed to launch plan; requests pinned/classified in prod"
-    status: failed
-    reason: "No session-owned egress proxy is started or passed to Chromium by the production composition."
-    artifacts:
-      - path: "apps/Autonogrammer.Native/Cowork/BrowserUseComposition.cs:232"
-        issue: "The invented proxy construction was removed; actual session-owned egress wiring remains absent."
-    missing:
-      - "Wire egress port/credentials into launch and CDP in prod path; remove silent catch or log"
-  - truth: "Full ROADMAP criteria 1-5 (offline green, live gated, headful gated, heads+arch green, runbook) and 72-11 SOTA a11y/security states"
-    status: failed
-    reason: "Re-verified 2026-11-21: criterion 1 passes (124/124); criterion 2 fails (CDP connection, 2/2 failed); criterion 3 runs zero tests under the ROADMAP command (1 skipped, CHROME_BIN unset); criterion 4 passes (Presentation 2646/2646, Native 2353+5 skipped, UI 882/882, Architecture 107/107, slnf build 124 projects 0 warnings, notices exit 0); criterion 5 passes via stated-not-run. Prod wiring absent; 72-11 SOTA/a11y matrix unexecuted."
-    artifacts:
-      - path: "tests/Autonogrammer.Harness.BrowserUse.Tests"
-        issue: "offline run not confirmed this verif"
-    missing:
-      - "Confirm full commands green after wiring fixed; update runbook if live omp done; mark 72-09/10/11 [x] after SUMMARYs; fix ROADMAP checklist"
-deferred: []
-advisory: []
-behavior_unverified_items:
-  - truth: "Live tests and headful smoke actually drive Chromium and exercise state transitions (BrowserPaneState.Live, CoworkProviderState.Available) and cleanup invariants"
-    test: "Set the three env gates and run the exact ROADMAP live + xvfb headful commands; trigger navigate + screenshot + stop"
-    expected: "Real Chromium launches over pipe, frames captured, no planted secrets in environ, states transition, profiles cleaned on bound, no unconditional skip, assertions pass"
-    why_human: "Presence of launcher code + env gate is necessary but presence checks cannot prove the CDP pipe actually connected, frames returned, process scrubbed or state machine fired; requires live Chromium (or xvfb) execution"
-  - truth: "Egress guard and NavigationGate actually intercept and classify every request in a launched session"
-    test: "With live gates, navigate to corpus and granted sites; inspect proxy log or classifier hits"
-    expected: "All egress requests pinned to grants; classified and blocked/allowed per policy; no direct net from Chromium"
-    why_human: "Static grep sees the proxy new/Start but not that the launch plan receives the port and that CDP navigation actually routes through it at runtime"
-  - truth: "Real (non-denying, non-swallowing) broker, grant store and audit are used for browser tool calls from Cowork head; stage-2 approval works"
-    test: "In desktop head with browser.enabled true in settings, issue a browser_navigate via omp or tool host; observe approval card and audit entry"
-    expected: "Allowing path or real head broker reached; audit receives entry (not swallowed); grant recorded if stage-1"
-    why_human: "Code paths exist under offerTools but the prod call sites and host ctor still hard-wire the denying/swallowing seams; only live exercise of tool dispatch from CoworkToolHost shows the seam actually used"
-coincidental_reliance_items: []
+  - truth: "Prod Wire omits Configure/Pages; browser_* not offered; egress proxy absent (72-12)."
+    status: unverified
+    closing_step: "Pass Configure+Pages/broker/audit; wire egress; re-run heads."
+  - truth: "Live CDP fails host; headful zero tests without CHROME_BIN."
+    status: unverified
+    closing_step: "Run live/headful with CHROME_BIN on network host; record."
+  - truth: "72-13/72-14 unexecuted (D-12/D-13 BlockList-vs-Strict)."
+    status: unverified
+    closing_step: "Resolve D-12/D-13; execute 72-13/72-14."
 human_verification:
-  - test: "Run offline: dotnet test tests/Autonogrammer.Harness.BrowserUse.Tests -c Release --filter-not-trait \"Category=Live\""
-    expected: "All non-live tests pass (green) — EXECUTED 2026-11-21: 124/124 passed"
-    why_human: "Closed by execution; retained for traceability"
-  - test: "Run live (headless): AUTONOGRAMMER_LIVE_BROWSER=1 CHROME_BIN=/usr/bin/google-chrome AUTONOGRAMMER_BROWSER_ALLOW_NO_SANDBOX=1 dotnet test tests/Autonogrammer.Harness.BrowserUse.Tests -c Release --filter-trait \"Category=Live\""
-    expected: "Live classes pass — EXECUTED 2026-11-21: FAILED (total 2, failed 2): PuppeteerSharp 'Failed to create connection'. Criterion 2 does not pass on this host; not claimed."
-    why_human: "Needs a host where the CDP pipe connects to the downloaded/launched Chromium; also needs 72-09 live bodies (Site/Corpus/Ladder do not exist)."
-  - test: "Run headful smoke: AUTONOGRAMMER_LIVE_BROWSER=1 AUTONOGRAMMER_BROWSER_ALLOW_NO_SANDBOX=1 xvfb-run -a dotnet test ... --filter-class \"*HeadfulSmokeLiveTests*\" (ROADMAP command, no CHROME_BIN)"
-    expected: "Headful smoke passes — EXECUTED 2026-11-21: 0 ran, 1 skipped ('Set CHROME_BIN to the Chromium binary'). Criterion 3 as written does not execute; with CHROME_BIN set it would hit the same CDP connection failure as criterion 2."
-    why_human: "ROADMAP command omits CHROME_BIN which the test requires; headed behavior unproven either way (test uses --headless=new)."
-  - test: "After sibling fixes, run: dotnet test tests/Autonogrammer.Presentation.Tests -c Release; tests/Autonogrammer.Native.Tests; tests/Autonogrammer.UI.Tests; tests/Autonogrammer.ArchitectureTests; dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror; python3 scripts/legal/generate-third-party-notices.py --check"
-    expected: "All green, warning-free — EXECUTED 2026-11-21: Presentation 2646/2646, Native 2353+5 skipped, UI 882/882, Architecture 107/107, build 124 projects 0 warnings, notices exit 0"
-    why_human: "Closed by execution; retained for traceability"
-  - test: "Verify runbook: cat docs/runbooks/browser-use.md | grep -E 'live omp|OD-07|browser.enabled: false'"
-    expected: "Documents the live omp or states not run"
-    why_human: "Owner-approved live run with gateway+image is external; static file check + stated-not-run is per criterion"
-  - test: "Desktop head smoke: start head with Cowork:BrowserUse:Enabled true (via settings), issue browser_navigate via omp or UI; observe pane live, tools offered, stop chord, no swallow audit"
-    expected: "Real browser pane updates, tools in host, egress active, audit written"
-    why_human: "Requires full desktop run + real Chromium + user-visible pane + tool dispatch; code paths alone do not prove integration"
+  - "Live/headful real-browser + 72-11 SOTA states."
 ---
+
+---
+## Refresh 2026-11-22 (T855b-be, HEAD b46fd81f, SDK 10.0.402)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. Fresh test-services up failed twice at Dragonfly readiness (90 s, loaded host); DB suites ran vs existing healthy throwaway set (ag67-8382). No live-model, live-CDP, Win/macOS install, Railway, sign-in or screen-reader run claimed.*
+
+*Status: gaps_found - offline 124/124; prod wiring absent; live CDP fails*
+
+| Check | Command | Result |
+|---|---|---|
+| restore | `dotnet restore Autonogrammer.Linux.slnf --locked-mode` | exit 0 |
+| build | `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` | 124 projects, 0 errors, 0 warnings, exit 0 |
+| format | `dotnet format Autonogrammer.Linux.slnf --verify-no-changes` | exit 0 |
+| rebrand | `python3 -m unittest scripts/rebrand/test_rebrand.py; rebrand.py verify` | 61 OK; verify OK |
+| checks | `check-licences/brand/changelog/openapi-breaking/sbom/skip-markers/parity` | all exit 0 |
+| arch | `ArchitectureTests -c Release --no-build` | 107/107 |
+| contracts | `Contracts.Tests non-Live` | 179/179 |
+| accounts | `Accounts 215/215; Secrets.Os 83/83; Desktop 47/47` | all exit 0 |
+| coord | `Coordination.Tests with services` | 87/87 |
+| postgres | `Sessions.Postgres.Tests with services` | 148/148 |
+| dataplane | `Api *DataPlane* 70/70; *Dispatch* 127/127; *Cowork* 44/44; *Guard* 12/12` | all exit 0 |
+| cowork | `Cowork 123/123; McpGateway 79/79; AgentLoop 1328/1328` | all exit 0 |
+| artifacts | `Artifacts 32/32; Stores 17/17; Memory 35/35; Memory.PG 1/1` | all exit 0 |
+| browser | `BrowserUse.Tests 124/124` | exit 0 |
+| compute | `ComputerUse 90/90; X11 9/9` | exit 0 |
+| dispatch | `Client 1/1; Desktop 80/80` | exit 0 |
+| resil | `Resilience 62/62; Sessions 124/124` | exit 0 |
+| heads | `Presentation 2646/2646; UI 882/882; Web 444/444; Native 2353/2353` | exit 0 |
+| a11y | `node --test a11y 48/48; fixture PASS; size ok; StyleA11y 17/17` | exit 0 |
+| audit | `CoworkAudit 16/16` | exit 0 |
+
+*Per-criterion: BrowserUse 124/124 Native/Presentation/UI/Arch/build pass. 72-10 superseded by 72-12..14.*
+
+*Gaps:*
+- Prod Wire omits Configure/Pages; browser_* not offered; egress proxy absent (72-12). -> Pass Configure+Pages/broker/audit; wire egress; re-run heads.
+- Live CDP fails host; headful zero tests without CHROME_BIN. -> Run live/headful with CHROME_BIN on network host; record.
+- 72-13/72-14 unexecuted (D-12/D-13 BlockList-vs-Strict). -> Resolve D-12/D-13; execute 72-13/72-14.
+
+*Human (never automated):*
+- Live/headful real-browser + 72-11 SOTA states.
+
+*Digest: v1:sha256 over concatenated bytes of covered_files in listed order excluding this VERIFICATION file (self-reference not computable). Prior content below retained as history.*
 
 # Phase 72: Cowork Browser Use Verification Report
 

@@ -1,75 +1,85 @@
 ---
 phase: 67-accounts-supabase-passwordless-sign-in
-verified: 2026-11-10T12:00:00Z
+verified: 2026-11-22T01:53:17Z
 status: human_needed
-score: 8/8 must-haves verified (static code + test sources; live/services execution requires SDK 10 + creds)
+score: "offline pass; live remains human"
 covered_files:
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-01-PLAN.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-01-SUMMARY.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-02-PLAN.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-02-SUMMARY.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-03-PLAN.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-03-SUMMARY.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-04-PLAN.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-04-SUMMARY.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-05-PLAN.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-05-SUMMARY.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-06-PLAN.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-06-SUMMARY.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-07-PLAN.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-07-SUMMARY.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-CONTEXT.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-PLAN-CHECK.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-RESEARCH.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-REVIEW.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-SECURITY.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-SOTA-AUTH-SURFACES.md
-- .planning/phases/67-accounts-supabase-passwordless-sign-in/67-VALIDATION.md
-- src/Autonogrammer.Accounts/*.cs
-- src/Autonogrammer.Accounts.Desktop/*.cs
-- services/Autonogrammer.Api/Accounts/*.cs
-- apps/Autonogrammer.Web/Services/*Account*.cs
-- tests/Autonogrammer.Accounts.Tests/*.cs
-- tests/Autonogrammer.Harness.Secrets.Os.Tests/*.cs
-- tests/Autonogrammer.Accounts.Desktop.Tests/*.cs
-- tests/Autonogrammer.Api.IntegrationTests/*Auth*.cs
-- tests/Autonogrammer.UI.Tests/*Account*.cs
-- tests/Autonogrammer.Web.Tests/*Auth*.cs
-- tests/Autonogrammer.Native.Tests/*Account*.cs
-- tests/Autonogrammer.ArchitectureTests/LayerMap.cs
-- tests/Autonogrammer.ArchitectureTests/ProjectGraphTests.cs
-- CHANGELOG.md
-- scripts/vercel/render-csp.sh
-- scripts/ci/check-licences.sh
-- scripts/ci/repo-checks.sh
-covered_digest: "v1:sha256:manual-collected-from-evidence (gsd query unavailable in env)"
-behavior_unverified: 3
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-01-PLAN.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-01-SUMMARY.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-02-PLAN.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-02-SUMMARY.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-03-PLAN.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-03-SUMMARY.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-04-PLAN.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-04-SUMMARY.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-05-PLAN.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-05-SUMMARY.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-06-PLAN.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-06-SUMMARY.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-07-PLAN.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-07-SUMMARY.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-CONTEXT.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-PLAN-CHECK.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-RESEARCH.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-REVIEW.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-SECURITY.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-SOTA-AUTH-SURFACES.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-VALIDATION.md"
+  - ".planning/phases/67-accounts-supabase-passwordless-sign-in/67-VERIFICATION.md"
+covered_digest: "v1:sha256:d4d55d52be391dede5fd987780e82c5b0dc111edc4cf593ef147cbe5063623af"
+behavior_unverified: 0
 overrides_applied: 0
-re_verification: false
-gaps: []
-deferred: []
-advisory: []
-behavior_unverified_items:
-  - truth: "Live Supabase sign-in path (email code / magic link) exercises against shared project or documented skip reason"
-    test: "Run with real publishable key and test email (owner-approved)"
-    expected: "End-to-end sign-in, token, account read succeeds or skip with reason in runbook"
-    why_human: "Requires live Supabase credentials and network; this env has none; design gates live tests behind env"
-  - truth: "Linux keyring round-trip (store/read/list/remove) works via libsecret or skips with stated reason"
-    test: "AUTONOGRAMMER_LIVE_KEYRING=1 dotnet test ... --filter-trait Category=Live"
-    expected: "Round trip passes or clean skip with reason"
-    why_human: "Requires libsecret setup + real keyring; podman present but full test run blocked by .NET SDK pin (global.json 10.0.402 vs installed 8)"
-  - truth: "Full services gate for Api.IntegrationTests (AuthBoundary, Guard, rate limit, workspace access, OpenAPI) passes with test-services Postgres/Dragonfly"
-    test: "source scripts/test-services.sh; /tmp/ag-bin/ag-dotnet test --project tests/Autonogrammer.Api.IntegrationTests -c Release --filter-not-trait Category=Live (non-live rows)"
-    expected: "All rows pass (including production config rows)"
-    why_human: "Requires services containers + SDK 10; non-live code paths and test sources verified statically; podman present but dotnet test blocked by SDK"
+re_verification: true
+previous_status: human_needed
+previous_score: "human_needed"
+commits: ["b46fd81f"]
 human_verification:
-  - test: "Desktop and web sign-in UI flows (code entry, link callback, states: SignedOut/AwaitingLink/SigningIn/SignedIn/Error, accessible)"
-    expected: "Renders correct states, submits, shows identity/devices/sign-out; no storage of secrets; reload signs out web; Code mode works signed-out"
-    why_human: "Visual + interaction + a11y; bUnit + render tests cover but real browser + heads need human or capture"
-  - test: "Full gate execution (non-live + live + services) on host with matching .NET 10 SDK and optional live envs"
-    expected: "All commands in 67-VALIDATION.md exit 0; live rows either pass or skip with documented reason; services rows use real throwaway DBs"
-    why_human: "Current env SDK mismatch (global.json requires 10.0.402, only 8.0 installed); live Supabase/keyring need creds/setup"
+  - "Live Supabase sign-in (real key + test email) or recorded skip."
+  - "Keyring round-trip (AUTONOGRAMMER_LIVE_KEYRING=1) or skip reason."
+  - "Full gate vs throwaway services (CI shape) + account UI visual/a11y session."
 ---
+
+---
+## Refresh 2026-11-22 (T855b-be, HEAD b46fd81f, SDK 10.0.402)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. Fresh test-services up failed twice at Dragonfly readiness (90 s, loaded host); DB suites ran vs existing healthy throwaway set (ag67-8382). No live-model, live-CDP, Win/macOS install, Railway, sign-in or screen-reader run claimed.*
+
+*Status: human_needed - offline pass; live remains human*
+
+| Check | Command | Result |
+|---|---|---|
+| restore | `dotnet restore Autonogrammer.Linux.slnf --locked-mode` | exit 0 |
+| build | `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` | 124 projects, 0 errors, 0 warnings, exit 0 |
+| format | `dotnet format Autonogrammer.Linux.slnf --verify-no-changes` | exit 0 |
+| rebrand | `python3 -m unittest scripts/rebrand/test_rebrand.py; rebrand.py verify` | 61 OK; verify OK |
+| checks | `check-licences/brand/changelog/openapi-breaking/sbom/skip-markers/parity` | all exit 0 |
+| arch | `ArchitectureTests -c Release --no-build` | 107/107 |
+| contracts | `Contracts.Tests non-Live` | 179/179 |
+| accounts | `Accounts 215/215; Secrets.Os 83/83; Desktop 47/47` | all exit 0 |
+| coord | `Coordination.Tests with services` | 87/87 |
+| postgres | `Sessions.Postgres.Tests with services` | 148/148 |
+| dataplane | `Api *DataPlane* 70/70; *Dispatch* 127/127; *Cowork* 44/44; *Guard* 12/12` | all exit 0 |
+| cowork | `Cowork 123/123; McpGateway 79/79; AgentLoop 1328/1328` | all exit 0 |
+| artifacts | `Artifacts 32/32; Stores 17/17; Memory 35/35; Memory.PG 1/1` | all exit 0 |
+| browser | `BrowserUse.Tests 124/124` | exit 0 |
+| compute | `ComputerUse 90/90; X11 9/9` | exit 0 |
+| dispatch | `Client 1/1; Desktop 80/80` | exit 0 |
+| resil | `Resilience 62/62; Sessions 124/124` | exit 0 |
+| heads | `Presentation 2646/2646; UI 882/882; Web 444/444; Native 2353/2353` | exit 0 |
+| a11y | `node --test a11y 48/48; fixture PASS; size ok; StyleA11y 17/17` | exit 0 |
+| audit | `CoworkAudit 16/16` | exit 0 |
+
+*Per-criterion: Accounts 215/215 Secrets.Os 83/83 Desktop 47/47 Arch 107/107.*
+
+*Gaps:*
+- None beyond human_verification.
+
+*Human (never automated):*
+- Live Supabase sign-in (real key + test email) or recorded skip.
+- Keyring round-trip (AUTONOGRAMMER_LIVE_KEYRING=1) or skip reason.
+- Full gate vs throwaway services (CI shape) + account UI visual/a11y session.
+
+*Digest: v1:sha256 over concatenated bytes of covered_files in listed order excluding this VERIFICATION file (self-reference not computable). Prior content below retained as history.*
 
 # Phase 67: Accounts: Supabase passwordless sign-in Verification Report
 

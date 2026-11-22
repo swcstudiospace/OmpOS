@@ -1,8 +1,8 @@
 ---
 phase: 69-surface-switch-and-cowork-sessions
-verified: 2026-11-10T12:00:00Z
+verified: 2026-11-22T01:53:17Z
 status: human_needed
-score: 7/7 must-haves verified
+score: "unit pass; assistive/visual human"
 covered_files:
   - ".planning/phases/69-surface-switch-and-cowork-sessions/69-01-PLAN.md"
   - ".planning/phases/69-surface-switch-and-cowork-sessions/69-01-SUMMARY.md"
@@ -22,37 +22,61 @@ covered_files:
   - ".planning/phases/69-surface-switch-and-cowork-sessions/69-SOTA-SUMMARY.md"
   - ".planning/phases/69-surface-switch-and-cowork-sessions/69-SOTA-SURFACE-SWITCH-AND-COWORK-SESSIONS.md"
   - ".planning/phases/69-surface-switch-and-cowork-sessions/69-VALIDATION.md"
-  - "CHANGELOG.md"
-  - "docs/accessibility/README.md"
-  - "src/Autonogrammer.Native.Views/Shell/SurfaceHost.axaml.cs"
-  - "src/Autonogrammer.Native.Views/Shell/SurfaceSwitchView.axaml"
-  - "src/Autonogrammer.Native.Views/Shell/SurfaceSwitchView.axaml.cs"
-  - "src/Autonogrammer.UI/Components/Shell/SurfaceTabs.razor"
-  - "src/Autonogrammer.Presentation/Cowork/SurfaceSwitchModel.cs"
-  - "src/Autonogrammer.Presentation/Cowork/SurfaceActivityModel.cs"
-  - "tests/Autonogrammer.Native.Tests/Shell/SurfaceSwitchViewTests.cs"
-  - "tests/Autonogrammer.UI.Tests/Cowork/SurfaceTabsTests.cs"
-covered_digest: "v3:sha256:d9bbcb5327533aebf9c5d2f09967f70798ed305bb506e851996ded59d3be00a3"
+  - ".planning/phases/69-surface-switch-and-cowork-sessions/69-VERIFICATION.md"
+covered_digest: "v1:sha256:651c9f1e202dc4a928246510c24016cb43bd79700c503f39ac628fa0d7ccccac"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification: true
 previous_status: human_needed
-previous_score: 7/7
-gaps_closed: []
-gaps_remaining: []
-human_verification_items_added:
-  - "SOTA verification of assistive (a11y roles/aria/live/polite), pointer (click/raise + model select), shortcuts (tunnel handlers, aria-keyshortcuts, roving keys) - all wired and unit-tested in code"
+previous_score: "human_needed"
+commits: ["b46fd81f"]
 human_verification:
-  - test: "Screen-reader pass on the Native and Web switches: tab through the Code/Cowork control with Ctrl+Shift+1/2 and arrows, then trigger hidden-surface activity while on the other surface."
-    expected: "Each switch is announced with its name and selected state; the hidden-surface activity chip is announced politely and does not steal focus."
-    why_human: "Automated tests (SurfaceSwitchViewTests, SurfaceTabsTests, AccessibilityNameTests) check automation names, roles, live-region text and key handlers only. Real assistive-technology output (VoiceOver, NVDA, etc.) is not observed. SOTA a11y section documents roles/aria/live/keyboard roving/shortcut aria per 66-SOTA."
-  - test: "Pointer activation and visual check of the Code/Cowork switch on the Native title bar and the Web top bar at 1280x800: click each segment, then inspect the Cowork rail, dock and focus ring."
-    expected: "Clicking selects the surface, the selected state is visibly distinct, focus rings are visible, and the Cowork layout renders without clipping."
-    why_human: "Click handlers (OnCodeClick/OnCoworkClick, @onclick SelectAsync) + tests (RaiseEvent, model update) and keyboard tests exercise activation. No recorded visual/render run or screenshot at 1280x800 in evidence; SOTA notes human visual pending."
-  - test: "Confirm the Ctrl+Shift+1/2 shortcuts are not swallowed by a supported browser and that the visible switch remains the fallback (open question OQ-320)."
-    expected: "Shortcut reaches the page in the target browser, or the visible switch is used and works."
-    why_human: "Native tunnel handler (OnKeyDownTunnel, marks handled, FocusSelectedToggle) + Web aria-keyshortcuts + key handlers (arrows + declared shortcuts) + ShortcutCatalogueTests present and wired. Browser reservation of key combinations (OQ-320) cannot be checked headlessly; SOTA carries forward as non-code."
+  - "Screen-reader pass Native+Web incl. hidden-surface announcement."
+  - "Pointer/visual check 1280x800."
+  - "Ctrl+Shift+1/2 vs browser reservation (OQ-320)."
 ---
+
+---
+## Refresh 2026-11-22 (T855b-be, HEAD b46fd81f, SDK 10.0.402)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. Fresh test-services up failed twice at Dragonfly readiness (90 s, loaded host); DB suites ran vs existing healthy throwaway set (ag67-8382). No live-model, live-CDP, Win/macOS install, Railway, sign-in or screen-reader run claimed.*
+
+*Status: human_needed - unit pass; assistive/visual human*
+
+| Check | Command | Result |
+|---|---|---|
+| restore | `dotnet restore Autonogrammer.Linux.slnf --locked-mode` | exit 0 |
+| build | `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` | 124 projects, 0 errors, 0 warnings, exit 0 |
+| format | `dotnet format Autonogrammer.Linux.slnf --verify-no-changes` | exit 0 |
+| rebrand | `python3 -m unittest scripts/rebrand/test_rebrand.py; rebrand.py verify` | 61 OK; verify OK |
+| checks | `check-licences/brand/changelog/openapi-breaking/sbom/skip-markers/parity` | all exit 0 |
+| arch | `ArchitectureTests -c Release --no-build` | 107/107 |
+| contracts | `Contracts.Tests non-Live` | 179/179 |
+| accounts | `Accounts 215/215; Secrets.Os 83/83; Desktop 47/47` | all exit 0 |
+| coord | `Coordination.Tests with services` | 87/87 |
+| postgres | `Sessions.Postgres.Tests with services` | 148/148 |
+| dataplane | `Api *DataPlane* 70/70; *Dispatch* 127/127; *Cowork* 44/44; *Guard* 12/12` | all exit 0 |
+| cowork | `Cowork 123/123; McpGateway 79/79; AgentLoop 1328/1328` | all exit 0 |
+| artifacts | `Artifacts 32/32; Stores 17/17; Memory 35/35; Memory.PG 1/1` | all exit 0 |
+| browser | `BrowserUse.Tests 124/124` | exit 0 |
+| compute | `ComputerUse 90/90; X11 9/9` | exit 0 |
+| dispatch | `Client 1/1; Desktop 80/80` | exit 0 |
+| resil | `Resilience 62/62; Sessions 124/124` | exit 0 |
+| heads | `Presentation 2646/2646; UI 882/882; Web 444/444; Native 2353/2353` | exit 0 |
+| a11y | `node --test a11y 48/48; fixture PASS; size ok; StyleA11y 17/17` | exit 0 |
+| audit | `CoworkAudit 16/16` | exit 0 |
+
+*Per-criterion: Native 2353/2353 Cowork 67/67 UI 882/882 Presentation 2646/2646.*
+
+*Gaps:*
+- None beyond human_verification.
+
+*Human (never automated):*
+- Screen-reader pass Native+Web incl. hidden-surface announcement.
+- Pointer/visual check 1280x800.
+- Ctrl+Shift+1/2 vs browser reservation (OQ-320).
+
+*Digest: v1:sha256 over concatenated bytes of covered_files in listed order excluding this VERIFICATION file (self-reference not computable). Prior content below retained as history.*
 
 # Phase 69: Surface switch and Cowork sessions Verification Report
 

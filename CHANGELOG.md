@@ -8,6 +8,10 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.13] - 2026-11-22
+
+### Changed
+- Verification refresh for phases 66-77 (T855b-be, HEAD b46fd81f, SDK 10.0.402): 16 VERIFICATIONs refreshed with fresh targeted evidence (build 124 projects 0/0, format clean, Arch 107/107, Coordination 87/87 + Sessions.Postgres 148/148 vs throwaway services, Dispatch 127/127, Native 2353/2353, Presentation 2646/2646, a11y node 48/48); 70 upgraded to passed (5/5 ROADMAP criteria executed); 67/69 stay human_needed; the rest stay gaps_found with exact closing steps; all covered_digests recomputed to v1:sha256 (64-hex). 77 PLAN/SUMMARY count verified 11/11 (no new SUMMARY). Indexed upstream T855b req/arch/adr docs in docs/SUMMARY.md. Docs-only, no product code under src/services/apps and no new tag.
 ## [0.20.12] - 2026-11-21
 
 ### Changed
@@ -603,6 +607,7 @@ Foundation through verified handoff (Phases 1 to 5).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
 [Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...HEAD
+[0.20.13]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.12...v0.20.13
 [0.20.12]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.11...v0.20.12
 [0.20.11]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.10...v0.20.11
 [0.20.10]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.9...v0.20.10

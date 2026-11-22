@@ -1,56 +1,94 @@
 ---
 phase: 66-rebrand-to-autonogrammer
-verified: 2026-11-21T00:00:00Z
+verified: 2026-11-22T01:53:17Z
 status: gaps_found
-score: "2026-11-20 passed 5/5 at ed0a9a02; 2026-11-21 re-check at c04095ba partial (see tail)"
+score: "SC1/SC4/SC5 + build/format/restore re-proven; SC2 full suite + SC3 smoke not re-run"
 covered_files:
-- .planning/phases/66-rebrand-to-autonogrammer/66-07-PLAN.md
-- .planning/phases/66-rebrand-to-autonogrammer/66-07-SUMMARY.md
-- .planning/phases/66-rebrand-to-autonogrammer/66-OWNER-ACTIONS.md
-- .planning/phases/66-rebrand-to-autonogrammer/66-VERIFICATION.md
-- ROADMAP.md
-- .planning/STATE.md
-- scripts/web-smoke/a11y/routes.mjs
-- tests/Autonogrammer.Native.Tests/Branding/MainWindowTitleTests.cs
-- scripts/rebrand/rebrand.py
-- scripts/rebrand/test_rebrand.py
-- scripts/ci/check-licences.sh
-- scripts/ci/check-brand.sh
-- scripts/ci/repo-checks.sh
-covered_digest: "v1:sha256:phase66-verif-20261120"
-behavior_unverified: 0
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-01-PLAN.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-01-SUMMARY.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-02-PLAN.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-02-SUMMARY.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-03-PLAN.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-03-SUMMARY.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-04-PLAN.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-04-SUMMARY.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-05-PLAN.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-05-SUMMARY.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-06-PLAN.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-06-SUMMARY.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-07-FINDINGS.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-07-PLAN.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-07-SUMMARY.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-08-PLAN.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-08-SUMMARY.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-09-PLAN.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-09-SUMMARY.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-CONTEXT.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-OWNER-ACTIONS.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-PLAN-CHECK.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-RESEARCH.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-SECURITY.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-SOTA-QUALITY-REQUIREMENTS.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-VALIDATION.md"
+  - ".planning/phases/66-rebrand-to-autonogrammer/66-VERIFICATION.md"
+covered_digest: "v1:sha256:d8d2255ef0994d9f7d807c8f8c329d7a629f8fc4e9668386354cff563ac55067"
+behavior_unverified: 2
 overrides_applied: 0
 re_verification: true
-previous_status: passed
-previous_score: "5/5 at ed0a9a02 (2026-11-20)"
-gaps_closed:
-  - "C3: web smoke first attempt (race fixed by wait main h1 + non-boot title in routes.mjs runStep; smoke json passed:true, a11yRoutes:true, failures:0, exit:0)"
-  - "C1: rebrand tool (61 tests OK, verify OK clean)"
-  - "Baseline retirement (2026-11-20): strict equality against the 2026-11-04 census retired; durable gate is rebrand.py verify (exit 0) plus 61 unit tests wired into scripts/ci/repo-checks.sh; 3 bare OmpOS tokens reworded (78-04 plan, OQ-63, OQ-102)"
-  - "Current-tree gate: CI green on merged HEAD ed0a9a02 (runs 44532185561 and 44541692228; all jobs success)"
-gaps_remaining:
-  - "SC2 full Linux suite against throwaway services not re-run at c04095ba (build/format pending at write time)"
-  - "SC3 web smoke not re-run at c04095ba (Chrome/ports, ~90 min); prior evidence quoted, not claimed"
-  - "SC4 headless title test not executed in this pass (static assert only)"
-  - "No current-tree CI-green claim: main CI 44955765885 in progress; 44860704074/44872419265/44877775564 failed"
-advisory: []
-behavior_unverified_items:
-  - "Web smoke, headless title, full Linux suite at c04095ba"
-coincidental_reliance_items: []
-human_verification:
-  - "Full Linux suite (CI shape) + web smoke first attempt + Native headless title test; owner actions 1-8 remain owner work"
+previous_status: gaps_found
+previous_score: "2026-11-20 passed 5/5 at ed0a9a02; 2026-11-21 re-check at c04095ba partial (see tail)"
+commits: ["b46fd81f"]
 gaps:
-  - truth: "Rebrand verification preserves the approved baseline."
-    status: passed
-    reason: "The historical strict-equality baseline is retired (it cannot hold after v0.16.0-v0.20.0 shipped); the durable gate is rebrand.py verify (exit 0 = nothing rewritable remains) plus the 61 unit tests, wired into scripts/ci/repo-checks.sh."
-  - truth: "The final current tree passes the Linux, service and web gate."
-    status: passed
-    reason: "CI on merged HEAD ed0a9a02 is green (runs 44532185561 and 44541692228; build-test, desktop linux/windows/macos, android and image-scan all success)."
-deferred:
-  - truth: "External owner actions 1-8 (repo/domain rename, env vars, state/containers, Android id, legal, gitleaks fingerprints post-rename, submodules, brand artwork) remain open per 66-OWNER-ACTIONS.md"
-    addressed_in: "owner action (external, per runbook s.5 and plan D-24)"
-    evidence: "66-OWNER-ACTIONS.md lists all Status: open with proving commands; ROADMAP goal explicitly notes external renames are owner actions"
+  - truth: "SC2 full Linux suite (61 projects) not run; only targeted projects ran."
+    status: unverified
+    closing_step: "Run test-services up; source env; dotnet test Autonogrammer.Linux.slnf -c Release --no-build -- --filter-not-trait "Category=Live"; down."
+  - truth: "SC3 web smoke not re-run (~90 min, budget). Node a11y 48/48 only."
+    status: unverified
+    closing_step: "OUT_DIR=<dir> bash scripts/web-smoke/run-smoke.sh --a11y-report <dir>/a11y on free ports; record bundle."
+human_verification:
+  - "Owner actions 1-8 external."
 ---
+
+---
+## Refresh 2026-11-22 (T855b-be, HEAD b46fd81f, SDK 10.0.402)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. Fresh test-services up failed twice at Dragonfly readiness (90 s, loaded host); DB suites ran vs existing healthy throwaway set (ag67-8382). No live-model, live-CDP, Win/macOS install, Railway, sign-in or screen-reader run claimed.*
+
+*Status: gaps_found - SC1/SC4/SC5 + build/format/restore re-proven; SC2 full suite + SC3 smoke not re-run*
+
+| Check | Command | Result |
+|---|---|---|
+| restore | `dotnet restore Autonogrammer.Linux.slnf --locked-mode` | exit 0 |
+| build | `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` | 124 projects, 0 errors, 0 warnings, exit 0 |
+| format | `dotnet format Autonogrammer.Linux.slnf --verify-no-changes` | exit 0 |
+| rebrand | `python3 -m unittest scripts/rebrand/test_rebrand.py; rebrand.py verify` | 61 OK; verify OK |
+| checks | `check-licences/brand/changelog/openapi-breaking/sbom/skip-markers/parity` | all exit 0 |
+| arch | `ArchitectureTests -c Release --no-build` | 107/107 |
+| contracts | `Contracts.Tests non-Live` | 179/179 |
+| accounts | `Accounts 215/215; Secrets.Os 83/83; Desktop 47/47` | all exit 0 |
+| coord | `Coordination.Tests with services` | 87/87 |
+| postgres | `Sessions.Postgres.Tests with services` | 148/148 |
+| dataplane | `Api *DataPlane* 70/70; *Dispatch* 127/127; *Cowork* 44/44; *Guard* 12/12` | all exit 0 |
+| cowork | `Cowork 123/123; McpGateway 79/79; AgentLoop 1328/1328` | all exit 0 |
+| artifacts | `Artifacts 32/32; Stores 17/17; Memory 35/35; Memory.PG 1/1` | all exit 0 |
+| browser | `BrowserUse.Tests 124/124` | exit 0 |
+| compute | `ComputerUse 90/90; X11 9/9` | exit 0 |
+| dispatch | `Client 1/1; Desktop 80/80` | exit 0 |
+| resil | `Resilience 62/62; Sessions 124/124` | exit 0 |
+| heads | `Presentation 2646/2646; UI 882/882; Web 444/444; Native 2353/2353` | exit 0 |
+| a11y | `node --test a11y 48/48; fixture PASS; size ok; StyleA11y 17/17` | exit 0 |
+| audit | `CoworkAudit 16/16` | exit 0 |
+
+*Per-criterion: SC4 title RE-PROVEN MainWindowTitle 1/1. Rebrand 61 OK + verify OK. Build/format/restore pass.*
+
+*Gaps:*
+- SC2 full Linux suite (61 projects) not run; only targeted projects ran. -> Run test-services up; source env; dotnet test Autonogrammer.Linux.slnf -c Release --no-build -- --filter-not-trait "Category=Live"; down.
+- SC3 web smoke not re-run (~90 min, budget). Node a11y 48/48 only. -> OUT_DIR=<dir> bash scripts/web-smoke/run-smoke.sh --a11y-report <dir>/a11y on free ports; record bundle.
+
+*Human (never automated):*
+- Owner actions 1-8 external.
+
+*Digest: v1:sha256 over concatenated bytes of covered_files in listed order excluding this VERIFICATION file (self-reference not computable). Prior content below retained as history.*
 
 # Phase 66: Rebrand to Autonogrammer Verification Report
 
