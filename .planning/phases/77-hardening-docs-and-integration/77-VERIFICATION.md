@@ -1,3 +1,104 @@
+---
+phase: 77-hardening-docs-and-integration
+verified: 2026-11-22T01:53:17Z
+status: gaps_found
+score: "machine gates pass; security/runbook/a11y remain"
+covered_files:
+  - ".planning/phases/77-hardening-docs-and-integration/77-01-PLAN.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-01-SUMMARY.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-02-PLAN.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-02-SUMMARY.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-03-PLAN.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-03-SUMMARY.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-04-PLAN.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-04-SUMMARY.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-05-PLAN.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-05-SUMMARY.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-06-PLAN.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-06-SUMMARY.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-07-PLAN.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-07-SUMMARY.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-08-PLAN.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-08-SUMMARY.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-09-PLAN.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-09-SUMMARY.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-10-PLAN.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-10-SUMMARY.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-11-PLAN.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-11-SUMMARY.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-CONTEXT.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-PLAN-CHECK.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-RESEARCH.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-SOTA-HARDENING-DOCS-INTEGRATION.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-SOTA-SUMMARY.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-VALIDATION.md"
+  - ".planning/phases/77-hardening-docs-and-integration/77-VERIFICATION.md"
+covered_digest: "v1:sha256:92d47bc1d0fd1fa24b796c70fb36fdebada5dce4f1163d2d0d94abe77375ecaa"
+behavior_unverified: 4
+overrides_applied: 0
+re_verification: true
+previous_status: unknown
+previous_score: "unknown"
+commits: ["b46fd81f"]
+gaps:
+  - truth: "Security review open SEC-77-01/02/04 (AG-77-10/11)."
+    status: unverified
+    closing_step: "Close with owners; never downgrade while High open."
+  - truth: "Missing runbooks cowork/computer-use/v0.16.0-owner-actions; stubs dispatch/browser-use."
+    status: unverified
+    closing_step: "Author pages; complete stubs; run CoworkAuditTests.Security."
+  - truth: "Missing parity-audit-elevation.md + SOTA elevation section."
+    status: unverified
+    closing_step: "Write elevation file + SOTA section."
+  - truth: "A11y matrix Pending + no a11y-report bundle on HEAD (AG-77-13, OQ-483)."
+    status: unverified
+    closing_step: "Record bundle on HEAD; fill matrix; keep screen-reader human."
+human_verification:
+  - "Screen-reader (OQ-483); device a11y; keyring/pairing; Accounts:Enabled transition; owner runbook review."
+---
+
+---
+## Refresh 2026-11-22 (T855b-be, HEAD b46fd81f, SDK 10.0.402)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. Fresh test-services up failed twice at Dragonfly readiness (90 s, loaded host); DB suites ran vs existing healthy throwaway set (ag67-8382). No live-model, live-CDP, Win/macOS install, Railway, sign-in or screen-reader run claimed.*
+
+*Status: gaps_found - machine gates pass; security/runbook/a11y remain*
+
+| Check | Command | Result |
+|---|---|---|
+| restore | `dotnet restore Autonogrammer.Linux.slnf --locked-mode` | exit 0 |
+| build | `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` | 124 projects, 0 errors, 0 warnings, exit 0 |
+| format | `dotnet format Autonogrammer.Linux.slnf --verify-no-changes` | exit 0 |
+| rebrand | `python3 -m unittest scripts/rebrand/test_rebrand.py; rebrand.py verify` | 61 OK; verify OK |
+| checks | `check-licences/brand/changelog/openapi-breaking/sbom/skip-markers/parity` | all exit 0 |
+| arch | `ArchitectureTests -c Release --no-build` | 107/107 |
+| contracts | `Contracts.Tests non-Live` | 179/179 |
+| accounts | `Accounts 215/215; Secrets.Os 83/83; Desktop 47/47` | all exit 0 |
+| coord | `Coordination.Tests with services` | 87/87 |
+| postgres | `Sessions.Postgres.Tests with services` | 148/148 |
+| dataplane | `Api *DataPlane* 70/70; *Dispatch* 127/127; *Cowork* 44/44; *Guard* 12/12` | all exit 0 |
+| cowork | `Cowork 123/123; McpGateway 79/79; AgentLoop 1328/1328` | all exit 0 |
+| artifacts | `Artifacts 32/32; Stores 17/17; Memory 35/35; Memory.PG 1/1` | all exit 0 |
+| browser | `BrowserUse.Tests 124/124` | exit 0 |
+| compute | `ComputerUse 90/90; X11 9/9` | exit 0 |
+| dispatch | `Client 1/1; Desktop 80/80` | exit 0 |
+| resil | `Resilience 62/62; Sessions 124/124` | exit 0 |
+| heads | `Presentation 2646/2646; UI 882/882; Web 444/444; Native 2353/2353` | exit 0 |
+| a11y | `node --test a11y 48/48; fixture PASS; size ok; StyleA11y 17/17` | exit 0 |
+| audit | `CoworkAudit 16/16` | exit 0 |
+
+*Per-criterion: Parity/changelog/openapi/sbom/CoworkAudit 16/16/Arch/build/format pass. PLAN/SUMMARY 11/11, no new SUMMARY.*
+
+*Gaps:*
+- Security review open SEC-77-01/02/04 (AG-77-10/11). -> Close with owners; never downgrade while High open.
+- Missing runbooks cowork/computer-use/v0.16.0-owner-actions; stubs dispatch/browser-use. -> Author pages; complete stubs; run CoworkAuditTests.Security.
+- Missing parity-audit-elevation.md + SOTA elevation section. -> Write elevation file + SOTA section.
+- A11y matrix Pending + no a11y-report bundle on HEAD (AG-77-13, OQ-483). -> Record bundle on HEAD; fill matrix; keep screen-reader human.
+
+*Human (never automated):*
+- Screen-reader (OQ-483); device a11y; keyring/pairing; Accounts:Enabled transition; owner runbook review.
+
+*Digest: v1:sha256 over concatenated bytes of covered_files in listed order excluding this VERIFICATION file (self-reference not computable). Prior content below retained as history.*
 # Phase 77 Verification — Hardening, docs and integration
 
 **Verified:** 2026-11-21 (auto-78 worktree at `c04095ba`, v0.20.11)

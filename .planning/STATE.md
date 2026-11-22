@@ -5,11 +5,11 @@ milestone_name: "Autonogrammer: accounts, Cowork and Dispatch (planned, added 20
 current_phase: "78"
 current_phase_name: Desktop release pipeline and per-machine Windows installer
 status: executing
-stopped_at: "Phases 66-78 docs closed 2026-11-21: four Tc945 lanes merged onto docs/verify-66-78 (a483dc90): 44 SUMMARYs added vs base c04095ba, VERIFICATIONs completed for 66/66.2-66.4/68/71-77 (74.1 and 77 new; 11 re-verified), tree now 194 SUMMARYs, 47 VERIFICATIONs, 179 PLANs. This PR (0.20.12) carries the lanes to main; VERIFICATIONs stay gaps_found where live/host criteria are unproven; no new tag."
-last_updated: "2026-11-21"
-last_activity: 2026-11-21
-last_activity_desc: "Tc945-join merge: phases-66-68 lane at c04095ba (no-op), phases-74-76 at c733f6a2 (merge affadac4, carries f553471e 66-68 SUMMARYs), 71-73 lane committed f704ca7d (71-07..13, 72-09/11..14, 73-07/09/10 + 3 re-verifications; 72-10 superseded with no SUMMARY by design), 77-78 lane a483dc90 (77-02/04/05/06/09/10/11 + 77-VERIFICATION, 78-01..06). Every 66-78 phase has a VERIFICATION; only 72-10 lacks a SUMMARY."
-state_head: a483dc90
+stopped_at: "T855b-be verification refresh 2026-11-22 (b46fd81f, 0.20.13): 16 VERIFICATIONs (66, 66.2-66.4, 67-77, 74.1) refreshed with fresh targeted evidence (70 passed, 67/69 human_needed, rest gaps_found); 77 PLAN/SUMMARY 11/11; version bumped to 0.20.13; PR pending CI."
+last_updated: "2026-11-22"
+last_activity: 2026-11-22
+last_activity_desc: "T855b-be refresh: build 124/0/0, format clean, Arch 107/107, Coord 87/87 + PG 148/148, Dispatch 127/127, Native 2353/2353; 70 passed (5/5), 67/69 human_needed, others gaps_found with exact steps; digests v1:sha256; 0.20.13 bump; no product code."
+state_head: b46fd81f
 progress:
   total_phases: 18
   completed_phases: 0
@@ -26,7 +26,7 @@ current_plan: 6
 See: .planning/PROJECT.md (updated 2026-10-21)
 
 **Core value:** A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
-**Current focus (2026-11-21, Tc945-join):** Phases 66-78 docs lanes merged onto docs/verify-66-78 (a483dc90) and carried to main at 0.20.12: 44 SUMMARYs added vs c04095ba, VERIFICATIONs completed for 66/66.2-66.4/68/71-77 (74.1 and 77 new, 11 re-verified), tree now 194 SUMMARYs, 47 VERIFICATIONs, 179 PLANs. Every 66-78 phase has a VERIFICATION; only 72-10 lacks a SUMMARY (superseded by 72-12..14 by design). Verdicts stay gaps_found where live/host criteria (live model/hosts/Railway/sign-in) are unproven; no product code changed.
+**Current focus (2026-11-22, T855b-be refresh 0.20.13):** 16 VERIFICATIONs (66, 66.2, 66.3, 66.4, 67, 68, 69, 70, 71, 72, 73, 74, 74.1, 75, 76, 77) refreshed from fresh targeted evidence at b46fd81f (SDK 10.0.402): 70 upgraded to passed (5/5 ROADMAP criteria executed); 67/69 stay human_needed; the rest stay gaps_found with exact closing steps (full Linux suite, web-smoke bundles, prod wiring 72/73, 74-11, 74.1-03, SEC-77 findings, missing runbooks/elevation); all covered_digests recomputed to v1:sha256 64-hex; 77 PLAN/SUMMARY verified 11/11 (no new SUMMARY; only 72-10 lacks a SUMMARY by supersession). Tree now 194 SUMMARYs, 47 VERIFICATIONs, 179 PLANs. Version bumped 0.20.12 to 0.20.13; docs-only (src/services/apps unchanged); PR merges only on all-Green CI.
 **Current focus (retained 2026-11-21 T77d9 text):** T77d9 wave merged to main at 0.20.9: PR #28 (FE, aa4e184b: preserved dirty auth/secrets, gweb lang=en, ArtifactBody a11y, M0015, docs) + PR #29 (BE, 96ccf540: GAP-OP-1 80 operationIds, contract 1.1.0, JwtBearerSetup dup fix, 0.20.9 bump). CI green on both PR runs (build-test/desktop/android SUCCESS; image-scan skipped on PR runs). SDK 10.0.402 installed (verified). Linear map 66-78 + AC-101..AC-122 on main. Human L4 accept-risk merge-ci: local QA infra fails (QF-001/QF-101/Dragonfly + 198 workspace security findings, 0 in-diff) waived as CI evidence. Phase 78 plan 78-06 since completed (rehearsal 44524125822, 0.20.11).
 
 **Current focus (retained 2026-11-19 text):** Phase 78 (desktop release pipeline and per-machine Windows installer; milestone v0.16.0, release 0.20.0) in the worktree `/root/src/worktrees/ag-plugin-connector` on `fix/phase35-review-closure`. PRs #16 and #17 are merged to main (main is 0.19.2; this branch carries 0.20.0). The Phase 78 code (installer, installer smoke test, app readiness for Program Files, workflows, asset verifier, plugin pins, docs, changelog) is written and reviewed but no CI run has proven it; the next step is plan 78-06 (PR, dispatch rehearsal, tag `v0.20.0-rc.1`, release asset check). On 2026-11-19 a reconciliation of phases 66 to 77 against the current tree and CI replaced the older reading that stopped at a blocked Phase 74.1; see "Reconciliation 2026-11-19" below. No phase is verified by a gate run. The frontmatter counts are plans reconciled as done (82 of 155: the 149 plans of phases 66 to 77 plus the six Phase 78 plans, none of which is done), not verified completion; `completed_phases` is 0 because no VERIFICATION file says passed.

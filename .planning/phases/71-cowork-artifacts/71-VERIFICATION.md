@@ -1,8 +1,8 @@
 ---
 phase: 71-cowork-artifacts
-verified: 2026-11-21
+verified: 2026-11-22T01:53:17Z
 status: gaps_found
-score: "7/7 runnable roadmap criteria executed 2026-11-21; integrated access-flow gap remains"
+score: "7/7 runnable pass; web access-flow gap remains"
 covered_files:
   - ".planning/phases/71-cowork-artifacts/71-01-PLAN.md"
   - ".planning/phases/71-cowork-artifacts/71-01-SUMMARY.md"
@@ -36,60 +36,61 @@ covered_files:
   - ".planning/phases/71-cowork-artifacts/71-SOTA-COWORK-ARTIFACTS.md"
   - ".planning/phases/71-cowork-artifacts/71-SOTA-SUMMARY.md"
   - ".planning/phases/71-cowork-artifacts/71-VALIDATION.md"
-  - "src/Autonogrammer.Contracts/Artifacts/ArtifactKind.cs"
-  - "src/Autonogrammer.Contracts/Ui/ArtifactBlock.cs"
-  - "src/Autonogrammer.Cowork.Artifacts/ArtifactService.cs"
-  - "src/Autonogrammer.Cowork.Artifacts/Rendering/ArtifactDocumentPolicy.cs"
-  - "src/Autonogrammer.Cowork.Artifacts/Rendering/SvgSanitizer.cs"
-  - "src/Autonogrammer.Cowork.Artifacts/Rendering/CsvReader.cs"
-  - "src/Autonogrammer.Cowork.Artifacts/Rendering/ImageValidator.cs"
-  - "src/Autonogrammer.Cowork.Artifacts.Stores/FileArtifactStore.cs"
-  - "src/Autonogrammer.Cowork.Artifacts.Stores/PostgresArtifactStore.cs"
-  - "src/Autonogrammer.Cowork.Artifacts/Tools/ArtifactToolProvider.cs"
-  - "services/Autonogrammer.Api/Cowork/Artifacts/ArtifactEndpoints.cs"
-  - "services/Autonogrammer.Api/Cowork/Artifacts/ArtifactRenderTickets.cs"
-  - "src/Autonogrammer.Presentation/Cowork/Artifacts/ArtifactPanelModel.cs"
-  - "src/Autonogrammer.Presentation/Cowork/Artifacts/IArtifactSurface.cs"
-  - "src/Autonogrammer.Presentation/Cowork/Artifacts/ArtifactSurfaceState.cs"
-  - "src/Autonogrammer.Native.Views/Views/Cowork/Artifacts/NativeWebViewArtifactSurface.cs"
-  - "src/Autonogrammer.UI/Components/Cowork/Artifacts/ArtifactFrame.razor"
-  - "src/Autonogrammer.UI/wwwroot/styles/artifacts.css"
-  - "src/Autonogrammer.UI/wwwroot/styles/autonogrammer.css"
-  - "scripts/web-smoke/run-smoke.sh"
-  - "scripts/web-smoke/artifact-page.mjs"
-  - "tests/Autonogrammer.Cowork.Artifacts.Tests/HostileCorpusTests.cs"
-  - "tests/Autonogrammer.ArchitectureTests/LayerMap.cs"
-  - "tests/Autonogrammer.ArchitectureTests/CoworkSurfaceIsolationTests.cs"
-  - "tests/Autonogrammer.Api.IntegrationTests/Artifacts/ArtifactEndpointsTests.cs"
-covered_digest: "v3:sha256:64822e826a99fe1a9425a67449a6745c1b4af29ccc3a46516d65a4d8ef793f4a"
-behavior_unverified: 2
+  - ".planning/phases/71-cowork-artifacts/71-VERIFICATION.md"
+covered_digest: "v1:sha256:20ec3f3dd26f148e6c30d522d098354e02efbace563810908fbd5c4e0b1255bd"
+behavior_unverified: 1
 overrides_applied: 0
 re_verification: true
+previous_status: gaps_found
+previous_score: "7/7 runnable roadmap criteria executed 2026-11-21; integrated access-flow gap remains"
+commits: ["b46fd81f"]
 gaps:
-  - truth: "The actual web Cowork flow opens an artifact access review and safely applies the selected grant."
+  - truth: "No production web opener for artifact access dialog; 71-07..71-12 blocked (rollout, identity proof, DNS-rebinding). AG-71-17 open."
     status: unverified
-    reason: "The standalone dialog has no production web opener; selected-session wiring, persisted request metadata and a verified destination-enforcement boundary are not established."
-deferred: []
-advisory:
-  - finding: "Re-verified 2026-11-21 on SDK 10.0.402 (worktree auto-78, c04095ba): every runnable roadmap criterion was executed (see report body). The 2026-11-10 SDK-mismatch advisory is superseded."
-    category: "operational"
-    reason: "global.json pin 10.0.402 now installed at ~/.dotnet; throwaway TimescaleDB/Dragonfly started via podman with the same containers/env as scripts/test-services.sh (that script's /dev/tcp probe cannot run in this sandbox, so the identical containers were started manually with a distinct name suffix)"
-    evidence_status: "executed runs below"
-  - finding: "ArtifactSurfaceLiveTests.cs present but skipped (Category=Live or Assert.Skip)"
-    category: "other"
-    reason: "Per SOTA/VALIDATION: live surface human recommended; env limits"
-    evidence_status: "none provided"
-behavior_unverified_items:
-  - truth: "Live artifact surface (ArtifactSurfaceLiveTests, Category=Live) destroys and rebuilds correctly on hide/stop/signout/second load"
-    test: "Run the Category=Live artifact surface tests on a host with the platform WebView plus a human walk of the Artifact panel"
-    expected: "Surface destroyed (no preserved state), frame removed on nav/signout; labelled region operable, polite Announcement, contrast ok"
-    why_human: "Requires platform WebView / screen reader; the non-live suite (32/32) and web smoke (exit 0) do not exercise the live surface or AT"
-coincidental_reliance_items: []
+    closing_step: "Land 71-07..71-12; add opener; record browser proof."
 human_verification:
-  - test: "Live surface destroy + visual/keyboard/a11y check of Artifact panel (ChromeLabel region, polite Announcement, access dialog keyboard, no colour literals, reduced motion)"
-    expected: "Operable, announced, contrast ok, forced-colors visible, import order artifacts before a11y; frame destroyed on nav/signout/second load"
-    why_human: "Static + non-live tests cover logic, but real screenreader/contrast/platform WebView needs a human; network grants per-version/session remain unproven until plans 71-07/71-08 land"
+  - "Live surface hide/stop/signout + panel visual/a11y; OQ-400/401 decisions."
 ---
+
+---
+## Refresh 2026-11-22 (T855b-be, HEAD b46fd81f, SDK 10.0.402)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. Fresh test-services up failed twice at Dragonfly readiness (90 s, loaded host); DB suites ran vs existing healthy throwaway set (ag67-8382). No live-model, live-CDP, Win/macOS install, Railway, sign-in or screen-reader run claimed.*
+
+*Status: gaps_found - 7/7 runnable pass; web access-flow gap remains*
+
+| Check | Command | Result |
+|---|---|---|
+| restore | `dotnet restore Autonogrammer.Linux.slnf --locked-mode` | exit 0 |
+| build | `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` | 124 projects, 0 errors, 0 warnings, exit 0 |
+| format | `dotnet format Autonogrammer.Linux.slnf --verify-no-changes` | exit 0 |
+| rebrand | `python3 -m unittest scripts/rebrand/test_rebrand.py; rebrand.py verify` | 61 OK; verify OK |
+| checks | `check-licences/brand/changelog/openapi-breaking/sbom/skip-markers/parity` | all exit 0 |
+| arch | `ArchitectureTests -c Release --no-build` | 107/107 |
+| contracts | `Contracts.Tests non-Live` | 179/179 |
+| accounts | `Accounts 215/215; Secrets.Os 83/83; Desktop 47/47` | all exit 0 |
+| coord | `Coordination.Tests with services` | 87/87 |
+| postgres | `Sessions.Postgres.Tests with services` | 148/148 |
+| dataplane | `Api *DataPlane* 70/70; *Dispatch* 127/127; *Cowork* 44/44; *Guard* 12/12` | all exit 0 |
+| cowork | `Cowork 123/123; McpGateway 79/79; AgentLoop 1328/1328` | all exit 0 |
+| artifacts | `Artifacts 32/32; Stores 17/17; Memory 35/35; Memory.PG 1/1` | all exit 0 |
+| browser | `BrowserUse.Tests 124/124` | exit 0 |
+| compute | `ComputerUse 90/90; X11 9/9` | exit 0 |
+| dispatch | `Client 1/1; Desktop 80/80` | exit 0 |
+| resil | `Resilience 62/62; Sessions 124/124` | exit 0 |
+| heads | `Presentation 2646/2646; UI 882/882; Web 444/444; Native 2353/2353` | exit 0 |
+| a11y | `node --test a11y 48/48; fixture PASS; size ok; StyleA11y 17/17` | exit 0 |
+| audit | `CoworkAudit 16/16` | exit 0 |
+
+*Per-criterion: Artifacts 32/32 Stores 17/17 Api Cowork 44/44.*
+
+*Gaps:*
+- No production web opener for artifact access dialog; 71-07..71-12 blocked (rollout, identity proof, DNS-rebinding). AG-71-17 open. -> Land 71-07..71-12; add opener; record browser proof.
+
+*Human (never automated):*
+- Live surface hide/stop/signout + panel visual/a11y; OQ-400/401 decisions.
+
+*Digest: v1:sha256 over concatenated bytes of covered_files in listed order excluding this VERIFICATION file (self-reference not computable). Prior content below retained as history.*
 
 # Phase 71: Cowork Artifacts Verification Report
 

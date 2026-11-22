@@ -72,3 +72,32 @@ carried by colour alone; live region as a persistent `role=status` container; 32
 `prefers-reduced-motion` and `data-motion=reduce` zeroing every duration.
 A08 must keep: 0 axe errors over the 68 NFR-A1 runs (light+dark, 1440/1024/390) on every screen
 in the spec; target-size, text-spacing, reflow and forced-colors probes green.
+
+## T855b refresh (T855b-ux, this run)
+
+Task: T855b-ux, correlation 855b317b-954c-4303-b010-d0a18406ab35.
+Tokens unchanged at 1.4.0 (`design/tokens.json`, 77 tokens). Every
+value below is from this run's tool output; nothing is copied from
+the T77d9-ux run above.
+
+| Area | WCAG 2.2 SC | Threshold | Measured (this run) | Status |
+|---|---|---|---|---|
+| Token file + script | W3C shape, AA floor | pairs below 4.5 are major | python: 77 tokens, 20 colours, 9 pairs all aa (lowest 4.83 border); bun: 0 findings; verdict pass | pass |
+| Token names | design policy | kebab-case dot-path, depth ≤ 4, roots color/space/size/typography/motion/radius/breakpoint | 77 checked, 0 invalid, 0 duplicates, conforming true | pass |
+| Normal text, light (text, secondary, accent, error on `color.surface.default` #fafaf9; fill #ffffff on #6d28d9; tint #1c1c1a on #f5f1ff) | 1.4.3 | 4.5 | 16.34, 7.09, 6.80, 6.25, 7.10, 15.36 (lowest 6.25) | pass |
+| Normal text, dark (on `color.dark.surface` #181818) | 1.4.3 | 4.5 | 15.03, 6.52 (lowest 6.52) | pass |
+| Focus indicator, light (`#5b21b6` on 4 surfaces) | 1.4.11 | 3.0 | 8.60, 8.98, 7.87, 8.09 (lowest 7.87) | pass |
+| Target size | 2.5.8 | 24 CSS px (or 12 px centre-to-edge exception) | 11 of 11 meet minimum, 0 failing, 0 exception-only | pass |
+| Animation bound | 2.2.2 (policy: 5000 ms max, reduced-motion variant required) | max 5000 ms, every animation has a reduced variant | max observed 200 ms; 3 of 3 have variant | pass |
+| Spacing grid | design policy (base 2 px) | every gap a whole multiple of 2 px | multiples 1,2,3,4,6,8,12; 0 off scale | pass |
+| Spacing scale ramp | design policy | surface ramp strictly decreasing luminance | luminance 0.9553, 0.8702, 0.8291, 0.7736, 0.7131; violations [] | pass |
+| Breakpoints | design policy | unique names, strictly ascending, start at 0 | base 0, sm 560, md 840, lg 1200, xl 1440; valid true | pass |
+| NFR-A2 smoke evidence | 1.4.3/1.4.11/2.4.3/2.5.8 via `run-smoke.sh --a11y-report` | 0 axe errors, 0 incomplete, light+dark at 1440/1024/390, headless title | NOT re-run in this design lane; 66-SC3/SC4 and 77 AG-77-13 stay `gaps_found` until A08 records a fresh bundle on HEAD | not audited this run — see ux-spec gaps |
+
+`shared_verdict` called with 8 `info` severities → `pass`. No
+`major`/`critical`/`blocker` finding this run; the palette,
+`SCR-VerificationRefresh` and the four T855b screens can ship.
+The NFR-A2 row is deliberately `not audited`: the design lane does
+not fabricate smoke evidence; the exact closing steps are in
+66-VERIFICATION (SC3/SC4) and 77-VERIFICATION (AG-77-13), and the
+spec renders `gaps_found` until a recorded bundle exists.

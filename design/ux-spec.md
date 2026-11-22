@@ -265,3 +265,115 @@ No screen exists for them and none is claimed. `ux_ac_trace_check` for this set 
   "tokens_version": "1.4.0", "fidelity": "lofi", "provisional": true,
   "acceptance_refs": ["AC-103", "AC-104"] }
 ```
+
+---
+
+## T855b addendum — verification refresh, phases 66–77 (T855b-ux)
+
+Task: T855b-ux, correlation 855b317b-954c-4303-b010-d0a18406ab35,
+capability ux.spec. This addendum specifies the UX for reading and
+closing the verification refresh; it reuses the components above and
+the same tokens version 1.4.0 (`design/tokens.json`, unchanged —
+no token edit, no brand change, L2). Fidelity lofi, provisional true.
+A11y target WCAG 2.2 AA; lowest normal-text ratio measured this run
+6.25 (`color.status.error` #b3261e on #fafaf9). AC refs are AC-201
+to AC-209 from acceptance-T855b.md and are traced below.
+
+Web smoke / headless title criteria (66-SC3/SC4 gaps, 77 AG-77-13,
+NFR-A2): evidence is a recorded `run-smoke.sh --a11y-report <dir>`
+bundle (axe 0 errors, 0 incomplete, light+dark at 1440/1024/390,
+plus the headless title check `MainWindowTitleTests`). Until a fresh
+bundle exists on HEAD, the screens render `gaps_found` with the exact
+closing steps; screen-reader-only criteria stay in
+`human_verification` and are never shown as automated passes.
+
+## SCR-VerificationRefresh — phase verification board
+
+AC refs: AC-201, AC-202, AC-209. Flows: `authenticated`.
+Reuses: `ds/TopBar@1.4`, `ds/Rail@1.4`, `ds/ThreadView@1.4`,
+`ds/LiveRegion@1.4`, `ds/Button@1.4`.
+
+Interactive ids / focus order: `phase-filter`, `phase-row-first`,
+`evidence-link`, `digest-toggle`, `refresh-run`. Focus lands on the
+board heading (`h1[tabindex=-1]`) on load and returns to the filtered
+row on close. Status is word + icon, never colour alone (`passed` /
+`gaps_found` / `human_needed` / `stale`).
+
+States (drawn, ASCII): `default`, `loading`, `error.network`,
+`error.validation`, `empty.session`, `success`.
+
+```
+-- default (desktop >= lg, 1440) ----------------------------------
+| TopBar | Filter [phase-filter]                                   |
+| board  | 66 gaps_found  [phase-row-first]  digest v1 current     |
+|        | 77 gaps_found  digest stale → refresh-run (button)      |
+|        | [evidence-link] opens the cited evidence bundle         |
+-- loading ---------------------------------------------------------
+| board skeleton rows; role=status 'Refreshing evidence';         |
+| filter + refresh-run disabled with reason.                        |
+-- error.network ---------------------------------------------------
+| inline notice 'Evidence bundle unreachable — retry' (focus to   |
+| heading); board keeps last known state, never blank.             |
+-- error.validation -------------------------------------------------
+| filter with no match shows inline 'No phase matches x'          |
+| (aria-describedby); board unchanged.                             |
+-- empty.session ---------------------------------------------------
+| 'No phases match the filter' + clear-filter action (primary).    |
+-- success ---------------------------------------------------------
+| board re-rendered with fresh digests; live region announces      |
+| '9 of 9 files refreshed' once.                                   |
+```
+
+## SCR-WebWorkbenchEvidence — smoke and title evidence screen
+
+AC refs: AC-208. Reuses the workbench components above.
+Interactive ids / focus order: `skip-link`, `drawer-menu`,
+`theme-switch`, `rail-new-agent`, `composer-input`,
+`composer-send`, `footer-source-link`.
+
+States: `default`, `loading`, `error.network`, `error.validation`,
+`empty.session`, `success` (drawn in the SCR-WebWorkbench frame
+above; this screen adds only the evidence banner: commit hash, SDK
+10.0.402, axe counts per width/theme, headless title result). An
+absent fresh bundle renders `gaps_found` — the exact run steps —
+rather than a green pass (66-SC3/SC4 stay open until run).
+
+## SCR-DocsHub — SUMMARY + version + PR gate screen
+
+AC refs: AC-203, AC-205, AC-206, AC-207.
+Interactive ids / focus order: `version-banner`, `changelog-link`,
+`state-link`, `pr-gate-status`, `summary-count`.
+
+States: `default` (0.20.13, SUMMARY == PLAN count), `loading`
+(gate polling, status text), `error.network` (CI unreachable),
+`error.validation` (SUMMARY count mismatch listed as a gap),
+`empty.session` (no SUMMARY yet — writing guidance), `success`
+(PR merged on all-green CI, version banner announced).
+
+## SCR-HumanVerificationGate — human-only criteria screen
+
+AC refs: AC-204. Interactive ids / focus order:
+`human-verify-list`, `step-detail`, `confirm-button`, `defer-button`.
+Every human criterion renders with its evidence and exact closing
+steps (screen-reader pass OQ-483, owner actions 1–8); nothing on
+this screen can read as an automated pass. States mirror the board:
+`default`, `loading`, `error.network`, `error.validation`,
+`empty.session`, `success` (all human criteria confirmed → next
+review unlocked, announced once).
+
+## T855b AC trace
+
+`ux_ac_trace_check`: acceptance 201–209 over the four screens above —
+`coverage_pct` 100, `uncovered_acs` [], `unknown_refs` [],
+`screens_without_refs` []. State coverage `complete` true; spec
+completeness `complete` true (focus ids match interactive ids,
+min_contrast 6.25 above the 4.5 floor).
+
+```json
+{ "screen_id": "SCR-VerificationRefresh", "flows": ["authenticated"],
+  "states": ["default", "loading", "error.network", "error.validation", "empty.session", "success"],
+  "components": [ { "ref": "ds/Button@1.4", "props": { "variant": "primary" } } ],
+  "a11y": { "target": "WCAG-2.2-AA", "focus_order": ["phase-filter", "phase-row-first", "evidence-link", "digest-toggle", "refresh-run"], "min_contrast": 6.25 },
+  "tokens_version": "1.4.0", "fidelity": "lofi", "provisional": true,
+  "acceptance_refs": ["AC-201", "AC-202", "AC-209"] }
+```

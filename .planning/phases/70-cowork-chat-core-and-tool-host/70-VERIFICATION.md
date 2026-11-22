@@ -1,14 +1,83 @@
 ---
 phase: 70-cowork-chat-core-and-tool-host
-verified: 2026-11-03
-status: gaps_found
-method: static only (read, grep, glob, phase summaries). No builds, tests, containers, live omp turns or git writes were run.
+verified: 2026-11-22T01:53:17Z
+status: passed
+score: "5/5 ROADMAP criteria re-proven executed"
 covered_files:
-  - .planning/ROADMAP.md (Phase 70, lines 1448-1460)
-  - .planning/phases/70-cowork-chat-core-and-tool-host/70-01..70-06-PLAN.md
-  - .planning/phases/70-cowork-chat-core-and-tool-host/70-01..70-06-SUMMARY.md
-  - .planning/phases/70-cowork-chat-core-and-tool-host/70-PLAN-CHECK-INTEGRATION.md
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-01-PLAN.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-01-SUMMARY.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-02-PLAN.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-02-SUMMARY.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-03-PLAN.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-03-SUMMARY.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-04-PLAN.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-04-SUMMARY.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-05-PLAN.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-05-SUMMARY.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-06-PLAN.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-06-SUMMARY.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-07-PLAN.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-07-SUMMARY.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-08-PLAN.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-08-SUMMARY.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-CONTEXT.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-PLAN-CHECK-INTEGRATION.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-PLAN-CHECK.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-RESEARCH.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-SOTA-COWORK-CHAT-SURFACES.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-SOTA-SUMMARY.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-VALIDATION.md"
+  - ".planning/phases/70-cowork-chat-core-and-tool-host/70-VERIFICATION.md"
+covered_digest: "v1:sha256:364b61d90806a1f9a21be5fda4446a9ef3c55e8734341d9f1b2dfc5cf3b27726"
+behavior_unverified: 0
+overrides_applied: 0
+re_verification: true
+previous_status: gaps_found
+previous_score: "gaps_found"
+commits: ["b46fd81f"]
+human_verification:
+  - "Live omp turn with real model (NOT a ROADMAP criterion; never claimed)."
 ---
+
+---
+## Refresh 2026-11-22 (T855b-be, HEAD b46fd81f, SDK 10.0.402)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. Fresh test-services up failed twice at Dragonfly readiness (90 s, loaded host); DB suites ran vs existing healthy throwaway set (ag67-8382). No live-model, live-CDP, Win/macOS install, Railway, sign-in or screen-reader run claimed.*
+
+*Status: passed - 5/5 ROADMAP criteria re-proven executed*
+
+| Check | Command | Result |
+|---|---|---|
+| restore | `dotnet restore Autonogrammer.Linux.slnf --locked-mode` | exit 0 |
+| build | `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` | 124 projects, 0 errors, 0 warnings, exit 0 |
+| format | `dotnet format Autonogrammer.Linux.slnf --verify-no-changes` | exit 0 |
+| rebrand | `python3 -m unittest scripts/rebrand/test_rebrand.py; rebrand.py verify` | 61 OK; verify OK |
+| checks | `check-licences/brand/changelog/openapi-breaking/sbom/skip-markers/parity` | all exit 0 |
+| arch | `ArchitectureTests -c Release --no-build` | 107/107 |
+| contracts | `Contracts.Tests non-Live` | 179/179 |
+| accounts | `Accounts 215/215; Secrets.Os 83/83; Desktop 47/47` | all exit 0 |
+| coord | `Coordination.Tests with services` | 87/87 |
+| postgres | `Sessions.Postgres.Tests with services` | 148/148 |
+| dataplane | `Api *DataPlane* 70/70; *Dispatch* 127/127; *Cowork* 44/44; *Guard* 12/12` | all exit 0 |
+| cowork | `Cowork 123/123; McpGateway 79/79; AgentLoop 1328/1328` | all exit 0 |
+| artifacts | `Artifacts 32/32; Stores 17/17; Memory 35/35; Memory.PG 1/1` | all exit 0 |
+| browser | `BrowserUse.Tests 124/124` | exit 0 |
+| compute | `ComputerUse 90/90; X11 9/9` | exit 0 |
+| dispatch | `Client 1/1; Desktop 80/80` | exit 0 |
+| resil | `Resilience 62/62; Sessions 124/124` | exit 0 |
+| heads | `Presentation 2646/2646; UI 882/882; Web 444/444; Native 2353/2353` | exit 0 |
+| a11y | `node --test a11y 48/48; fixture PASS; size ok; StyleA11y 17/17` | exit 0 |
+| audit | `CoworkAudit 16/16` | exit 0 |
+
+*Per-criterion: Cowork 123/123 McpGateway 79/79 Native Cowork 67/67 Sessions/Presentation/UI pass; Arch+build+format+licences pass. Prior Native-compile/ProjectGraph gaps closed.*
+
+*Gaps:*
+- None beyond human_verification.
+
+*Human (never automated):*
+- Live omp turn with real model (NOT a ROADMAP criterion; never claimed).
+
+*Digest: v1:sha256 over concatenated bytes of covered_files in listed order excluding this VERIFICATION file (self-reference not computable). Prior content below retained as history.*
 
 # Phase 70 verification: Cowork chat core and tool host
 

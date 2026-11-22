@@ -1,83 +1,99 @@
 ---
 phase: 68-data-plane-names-schema-and-resilience
-verified: 2026-11-21T00:00:00Z
+verified: 2026-11-22T01:53:17Z
 status: gaps_found
-score: "2026-11-10 9/12; 2026-11-21 re-check: SEC-77-07 closed, live/full-gate gaps remain (see tail)"
+score: "targeted+DB pass; full set + live Greptime + erasure entry remain"
 covered_files:
-  - .planning/ROADMAP.md (Phase 68, lines 1419-1431)
-  - .planning/phases/68-data-plane-names-schema-and-resilience/68-01..68-08-PLAN.md
-  - .planning/phases/68-data-plane-names-schema-and-resilience/68-01..68-08-SUMMARY.md
-  - .planning/phases/68-data-plane-names-schema-and-resilience/68-PLAN-CHECK.md
-  - .planning/phases/68-data-plane-names-schema-and-resilience/68-SOTA-DATA-PLANE.md
-  - .planning/phases/68-data-plane-names-schema-and-resilience/68-VERIFICATION.md
-  - tests/Autonogrammer.ArchitectureTests/DataPlaneGuardTests.cs
-  - docs/runbooks/data-plane.md
-  - deploy/data-plane/bootstrap.sql
-  - src/Autonogrammer.Sessions.Postgres/Migrations/MigrationRegistry.cs
-  - tests/Autonogrammer.Sessions.Postgres.Tests/MigrationRunnerTests.cs
-  - tests/Autonogrammer.Coordination.Tests/DragonflyTenantErasureTests.cs
-  - tests/Autonogrammer.Resilience.Tests/ResiliencePipelineTests.cs
-  - services/Autonogrammer.Api/DataPlane/DataPlaneStatusService.cs
-  - src/Autonogrammer.Sandbox/OpenShellProvider.cs
-  - deploy/api.Containerfile
-  - tests/Autonogrammer.Api.IntegrationTests/DataPlane/DataPlaneStatusTests.cs
-covered_digest: "v3:sha256:bd238cdfe8158b5be64f5fe430a8558b60f5a52bcc8cacb1a7d2d62ef87562b2"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-01-PLAN.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-01-SUMMARY.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-02-PLAN.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-02-SUMMARY.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-03-PLAN.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-03-SUMMARY.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-04-PLAN.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-04-SUMMARY.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-05-PLAN.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-05-SUMMARY.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-06-PLAN.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-06-SUMMARY.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-07-PLAN.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-07-SUMMARY.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-08-PLAN.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-08-SUMMARY.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-09-PLAN.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-09-SUMMARY.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-10-PLAN.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-10-SUMMARY.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-11-PLAN.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-11-SUMMARY.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-CONTEXT.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-PLAN-CHECK.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-RESEARCH.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-SOTA-DATA-PLANE.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-VALIDATION.md"
+  - ".planning/phases/68-data-plane-names-schema-and-resilience/68-VERIFICATION.md"
+covered_digest: "v1:sha256:5d0badc6a8bd289f5ca2d97bb67a82817f2d2d37b67d1e1185c3b5d93c6cfe50"
 behavior_unverified: 3
 overrides_applied: 0
 re_verification: true
 previous_status: gaps_found
-previous_score: "see 2026-11-03 verif (narrative gaps 1-7)"
-gaps_closed:
-  - "old-name check (criterion 3): corrected grep + DataPlaneGuardTests now clean and asserted"
-  - "erasure scope: matches D-11 (presence/rl tenant only; lease/idem/auth reconstructible/TTL per doc+impl+test)"
-  - "stores: presence/rl/auth domains have key builders + Dragonfly* impls wired to resilience degraded states"
-  - "M0010: removed from MigrationRegistry + explicit test + 74 ownership comment; head M0009 (at the time; registry now M0010-M0014, head M0014)"
-  - "SUP: SUP-019 kept with matching justification; no new unreconciled in 68-touched; ledger tests logic satisfied"
-  - "ArchTests: duplicate SelfPath removed (build blocker fixed); SOTA states embedded in DataPlaneGuardTests"
-  - "gate: partial runnable (licences, repo-checks, corrected check) pass; full documented in runbook + SOTA"
-deferred: []
-advisory: []
-behavior_unverified_items:
-  - truth: "Full phase gate (build/restore/licences + whole Linux test set) passes"
-    test: "Run `bash scripts/ci/repo-checks.sh; CI=true ... restore --locked-mode; ... check-licences.sh; build -warnaserror; source test-services up + dotnet test ... --filter-not-trait Category=Live`"
-    expected: "All exit 0, no new packages, full filtered tests pass"
-    why_human: "Long-running; env SDK mismatch (global.json .NET10 vs host 8); requires clean tree + services"
-  - truth: "Telemetry reaches GreptimeDB database `autonogrammer` (live)"
-    test: "AUTONOGRAMMER_LIVE_GREPTIME=1 dotnet test ... --filter-trait Category=Live on podman host"
-    expected: "OTLP export succeeds to autonogrammer DB"
-    why_human: "Requires podman + live Greptime instance; static .env + bootstrap evidence only"
-  - truth: "ArchitectureTests (filtered DataPlaneGuard/DecisionRecord/SuppressionLedger/GateParity/Scaffold/ImagePin) build and pass"
-    test: "dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class \"*DataPlaneGuardTests*|*DecisionRecordTests*...\""
-    expected: "All pass (after UI sibling isolation or fix)"
-    why_human: "Builds not executable here (SDK); static syntax+content verified post-dup-fix"
-coincidental_reliance_items: []
-human_verification:
-  - test: "Full phase gate end-to-end (repo-checks, locked restore, licences, warnaserror build, full Linux tests on throwaway services, format)"
-    expected: "All commands exit 0; no new licence packages; tests pass (subsets were claimed before)"
-    why_human: "Requires clean SDK env + services up; partial (licences+checks+corrected check) verified static here"
-  - test: "Live Greptime telemetry test with AUTONOGRAMMER_LIVE_GREPTIME=1 on podman host"
-    expected: "OTLP data reaches `autonogrammer` DB; no data_plane_unavailable"
-    why_human: "Gated to podman host; bootstrap and .env confirm config"
-  - test: "Filtered ArchitectureTests (DataPlaneGuardTests etc including DecisionRecord, SuppressionLedger, GateParity) build+pass"
-    expected: "No build errors (dup fixed), tests assert SOTA states + no old names + M0010 absent + erasure scope"
-    why_human: "SDK/host mismatch prevents dotnet test; static inspection + grep + single file fix verified"
-  - test: "Erasure scope owner decision on lease/idem/auth (D-11 vs plan)"
-    expected: "Documented as reconstructible/TTL (no tenant segment), only presence/rl tenant erased"
-    why_human: "Requires owner sign-off per prior verif; code+tests+runbook match D-11 now"
-  - test: "SUP candidates from 68-02/03/07 reconciled (flipped or kept with justification)"
-    expected: "No unlisted or orphan rows in SuppressionLedgerTests; SUP-019 kept justified"
-    why_human: "Ledger scan + source match verified static; full test run human"
+previous_score: "2026-11-10 9/12; 2026-11-21 re-check: SEC-77-07 closed, live/full-gate gaps remain (see tail)"
+commits: ["b46fd81f"]
 gaps:
-  - truth: "Account erasure is safely fenced against concurrent account-owned writes."
-    status: passed
-    reason: "SEC-77-07 fixed on main: M0012 account_erasure_fence + M0014 trigger (17 tables + claim table), advisory-lock admission, resumable family deletes; 2026-11-10 High/open gap superseded by c4e6fe2e/332660ee/7dadceb5 (see 68-10-SUMMARY.md)."
-  - truth: "Account erasure has an authorized production entry point with credential revocation; Dragonfly coordination keys are fenced."
+  - truth: "Full 61-project Linux set not run; targeted only."
     status: unverified
-    reason: "SEC-77-09 (Low, open): no production caller (PostgresAccountErasure matches only its own file at HEAD); Dragonfly keys live <=24h unfenced; typed refusal mapping missing for some stores. Owner entry-point decision still pending."
-  - truth: "Whole Linux test set and live Greptime telemetry pass at current HEAD."
+    closing_step: "test-services up; source; dotnet test slnf --filter-not-trait Category=Live; down."
+  - truth: "Live Greptime OTLP to autonogrammer DB not proven."
     status: unverified
-    reason: "Focused Suites re-run in 2026-11-21 re-check (see tail); full-solution non-Live run and AUTONOGRAMMER_LIVE_GREPTIME=1 live runs remain human items, never claimed."
+    closing_step: "AUTONOGRAMMER_LIVE_GREPTIME=1 dotnet test --filter-trait Category=Live on podman host."
+  - truth: "Erasure production entry point end-to-end not proven (tests pass, wiring not e2e)."
+    status: unverified
+    closing_step: "Wire + prove authorized erasure entry point vs throwaway services; record run."
+human_verification:
+  - "Live Greptime run; full gate CI shape."
 ---
+
+---
+## Refresh 2026-11-22 (T855b-be, HEAD b46fd81f, SDK 10.0.402)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. Fresh test-services up failed twice at Dragonfly readiness (90 s, loaded host); DB suites ran vs existing healthy throwaway set (ag67-8382). No live-model, live-CDP, Win/macOS install, Railway, sign-in or screen-reader run claimed.*
+
+*Status: gaps_found - targeted+DB pass; full set + live Greptime + erasure entry remain*
+
+| Check | Command | Result |
+|---|---|---|
+| restore | `dotnet restore Autonogrammer.Linux.slnf --locked-mode` | exit 0 |
+| build | `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` | 124 projects, 0 errors, 0 warnings, exit 0 |
+| format | `dotnet format Autonogrammer.Linux.slnf --verify-no-changes` | exit 0 |
+| rebrand | `python3 -m unittest scripts/rebrand/test_rebrand.py; rebrand.py verify` | 61 OK; verify OK |
+| checks | `check-licences/brand/changelog/openapi-breaking/sbom/skip-markers/parity` | all exit 0 |
+| arch | `ArchitectureTests -c Release --no-build` | 107/107 |
+| contracts | `Contracts.Tests non-Live` | 179/179 |
+| accounts | `Accounts 215/215; Secrets.Os 83/83; Desktop 47/47` | all exit 0 |
+| coord | `Coordination.Tests with services` | 87/87 |
+| postgres | `Sessions.Postgres.Tests with services` | 148/148 |
+| dataplane | `Api *DataPlane* 70/70; *Dispatch* 127/127; *Cowork* 44/44; *Guard* 12/12` | all exit 0 |
+| cowork | `Cowork 123/123; McpGateway 79/79; AgentLoop 1328/1328` | all exit 0 |
+| artifacts | `Artifacts 32/32; Stores 17/17; Memory 35/35; Memory.PG 1/1` | all exit 0 |
+| browser | `BrowserUse.Tests 124/124` | exit 0 |
+| compute | `ComputerUse 90/90; X11 9/9` | exit 0 |
+| dispatch | `Client 1/1; Desktop 80/80` | exit 0 |
+| resil | `Resilience 62/62; Sessions 124/124` | exit 0 |
+| heads | `Presentation 2646/2646; UI 882/882; Web 444/444; Native 2353/2353` | exit 0 |
+| a11y | `node --test a11y 48/48; fixture PASS; size ok; StyleA11y 17/17` | exit 0 |
+| audit | `CoworkAudit 16/16` | exit 0 |
+
+*Per-criterion: Coord 87/87 PG 148/148 DataPlane 70/70 Resilience 62/62 Arch 107/107.*
+
+*Gaps:*
+- Full 61-project Linux set not run; targeted only. -> test-services up; source; dotnet test slnf --filter-not-trait Category=Live; down.
+- Live Greptime OTLP to autonogrammer DB not proven. -> AUTONOGRAMMER_LIVE_GREPTIME=1 dotnet test --filter-trait Category=Live on podman host.
+- Erasure production entry point end-to-end not proven (tests pass, wiring not e2e). -> Wire + prove authorized erasure entry point vs throwaway services; record run.
+
+*Human (never automated):*
+- Live Greptime run; full gate CI shape.
+
+*Digest: v1:sha256 over concatenated bytes of covered_files in listed order excluding this VERIFICATION file (self-reference not computable). Prior content below retained as history.*
 
 # Phase 68 verification: Data plane: names, schema and resilience (RE-VERIFICATION)
 

@@ -1,0 +1,55 @@
+{
+  "contract_id": "VERIFICATION-evidence",
+  "version": "1.0.0",
+  "format": "json-schema",
+  "compatibility": "BACKWARD",
+  "task_id": "T855b-data",
+  "correlation_id": "855b317b-954c-4303-b010-d0a18406ab35",
+  "source_blueprint": "docs/architecture/verification-refresh-blueprint-T855b.md",
+  "source_adr": "docs/adr/0002-verification-refresh-evidence-discipline-for-phases-66-77.md",
+  "scope": "GSD VERIFICATION records for phases 66-77 (incl. 66.2, 66.3, 66.4, 74.1). Docs-only refresh; no product code, no schema DDL.",
+  "fields": [
+    {"name": "phase", "type": "string", "required": true, "notes": "Phase directory id, e.g. 66-rebrand-to-autonogrammer"},
+    {"name": "verified", "type": "string", "required": true, "notes": "ISO-8601 date the fresh evidence run was recorded"},
+    {"name": "status", "type": "string", "required": true, "notes": "One of passed, gaps_found, human_needed. Human-only criteria stay in human_verification, never upgrade status."},
+    {"name": "score", "type": "string", "required": false, "notes": "Human-readable criterion score with commit evidence"},
+    {"name": "covered_files", "type": "array", "required": true, "notes": "Every file the verdict covers, including the VERIFICATION file itself"},
+    {"name": "covered_digest", "type": "string", "required": true, "pattern": "^v1:sha256:[0-9a-f]{64}$", "notes": "v1 sha256 hex over the concatenated bytes of covered_files in listed order. Placeholder strings (e.g. v1:sha256:phase66-verif-20261120) and v3:sha256: prefixes are stale/non-conforming and must be recomputed on refresh (NFR-C2)."},
+    {"name": "behavior_unverified", "type": "integer", "required": false},
+    {"name": "overrides_applied", "type": "integer", "required": false},
+    {"name": "re_verification", "type": "boolean", "required": false},
+    {"name": "previous_status", "type": "string", "required": false},
+    {"name": "previous_score", "type": "string", "required": false},
+    {"name": "commits", "type": "array", "required": false, "notes": "Short commit ids the evidence ran on"},
+    {"name": "gaps", "type": "array", "required": false, "notes": "NEW in v1 (additive, optional): exact closing steps per gap; required when status is gaps_found"},
+    {"name": "human_verification", "type": "array", "required": false, "notes": "NEW in v1 (additive, optional): human-only criteria with evidence and steps, per ADR-0002"}
+  ],
+  "fields_classified": {
+    "phase": "non-PII", "verified": "non-PII", "status": "non-PII", "score": "non-PII",
+    "covered_files": "non-PII", "covered_digest": "non-PII", "behavior_unverified": "non-PII",
+    "overrides_applied": "non-PII", "re_verification": "non-PII", "previous_status": "non-PII",
+    "previous_score": "non-PII", "commits": "non-PII", "gaps": "non-PII", "human_verification": "non-PII"
+  },
+  "compatibility_evidence": {
+    "tool": "data_contract_field_compat",
+    "result": "compatible=true, breaking_count=0, additive=[gaps: new optional field, human_verification: new optional field]",
+    "pii_tool": "data_pii_tag_coverage",
+    "pii_result": "column_count=14, pii_columns=0, untagged=[], coverage=1.0"
+  },
+  "migration": {
+    "schema_migration_required": false,
+    "reason": "Evidence inventory for phases 66-77 is file records under .planning/phases/; no relational tables store VERIFICATION evidence. data_migration_check.py and data_migration_check.ts both report status=ok, 0 migrations, 0 destructive DDL, 0 findings on the refresh worktree. Existing operator DDL in deploy/data-plane/bootstrap.sql is unchanged and was not executed by this task (L4).",
+    "rollback": "No forward DDL was applied, so no down migration exists or is required. data_down_present on the no-op migration text returned reversible=false, which is recorded as N/A for a migration that publishes no DDL."
+  },
+  "inventory_observed_2026_11_22": {
+    "phases": ["66", "66.1", "66.2", "66.3", "66.4", "67", "68", "69", "70", "71", "72", "73", "74", "74.1", "75", "76", "77"],
+    "nonconforming_digests": [
+      ".planning/phases/66-rebrand-to-autonogrammer/66-VERIFICATION.md: v1:sha256:phase66-verif-20261120 (placeholder, not 64-hex)",
+      ".planning/phases/68-data-plane-names-schema-and-resilience/68-VERIFICATION.md: v3:sha256:bd238cdf... (v3 prefix, not v1)",
+      ".planning/phases/72-cowork-browser-use/72-VERIFICATION.md: v1:sha256:manual-verif-72-20261110 (placeholder, not 64-hex)"
+    ],
+    "phase77_summary_count": "11 PLAN files (77-01..77-11) and 11 SUMMARY files present; missing count 0, matching spec assumption A4. Downstream re-counts before writing."
+  },
+  "consumers": "A05/A06/A08 consume refreshed VERIFICATION files conforming to this contract; pin this contract by digest. Consumers must treat any covered_digest not matching the v1 pattern as stale (NFR-C2, 0 stale digests allowed).",
+  "approval_required": "none"
+}
