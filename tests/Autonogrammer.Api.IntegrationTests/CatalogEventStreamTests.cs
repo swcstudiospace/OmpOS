@@ -73,7 +73,7 @@ public sealed class CatalogEventStreamTests
         changed.RootElement.GetProperty("sessionId").GetString().ShouldBe(id);
         changed.RootElement.GetProperty("change").GetString().ShouldBe("created");
         using var stage = JsonDocument.Parse(items[2].Data);
-        stage.RootElement.GetProperty("source").GetString().ShouldBe("Omp");
+        stage.RootElement.GetProperty("source").GetString().ShouldBe("Engine");
         stage.RootElement.GetProperty("status").GetString().ShouldBe("Pending");
     }
 
