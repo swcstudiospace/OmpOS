@@ -12,9 +12,9 @@ public enum ProviderGroup
     /// <summary>A subscription coding plan with its own key and published request limits.</summary>
     CodingPlan = 2,
 
-    /// <summary>A provider the user defined; it is written to omp's <c>models.yml</c>.</summary>
+    /// <summary>A provider the user defined; it is written to the engine's <c>models.yml</c>.</summary>
     Custom = 3,
 
-    /// <summary>A provider omp knows by itself, without any Autonogrammer entry.</summary>
-    OmpBuiltIn = 4,
+    /// <summary>A provider the engine knows by itself, without any Autonogrammer entry.</summary>
+    EngineBuiltIn = 4,
 }

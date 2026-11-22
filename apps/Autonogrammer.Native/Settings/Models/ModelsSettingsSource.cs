@@ -9,22 +9,22 @@ using Autonogrammer.Presentation.Settings.Models;
 namespace Autonogrammer.Native.Settings.Models;
 
 /// <summary>
-/// The Models page's access to omp, backed by omp's own mechanisms so that every action changes what omp uses: the model listing
-/// (<c>omp models --json</c>), credential presence (<c>omp token</c>), a key import (<c>omp auth import -</c>), the default model
-/// (<c>omp config set modelRoles</c>) and the Autonogrammer blocks of <c>models.yml</c>. Nothing here validates a credential: a key is
+/// The Models page's access to engine, backed by engine's own mechanisms so that every action changes what engine uses: the model listing
+/// (<c>engine models --json</c>), credential presence (<c>engine token</c>), a key import (<c>engine auth import -</c>), the default model
+/// (<c>engine config set modelRoles</c>) and the Autonogrammer blocks of <c>models.yml</c>. Nothing here validates a credential: a key is
 /// reported as present, never as working, and a test only asks whether something answers at an address.
 /// </summary>
 /// <remarks>
 /// <para>
-/// omp resolves a stored credential only for the providers it knows, so a key for a built-in provider goes to omp's credential
-/// database through <c>omp auth import</c> and Autonogrammer keeps no copy. A custom provider is different: its block in <c>models.yml</c> names
-/// an environment variable that omp reads from its own process environment, so that key is kept in the Autonogrammer provider key store (plain
-/// text, owner-only file; see <see cref="OwnerOnlyFileSecretStore"/>) and <see cref="ProviderKeyEnvironment"/> hands it to every omp the
+/// engine resolves a stored credential only for the providers it knows, so a key for a built-in provider goes to engine's credential
+/// database through <c>engine auth import</c> and Autonogrammer keeps no copy. A custom provider is different: its block in <c>models.yml</c> names
+/// an environment variable that engine reads from its own process environment, so that key is kept in the Autonogrammer provider key store (plain
+/// text, owner-only file; see <see cref="OwnerOnlyFileSecretStore"/>) and <see cref="ProviderKeyEnvironment"/> hands it to every engine the
 /// head starts. Removing the provider deletes the key.
 /// </para>
 /// <para>
-/// Writes are serialised, one at a time. A <c>models.yml</c> change applies to omp processes started afterwards; the registry entry that
-/// keeps a provider's display name and routes is written first and restored when omp refuses the block.
+/// Writes are serialised, one at a time. A <c>models.yml</c> change applies to engine processes started afterwards; the registry entry that
+/// keeps a provider's display name and routes is written first and restored when engine refuses the block.
 /// </para>
 /// </remarks>
 internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDisposable
@@ -40,7 +40,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
     private readonly SemaphoreSlim _writeGate = new(1, 1);
 
     /// <summary>Creates the source.</summary>
-    /// <param name="omp">omp's model configuration: the listing, the credential store, the default model and <c>models.yml</c>.</param>
+    /// <param name="omp">engine's model configuration: the listing, the credential store, the default model and <c>models.yml</c>.</param>
     /// <param name="secrets">The Autonogrammer provider key store, which holds the key of each keyed custom provider under its variable name.</param>
     /// <param name="keys">The environment the keys of that store are merged into; it is refreshed after every change of a key.</param>
     /// <param name="details">The registry file that keeps the display name and routes of each custom provider.</param>
@@ -129,7 +129,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
 
         if (!OmpProviderId.IsValid(providerId))
         {
-            return ModelsActionResult.Failure("This provider id is not one omp accepts.");
+            return ModelsActionResult.Failure("This provider id is not one the engine accepts.");
         }
 
         await _writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -192,9 +192,9 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
             return ModelsActionResult.Failure(problem);
         }
 
-        if (OmpBuiltInProviders.Find(form.Id) is not null || OmpBuiltInProviders.FindLocalEngine(form.Id) is not null)
+        if (BuiltInProviders.Find(form.Id) is not null || BuiltInProviders.FindLocalRuntime(form.Id) is not null)
         {
-            return ModelsActionResult.Failure("omp already has a provider with this id of its own. Choose another id.");
+            return ModelsActionResult.Failure("The engine already has a provider with this id of its own. Choose another id.");
         }
 
         var keyVariable = ProviderKeyEnvironment.EnvNameFor(form.Id);
@@ -276,7 +276,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
         ArgumentNullException.ThrowIfNull(providerId);
         if (!OmpProviderId.IsValid(providerId))
         {
-            return ModelsActionResult.Failure("This provider id is not one omp accepts.");
+            return ModelsActionResult.Failure("This provider id is not one the engine accepts.");
         }
 
         await _writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -323,7 +323,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
                 : NotTested;
         }
 
-        if (OmpBuiltInProviders.FindLocalEngine(providerId) is { } engine)
+        if (BuiltInProviders.FindLocalRuntime(providerId) is { } engine)
         {
             return await ProbeAsync(engine.Id, engine.Endpoint, ProviderAuthType.None, cancellationToken).ConfigureAwait(false);
         }
@@ -342,7 +342,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
         ConcurrentDictionary<string, OmpCredentialPresence> presence)
     {
         var providers = new List<ProviderInfo>();
-        foreach (var engine in OmpBuiltInProviders.LocalEngines)
+        foreach (var engine in BuiltInProviders.LocalEngines)
         {
             if (modelsByProvider.TryGetValue(engine.Id, out var engineModels) && !managedIds.Contains(engine.Id))
             {
@@ -350,7 +350,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
             }
         }
 
-        foreach (var builtIn in OmpBuiltInProviders.All)
+        foreach (var builtIn in BuiltInProviders.All)
         {
             if (!managedIds.Contains(builtIn.Id))
             {
@@ -360,7 +360,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
 
         foreach (var id in listedOrder)
         {
-            if (!managedIds.Contains(id) && OmpBuiltInProviders.Find(id) is null && OmpBuiltInProviders.FindLocalEngine(id) is null)
+            if (!managedIds.Contains(id) && BuiltInProviders.Find(id) is null && BuiltInProviders.FindLocalRuntime(id) is null)
             {
                 providers.Add(UnknownCard(id, modelsByProvider[id], presence));
             }
@@ -378,7 +378,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
         return providers;
     }
 
-    private static ProviderInfo LocalCard(OmpLocalEngine engine, IReadOnlyList<string> models) =>
+    private static ProviderInfo LocalCard(LocalRuntime engine, IReadOnlyList<string> models) =>
         new(
             engine.Id,
             engine.DisplayName,
@@ -391,13 +391,13 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
             RetrievedOn: null,
             Plan: null,
             IsAutonogrammerManaged: false,
-            "omp finds this engine on its default address unless an environment variable moves it. The connection test checks that address.");
+            "The engine finds this runtime on its default address unless an environment variable moves it. The connection test checks that address.");
 
-    private static ProviderInfo BuiltInCard(OmpBuiltInProvider provider, IReadOnlyList<string> models, ConcurrentDictionary<string, OmpCredentialPresence> presence) =>
+    private static ProviderInfo BuiltInCard(BuiltInProvider provider, IReadOnlyList<string> models, ConcurrentDictionary<string, OmpCredentialPresence> presence) =>
         new(
             provider.Id,
             provider.DisplayName,
-            ProviderGroup.OmpBuiltIn,
+            ProviderGroup.EngineBuiltIn,
             string.Empty,
             ProviderAuthKind.ApiKey,
             StateOf(presence, provider.Id),
@@ -412,7 +412,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
         new(
             id,
             id,
-            ProviderGroup.OmpBuiltIn,
+            ProviderGroup.EngineBuiltIn,
             string.Empty,
             ProviderAuthKind.Unknown,
             StateOf(presence, id),
@@ -523,7 +523,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
             IsAutonogrammerManaged: true,
             block.NoAuthentication
                 ? null
-                : "Autonogrammer keeps this provider's key as plain text in a file only your account can read, and gives it to every omp it starts. Removing the provider deletes the key.",
+                : "Autonogrammer keeps this provider's key as plain text in a file only your account can read, and gives it to every engine process it starts. Removing the provider deletes the key.",
             form);
     }
 
@@ -535,13 +535,13 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
     {
         var presence = new ConcurrentDictionary<string, OmpCredentialPresence>(StringComparer.Ordinal);
         var ask = new List<string>();
-        var shown = OmpBuiltInProviders.All.Select(static provider => provider.Id)
-            .Concat(listedOrder.Where(static id => OmpBuiltInProviders.FindLocalEngine(id) is null))
+        var shown = BuiltInProviders.All.Select(static provider => provider.Id)
+            .Concat(listedOrder.Where(static id => BuiltInProviders.FindLocalRuntime(id) is null))
             .Where(id => !managedIds.Contains(id))
             .Distinct(StringComparer.Ordinal);
         foreach (var id in shown)
         {
-            // omp lists only the models of providers it holds a credential for, so a provider in a complete listing needs no question.
+            // engine lists only the models of providers it holds a credential for, so a provider in a complete listing needs no question.
             if (listing.IsComplete && listedOrder.Contains(id, StringComparer.Ordinal))
             {
                 presence[id] = OmpCredentialPresence.Present;
@@ -580,7 +580,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            // The block is the truth omp reads; an entry that could not be restored only holds a name and routes, and the next save replaces it.
+            // The block is the truth engine reads; an entry that could not be restored only holds a name and routes, and the next save replaces it.
         }
     }
 
@@ -598,7 +598,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            // The provider is gone from models.yml, which is what omp reads; a leftover entry is ignored and replaced by the next save of this id.
+            // The provider is gone from models.yml, which is what engine reads; a leftover entry is ignored and replaced by the next save of this id.
         }
     }
 
@@ -611,7 +611,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
         }
         catch (SecretStoreException exception)
         {
-            return ModelsActionResult.Failure("The provider was changed in omp, but Autonogrammer could not delete its stored key. " + exception.Message);
+            return ModelsActionResult.Failure("The provider was changed in the engine, but Autonogrammer could not delete its stored key. " + exception.Message);
         }
     }
 

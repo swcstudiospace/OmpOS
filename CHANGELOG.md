@@ -8,6 +8,11 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.15] - 2026-11-22
+
+### Changed
+- Plugin boundary + Settings providers (Tc00c, PR #35): frontend confines Omp to backend (ADR-0001, PluginFrontendBoundaryTests); Settings typed select/connect/test flows (ADR-0002, ModelsFlowDisciplineTests); Linear SPE-36343..45 + Notion tracking.
+
 ## [0.20.14] - 2026-11-22
 
 ### Changed
@@ -611,6 +616,7 @@ Foundation through verified handoff (Phases 1 to 5).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
 [Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...HEAD
+[0.20.15]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.14...v0.20.15
 [0.20.14]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.13...v0.20.14
 [0.20.13]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.12...v0.20.13
 [0.20.12]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.11...v0.20.12

@@ -51,7 +51,7 @@ public sealed class ModelsPageLoadTests
         failed.Groups.ShouldBeEmpty();
     }
 
-    /// <summary>The empty state explains that omp lists only providers with a credential and points to Add API key.</summary>
+    /// <summary>The empty state explains that engine lists only providers with a credential and points to Add API key.</summary>
     [Fact]
     public void EmptyStateExplainsTheCredentialRule()
     {
@@ -88,7 +88,7 @@ public sealed class ModelsPageLoadTests
         await page.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         page.State.ShouldBe(ModelsPageState.Error);
-        page.LoadFailure.ShouldBe("omp listed provider " + provider.Id + " twice.");
+        page.LoadFailure.ShouldBe("The engine listed provider " + provider.Id + " twice.");
         page.Groups.ShouldBeEmpty();
     }
 
@@ -122,7 +122,7 @@ public sealed class ModelsPageLoadTests
         page.Groups.Count.ShouldBe(1);
     }
 
-    /// <summary>The page covers local, cloud, coding plan, custom and omp built-in providers, in that order, each with its own heading.</summary>
+    /// <summary>The page covers local, cloud, coding plan, custom and engine built-in providers, in that order, each with its own heading.</summary>
     [Fact]
     public async Task EveryGroupIsListedInOrder()
     {
@@ -131,7 +131,7 @@ public sealed class ModelsPageLoadTests
         await page.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         page.Groups.Select(group => group.Group).ShouldBe(
-            [ProviderGroup.Local, ProviderGroup.Cloud, ProviderGroup.CodingPlan, ProviderGroup.Custom, ProviderGroup.OmpBuiltIn]);
+            [ProviderGroup.Local, ProviderGroup.Cloud, ProviderGroup.CodingPlan, ProviderGroup.Custom, ProviderGroup.EngineBuiltIn]);
         page.Groups.Select(group => group.Title).Distinct(StringComparer.Ordinal).Count().ShouldBe(5);
         page.Groups.ShouldAllBe(group => group.Description.Length > 0 && group.Cards.Count == 1);
         page.VisibleCardCount.ShouldBe(5);
@@ -148,7 +148,7 @@ public sealed class ModelsPageLoadTests
 
         card.EndpointText.ShouldBe("https://api.perplexity.ai");
         card.SourceText.ShouldBe("Source: https://docs.perplexity.ai/, read 2026-10-22");
-        card.StatusLine.ShouldBe("API key, no credential in omp");
+        card.StatusLine.ShouldBe("API key, no credential in the engine");
         card.HasPlan.ShouldBeFalse();
     }
 
@@ -167,7 +167,7 @@ public sealed class ModelsPageLoadTests
         card.PlanUrl.ShouldBe(new Uri("https://platform.minimax.example/plan"));
     }
 
-    /// <summary>An incomplete list says so, a complete one does not, and omp's configuration warning is shown.</summary>
+    /// <summary>An incomplete list says so, a complete one does not, and engine's configuration warning is shown.</summary>
     [Fact]
     public async Task IncompleteNoteAndWarningFollowTheSnapshot()
     {

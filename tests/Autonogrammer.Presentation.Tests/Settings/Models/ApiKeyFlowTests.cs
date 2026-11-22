@@ -22,7 +22,7 @@ public sealed class ApiKeyFlowTests
         return (page, source, card);
     }
 
-    /// <summary>The action reads Add API key while omp holds no key and Replace API key once it does.</summary>
+    /// <summary>The action reads Add API key while engine holds no key and Replace API key once it does.</summary>
     [Fact]
     public async Task LabelIsAddThenReplace()
     {
@@ -33,7 +33,7 @@ public sealed class ApiKeyFlowTests
         keyed.ApiKeyActionLabel.ShouldBe("Replace API key");
     }
 
-    /// <summary>Only providers that take an API key offer the flow; a sign-in provider says to use omp login and offers no key.</summary>
+    /// <summary>Only providers that take an API key offer the flow; a sign-in provider says to use engine login and offers no key.</summary>
     [Fact]
     public async Task OnlyApiKeyProvidersOfferTheFlow()
     {
@@ -78,7 +78,7 @@ public sealed class ApiKeyFlowTests
         card.IsApiKeyEditorOpen.ShouldBeFalse();
         card.ErrorText.ShouldBeNull();
         card.ApiKeyActionLabel.ShouldBe(ModelsCopy.ReplaceApiKeyLabel);
-        card.StatusLine.ShouldContain("credential present in omp", Case.Sensitive);
+        card.StatusLine.ShouldContain("credential present in the engine", Case.Sensitive);
         source.LoadCalls.ShouldBe(2);
         page.Announcement.ShouldBe(ModelsCopy.KeySaved("Perplexity"));
         SecretScan.ShouldNotHold(page, Key);
@@ -211,7 +211,7 @@ public sealed class ApiKeyFlowTests
         card.ApiKey.ShouldBeNull();
     }
 
-    /// <summary>A provider omp knows says omp keeps the key in its credential database; a provider Autonogrammer wrote says Autonogrammer keeps it in its own store and omp keeps no copy.</summary>
+    /// <summary>A provider engine knows says engine keeps the key in its credential database; a provider Autonogrammer wrote says Autonogrammer keeps it in its own store and engine keeps no copy.</summary>
     [Fact]
     public async Task EachCardStatesWhereItsKeyIsKept()
     {
@@ -223,12 +223,12 @@ public sealed class ApiKeyFlowTests
         var ompNote = omp.ApiKey.ShouldNotBeNull().KeyStorageNote;
         var customNote = custom.ApiKey.ShouldNotBeNull().KeyStorageNote;
 
-        ompNote.ShouldBe(ModelsCopy.OmpKeyStorageNote);
-        ompNote.ShouldContain("omp keeps the key in its own credential database", Case.Sensitive);
+        ompNote.ShouldBe(ModelsCopy.EngineKeyStorageNote);
+        ompNote.ShouldContain("The engine keeps the key in its own credential database", Case.Sensitive);
         ompNote.ShouldContain("does not keep it", Case.Sensitive);
         customNote.ShouldBe(ModelsCopy.AutonogrammerKeyStorageNote);
         customNote.ShouldContain("Autonogrammer keeps the key in secrets/secrets.json", Case.Sensitive);
-        customNote.ShouldContain("omp keeps no copy", Case.Sensitive);
+        customNote.ShouldContain("The engine keeps no copy", Case.Sensitive);
         customNote.ShouldNotContain("does not keep it", Case.Sensitive);
     }
 }

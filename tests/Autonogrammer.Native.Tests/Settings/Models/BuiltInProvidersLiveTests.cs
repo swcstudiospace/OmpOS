@@ -7,19 +7,19 @@ using Xunit;
 namespace Autonogrammer.Native.Tests.Settings.Models;
 
 /// <summary>
-/// Live proof that every row of <see cref="OmpBuiltInProviders"/> is a provider the installed omp lists models for once the provider's own
-/// environment variable holds a (fake) key, and that omp lists none without it. omp runs in an isolated home and agent directory with a
-/// scrubbed environment and a fake key; no model is called. A cold model cache makes omp refresh its catalogue over the network on its
+/// Live proof that every row of <see cref="BuiltInProviders"/> is a provider the installed engine lists models for once the provider's own
+/// environment variable holds a (fake) key, and that engine lists none without it. engine runs in an isolated home and agent directory with a
+/// scrubbed environment and a fake key; no model is called. A cold model cache makes engine refresh its catalogue over the network on its
 /// first run, so run it once online. Excluded from the gate by its trait and skipped unless <c>AUTONOGRAMMER_LIVE_OMP=1</c>; run it with
 /// <c>AUTONOGRAMMER_LIVE_OMP=1 dotnet test tests/Autonogrammer.Native.Tests -c Release --no-build -- --filter-trait "Category=Live"</c>.
 /// </summary>
 [Trait("Category", "Live")]
-public sealed class OmpBuiltInProvidersLiveTests
+public sealed class BuiltInProvidersLiveTests
 {
     private const string OptInVariable = "AUTONOGRAMMER_LIVE_OMP";
     private const string FakeKey = "fake-key-not-real";
 
-    /// <summary>The variable each provider reads its key from, as <c>omp://providers.md</c> documents it.</summary>
+    /// <summary>The variable each provider reads its key from, as <c>engine://providers.md</c> documents it.</summary>
     private static readonly Dictionary<string, string> Variables = new(StringComparer.Ordinal)
     {
         ["openai"] = "OPENAI_API_KEY",
@@ -63,7 +63,7 @@ public sealed class OmpBuiltInProvidersLiveTests
             return;
         }
 
-        OmpBuiltInProviders.All.Select(static provider => provider.Id).Order(StringComparer.Ordinal)
+        BuiltInProviders.All.Select(static provider => provider.Id).Order(StringComparer.Ordinal)
             .ShouldBe(Variables.Keys.Order(StringComparer.Ordinal), "the live check covers exactly the rows of the table");
         var cancellationToken = TestContext.Current.CancellationToken;
         var home = Path.Combine(Path.GetTempPath(), "autonogrammer-live-providers-" + Guid.NewGuid().ToString("N"));

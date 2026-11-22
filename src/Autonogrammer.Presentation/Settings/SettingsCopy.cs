@@ -210,8 +210,8 @@ public static class SettingsCopy
     /// <summary>The warning shown while the terminal auto-run switch is on.</summary>
     public const string AutoRunWarning = "Terminal commands an agent proposes will run as soon as it proposes them.";
 
-    /// <summary>The note that every tool call follows omp's approval policy.</summary>
-    public const string ApprovalPolicyNote = "Every tool call follows omp's approval policy. This page only changes how Autonogrammer runs terminal commands it proposes.";
+    /// <summary>The note that every tool call follows the engine's approval policy.</summary>
+    public const string ApprovalPolicyNote = "Every tool call follows the engine's approval policy. This page only changes how Autonogrammer runs terminal commands it proposes.";
 
     /// <summary>The heading of the Tab page.</summary>
     public const string TabHeading = "Tab";
@@ -238,11 +238,11 @@ public static class SettingsCopy
     public const string PluginsHeading = "Plugins";
 
     /// <summary>The sentence under the title of the Plugins page.</summary>
-    public const string PluginsDescription = "The plugins Autonogrammer connects to every omp process it starts.";
+    public const string PluginsDescription = "The plugins Autonogrammer connects to every engine process it starts.";
 
     /// <summary>The line that explains why there is no switch (OQ-80).</summary>
     public const string PluginsAlwaysOnNote =
-        "These plugins are connected to every omp process Autonogrammer starts. There is deliberately no switch to turn one off.";
+        "These plugins are connected to every engine process Autonogrammer starts. There is deliberately no switch to turn one off.";
 
     /// <summary>The text shown when the plugin list is empty.</summary>
     public const string PluginsEmpty = "No plugins were reported.";

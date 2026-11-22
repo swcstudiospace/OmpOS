@@ -18,7 +18,7 @@ public sealed class AgentsPageTests
         page.State.ShouldBe(SettingsPageState.Ready);
         page.TerminalAutoRun.ShouldBeFalse();
         page.IsAutoRunWarningVisible.ShouldBeFalse();
-        SettingsCopy.ApprovalPolicyNote.ShouldContain("omp's approval policy", Case.Sensitive);
+        SettingsCopy.ApprovalPolicyNote.ShouldContain("the engine's approval policy", Case.Sensitive);
     }
 
     /// <summary>Switching auto-run on is a draft that shows the warning; the source is untouched until Save.</summary>

@@ -16,7 +16,7 @@ internal static class ModelsData
     /// <param name="name">The display name.</param>
     /// <param name="group">The group.</param>
     /// <param name="auth">How the provider authenticates.</param>
-    /// <param name="credential">Whether omp holds a credential.</param>
+    /// <param name="credential">Whether engine holds a credential.</param>
     /// <param name="models">The model selectors.</param>
     /// <param name="endpoint">The endpoint text, or empty.</param>
     /// <param name="managed">Whether Autonogrammer wrote the provider.</param>
@@ -117,8 +117,8 @@ internal static class ModelsData
                     ["zai-plan/glm"],
                     plan: new ProviderPlanInfo([new PlanTierInfo("Lite", "about 120 requests per 5 hours"), new PlanTierInfo("Pro", "about 600 requests per 5 hours")], 30, new Uri("https://plans.example.test/pricing"))),
                 Provider("mine", "My Gateway", ProviderGroup.Custom, ProviderAuthKind.ApiKey, CredentialState.Present, ["mine/small"], "https://llm.example.test/v1", managed: true, definition: Form("mine", "My Gateway")),
-                Provider("openai", "OpenAI", ProviderGroup.OmpBuiltIn, ProviderAuthKind.ApiKey, CredentialState.Present, [DefaultSelector, "openai/gpt-4o-mini"]),
-                Provider("anthropic", "Anthropic", ProviderGroup.OmpBuiltIn, ProviderAuthKind.OAuth, CredentialState.Absent, []),
+                Provider("openai", "OpenAI", ProviderGroup.EngineBuiltIn, ProviderAuthKind.ApiKey, CredentialState.Present, [DefaultSelector, "openai/gpt-4o-mini"]),
+                Provider("anthropic", "Anthropic", ProviderGroup.EngineBuiltIn, ProviderAuthKind.OAuth, CredentialState.Absent, []),
             ],
             DefaultSelector,
             null,

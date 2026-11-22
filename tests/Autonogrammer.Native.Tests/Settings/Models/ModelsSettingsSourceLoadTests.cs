@@ -8,9 +8,9 @@ using Xunit;
 namespace Autonogrammer.Native.Tests.Settings.Models;
 
 /// <summary>
-/// What <see cref="ModelsSettingsSource.LoadAsync"/> reads through a fake omp: the listing grouped by provider, credential presence
-/// through <c>omp token</c> for the providers that are shown, the default model, the templates and the warnings. omp is a shell
-/// script; no real omp, model or network is involved.
+/// What <see cref="ModelsSettingsSource.LoadAsync"/> reads through a fake engine: the listing grouped by provider, credential presence
+/// through <c>engine token</c> for the providers that are shown, the default model, the templates and the warnings. engine is a shell
+/// script; no real engine, model or network is involved.
 /// </summary>
 public sealed class ModelsSettingsSourceLoadTests
 {
@@ -32,7 +32,7 @@ public sealed class ModelsSettingsSourceLoadTests
         var snapshot = await composition.Source.LoadAsync(Token).ConfigureAwait(true);
 
         var openai = snapshot.Providers.Single(provider => string.Equals(provider.Id, "openai", StringComparison.Ordinal));
-        openai.Group.ShouldBe(ProviderGroup.OmpBuiltIn);
+        openai.Group.ShouldBe(ProviderGroup.EngineBuiltIn);
         openai.Credential.ShouldBe(CredentialState.Present);
         openai.AuthKind.ShouldBe(ProviderAuthKind.ApiKey);
         openai.Models.ShouldBe(["openai/gpt-x", "openai/gpt-y"]);
@@ -53,7 +53,7 @@ public sealed class ModelsSettingsSourceLoadTests
         ollama.AuthKind.ShouldBe(ProviderAuthKind.None);
         ollama.EndpointText.ShouldBe("http://127.0.0.1:11434");
         ollama.Models.ShouldBe(["ollama/llama3"]);
-        snapshot.Providers.Count.ShouldBe(OmpBuiltInProviders.All.Count + 1);
+        snapshot.Providers.Count.ShouldBe(BuiltInProviders.All.Count + 1);
         snapshot.IsComplete.ShouldBeTrue();
         snapshot.Warning.ShouldBeNull();
         snapshot.DefaultModel.ShouldBeNull();
@@ -64,7 +64,7 @@ public sealed class ModelsSettingsSourceLoadTests
         asked.ShouldNotContain("ollama", StringComparer.Ordinal);
         asked.ShouldContain("groq", StringComparer.Ordinal);
         asked.ShouldContain("mistral", StringComparer.Ordinal);
-        asked.Length.ShouldBe(OmpBuiltInProviders.All.Count - 2);
+        asked.Length.ShouldBe(BuiltInProviders.All.Count - 2);
         asked.Distinct(StringComparer.Ordinal).Count().ShouldBe(asked.Length, "no provider is asked twice");
     }
 
@@ -80,7 +80,7 @@ public sealed class ModelsSettingsSourceLoadTests
 
         var card = snapshot.Providers.Single(provider => string.Equals(provider.Id, "foo-gateway", StringComparison.Ordinal));
         card.DisplayName.ShouldBe("foo-gateway");
-        card.Group.ShouldBe(ProviderGroup.OmpBuiltIn);
+        card.Group.ShouldBe(ProviderGroup.EngineBuiltIn);
         card.AuthKind.ShouldBe(ProviderAuthKind.Unknown);
         card.Credential.ShouldBe(CredentialState.Present);
         card.Models.ShouldBe(["foo-gateway/m1"]);
@@ -112,7 +112,7 @@ public sealed class ModelsSettingsSourceLoadTests
 
         snapshot.IsComplete.ShouldBeFalse();
         snapshot.Warning.ShouldNotBeNull().ShouldContain("validation failed", Case.Sensitive);
-        snapshot.Providers.Count.ShouldBe(OmpBuiltInProviders.All.Count, "the table still lists the providers a key can be added to");
+        snapshot.Providers.Count.ShouldBe(BuiltInProviders.All.Count, "the table still lists the providers a key can be added to");
         snapshot.Warning.ShouldNotContain(fake.Root, Case.Sensitive);
     }
 

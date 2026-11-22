@@ -59,11 +59,11 @@ public sealed class ModelsCopyTests
         Should.Throw<ArgumentOutOfRangeException>(() => ModelsCopy.TestText((ProviderTestStatus)99, null, ProviderGroup.Local));
     }
 
-    /// <summary>The status line joins how the provider authenticates with whether omp holds a credential.</summary>
+    /// <summary>The status line joins how the provider authenticates with whether engine holds a credential.</summary>
     [Fact]
     public void StatusLineJoinsAuthAndCredential()
     {
-        ModelsCopy.StatusLine(ProviderAuthKind.OAuth, CredentialState.Unknown).ShouldBe("Sign-in through omp, credential state unknown");
+        ModelsCopy.StatusLine(ProviderAuthKind.OAuth, CredentialState.Unknown).ShouldBe("Sign-in through the engine, credential state unknown");
         ModelsCopy.StatusLine(ProviderAuthKind.None, CredentialState.NotRequired).ShouldBe("No authentication, no credential needed");
     }
 

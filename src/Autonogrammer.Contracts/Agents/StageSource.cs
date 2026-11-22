@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Autonogrammer.Contracts.Agents;
 
 /// <summary>
@@ -6,7 +8,8 @@ namespace Autonogrammer.Contracts.Agents;
 /// </summary>
 public enum StageSource
 {
-    /// <summary>The omp engine itself: the session, the turn and the model run.</summary>
+    /// <summary>The omp engine itself: the session, the turn and the model run. The C# name stays backend-only; on the wire this is the plugin-neutral <c>Engine</c>.</summary>
+    [JsonStringEnumMemberName("Engine")]
     Omp,
 
     /// <summary>The prompt planner: the XML spec, the Graph of Thought and the workflow waves.</summary>

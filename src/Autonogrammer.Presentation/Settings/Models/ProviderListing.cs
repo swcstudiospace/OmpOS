@@ -10,9 +10,9 @@ namespace Autonogrammer.Presentation.Settings.Models;
 /// <param name="Country">The ISO 3166-1 alpha-2 country, or null.</param>
 /// <param name="ResidencyNote">What the vendor states about where data is processed, or null. It is not verified by Autonogrammer.</param>
 /// <param name="Kind">What the listing sells or runs.</param>
-/// <param name="OmpProviderId">The id omp knows the provider by, or null when Autonogrammer writes a <c>models.yml</c> block.</param>
+/// <param name="EngineProviderId">The id the engine knows the provider by, or null when Autonogrammer writes a <c>models.yml</c> block.</param>
 /// <param name="ApiKeyEnv">The environment variable name that carries the key, or null for keyless and sign-in listings.</param>
-/// <param name="LoginCommand">The omp sign-in command of a listing whose credential Autonogrammer never stores, or null.</param>
+/// <param name="LoginCommand">The engine sign-in command of a listing whose credential Autonogrammer never stores, or null.</param>
 /// <param name="Routes">The ways to reach the provider; the first is the default. Empty for a sign-in listing.</param>
 /// <param name="Variables">The base URL placeholders the user fills in.</param>
 /// <param name="DocsUrl">The vendor documentation, or null.</param>
@@ -29,7 +29,7 @@ public sealed record ProviderListing(
     string? Country,
     string? ResidencyNote,
     ProviderListingKind Kind,
-    string? OmpProviderId,
+    string? EngineProviderId,
     string? ApiKeyEnv,
     string? LoginCommand,
     IReadOnlyList<ProviderListingRoute> Routes,

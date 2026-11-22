@@ -222,7 +222,7 @@ public sealed class ProviderDirectoryTests
         card.BeginSetup();
         (await card.SaveAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeTrue();
 
-        card.ConfiguredText.ShouldBe("Set up in omp.");
+        card.ConfiguredText.ShouldBe("Set up in this workspace.");
         source.LoadCalls.ShouldBe(2);
         page.Directory.Find("mistral")!.ConfiguredText.ShouldBeNull();
     }

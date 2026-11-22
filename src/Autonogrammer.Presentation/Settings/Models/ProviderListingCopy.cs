@@ -14,7 +14,7 @@ public static class ProviderListingCopy
 
     /// <summary>The sentence under the heading of the provider listing section.</summary>
     public const string SectionDescription =
-        "Every model provider, aggregator, coding plan and local runtime Autonogrammer knows, grouped by region and kind. Pick one, add its key and omp can use it.";
+        "Every model provider, aggregator, coding plan and local runtime Autonogrammer knows, grouped by region and kind. Pick one, add its key and the engine can use it.";
 
     /// <summary>The label of the region filter.</summary>
     public const string RegionFilterLabel = "Filter by region";
@@ -53,7 +53,7 @@ public static class ProviderListingCopy
     public const string ModelIdsNeededText = "This provider has no models list Autonogrammer can read. Enter at least one model id, separated by commas or spaces.";
 
     /// <summary>The sentence under the model id field of a route that discovers its models.</summary>
-    public const string ModelIdsOptionalText = "omp reads the models from the provider. Add model ids here only to pin extra ones.";
+    public const string ModelIdsOptionalText = "The engine reads the models from the provider. Add model ids here only to pin extra ones.";
 
     /// <summary>The sentence shown when the head cannot add catalogue providers.</summary>
     public const string NotSupportedText = "This version of Autonogrammer cannot add catalogue providers yet. Add the provider as a custom provider instead.";
@@ -209,11 +209,11 @@ public static class ProviderListingCopy
         return string.IsNullOrEmpty(tier.QuotaText) ? $"{tier.Name}: {tier.PriceText}" : $"{tier.Name}: {tier.PriceText}; {tier.QuotaText}";
     }
 
-    /// <summary>Returns the sentence for a listing whose credential is an omp sign-in.</summary>
-    /// <param name="command">The omp command.</param>
+    /// <summary>Returns the sentence for a listing whose credential is an engine sign-in.</summary>
+    /// <param name="command">The sign-in command the engine uses.</param>
     /// <returns>The sentence.</returns>
     public static string SignInText(string command) =>
-        $"Sign in inside omp with {command}. Autonogrammer never stores this credential and shows no key field for it.";
+        $"Sign in inside the engine with {command}. Autonogrammer never stores this credential and shows no key field for it.";
 
     /// <summary>Returns the accessible name of the set up action.</summary>
     /// <param name="providerName">The provider's display name.</param>
@@ -228,7 +228,7 @@ public static class ProviderListingCopy
     /// <summary>Returns the accessible name of the add action.</summary>
     /// <param name="providerName">The provider's display name.</param>
     /// <returns>The name.</returns>
-    public static string AddActionName(string providerName) => $"Add {providerName} to omp";
+    public static string AddActionName(string providerName) => $"Add {providerName} to this workspace";
 
     /// <summary>Returns the accessible name of the model id field.</summary>
     /// <param name="providerName">The provider's display name.</param>
@@ -257,23 +257,23 @@ public static class ProviderListingCopy
     public static string VariableInvalid(string label) =>
         $"{label} must be an identifier of letters, digits, dots and hyphens, not a placeholder.";
 
-    /// <summary>Returns the text for a provider added to omp.</summary>
+    /// <summary>Returns the text for a provider added to the workspace.</summary>
     /// <param name="providerName">The provider's display name.</param>
     /// <returns>The text.</returns>
-    public static string Added(string providerName) => $"{providerName} was added to omp.";
+    public static string Added(string providerName) => $"{providerName} was added to this workspace.";
 
     /// <summary>Returns the text of a listing that is already set up.</summary>
     /// <param name="takesKey">True when the listing's route takes a key.</param>
-    /// <param name="credentialPresent">True when omp also holds a credential for it.</param>
+    /// <param name="credentialPresent">True when the engine also holds a credential for it.</param>
     /// <returns>The text.</returns>
     public static string ConfiguredText(bool takesKey, bool credentialPresent)
     {
         if (!takesKey)
         {
-            return "Set up in omp.";
+            return "Set up in this workspace.";
         }
 
-        return credentialPresent ? "Set up: omp holds a credential." : "Set up in omp. Add its key to use it.";
+        return credentialPresent ? "Set up: the engine holds a credential." : "Set up in this workspace. Add its key to use it.";
     }
 
     /// <summary>Returns the live-region text for the number of listings shown.</summary>

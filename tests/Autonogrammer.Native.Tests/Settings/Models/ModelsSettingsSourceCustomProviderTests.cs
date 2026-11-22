@@ -8,7 +8,7 @@ namespace Autonogrammer.Native.Tests.Settings.Models;
 
 /// <summary>
 /// Saving and removing custom providers through <see cref="ModelsSettingsSource"/>: the form becomes an Autonogrammer block in <c>models.yml</c>
-/// (what omp reads) and an entry in the registry file (what omp's file cannot hold), every write status becomes a plain
+/// (what engine reads) and an entry in the registry file (what engine's file cannot hold), every write status becomes a plain
 /// <see cref="ModelsActionResult"/>, and a refused write leaves both files as they were.
 /// </summary>
 public sealed class ModelsSettingsSourceCustomProviderTests
@@ -114,7 +114,7 @@ public sealed class ModelsSettingsSourceCustomProviderTests
         var ollama = await composition.Source.SaveCustomProviderAsync(ModelsForms.Local("ollama"), Token).ConfigureAwait(true);
 
         openai.Succeeded.ShouldBeFalse();
-        openai.Message.ShouldNotBeNull().ShouldContain("omp already has a provider", Case.Sensitive);
+        openai.Message.ShouldNotBeNull().ShouldContain("The engine already has a provider", Case.Sensitive);
         ollama.Succeeded.ShouldBeFalse();
         fake.ReadModelsYml().ShouldBeNull();
     }

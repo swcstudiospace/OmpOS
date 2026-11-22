@@ -80,7 +80,7 @@ internal sealed class HttpProviderProbe : IProviderProbe, IDisposable
     {
         401 or 403 => new ProviderProbeResult(ProviderTestStatus.Unauthorized, "The address answered and asks for a key."),
         >= 500 => new ProviderProbeResult(ProviderTestStatus.Unreachable, "The address answered with a server error."),
-        _ => new ProviderProbeResult(ProviderTestStatus.Reachable),
+        _ => new ProviderProbeResult(ProviderTestStatus.Reachable, "Something answered at the address."),
     };
 
     private static ProviderProbeResult Blocked() =>

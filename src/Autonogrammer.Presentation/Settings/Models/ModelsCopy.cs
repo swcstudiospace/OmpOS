@@ -12,7 +12,7 @@ public static class ModelsCopy
     public const string PageTitle = "Models";
 
     /// <summary>The sentence under the title of the page.</summary>
-    public const string PageDescription = "The model providers omp uses, their models and their keys.";
+    public const string PageDescription = "The model providers the engine uses, their models and their keys.";
 
     /// <summary>The accessible name of the search box.</summary>
     public const string SearchLabel = "Search providers and models";
@@ -21,47 +21,47 @@ public static class ModelsCopy
     public const string SearchHint = "Search providers and models";
 
     /// <summary>The text of the loading state.</summary>
-    public const string LoadingText = "Loading providers from omp...";
+    public const string LoadingText = "Loading providers from the engine...";
 
     /// <summary>The heading of the empty state.</summary>
     public const string EmptyTitle = "No providers to show yet";
 
     /// <summary>The explanation of the empty state.</summary>
     public const string EmptyText =
-        "omp lists only providers it has a credential for, and none was found. Add a provider from a template or define your own, or choose Add API key on a provider, and it appears here.";
+        "The engine lists only providers it has a credential for, and none was found. Add a provider from a template or define your own, or choose Add API key on a provider, and it appears here.";
 
     /// <summary>The heading of the error state.</summary>
     public const string ErrorTitle = "The providers could not be read";
 
     /// <summary>The reason shown when the source gives none.</summary>
-    public const string LoadFailed = "omp's providers could not be read. Check that omp is installed and try again.";
+    public const string LoadFailed = "The engine's providers could not be read. Check that the engine is installed and try again.";
 
     /// <summary>The sentence shown when the search keeps no provider.</summary>
     public const string NoMatchesText = "No provider or model matches the search.";
 
     /// <summary>The sentence shown when the list is not complete.</summary>
     public const string IncompleteNote =
-        "omp lists only providers it has credentials for, so this list can be shorter than the providers omp supports. Add a provider from a template or define your own, or add an API key to a provider to make its models appear.";
+        "The engine lists only providers it has credentials for, so this list can be shorter than the providers the engine supports. Add a provider from a template or define your own, or add an API key to a provider to make its models appear.";
 
-    /// <summary>The sentence that says where the key of a provider omp knows keeps: omp holds it, Autonogrammer keeps no copy.</summary>
-    public const string OmpKeyStorageNote =
-        "omp keeps the key in its own credential database, unencrypted and readable only by your account. Autonogrammer hands the key to omp once and does not keep it.";
+    /// <summary>The sentence that says where the key of a provider the engine knows keeps: the engine holds it, Autonogrammer keeps no copy.</summary>
+    public const string EngineKeyStorageNote =
+        "The engine keeps the key in its own credential database, unencrypted and readable only by your account. Autonogrammer hands the key to the engine once and does not keep it.";
 
-    /// <summary>The sentence that says where the key of a provider Autonogrammer wrote to models.yml keeps: Autonogrammer holds it, omp gets it per process.</summary>
+    /// <summary>The sentence that says where the key of a provider Autonogrammer wrote to models.yml keeps: Autonogrammer holds it, the engine gets it per process.</summary>
     public const string AutonogrammerKeyStorageNote =
-        "Autonogrammer keeps the key in secrets/secrets.json in its own state directory, unencrypted and readable only by your account, like omp's own credential database. Autonogrammer gives it to omp through an environment variable each time it starts omp. omp keeps no copy.";
+        "Autonogrammer keeps the key in secrets/secrets.json in its own state directory, unencrypted and readable only by your account, like the engine's own credential database. Autonogrammer gives it to the engine through an environment variable each time it starts the engine. The engine keeps no copy.";
 
     /// <summary>Returns the sentence that says where the key of a provider is kept.</summary>
     /// <param name="isAutonogrammerManaged">True when Autonogrammer wrote the provider to models.yml, so Autonogrammer holds its key.</param>
     /// <returns>The sentence.</returns>
-    public static string KeyStorageNote(bool isAutonogrammerManaged) => isAutonogrammerManaged ? AutonogrammerKeyStorageNote : OmpKeyStorageNote;
+    public static string KeyStorageNote(bool isAutonogrammerManaged) => isAutonogrammerManaged ? AutonogrammerKeyStorageNote : EngineKeyStorageNote;
 
     /// <summary>The notice about writing a custom provider.</summary>
     public const string CustomProviderWriteNotice =
-        "A custom provider is written to models.yml in omp's configuration directory. A backup of the file is kept before each change.";
+        "A custom provider is written to models.yml in the engine's configuration directory. A backup of the file is kept before each change.";
 
-    /// <summary>The hint for a provider that signs in through omp.</summary>
-    public const string SignInHint = "This provider signs in through omp. Run omp login in a terminal; Autonogrammer cannot sign in for you.";
+    /// <summary>The hint for a provider that signs in through the engine.</summary>
+    public const string SignInHint = "This provider signs in through the engine. Run its sign-in command in a terminal; Autonogrammer cannot sign in for you.";
 
     /// <summary>The label of the add-provider action.</summary>
     public const string AddCustomProviderLabel = "Add custom provider";
@@ -74,7 +74,7 @@ public static class ModelsCopy
 
     /// <summary>The sentence that explains what a provider template is.</summary>
     public const string TemplatesExplanation =
-        "omp knows only its built-in providers and the providers in models.yml. Add a provider from a template or define your own: pick a template, add the model ids, save, then add the API key on the provider's card.";
+        "The engine knows only its built-in providers and the providers in models.yml. Add a provider from a template or define your own: pick a template, add the model ids, save, then add the API key on the provider's card.";
 
     /// <summary>The label of the action that starts a custom provider from a template.</summary>
     public const string UseTemplateLabel = "Use template";
@@ -119,7 +119,7 @@ public static class ModelsCopy
     public const string ModelsHeading = "Models";
 
     /// <summary>The text of a card that lists no model.</summary>
-    public const string NoModelsText = "omp lists no models for this provider yet.";
+    public const string NoModelsText = "The engine lists no models for this provider yet.";
 
     /// <summary>The heading of the add form.</summary>
     public const string DraftTitleAdd = "Add custom provider";
@@ -209,7 +209,9 @@ public static class ModelsCopy
     public const string ErrApiKeyTooLong = "The key is longer than 4096 characters.";
 
     /// <summary>The reason shown when a write fails and the source gives none.</summary>
-    public const string ActionFailed = "omp did not accept the change. Nothing was changed.";
+    public const string ActionFailed = "The engine did not accept the change. Nothing was changed.";
+    /// <summary>The reason shown when a write is cancelled before it finishes.</summary>
+    public const string ActionCancelled = "The action was cancelled. Nothing was changed.";
 
     /// <summary>The text shown when a test is not run for a provider that needs credentials the owner has not supplied.</summary>
     public const string TestNotRun = "Testing needs credentials the owner has not supplied; not run.";
@@ -228,6 +230,8 @@ public static class ModelsCopy
 
     /// <summary>The text for a test that failed.</summary>
     public const string TestFailed = "The test failed.";
+    /// <summary>The text shown when a test is cancelled before it finishes.</summary>
+    public const string TestCancelled = "The test was cancelled.";
 
     /// <summary>Returns the heading of a group.</summary>
     /// <param name="group">The group.</param>
@@ -239,7 +243,7 @@ public static class ModelsCopy
         ProviderGroup.Cloud => "Cloud",
         ProviderGroup.CodingPlan => "Coding plans",
         ProviderGroup.Custom => "Custom",
-        ProviderGroup.OmpBuiltIn => "Built into omp",
+        ProviderGroup.EngineBuiltIn => "Built in",
         _ => throw new ArgumentOutOfRangeException(nameof(group), group, "Unknown provider group."),
     };
 
@@ -252,8 +256,8 @@ public static class ModelsCopy
         ProviderGroup.Local => "Runtimes on this machine. Testing probes the address and needs no key.",
         ProviderGroup.Cloud => "Hosted APIs billed per use. Each needs its own API key.",
         ProviderGroup.CodingPlan => "Subscription plans with their own coding key and published request limits.",
-        ProviderGroup.Custom => "Providers you added. Autonogrammer wrote them to omp's models.yml and can edit or remove them.",
-        ProviderGroup.OmpBuiltIn => "Providers omp supports by itself. Autonogrammer can add a key; it does not change the provider.",
+        ProviderGroup.Custom => "Providers you added. Autonogrammer wrote them to the engine's models.yml and can edit or remove them.",
+        ProviderGroup.EngineBuiltIn => "Providers the engine supports by itself. Autonogrammer can add a key; it does not change the provider.",
         _ => throw new ArgumentOutOfRangeException(nameof(group), group, "Unknown provider group."),
     };
 
@@ -265,7 +269,7 @@ public static class ModelsCopy
     {
         ProviderAuthKind.None => "No authentication",
         ProviderAuthKind.ApiKey => "API key",
-        ProviderAuthKind.OAuth => "Sign-in through omp",
+        ProviderAuthKind.OAuth => "Sign-in through the engine",
         ProviderAuthKind.Unknown => "Authentication unknown",
         _ => throw new ArgumentOutOfRangeException(nameof(auth), auth, "Unknown authentication kind."),
     };
@@ -276,8 +280,8 @@ public static class ModelsCopy
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="credential"/> is not defined.</exception>
     public static string CredentialLabel(CredentialState credential) => credential switch
     {
-        CredentialState.Present => "credential present in omp",
-        CredentialState.Absent => "no credential in omp",
+        CredentialState.Present => "credential present in the engine",
+        CredentialState.Absent => "no credential in the engine",
         CredentialState.Unknown => "credential state unknown",
         CredentialState.NotRequired => "no credential needed",
         _ => throw new ArgumentOutOfRangeException(nameof(credential), credential, "Unknown credential state."),
@@ -285,8 +289,8 @@ public static class ModelsCopy
 
     /// <summary>Returns the status line of a card.</summary>
     /// <param name="auth">How the provider authenticates.</param>
-    /// <param name="credential">Whether omp holds a credential.</param>
-    /// <returns>The line, for example "API key, no credential in omp".</returns>
+    /// <param name="credential">Whether the engine holds a credential.</param>
+    /// <returns>The line, for example "API key, no credential in the engine".</returns>
     public static string StatusLine(ProviderAuthKind auth, CredentialState credential) => $"{AuthLabel(auth)}, {CredentialLabel(credential)}";
 
     /// <summary>Returns the label of a protocol choice.</summary>
@@ -387,7 +391,7 @@ public static class ModelsCopy
     /// <param name="providerName">The provider's display name.</param>
     /// <returns>The question.</returns>
     public static string RemoveQuestion(string providerName) =>
-        $"Remove {providerName}? It is deleted from models.yml; a backup of the file is kept. Keys omp holds for it are not touched.";
+        $"Remove {providerName}? It is deleted from models.yml; a backup of the file is kept. Keys the engine holds for it are not touched.";
 
     /// <summary>Returns the live-region text for the number of matches.</summary>
     /// <param name="count">The number of providers shown.</param>
@@ -395,12 +399,12 @@ public static class ModelsCopy
     public static string MatchCount(int count) =>
         count == 1 ? "1 provider shown." : $"{count.ToString(CultureInfo.InvariantCulture)} providers shown.";
 
-    /// <summary>Returns the text for a key omp accepted.</summary>
+    /// <summary>Returns the text for a key the engine accepted.</summary>
     /// <param name="providerName">The provider's display name.</param>
     /// <returns>The text.</returns>
-    public static string KeySaved(string providerName) => $"The API key for {providerName} was handed to omp.";
+    public static string KeySaved(string providerName) => $"The API key for {providerName} was handed to the engine.";
 
-    /// <summary>Returns the text for a default model that omp now uses.</summary>
+    /// <summary>Returns the text for a default model that the engine now uses.</summary>
     /// <param name="selector">The model.</param>
     /// <returns>The text.</returns>
     public static string DefaultSet(string selector) => $"{selector} is now the default model.";
@@ -441,7 +445,7 @@ public static class ModelsCopy
             ProviderTestStatus.Reachable => TestReachable,
             ProviderTestStatus.NotRunning => TestNotRunning,
             ProviderTestStatus.Unauthorized => TestUnauthorized,
-            ProviderTestStatus.NotTestable => group is ProviderGroup.Cloud or ProviderGroup.CodingPlan or ProviderGroup.OmpBuiltIn ? TestNotRun : TestUnavailable,
+            ProviderTestStatus.NotTestable => group is ProviderGroup.Cloud or ProviderGroup.CodingPlan or ProviderGroup.EngineBuiltIn ? TestNotRun : TestUnavailable,
             ProviderTestStatus.Failed => TestFailed,
             _ => throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown test status."),
         };

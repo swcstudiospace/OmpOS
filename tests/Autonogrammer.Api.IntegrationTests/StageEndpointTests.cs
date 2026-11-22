@@ -31,7 +31,7 @@ public sealed class StageEndpointTests
         document.RootElement.GetProperty("available").GetBoolean().ShouldBeFalse();
         document.RootElement.GetProperty("reason").GetString().ShouldNotBeNullOrWhiteSpace();
         var stages = document.RootElement.GetProperty("stages").EnumerateArray().ToArray();
-        stages.Select(static stage => stage.GetProperty("source").GetString()).ShouldBe(["Omp", "Ultrathink", "Swarm", "Substrate", "Gsd"]);
+        stages.Select(static stage => stage.GetProperty("source").GetString()).ShouldBe(["Engine", "Ultrathink", "Swarm", "Substrate", "Gsd"]);
         stages[0].GetProperty("status").GetString().ShouldBe("Pending");
         foreach (var plugin in stages.Skip(1))
         {

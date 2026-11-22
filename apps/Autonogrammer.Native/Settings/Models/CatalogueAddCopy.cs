@@ -24,14 +24,14 @@ internal static class CatalogueAddCopy
     /// <summary>The id belongs to a provider Autonogrammer does not own.</summary>
     public const string NotOwned = "A provider with this id already exists in models.yml that Autonogrammer does not own. Remove it by hand, then add this one.";
 
-    /// <summary>omp could not be run to check or write the change.</summary>
-    public const string OmpUnavailable = "Autonogrammer could not ask omp to check the change, so nothing was changed.";
+    /// <summary>The engine could not be run to check or write the change.</summary>
+    public const string EngineUnavailable = "Autonogrammer could not ask the engine to check the change, so nothing was changed.";
 
     /// <summary>Returns the sentence for a sign-in row, which has no key and no block.</summary>
-    /// <param name="loginCommand">The omp command that signs in, or null.</param>
+    /// <param name="loginCommand">The command that signs in, or null.</param>
     /// <returns>The sentence.</returns>
     public static string SignInOnly(string? loginCommand) =>
         string.IsNullOrWhiteSpace(loginCommand)
-            ? "This provider signs in through omp, not with a key. Sign in with omp."
-            : $"This provider signs in through omp, not with a key. In omp, run {loginCommand}.";
+            ? "This provider signs in through the engine, not with a key. Sign in with the engine."
+            : $"This provider signs in through the engine, not with a key. In the engine, run {loginCommand}.";
 }

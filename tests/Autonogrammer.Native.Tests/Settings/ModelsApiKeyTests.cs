@@ -47,7 +47,7 @@ public sealed class ModelsApiKeyTests
                 card.ApiKeyEntry.Classes.ShouldNotContain("revealPasswordButton", StringComparer.Ordinal, "the Fluent reveal button only shows with this class");
                 card.ApiKeyEntry.IsFocused.ShouldBeTrue("focus moves into the entry");
                 AutomationProperties.GetName(card.ApiKeyEntry).ShouldBe(ModelsCopy.ApiKeyFieldLabel("OpenRouter"));
-                SettingsTree.Texts(card).ShouldContain(ModelsCopy.OmpKeyStorageNote, StringComparer.Ordinal);
+                SettingsTree.Texts(card).ShouldContain(ModelsCopy.EngineKeyStorageNote, StringComparer.Ordinal);
                 card.ApiKey.IsEffectivelyVisible.ShouldBeFalse("the entry replaces the button while it is open");
                 card.SaveKey.IsEnabled.ShouldBeFalse("nothing is typed");
                 AutomationProperties.GetName(card.SaveKey).ShouldBe(SettingsViewCopy.ForProvider(ModelsCopy.SaveKeyLabel, "OpenRouter"));
@@ -57,8 +57,8 @@ public sealed class ModelsApiKeyTests
     }
 
     /// <summary>
-    /// Each card says where its own key lives: a provider omp knows says omp keeps it, a provider Autonogrammer wrote says Autonogrammer keeps it in its own
-    /// key store and omp keeps no copy.
+    /// Each card says where its own key lives: a provider engine knows says engine keeps it, a provider Autonogrammer wrote says Autonogrammer keeps it in its own
+    /// key store and engine keeps no copy.
     /// </summary>
     [Fact]
     public async Task EachCardNamesWhereItsKeyLives()
@@ -76,9 +76,9 @@ public sealed class ModelsApiKeyTests
 
                 var mineTexts = SettingsTree.Texts(mine);
                 mineTexts.ShouldContain(ModelsCopy.AutonogrammerKeyStorageNote, StringComparer.Ordinal);
-                mineTexts.ShouldNotContain(ModelsCopy.OmpKeyStorageNote, StringComparer.Ordinal);
+                mineTexts.ShouldNotContain(ModelsCopy.EngineKeyStorageNote, StringComparer.Ordinal);
                 var openrouterTexts = SettingsTree.Texts(openrouter);
-                openrouterTexts.ShouldContain(ModelsCopy.OmpKeyStorageNote, StringComparer.Ordinal);
+                openrouterTexts.ShouldContain(ModelsCopy.EngineKeyStorageNote, StringComparer.Ordinal);
                 openrouterTexts.ShouldNotContain(ModelsCopy.AutonogrammerKeyStorageNote, StringComparer.Ordinal);
             }
         }, ct).ConfigureAwait(true);

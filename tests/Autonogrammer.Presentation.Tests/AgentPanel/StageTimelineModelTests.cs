@@ -304,7 +304,7 @@ public sealed class StageTimelineModelTests
     [Theory]
     [InlineData(StageSource.Omp, StageStatus.Degraded, "The engine is running with reduced function.")]
     [InlineData(StageSource.Omp, StageStatus.Failed, "The engine failed. See the error above the transcript.")]
-    [InlineData(StageSource.Omp, StageStatus.Unavailable, "The omp engine is not available.")]
+    [InlineData(StageSource.Omp, StageStatus.Unavailable, "The engine is not available.")]
     [InlineData(StageSource.Ultrathink, StageStatus.Skipped, "Planning is off. Prompts run as written.")]
     [InlineData(StageSource.Ultrathink, StageStatus.Degraded, "The planner fell back to a plain spec. No graph was created.")]
     [InlineData(StageSource.Ultrathink, StageStatus.Failed, "Planning failed. The prompt ran as written.")]
@@ -536,7 +536,7 @@ public sealed class StageTimelineModelTests
         model.AllPluginsUnavailable.ShouldBeFalse();
     }
 
-    /// <summary>When all four plugin sources report unavailable, the panel knows the agent runs as plain omp.</summary>
+    /// <summary>When all four plugin sources report unavailable, the panel knows the agent runs as plain engine.</summary>
     [Fact]
     public void AllPluginsUnavailableNeedsEveryPluginSourceToReport()
     {
