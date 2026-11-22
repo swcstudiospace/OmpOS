@@ -3,7 +3,7 @@ using Autonogrammer.Presentation.Settings.Models;
 
 namespace Autonogrammer.Presentation.Tests.Settings.Models;
 
-/// <summary>A scripted <see cref="IModelsSettingsSource"/> that behaves like a small omp: writes change what the next load returns.</summary>
+/// <summary>A scripted <see cref="IModelsSettingsSource"/> that behaves like a small engine: writes change what the next load returns.</summary>
 internal sealed class ScriptedModelsSource : IModelsSettingsSource
 {
     private readonly List<ProviderInfo> _providers;

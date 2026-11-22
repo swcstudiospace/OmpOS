@@ -10,7 +10,7 @@ internal static class ListingTestData
     private static ProviderListingRoute Route(string id, string api, string url, bool takesKey = true, bool discovers = true, bool needsModels = false, IReadOnlyList<string>? models = null) =>
         new(id, api, url, takesKey ? "Bearer" : "none", takesKey, discovers, needsModels, models ?? []);
 
-    /// <summary>Mistral's pay-as-you-go API: European, omp knows it, models are discovered.</summary>
+    /// <summary>Mistral's pay-as-you-go API: European, engine knows it, models are discovered.</summary>
     public static ProviderListing Mistral() => new(
         "mistral",
         "Mistral AI La Plateforme",
@@ -31,7 +31,7 @@ internal static class ListingTestData
         null,
         null);
 
-    /// <summary>Infomaniak AI Tools: Swiss, omp does not know it, the base URL holds the account's product id.</summary>
+    /// <summary>Infomaniak AI Tools: Swiss, engine does not know it, the base URL holds the account's product id.</summary>
     public static ProviderListing Infomaniak() => new(
         "infomaniak-ai-tools",
         "Infomaniak AI Tools",
@@ -52,7 +52,7 @@ internal static class ListingTestData
         "Docs page is a JS shell; facts from search excerpts.",
         null);
 
-    /// <summary>Perplexity: American, omp does not know it, the vendor documents no models list.</summary>
+    /// <summary>Perplexity: American, engine does not know it, the vendor documents no models list.</summary>
     public static ProviderListing Perplexity() => new(
         "perplexity",
         "Perplexity API",
@@ -104,7 +104,7 @@ internal static class ListingTestData
             ],
             ["Claude Code", "Cline"]));
 
-    /// <summary>Claude Pro and Max sign-in: a credential the user supplies in omp; Autonogrammer never stores it.</summary>
+    /// <summary>Claude Pro and Max sign-in: a credential the user supplies in engine; Autonogrammer never stores it.</summary>
     public static ProviderListing AnthropicSubscription() => new(
         "anthropic-subscription",
         "Claude Pro / Max login",
@@ -132,7 +132,7 @@ internal static class ListingTestData
             [new ProviderListingTier("Pro", "$20 per month", true, null)],
             []));
 
-    /// <summary>Ollama on this machine: omp finds it itself, no key.</summary>
+    /// <summary>Ollama on this machine: engine finds it itself, no key.</summary>
     public static ProviderListing Ollama() => new(
         "ollama",
         "Ollama",
@@ -153,7 +153,7 @@ internal static class ListingTestData
         null,
         null);
 
-    /// <summary>LocalAI: local, omp does not know it, keyless, so Autonogrammer writes a block.</summary>
+    /// <summary>LocalAI: local, engine does not know it, keyless, so Autonogrammer writes a block.</summary>
     public static ProviderListing LocalAi() => Ollama() with
     {
         Id = "localai",
@@ -183,7 +183,7 @@ internal static class ListingTestData
         "Verify before use: the docs page returned only navigation.",
         null);
 
-    /// <summary>DeepSeek: Chinese, omp knows it, two routes (OpenAI and Anthropic).</summary>
+    /// <summary>DeepSeek: Chinese, engine knows it, two routes (OpenAI and Anthropic).</summary>
     public static ProviderListing DeepSeek() => new(
         "deepseek",
         "DeepSeek API",

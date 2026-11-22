@@ -47,7 +47,7 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
     private bool _isSaving;
 
     /// <summary>Initializes a new instance of the <see cref="ModelsSettingsPage"/> class.</summary>
-    /// <param name="source">The source that reads and writes omp's providers.</param>
+    /// <param name="source">The source that reads and writes engine's providers.</param>
     public ModelsSettingsPage(IModelsSettingsSource source)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -67,16 +67,16 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
     /// <summary>Gets the reason the providers could not be read, or null.</summary>
     public string? LoadFailure => _loadFailure;
 
-    /// <summary>Gets omp's configuration warning (for example its <c>models.yml</c> validation message), or null.</summary>
+    /// <summary>Gets engine's configuration warning (for example its <c>models.yml</c> validation message), or null.</summary>
     public string? Warning => _warning;
 
     /// <summary>Gets the sentence that says why the operator has disabled key entry, or null when keys can be entered. Every card disables its key field while it is set.</summary>
     public string? KeyWritesDisabledReason => _keyWritesDisabledReason;
 
-    /// <summary>Gets a value indicating whether the list is complete. When false omp lists only providers it holds a credential for.</summary>
+    /// <summary>Gets a value indicating whether the list is complete. When false engine lists only providers it holds a credential for.</summary>
     public bool IsComplete => _isComplete;
 
-    /// <summary>Gets the sentence that says the list may be shorter than what omp supports, or null when the list is complete.</summary>
+    /// <summary>Gets the sentence that says the list may be shorter than what engine supports, or null when the list is complete.</summary>
     public string? IncompleteNote => _isComplete ? null : ModelsCopy.IncompleteNote;
 
     /// <summary>Gets the default model selector, or null when none is set.</summary>
@@ -217,7 +217,7 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
     /// with a broken rule shows its errors and is not sent.
     /// </summary>
     /// <param name="cancellationToken">Cancels the write.</param>
-    /// <returns>True when the form was saved or there was nothing to save; false when it is rejected or omp refused it.</returns>
+    /// <returns>True when the form was saved or there was nothing to save; false when it is rejected or engine refused it.</returns>
     public async Task<bool> SaveAsync(CancellationToken cancellationToken)
     {
         var draft = _draft;
@@ -279,7 +279,7 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
     /// <summary>Makes a model the default for new chats, whichever card lists it.</summary>
     /// <param name="selector">The model as <c>provider/model</c>.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
-    /// <returns>True when omp now uses it; false when no card lists it or omp refused it.</returns>
+    /// <returns>True when engine now uses it; false when no card lists it or engine refused it.</returns>
     public Task<bool> SetDefaultModelAsync(string selector, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(selector);

@@ -6,9 +6,9 @@ using Autonogrammer.Presentation.Settings.Models;
 namespace Autonogrammer.Native.Settings.Models;
 
 /// <summary>
-/// The catalogue half of the Models source: adding one row of <see cref="CatalogueRows"/> to omp. A row omp knows by id on its
-/// default route gets its key through <c>omp auth import</c> and no block; every other row or route gets an Autonogrammer block in
-/// <c>models.yml</c> (written by <see cref="OmpModelsFile"/>: backup, atomic write, omp validates and the previous file is restored
+/// The catalogue half of the Models source: adding one row of <see cref="CatalogueRows"/> to engine. A row engine knows by id on its
+/// default route gets its key through <c>engine auth import</c> and no block; every other row or route gets an Autonogrammer block in
+/// <c>models.yml</c> (written by <see cref="OmpModelsFile"/>: backup, atomic write, engine validates and the previous file is restored
 /// on refusal) and its key in the Autonogrammer key store under <see cref="ProviderKeyEnvironment.EnvNameFor"/> of the block id. Removing a
 /// block and choosing the default model are the existing members of the source; they work on a catalogue block because it is an
 /// ordinary Autonogrammer block.
@@ -24,7 +24,7 @@ internal sealed partial class ModelsSettingsSource
         return outcome.IsSuccess ? ModelsActionResult.Success : ModelsActionResult.Failure(outcome.Message ?? ModelsCopy.ActionFailed);
     }
 
-    /// <summary>Adds a catalogue listing to omp and says exactly what happened.</summary>
+    /// <summary>Adds a catalogue listing to engine and says exactly what happened.</summary>
     /// <param name="request">The listing, route, placeholder values and model ids.</param>
     /// <param name="apiKey">The key, or an empty string when the route takes none or a key is already stored. It is passed on once and not kept.</param>
     /// <param name="planRuleAccepted">True when the user confirmed that they read the vendor's rule text. A coding plan listing is refused without it.</param>
@@ -181,7 +181,7 @@ internal sealed partial class ModelsSettingsSource
     private async Task RestoreBlockAsync(string blockId, OmpManagedProvider? previous)
     {
         // The key could not be stored, so the block that names it must not stay behind half set up. A failed restore leaves a block
-        // omp can read and the next add of the same id replaces it, so the failure is not a second error for the user.
+        // engine can read and the next add of the same id replaces it, so the failure is not a second error for the user.
         _ = previous is null
             ? await _omp.ModelsFile.RemoveAsync(blockId, CancellationToken.None).ConfigureAwait(false)
             : await _omp.ModelsFile.UpsertAsync(previous, CancellationToken.None).ConfigureAwait(false);

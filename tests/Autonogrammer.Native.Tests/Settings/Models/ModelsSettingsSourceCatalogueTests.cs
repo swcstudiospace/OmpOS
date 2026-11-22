@@ -8,7 +8,7 @@ using Xunit;
 namespace Autonogrammer.Native.Tests.Settings.Models;
 
 /// <summary>
-/// Adding a catalogue listing through <see cref="ModelsSettingsSource"/> with a fake omp: a row omp knows gets its key through omp,
+/// Adding a catalogue listing through <see cref="ModelsSettingsSource"/> with a fake engine: a row engine knows gets its key through engine,
 /// every other route becomes an Autonogrammer block whose <c>apiKey</c> is the NAME of a variable and whose key sits in the key store, and each
 /// refusal is a typed outcome that leaves <c>models.yml</c> and the key store as they were. No outcome, file or call carries the key.
 /// </summary>

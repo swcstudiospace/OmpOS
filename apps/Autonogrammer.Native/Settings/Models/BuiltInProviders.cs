@@ -4,11 +4,11 @@ namespace Autonogrammer.Native.Settings.Models;
 
 /// <summary>
 /// The API-key providers the engine knows by itself that the Models page lists even before a key exists, and the local runtimes the engine discovers.
-/// Every API-key row was verified in a sandbox on 2026-10-26 against omp 18.12.6: with a fake key in the provider's own environment
-/// variable (the variable named in <c>omp://providers.md</c>), <c>omp models --json --no-extensions</c> listed models of that provider
+/// Every API-key row was verified in a sandbox on 2026-10-26 against engine 18.12.6: with a fake key in the provider's own environment
+/// variable (the variable named in <c>engine://providers.md</c>), <c>engine models --json --no-extensions</c> listed models of that provider
 /// id, and with no variable it listed none. A provider that failed the check is not in the table: <c>siliconflow</c>, <c>perplexity</c>
 /// and <c>cohere</c> listed no row. The key page is the address the provider issues keys at, kept only where it could be read on the
-/// date; a page that answered 403, 404 or 429 to a plain request has no address here. The table is a convenience: omp's own listing
+/// date; a page that answered 403, 404 or 429 to a plain request has no address here. The table is a convenience: engine's own listing
 /// adds every other provider it holds a credential for.
 /// </summary>
 internal static class BuiltInProviders
@@ -59,7 +59,7 @@ internal static class BuiltInProviders
     /// <summary>Gets the verified API-key providers, in the order the page lists them.</summary>
     public static IReadOnlyList<BuiltInProvider> All => Providers;
 
-    /// <summary>Gets the local engines omp discovers, with the default address of each as <c>omp://providers.md</c> documents it.</summary>
+    /// <summary>Gets the local engines engine discovers, with the default address of each as <c>engine://providers.md</c> documents it.</summary>
     public static IReadOnlyList<LocalRuntime> LocalEngines => Engines;
 
     /// <summary>Returns the API-key provider with an id, or null.</summary>

@@ -3,8 +3,8 @@ using Autonogrammer.Presentation.Observable;
 namespace Autonogrammer.Presentation.Settings.Models;
 
 /// <summary>
-/// One provider card on the Models page: what the provider is, whether omp holds a credential, its models, and the actions the
-/// source can back. Actions that omp cannot do from here have no member: there is no sign-in action (omp signs in by itself) and
+/// One provider card on the Models page: what the provider is, whether engine holds a credential, its models, and the actions the
+/// source can back. Actions that engine cannot do from here have no member: there is no sign-in action (engine signs in by itself) and
 /// edit and remove exist only for providers Autonogrammer wrote. Action failures set <see cref="ErrorText"/> and never throw.
 /// </summary>
 /// <remarks>
@@ -56,16 +56,16 @@ public sealed class ProviderCardModel : ObservableModel
     /// <summary>Gets the group the card sits in.</summary>
     public ProviderGroup Group => _info.Group;
 
-    /// <summary>Gets the endpoint as text, or an empty string when omp owns it.</summary>
+    /// <summary>Gets the endpoint as text, or an empty string when engine owns it.</summary>
     public string EndpointText => _info.EndpointText;
 
-    /// <summary>Gets the line that says how the provider authenticates and whether omp holds a credential.</summary>
+    /// <summary>Gets the line that says how the provider authenticates and whether engine holds a credential.</summary>
     public string StatusLine => ModelsCopy.StatusLine(_info.AuthKind, _info.Credential);
 
     /// <summary>Gets the short note of the card, or null.</summary>
     public string? Note => _info.Note;
 
-    /// <summary>Gets the hint for a provider that signs in through omp, or null for every other provider.</summary>
+    /// <summary>Gets the hint for a provider that signs in through engine, or null for every other provider.</summary>
     public string? SignInHint => _info.AuthKind == ProviderAuthKind.OAuth ? ModelsCopy.SignInHint : null;
 
     /// <summary>Gets the models the provider offers.</summary>
@@ -90,10 +90,10 @@ public sealed class ProviderCardModel : ObservableModel
     /// <summary>Gets the page where the plan is described, bought or renewed, or null.</summary>
     public Uri? PlanUrl => _info.Plan?.PlanUrl;
 
-    /// <summary>Gets a value indicating whether an API key can be added or replaced: omp takes an API key for this provider.</summary>
+    /// <summary>Gets a value indicating whether an API key can be added or replaced: engine takes an API key for this provider.</summary>
     public bool CanSetApiKey => _info.AuthKind == ProviderAuthKind.ApiKey;
 
-    /// <summary>Gets the label of the key action: Add API key while omp holds none, Replace API key otherwise.</summary>
+    /// <summary>Gets the label of the key action: Add API key while engine holds none, Replace API key otherwise.</summary>
     public string ApiKeyActionLabel => _info.Credential == CredentialState.Present ? ModelsCopy.ReplaceApiKeyLabel : ModelsCopy.AddApiKeyLabel;
 
     /// <summary>Gets the open key entry, or null while no entry is open.</summary>
@@ -167,7 +167,7 @@ public sealed class ProviderCardModel : ObservableModel
     /// empty, with the source's message in <see cref="ErrorText"/>.
     /// </summary>
     /// <param name="cancellationToken">Cancels the write.</param>
-    /// <returns>True when omp accepted the key.</returns>
+    /// <returns>True when engine accepted the key.</returns>
     public async Task<bool> SaveApiKeyAsync(CancellationToken cancellationToken = default)
     {
         var draft = _apiKey;
@@ -233,7 +233,7 @@ public sealed class ProviderCardModel : ObservableModel
     /// <summary>Makes a model of this provider the default for new chats. A selector the card does not list is refused.</summary>
     /// <param name="selector">The model as <c>provider/model</c>.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
-    /// <returns>True when omp now uses the model as the default.</returns>
+    /// <returns>True when engine now uses the model as the default.</returns>
     public async Task<bool> UseAsDefaultAsync(string selector, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(selector);
@@ -339,7 +339,7 @@ public sealed class ProviderCardModel : ObservableModel
 
     /// <summary>Removes the provider after <see cref="BeginRemove"/>. Without the question nothing is removed.</summary>
     /// <param name="cancellationToken">Cancels the write.</param>
-    /// <returns>True when omp no longer has the provider.</returns>
+    /// <returns>True when engine no longer has the provider.</returns>
     public async Task<bool> ConfirmRemoveAsync(CancellationToken cancellationToken = default)
     {
         if (!_isConfirmingRemove || !CanRemove || _isBusy)

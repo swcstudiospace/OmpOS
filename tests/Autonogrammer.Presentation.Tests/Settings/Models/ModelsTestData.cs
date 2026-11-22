@@ -87,7 +87,7 @@ internal static class ModelsTestData
         CustomProviderCapabilities.Chat,
         false);
 
-    /// <summary>A provider omp knows by itself, with a key and two models.</summary>
+    /// <summary>A provider engine knows by itself, with a key and two models.</summary>
     public static ProviderInfo OpenAi(CredentialState credential = CredentialState.Present) => new(
         "openai",
         "OpenAI",
@@ -102,7 +102,7 @@ internal static class ModelsTestData
         false,
         null);
 
-    /// <summary>A provider omp signs in to by itself.</summary>
+    /// <summary>A provider engine signs in to by itself.</summary>
     public static ProviderInfo SignInOnly() => new(
         "anthropic",
         "Anthropic",

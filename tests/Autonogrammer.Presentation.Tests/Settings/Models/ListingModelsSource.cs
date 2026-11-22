@@ -20,7 +20,7 @@ internal sealed class ListingModelsSource : IModelsSettingsSource
     /// <summary>Gets the number of loads.</summary>
     public int LoadCalls { get; private set; }
 
-    /// <summary>Gets the keys handed to omp itself, with the omp provider id each was for.</summary>
+    /// <summary>Gets the keys handed to engine itself, with the engine provider id each was for.</summary>
     public List<(string ProviderId, string Key)> OmpKeys { get; } = [];
 
     /// <summary>Gets the catalogue requests and the key handed with each.</summary>

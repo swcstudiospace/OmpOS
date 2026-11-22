@@ -39,7 +39,7 @@ public sealed class ModelsPageViewTests
         }, ct).ConfigureAwait(true);
     }
 
-    /// <summary>A card shows the name, the status line, the endpoint, the source line and the models, and offers only the actions omp can back.</summary>
+    /// <summary>A card shows the name, the status line, the endpoint, the source line and the models, and offers only the actions engine can back.</summary>
     [Fact]
     public async Task ACardShowsItsFactsAndOnlyTheActionsOmpCanDo()
     {
@@ -145,7 +145,7 @@ public sealed class ModelsPageViewTests
         }, ct).ConfigureAwait(true);
     }
 
-    /// <summary>When omp refuses a default the card says so and the badge stays where it was.</summary>
+    /// <summary>When engine refuses a default the card says so and the badge stays where it was.</summary>
     [Fact]
     public async Task ARefusedDefaultShowsItsReasonAndKeepsTheBadge()
     {
@@ -195,7 +195,7 @@ public sealed class ModelsPageViewTests
         }, ct).ConfigureAwait(true);
     }
 
-    /// <summary>omp's warning shows as a banner, and an incomplete list says that omp lists only providers it has credentials for.</summary>
+    /// <summary>engine's warning shows as a banner, and an incomplete list says that engine lists only providers it has credentials for.</summary>
     [Fact]
     public async Task TheWarningAndTheIncompleteNoteAreShown()
     {

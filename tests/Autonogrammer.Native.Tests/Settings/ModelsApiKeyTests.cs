@@ -57,8 +57,8 @@ public sealed class ModelsApiKeyTests
     }
 
     /// <summary>
-    /// Each card says where its own key lives: a provider omp knows says omp keeps it, a provider Autonogrammer wrote says Autonogrammer keeps it in its own
-    /// key store and omp keeps no copy.
+    /// Each card says where its own key lives: a provider engine knows says engine keeps it, a provider Autonogrammer wrote says Autonogrammer keeps it in its own
+    /// key store and engine keeps no copy.
     /// </summary>
     [Fact]
     public async Task EachCardNamesWhereItsKeyLives()

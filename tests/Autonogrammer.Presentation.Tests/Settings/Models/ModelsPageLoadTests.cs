@@ -51,7 +51,7 @@ public sealed class ModelsPageLoadTests
         failed.Groups.ShouldBeEmpty();
     }
 
-    /// <summary>The empty state explains that omp lists only providers with a credential and points to Add API key.</summary>
+    /// <summary>The empty state explains that engine lists only providers with a credential and points to Add API key.</summary>
     [Fact]
     public void EmptyStateExplainsTheCredentialRule()
     {
@@ -122,7 +122,7 @@ public sealed class ModelsPageLoadTests
         page.Groups.Count.ShouldBe(1);
     }
 
-    /// <summary>The page covers local, cloud, coding plan, custom and omp built-in providers, in that order, each with its own heading.</summary>
+    /// <summary>The page covers local, cloud, coding plan, custom and engine built-in providers, in that order, each with its own heading.</summary>
     [Fact]
     public async Task EveryGroupIsListedInOrder()
     {
@@ -167,7 +167,7 @@ public sealed class ModelsPageLoadTests
         card.PlanUrl.ShouldBe(new Uri("https://platform.minimax.example/plan"));
     }
 
-    /// <summary>An incomplete list says so, a complete one does not, and omp's configuration warning is shown.</summary>
+    /// <summary>An incomplete list says so, a complete one does not, and engine's configuration warning is shown.</summary>
     [Fact]
     public async Task IncompleteNoteAndWarningFollowTheSnapshot()
     {

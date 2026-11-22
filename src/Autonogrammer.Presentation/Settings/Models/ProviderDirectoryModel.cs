@@ -102,7 +102,7 @@ public sealed class ProviderDirectoryModel : ObservableModel
     /// <summary>Gets the kind the filter keeps, or null for all kinds.</summary>
     public ProviderListingKind? SelectedKind => _kind;
 
-    /// <summary>Gets or sets the search text. A card stays when its name, id, omp id, country, residency note, endpoint or note contains it.</summary>
+    /// <summary>Gets or sets the search text. A card stays when its name, id, engine id, country, residency note, endpoint or note contains it.</summary>
     public string SearchText
     {
         get => _searchText;
@@ -161,7 +161,7 @@ public sealed class ProviderDirectoryModel : ObservableModel
         return _byId.GetValueOrDefault(listingId);
     }
 
-    /// <summary>Replaces the listings with a newer read and marks the ones omp already has.</summary>
+    /// <summary>Replaces the listings with a newer read and marks the ones engine already has.</summary>
     /// <param name="listings">The listings, in the order the source lists them.</param>
     /// <param name="providers">The provider cards of the page, to find which listings are set up.</param>
     internal void Update(IReadOnlyList<ProviderListing> listings, IReadOnlyList<ProviderCardModel> providers)

@@ -18,22 +18,22 @@ public static class AgentPanelCopy
     /// <summary>The product name the top bar shows when the view has no workspace folder to name.</summary>
     public const string ProductName = "Autonogrammer";
 
-    /// <summary>The rail control that creates an omp terminal session beside New agent.</summary>
+    /// <summary>The rail control that creates an engine terminal session beside New agent.</summary>
     public const string NewTerminal = "New omp terminal";
 
-    /// <summary>The tooltip of the New omp terminal control, with its shortcut.</summary>
+    /// <summary>The tooltip of the New engine terminal control, with its shortcut.</summary>
     public const string NewTerminalTooltip = "New omp terminal (Ctrl+Shift+T)";
 
-    /// <summary>The accessible name of the message box of the steer-only composer of an omp terminal session.</summary>
+    /// <summary>The accessible name of the message box of the steer-only composer of an engine terminal session.</summary>
     public const string TerminalMessageName = "Steer message";
 
-    /// <summary>The accessible name of the Send now control of an omp terminal session.</summary>
+    /// <summary>The accessible name of the Send now control of an engine terminal session.</summary>
     public const string SendNowName = "Send now, deliver the message into the running omp";
 
-    /// <summary>The accessible name of the Queue control of an omp terminal session.</summary>
+    /// <summary>The accessible name of the Queue control of an engine terminal session.</summary>
     public const string QueueFollowUpName = "Queue, run the message after the current turn";
 
-    /// <summary>The placeholder of the steer-only composer of an omp terminal session.</summary>
+    /// <summary>The placeholder of the steer-only composer of an engine terminal session.</summary>
     public const string ComposerPlaceholderTerminal = "Steer this omp terminal";
 
     /// <summary>The label of the control that delivers a steering message into the running turn at once.</summary>
@@ -48,7 +48,7 @@ public static class AgentPanelCopy
     /// <summary>The words that name a terminal session inside its accessible name, in running text.</summary>
     public const string TerminalAccessibleTag = "terminal";
 
-    /// <summary>The status line text when a message is sent to an omp terminal that is not running.</summary>
+    /// <summary>The status line text when a message is sent to an engine terminal that is not running.</summary>
     public const string TerminalNotRunning = "This omp terminal is not running. Restart omp, then send the message again.";
 
     /// <summary>The accessible name of the primary button of the empty thread.</summary>
@@ -225,19 +225,19 @@ public static class AgentPanelCopy
     /// <summary>The delivery text of a steering message the engine took at once.</summary>
     public const string DeliveryDelivered = "Delivered";
 
-    /// <summary>The delivery text of a steering message that reached a session with no running turn: omp started a new turn from it.</summary>
+    /// <summary>The delivery text of a steering message that reached a session with no running turn: engine started a new turn from it.</summary>
     public const string DeliveryStartedNewTurn = "Delivered. The turn had already ended, so omp started a new turn from your message.";
 
-    /// <summary>The delivery text of a steering message omp's own steering took into the turn that was running.</summary>
+    /// <summary>The delivery text of a steering message engine's own steering took into the turn that was running.</summary>
     public const string DeliveryDeliveredIntoTurn = "Delivered into the running turn.";
 
-    /// <summary>The delivery text of a follow-up omp's own steering took into the turn that was running.</summary>
+    /// <summary>The delivery text of a follow-up engine's own steering took into the turn that was running.</summary>
     public const string DeliveryQueuedBehindTurn = "Queued behind the running turn.";
 
     /// <summary>The delivery text of a steering message that found no running turn and was submitted as a new turn.</summary>
     public const string DeliverySubmittedAsNewTurn = "The turn had already ended, so your message started a new turn.";
 
-    /// <summary>The delivery text of a steering message a live channel queued for omp while omp has not acknowledged it yet.</summary>
+    /// <summary>The delivery text of a steering message a live channel queued for engine while engine has not acknowledged it yet.</summary>
     public const string DeliverySentNotAcknowledged = "Sent, omp has not acknowledged it yet";
 
     /// <summary>The delivery text prefix of a steering message that was not delivered.</summary>

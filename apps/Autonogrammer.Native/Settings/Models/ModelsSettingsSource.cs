@@ -9,22 +9,22 @@ using Autonogrammer.Presentation.Settings.Models;
 namespace Autonogrammer.Native.Settings.Models;
 
 /// <summary>
-/// The Models page's access to omp, backed by omp's own mechanisms so that every action changes what omp uses: the model listing
-/// (<c>omp models --json</c>), credential presence (<c>omp token</c>), a key import (<c>omp auth import -</c>), the default model
-/// (<c>omp config set modelRoles</c>) and the Autonogrammer blocks of <c>models.yml</c>. Nothing here validates a credential: a key is
+/// The Models page's access to engine, backed by engine's own mechanisms so that every action changes what engine uses: the model listing
+/// (<c>engine models --json</c>), credential presence (<c>engine token</c>), a key import (<c>engine auth import -</c>), the default model
+/// (<c>engine config set modelRoles</c>) and the Autonogrammer blocks of <c>models.yml</c>. Nothing here validates a credential: a key is
 /// reported as present, never as working, and a test only asks whether something answers at an address.
 /// </summary>
 /// <remarks>
 /// <para>
-/// omp resolves a stored credential only for the providers it knows, so a key for a built-in provider goes to omp's credential
-/// database through <c>omp auth import</c> and Autonogrammer keeps no copy. A custom provider is different: its block in <c>models.yml</c> names
-/// an environment variable that omp reads from its own process environment, so that key is kept in the Autonogrammer provider key store (plain
-/// text, owner-only file; see <see cref="OwnerOnlyFileSecretStore"/>) and <see cref="ProviderKeyEnvironment"/> hands it to every omp the
+/// engine resolves a stored credential only for the providers it knows, so a key for a built-in provider goes to engine's credential
+/// database through <c>engine auth import</c> and Autonogrammer keeps no copy. A custom provider is different: its block in <c>models.yml</c> names
+/// an environment variable that engine reads from its own process environment, so that key is kept in the Autonogrammer provider key store (plain
+/// text, owner-only file; see <see cref="OwnerOnlyFileSecretStore"/>) and <see cref="ProviderKeyEnvironment"/> hands it to every engine the
 /// head starts. Removing the provider deletes the key.
 /// </para>
 /// <para>
-/// Writes are serialised, one at a time. A <c>models.yml</c> change applies to omp processes started afterwards; the registry entry that
-/// keeps a provider's display name and routes is written first and restored when omp refuses the block.
+/// Writes are serialised, one at a time. A <c>models.yml</c> change applies to engine processes started afterwards; the registry entry that
+/// keeps a provider's display name and routes is written first and restored when engine refuses the block.
 /// </para>
 /// </remarks>
 internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDisposable
@@ -40,7 +40,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
     private readonly SemaphoreSlim _writeGate = new(1, 1);
 
     /// <summary>Creates the source.</summary>
-    /// <param name="omp">omp's model configuration: the listing, the credential store, the default model and <c>models.yml</c>.</param>
+    /// <param name="omp">engine's model configuration: the listing, the credential store, the default model and <c>models.yml</c>.</param>
     /// <param name="secrets">The Autonogrammer provider key store, which holds the key of each keyed custom provider under its variable name.</param>
     /// <param name="keys">The environment the keys of that store are merged into; it is refreshed after every change of a key.</param>
     /// <param name="details">The registry file that keeps the display name and routes of each custom provider.</param>
@@ -541,7 +541,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
             .Distinct(StringComparer.Ordinal);
         foreach (var id in shown)
         {
-            // omp lists only the models of providers it holds a credential for, so a provider in a complete listing needs no question.
+            // engine lists only the models of providers it holds a credential for, so a provider in a complete listing needs no question.
             if (listing.IsComplete && listedOrder.Contains(id, StringComparer.Ordinal))
             {
                 presence[id] = OmpCredentialPresence.Present;
@@ -580,7 +580,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            // The block is the truth omp reads; an entry that could not be restored only holds a name and routes, and the next save replaces it.
+            // The block is the truth engine reads; an entry that could not be restored only holds a name and routes, and the next save replaces it.
         }
     }
 
@@ -598,7 +598,7 @@ internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDis
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            // The provider is gone from models.yml, which is what omp reads; a leftover entry is ignored and replaced by the next save of this id.
+            // The provider is gone from models.yml, which is what engine reads; a leftover entry is ignored and replaced by the next save of this id.
         }
     }
 

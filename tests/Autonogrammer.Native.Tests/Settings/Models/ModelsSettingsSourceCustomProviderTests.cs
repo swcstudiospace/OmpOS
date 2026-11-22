@@ -8,7 +8,7 @@ namespace Autonogrammer.Native.Tests.Settings.Models;
 
 /// <summary>
 /// Saving and removing custom providers through <see cref="ModelsSettingsSource"/>: the form becomes an Autonogrammer block in <c>models.yml</c>
-/// (what omp reads) and an entry in the registry file (what omp's file cannot hold), every write status becomes a plain
+/// (what engine reads) and an entry in the registry file (what engine's file cannot hold), every write status becomes a plain
 /// <see cref="ModelsActionResult"/>, and a refused write leaves both files as they were.
 /// </summary>
 public sealed class ModelsSettingsSourceCustomProviderTests

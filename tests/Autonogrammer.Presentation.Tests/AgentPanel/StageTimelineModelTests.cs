@@ -536,7 +536,7 @@ public sealed class StageTimelineModelTests
         model.AllPluginsUnavailable.ShouldBeFalse();
     }
 
-    /// <summary>When all four plugin sources report unavailable, the panel knows the agent runs as plain omp.</summary>
+    /// <summary>When all four plugin sources report unavailable, the panel knows the agent runs as plain engine.</summary>
     [Fact]
     public void AllPluginsUnavailableNeedsEveryPluginSourceToReport()
     {

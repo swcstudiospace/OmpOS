@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Autonogrammer.Native.Tests.Settings.Models;
 
-/// <summary>The table of API-key providers omp knows by itself: only verified rows, each with a usable id, a key page that carries its read date, and no row for a provider that failed the check.</summary>
+/// <summary>The table of API-key providers engine knows by itself: only verified rows, each with a usable id, a key page that carries its read date, and no row for a provider that failed the check.</summary>
 public sealed class BuiltInProvidersTests
 {
     [Fact]

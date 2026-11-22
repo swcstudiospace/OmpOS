@@ -16,7 +16,7 @@ internal static class ModelsData
     /// <param name="name">The display name.</param>
     /// <param name="group">The group.</param>
     /// <param name="auth">How the provider authenticates.</param>
-    /// <param name="credential">Whether omp holds a credential.</param>
+    /// <param name="credential">Whether engine holds a credential.</param>
     /// <param name="models">The model selectors.</param>
     /// <param name="endpoint">The endpoint text, or empty.</param>
     /// <param name="managed">Whether Autonogrammer wrote the provider.</param>

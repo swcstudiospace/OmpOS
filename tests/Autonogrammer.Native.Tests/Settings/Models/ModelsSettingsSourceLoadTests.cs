@@ -8,9 +8,9 @@ using Xunit;
 namespace Autonogrammer.Native.Tests.Settings.Models;
 
 /// <summary>
-/// What <see cref="ModelsSettingsSource.LoadAsync"/> reads through a fake omp: the listing grouped by provider, credential presence
-/// through <c>omp token</c> for the providers that are shown, the default model, the templates and the warnings. omp is a shell
-/// script; no real omp, model or network is involved.
+/// What <see cref="ModelsSettingsSource.LoadAsync"/> reads through a fake engine: the listing grouped by provider, credential presence
+/// through <c>engine token</c> for the providers that are shown, the default model, the templates and the warnings. engine is a shell
+/// script; no real engine, model or network is involved.
 /// </summary>
 public sealed class ModelsSettingsSourceLoadTests
 {
