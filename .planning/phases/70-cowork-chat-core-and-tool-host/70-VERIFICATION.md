@@ -1,6 +1,6 @@
 ---
 phase: 70-cowork-chat-core-and-tool-host
-verified: 2026-11-22T01:53:17Z
+verified: 2026-11-22T12:00:00Z
 status: passed
 score: "5/5 ROADMAP criteria re-proven executed"
 covered_files:
@@ -34,7 +34,7 @@ overrides_applied: 0
 re_verification: true
 previous_status: gaps_found
 previous_score: "gaps_found"
-commits: ["b46fd81f"]
+commits: ["52eb2c55"]
 human_verification:
   - "Live omp turn with real model (NOT a ROADMAP criterion; never claimed)."
 ---
@@ -177,3 +177,17 @@ Steering (gap 1) remains RESOLVED. U-1, terminal, full .NET 10 human remain. No 
 **Threats appended:** T-70-08-01..04 , T-70-SC (see SOTA)
 
 70-08-SUMMARY records the timeout. Gaps 2 and 4 remain open pending passing tests and build.
+
+## Refresh 2026-11-22 (T8783-be, HEAD 52eb2c55, SDK 10.0.402)
+
+*Evidence first, then verdict (ADR-0002/ADR-0003). No product code touched. Restore+build once (-warnaserror clean), then --no-build runs. 5/5 ROADMAP criteria re-proven at 52eb2c55 today, so verdict returns to passed per blueprint rule.*
+
+*Status: passed — 5/5 re-proven 2026-11-22 at 52eb2c55.*
+
+| Check | Command | Result |
+|---|---|---|
+| SC1 | Cowork.Tests | 123/123 exit 0 (tool host, gate, limiter, profile, permissions, fake provider) |
+| SC2 | Harness.McpGateway.Tests incl real image test (`*CoworkGatewayImageTests*` 2/2, full 79/79, 0 skipped) | exit 0 |
+| SC3 | Native `--filter-class "*Cowork*"` | 67/67 exit 0 |
+| SC4 | Presentation 2646 + UI 882 + Sessions 124 (image fold/replay parity) | exit 0 |
+| SC5 | ArchitectureTests 107/107 (incl ProjectGraph 4/4) + `dotnet build -c Release --no-restore -warnaserror` exit 0 + notices --check exit 0 | exit 0 |
