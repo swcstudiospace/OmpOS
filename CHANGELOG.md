@@ -8,6 +8,12 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.17] - 2026-11-23
+
+### Changed
+
+- Phase 77 docs closeout (GSD v0.16.0 autonomous wave 2, stacked on PR #37): new runbooks `docs/runbooks/cowork.md`, `docs/runbooks/computer-use.md` and `docs/runbooks/v0.16.0-owner-actions.md` (every owner action in ADR-0030 form; Linear register SPE-34972), plus `docs/quality/v0.16.0-parity-audit-elevation.md` (SOTA record for the parity gate); all four listed in `docs/SUMMARY.md`. Docs-only, no product code under src/services/apps and no new tag.
+
 ## [0.20.16] - 2026-11-23
 
 ### Changed
@@ -621,7 +627,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.16...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.17...HEAD
+[0.20.17]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.16...v0.20.17
 [0.20.16]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.15...v0.20.16
 [0.20.15]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.14...v0.20.15
 [0.20.14]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.13...v0.20.14
