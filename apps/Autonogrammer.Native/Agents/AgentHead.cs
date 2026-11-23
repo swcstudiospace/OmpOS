@@ -94,6 +94,9 @@ internal sealed class AgentHead : IAsyncDisposable
     /// <summary>Gets the Cowork browser composition, or null before attach.</summary>
     internal BrowserUseCompositionResult? BrowserUse { get; private set; }
 
+    /// <summary>Gets the Computer Use head composition (backend, settings, access facts), or null before attach. The tool provider registers only through the gated core composition; this result alone offers no tools.</summary>
+    internal Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadResult? ComputerUse { get; private set; }
+
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
     [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: each owner is nulled once transferred to its composed holder; the finally disposes any owner still held directly.")]
     private static async Task<AgentHead> CreateProductionCoreAsync(Autonogrammer.Native.Composition.HeadServices? services)
@@ -409,12 +412,28 @@ internal sealed class AgentHead : IAsyncDisposable
         }
         finally
         {
-            if (Cowork is { } cowork)
+            try
             {
-                await cowork.DisposeAsync().ConfigureAwait(true);
+                if (Cowork is { } cowork)
+                {
+                    await cowork.DisposeAsync().ConfigureAwait(true);
+                }
+            }
+            finally
+            {
+                ComputerUse?.Dispose();
             }
         }
     }
+
+    /// <summary>Builds the Computer Use head glue for this process platform; unsupported platforms get the null backend and register no tools.</summary>
+    private static Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadResult BuildComputerUse(SessionEngineSetOptions options, Autonogrammer.Native.Composition.HeadServices? services) =>
+        Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadComposition.Build(new Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadOptions
+        {
+            Platform = Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadComposition.DetectPlatform(),
+            StateDirectory = options.Loop.StateRoot,
+            AccountGate = services is not null ? new NativeCoworkAccountGate(services.AccountHost.Session) : new SignedOutCoworkGate(),
+        });
 
     private async ValueTask DisposeHostAsync()
     {
@@ -580,6 +599,7 @@ internal sealed class AgentHead : IAsyncDisposable
     }
 
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
+    [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: each owner is nulled once transferred to its composed holder; the finally disposes any owner still held directly.")]
     private static async Task<AgentHead> BuildModelsAsync(SessionEngineSet host, HeadSettings settings, CoworkHead cowork, SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, Autonogrammer.Native.Composition.HeadServices? services, BrowserUseCompositionResult browser)
     {
         SessionCatalogModel? catalog = null;
@@ -691,14 +711,24 @@ internal sealed class AgentHead : IAsyncDisposable
     private static AgentHead CompleteHead(SessionEngineSet host, SessionCatalogModel catalog, AgentPanelViewModel panel, KanbanBoardModel board, HeadSettings settings, CoworkHead cowork, IDisposable loading, BrowserUseCompositionResult browser, SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, Autonogrammer.Native.Composition.HeadServices? services)
     {
         var bundles = ConfigureHost(host, options, services);
-        return new AgentHead(host, catalog, panel, board, loading, selectMostRecent, dispatch, options.TimeProvider, detailsInterval, settings)
+        var computerUse = BuildComputerUse(options, services);
+        try
         {
-            Cowork = cowork,
-            Bundles = bundles,
-            BrowserUse = browser,
-            Services = services,
-            WorkspaceRoot = options.Loop.WorkspaceRoot,
-        };
+            return new AgentHead(host, catalog, panel, board, loading, selectMostRecent, dispatch, options.TimeProvider, detailsInterval, settings)
+            {
+                Cowork = cowork,
+                Bundles = bundles,
+                BrowserUse = browser,
+                ComputerUse = computerUse,
+                Services = services,
+                WorkspaceRoot = options.Loop.WorkspaceRoot,
+            };
+        }
+        catch
+        {
+            computerUse.Dispose();
+            throw;
+        }
     }
 
     private static Autonogrammer.Native.Composition.Plugins.BundleComposition ConfigureHost(SessionEngineSet host, SessionEngineSetOptions options, Autonogrammer.Native.Composition.HeadServices? services)

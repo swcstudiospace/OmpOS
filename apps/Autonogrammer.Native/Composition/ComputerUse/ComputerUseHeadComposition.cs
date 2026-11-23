@@ -24,6 +24,36 @@ internal static class ComputerUseHeadComposition
     /// <summary>Gets the settings factory the window evaluates each time it opens, or null.</summary>
     public static Func<ComputerUseSettingsPage?>? SettingsFactory => Volatile.Read(ref _settingsFactory);
 
+    /// <summary>Detects the desktop platform of this process. Linux is X11 only when an X display is present; a Wayland-only or headless session is unsupported and registers no tools.</summary>
+    /// <param name="getVariable">Environment reader. Null reads the process environment.</param>
+    /// <returns>The platform.</returns>
+    public static ComputerPlatform DetectPlatform(Func<string, string?>? getVariable = null)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return ComputerPlatform.Windows;
+        }
+
+        if (OperatingSystem.IsMacOS())
+        {
+            return ComputerPlatform.MacOS;
+        }
+
+        if (!OperatingSystem.IsLinux())
+        {
+            return ComputerPlatform.Unsupported;
+        }
+
+        return DetectLinuxPlatform(getVariable ?? Environment.GetEnvironmentVariable);
+    }
+
+    /// <summary>Linux rule of <see cref="DetectPlatform"/>: X11 when <c>DISPLAY</c> is set (XWayland included), otherwise unsupported.</summary>
+    internal static ComputerPlatform DetectLinuxPlatform(Func<string, string?> getVariable)
+    {
+        ArgumentNullException.ThrowIfNull(getVariable);
+        return string.IsNullOrWhiteSpace(getVariable("DISPLAY")) ? ComputerPlatform.Unsupported : ComputerPlatform.X11;
+    }
+
     /// <summary>Chooses the backend. Unsupported platforms get <see cref="NullComputerUseBackend"/>.</summary>
     /// <param name="platform">The head platform.</param>
     /// <returns>The backend.</returns>

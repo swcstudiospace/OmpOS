@@ -33,6 +33,19 @@ public sealed class ComputerUseHeadCompositionTests : IDisposable
         ComputerUseHeadComposition.ChooseBackend(platform).ShouldBeOfType(backend);
     }
 
+    /// <summary>Linux detection: an X display (XWayland included) is X11; headless or Wayland-only is unsupported.</summary>
+    [Theory]
+    [InlineData(":0", ComputerPlatform.X11)]
+    [InlineData(":99", ComputerPlatform.X11)]
+    [InlineData("", ComputerPlatform.Unsupported)]
+    [InlineData("   ", ComputerPlatform.Unsupported)]
+    [InlineData(null, ComputerPlatform.Unsupported)]
+    public void LinuxDetectionRequiresAnXDisplay(string? display, ComputerPlatform expected)
+    {
+        ComputerUseHeadComposition.DetectLinuxPlatform(name => string.Equals(name, "DISPLAY", StringComparison.Ordinal) ? display : null)
+            .ShouldBe(expected);
+    }
+
     [Fact]
     public async Task AnUnsupportedPlatformUsesTheNullBackend()
     {
