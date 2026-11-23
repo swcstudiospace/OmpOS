@@ -8,6 +8,12 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.16] - 2026-11-23
+
+### Changed
+
+- Refreshed `deploy/omp-deps.lock.json` (`@babel/parser` 7.29.14 to 7.29.15) via the sanctioned `OMP_DEPS_MODE=write` snapshot (PR #37, GSD v0.16.0 autonomous wave 1) so the push-only image-scan job can pass; verified locally with `snapshot-omp-deps: ok` in check mode and a full `deploy/api.Containerfile` build. No product code under src/services/apps and no new tag.
+
 ## [0.20.15] - 2026-11-22
 
 ### Changed
@@ -615,7 +621,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.4...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.16...HEAD
+[0.20.16]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.15...v0.20.16
 [0.20.15]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.14...v0.20.15
 [0.20.14]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.13...v0.20.14
 [0.20.13]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.12...v0.20.13
