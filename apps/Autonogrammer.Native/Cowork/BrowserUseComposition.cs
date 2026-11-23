@@ -50,6 +50,9 @@ internal sealed class BrowserUseCompositionRequest
 
     /// <summary>Gets the approval broker. Null uses the desktop broker, which asks on screen and refuses when no window is shown.</summary>
     public ICoworkApprovalBroker? Broker { get; init; }
+
+    /// <summary>Gets the settings file Browser values persist to. Null creates one over <see cref="StateDirectory"/>.</summary>
+    public FileSettingsStore? SettingsStore { get; init; }
 }
 
 /// <summary>The desktop browser composition: options, settings, gate, provider and pane.</summary>
@@ -225,14 +228,7 @@ internal static class BrowserUseComposition
     {
         var session = DispatchProxy.Create<ICDPSession, IdleCdpSession>();
         var control = new TakeOverController(session, gate, localDesktop: true);
-        var settings = new BrowserUseSettingsSource(
-            options,
-            new ChromiumLocator(new DiskChromiumProbe()),
-            ChromiumManifest.LoadEmbedded(),
-            new ChromiumAcquirer(handler),
-            request.StateDirectory,
-            PlatformId,
-            ChromiumOsFamily.Linux);
+        var settings = CreateSettingsSource(request, options, handler);
         var located = new ChromiumLocator(new DiskChromiumProbe()).Locate(options, request.StateDirectory, ChromiumOsFamily.Linux);
         var offerTools = options.Enabled && (request.ForceAvailable || located.State == BrowserLocateState.Found);
         var (grants, audit) = OpenToolStores(request.StateDirectory);
@@ -283,6 +279,16 @@ internal static class BrowserUseComposition
             throw;
         }
     }
+
+    private static BrowserUseSettingsSource CreateSettingsSource(BrowserUseCompositionRequest request, BrowserUseOptions options, HttpMessageHandler handler) => new(
+        options,
+        new ChromiumLocator(new DiskChromiumProbe()),
+        ChromiumManifest.LoadEmbedded(),
+        new ChromiumAcquirer(handler),
+        request.StateDirectory,
+        PlatformId,
+        ChromiumOsFamily.Linux,
+        request.SettingsStore ?? new FileSettingsStore(request.StateDirectory));
 
     /// <summary>Opens the file-backed grant store and tool audit under the local owner. The caller owns both.</summary>
     /// <param name="stateRoot">The head state directory.</param>

@@ -19,6 +19,7 @@ internal sealed class BrowserUseSettingsSource : IBrowserUseSettingsSource
     private readonly string _stateDirectory;
     private readonly string _platformId;
     private readonly ChromiumOsFamily _osFamily;
+    private readonly FileSettingsStore? _store;
 
     /// <summary>Initializes the adapter.</summary>
     /// <param name="options">The live options object the head binds.</param>
@@ -28,6 +29,7 @@ internal sealed class BrowserUseSettingsSource : IBrowserUseSettingsSource
     /// <param name="stateDirectory">The head state directory.</param>
     /// <param name="platformId">The manifest platform id.</param>
     /// <param name="osFamily">The OS family used to locate a system binary.</param>
+    /// <param name="store">The settings file the values persist to. Null keeps saves in memory (tests).</param>
     public BrowserUseSettingsSource(
         BrowserUseOptions options,
         ChromiumLocator locator,
@@ -35,7 +37,8 @@ internal sealed class BrowserUseSettingsSource : IBrowserUseSettingsSource
         ChromiumAcquirer acquirer,
         string stateDirectory,
         string platformId,
-        ChromiumOsFamily osFamily)
+        ChromiumOsFamily osFamily,
+        FileSettingsStore? store = null)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(locator);
@@ -50,6 +53,7 @@ internal sealed class BrowserUseSettingsSource : IBrowserUseSettingsSource
         _stateDirectory = stateDirectory;
         _platformId = platformId;
         _osFamily = osFamily;
+        _store = store;
     }
 
     /// <inheritdoc />
@@ -77,15 +81,10 @@ internal sealed class BrowserUseSettingsSource : IBrowserUseSettingsSource
     {
         ArgumentNullException.ThrowIfNull(values);
         cancellationToken.ThrowIfCancellationRequested();
-        _options.ExecutablePath = values.ExecutablePath;
-        _options.PolicyMode = Enum.Parse<PolicyMode>(values.PolicyMode.ToString());
-        _options.DownloadMode = Enum.Parse<DownloadMode>(values.DownloadMode.ToString());
-        _options.SandboxMode = Enum.Parse<SandboxMode>(values.SandboxMode.ToString());
-        _options.PersistentProfile = values.PersistentProfile;
-        _options.AllowDispatchSessions = values.AllowDispatchSessions;
-        _options.LocalOriginsTrusted = values.LocalOriginsTrusted;
-        Replace(_options.AllowedHosts, values.AllowedHosts);
-        Replace(_options.DeniedHosts, values.DeniedHosts);
+
+        // Persist first: a failed write changes neither the file nor the live options.
+        _store?.SetBrowserUse(values);
+        BrowserUseSettingsPersistence.Apply(values, _options);
         return Task.CompletedTask;
     }
 
@@ -99,25 +98,7 @@ internal sealed class BrowserUseSettingsSource : IBrowserUseSettingsSource
         }
     }
 
-    private BrowserUseSettingsValues ReadValues() => new(
-        _options.ExecutablePath,
-        Enum.Parse<BrowserUsePolicyMode>(_options.PolicyMode.ToString()),
-        _options.AllowedHosts.ToArray(),
-        _options.DeniedHosts.ToArray(),
-        Enum.Parse<BrowserUseDownloadMode>(_options.DownloadMode.ToString()),
-        Enum.Parse<BrowserUseSandboxMode>(_options.SandboxMode.ToString()),
-        _options.PersistentProfile,
-        _options.AllowDispatchSessions,
-        _options.LocalOriginsTrusted);
-
-    private static void Replace(IList<string> target, IReadOnlyList<string> values)
-    {
-        target.Clear();
-        foreach (var value in values)
-        {
-            target.Add(value);
-        }
-    }
+    private BrowserUseSettingsValues ReadValues() => BrowserUseSettingsPersistence.Read(_options);
 
     private static string HostOf(string source)
     {

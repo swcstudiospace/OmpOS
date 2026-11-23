@@ -2,6 +2,7 @@ using System.Text.Json;
 using Autonogrammer.Accounts.Desktop;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Settings;
+using Autonogrammer.Presentation.Settings.BrowserUse;
 using Autonogrammer.Presentation.Settings.Ignore;
 
 namespace Autonogrammer.Native.Settings;
@@ -39,6 +40,9 @@ internal sealed class FileSettingsStore
     private const string IdleStopMember = "runtime.idleStopHours";
     private const string RetentionMember = "runtime.retentionDays";
     private const string IgnorePatternsMember = "ignore.globalPatterns";
+    private const string BrowserUsePolicyMember = "browserUse.policyMode";
+    private const string BrowserUseDownloadMember = "browserUse.downloadMode";
+    private const string BrowserUseSandboxMember = "browserUse.sandboxMode";
     private const string SurfaceMember = SettingsShellSection.SurfaceMember;
 
     private readonly System.Threading.Lock _gate = new();
@@ -165,6 +169,42 @@ internal sealed class FileSettingsStore
         });
     }
 
+    /// <summary>Reads the browser-use settings. A file that does not exist, or has no <c>browserUse</c> object, gives the defaults (disabled).</summary>
+    /// <returns>The values.</returns>
+    /// <exception cref="SettingsSourceException">The file is unreadable, not valid, from a newer major schema or holds an unusable value.</exception>
+    public BrowserUseSettingsValues ReadBrowserUse()
+    {
+        lock (_gate)
+        {
+            var document = ReadDocument();
+            _ = ToValues(document);
+            return BrowserUseOf(document, FilePath);
+        }
+    }
+
+    /// <summary>Saves the browser-use settings under <c>browserUse</c> in one write.</summary>
+    /// <param name="values">The values to save.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="values"/> is null.</exception>
+    /// <exception cref="SettingsSourceException">The file cannot be read or written; nothing is changed.</exception>
+    public void SetBrowserUse(BrowserUseSettingsValues values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        Update(document =>
+        {
+            document.BrowserUse ??= new SettingsBrowserUseSection();
+            document.BrowserUse.Enabled = values.Enabled;
+            document.BrowserUse.ExecutablePath = values.ExecutablePath;
+            document.BrowserUse.PolicyMode = values.PolicyMode.ToString();
+            document.BrowserUse.AllowedHosts = [.. values.AllowedHosts];
+            document.BrowserUse.DeniedHosts = [.. values.DeniedHosts];
+            document.BrowserUse.DownloadMode = values.DownloadMode.ToString();
+            document.BrowserUse.SandboxMode = values.SandboxMode.ToString();
+            document.BrowserUse.PersistentProfile = values.PersistentProfile;
+            document.BrowserUse.AllowDispatchSessions = values.AllowDispatchSessions;
+            document.BrowserUse.LocalOriginsTrusted = values.LocalOriginsTrusted;
+        });
+    }
+
     /// <summary>Reads <see cref="AccountSettingsKeys.HasStoredSession"/>. Absent means false.</summary>
     /// <returns>True when a signed-in session is stored.</returns>
     public bool ReadHasStoredSession()
@@ -203,6 +243,46 @@ internal sealed class FileSettingsStore
         }
 
         return new IgnoreSettingsValues(patterns, section?.UseDefaultList ?? true, section?.Hierarchical ?? false);
+    }
+
+    private static BrowserUseSettingsValues BrowserUseOf(SettingsDocument document, string path)
+    {
+        var section = document.BrowserUse;
+        if (section is null)
+        {
+            return BrowserUseSettingsValues.Defaults;
+        }
+
+        var policy = ParseBrowserEnum<BrowserUsePolicyMode>(section.PolicyMode, BrowserUsePolicyMode.PromptOnNewOrigin, path, BrowserUsePolicyMember);
+        var download = ParseBrowserEnum<BrowserUseDownloadMode>(section.DownloadMode, BrowserUseDownloadMode.Deny, path, BrowserUseDownloadMember);
+        var sandbox = ParseBrowserEnum<BrowserUseSandboxMode>(section.SandboxMode, BrowserUseSandboxMode.Required, path, BrowserUseSandboxMember);
+        return new BrowserUseSettingsValues(
+            section.ExecutablePath ?? string.Empty,
+            policy,
+            section.AllowedHosts is { } allowed ? [.. allowed] : [],
+            section.DeniedHosts is { } denied ? [.. denied] : [],
+            download,
+            sandbox,
+            section.PersistentProfile ?? false,
+            section.AllowDispatchSessions ?? false,
+            section.LocalOriginsTrusted ?? false,
+            section.Enabled ?? false);
+    }
+
+    private static T ParseBrowserEnum<T>(string? text, T fallback, string path, string member)
+        where T : struct, Enum
+    {
+        if (text is null)
+        {
+            return fallback;
+        }
+
+        if (Enum.TryParse<T>(text, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed))
+        {
+            return parsed;
+        }
+
+        throw new SettingsSourceException(HeadSettingsCopy.SettingsBadMember(path, member));
     }
 
     private static string MotionText(MotionPreference motion) => motion switch
