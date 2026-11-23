@@ -16,7 +16,9 @@
 * [Web app guide](guides/web-app-guide.md)
 * [Local terminal](runbooks/local-terminal.md)
 * [Cloud terminals on Railway](runbooks/cloud-terminals.md)
+* [Cowork](runbooks/cowork.md)
 * [Cowork browser use](runbooks/browser-use.md)
+* [Cowork Computer Use](runbooks/computer-use.md)
 * [Agent loop and the five plugins](runbooks/agent-loop.md)
 
 ## Concepts
@@ -65,6 +67,7 @@
 * [Cursor parity audit, 2026-10-28](quality/cursor-parity-audit-2026-10-28.md)
 * [Cursor parity audit, 2026-10-26 (previous)](quality/cursor-parity-audit-2026-10-26.md)
 * [v0.16.0 security review](quality/v0.16.0-security-review.md)
+* [Cowork parity audit elevation (v0.16.0)](quality/v0.16.0-parity-audit-elevation.md)
 * [Troubleshooting and FAQ](guides/troubleshooting-and-faq.md)
 * [Licensing](licensing.md)
 * [Contributing, security and support](guides/community.md)
@@ -90,6 +93,7 @@
 * [Data plane](runbooks/data-plane.md)
 * [Accounts](runbooks/accounts.md)
 * [Dispatch pairing secret storage](runbooks/dispatch.md)
+* [v0.16.0 owner actions](runbooks/v0.16.0-owner-actions.md)
 * [Deploy and rollback](runbooks/deploy-and-rollback.md)
 * [SLOs, alerting and uptime monitoring](runbooks/slo-and-alerting.md)
 * [Incident response](runbooks/incident-response.md)
