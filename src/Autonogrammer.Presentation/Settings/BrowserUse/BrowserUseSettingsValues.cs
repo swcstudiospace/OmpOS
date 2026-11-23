@@ -12,6 +12,7 @@ namespace Autonogrammer.Presentation.Settings.BrowserUse;
 /// <param name="PersistentProfile">Whether a named profile is kept.</param>
 /// <param name="AllowDispatchSessions">Whether dispatch-origin turns may use the browser.</param>
 /// <param name="LocalOriginsTrusted">Whether granted local origins are treated as trusted.</param>
+/// <param name="Enabled">Whether the agent browser is enabled. Default false; tools are offered only when true and a Chromium binary is located.</param>
 public sealed record BrowserUseSettingsValues(
     string ExecutablePath,
     BrowserUsePolicyMode PolicyMode,
@@ -21,7 +22,8 @@ public sealed record BrowserUseSettingsValues(
     BrowserUseSandboxMode SandboxMode,
     bool PersistentProfile,
     bool AllowDispatchSessions,
-    bool LocalOriginsTrusted)
+    bool LocalOriginsTrusted,
+    bool Enabled = false)
 {
     /// <summary>Gets the documented defaults.</summary>
     public static BrowserUseSettingsValues Defaults { get; } = new(
@@ -33,7 +35,8 @@ public sealed record BrowserUseSettingsValues(
         BrowserUseSandboxMode.Required,
         PersistentProfile: false,
         AllowDispatchSessions: false,
-        LocalOriginsTrusted: false);
+        LocalOriginsTrusted: false,
+        Enabled: false);
 
     /// <inheritdoc/>
     public bool Equals(BrowserUseSettingsValues? other) =>
@@ -45,9 +48,10 @@ public sealed record BrowserUseSettingsValues(
         && PersistentProfile == other.PersistentProfile
         && AllowDispatchSessions == other.AllowDispatchSessions
         && LocalOriginsTrusted == other.LocalOriginsTrusted
+        && Enabled == other.Enabled
         && AllowedHosts.SequenceEqual(other.AllowedHosts, StringComparer.Ordinal)
         && DeniedHosts.SequenceEqual(other.DeniedHosts, StringComparer.Ordinal);
 
     /// <inheritdoc/>
-    public override int GetHashCode() => HashCode.Combine(ExecutablePath, PolicyMode, DownloadMode, SandboxMode, AllowedHosts.Count, DeniedHosts.Count);
+    public override int GetHashCode() => HashCode.Combine(ExecutablePath, PolicyMode, DownloadMode, SandboxMode, AllowedHosts.Count, DeniedHosts.Count, Enabled);
 }

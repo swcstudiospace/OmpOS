@@ -107,7 +107,7 @@ internal sealed class AgentHead : IAsyncDisposable
         var completed = false;
         try
         {
-            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = services?.Artifacts.ToolProvider });
+            browser = WireBrowserUse(loop.StateRoot, store, services?.Artifacts.ToolProvider);
             // The Models page and the provider keys omp is started with are built together, so a key saved on the page reaches every omp the head starts.
             models = ModelsSettingsComposition.Create(new ModelsSettingsCompositionOptions { StateRoot = loop.StateRoot });
             var modelSource = models.Source;
@@ -227,7 +227,7 @@ internal sealed class AgentHead : IAsyncDisposable
         BrowserUseCompositionResult? browser = null;
         try
         {
-            browser = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot, Artifacts = options.Services?.Artifacts.ToolProvider });
+            browser = WireBrowserUse(loop.StateRoot, new FileSettingsStore(loop.StateRoot), options.Services?.Artifacts.ToolProvider);
             return await BuildAsync(
                 new SessionEngineSetOptions
                 {
@@ -272,6 +272,16 @@ internal sealed class AgentHead : IAsyncDisposable
             }
         }
     }
+
+    /// <summary>Wires Browser Use with the persisted Browser settings applied; disabled unless the person turned it on in Settings.</summary>
+    private static BrowserUseCompositionResult WireBrowserUse(string stateRoot, FileSettingsStore store, ICoworkToolProvider? artifacts) =>
+        BrowserUseComposition.Wire(new BrowserUseCompositionRequest
+        {
+            StateDirectory = stateRoot,
+            Artifacts = artifacts,
+            SettingsStore = store,
+            Configure = browserOptions => BrowserUseSettingsPersistence.Apply(store.ReadBrowserUse(), browserOptions),
+        });
 
     /// <summary>
     /// Loads the plugins and the saved sessions, then selects the most recent session and ends the board's loading state. A failure shows

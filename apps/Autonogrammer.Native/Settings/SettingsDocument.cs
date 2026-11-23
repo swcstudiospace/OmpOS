@@ -29,6 +29,9 @@ internal sealed class SettingsDocument
     /// <summary>Gets or sets the ignore settings: the global patterns and the two switches.</summary>
     public SettingsIgnoreSection? Ignore { get; set; }
 
+    /// <summary>Gets or sets the browser-use settings. Absent means disabled with the documented defaults.</summary>
+    public SettingsBrowserUseSection? BrowserUse { get; set; }
+
 
     /// <summary>Gets or sets whether a signed-in session is stored. The name is <see cref="AccountSettingsKeys.HasStoredSession"/>.</summary>
     [JsonPropertyName(AccountSettingsKeys.HasStoredSession)]

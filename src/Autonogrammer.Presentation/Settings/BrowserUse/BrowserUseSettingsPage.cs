@@ -128,6 +128,13 @@ public sealed class BrowserUseSettingsPage : EditableSettingsPage<BrowserUseSett
         set => SetDraft(Draft with { LocalOriginsTrusted = value });
     }
 
+    /// <summary>Gets or sets whether the draft enables the agent browser. Off by default; tools are offered only when on and a Chromium binary is located.</summary>
+    public bool Enabled
+    {
+        get => Draft.Enabled;
+        set => SetDraft(Draft with { Enabled = value });
+    }
+
     /// <summary>Opens the acquisition dialog when a manifest row exists. Does not acquire.</summary>
     /// <returns>The dialog, or null when acquisition is hidden.</returns>
     public BrowserUseAcquisitionDialog? OpenAcquisition()
@@ -182,6 +189,7 @@ public sealed class BrowserUseSettingsPage : EditableSettingsPage<BrowserUseSett
         NotifyPropertyChanged(nameof(PersistentProfile));
         NotifyPropertyChanged(nameof(AllowDispatchSessions));
         NotifyPropertyChanged(nameof(LocalOriginsTrusted));
+        NotifyPropertyChanged(nameof(Enabled));
         NotifyPropertyChanged(nameof(PolicyRiskText));
         NotifyPropertyChanged(nameof(LocalOriginsRiskText));
         NotifyDialog();
