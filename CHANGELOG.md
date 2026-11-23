@@ -8,6 +8,12 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+## [0.20.18] - 2026-11-23
+
+### Changed
+
+- Browser Use enablement wiring (phase 72, GSD v0.16.0 autonomous wave 3, stacked on PR #38): `BrowserUseSettingsValues` gains `Enabled` (default false), the Browser settings page edits it, values persist under `browserUse` in `settings.json` (bad enum names fail named), saves persist before mutating live options, and both `AgentHead` paths pass `Configure` from the persisted values so `browser_*` tools are offered only when the person turned Browser Use on and a Chromium binary is located. Live page/egress wiring stays gated (D-12/D-13, live CDP unproven); no live claim. Tests: Browser 23/23, Presentation Browser 15/15, Native Settings 451/452 (1 skipped).
+
 ## [0.20.17] - 2026-11-23
 
 ### Changed
@@ -627,7 +633,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.17...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.18...HEAD
+[0.20.18]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.17...v0.20.18
 [0.20.17]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.16...v0.20.17
 [0.20.16]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.15...v0.20.16
 [0.20.15]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.14...v0.20.15
