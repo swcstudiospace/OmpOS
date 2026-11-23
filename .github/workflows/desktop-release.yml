@@ -172,7 +172,7 @@ jobs:
           fi
           printf 'VERSION=%s-%s\n' "$BASE_VERSION" "$VERSION_SUFFIX" >> "$GITHUB_ENV"
           echo "Rehearsal build: VERSION is $BASE_VERSION-$VERSION_SUFFIX"
-      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           global-json-file: global.json
       - name: Use the pinned SDK only (the runner runtime must not change the lock file)
