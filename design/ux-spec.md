@@ -377,3 +377,147 @@ min_contrast 6.25 above the 4.5 floor).
   "tokens_version": "1.4.0", "fidelity": "lofi", "provisional": true,
   "acceptance_refs": ["AC-201", "AC-202", "AC-209"] }
 ```
+
+---
+
+## T9013 addendum — terminal-retirement / session UI impact (T9013-ux)
+
+Task: T9013-ux, correlation 901308c5-825d-45fe-8832-36b59c0771ae,
+capability ux.spec. Upstream: PROVISIONAL T9013-req (US-301..310,
+AC-301..310). Tokens unchanged at 1.4.0 (`design/tokens.json`; no
+token edit, no brand change, no new component — L2). Fidelity lofi
+(no Figma), provisional true (no brand.guide; colours verbatim from
+tokens). A11y target WCAG 2.2 AA; lowest normal-text ratio measured
+this run 6.25 (`color.status.error` #b3261e on #fafaf9, `ux_contrast`).
+Scope per A01: this lane specifies only the session/terminal UI
+impact; it edits no `.planning/` file (A03 owns ROADMAP/phases 79+).
+
+### Wave 1 verdict: no visible change (AC-304)
+
+AC-304 requires 0 changed session-owner assignments in Wave 1 and
+spec §3 lists terminal-owner retirement as Won't-this-wave. So in
+Wave 1 nothing the user sees changes: `SessionKind.Chat|Terminal`
+(`src/Autonogrammer.Contracts/Agents/SessionKind.cs`), the rail
+New Terminal button + Terminal tag (`AgentRail.razor`), terminal
+routing (`WorkbenchView`: `IsTerminal` → `TerminalView`), the Kanban
+kind text "Terminal", and the `TerminalAutoRun` settings toggle all
+render exactly as today. Any Wave-1 diff that hides, renames or
+reorders these is a defect against this spec, not an improvement.
+Chat (ACP) remains the default kind; Wave 1 adds no badge claiming
+a transport the user cannot act on (AC-302 is an inventory result,
+not a screen — see no-screen table).
+
+### Later retirement phase: plan only (AC-309)
+
+The states below are the binding plan for the future retirement
+phase A03 sequences (execution is AC-309 plan-only in this wave).
+Reuse only: `TerminalView` (its existing `TerminalViewState`
+Connecting/Live/Reconnecting/Ended/Unavailable + `TerminalCopy`),
+`AgentRail`, `ds/Button@1.4`. No new component (a new component
+would be L3 and stops for human approval).
+
+Retirement rules A06 must implement when that phase lands:
+
+1. Creating stops, history does not vanish. Remove `rail-new-terminal`
+   from the rail (and from focus order; nothing else moves). Persisted
+   Terminal rows/cards stay listed with the word tag "Terminal" plus
+   a word status (Ended/Retired — never colour alone); they are never
+   silently deleted and never silently converted to Chat.
+2. Opening a retired terminal renders the existing Unavailable frame
+   (`h2` + `role=status` reason, `error.unavailable` below) with copy
+   resolved from `TerminalCopy` stating terminal sessions are retired
+   and offering New Agent (Chat/ACP) as the next action. It must not
+   start omp, must not offer Reconnect (Reconnect stays only for
+   Ended+connection-lost, as `TerminalView` already gates it), and
+   must not promise PTY transcript replay unless A03 confirms the
+   backend retains it — open question below, do not invent it.
+3. Steering shows the existing `SteerUnavailable` help sentence; the
+   steer textarea/buttons are absent (as when no steering service is
+   supplied), never disabled without a stated reason.
+4. `TerminalAutoRun` leaves the tab order with its row: remove the
+   toggle in the same change, with the settings page announcing the
+   removal once via its live region; a stored value is ignored, not
+   acted on. Do not leave a switch that does nothing.
+5. Announce state changes once through the existing persistent
+   `role=status` regions; focus lands on the unavailable heading on
+   open and returns to the originating rail row on back/close.
+
+## SCR-SessionTerminal — session list + terminal view (impact screen)
+
+AC refs: AC-304 (Wave 1: 0 owner changes ⇒ UI unchanged), AC-309
+(this retirement design is plan-only in Wave 1). Flows:
+`authenticated`. Reuses `ds/Rail@1.4`, `ds/TerminalView@1.4`
+(`Components/Terminal/TerminalView.razor`), `ds/Button@1.4`.
+
+Interactive ids / focus order (tab stops only; the status text
+`role=status` and screen `role=group` are reading-order regions,
+not tab stops): `rail-new-agent`, `rail-new-terminal` (Wave 1 and
+until retirement; deleted by rule 1 after), `rail-session-row-first`,
+`terminal-reconnect` (present only in Ended+connection-lost),
+`terminal-steer-input`, `terminal-steer-followup`,
+`terminal-steer-sendnow`. Send-now is `variant: primary` but never
+the autofocused default; both steer buttons stay disabled until the
+box has nonblank text (existing `CanSend`).
+
+States (drawn; `ux_state_coverage_check` complete, missing []):
+`default`, `loading`, `error.network`, `error.validation`,
+`error.unavailable`, `empty.session`, `success`.
+
+```
+-- default (Wave 1, unchanged; live terminal) ---------------------
+| Rail: [rail-new-agent] [rail-new-terminal]                      |
+|  row: title <tag Terminal> (word, not colour alone)             |
+| TerminalView: status role=status "Connected..." (TerminalCopy)  |
+|  screen role=group aria-label "omp terminal output" (read-only) |
+|  steer group: [terminal-steer-input] [followup] [sendnow prim.] |
+|  help: Steering messages go to the omp session, not the shell.  |
+-- loading (Connecting / Reconnecting) ----------------------------
+| status role=status "Connecting..." / "Connection lost.         |
+| Reconnecting; output resumes where it stopped." No spinner-only.|
+-- error.network (Ended + connection lost) ------------------------
+| status "connection was lost and could not be restored." +       |
+| [terminal-reconnect] (small). After 5 failed retries it stops.  |
+-- error.validation -----------------------------------------------
+| blank steer box: both steer buttons disabled, help text states  |
+| why; steer failure writes role=status result, data-failed=true.|
+-- error.unavailable (no transport today; retired in later phase)-|
+| h2 "terminal is not available..." + p role=status reason from  |
+| transport/retirement copy. No screen, no Reconnect, no steer.   |
+| Focus -> heading; next action offered: New Agent (Chat).        |
+-- empty.session --------------------------------------------------
+| rail has no sessions: new-agent guidance (existing empty state);|
+| after retirement there is simply no New Terminal button.        |
+-- success (Live, or Ended normally) ------------------------------
+| Live: chunks in order, announced once. Ended: status "The       |
+| terminal has ended." — no Reconnect (that is not a failure).    |
+```
+
+Dark-pattern lint: no fake urgency or migration nagging; retirement
+copy states the fact and the alternative once, in plain words.
+Synthetic data only in the wireframe. All copy from `TerminalCopy` /
+`AgentPanelCopy` (NFR-I3 pattern); no literals introduced.
+
+### Explicit note — T9013 ACs with no screen (not orphans)
+
+AC-301, AC-302, AC-303, AC-305, AC-306, AC-307, AC-308, AC-310 are
+inventory/process/tracker outcomes with no user-facing surface in
+Wave 1; no screen is claimed for them (verified by their named
+source-grep/diff/doc checks). `ux_ac_trace_check` is therefore run
+over the UI ACs AC-304, AC-309: coverage_pct 100, uncovered [],
+unknown [], screens_without_refs []. Spec completeness complete
+true (min_contrast 6.25 ≥ 4.5 floor, focus ids = interactive ids).
+
+Open questions for A01/A03 (do not guess in implementation):
+(a) does the backend retain any readable record of a retired
+terminal session (its PTY output is streamed, not a chat
+transcript); (b) OQ-1/OQ-2 from T9013-req still keep this
+addendum provisional.
+
+```json
+{ "screen_id": "SCR-SessionTerminal", "flows": ["authenticated"],
+  "states": ["default", "loading", "error.network", "error.validation", "error.unavailable", "empty.session", "success"],
+  "components": [ { "ref": "ds/TerminalView@1.4", "props": { "variant": "existing" } }, { "ref": "ds/Button@1.4", "props": { "variant": "primary" } }, { "ref": "ds/Rail@1.4", "props": {} } ],
+  "a11y": { "target": "WCAG-2.2-AA", "focus_order": ["rail-new-agent", "rail-new-terminal", "rail-session-row-first", "terminal-reconnect", "terminal-steer-input", "terminal-steer-followup", "terminal-steer-sendnow"], "min_contrast": 6.25 },
+  "tokens_version": "1.4.0", "fidelity": "lofi", "provisional": true,
+  "acceptance_refs": ["AC-304", "AC-309"] }
+```

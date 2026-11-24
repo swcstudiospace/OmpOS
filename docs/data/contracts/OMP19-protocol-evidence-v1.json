@@ -1,0 +1,158 @@
+{
+  "contract_id": "OMP19-protocol-evidence",
+  "version": "1.0.1",
+  "format": "contract-descriptor",
+  "schema_format": "This descriptor is human-readable contract documentation (field tables + rules), NOT itself a machine JSON Schema. The machine-checkable JSON Schema (2020-12) for a capture manifest is embedded below as manifest_json_schema; validators run that object, not this file as a whole.",
+  "task_id": "T9013-data",
+  "correlation_id": "901308c5-825d-45fe-8832-36b59c0771ae",
+  "source_blueprint": "docs/architecture/v0170-transport-retirement-blueprint-T9013-arch.md",
+  "source_adr": "docs/decisions/ADR-0038-omp-rpc-primary-transport.md",
+  "source_plan": ".planning/phases/79-omp-1911-reverification-and-protocol-contract/79-01-PLAN.md",
+  "scope": "Phase 79 omp protocol evidence and scripted fixtures (RPC-79-1..RPC-79-4, OQ-520..OQ-524): how a capture of omp frames or command output is recorded so every ledger fact in docs/architecture/omp-19-reverification.md traces to bytes. File records under tests/Autonogrammer.Harness.Rpc.Tests/TestData/frames/ and tests/Autonogrammer.Harness.Acp.Tests/TestData/frames/ only; no database, no schema DDL, no production code change in Wave 1. No live model turn (OD-07): captures are version/help output and handshake/scripted-peer frames only.",
+  "artifact_shape": {
+    "capture": "A capture is a pair of files with one stem: <stem>.ndjson (or <stem>.txt for command output) plus <stem>.manifest.json conforming to the manifest fields below.",
+    "stem": "<transport>-<evidence_label>-<YYYYMMDDTHHMMSSZ>, e.g. rpc-observed-19.1.1-20261123T201500Z. Capture_id equals the stem.",
+    "frames_file_bytes": "The .ndjson file holds omp frame bytes verbatim, one JSON value per line, LF line endings, UTF-8, no envelope and no injected metadata fields. The frame wire format is unchanged from the 18.x fixtures (rpc-out.ndjson, rpc-live-20261021T171351Z.ndjson, acp-in.ndjson, acp-out.ndjson); this contract adds the sidecar manifest only.",
+    "legacy_v0": "Existing 18.x fixture files without a manifest (including the .turns.json sidecar of rpc-live-20261021T171351Z) remain valid legacy fixtures labelled verified-18.12.6 by their evidence document (docs/runbooks/evidence/omp-rpc-live-variants-2026-10-21.md). Absence of a manifest never invalidates a legacy file; new Phase 79 captures MUST carry one.",
+    "manifest_location_note": "Manifests ride to test output with their frames: Autonogrammer.Harness.Rpc.Tests.csproj copies TestData/frames/*.ndjson AND TestData/frames/*.manifest.json (Content, PreserveNewest; glob widened by A05 in the Phase 79 fixture task), and Autonogrammer.Harness.Acp.Tests.csproj copies TestData/**/* (None, PreserveNewest). Tests may read manifests from output or source tree; both are the same committed bytes."
+  },
+  "manifest_fields": [
+    {"name": "contract_id", "type": "string", "required": true, "notes": "Constant OMP19-protocol-evidence"},
+    {"name": "contract_version", "type": "string", "required": true, "notes": "Contract version the manifest was written against. Manifests written as 1.0.0 remain conforming under 1.0.1 (clarifications only: credential-key definition, embedded machine schema, location note; no field added, removed, retyped or made required)"},
+    {"name": "capture_id", "type": "string", "required": true, "notes": "File stem shared by the manifest and its frames/output file"},
+    {"name": "captured_at", "type": "string", "required": true, "notes": "ISO-8601 UTC timestamp (Z suffix) of capture start, second precision or finer"},
+    {"name": "transport", "type": "string", "required": true, "notes": "One of rpc, acp"},
+    {"name": "evidence_kind", "type": "string", "required": true, "notes": "One of frames (NDJSON frame capture), command_output (verbatim stdout of a non-session command such as --version or --help, OQ-524)"},
+    {"name": "omp_version", "type": "string", "required": true, "notes": "Verbatim trimmed `omp --version` output from the same binary and PATH resolution, recorded at capture time. Never inferred from frame content."},
+    {"name": "evidence_label", "type": "string", "required": true, "notes": "AC-301 label: observed-19.1.1 when omp_version is 19.1.1, verified-18.12.6 for the 18.12.6-verified legacy surface, otherwise observed-<omp_version>. Derived from omp_version, never asserted independently; a mismatch fails validation."},
+    {"name": "omp_binary_path", "type": "string", "required": true, "notes": "Resolved binary path via the production resolver (OmpLocator, T-79-02), home prefix redacted to ~ (rule R1). PII-indirect."},
+    {"name": "argv", "type": "array", "required": true, "notes": "Exact argument vector passed to the omp process, argv[0] the binary as invoked, after redaction rules R1-R2. PII-indirect (paths) and secret-bearing values are redacted before commit, never recorded raw."},
+    {"name": "live_model_turn", "type": "boolean", "required": true, "notes": "Must be false for every Phase 79 capture (OD-07, plan prohibition). A manifest with true is out of contract for this milestone wave."},
+    {"name": "frames_file", "type": "string", "required": true, "notes": "Path of the .ndjson (evidence_kind frames) or .txt (command_output) file relative to the manifest"},
+    {"name": "frames_sha256", "type": "string", "required": true, "pattern": "^sha256:[0-9a-f]{64}$", "notes": "sha256 over the exact committed bytes of frames_file AFTER redaction. Recomputing sha256sum over the committed file must reproduce it; it digests the redacted fixture, never a raw capture."},
+    {"name": "frames_bytes", "type": "integer", "required": true, "notes": "Byte length of the committed frames_file"},
+    {"name": "frame_count", "type": "integer", "required": true, "notes": "Line count of frames_file. For evidence_kind frames it must equal the frames index length; for command_output the frames index is empty and frame_count is the output line count."},
+    {"name": "redaction_applied", "type": "boolean", "required": true, "notes": "True when any of R1-R5 changed a byte of frames_file or any argv/path value recorded in the manifest"},
+    {"name": "redaction_rules", "type": "array", "required": true, "notes": "Rule ids applied, subset of R1..R5 below; empty array only when redaction_applied is false"},
+    {"name": "ledger_refs", "type": "array", "required": true, "notes": "Ledger row / open-question ids this capture evidences (e.g. OQ-520, OQ-524) in docs/architecture/omp-19-reverification.md. Non-empty: a capture evidencing no ledger row must not be committed (79-CONTEXT D-02)."},
+    {"name": "frames", "type": "array", "required": true, "notes": "Per-line index, frame_fields below, in file order. Empty only for evidence_kind command_output."}
+  ],
+  "frame_fields": [
+    {"name": "seq", "type": "integer", "required": true, "notes": "1-based line number in frames_file"},
+    {"name": "direction", "type": "string", "required": true, "notes": "in (omp stdout to client), out (client to omp stdin), or stderr. Direction is from the client/harness point of view."},
+    {"name": "t_offset_ms", "type": "integer", "required": false, "notes": "Monotonic milliseconds from process spawn to the completed line read/write; preferred over per-frame wall time. Non-decreasing within one direction."},
+    {"name": "frame_type", "type": "string", "required": true, "notes": "RPC: top-level `type` value of the line. ACP: JSON-RPC method for requests/notifications, `result`/`error` marker plus id correlation noted as result:<id> for replies. stderr lines use the literal stderr."},
+    {"name": "byte_length", "type": "integer", "required": true, "notes": "Byte length of the line excluding the LF terminator"},
+    {"name": "line_sha256", "type": "string", "required": true, "pattern": "^sha256:[0-9a-f]{64}$", "notes": "sha256 over the line bytes excluding the LF terminator, after redaction"},
+    {"name": "redacted", "type": "boolean", "required": true, "notes": "True when a redaction rule changed this line"},
+    {"name": "redacted_paths", "type": "array", "required": false, "notes": "JSON Pointer paths replaced in this line; required non-empty when redacted is true and the line is JSON"}
+  ],
+  "redaction_rules": [
+    {"id": "R1", "rule": "Absolute home-directory prefixes in argv values, omp_binary_path and JSON string values are replaced with ~; other absolute paths stay only when they are evidence (resolved binary path, cwd) and contain no username."},
+    {"id": "R2", "rule": "Secret-bearing argv values are replaced with the literal <redacted>. An argv item is secret-bearing ONLY when (a) it is a name=value or --name=value item whose name (leading dashes stripped) is a credential key per credential_key_definition below, or (b) it is a flag whose name is a credential key, in which case the following item (its value) is replaced. Metadata flags whose names merely contain 'token' (e.g. --max-tokens=4096) are NOT secret-bearing. Secrets are never recorded, hashed-then-kept, or committed in any form."},
+    {"id": "R3", "rule": "JSON object members at any depth whose key is a credential key per credential_key_definition below AND whose value is a string have the value replaced with <redacted> and the JSON Pointer recorded in redacted_paths. Token-metadata keys are never credential keys under that definition (maxTokens, tokenizer, tokensPerSecond etc. carry model/usage metadata, not credentials) and must be left verbatim — redacting them would corrupt the protocol evidence."},
+    {"id": "R4", "rule": "Prompt/message text in scripted captures is synthetic scripted-peer input only (no real user text, no live model turn). Any accidentally captured non-synthetic text is replaced with <redacted> under R3-style path recording, and the capture is re-taken scripted if the text was load-bearing evidence."},
+    {"id": "R5", "rule": "Raw unredacted captures are never committed. They live only in the capturing session's scratch space and are deleted once the redacted fixture and manifest are frozen (retention: session-local). Committed redacted fixtures are retained as test data with the phase history."}
+  ],
+  "fields_classified": {
+    "manifest.contract_id": "non-PII", "manifest.contract_version": "non-PII", "manifest.capture_id": "non-PII",
+    "manifest.captured_at": "non-PII", "manifest.transport": "non-PII", "manifest.evidence_kind": "non-PII",
+    "manifest.omp_version": "non-PII", "manifest.evidence_label": "non-PII",
+    "manifest.omp_binary_path": "PII-indirect", "manifest.argv": "PII-indirect",
+    "manifest.live_model_turn": "non-PII", "manifest.frames_file": "non-PII", "manifest.frames_sha256": "non-PII",
+    "manifest.frames_bytes": "non-PII", "manifest.frame_count": "non-PII", "manifest.redaction_applied": "non-PII",
+    "manifest.redaction_rules": "non-PII", "manifest.ledger_refs": "non-PII",
+    "frame.seq": "non-PII", "frame.direction": "non-PII", "frame.t_offset_ms": "non-PII",
+    "frame.frame_type": "non-PII", "frame.byte_length": "non-PII", "frame.line_sha256": "non-PII",
+    "frame.redacted": "non-PII", "frame.redacted_paths": "non-PII",
+    "frames.payload": "PII-direct"
+  },
+  "privacy": {
+    "masking": "frames.payload (PII-direct, prompt/message text) is synthetic-only under R4 and redacted under R3; manifest.argv and manifest.omp_binary_path (PII-indirect) are redacted under R1-R2. Masking happens before commit in every environment; there is no unredacted committed form to unmask.",
+    "retention": "Raw captures: session-local, deleted at fixture freeze (R5). Committed redacted fixtures + manifests: retained as test data. No personal-data store, table or subject-request surface is created by this contract."
+  },
+  "validation_rules_for_consumers": [
+    "V1: recomputed sha256 of frames_file equals frames_sha256 and its length equals frames_bytes; frame_count equals the file line count.",
+    "V2: frames index seq is exactly 1..frame_count; each line_sha256/byte_length recomputes from the committed line.",
+    "V3: evidence_label is the derivation of omp_version stated in the field note; any other pairing is rejected (AC-301: 0 unlabeled or mislabeled facts).",
+    "V4: live_model_turn is false; ledger_refs is non-empty and every id resolves to a row in docs/architecture/omp-19-reverification.md or an OQ-520..OQ-525 row.",
+    "V5: redacted frames carry non-empty redacted_paths; no committed line or argv value holds a credential key (credential_key_definition exactly — word-boundary segments and the explicit key list, never a bare 'token'/'key'/'secret' substring scan) with a string value other than <redacted>. Token-metadata keys (credential_key_definition.never_credential_examples, e.g. maxTokens, tokenizer, tokens, tokensPerSecond, requiresGlyphTokenization as observed in the 19.1.1 get_state frame) are out of scope for this check and their presence unredacted is NOT a finding (QF-102).",
+    "V6: frame_type matches the line it indexes (RPC top-level type; ACP method/reply marker), so a fixture cannot silently drift from its index."
+  ],
+  "credential_key_definition": {
+    "purpose": "Single matcher shared by R2, R3 and V5. It replaces the 1.0.0 loose substring wording (key|token|secret|password|authorization), which false-positived ordinary omp token-metadata keys observed in real 19.1.1 frames (QF-102). Producers and validators implement exactly this definition, never a substring scan.",
+    "normalization": "Lowercase the key and delete every '_' and '-' (so access_token and accessToken both normalize to accesstoken). CamelCase word segments are the key split on '_', '-' and lower->Upper transitions, lowercased (maxTokens -> [max, tokens]; requiresGlyphTokenization -> [requires, glyph, tokenization]).",
+    "is_credential_key": "A key is a credential key iff EITHER its normalized whole form is in exact_keys, OR (segment rule) some segment is exactly one of [secret, password, passwd, passphrase, authorization], OR its segments contain the consecutive pair [api, key], OR its LAST segment is exactly 'token' (singular). Additionally the member value must be a string for R3/V5 to fire; numeric/boolean values are metadata, not credentials.",
+    "exact_keys": ["token", "accesstoken", "refreshtoken", "idtoken", "authtoken", "bearertoken", "sessiontoken", "csrftoken", "apikey", "xapikey", "apisecret", "clientsecret", "secretkey", "webhooksecret", "secret", "password", "passwd", "passphrase", "authorization", "privatekey", "signingkey", "credential", "credentials"],
+    "never_credential_examples": ["maxTokens", "max_tokens", "alwaysSendMaxTokens", "maxTokensField", "tokenizer", "tokens", "tokensPerSecond", "tokenCount", "requiresGlyphTokenization", "stripDeepseekSpecialTokens"],
+    "worked_examples": "Credential: apiKey (pair api+key), accessToken / refresh_token (exact + last segment token), clientSecret (segment secret), authorization (exact), openaiApiKey (consecutive segments api,key). NOT credential: maxTokens (segments [max,tokens]; plural, not exact), tokenizer / tokenization (single segment, not 'token'), tokens / tokensPerSecond (plural/usage), tokenCount (last segment count), cacheKey / publicKey / sortKey ('key' alone is never a credential segment).",
+    "extension_rule": "A newly observed credential-bearing key is added to exact_keys by a BACKWARD 1.x contract revision naming the capture that evidenced it; implementers must not improvise broader local patterns."
+  },
+  "manifest_json_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "urn:autonogrammer:omp19-protocol-evidence:manifest:1.0.1",
+    "title": "OMP19 protocol evidence capture manifest",
+    "type": "object",
+    "additionalProperties": true,
+    "required": ["contract_id", "contract_version", "capture_id", "captured_at", "transport", "evidence_kind", "omp_version", "evidence_label", "omp_binary_path", "argv", "live_model_turn", "frames_file", "frames_sha256", "frames_bytes", "frame_count", "redaction_applied", "redaction_rules", "ledger_refs", "frames"],
+    "properties": {
+      "contract_id": {"type": "string", "const": "OMP19-protocol-evidence"},
+      "contract_version": {"type": "string", "minLength": 1},
+      "capture_id": {"type": "string", "minLength": 1},
+      "captured_at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$"},
+      "transport": {"type": "string", "enum": ["rpc", "acp"]},
+      "evidence_kind": {"type": "string", "enum": ["frames", "command_output"]},
+      "omp_version": {"type": "string", "minLength": 1},
+      "evidence_label": {"type": "string", "pattern": "^(observed|verified)-.+$"},
+      "omp_binary_path": {"type": "string", "minLength": 1},
+      "argv": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+      "live_model_turn": {"type": "boolean"},
+      "frames_file": {"type": "string", "minLength": 1},
+      "frames_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+      "frames_bytes": {"type": "integer", "minimum": 0},
+      "frame_count": {"type": "integer", "minimum": 0},
+      "redaction_applied": {"type": "boolean"},
+      "redaction_rules": {"type": "array", "items": {"type": "string", "enum": ["R1", "R2", "R3", "R4", "R5"]}, "uniqueItems": true},
+      "ledger_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1},
+      "frames": {"type": "array", "items": {"$ref": "#/$defs/frame"}}
+    },
+    "$defs": {
+      "frame": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["seq", "direction", "frame_type", "byte_length", "line_sha256", "redacted"],
+        "properties": {
+          "seq": {"type": "integer", "minimum": 1},
+          "direction": {"type": "string", "enum": ["in", "out", "stderr"]},
+          "t_offset_ms": {"type": "integer", "minimum": 0},
+          "frame_type": {"type": "string", "minLength": 1},
+          "byte_length": {"type": "integer", "minimum": 0},
+          "line_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+          "redacted": {"type": "boolean"},
+          "redacted_paths": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "x-not-expressible-in-schema": "Cross-field rules V1-V6 (digest recomputation, evidence_label derivation from omp_version, line/seq correspondence, credential-key scan) are validator logic on top of this schema; passing this schema is necessary, not sufficient."
+  },
+  "revision_notes": [
+    "1.0.1 (rework loop 1, QF-102 + review minors): credential_key_definition narrows R2/R3/V5 from bare substrings to an exact key list + word-boundary segment rules so omp token-metadata keys (maxTokens, tokenizer, tokens, tokensPerSecond, requiresGlyphTokenization) are never false-positives; format honestly labelled contract-descriptor with the machine JSON Schema embedded as manifest_json_schema; manifest_location_note updated for the widened Rpc csproj *.manifest.json copy glob. No manifest/frame field changed: 1.0.0 manifests and frozen fixtures remain conforming, BACKWARD within 1.x.",
+    "1.0.0: initial freeze (T9013-data first pass)."
+  ],
+  "compatibility_evidence": {
+    "tool": "data_contract_field_compat",
+    "result": "compatible=true, breaking_count=0, additive_count=0 for the frame wire format (before/after top-level `type` discriminator, string, required): the .ndjson frame format is unchanged; the manifest is a NEW sidecar subject at version 1.0.0 with no predecessor version, published under BACKWARD for its own 1.x evolution. Legacy v0 fixtures without manifests remain consumable.",
+    "pii_tool": "data_pii_tag_coverage",
+    "pii_result": "column_count=27, pii_columns=3, tagged_pii_columns=3, untagged=[], coverage=1.0"
+  },
+  "migration": {
+    "schema_migration_required": false,
+    "migration_id": null,
+    "destructive": false,
+    "shadow_tested": false,
+    "reason": "Protocol evidence and fixtures are file records under tests/*/TestData/frames/ and docs/; no relational or document store holds them. data_migration_check.py and data_migration_check.ts (task T9013-data, correlation 901308c5-825d-45fe-8832-36b59c0771ae) both report status=ok, 0 migrations, 0 irreversible, 0 destructive DDL, 0 findings. shadow_tested is false because no migration exists to rehearse; it is not a failed rehearsal.",
+    "rollback": "No forward DDL was applied or published, so no down migration exists or is required. data_down_present on the no-op migration text returned reversible=false, recorded as N/A. Rolling back this contract is deleting docs/data/contracts/OMP19-protocol-evidence-v1.json; no consumer code was changed in Wave 1."
+  },
+  "consumers": "A05 Lane C (Phase 79 execution) writes captures and frozen fixtures conforming to this contract in the two harness test projects and cites ledger rows; A08 validates V1-V6 as the Phase 79 acceptance checks (AC-301 labelled facts, fixture-to-ledger trace). Phase 80 composes RPC in production only against fixtures frozen under this contract. Pin this contract by digest from the T9013-data handover.",
+  "approval_required": "none"
+}

@@ -137,6 +137,7 @@
   * [ADR-0035 Cowork Computer Use](decisions/ADR-0035-cowork-computer-use.md)
   * [ADR-0036 Dispatch relay](decisions/ADR-0036-dispatch-relay.md)
   * [ADR-0037 Cowork parity remainder](decisions/ADR-0037-cowork-parity-remainder.md)
+  * [ADR-0038 omp RPC primary transport](decisions/ADR-0038-omp-rpc-primary-transport.md)
 * [Open questions register](open-questions.md)
 * [Deferred and blocked items, 2026-10-26](runbooks/deferred-and-blocked-2026-10-26.md)
 * [Quality bar, 2026-10-22](quality/quality-bar.md)
