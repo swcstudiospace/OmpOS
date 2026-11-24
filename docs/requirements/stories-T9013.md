@@ -1,5 +1,7 @@
 # User stories T9013-req (PROVISIONAL)
 
+Status: PROVISIONAL (T9013-req; see brief-T9013-req.md).
+
 US-301 estimate: 3 dependencies: none
 As a maintainer, I want observed omp 19.1.1 behaviour recorded apart from behaviour verified at 18.12.6, so that no invented fact guides delivery.
 

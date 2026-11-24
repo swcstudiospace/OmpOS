@@ -1,5 +1,7 @@
 # Traceability T9013-req
 
+Status: PROVISIONAL (T9013-req; see brief-T9013-req.md).
+
 US-301 -> AC-301
 US-302 -> AC-302
 US-303 -> AC-303

@@ -1,5 +1,7 @@
 # Acceptance criteria T9013-req
 
+Status: PROVISIONAL (T9013-req; see brief-T9013-req.md).
+
 AC-301 story: US-301 Given omp 19.1.1 installed and codebase verified at 18.12.6 When the Wave 1 inventory records a version fact Then the record labels it observed or verified with 0 unlabeled facts check: source-grep automated: true
 
 AC-302 story: US-302 Given the 7 named production component groups in the brief When each group is checked for its transport Then 7 of 7 groups record ACP as transport check: source-grep automated: true

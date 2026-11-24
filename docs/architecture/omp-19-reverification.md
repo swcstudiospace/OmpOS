@@ -1,5 +1,7 @@
 # omp 19.1.1 re-verification ledger
 
+Status: Current (Phase 79 evidence ledger, verified 2026-11-24; see 79-VERIFICATION.md).
+
 Phase 79 (plan 79-01, requirements RPC-79-1 to RPC-79-4). Every protocol fact below is labeled
 **observed-19.1.1** (produced by the installed binary on 2026-11-23) or **verified-18.12.6** (the surface the
 two harness clients were verified against), with the command or fixture behind it (AC-301: 0 unlabeled facts).

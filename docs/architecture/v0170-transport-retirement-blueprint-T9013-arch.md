@@ -1,5 +1,7 @@
 # Architecture blueprint: v0.17.0 Omp RPC engine rearchitecture (T9013-arch)
 
+Status: Proposed (T9013-arch blueprint; ADR-0038 Proposed, accepted only at the Phase 84 cutover gate).
+
 Task T9013-arch, correlation 901308c5-825d-45fe-8832-36b59c0771ae, capability design.blueprint.
 Inputs: `docs/requirements/spec-T9013-req.md` (PROVISIONAL, US-301..US-310), `acceptance-T9013.md`, `nfr-T9013.md`; owner directive (parent brief): RPC primary local transport, ACP retained for the remote boundary, PTY terminal engine retired.
 Decision record: ADR-0038 (`docs/decisions/ADR-0038-omp-rpc-primary-transport.md`), status Proposed until the Phase 84 cutover gate.

@@ -1,5 +1,7 @@
 # Cleaned brief T9013-req (PROVISIONAL)
 
+Status: PROVISIONAL (T9013-req cleaned brief; assumptions recorded inline).
+
 task_id: T9013-req correlation_id: 901308c5-825d-45fe-8832-36b59c0771ae
 PII scan: 0 kinds found, has_pii false, regimes_hint [] (req_pii_scan).
 Ambiguity scan on distilled brief: score 0, 0 flagged sentences (req_ambiguity_scan).

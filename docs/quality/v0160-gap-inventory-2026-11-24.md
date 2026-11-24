@@ -1,5 +1,7 @@
 # v0.16.0 outstanding-phase gap inventory — 2026-11-24
 
+Status: Current (read-only inventory at b0568d95; not a verification result).
+
 Lane V1 (read-only inventory). Repo `autonogrammer` @ `b0568d95`, branch
 `gsd/v0160-wave4-computer`. No tests, builds or live turns were run for this
 inventory (OD-07 respected); nothing below is a new verification result.
