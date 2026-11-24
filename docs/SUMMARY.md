@@ -69,6 +69,7 @@
 * [v0.16.0 security review](quality/v0.16.0-security-review.md)
 * [Cowork parity audit elevation (v0.16.0)](quality/v0.16.0-parity-audit-elevation.md)
 * [v0.16.0 gap inventory, 2026-11-24](quality/v0160-gap-inventory-2026-11-24.md)
+* [SEC-77 reconciliation, 2026-11-24](quality/sec77-reconciliation-2026-11-24.md)
 * [Troubleshooting and FAQ](guides/troubleshooting-and-faq.md)
 * [Licensing](licensing.md)
 * [Contributing, security and support](guides/community.md)
