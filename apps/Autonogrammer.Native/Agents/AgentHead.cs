@@ -94,7 +94,7 @@ internal sealed class AgentHead : IAsyncDisposable
     /// <summary>Gets the Cowork browser composition, or null before attach.</summary>
     internal BrowserUseCompositionResult? BrowserUse { get; private set; }
 
-    /// <summary>Gets the Computer Use head composition (backend, settings, access facts), or null before attach. The tool provider registers only through the gated core composition; this result alone offers no tools.</summary>
+    /// <summary>Gets the Computer Use head composition (backend, gated core, kill switch, settings, access facts), or null before attach. Its provider registers in the Cowork tool host only when Computer Use is enabled on a supported platform with an armed kill switch.</summary>
     internal Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadResult? ComputerUse { get; private set; }
 
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
@@ -106,11 +106,16 @@ internal sealed class AgentHead : IAsyncDisposable
 
         // Keep the original browser owner until BuildAsync has retained the successful head's reference.
         BrowserUseCompositionResult? browser = null;
+        Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadResult? computer = null;
         ModelsSettingsComposition? models = null;
         var completed = false;
         try
         {
-            browser = WireBrowserUse(loop.StateRoot, store, services?.Artifacts.ToolProvider);
+            // One local approval broker serves the whole Cowork tool host. It stays window-unavailable, as the
+            // browser wiring was, so actuating asks fail closed until a window shows the approval card.
+            var broker = new CoworkApprovalBroker(windowAvailable: false);
+            computer = await BuildComputerUseAsync(loop.StateRoot, services, broker, getVariable: null, time: null).ConfigureAwait(true);
+            browser = WireBrowserUse(loop.StateRoot, store, services?.Artifacts.ToolProvider, computer.Provider, broker);
             // The Models page and the provider keys omp is started with are built together, so a key saved on the page reaches every omp the head starts.
             models = ModelsSettingsComposition.Create(new ModelsSettingsCompositionOptions { StateRoot = loop.StateRoot });
             var modelSource = models.Source;
@@ -134,9 +139,10 @@ internal sealed class AgentHead : IAsyncDisposable
                 BrowserUse = browser.Settings,
             };
 
-            // BuildAsync adopts the models at entry, including failure before settings construction.
-            var build = BuildAsync(engineOptions, UiDispatch, selectMostRecent: true, DefaultDetailsRefreshInterval, store, settingsOptions, services, browser);
+            // BuildAsync adopts the models and the Computer Use composition at entry, including failure before settings construction.
+            var build = BuildAsync(engineOptions, UiDispatch, selectMostRecent: true, DefaultDetailsRefreshInterval, store, settingsOptions, services, browser, computer);
             models = null;
+            computer = null;
             var head = await build.ConfigureAwait(true);
             completed = true;
             return head;
@@ -162,6 +168,15 @@ internal sealed class AgentHead : IAsyncDisposable
                 {
                     browser.Dispose();
                 }
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(exception);
+            }
+
+            try
+            {
+                computer?.Dispose();
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {
@@ -214,6 +229,7 @@ internal sealed class AgentHead : IAsyncDisposable
     /// <param name="options">The roots and seams. Supplied services are borrowed during construction and owned by the returned head only on success.</param>
     /// <returns>The head, after awaiting rollback of acquired resources on failure. It opens nothing until <see cref="InitializeAsync"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
     [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: each owner is nulled once transferred to its composed holder; the finally disposes any owner still held directly.")]
     public static async Task<AgentHead> CreateAsync(AgentHeadOptions options)
     {
@@ -228,10 +244,13 @@ internal sealed class AgentHead : IAsyncDisposable
 
         var loop = AgentLoopEnvironment.Resolve(Lookup, options.WorkspaceRoot, options.WorkspaceRoot, options.WorkspaceRoot);
         BrowserUseCompositionResult? browser = null;
+        Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadResult? computer = null;
         try
         {
-            browser = WireBrowserUse(loop.StateRoot, new FileSettingsStore(loop.StateRoot), options.Services?.Artifacts.ToolProvider);
-            return await BuildAsync(
+            var broker = new CoworkApprovalBroker(windowAvailable: false);
+            computer = await BuildComputerUseAsync(loop.StateRoot, options.Services, broker, Lookup, options.TimeProvider).ConfigureAwait(true);
+            browser = WireBrowserUse(loop.StateRoot, new FileSettingsStore(loop.StateRoot), options.Services?.Artifacts.ToolProvider, computer.Provider, broker);
+            var head = await BuildAsync(
                 new SessionEngineSetOptions
                 {
                     Loop = loop,
@@ -265,10 +284,14 @@ internal sealed class AgentHead : IAsyncDisposable
                     BrowserUse = browser.Settings,
                 },
                 options.Services,
-                browser).ConfigureAwait(true);
+                browser,
+                computer).ConfigureAwait(true);
+            computer = null;
+            return head;
         }
         finally
         {
+            computer?.Dispose();
             if (browser is not null)
             {
                 browser.Dispose();
@@ -276,12 +299,18 @@ internal sealed class AgentHead : IAsyncDisposable
         }
     }
 
-    /// <summary>Wires Browser Use with the persisted Browser settings applied; disabled unless the person turned it on in Settings.</summary>
-    private static BrowserUseCompositionResult WireBrowserUse(string stateRoot, FileSettingsStore store, ICoworkToolProvider? artifacts) =>
+    /// <summary>
+    /// Wires Browser Use with the persisted Browser settings applied; disabled unless the person turned it on in Settings.
+    /// The Computer Use provider (when the gated composition produced one) and the shared local approval broker join
+    /// the same Cowork tool host the browser provider registers in.
+    /// </summary>
+    private static BrowserUseCompositionResult WireBrowserUse(string stateRoot, FileSettingsStore store, ICoworkToolProvider? artifacts, ICoworkToolProvider? computer, ICoworkApprovalBroker broker) =>
         BrowserUseComposition.Wire(new BrowserUseCompositionRequest
         {
             StateDirectory = stateRoot,
             Artifacts = artifacts,
+            Computer = computer,
+            Broker = broker,
             SettingsStore = store,
             Configure = browserOptions => BrowserUseSettingsPersistence.Apply(store.ReadBrowserUse(), browserOptions),
         });
@@ -426,13 +455,20 @@ internal sealed class AgentHead : IAsyncDisposable
         }
     }
 
-    /// <summary>Builds the Computer Use head glue for this process platform; unsupported platforms get the null backend and register no tools.</summary>
-    private static Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadResult BuildComputerUse(SessionEngineSetOptions options, Autonogrammer.Native.Composition.HeadServices? services) =>
-        Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadComposition.Build(new Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadOptions
+    /// <summary>
+    /// Builds the Computer Use head glue for this process platform through the gated core composition. The validated
+    /// <c>Cowork__ComputerUse__</c> options decide whether the kill switch arms; only an armed switch on a supported
+    /// platform yields the provider the Cowork tool host registers. Unsupported platforms get the null backend and no tools.
+    /// </summary>
+    private static ValueTask<Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadResult> BuildComputerUseAsync(string stateRoot, Autonogrammer.Native.Composition.HeadServices? services, ICoworkApprovalBroker broker, Func<string, string?>? getVariable, TimeProvider? time) =>
+        Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadComposition.CreateAsync(new Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadOptions
         {
             Platform = Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadComposition.DetectPlatform(),
-            StateDirectory = options.Loop.StateRoot,
+            StateDirectory = stateRoot,
             AccountGate = services is not null ? new NativeCoworkAccountGate(services.AccountHost.Session) : new SignedOutCoworkGate(),
+            Broker = broker,
+            GetVariable = getVariable,
+            Time = time,
         });
 
     private async ValueTask DisposeHostAsync()
@@ -498,12 +534,13 @@ internal sealed class AgentHead : IAsyncDisposable
 
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
     [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: each owner is nulled once transferred to its composed holder; the finally disposes any owner still held directly.")]
-    private static async Task<AgentHead> BuildAsync(SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, FileSettingsStore store, HeadSettingsOptions settingsOptions, Autonogrammer.Native.Composition.HeadServices? services, BrowserUseCompositionResult browser)
+    private static async Task<AgentHead> BuildAsync(SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, FileSettingsStore store, HeadSettingsOptions settingsOptions, Autonogrammer.Native.Composition.HeadServices? services, BrowserUseCompositionResult browser, Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadResult computer)
     {
         IDisposable? ownedModels = null;
         SessionEngineSet? host = null;
         HeadSettings? settings = null;
         CoworkHead? cowork = null;
+        Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadResult? ownedComputer = computer;
         var completed = false;
         try
         {
@@ -512,10 +549,11 @@ internal sealed class AgentHead : IAsyncDisposable
             settings = HeadSettings.Create(host, store, options.TimeProvider, dispatch, settingsOptions);
             ownedModels = null;
             cowork = await CreateCoworkAsync(options, services, browser.Host).ConfigureAwait(true);
-            var head = await BuildModelsAsync(host, settings, cowork, options, dispatch, selectMostRecent, detailsInterval, services, browser).ConfigureAwait(true);
+            var head = await BuildModelsAsync(host, settings, cowork, options, dispatch, selectMostRecent, detailsInterval, services, browser, ownedComputer).ConfigureAwait(true);
             host = null;
             settings = null;
             cowork = null;
+            ownedComputer = null;
             completed = true;
             return head;
         }
@@ -570,6 +608,15 @@ internal sealed class AgentHead : IAsyncDisposable
                 failure ??= ExceptionDispatchInfo.Capture(exception);
             }
 
+
+            try
+            {
+                ownedComputer?.Dispose();
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(exception);
+            }
             CleanupFailureReporter.Report(failure, completed, options.LoggerFactory?.CreateLogger("Autonogrammer.Native.Agents"));
         }
     }
@@ -600,7 +647,7 @@ internal sealed class AgentHead : IAsyncDisposable
 
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
     [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: each owner is nulled once transferred to its composed holder; the finally disposes any owner still held directly.")]
-    private static async Task<AgentHead> BuildModelsAsync(SessionEngineSet host, HeadSettings settings, CoworkHead cowork, SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, Autonogrammer.Native.Composition.HeadServices? services, BrowserUseCompositionResult browser)
+    private static async Task<AgentHead> BuildModelsAsync(SessionEngineSet host, HeadSettings settings, CoworkHead cowork, SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, Autonogrammer.Native.Composition.HeadServices? services, BrowserUseCompositionResult browser, Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadResult computer)
     {
         SessionCatalogModel? catalog = null;
         AgentPanelViewModel? panel = null;
@@ -622,7 +669,7 @@ internal sealed class AgentHead : IAsyncDisposable
             services?.Automations.Attach(new HeadAutomationSessions(host, dispatch));
             loading = panel.BeginInitialising();
             retainedBrowser = browser.Retain();
-            var head = CompleteHead(host, catalog, panel, board, settings, cowork, loading, retainedBrowser, options, dispatch, selectMostRecent, detailsInterval, services);
+            var head = CompleteHead(host, catalog, panel, board, settings, cowork, loading, retainedBrowser, computer, options, dispatch, selectMostRecent, detailsInterval, services);
             // The head owns the models from here on.
             retainedBrowser = null;
             loading = null;
@@ -708,27 +755,18 @@ internal sealed class AgentHead : IAsyncDisposable
             StartLoading = true,
         };
 
-    private static AgentHead CompleteHead(SessionEngineSet host, SessionCatalogModel catalog, AgentPanelViewModel panel, KanbanBoardModel board, HeadSettings settings, CoworkHead cowork, IDisposable loading, BrowserUseCompositionResult browser, SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, Autonogrammer.Native.Composition.HeadServices? services)
+    private static AgentHead CompleteHead(SessionEngineSet host, SessionCatalogModel catalog, AgentPanelViewModel panel, KanbanBoardModel board, HeadSettings settings, CoworkHead cowork, IDisposable loading, BrowserUseCompositionResult browser, Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadResult computerUse, SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, Autonogrammer.Native.Composition.HeadServices? services)
     {
         var bundles = ConfigureHost(host, options, services);
-        var computerUse = BuildComputerUse(options, services);
-        try
+        return new AgentHead(host, catalog, panel, board, loading, selectMostRecent, dispatch, options.TimeProvider, detailsInterval, settings)
         {
-            return new AgentHead(host, catalog, panel, board, loading, selectMostRecent, dispatch, options.TimeProvider, detailsInterval, settings)
-            {
-                Cowork = cowork,
-                Bundles = bundles,
-                BrowserUse = browser,
-                ComputerUse = computerUse,
-                Services = services,
-                WorkspaceRoot = options.Loop.WorkspaceRoot,
-            };
-        }
-        catch
-        {
-            computerUse.Dispose();
-            throw;
-        }
+            Cowork = cowork,
+            Bundles = bundles,
+            BrowserUse = browser,
+            ComputerUse = computerUse,
+            Services = services,
+            WorkspaceRoot = options.Loop.WorkspaceRoot,
+        };
     }
 
     private static Autonogrammer.Native.Composition.Plugins.BundleComposition ConfigureHost(SessionEngineSet host, SessionEngineSetOptions options, Autonogrammer.Native.Composition.HeadServices? services)

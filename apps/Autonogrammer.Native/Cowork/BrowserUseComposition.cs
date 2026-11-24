@@ -45,6 +45,12 @@ internal sealed class BrowserUseCompositionRequest
     /// <summary>Gets the artifact tool provider added beside the browser provider. Null leaves the tool host as it was without it.</summary>
     public ICoworkToolProvider? Artifacts { get; init; }
 
+    /// <summary>
+    /// Gets the Computer Use tool provider added beside the browser provider, or null when Computer Use offers no
+    /// tools (unsupported platform, disabled, or an unarmed kill switch). Screen tools sort last: connector, browser, screen.
+    /// </summary>
+    public ICoworkToolProvider? Computer { get; init; }
+
     /// <summary>Gets the permission mode the call gate reads. Manual asks on every call that no grant covers. The desktop composition never offers Skip.</summary>
     public Autonogrammer.Cowork.Tools.CoworkPermissionMode Mode { get; init; } = Autonogrammer.Cowork.Tools.CoworkPermissionMode.Manual;
 
@@ -255,6 +261,11 @@ internal static class BrowserUseComposition
         if (request.Artifacts is not null)
         {
             providers.Add(request.Artifacts);
+        }
+
+        if (request.Computer is not null)
+        {
+            providers.Add(request.Computer);
         }
 
         var host = new CoworkToolHost(
