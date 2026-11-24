@@ -1962,7 +1962,7 @@ Current projection (reconciled 2026-11-19): **0/17 reconciled phases verified by
 
 Source: owner directive (parent brief) via task T9013-arch (correlation 901308c5-825d-45fe-8832-36b59c0771ae), `docs/requirements/spec-T9013-req.md` (US-301 to US-310, PROVISIONAL), ADR-0038 (Proposed) and `docs/architecture/v0170-transport-retirement-blueprint-T9013-arch.md`. Decision: RPC is the primary local transport, ACP retained for remote (ssh/podman/WSL/WebSocket), PTY terminal engine retired. Ground truth: ACP carries every production group today; `Harness.Rpc` already returns `IOmpSession` but has zero production consumers (tests only); `SessionKind.Terminal` runs the omp TUI in a PTY through `PlannedOmpTerminalStarter`; `Harness.Herdr` is dead; provisioning (`OmpManagedInstaller`, `OmpLocator`) is kept. omp 19.1.1 is installed, the code is verified at 18.12.3/18.12.6, and no 19.x protocol fact is asserted without Phase 79 evidence. No live model turn (OD-07). Waves: Wave 1 executes Phase 79 only; phases 80-84 are plan-and-return until sequenced.
 
-- [ ] **Phase 79: omp 19.1.1 re-verification and protocol contract** - RPC+ACP handshake recorded, fixture freeze, drift vs 18.12.x, version pin/probe (US-301, US-302)
+- [x] **Phase 79: omp 19.1.1 re-verification and protocol contract** - RPC+ACP handshake recorded, fixture freeze, drift vs 18.12.x, version pin/probe (US-301, US-302) — verified passed 2026-11-24 (`79-VERIFICATION.md`)
 - [ ] **Phase 80: RPC engine transport production wiring** - `Harness.Rpc` behind `IOmpSession` parity (prompt/steer/follow_up/abort/get_state), selectable via `Harness:Adapter`, composed in EngineHost+Native+Api (US-302)
 - [ ] **Phase 81: Terminal engine retirement** - omp-TUI-in-PTY removed, Herdr deleted, `OmpLauncher` provisioning kept (US-304, US-305)
 - [ ] **Phase 82: Plugin code-connectivity** - realm init-or-remove, plugins proven loading in RPC-launched omp, launch-contributor/config/MCP parity ACP vs RPC (US-306)
@@ -1982,7 +1982,7 @@ Source: owner directive (parent brief) via task T9013-arch (correlation 901308c5
   4. Today's wiring is recorded unchanged: 7 of 7 groups on ACP (AC-302), Rpc consumers tests-only (AC-303), 0 owner assignments changed (AC-304).
 
 **Plans**: 1 plan in `.planning/phases/79-omp-1911-reverification-and-protocol-contract/`
-- [ ] 79-01-PLAN.md - handshake contract, command/flag tables and pin, fixture freeze (RPC-79-1 to RPC-79-4)
+- [x] 79-01-PLAN.md - handshake contract, command/flag tables and pin, fixture freeze (RPC-79-1 to RPC-79-4)
 
 ### Phase 80: RPC engine transport production wiring
 
