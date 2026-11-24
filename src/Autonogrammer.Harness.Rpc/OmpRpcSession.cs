@@ -3,6 +3,7 @@ using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Channels;
@@ -27,13 +28,19 @@ namespace Autonogrammer.Harness.Rpc;
 /// A command rejected by omp (<c>success: false</c>) does not fault it.
 /// </para>
 /// </remarks>
-public sealed class OmpRpcSession : IOmpSession
+public sealed class OmpRpcSession
+    : IOmpSession, IOmpLiveSteering, IOmpSessionIdentity, IOmpSessionCommands, IOmpModelControl, IOmpSessionOptions
 {
     private const string Context = "omp rpc";
     private const string CompletedReason = "completed";
     private const string CancelledReason = "cancelled";
     private const string ErrorReason = "error";
     private const string AbortedStatus = "aborted";
+    private const int MaxSteerBytes = 8192;
+    private const string ModelSwitchGap =
+        "omp RPC exposes no verified model-switch command (OQ-523); the model is fixed at engine start (--model/profile).";
+    private const string OptionSetGap =
+        "omp RPC exposes no verified option-set command (OQ-523); session options are fixed at engine start.";
 
     private readonly IRpcTransport _transport;
     private readonly TimeSpan _handshakeTimeout;
@@ -50,6 +57,12 @@ public sealed class OmpRpcSession : IOmpSession
     private bool _disposed;
     private Task? _pump;
     private IReadOnlyDictionary<string, string> _capabilities = FrozenDictionary<string, string>.Empty;
+    private ReadyFrame? _readyFrame;
+    private bool _handshakeCompleted;
+    private string? _nativeSessionId;
+    private string? _currentModelId;
+    private IReadOnlyList<OmpModelChoice> _modelChoices = [];
+    private IReadOnlyList<OmpCommand> _commands = [];
 
     /// <summary>Creates a session over <paramref name="transport"/>. The transport is owned and disposed by the session.</summary>
     /// <param name="transport">The line transport, typically an <see cref="OmpRpcProcess"/>.</param>
@@ -80,6 +93,93 @@ public sealed class OmpRpcSession : IOmpSession
     /// <inheritdoc />
     public IReadOnlyDictionary<string, string> AdvertisedCapabilities => _capabilities;
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// The resume key omp reported as <c>get_state.sessionFile</c>, or <see langword="null"/> when it reported
+    /// none (an ephemeral <c>--no-session</c> profile has no file; the value is never synthesised).
+    /// </remarks>
+    public string? NativeSessionId
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _nativeSessionId;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<OmpCommand> Commands
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _commands;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public event EventHandler? CommandsChanged;
+
+    /// <inheritdoc />
+    /// <remarks>Exactly the current model when omp reported one; RPC advertises no model list to choose from.</remarks>
+    public IReadOnlyList<OmpModelChoice> ModelChoices
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _modelChoices;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public string? CurrentModelId
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _currentModelId;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public event EventHandler? ModelChanged;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Always empty: RPC reports no selectable option list with a verified set path (OQ-523), so none is
+    /// fabricated from <c>get_state</c> data such as <c>thinkingLevels</c>.
+    /// </remarks>
+    public IReadOnlyList<OmpSessionOption> Options => [];
+
+    /// <inheritdoc />
+    /// <remarks>Never raised: <see cref="Options"/> is an explicitly empty surface (OQ-523).</remarks>
+    public event EventHandler? OptionsChanged
+    {
+        add { }
+        remove { }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>RPC steering is protocol-native, so this is true once the handshake completed and remains so until disposal or fault.</remarks>
+    public bool IsSupported
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _handshakeCompleted && !_disposed && _failure is null;
+            }
+        }
+    }
+
     /// <summary>
     /// Waits for the <c>ready</c> frame, negotiates protocol v2, and reads the engine state for its advertised
     /// capabilities.
@@ -97,6 +197,12 @@ public sealed class OmpRpcSession : IOmpSession
     /// Completes the handshake, then switches the engine to an existing session file. omp addresses sessions by file
     /// path, so <paramref name="sessionId"/> is the session file path.
     /// </summary>
+    /// <remarks>
+    /// Cross-transport warning: session identities are not interchangeable between transports. An
+    /// ACP-advertised session id is not an RPC resume key, so persisted ids must only be resumed on the
+    /// transport that issued them; resuming a foreign id here surfaces omp's <c>switch_session</c> refusal
+    /// as an <see cref="RpcCommandException"/>, never a silent fresh session.
+    /// </remarks>
     /// <param name="sessionId">The path of the session file to switch to.</param>
     /// <param name="cancellationToken">Cancels the resume.</param>
     /// <exception cref="RpcCommandException">omp refused the switch.</exception>
@@ -122,6 +228,9 @@ public sealed class OmpRpcSession : IOmpSession
     /// <remarks>
     /// The prompt is admitted with a bounded timeout rather than the caller's token, so a cancellation cannot leave
     /// omp running a prompt the session believes was never sent. The token governs only the event consumer.
+    /// <see cref="PromptOptions.Images"/> are mapped onto the <c>prompt</c> frame (the verified-18.12.6 shape).
+    /// <see cref="PromptOptions.Resources"/> have no observed RPC equivalent: a prompt carrying them sends
+    /// nothing and ends the turn with an <see cref="ErrorEvent"/> naming that gap, never silently dropping them.
     /// </remarks>
     public async IAsyncEnumerable<HarnessEvent> SubmitPromptAsync(
         string prompt,
@@ -135,11 +244,21 @@ public sealed class OmpRpcSession : IOmpSession
         bool finished = false;
         try
         {
+            if (options.Resources.Count > 0)
+            {
+                EndPrompt(slot);
+                finished = true;
+                yield return new ErrorEvent(
+                    "omp RPC has no observed embedded-resource prompt shape; the prompt was not sent.", false);
+                yield break;
+            }
+
             RpcResponse admission = await SendCommandAsync(
                 new PromptCommand
                 {
                     Id = slot.Id,
                     Message = prompt,
+                    Images = MapImages(options.Images),
                     StreamingBehavior = options.Steer ? "steer" : null,
                 },
                 CancellationToken.None).ConfigureAwait(false);
@@ -190,6 +309,131 @@ public sealed class OmpRpcSession : IOmpSession
 
         _ = await SendCommandAsync(new AbortCommand { Id = NextId() }, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Sends a <c>prompt</c> with <c>streamingBehavior</c> (<c>steer</c> or <c>followUp</c>) and awaits admission
+    /// only: no prompt slot is allocated and the running turn's stream delivers the effect. A refusal sends
+    /// nothing. An admission answered <c>agentInvoked: false</c> took no turn and maps to
+    /// <see cref="OmpSteerOutcome.PromptRequired"/>; a rejection, a transport failure, or the turn ending
+    /// while the steer was in flight maps to <see cref="OmpSteerOutcome.Failed"/> and never throws across
+    /// the running stream.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="queue"/> is not a defined value.</exception>
+    public async Task<OmpSteerResult> SteerAsync(string text, OmpSteerLane queue, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (!Enum.IsDefined(queue))
+        {
+            throw new ArgumentOutOfRangeException(nameof(queue));
+        }
+
+        if (SteerRefusal(text, queue, out PromptSlot? slot) is { } refusal)
+        {
+            return refusal;
+        }
+
+        PromptSlot running = slot!;
+
+        RpcResponse admission;
+        try
+        {
+            admission = await SendCommandAsync(
+                new PromptCommand
+                {
+                    Id = NextId(),
+                    Message = text,
+                    StreamingBehavior = queue == OmpSteerLane.FollowUp ? "followUp" : "steer",
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (HarnessException ex)
+        {
+            return new OmpSteerResult(OmpSteerOutcome.Failed, queue, ex.Message);
+        }
+
+        lock (_gate)
+        {
+            if (!ReferenceEquals(_active, running))
+            {
+                return new OmpSteerResult(OmpSteerOutcome.Failed, queue, "The turn ended while the message was sent.");
+            }
+        }
+
+        if (admission.Data is { ValueKind: JsonValueKind.Object } data
+            && data.TryGetProperty("agentInvoked", out JsonElement invoked)
+            && invoked.ValueKind == JsonValueKind.False)
+        {
+            return new OmpSteerResult(OmpSteerOutcome.PromptRequired, queue, null);
+        }
+
+        return new OmpSteerResult(OmpSteerOutcome.Injected, queue, null);
+    }
+
+    /// <summary>
+    /// Returns the refusal for a steer the session cannot take, or null (with the streaming prompt's slot in
+    /// <paramref name="running"/>) when a turn is streaming and the text passes validation. Every refusal is
+    /// decided before anything is sent.
+    /// </summary>
+    private OmpSteerResult? SteerRefusal(string text, OmpSteerLane queue, out PromptSlot? running)
+    {
+        lock (_gate)
+        {
+            running = _active;
+            if (!_handshakeCompleted)
+            {
+                return new OmpSteerResult(OmpSteerOutcome.Unsupported, queue, "The session is not open.");
+            }
+
+            if (_disposed || _failure is not null || _machine.State != HarnessState.Streaming || running is null)
+            {
+                return new OmpSteerResult(OmpSteerOutcome.NotRunning, queue, "No turn is running.");
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return new OmpSteerResult(OmpSteerOutcome.Failed, queue, "The message is empty.");
+        }
+
+        return Encoding.UTF8.GetByteCount(text) > MaxSteerBytes
+            ? new OmpSteerResult(OmpSteerOutcome.Failed, queue, "The message is too long: the limit is 8 KiB.")
+            : null;
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Sends nothing: omp RPC exposes no verified model-switch command (OQ-523), so every change is refused
+    /// with that reason. Asking for the already-current model is a no-op switch, matching ACP.
+    /// </remarks>
+    public Task<OmpModelSwitchResult> SetModelAsync(string value, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        cancellationToken.ThrowIfCancellationRequested();
+        string? current = CurrentModelId;
+        return Task.FromResult(string.Equals(value, current, StringComparison.Ordinal)
+            ? new OmpModelSwitchResult(OmpModelSwitchOutcome.Switched, current, null)
+            : new OmpModelSwitchResult(OmpModelSwitchOutcome.NoModelOption, current, ModelSwitchGap));
+    }
+
+    /// <inheritdoc />
+    /// <remarks>Sends nothing: no verified option-set command exists (OQ-523); every option is unknown here.</remarks>
+    public Task<OmpOptionSetResult> SetOptionAsync(string configId, string value, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(configId);
+        ArgumentNullException.ThrowIfNull(value);
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(new OmpOptionSetResult(OmpOptionSetOutcome.UnknownOption, null, OptionSetGap));
+    }
+
+    private static List<RpcImageContent>? MapImages(IReadOnlyList<PromptImage> images) =>
+        images.Count == 0
+            ? null
+            : [.. images.Select(static image => new RpcImageContent
+            {
+                Data = Convert.ToBase64String(image.Data.Span),
+                MimeType = image.MimeType,
+            })];
 
     /// <summary>
     /// Aborts the in-flight turn and withdraws queued steering and follow-up input back to the caller.
@@ -350,6 +594,7 @@ public sealed class OmpRpcSession : IOmpSession
         _pump = PumpAsync();
 
         ReadyFrame ready = await AwaitReadyAsync(cancellationToken).ConfigureAwait(false);
+        _readyFrame = ready;
         if (!ready.SupportedProtocolVersions.Contains(OmpRpcFrames.NegotiatedProtocolVersion))
         {
             throw Fail(new MalformedFrameHarnessException("omp does not support RPC protocol v2.", Context));
@@ -365,6 +610,11 @@ public sealed class OmpRpcSession : IOmpSession
         {
             throw Fail(new MalformedFrameHarnessException("negotiate_protocol did not confirm protocol v2.", Context));
         }
+
+        lock (_gate)
+        {
+            _handshakeCompleted = true;
+        }
     }
 
     private async Task<ReadyFrame> AwaitReadyAsync(CancellationToken cancellationToken)
@@ -377,22 +627,86 @@ public sealed class OmpRpcSession : IOmpSession
         }
         catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            throw Fail(new HandshakeTimeoutHarnessException("omp did not send its ready frame in time.", Context));
+            throw Fail(new HandshakeTimeoutHarnessException(WithStderrTail("omp did not send its ready frame in time."), Context));
         }
+    }
+
+    /// <summary>
+    /// Appends a bounded tail of the engine's recent stderr to a start-failure message when the transport is
+    /// the real process, so a pre-<c>ready</c> exit (for example the ledger's no-default-model exit) names
+    /// itself instead of surfacing as a blank timeout. Fake transports keep the bare message. Only the last
+    /// few non-empty lines are used, capped, never the whole 200-line tail.
+    /// </summary>
+    private string WithStderrTail(string message)
+    {
+        if (_transport is not OmpRpcProcess process)
+        {
+            return message;
+        }
+
+        string[] lines = [.. process.RecentStderr
+            .Where(static line => !string.IsNullOrWhiteSpace(line))
+            .TakeLast(5)
+            .Select(static line => line.Trim())];
+        if (lines.Length == 0)
+        {
+            return message;
+        }
+
+        string tail = string.Join(" | ", lines);
+        if (tail.Length > 1000)
+        {
+            tail = tail[..1000];
+        }
+
+        return string.Concat(message, " Engine stderr: ", tail);
     }
 
     private async Task RefreshCapabilitiesAsync(CancellationToken cancellationToken)
     {
         JsonElement state = await GetStateAsync(cancellationToken).ConfigureAwait(false);
-        var capabilities = new Dictionary<string, string>(StringComparer.Ordinal);
+        var capabilities = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["transport"] = "rpc",
+            ["approvals"] = "denied",
+        };
+        string? modelId = null;
+        string? modelName = null;
         if (state.TryGetProperty("model", out JsonElement model) && model.ValueKind == JsonValueKind.Object)
         {
             AddString(capabilities, model, "id", "model.id");
             AddString(capabilities, model, "provider", "model.provider");
+            modelId = ReadString(model, "id");
+            modelName = ReadString(model, "name");
         }
 
-        _capabilities = capabilities.ToFrozenDictionary(StringComparer.Ordinal);
+        if (_readyFrame is { } readyFrame)
+        {
+            capabilities["ready.supportsBashExcludeFromContext"] =
+                readyFrame.SupportsBashExcludeFromContext ? "true" : "false";
+        }
+
+        string? sessionFile = ReadString(state, "sessionFile");
+        bool modelChanged;
+        lock (_gate)
+        {
+            _capabilities = capabilities.ToFrozenDictionary(StringComparer.Ordinal);
+            _nativeSessionId = sessionFile;
+            modelChanged = !string.Equals(modelId, _currentModelId, StringComparison.Ordinal);
+            _currentModelId = modelId;
+            _modelChoices = modelId is null ? [] : [new OmpModelChoice(modelId, modelName ?? modelId)];
+        }
+
+        if (modelChanged)
+        {
+            ModelChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
+
+    private static string? ReadString(JsonElement source, string property) =>
+        source.TryGetProperty(property, out JsonElement value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
 
     private static void AddString(Dictionary<string, string> target, JsonElement source, string property, string key)
     {
@@ -461,7 +775,7 @@ public sealed class OmpRpcSession : IOmpSession
                 Dispatch(line);
             }
 
-            _ = Fail(new DisconnectedHarnessException("omp closed its output stream.", Context));
+            _ = Fail(new DisconnectedHarnessException(WithStderrTail("omp closed its output stream."), Context));
         }
         catch (HarnessException ex)
         {
@@ -612,6 +926,12 @@ public sealed class OmpRpcSession : IOmpSession
 
     private void DispatchStreamFrame(string type, JsonElement frame)
     {
+        if (string.Equals(type, "available_commands_update", StringComparison.Ordinal))
+        {
+            ApplyAvailableCommands(frame);
+            return;
+        }
+
         PromptSlot? slot;
         lock (_gate)
         {
@@ -621,6 +941,49 @@ public sealed class OmpRpcSession : IOmpSession
         if (slot is not null && RpcEventMapper.Map(type, frame) is { } harnessEvent)
         {
             Publish(slot, harnessEvent);
+        }
+    }
+
+    /// <summary>
+    /// Applies one unsolicited <c>available_commands_update</c> frame (observed-19.1.1, frozen capture seq 3)
+    /// as a whole-list replacement in engine order, raising <see cref="CommandsChanged"/> only when the list
+    /// differs. Malformed entries are skipped per entry and a malformed frame is ignored: an unsolicited
+    /// frame must never fault the session (R-UNSOLICITED).
+    /// </summary>
+    private void ApplyAvailableCommands(JsonElement frame)
+    {
+        if (!frame.TryGetProperty("commands", out JsonElement entries) || entries.ValueKind != JsonValueKind.Array)
+        {
+            return;
+        }
+
+        var commands = new List<OmpCommand>();
+        foreach (JsonElement entry in entries.EnumerateArray())
+        {
+            if (entry.ValueKind != JsonValueKind.Object || ReadString(entry, "name") is not { } name)
+            {
+                continue;
+            }
+
+            string? hint = entry.TryGetProperty("input", out JsonElement input) && input.ValueKind == JsonValueKind.Object
+                ? ReadString(input, "hint")
+                : null;
+            commands.Add(new OmpCommand(name, ReadString(entry, "description"), hint));
+        }
+
+        bool changed;
+        lock (_gate)
+        {
+            changed = !_commands.SequenceEqual(commands);
+            if (changed)
+            {
+                _commands = commands;
+            }
+        }
+
+        if (changed)
+        {
+            CommandsChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 

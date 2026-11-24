@@ -36,12 +36,26 @@ public sealed class OmpRpcProcess : IRpcTransport
     /// <summary>Gets the most recent stderr lines (up to 200), oldest first.</summary>
     public IReadOnlyList<string> RecentStderr => _stderrTail.ToArray();
 
-    /// <summary>Starts <c>&lt;ompPath&gt; --mode rpc --no-ui --cwd &lt;cwd&gt;</c>.</summary>
+    /// <summary>Starts <c>&lt;ompPath&gt; --mode rpc --no-ui --cwd &lt;cwd&gt;</c> with the inherited environment.</summary>
     /// <param name="ompPath">The omp executable: an absolute path, or a name resolved through PATH.</param>
     /// <param name="cwd">The working directory the engine operates in.</param>
     /// <returns>The running process.</returns>
     /// <exception cref="ProcessStartHarnessException">The executable could not be started.</exception>
-    public static OmpRpcProcess Start(string ompPath, string cwd)
+    public static OmpRpcProcess Start(string ompPath, string cwd) => Start(ompPath, cwd, environment: null);
+
+    /// <summary>Starts <c>&lt;ompPath&gt; --mode rpc --no-ui --cwd &lt;cwd&gt;</c>.</summary>
+    /// <param name="ompPath">The omp executable: an absolute path, or a name resolved through PATH.</param>
+    /// <param name="cwd">The working directory the engine operates in.</param>
+    /// <param name="environment">
+    /// The child's complete environment, or <see langword="null"/> to inherit the parent environment
+    /// unchanged. When supplied, inherited variables are cleared first and each entry is then set; an
+    /// entry with an empty value deliberately clears that inherited variable, and an empty dictionary
+    /// means the child receives no inherited variables (never "inherit"). The caller supplies
+    /// already-resolved isolation output; allowlist resolution stays with the composition roots.
+    /// </param>
+    /// <returns>The running process.</returns>
+    /// <exception cref="ProcessStartHarnessException">The executable could not be started.</exception>
+    public static OmpRpcProcess Start(string ompPath, string cwd, IReadOnlyDictionary<string, string>? environment)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ompPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(cwd);
@@ -60,6 +74,19 @@ public sealed class OmpRpcProcess : IRpcTransport
         startInfo.ArgumentList.Add("--no-ui");
         startInfo.ArgumentList.Add("--cwd");
         startInfo.ArgumentList.Add(cwd);
+
+        if (environment is not null)
+        {
+            startInfo.Environment.Clear();
+            foreach (KeyValuePair<string, string> entry in environment)
+            {
+                if (entry.Value.Length > 0)
+                {
+                    startInfo.Environment[entry.Key] = entry.Value;
+                }
+            }
+        }
+
 
         Process? process;
         try

@@ -6,6 +6,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Autonogrammer.Harness.Rpc.Tests" />
+    <InternalsVisibleTo Include="Autonogrammer.EngineHost.Tests" />
+    <InternalsVisibleTo Include="Autonogrammer.Harness.ContractTests" />
   </ItemGroup>
 
 </Project>

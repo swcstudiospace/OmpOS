@@ -146,18 +146,22 @@ public sealed class Omp19HandshakeContractTests
     }
 
     /// <summary>
-    /// The version probe parses the installed 19.1.1 string, but the client pin still refuses it: the Phase 79
-    /// ledger records the evidence, and moving the pin is Phase 80 work, not a silent edit here.
+    /// The version probe parses the installed 19.1.1 string and the pin now accepts exactly the 19.1 line:
+    /// Phase 80 moved it on this ledger's evidence (OQ-524 closed, "Pin decision (D-03)"), so 18.12.6 and
+    /// 19.2.0 fall outside again on either side.
     /// </summary>
     [Fact]
-    public void Version1911ParsesButStaysOutsideThePinnedLine()
+    public void Version1911ParsesAndIsInsideThePinnedLine()
     {
         OmpVersion version = OmpVersion.Parse("omp/19.1.1");
 
         version.ShouldBe(new OmpVersion(19, 1, 1));
-        version.IsPinnedRelease.ShouldBeFalse();
-        OmpVersion.PinnedMajor.ShouldBe(18);
-        OmpVersion.PinnedMinor.ShouldBe(12);
+        version.IsPinnedRelease.ShouldBeTrue();
+        OmpVersion.PinnedMajor.ShouldBe(19);
+        OmpVersion.PinnedMinor.ShouldBe(1);
+        new OmpVersion(18, 12, 6).IsPinnedRelease.ShouldBeFalse();
+        new OmpVersion(19, 0, 0).IsPinnedRelease.ShouldBeFalse();
+        new OmpVersion(19, 2, 0).IsPinnedRelease.ShouldBeFalse();
     }
 
     private static string FramesPath(string fileName) =>

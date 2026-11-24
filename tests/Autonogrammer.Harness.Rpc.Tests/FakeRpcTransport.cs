@@ -1,5 +1,8 @@
+#pragma warning disable MA0048 // TransportStarter shares the fake-transport file the plan owns.
+
 using System.Collections.Concurrent;
 using System.Threading.Channels;
+using Autonogrammer.Harness.Abstractions;
 
 namespace Autonogrammer.Harness.Rpc.Tests;
 
@@ -98,5 +101,48 @@ internal sealed class FakeRpcTransport : IRpcTransport
     {
         EndStdout();
         return ValueTask.CompletedTask;
+    }
+}
+
+/// <summary>
+/// An <see cref="IRpcSessionStarter"/> that opens each session over a fresh scripted transport from the
+/// supplied factory and completes its handshake, so wrapper (<c>RpcHarnessSession</c>) tests exercise the
+/// real <see cref="OmpRpcSession"/> satellites through the factory surface. No omp process is launched.
+/// </summary>
+internal sealed class TransportStarter : IRpcSessionStarter
+{
+    private readonly Func<FakeRpcTransport> _transportFactory;
+
+    /// <summary>Creates a starter over <paramref name="transportFactory"/>.</summary>
+    public TransportStarter(Func<FakeRpcTransport> transportFactory)
+    {
+        _transportFactory = transportFactory;
+    }
+
+    /// <summary>Gets the transport of the most recent start.</summary>
+    public FakeRpcTransport? LastTransport { get; private set; }
+
+    /// <inheritdoc />
+    public Task<IOmpSession> CreateAsync(CancellationToken cancellationToken) =>
+        OpenAsync(null, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<IOmpSession> ResumeAsync(string sessionPath, CancellationToken cancellationToken) =>
+        OpenAsync(sessionPath, cancellationToken);
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Reliability",
+        "CA2000",
+        Justification = "Ownership of the session transfers to the returned IOmpSession; the wrapper disposes it.")]
+    private async Task<IOmpSession> OpenAsync(string? sessionPath, CancellationToken cancellationToken)
+    {
+        FakeRpcTransport transport = _transportFactory();
+        LastTransport = transport;
+        var session = new OmpRpcSession(transport, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+        return await OmpRpcClient.StartSessionAsync(
+            session,
+            started => sessionPath is null
+                ? started.CreateAsync(cancellationToken)
+                : started.ResumeAsync(sessionPath, cancellationToken)).ConfigureAwait(false);
     }
 }

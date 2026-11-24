@@ -14,6 +14,24 @@ internal static class RpcTestData
     public static IReadOnlyList<string> Fixture() =>
         File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "TestData", "frames", "rpc-out.ndjson"));
 
+    /// <summary>Reads the frozen omp 19.1.1 handshake capture (ledger rows R-READY/R-NEGOTIATE/R-UNSOLICITED).</summary>
+    /// <returns>The lines in capture order, both directions as frozen.</returns>
+    public static IReadOnlyList<string> Observed19() =>
+        File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "TestData", "frames", "rpc-observed-19.1.1-20261123T202249Z.ndjson"));
+
+    /// <summary>Reads the verified-18.12.6 live prompt-path capture (ledger command table, <c>prompt</c>/<c>abort</c> rows).</summary>
+    /// <returns>The lines in capture order.</returns>
+    public static IReadOnlyList<string> LiveCapture() =>
+        File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "TestData", "frames", "rpc-live-20261021T171351Z.ndjson"));
+
+    /// <summary>Builds a streamed thinking delta from the agent, in the live capture's <c>message_update</c> shape.</summary>
+    /// <param name="delta">The thinking fragment.</param>
+    /// <returns>The frame line.</returns>
+    public static string ThinkingDelta(string delta) =>
+        "{\"type\":\"message_update\",\"messageId\":\"m1\",\"message\":{},\"assistantMessageEvent\":{\"type\":\"thinking_delta\",\"contentIndex\":0,\"delta\":\""
+        + delta
+        + "\"}}";
+
     /// <summary>Builds a successful response line.</summary>
     /// <param name="id">The command id to echo.</param>
     /// <param name="command">The command type.</param>
