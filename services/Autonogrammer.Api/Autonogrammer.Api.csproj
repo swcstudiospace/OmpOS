@@ -78,6 +78,7 @@
     <ProjectReference Include="../../src/Autonogrammer.Sessions.Postgres/Autonogrammer.Sessions.Postgres.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Acp/Autonogrammer.Harness.Acp.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Rpc/Autonogrammer.Harness.Rpc.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Automations/Autonogrammer.Harness.Automations.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.InMemory/Autonogrammer.Harness.InMemory.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.OmpConfig/Autonogrammer.Harness.OmpConfig.csproj" />

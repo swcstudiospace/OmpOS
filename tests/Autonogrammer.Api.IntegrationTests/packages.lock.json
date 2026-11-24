@@ -447,6 +447,7 @@
           "Autonogrammer.Harness.OmpLauncher": "[0.17.0, )",
           "Autonogrammer.Harness.Plugins": "[0.17.0, )",
           "Autonogrammer.Harness.Providers": "[0.17.0, )",
+          "Autonogrammer.Harness.Rpc": "[0.17.0, )",
           "Autonogrammer.Harness.Secrets": "[0.17.0, )",
           "Autonogrammer.Harness.Workspace": "[0.17.0, )",
           "Autonogrammer.Harness.Worktrees": "[0.17.0, )",
@@ -610,6 +611,12 @@
       },
       "autonogrammer.harness.providers": {
         "type": "Project"
+      },
+      "autonogrammer.harness.rpc": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Harness.Abstractions": "[0.17.0, )"
+        }
       },
       "autonogrammer.harness.secrets": {
         "type": "Project"

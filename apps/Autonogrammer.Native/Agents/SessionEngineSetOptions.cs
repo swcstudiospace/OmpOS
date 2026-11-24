@@ -2,7 +2,9 @@ using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.AgentLoop.Steering;
 using Autonogrammer.Harness.OmpLauncher;
+using Autonogrammer.Harness.Rpc;
 using Autonogrammer.Harness.Terminal;
+using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Settings.Models;
 using Autonogrammer.Presentation;
 using Microsoft.Extensions.Logging;
@@ -81,4 +83,19 @@ internal sealed class SessionEngineSetOptions
     /// these features existed: no hooks, no run mode (omp keeps its own approval default), no MCP servers of the user's files, no ssh sessions.
     /// </summary>
     public Autonogrammer.Native.Composition.HeadServices? Services { get; init; }
+
+    /// <summary>
+    /// Gets the transport the main local sessions of the set are composed over, fixed when the set is constructed. The default is
+    /// <see cref="EngineTransport.Acp"/>; <see cref="EngineTransport.Rpc"/> is the Phase 80 opt-in and threads to the main local
+    /// composition site only — child sessions (side chats, unattended candidates) and remote sessions keep composing ACP until
+    /// Phase 82 lands the shared launch plan under RPC.
+    /// </summary>
+    public EngineTransport Transport { get; init; } = EngineTransport.Acp;
+
+    /// <summary>
+    /// Gets the seam a test uses to supply a scripted session for RPC-composed main local sessions instead of spawning
+    /// <c>omp --mode rpc</c>, mirroring <see cref="TransportFactory"/>. Production leaves it null. It is consulted only when
+    /// <see cref="Transport"/> is <see cref="EngineTransport.Rpc"/>.
+    /// </summary>
+    public Func<OmpRpcClientOptions, IOmpSession>? RpcSessionFactory { get; init; }
 }

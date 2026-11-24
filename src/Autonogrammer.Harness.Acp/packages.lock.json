@@ -41,7 +41,7 @@
       "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.17.0, )"
+          "Autonogrammer.Contracts": "[0.20.18, )"
         }
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {

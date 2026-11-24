@@ -4,6 +4,7 @@
     <ProjectReference Include="../../src/Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.InMemory/Autonogrammer.Harness.InMemory.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Rpc/Autonogrammer.Harness.Rpc.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.EngineHost/Autonogrammer.EngineHost.csproj" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="Shouldly" />

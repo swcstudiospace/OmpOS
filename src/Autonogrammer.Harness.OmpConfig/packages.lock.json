@@ -29,7 +29,7 @@
       "autonogrammer.harness.omplauncher": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Terminal": "[0.17.0, )"
+          "Autonogrammer.Harness.Terminal": "[0.20.18, )"
         }
       },
       "autonogrammer.harness.providers": {

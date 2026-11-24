@@ -630,6 +630,9 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             // A remote plan runs omp on its own host, so the local launcher is not consulted; it gets the configured path, as before the launcher wiring.
             var ompPath = plan.Extras.IsRemote ? _options.OmpPath : await ResolveOmpPathAsync(cancellationToken).ConfigureAwait(false);
             var holder = plan.RunModes;
+            // Phase 80 slice-single: the transport selection threads to this main local composition site only. The child sites
+            // (side chats, unattended candidates) keep composing ACP explicitly and flip when Phase 82 lands the shared launch
+            // plan under RPC; a remote plan here carries Remote, which the RPC path refuses (Phase 83).
             var composition = new EngineCompositionOptions
             {
                 ExtraMcpServers = extraServers,
@@ -639,6 +642,8 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
                 Remote = remote,
                 Clock = _options.TimeProvider,
                 ProcessWrapper = ProcessWrapper,
+                Transport = _options.Transport,
+                RpcSessionFactory = _options.RpcSessionFactory,
             };
             return EngineComposition.Compose(_options.AllowedKinds, launch, _options.TransportFactory, _options.LoggerFactory, ompPath, resumeSessionId, composition);
         }
@@ -723,14 +728,15 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
     /// <summary>
     /// Composes the engine of a side chat: a plain omp in the parent's workspace that asks before every tool call (<c>--approval-mode always-ask</c>) under an approval policy that admits no tool kind, so
-    /// every call is denied before anyone is asked.
+    /// every call is denied before anyone is asked. Child sessions stay on ACP in the Phase 80 slice whatever
+    /// <see cref="SessionEngineSetOptions.Transport"/> selects for main sessions, until Phase 82 lands the shared launch plan under RPC.
     /// </summary>
     /// <param name="workspaceRoot">The workspace of the parent session.</param>
     /// <returns>The engine. It starts no process until a prompt is submitted.</returns>
     internal EngineComposition ComposeSideChatEngine(string workspaceRoot) =>
         EngineComposition.Compose([], ChildPlan(workspaceRoot, RunMode.Allowlist), _options.TransportFactory, _options.LoggerFactory, CurrentOmpPath);
 
-    /// <summary>Composes the engine of an unattended candidate (best of n): omp's <c>yolo</c> approval mode in the candidate's worktree. The caller makes sure the user chose Run Everything.</summary>
+    /// <summary>Composes the engine of an unattended candidate (best of n): omp's <c>yolo</c> approval mode in the candidate's worktree. The caller makes sure the user chose Run Everything. Child sessions stay on ACP in the Phase 80 slice whatever <see cref="SessionEngineSetOptions.Transport"/> selects for main sessions.</summary>
     /// <param name="workspaceRoot">The candidate's worktree.</param>
     /// <param name="cancellationToken">Cancels the resolution of the omp.</param>
     /// <returns>The engine. It starts no process until a prompt is submitted.</returns>

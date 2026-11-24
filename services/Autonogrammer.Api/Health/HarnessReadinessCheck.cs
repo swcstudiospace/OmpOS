@@ -6,8 +6,9 @@ namespace Autonogrammer.Api.Health;
 
 /// <summary>
 /// Harness adapter readiness for <c>/health/ready</c>. The in-memory adapter needs no external process and is always ready.
-/// The ACP adapter is ready when <c>Harness:Acp:OmpPath</c> resolves to an existing file: an absolute path that exists, or a
-/// bare name that a PATH directory holds. The probe checks the file only; it never starts omp.
+/// The ACP and RPC adapters are ready when their omp path (<c>Harness:Acp:OmpPath</c> or <c>Harness:Rpc:OmpPath</c>) resolves
+/// to an existing file: an absolute path that exists, or a bare name that a PATH directory holds. The probe checks the file
+/// only; it never starts omp.
 /// </summary>
 internal sealed class HarnessReadinessCheck : IHealthCheck
 {
@@ -33,29 +34,34 @@ internal sealed class HarnessReadinessCheck : IHealthCheck
 
         if (HarnessOptions.IsAcpAdapter(harness.Adapter))
         {
-            return Task.FromResult(CheckOmpPath(harness.Acp.OmpPath));
+            return Task.FromResult(CheckOmpPath(harness.Acp.OmpPath, "Harness:Acp:OmpPath", HarnessOptions.AcpAdapter));
         }
 
-        return Task.FromResult(HealthCheckResult.Unhealthy($"Harness:Adapter '{harness.Adapter}' is not a supported adapter (InMemory or Acp)."));
+        if (HarnessOptions.IsRpcAdapter(harness.Adapter))
+        {
+            return Task.FromResult(CheckOmpPath(harness.Rpc.OmpPath, "Harness:Rpc:OmpPath", HarnessOptions.RpcAdapter));
+        }
+
+        return Task.FromResult(HealthCheckResult.Unhealthy($"Harness:Adapter '{harness.Adapter}' is not a supported adapter (InMemory, Acp or Rpc)."));
     }
 
-    private static HealthCheckResult CheckOmpPath(string ompPath)
+    private static HealthCheckResult CheckOmpPath(string ompPath, string keyName, string adapterName)
     {
         if (string.IsNullOrWhiteSpace(ompPath))
         {
-            return HealthCheckResult.Unhealthy("Harness:Acp:OmpPath is not set; the Acp adapter needs the omp executable path.");
+            return HealthCheckResult.Unhealthy($"{keyName} is not set; the {adapterName} adapter needs the omp executable path.");
         }
 
         if (Path.IsPathRooted(ompPath))
         {
             return File.Exists(ompPath)
-                ? HealthCheckResult.Healthy($"Harness:Acp:OmpPath resolves to {ompPath}.")
-                : HealthCheckResult.Unhealthy($"Harness:Acp:OmpPath names no existing file; tried {ompPath}.");
+                ? HealthCheckResult.Healthy($"{keyName} resolves to {ompPath}.")
+                : HealthCheckResult.Unhealthy($"{keyName} names no existing file; tried {ompPath}.");
         }
 
         if (ompPath.IndexOfAny([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar]) >= 0)
         {
-            return HealthCheckResult.Unhealthy($"Harness:Acp:OmpPath must be an absolute path or a bare executable name; relative path '{ompPath}' was not probed.");
+            return HealthCheckResult.Unhealthy($"{keyName} must be an absolute path or a bare executable name; relative path '{ompPath}' was not probed.");
         }
 
         var tried = new List<string>();
@@ -64,14 +70,14 @@ internal sealed class HarnessReadinessCheck : IHealthCheck
             var candidate = Path.Combine(directory, ompPath);
             if (File.Exists(candidate))
             {
-                return HealthCheckResult.Healthy($"Harness:Acp:OmpPath resolves to {candidate}.");
+                return HealthCheckResult.Healthy($"{keyName} resolves to {candidate}.");
             }
 
             tried.Add(candidate);
         }
 
         return HealthCheckResult.Unhealthy(tried.Count == 0
-            ? $"Harness:Acp:OmpPath '{ompPath}' was not found: PATH has no directories to search."
-            : $"Harness:Acp:OmpPath '{ompPath}' was not found on PATH; tried {string.Join(", ", tried)}.");
+            ? $"{keyName} '{ompPath}' was not found: PATH has no directories to search."
+            : $"{keyName} '{ompPath}' was not found on PATH; tried {string.Join(", ", tried)}.");
     }
 }

@@ -2,6 +2,7 @@ using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.AgentLoop.Safety;
 using Autonogrammer.Harness.Remote;
+using Autonogrammer.Harness.Rpc;
 
 namespace Autonogrammer.Native.Engine;
 
@@ -49,4 +50,23 @@ internal sealed record EngineCompositionOptions
 
     /// <summary>Gets the process wrapper for this session, or null for a direct launch. Cowork sets it; Code leaves it null.</summary>
     public IProcessLaunchWrapper? ProcessWrapper { get; init; }
+
+    /// <summary>
+    /// Gets the transport the session is composed over. The default is <see cref="EngineTransport.Acp"/>. With
+    /// <see cref="EngineTransport.Rpc"/> the plan-based composition refuses everything RPC cannot yet honour honestly: a remote
+    /// session (Phase 83), an approval-capable flow — admitted kinds, <see cref="RunModePolicy"/> or
+    /// <see cref="PermissionResolverFactory"/> — (OQ-525), and launch contributions such as extra arguments, MCP servers,
+    /// <see cref="HookGate"/> or <see cref="ProcessWrapper"/> (Phase 82). Only the plan-based
+    /// <see cref="EngineComposition.Compose(IReadOnlyCollection{string}, Autonogrammer.Harness.AgentLoop.Launch.OmpLaunchPlan, Func{AcpClientOptions, IAcpTransport}, Microsoft.Extensions.Logging.ILoggerFactory, string, string, EngineCompositionOptions)"/>
+    /// reads it; the non-plan overload always composes ACP.
+    /// </summary>
+    public EngineTransport Transport { get; init; } = EngineTransport.Acp;
+
+    /// <summary>
+    /// Gets the seam a test uses to supply a scripted session for the RPC path instead of spawning <c>omp --mode rpc</c>, mirroring
+    /// the ACP path's transport factory. Production leaves it null, and it is consulted only when <see cref="Transport"/> is
+    /// <see cref="EngineTransport.Rpc"/>. It is called when the host first binds its session (and again after a fault), never at
+    /// composition, and must not return null.
+    /// </summary>
+    public Func<OmpRpcClientOptions, IOmpSession>? RpcSessionFactory { get; init; }
 }

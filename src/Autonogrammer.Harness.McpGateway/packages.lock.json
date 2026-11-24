@@ -66,27 +66,27 @@
       "autonogrammer.cowork.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.17.0, )"
+          "Autonogrammer.Contracts": "[0.20.18, )"
         }
       },
       "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.17.0, )"
+          "Autonogrammer.Contracts": "[0.20.18, )"
         }
       },
       "autonogrammer.harness.acp": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.17.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.20.18, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.harness.mcp": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.17.0, )",
-          "Autonogrammer.Harness.Acp": "[0.17.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.20.18, )",
+          "Autonogrammer.Harness.Acp": "[0.20.18, )",
           "ModelContextProtocol": "[2.3.0, )"
         }
       },
