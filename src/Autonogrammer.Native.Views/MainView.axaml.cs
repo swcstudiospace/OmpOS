@@ -204,7 +204,6 @@ public partial class MainView : UserControl, IDisposable
         _rail = (AgentRailView)ViewMapping.Create(panel.Catalog);
         _rail.Panel = panel;
         _rail.NewAgentCompleted += OnNewAgentCompleted;
-        _rail.NewTerminalCompleted += OnNewAgentCompleted;
         _rail.RowActivated += OnRowActivated;
         _rail.CloseRequested += OnRailCloseRequested;
         RailHost.Content = _rail;
@@ -880,10 +879,6 @@ public partial class MainView : UserControl, IDisposable
                 e.Handled = true;
                 _ = StartNewAgentAsync();
                 break;
-            case Key.T when control && shift:
-                e.Handled = true;
-                _ = StartNewTerminalAsync();
-                break;
             case Key.K when control && shift && _boardView is not null:
                 e.Handled = true;
                 ShowKanbanTab();
@@ -980,7 +975,6 @@ public partial class MainView : UserControl, IDisposable
         HandOffToCloud = HandOffToCloudAsync,
         Handlers = CreateHandlers(pane),
         NewChat = _ => StartNewAgentAsync(),
-        NewTerminal = _ => StartNewTerminalAsync(),
     };
 
     private async Task StartNewAgentAsync()
@@ -1008,13 +1002,6 @@ public partial class MainView : UserControl, IDisposable
         await _selectionFocusCommand.ExecuteAsync(null).ConfigureAwait(true);
     }
 
-    private async Task StartNewTerminalAsync()
-    {
-        ShowAgentsTab();
-        ShowThread();
-        await _panel.NewTerminalCommand.ExecuteAsync(null).ConfigureAwait(true);
-        await _selectionFocusCommand.ExecuteAsync(null).ConfigureAwait(true);
-    }
 
     // The top-level tabs. Selecting the Kanban tab hides the rail and the thread, which keep their state, and shows the board in their place.
     private void SetKanbanShown(bool shown)
@@ -1709,7 +1696,6 @@ public partial class MainView : UserControl, IDisposable
         _keyHost?.RemoveHandler(KeyDownEvent, OnKeyDownTunnel);
         _keyHost = null;
         _rail.NewAgentCompleted -= OnNewAgentCompleted;
-        _rail.NewTerminalCompleted -= OnNewAgentCompleted;
         _rail.RowActivated -= OnRowActivated;
         _rail.CloseRequested -= OnRailCloseRequested;
         CloseShell();

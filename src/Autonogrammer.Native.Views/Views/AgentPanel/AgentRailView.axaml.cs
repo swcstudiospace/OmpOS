@@ -28,7 +28,6 @@ internal partial class AgentRailView : UserControl
     {
         InitializeComponent();
         NewAgentKeys.Text = new KeyGesture(Key.N, KeyModifiers.Control).ToString(null, System.Globalization.CultureInfo.InvariantCulture);
-        NewTerminalKeys.Text = new KeyGesture(Key.T, KeyModifiers.Control | KeyModifiers.Shift).ToString(null, System.Globalization.CultureInfo.InvariantCulture);
         _catalogWatch = new ModelWatcher<SessionCatalogModel>(Refresh);
         _panelWatch = new ModelWatcher<AgentPanelViewModel>(Refresh);
         _display = new DisplayOptionsWatcher(this, ApplyDisplay);
@@ -38,7 +37,6 @@ internal partial class AgentRailView : UserControl
         AgentRows.AddHandler(KeyDownEvent, OnRowsKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         AgentFilter.KeyDown += OnFilterKeyDown;
         NewAgentButton.Click += OnNewAgentClick;
-        NewTerminalButton.Click += OnNewTerminalClick;
         RowMenu.Opening += OnMenuOpening;
         ResumeItem.Click += OnResumeClick;
         ReopenItem.Click += OnReopenClick;
@@ -49,8 +47,6 @@ internal partial class AgentRailView : UserControl
     /// <summary>Occurs after the New agent command finished, so the owner can move focus to the new session's prompt.</summary>
     public event EventHandler? NewAgentCompleted;
 
-    /// <summary>Occurs after the New omp terminal command finished, so the owner can move focus to the terminal.</summary>
-    public event EventHandler? NewTerminalCompleted;
 
     /// <summary>Occurs when Enter is pressed in the agent list, so the owner can move focus to the prompt of the selected agent.</summary>
     public event EventHandler? RowActivated;
@@ -240,18 +236,6 @@ internal partial class AgentRailView : UserControl
 
     private void OnNewAgentClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => _ = NewAgentAsync();
 
-    private void OnNewTerminalClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => _ = NewTerminalAsync();
-
-    private async Task NewTerminalAsync()
-    {
-        if (_panel is null)
-        {
-            return;
-        }
-
-        await _panel.NewTerminalCommand.ExecuteAsync(null).ConfigureAwait(true);
-        NewTerminalCompleted?.Invoke(this, EventArgs.Empty);
-    }
 
     private async Task NewAgentAsync()
     {
