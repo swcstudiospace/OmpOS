@@ -150,3 +150,115 @@ and the Rpc twin, plus `grep -rln "OmpRpcClient\|OmpRpcSession\|OmpRpcProcess" s
 
 The 18.12.x fixtures are untouched and their replay tests still pass unchanged, so both surfaces stay pinned
 side by side for Phase 80's parity work.
+
+## Phase 82 flag surface and MCP channel (Task 1, 2026-11-25, no live turn)
+
+Phase 82 plan 82-01 Task 1 froze what `--mode rpc` on omp 19.1.1 accepts and honours, before any production
+code change. Every verdict below cites either the 19.1.1 `--help` text (byte-identical to Phase 79), one of the
+handshake-only probes run 2026-11-25, or is recorded "unobserved — refusal stays". No probe sent `prompt`,
+`authenticate`, `session/new` or a positional message; each ran with a fresh `HOME` under `/tmp` (plus XDG dirs
+inside it), a credential-scrubbed environment (no `API_KEY`/`TOKEN`/`SECRET`/`PASSWORD`/`ANTHROPIC`/`OPENAI`/`_KEY`
+variables), a throwaway cwd and `--session-dir` under `/tmp` with `--no-session`, and ended by closing stdin
+(EOF → exit 0, never killed). Raw probe output stayed in `/tmp/omp82t1/` scratch and is not committed (rule R5);
+only byte counts, exit codes and line hashes are frozen here. The one repeatable capture is the opt-in gated test
+`tests/Autonogrammer.Harness.Rpc.Tests/RpcPluginLoadCaptureTests.cs` (same `AUTONOGRAMMER_RPC_LIVE_CAPTURE=1` +
+`Category=Live` pattern as `RpcLiveCaptureTests`, skipped by default, excluded by
+`--filter-not-trait "Category=Live"`): it starts `omp --mode rpc` with the full planned argv over a fixture
+workspace, drives `negotiate_protocol` + `get_state` via `OmpRpcSession`, never sends a prompt, then closes
+stdin and asserts the plugin `available_commands_update` commands and the `gsd-core-omp` connection report
+(`mode: "rpc"`). It writes its frames to `TestData/frames/rpc-plugin-load-<timestamp>.ndjson` only when run.
+
+### Help (observed-19.1.1)
+
+- argv: `~/.local/bin/omp --help` (fresh `HOME`, credential-scrubbed), exit 0, stdout 19564 bytes,
+  sha256 `b4f9b413d56901993fe5f54d9133eaa8f2f23b93050f45634d6647d229aa2dc8` — identical to the Phase 79
+  frozen help. Relevant lines, verbatim:
+  - `      --mode=<value>                    Output mode: text (default), json, rpc, or rpc-ui`
+  - `      --cwd=<value>                     Directory to start in (overrides the launch cwd)`
+  - `      --no-ui                           With --mode rpc or rpc-ui: run extensions headless (rpc-ui tool UI remains enabled)`
+  - `      --session-dir=<value>             Directory for session storage and lookup`
+  - `      --no-session                      Don't save session (ephemeral)`
+  - `      --model=<value>                   Model to use (fuzzy match: "opus", "gpt-5.2"; exact with a provider: "openai/gpt-5.2")`
+  - `      --no-extensions                   Disable extension discovery (explicit -e paths still work)`
+  - `  -e, --extension=<value>               Load an extension file (can be used multiple times)`
+  - `      --config=<value>                  Load an extra config.yml-style overlay for this run (repeatable)`
+  - `      --skills=<value>                  Comma-separated glob patterns to filter skills (e.g., git-*,docker)`
+  - `      --add-dir=<value>                 Add a workspace directory beyond the working directory (repeatable)`
+  - `      --append-system-prompt=<value>    Append text or file contents to the system prompt`
+  - `      --approval-mode=<value>           Override tools.approvalMode for this session (always-ask|always-ask-cached|write|yolo)`
+  - `  --plugin-dir <path>        Load plugin from directory (repeatable)` (Plugin Options section only; not a launch flag)
+  - The words `mcp` do not appear anywhere in `--help`: no MCP flag exists at launch.
+- argv: `~/.local/bin/omp acp --help`, exit 0, stdout 79 bytes,
+  sha256 `8281e3859ff508a2aa842d9a7b0ea30c1d259a7e93f071d619b2587ff936b794`.
+- argv: `~/.local/bin/omp --version`, exit 0, stdout `omp/19.1.1`.
+
+### Probes (observed-19.1.1, scratch paths shown as `/tmp/omp82t1/…`, binary path R1-redacted)
+
+Probe client sends only `negotiate_protocol` (`protocolVersion: 2`) and `get_state`, never `prompt`, then
+closes stdin. Commands seen in `available_commands_update` are counted by `name`.
+
+| Probe | argv (after R1) | exit | duration | stdout | effect |
+|---|---|---|---|---|---|
+| basic | `omp --mode rpc --no-ui --cwd <ws> --session-dir <sessions> --no-session --model opus` | 0 | 20052 ms | 47605 B, 4 lines, sha256 `3961d1fd…f6af7` (see line hashes below) | `ready` 168 B, `available_commands_update` 16802 B with 53 commands, negotiate + get_state responses; stderr empty |
+| full | basic + `--no-extensions -e <ultrathink> -e <swarm/omp> -e <gsd> --config <overlay> --skills fixture-* --add-dir <adddir> --append-system-prompt <sysprompt> --approval-mode write` with plugin state-dir + `AUTONOGRAMMER_CONNECTION_FILE`/`AUTONOGRAMMER_STEER_DIR` env | 0 | 23322 ms | 56370 B, 4 lines, sha256 `a80703cf…5d87` | `available_commands_update` 17929 B with 60 commands; connection report + `alive.json` written; stderr empty |
+| badext | basic + `--no-extensions -e /tmp/omp82t1/fixture/does-not-exist -e <gsd>` | 0 | 7953 ms | 47333 B, 4 lines | `gsd-core` present, bundled `/annotate` `/green` `/review` absent; stderr `Failed to load extension /tmp/omp82t1/fixture/does-not-exist: Failed to load extension: Cannot find module …`, exit still 0 |
+| unknown | basic + `--definitely-not-a-real-flag-xyz` | 2 | 6067 ms | 0 B, 0 lines | no `ready`; stderr `Error: unknown flag: --definitely-not-a-real-flag-xyz` + `Run omp --help…` |
+| mcpfile | basic with cwd `<ws-mcp>` containing `.omp/mcp.json` = `{"mcpServers": {"probe-srv": {"type": "stdio", "command": "/tmp/omp82t1/fixture/nope-server", "args": []}}}` | 0 | 5078 ms | 47605 B, 4 lines | `ready` reached, stderr empty; `get_state.dumpTools` still the same 11 bundled tools as basic — the file had no handshake-level effect |
+
+Per-line sha256 (line bytes without LF), in frame order (`ready`, `available_commands_update`, negotiate
+response, get_state response):
+
+- basic: `0190791e…911`, `0292fe20…d1`, `3501496d…22`, `471873d0…e4` (full values in `/tmp/omp82t1/*.meta.json`).
+- full: `0190791e…911` (`ready` identical to basic), `6e82e35f…8b`, `3501496d…22`, `cac9529f…d0`.
+- badext: `0190791e…911`, `ac74d1a6…4d`, `3501496d…22`, `47095aea…f`.
+
+Observed effects, compared against basic:
+
+- full adds exactly the 10 plugin commands `gsd-core`, `swarm`, `ultrathink-off`, `ultrathink-on`,
+  `ultrathink-quick`, `ultrathink-skip`, `ultrathink-status`, `ultrathink-swarm`, `ultrathink-track`,
+  `ultrathink-ui` (60 vs 53), and with `--no-extensions` removes the 3 bundled commands `annotate`, `green`,
+  `review` — exactly the side effect `docs/plugins.md` records for the ACP launch.
+- The connection report (`AUTONOGRAMMER_CONNECTION_FILE`) was written: `mode: "rpc"`,
+  `commandsAvailable: true`, 11 commands (`autoresearch`, `gsd-core`, `swarm`, the 8 `ultrathink-*` names),
+  31 tools. `alive.json` in `AUTONOGRAMMER_STEER_DIR` names `"mode": "rpc"`.
+- The fixture file's `fixture standing context` string is present in full's `get_state.systemPrompt` and
+  absent from basic's.
+- **Drift against `docs/plugins.md` (flag rejection, not a silent ignore):** a top-level unknown flag is
+  rejected (`unknown` probe, exit 2) — the plan's "omp silently ignores unknown flags" does not hold for launch
+  flags on 19.1.1, so argv acceptance on this binary does prove the flag exists. The nonexistent `-e` path is
+  still ignored with only a stderr warning (`badext`, exit 0), as `plugins.md` says. Whether an accepted flag
+  is *honoured* still needs an observed effect, so the table below separates accepted from honoured.
+- MCP candidates, in the plan's order: (a) an `mcp` block in the `--config` overlay — the overlay is settings
+  only and cannot declare servers (ADR-0010 Q1, source-verified: `grep -n mcpServers src/config/settings.ts` is
+  empty, and no code reads `mcpServers` from settings). An `mcpServers:` overlay key is merged and inert. The
+  `config` subcommand did not reflect the overlay either (`config get mcp.enableProjectConfig` stayed `true`
+  with `--config` before the subcommand; `--config` after `config get` is rejected). (b) omp's own
+  project/user MCP configuration files — `mcpfile` shows a project `.omp/mcp.json` server has no
+  handshake-level effect under `--mode rpc`; whether MCP discovery is deferred until a prompt (which would
+  need a live turn) is unobservable by rule, so the claim is "no channel observed", not "MCP never loads".
+  (c) an RPC command — none observed: `--help` has no MCP flag, ADR-0010 records
+  `grep -rn -i mcp src/modes/rpc` = 4 lines, all `memcpy`/`mcp_prompt` label, and no frozen RPC frame carries
+  an MCP payload. The `mcp` name inside the 53/60-command lists comes from the `/mcp` slash command, not a
+  server carrier.
+
+### Verdict table (P1–P12)
+
+| Point | Flag / channel | Accepted under `--mode rpc` | Honoured (observed effect) | Disposition |
+|---|---|---|---|---|
+| P1 plugin `-e` entries | `--no-extensions` + `-e <dir>` after the transport words | observed-19.1.1 (help + full/badext reached `ready`, exit 0) | observed-19.1.1 (17929-byte commands frame; +10 plugin commands, −3 bundled commands, report `mode: rpc`; bad-ext ignored on stderr) | Task 3 forwards the plan arguments; Task 5 proves per-plugin load |
+| P2 hooks bridge | same `-e` channel + `AUTONOGRAMMER_HOOKS_*` env | observed as a channel (P1) | unobserved — no hooks-bridge entry or bridge env was probed (no bridge endpoint exists in the fixture) | refusal reason stays until Tasks 5/7 prove it; else OQ-526 difference |
+| P3 settings overlay | `--config <path>` + 0600 overlay file | observed-19.1.1 (full reached `ready`, exit 0, stderr empty) | unobserved — no overlay-key effect is visible in the handshake (`config get` did not read it back; `get_state` carries no overlay field) | Task 3 forwards argv; Task 4 claims overlay *byte* parity only |
+| P4 bundle skills | overlay `skills.customDirectories=` + `--skills <csv>` | observed-19.1.1 (full reached `ready`, exit 0) | unobserved — no skill enumeration reaches the handshake (`dumpTools` holds the same 11 tools in basic and full) | Task 7 decides |
+| P5 Cowork standing context | `--append-system-prompt <file>` (+ overlay/prompt fields) | observed-19.1.1 | observed-19.1.1 for the flag (fixture string present in full `get_state.systemPrompt`, absent in basic) | Task 7 decides |
+| P6 isolation wrapper | host-side `ProcessWrapper`, not omp argv | — | unobserved (host process-start semantics; not probed) | Task 7; refusal stays until then |
+| P7 substrate MCP | `session/new.mcpServers` on ACP; no RPC carrier found | — | no channel observed (help has no MCP flag; overlay cannot declare servers; project `mcp.json` has no handshake effect; no RPC MCP command; deferred-to-prompt discovery unobservable by rule) | record difference in OQ-526 (Task 6) |
+| P8 Cowork gateway MCP | same gap as P7 | — | no channel observed (same probes) | record difference in OQ-526 (Task 6) |
+| P9 Native user MCP | same gap as P7 | — | no channel observed (same probes) | record difference in OQ-526 (Task 6) |
+| P10 per-session environment | complete-env child environment | observed-19.1.1 (report + `alive.json` written at the exact env-named paths) | observed-19.1.1 | Task 4 diff proof |
+| P11 run-mode argv + bash overlay | `--approval-mode <write>` + overlay YAML | observed-19.1.1 (help values; full reached `ready` with `write`) | unobserved — approval behaviour needs a prompt and stays OQ-525; bash overlay is P3 | Tasks 3/9 argv mechanics only |
+| P12 `--add-dir` | `--add-dir <path>` | observed-19.1.1 (full reached `ready`, exit 0) | unobserved — no handshake field carries workspace roots (`get_state` has no `additionalDirectories` key) | Task 3 forwards argv; Task 4 parity |
+
+Consequences for later tasks: Tasks 3/4/5 may implement the argv channel for P1, P3, P11 and P12 (flag
+existence and acceptance are observed; *honouring* of P3/P4/P12 is claimed only where the table says observed).
+P2, P4–P6 need the Task 5/7 captures; P7–P9 are recorded as the phase's named transport difference unless a
+Task 6 capture observes a carrier — an unobserved candidate is never implemented on spec.
