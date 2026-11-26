@@ -2,7 +2,6 @@ using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Tests.AgentPanel.Shell;
 using Autonogrammer.Native.Views.Sessions;
-using Autonogrammer.Native.Views.Terminal;
 using Autonogrammer.Presentation.AgentPanel;
 using Shouldly;
 using Xunit;
@@ -10,47 +9,43 @@ using Xunit;
 namespace Autonogrammer.Native.Tests.Terminal;
 
 /// <summary>
-/// A persisted terminal record in the Native head (Phase 81): the runtime is retired, so it never calls the starter, holds no terminal
-/// view model, and reports the persisted kind for listing. The fake starter is the never-called witness: omp is never launched.
+/// A persisted terminal record in the Native head (Phase 81): the runtime is retired. No starter input exists any more, so nothing can start
+/// omp for the record: it reports retired and keeps the persisted kind for listing.
 /// </summary>
 public sealed class RetiredTerminalRuntimeTests
 {
-    /// <summary>A runtime built for a persisted Terminal record never calls the fake starter, reports retired, and disposes without starting anything.</summary>
+    /// <summary>A runtime built for a persisted Terminal record is retired and keeps the persisted kind.</summary>
     [Fact]
-    public async Task APersistedTerminalRuntimeNeverStartsOmp()
+    public async Task APersistedTerminalRuntimeIsRetired()
     {
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            var starter = new FakeOmpTerminalStarter();
-            var runtime = Create(starter);
+            var runtime = Create(SessionKind.Terminal);
             await using var scope = runtime.ConfigureAwait(true);
 
             runtime.IsRetiredTerminal.ShouldBeTrue();
             runtime.Kind.ShouldBe(SessionKind.Terminal, "the persisted kind is kept for listing");
-            runtime.Terminal.ShouldBeNull("a retired record has no terminal view model");
-            starter.Sizes.ShouldBeEmpty("omp is never launched for a retired record");
-            starter.Sessions.ShouldBeEmpty();
+            runtime.Runs.IsRunActive.ShouldBeFalse();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>A chat runtime is unaffected: no starter means no retired flag and a chat kind.</summary>
+    /// <summary>A chat runtime is unaffected: no retired flag and a chat kind.</summary>
     [Fact]
     public async Task AChatRuntimeIsNotRetired()
     {
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            var runtime = Create(starter: null, sessionId: "session-2");
+            var runtime = Create(SessionKind.Chat, "session-2");
             await using var scope = runtime.ConfigureAwait(true);
 
             runtime.IsRetiredTerminal.ShouldBeFalse();
             runtime.Kind.ShouldBe(SessionKind.Chat);
-            runtime.Terminal.ShouldBeNull();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    private static AgentSessionRuntime Create(IOmpTerminalStarter? starter, string sessionId = "session-1")
+    private static AgentSessionRuntime Create(SessionKind kind, string sessionId = "session-1")
     {
         var now = DateTimeOffset.UnixEpoch;
         var catalog = new FakeAgentCatalog();
@@ -61,7 +56,7 @@ public sealed class RetiredTerminalRuntimeTests
             Lifecycle = SessionLifecycle.Created,
             CreatedAt = now,
             LastActivity = now,
-            Kind = starter is null ? SessionKind.Chat : SessionKind.Terminal,
+            Kind = kind,
         });
         using var model = new SessionCatalogModel(catalog, new ShellClock());
         model.Refresh();
@@ -79,7 +74,6 @@ public sealed class RetiredTerminalRuntimeTests
             },
             Stages = new ScriptedStageSource(),
             Context = new ScriptedTaskContext(null),
-            TerminalStarter = starter,
         });
     }
 }

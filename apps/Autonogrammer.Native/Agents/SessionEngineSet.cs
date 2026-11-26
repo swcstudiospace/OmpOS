@@ -24,7 +24,6 @@ using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Settings;
 using Autonogrammer.Native.Views.Conventions;
 using Autonogrammer.Native.Views.Sessions;
-using Autonogrammer.Native.Views.Terminal;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Commands;
 using Autonogrammer.Presentation.Mentions;
@@ -221,20 +220,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         var isTerminal = row.Summary.Kind == SessionKind.Terminal;
         var runtime = new AgentSessionRuntime(RuntimeOptions(row, slot, isTerminal));
         slot.Runtime = runtime;
-        if (runtime.Terminal is { } terminal)
-        {
-            terminal.PropertyChanged += (_, e) =>
-            {
-                if (string.Equals(e.PropertyName, nameof(OmpTerminalViewModel.State), StringComparison.Ordinal))
-                {
-                    OnTerminalChanged(slot, terminal);
-                }
-            };
-        }
-        else
-        {
-            runtime.TurnChanged += (_, e) => OnTurnChanged(slot, e);
-        }
+        runtime.TurnChanged += (_, e) => OnTurnChanged(slot, e);
 
         if (IsClosed(row.Id))
         {
@@ -263,9 +249,8 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         Motion = _options.Motion,
         TimeProvider = _options.TimeProvider,
         Steering = _options.LiveSteering || isTerminal ? slot.Steering : null,
-        TerminalStarter = null,
 
-        // Only a chat session has a model to choose: a terminal's omp owns its own.
+        // Only a chat session has a model to choose: a retired terminal record has no engine of its own.
         Models = isTerminal ? null : slot.Models,
         ConnectModels = isTerminal ? null : slot.Models.ConnectAsync,
 
@@ -344,15 +329,6 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
         if (slot is not null)
         {
-            if (slot.Runtime?.Terminal is { } terminal)
-            {
-                // The terminal is stopped before the engine bookkeeping so its state change runs on the caller's context; stopping it
-                // disposes the omp it started, so no child outlives the closed session.
-                slot.MarkEngineClosed();
-                slot.SetTurnActive(false);
-                await terminal.StopAsync().ConfigureAwait(false);
-            }
-
             await slot.CloseEngineAsync().ConfigureAwait(false);
         }
 
@@ -439,12 +415,12 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
             // What the head's services add to the plan. Each one degrades to a stage notice: a missing file or a failed start never stops the session.
             var notices = new List<StageEvent>();
-            runModes = await OpenRunModeAsync(scope, notices, cancellationToken).ConfigureAwait(false);
-            hooks = await StartHooksAsync(slot, scope, additionalDirectories, extras, notices, cancellationToken).ConfigureAwait(false);
-            await RefreshMcpAsync(scope, additionalDirectories, extras, notices, cancellationToken).ConfigureAwait(false);
+            (runModes, hooks) = await StartServicesAsync(slot, scope, additionalDirectories, extras, notices, cancellationToken).ConfigureAwait(false);
 
             var hookBridge = extras.IsRemote ? null : hooks?.Endpoint;
             (var launch, overlay) = PlanLaunch(settings, plugins, scope, additionalDirectories, hookBridge, runModes, notices);
+            (launch, overlay) = ContributeLaunch(launch, overlay, settings, scope, additionalDirectories, runModes, notices);
+
             var plan = AssemblePlan(slot, scope, launch, plugins, settings, notices, gateway, reachable, client, extras, hooks, runModes, overlay);
             client = null;
             hooks = null;
@@ -462,6 +438,49 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
                 await hooks.DisposeAsync().ConfigureAwait(false);
             }
         }
+    }
+
+    /// <summary>Opens the run-mode policy, starts the hooks session and refreshes MCP for one session plan.</summary>
+    private async Task<(RunModePolicyHolder? RunModes, IHooksSession? Hooks)> StartServicesAsync(SessionSlot slot, StageObservationScope scope, string[]? additionalDirectories, SessionExtras extras, List<StageEvent> notices, CancellationToken cancellationToken)
+    {
+        var runModes = await OpenRunModeAsync(scope, notices, cancellationToken).ConfigureAwait(false);
+        var hooks = await StartHooksAsync(slot, scope, additionalDirectories, extras, notices, cancellationToken).ConfigureAwait(false);
+        await RefreshMcpAsync(scope, additionalDirectories, extras, notices, cancellationToken).ConfigureAwait(false);
+        return (runModes, hooks);
+    }
+
+    /// <summary>Applies host-registered launch contributors and rewrites the settings overlay when they add entries to it.</summary>
+    private (OmpLaunchPlan Launch, ConfigOverlayWriter? Overlay) ContributeLaunch(OmpLaunchPlan launch, ConfigOverlayWriter? overlay, AgentLoopSettings settings, StageObservationScope scope, string[]? additionalDirectories, RunModePolicyHolder? runModes, List<StageEvent> notices)
+    {
+        var contributed = ApplyContributors(launch, scope.SessionStateDirectory, scope.SessionId);
+        if (ReferenceEquals(contributed, launch))
+        {
+            return (launch, overlay);
+        }
+
+        launch = contributed;
+        if (launch.ConfigOverlayPath is null)
+        {
+            return (launch, overlay);
+        }
+
+        // The planner's write ran before host-registered contributors contributed overlay entries
+        // (BundleLaunchContributor skills.customDirectories=). Rewrite the single overlay file so the
+        // entries reach omp on both transports; the previous writer is disposed first, because its
+        // Dispose deletes the file it owns.
+        overlay?.Dispose();
+        var bashOverlay = runModes?.BashOverlayYaml;
+        try
+        {
+            overlay = ConfigOverlayWriter.Write(settings, scope.SessionStateDirectory, additionalDirectories, bashOverlay, launch.OverlayEntries);
+        }
+        catch (Exception exception) when (bashOverlay is not null && exception is IOException or UnauthorizedAccessException)
+        {
+            overlay = ConfigOverlayWriter.Write(settings, scope.SessionStateDirectory, additionalDirectories, null, launch.OverlayEntries);
+            notices.Add(Notice(scope, "run-mode-overlay", "Run mode", StageStatus.Degraded, "The settings file with the shell deny rules could not be written, so omp does not enforce them itself in this session. " + exception.GetType().Name));
+        }
+
+        return (launch, overlay);
     }
 
     private string[]? AdditionalDirectoriesOf(string sessionId)
@@ -578,7 +597,9 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
         try
         {
-            launch = ApplyContributors(launch, plan.SessionId);
+            // Host-registered launch contributors (arguments, environment, overlay entries, wrapper) were applied in
+            // BuildPlanAsync, where the settings overlay could still be rewritten with their entries; re-applying here
+            // would duplicate arguments.
             // The overlay must wrap the environment after the contributors have snapshotted it, or a key saved later never reaches omp.
             if (!plan.Extras.IsRemote && _options.ProviderKeys is { } providerKeys)
             {
@@ -587,9 +608,9 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             // A remote plan runs omp on its own host, so the local launcher is not consulted; it gets the configured path, as before the launcher wiring.
             var ompPath = plan.Extras.IsRemote ? _options.OmpPath : await ResolveOmpPathAsync(cancellationToken).ConfigureAwait(false);
             var holder = plan.RunModes;
-            // Phase 80 slice-single: the transport selection threads to this main local composition site only. The child sites
-            // (side chats, unattended candidates) keep composing ACP explicitly and flip when Phase 82 lands the shared launch
-            // plan under RPC; a remote plan here carries Remote, which the RPC path refuses (Phase 83).
+            // The transport selection threads to this main local composition site only. The child sites (side chats,
+            // unattended candidates) still do not read the transport option: they are approval-capable flows (OQ-525),
+            // so they compose ACP by construction. A remote plan here carries Remote, which the RPC path refuses (Phase 83).
             var composition = new EngineCompositionOptions
             {
                 ExtraMcpServers = extraServers,
@@ -628,7 +649,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         _launchContributors.Add(contributor);
     }
 
-    private OmpLaunchPlan ApplyContributors(OmpLaunchPlan launch, string? sessionId)
+    private OmpLaunchPlan ApplyContributors(OmpLaunchPlan launch, string sessionStateDirectory, string? sessionId)
     {
         if (_launchContributors.Count == 0)
         {
@@ -644,6 +665,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         };
         var arguments = launch.ExtraArguments.ToList();
         var environment = new Dictionary<string, string>(launch.Environment, StringComparer.Ordinal);
+        var overlayEntries = launch.OverlayEntries.ToList();
         foreach (var contributor in _launchContributors)
         {
             var contribution = contributor.Contribute(request, CancellationToken.None);
@@ -660,10 +682,26 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
                 }
             }
 
+            foreach (var entry in contribution.OverlayEntries)
+            {
+                if (!string.IsNullOrWhiteSpace(entry))
+                {
+                    overlayEntries.Add(entry);
+                }
+            }
+
             ProcessWrapper ??= contribution.ProcessWrapper;
         }
 
-        return launch with { ExtraArguments = arguments, Environment = environment };
+        var overlayPath = launch.ConfigOverlayPath;
+        if (overlayEntries.Count > 0 && overlayPath is null)
+        {
+            overlayPath = SessionStateLayout.ConfigOverlayFile(sessionStateDirectory);
+            arguments.Add("--config");
+            arguments.Add(overlayPath);
+        }
+
+        return launch with { ExtraArguments = arguments, Environment = environment, OverlayEntries = overlayEntries, ConfigOverlayPath = overlayPath };
     }
 
 
@@ -685,15 +723,15 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
     /// <summary>
     /// Composes the engine of a side chat: a plain omp in the parent's workspace that asks before every tool call (<c>--approval-mode always-ask</c>) under an approval policy that admits no tool kind, so
-    /// every call is denied before anyone is asked. Child sessions stay on ACP in the Phase 80 slice whatever
-    /// <see cref="SessionEngineSetOptions.Transport"/> selects for main sessions, until Phase 82 lands the shared launch plan under RPC.
+    /// every call is denied before anyone is asked. Child sessions stay on ACP whatever
+    /// <see cref="SessionEngineSetOptions.Transport"/> selects for main sessions: the approval flow is OQ-525.
     /// </summary>
     /// <param name="workspaceRoot">The workspace of the parent session.</param>
     /// <returns>The engine. It starts no process until a prompt is submitted.</returns>
     internal EngineComposition ComposeSideChatEngine(string workspaceRoot) =>
         EngineComposition.Compose([], ChildPlan(workspaceRoot, RunMode.Allowlist), _options.TransportFactory, _options.LoggerFactory, CurrentOmpPath);
 
-    /// <summary>Composes the engine of an unattended candidate (best of n): omp's <c>yolo</c> approval mode in the candidate's worktree. The caller makes sure the user chose Run Everything. Child sessions stay on ACP in the Phase 80 slice whatever <see cref="SessionEngineSetOptions.Transport"/> selects for main sessions.</summary>
+    /// <summary>Composes the engine of an unattended candidate (best of n): omp's <c>yolo</c> approval mode in the candidate's worktree. The caller makes sure the user chose Run Everything. Child sessions stay on ACP whatever <see cref="SessionEngineSetOptions.Transport"/> selects for main sessions: the approval flow is OQ-525.</summary>
     /// <param name="workspaceRoot">The candidate's worktree.</param>
     /// <param name="cancellationToken">Cancels the resolution of the omp.</param>
     /// <returns>The engine. It starts no process until a prompt is submitted.</returns>
@@ -1339,48 +1377,6 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         Registry?.SetLifecycle(slot.Id, SessionLifecycle.Created);
         return Task.CompletedTask;
     }
-
-    /// <summary>
-    /// Mirrors what the omp of a terminal session does into the registry: running is Running, an exit with code 0 is Completed, any other
-    /// exit and an omp that could not be started are Failed. A terminal that was stopped because its session was closed leaves the
-    /// lifecycle to the close.
-    /// </summary>
-    /// <param name="slot">The slot of the terminal session.</param>
-    /// <param name="terminal">The terminal model, in the state that changed.</param>
-    internal void OnTerminalChanged(SessionSlot slot, OmpTerminalViewModel terminal)
-    {
-        ArgumentNullException.ThrowIfNull(slot);
-        ArgumentNullException.ThrowIfNull(terminal);
-        var registry = Registry;
-        if (registry is null || slot.EngineClosed)
-        {
-            return;
-        }
-
-        switch (terminal.State)
-        {
-            case OmpTerminalState.Running:
-                slot.SetTurnActive(true);
-                registry.SetLifecycle(slot.Id, SessionLifecycle.Running);
-                break;
-            case OmpTerminalState.Exited:
-                slot.SetTurnActive(false);
-                registry.SetLifecycle(slot.Id, terminal.ExitCode == 0 ? SessionLifecycle.Completed : SessionLifecycle.Failed);
-                break;
-            case OmpTerminalState.Unavailable:
-                slot.SetTurnActive(false);
-                registry.SetLifecycle(slot.Id, SessionLifecycle.Failed);
-                break;
-            case OmpTerminalState.Idle:
-                slot.SetTurnActive(false);
-                return;
-            default:
-                return;
-        }
-
-        registry.Touch(slot.Id);
-    }
-
 
     /// <summary>Mirrors what a runtime reports about its run into the registry: started is Running, completed is Completed (Created when the operator stopped the run), faulted is Failed.</summary>
     /// <param name="slot">The slot of the session whose run changed.</param>

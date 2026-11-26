@@ -1,10 +1,7 @@
 using System.Runtime.Versioning;
-using Autonogrammer.Harness.OmpLauncher;
-using Autonogrammer.Harness.Terminal;
 using Autonogrammer.Native.Agents;
 using Autonogrammer.Native.Settings.Models;
 using Autonogrammer.Native.Tests.AgentLoop;
-using Autonogrammer.Native.Tests.Terminal;
 using Shouldly;
 using Xunit;
 using static Autonogrammer.Native.Tests.AgentLoop.AgentLoopFixtures;
@@ -13,8 +10,8 @@ namespace Autonogrammer.Native.Tests.Settings.Models;
 
 /// <summary>
 /// The key of a custom provider, end to end through the head: it is saved through the Models source, kept in the Autonogrammer key store, and
-/// reaches the environment of the omp the head starts (the ACP engine of a chat session and the omp of a terminal session), after
-/// planning, so the plan itself never holds it. The omp executable is a shell script that records the NAMES of the provider key
+/// reaches the environment of the omp the head starts (the ACP engine of a chat session), after planning, so the plan itself never holds it.
+/// A persisted terminal record is retired (Phase 81): no terminal omp is started for it any more. The omp executable is a shell script that records the NAMES of the provider key
 /// variables it was started with; no value is ever written or printed, and no real omp, model or network is involved.
 /// </summary>
 public sealed class ProviderKeyHeadTests
@@ -78,9 +75,10 @@ public sealed class ProviderKeyHeadTests
         IsProcessRunning(child).ShouldBeFalse("disposing the head leaves no omp acp child");
     }
 
+    /// <summary>A persisted terminal record is retired (Phase 81): no starter exists any more, so no terminal omp is started for the key journey. The plan and its terminal derivation never hold the key, no rendering shows it, and the merged ACP overlay still carries a key saved after the engine was composed.</summary>
     [Fact]
     [SupportedOSPlatform("linux")]
-    public async Task TheTerminalOmpGetsTheKeyAtEveryStartAndNeitherThePlanNorAnyPrintShowsIt()
+    public async Task AKeySavedAfterTheEngineWasComposedStaysOutOfThePlanAndNoRenderShowsIt()
     {
         SkipUnlessLinux();
         using var fake = new ModelsFakeOmp();
@@ -91,29 +89,16 @@ public sealed class ProviderKeyHeadTests
         await using var headLifetime = head.ConfigureAwait(true);
         await head.InitializeAsync(Token).ConfigureAwait(true);
         var (_, slot) = await NewSlotAsync(head, Token).ConfigureAwait(true);
-        var backend = new CapturingBackend();
-        var starter = new PlannedOmpTerminalStarter(slot, static () => null, new OmpTerminalLauncher(backend, fake.Locator), models.Keys);
-
-        var first = await starter.StartAsync(80, 24, new SilentSink(), Token).ConfigureAwait(true);
-        var firstLifetime = (OmpTerminalStarted)first;
-        await using var firstScope = firstLifetime.ConfigureAwait(true);
         (await models.Source.SaveApiKeyAsync("gateway", ModelsForms.Canary, Token).ConfigureAwait(true)).Succeeded.ShouldBeTrue();
-        var second = await starter.StartAsync(80, 24, new SilentSink(), Token).ConfigureAwait(true);
-        var secondLifetime = (OmpTerminalStarted)second;
-        await using var secondScope = secondLifetime.ConfigureAwait(true);
 
-        backend.Started.Count.ShouldBe(2);
-        backend.Started[0].Environment.ContainsKey(Name).ShouldBeFalse("no key was saved at the first start");
-        backend.Started[1].Environment[Name].ShouldBe(ModelsForms.Canary);
         var plan = await slot.PlanAsync(Token).ConfigureAwait(true);
-        plan.Launch.Environment.ContainsKey(Name).ShouldBeFalse();
-        plan.Launch.ForTerminal().Environment.ContainsKey(Name).ShouldBeFalse();
-        backend.Started[1].ToString().ShouldNotContain(ModelsForms.Canary, Case.Sensitive);
-        backend.Started[1].ToString().ShouldContain(Name, Case.Sensitive);
-        first.ToString()!.ShouldNotContain(ModelsForms.Canary, Case.Sensitive);
-        second.ToString()!.ShouldNotContain(ModelsForms.Canary, Case.Sensitive);
-        new OmpTerminalLaunchRequest("/workspace", [], 80, 24, new SilentSink()) { Environment = backend.Started[1].Environment }
-            .ToString().ShouldNotContain(ModelsForms.Canary, Case.Sensitive);
+        plan.Launch.Environment.ContainsKey(Name).ShouldBeFalse("the planner never holds a provider key");
+        plan.Launch.ForTerminal().Environment.ContainsKey(Name).ShouldBeFalse("the terminal derivation never holds it either");
+        plan.Launch.ToString().ShouldNotContain(ModelsForms.Canary, Case.Sensitive);
+        plan.Launch.ForTerminal().ToString().ShouldNotContain(ModelsForms.Canary, Case.Sensitive);
+        fake.AcpKeyNames().ShouldBeNull("no omp child is started without a prompt");
+        await models.Keys.RefreshAsync(Token).ConfigureAwait(true);
+        models.Keys.Merge(plan.Launch.Environment)[Name].ShouldBe(ModelsForms.Canary, "the merged ACP overlay still carries the key");
     }
 
     private static AgentHeadOptions HeadOptions(TempTree tree, ModelsFakeOmp fake, ProviderKeyEnvironment? keys) => new()
@@ -161,21 +146,4 @@ public sealed class ProviderKeyHeadTests
         }
     }
 
-    private sealed class SilentSink : IProcessOutputSink
-    {
-        public void Write(string text)
-        {
-        }
-    }
-
-    private sealed class CapturingBackend : ITerminalBackend
-    {
-        public List<TerminalSessionOptions> Started { get; } = [];
-
-        public Task<ITerminalSession> StartAsync(TerminalSessionOptions options, CancellationToken cancellationToken)
-        {
-            Started.Add(options);
-            return Task.FromResult<ITerminalSession>(new FakeTerminalSession());
-        }
-    }
 }

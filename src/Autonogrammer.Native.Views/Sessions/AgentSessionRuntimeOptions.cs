@@ -3,7 +3,6 @@ using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.AgentLoop.Steering;
 using Autonogrammer.Native.Engine;
-using Autonogrammer.Native.Views.Terminal;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Approvals;
@@ -59,13 +58,6 @@ public sealed class AgentSessionRuntimeOptions
     /// during a run for the end of the turn. In a terminal runtime it is the only way the composer reaches omp.
     /// </summary>
     public ISteeringChannel? Steering { get; init; }
-
-    /// <summary>
-    /// Gets the starter of the omp terminal of the session. Non-null makes a terminal runtime: its <see cref="AgentSessionRuntime.Kind"/> is
-    /// <see cref="SessionKind.Terminal"/>, the thread shows the terminal view, and <see cref="Prompts"/> is an <see cref="UnconnectedPromptChannel"/>.
-    /// A persisted terminal record (<see cref="Row"/> of kind Terminal) is retired (Phase 81): the runtime never calls the starter for it.
-    /// </summary>
-    public IOmpTerminalStarter? TerminalStarter { get; init; }
 
     /// <summary>
     /// Gets the control that reads the models of the session's engine and switches the current one, or null when the session offers none.

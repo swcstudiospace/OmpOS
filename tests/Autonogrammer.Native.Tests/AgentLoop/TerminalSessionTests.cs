@@ -107,7 +107,7 @@ public sealed class TerminalSessionTests
         chatRow.AccessibleName.ShouldNotContain("terminal", Case.Insensitive);
     }
 
-    /// <summary>Opening a persisted terminal row creates no starter, transport or engine: its runtime has no terminal.</summary>
+    /// <summary>Opening a persisted terminal row creates no starter, transport or engine: its runtime is retired and runs nothing.</summary>
     [Fact]
     public async Task OpeningAPersistedTerminalCreatesNoStarterOrEngine()
     {
@@ -131,8 +131,8 @@ public sealed class TerminalSessionTests
 
                 var runtime = AgentSessionRuntime.For(head.Panel.Selected.ShouldNotBeNull()).ShouldNotBeNull();
                 runtime.IsRetiredTerminal.ShouldBeTrue();
-                runtime.Kind.ShouldBe(SessionKind.Terminal);
-                runtime.Terminal.ShouldBeNull("opening a retired terminal creates no starter, transport or engine");
+                runtime.Kind.ShouldBe(SessionKind.Terminal, "the persisted kind is kept for listing");
+                runtime.Runs.IsRunActive.ShouldBeFalse("opening a retired terminal starts no engine");
             }
             finally
             {

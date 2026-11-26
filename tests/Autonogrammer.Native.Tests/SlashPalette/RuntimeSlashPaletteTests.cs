@@ -1,7 +1,6 @@
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Tests.AgentPanel.Shell;
-using Autonogrammer.Native.Tests.Terminal;
 using Autonogrammer.Native.Views.Sessions;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Commands;
@@ -152,7 +151,6 @@ public sealed class RuntimeSlashPaletteTests
             Context = new ScriptedTaskContext(null),
             SessionCommands = control,
             ConnectModels = connect,
-            TerminalStarter = kind == SessionKind.Terminal ? new FakeOmpTerminalStarter() : null,
         });
     }
 }

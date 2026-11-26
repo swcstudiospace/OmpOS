@@ -1,5 +1,4 @@
 using Autonogrammer.Contracts.Agents;
-using Autonogrammer.Native.Tests.Terminal;
 using Autonogrammer.Native.Views.Sessions;
 using Autonogrammer.Native.Views.Shell;
 using Autonogrammer.Presentation;
@@ -131,7 +130,7 @@ internal sealed class ShellFixture : IAsyncDisposable
     /// <returns>The session summary that was added.</returns>
     public SessionSummary AddTerminalSession(string id, string title, SessionScript? script = null, string? taskId = null, SessionLifecycle lifecycle = SessionLifecycle.Created)
     {
-        Host.Script(id, script ?? new SessionScript { TerminalStarter = new FakeOmpTerminalStarter(), Steering = new FakeSteeringChannel() });
+        Host.Script(id, script ?? new SessionScript { Steering = new FakeSteeringChannel() });
         _added++;
         var summary = new SessionSummary
         {

@@ -1,5 +1,4 @@
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using Autonogrammer.Contracts.Agents;
@@ -11,7 +10,6 @@ using Autonogrammer.Harness.AgentLoop.Steering;
 using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Views.Attachments;
 using Autonogrammer.Native.Views.RunControls;
-using Autonogrammer.Native.Views.Terminal;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Approvals;
@@ -67,8 +65,6 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     private string _statusText = string.Empty;
     private string? _errorText;
     private int _disposed;
-    private bool _terminalClosed;
-    private bool _terminalLost;
     private readonly ModelPickerBinding? _modelBinding;
     private readonly OptionChipBinding? _modeBinding;
     private readonly OptionChipBinding? _thinkingBinding;
@@ -82,12 +78,12 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
 
     private ModelPickerBinding? BindModels(AgentSessionRuntimeOptions options)
     {
-        if (options.Models is not { } models || options.TerminalStarter is not null)
+        if (options.Models is not { } models || IsRetiredTerminal)
         {
             return null;
         }
 
-        // A terminal runs its own omp, which owns its model: only a chat session offers the model chip.
+        // A retired terminal record has no engine of its own: only a chat session offers the model chip.
         var binding = new ModelPickerBinding(models, options.ConnectModels);
         Composer.ModelPicker = binding.Picker;
         return binding;
@@ -95,9 +91,9 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
 
     private ImageInputBinding? BindImages(AgentSessionRuntimeOptions options)
     {
-        // A terminal runs its own omp, and a session with no engine has nothing to send an image to: only a connected chat session offers image attachments. The model of the
+        // A retired terminal record has no engine to send an image to: only a connected chat session offers image attachments. The model of the
         // attachments follows what the engine said in initialize and, when a lookup knows it, whether the selected model reads images.
-        if (options.TerminalStarter is not null || options.Prompts is UnconnectedPromptChannel)
+        if (IsRetiredTerminal || options.Prompts is UnconnectedPromptChannel)
         {
             return null;
         }
@@ -126,6 +122,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
 
         _options = options;
         _timeProvider = options.TimeProvider ?? TimeProvider.System;
+        IsRetiredTerminal = options.Row.Summary.Kind == SessionKind.Terminal;
 
         Session = new SessionViewModel();
         Session.MarkHistoryLoaded();
@@ -134,25 +131,25 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         Composer = new ComposerViewModel(StartTurnAsync, StopTurnAsync);
         _modelBinding = BindModels(options);
 
-        if (options.SessionOptions is { } sessionOptions && options.TerminalStarter is null)
+        if (options.SessionOptions is { } sessionOptions && !IsRetiredTerminal)
         {
-            // A terminal runs its own omp, which owns its mode and thinking level: only a chat session offers the chips.
+            // A retired terminal record has no engine with options: only a chat session offers the chips.
             _modeBinding = new OptionChipBinding(sessionOptions, "mode", "Mode", chip => Composer.ModeChip = chip);
             _thinkingBinding = new OptionChipBinding(sessionOptions, "thinking", "Thinking", chip => Composer.ThinkingChip = chip);
         }
 
-        if (options.SessionCommands is { } sessionCommands && options.TerminalStarter is null)
+        if (options.SessionCommands is { } sessionCommands && !IsRetiredTerminal)
         {
-            // A terminal runs its own omp, which shows its own commands in its own terminal: only a chat session offers the slash palette.
+            // A retired terminal record has no engine commands: only a chat session offers the slash palette.
             var host = new DesktopSlashActionHost(ComposerSlashTargets.Create(Composer, options.SlashTargets));
             _slashBinding = new SlashPaletteBinding(sessionCommands, SlashCommandCatalogue.Shipped, options.ConnectModels, host, options.SlashDiscovery, _timeProvider);
             Composer.SlashPalette = _slashBinding.Palette;
             _ = _slashBinding.RefreshDiscoveryAsync(CancellationToken.None);
         }
 
-        if (options.MentionSources is { } mentionSources && options.TerminalStarter is null)
+        if (options.MentionSources is { } mentionSources && !IsRetiredTerminal)
         {
-            // A terminal runs its own omp and has no composer prompt: only a chat session offers @ mentions and the context ring.
+            // A retired terminal record has no composer prompt: only a chat session offers @ mentions and the context ring.
             _mentions = new MentionComposerModel(mentionSources(), timeProvider: _timeProvider);
             Composer.Mentions = _mentions;
             Composer.ContextRing = new ContextRingModel();
@@ -171,27 +168,6 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         ViewModel = CreateViewModel(options);
         RunControls.Approvals.CollectionChanged += OnApprovalsChanged;
         Registry.AddOrUpdate(ViewModel, this);
-        IsRetiredTerminal = options.Row.Summary.Kind == SessionKind.Terminal;
-        if (!IsRetiredTerminal)
-        {
-            StartTerminal(options);
-        }
-    }
-
-    private void StartTerminal(AgentSessionRuntimeOptions options)
-    {
-        if (options.TerminalStarter is not { } starter)
-        {
-            return;
-        }
-
-        // The runtime owns the terminal for as long as the session lives, so a view that is hidden by a tab or session switch leaves omp running.
-        _terminalClosed = ViewModel.IsClosed;
-        _terminalLost = ViewModel.IsLost;
-        Terminal = new OmpTerminalViewModel(starter) { KeepRunningWhenDetached = true, AutoStart = !_terminalClosed && !_terminalLost };
-        Terminal.PropertyChanged += OnTerminalChanged;
-        Terminal.CloseRequested += OnTerminalCloseRequested;
-        ViewModel.PropertyChanged += OnViewModelChanged;
     }
 
     private AgentSessionViewModel CreateViewModel(AgentSessionRuntimeOptions options)
@@ -242,16 +218,10 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     public AgentSessionViewModel ViewModel { get; }
 
     /// <summary>Gets what the session is: a chat over the engine behind the Agent Panel, or a persisted terminal record.</summary>
-    public SessionKind Kind => IsRetiredTerminal || Terminal is not null ? SessionKind.Terminal : SessionKind.Chat;
+    public SessionKind Kind => IsRetiredTerminal ? SessionKind.Terminal : SessionKind.Chat;
 
-    /// <summary>Gets whether this runtime is a persisted terminal record (Phase 81): it is retired, so no starter is called, no terminal view model exists, and the pane shows the retired state.</summary>
+    /// <summary>Gets whether this runtime is a persisted terminal record (Phase 81): it is retired, so no terminal engine starts and the pane shows the retired state.</summary>
     public bool IsRetiredTerminal { get; }
-
-    /// <summary>
-    /// Gets the omp terminal of a terminal runtime, or null for a chat and for a retired terminal record. The view starts omp when it is first shown; the runtime stops it
-    /// when the session is closed or the runtime is disposed.
-    /// </summary>
-    internal OmpTerminalViewModel? Terminal { get; private set; }
 
     /// <summary>Gets the pending tool-approval requests of the session and the coordinator that sends each decision.</summary>
     internal RunControlsViewModel RunControls { get; }
@@ -382,12 +352,6 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         }
 
         _mentions?.Dispose();
-        if (Terminal is { } terminal)
-        {
-            terminal.PropertyChanged -= OnTerminalChanged;
-            terminal.CloseRequested -= OnTerminalCloseRequested;
-            ViewModel.PropertyChanged -= OnViewModelChanged;
-        }
 
         await _lifetime.CancelAsync().ConfigureAwait(true);
         try
@@ -406,21 +370,11 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         {
             try
             {
-                if (Terminal is { } owned)
-                {
-                    await owned.DisposeAsync().ConfigureAwait(true);
-                }
+                await _options.Prompts.DisposeAsync().ConfigureAwait(true);
             }
             finally
             {
-                try
-                {
-                    await _options.Prompts.DisposeAsync().ConfigureAwait(true);
-                }
-                finally
-                {
-                    _lifetime.Dispose();
-                }
+                _lifetime.Dispose();
             }
         }
     }
@@ -513,66 +467,6 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         return Task.FromResult(false);
     }
 
-    // The run of a terminal runtime is the life of its omp: steering is offered while omp runs and not before or after.
-    private void OnTerminalChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (Terminal is not { } terminal || !string.Equals(e.PropertyName, nameof(OmpTerminalViewModel.State), StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        var running = terminal.State == OmpTerminalState.Running;
-        if (running && !Runs.IsRunActive)
-        {
-            Runs.RunStarted();
-        }
-        else if (!running && Runs.IsRunActive)
-        {
-            _ = Runs.RunCompletedAsync(CancellationToken.None);
-        }
-    }
-
-    // The terminal's own Close control stopped omp: the session closes like any other, so its card and its row follow.
-    private void OnTerminalCloseRequested(object? sender, EventArgs e) => ViewModel.CloseCommand.Execute(null);
-
-    // Closing the session stops omp; reopening or resuming it starts omp again in the view that is already showing the terminal. A session can
-    // learn that it was closed from its row (which notifies IsLost) before the panel calls MarkClosed, so the flags are compared, not the name.
-    // A session that is closed or lost is not started by showing it: AutoStart is off until it reopens or resumes.
-    private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (Terminal is not { } terminal
-            || e.PropertyName is not (nameof(AgentSessionViewModel.IsClosed) or nameof(AgentSessionViewModel.IsLost)))
-        {
-            return;
-        }
-
-        var wasClosed = _terminalClosed;
-        var wasLost = _terminalLost;
-        _terminalClosed = ViewModel.IsClosed;
-        _terminalLost = ViewModel.IsLost;
-        terminal.AutoStart = !_terminalClosed && !_terminalLost;
-        if (_terminalClosed && !wasClosed)
-        {
-            _ = ChangeTerminalAsync(terminal.StopAsync);
-        }
-        else if (!_terminalClosed && (wasClosed || (wasLost && !_terminalLost)) && terminal.State == OmpTerminalState.Idle)
-        {
-            _ = ChangeTerminalAsync(terminal.StartAsync);
-        }
-    }
-
-    private async Task ChangeTerminalAsync(Func<Task> change)
-    {
-        try
-        {
-            await change().ConfigureAwait(true);
-        }
-        catch (Exception fault) when (fault is not OutOfMemoryException)
-        {
-            ReportStatus($"{MainView.FaultedStatus} {fault.GetBaseException().Message}");
-        }
-    }
-
     /// <summary>
     /// Delivers a steer or a follow-up into the running turn. A chat session whose omp supports live steering hands the message to omp's own
     /// steering (see <see cref="DeliverNativeAsync"/>); a terminal, and a chat session whose omp does not support it, use the omp steering
@@ -583,7 +477,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// <param name="cancellationToken">Cancels the delivery.</param>
     /// <returns>The delivery the steering history records.</returns>
     private Task<SteeringDelivery> DeliverLiveAsync(string text, SteeringMode mode, CancellationToken cancellationToken) =>
-        Terminal is null && _options.NativeSteering is { IsSupported: true } native
+        _options.NativeSteering is { IsSupported: true } native
             ? DeliverNativeAsync(native, text, mode, cancellationToken)
             : DeliverThroughInboxAsync(text, mode, cancellationToken);
 
@@ -831,13 +725,6 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
 
     private async Task<bool> StartTurnCoreAsync(string text, IReadOnlyList<PromptResource> resources, IReadOnlyList<PromptImage>? images = null)
     {
-        if (Terminal is not null && Volatile.Read(ref _disposed) == 0)
-        {
-            // A terminal has no prompt: the composer only steers a running omp, so a send with omp stopped says why it went nowhere.
-            ReportStatus(AgentPanelCopy.TerminalNotRunning);
-            return false;
-        }
-
         if (_options.Prompts is UnconnectedPromptChannel || Volatile.Read(ref _disposed) != 0)
         {
             return await RefuseSendAsync().ConfigureAwait(true);

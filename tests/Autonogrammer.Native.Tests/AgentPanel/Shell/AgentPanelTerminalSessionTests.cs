@@ -1,9 +1,7 @@
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Native.Tests.AgentPanel.Views;
-using Autonogrammer.Native.Tests.Terminal;
 using Autonogrammer.Native.Views;
 using Autonogrammer.Native.Views.Sessions;
-using Autonogrammer.Native.Views.Terminal;
 using Autonogrammer.Presentation.AgentPanel;
 using Avalonia;
 using Avalonia.Controls;
@@ -17,16 +15,16 @@ namespace Autonogrammer.Native.Tests.AgentPanel.Shell;
 
 /// <summary>
 /// A persisted terminal row in the shell (Phase 81): it stays listed as terminal, but opening it creates a retired runtime — no starter,
-/// transport or engine — the thread shows a plain transcript instead of a terminal, the composer hides, and the retired banner explains why.
-/// Switching sessions and tabs, opening from a Kanban card, and restoring it closed all stay retired.
+/// transport or engine exists anymore — the thread shows a plain transcript instead of a terminal, the composer hides, and the retired banner
+/// explains why. Switching sessions and tabs, opening from a Kanban card, and restoring it closed all stay retired.
 /// </summary>
 public sealed class AgentPanelTerminalSessionTests
 {
     private static readonly string[] FontTokens = ["Autonogrammer.Font.Family", "Autonogrammer.Font.Display", "Autonogrammer.Font.Mono"];
 
-    /// <summary>A persisted terminal row opens as retired: no terminal view model, no starter use, a plain transcript in the thread, and the retired banner.</summary>
+    /// <summary>A persisted terminal row opens as retired: a plain transcript in the thread, and the retired banner.</summary>
     [Fact]
-    public async Task APersistedTerminalOpensAsRetiredWithNoStarterOrEngine()
+    public async Task APersistedTerminalOpensAsRetired()
     {
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
@@ -37,22 +35,17 @@ public sealed class AgentPanelTerminalSessionTests
             var window = ShellHarness.Show(fixture);
             var main = ShellHarness.MainViewOf(window);
 
-            var (runtime, starter, channel) = await OpenRetiredAsync(fixture, window, token).ConfigureAwait(true);
+            var (runtime, channel) = await OpenRetiredAsync(fixture, window, token).ConfigureAwait(true);
 
             runtime.IsRetiredTerminal.ShouldBeTrue();
             runtime.Kind.ShouldBe(SessionKind.Terminal);
-            runtime.Terminal.ShouldBeNull("a retired record has no terminal view model, starter, transport or engine");
-            starter.Sizes.ShouldBeEmpty("omp is never launched for a retired record");
-            starter.Sessions.ShouldBeEmpty();
             channel.Sent.ShouldBeEmpty();
 
             fixture.Panel.Selected.ShouldNotBeNull().Row.IsTerminal.ShouldBeTrue("a persisted terminal row stays listed as terminal");
             var thread = main.FindControl<ContentControl>("TranscriptHost")!.Content;
             thread.ShouldBeOfType<SessionView>();
-            thread.ShouldNotBeOfType<OmpTerminalView>();
             var composer = main.FindControl<ContentControl>("ComposerHost")!;
             composer.Content.ShouldBeOfType<ComposerView>();
-            composer.Content.ShouldNotBeOfType<TerminalSteerView>();
             composer.IsVisible.ShouldBeFalse("a retired terminal has no steer composer");
 
             var notice = ShellTree.NamedVisible<Border>(main, "ClosedNotice");
@@ -87,10 +80,10 @@ public sealed class AgentPanelTerminalSessionTests
 
     /// <summary>
     /// Selecting a chat and coming back, and visiting the Kanban tab, keep the retired terminal retired: the same transcript view is kept,
-    /// no starter is ever called, and the retired banner stays.
+    /// and the retired banner stays.
     /// </summary>
     [Fact]
-    public async Task SwitchingSessionsAndTabsCreatesNoStarter()
+    public async Task SwitchingSessionsAndTabsKeepsTheTerminalRetired()
     {
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
@@ -98,39 +91,34 @@ public sealed class AgentPanelTerminalSessionTests
             var token = TestContext.Current.CancellationToken;
             var fixture = ShellFixture.CreateWithSession();
             await using var fixtureScope = fixture.ConfigureAwait(true);
-            var starter = new FakeOmpTerminalStarter();
-            fixture.AddTerminalSession("terminal-1", "Shell", new SessionScript { TerminalStarter = starter, Steering = new FakeSteeringChannel() });
+            fixture.AddTerminalSession("terminal-1", "Shell", new SessionScript { Steering = new FakeSteeringChannel() });
             var main = fixture.ShowWithBoard();
             var window = fixture.BoardWindow!;
             fixture.Panel.SelectSession("terminal-1");
             await ShellWait.UntilAsync(window, () => fixture.Host.Runtimes.ContainsKey("terminal-1") && fixture.Runtime("terminal-1").IsRetiredTerminal, "the retired runtime", token).ConfigureAwait(true);
-            ViewHarness.Settle(window);
+            ShellHarness.Settle(window);
             var thread = main.FindControl<ContentControl>("TranscriptHost")!.Content.ShouldBeOfType<SessionView>();
-            starter.Sizes.ShouldBeEmpty();
 
             fixture.Panel.SelectSession("session-1");
-            ViewHarness.Settle(window);
+            ShellHarness.Settle(window);
             main.FindControl<ContentControl>("TranscriptHost")!.Content.ShouldNotBeSameAs(thread);
             BoardShell.Chord(window, Key.K, PhysicalKey.K);
             BoardShell.Chord(window, Key.A, PhysicalKey.A);
             fixture.Panel.SelectSession("terminal-1");
-            ViewHarness.Settle(window);
+            ShellHarness.Settle(window);
 
             main.FindControl<ContentControl>("TranscriptHost")!.Content.ShouldBeSameAs(thread, "the transcript view is kept with its session");
-            starter.Sizes.ShouldBeEmpty("switching never launches omp for a retired record");
-            starter.Sessions.ShouldBeEmpty();
             fixture.Runtime("terminal-1").IsRetiredTerminal.ShouldBeTrue();
             ShellTree.NamedVisible<Border>(main, "ClosedNotice").ShouldNotBeNull("the retired banner stays");
 
             BoardShell.Chord(window, Key.K, PhysicalKey.K);
-            ViewHarness.Settle(window);
+            ShellHarness.Settle(window);
 
-            starter.Sizes.ShouldBeEmpty();
             main.IsKanbanShown.ShouldBeTrue("the Kanban surface replaces the transcript thread, hiding the retired banner");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>With the Kanban tab shown first, a retired terminal session selected behind it stays retired when the Agents tab returns: no starter runs and no error about a missing emulator is raised.</summary>
+    /// <summary>With the Kanban tab shown first, a retired terminal session selected behind it stays retired when the Agents tab returns, with no error about a missing emulator.</summary>
     [Fact]
     public async Task ATerminalSelectedWhileTheKanbanTabIsShownStaysRetired()
     {
@@ -148,25 +136,21 @@ public sealed class AgentPanelTerminalSessionTests
 
             fixture.Panel.SelectSession("terminal-1");
             await ShellWait.UntilAsync(window, () => fixture.Host.Runtimes.ContainsKey("terminal-1"), "the terminal runtime", token).ConfigureAwait(true);
-            ViewHarness.Settle(window);
-            var (runtime, starter, _) = Parts(fixture, "terminal-1");
+            ShellHarness.Settle(window);
+            var (runtime, _) = Parts(fixture, "terminal-1");
 
             runtime.IsRetiredTerminal.ShouldBeTrue();
-            runtime.Terminal.ShouldBeNull();
-            starter.Sizes.ShouldBeEmpty("omp does not start behind the Kanban tab");
             main.FindControl<ContentControl>("TranscriptHost")!.Content.ShouldBeOfType<SessionView>().IsEffectivelyVisible.ShouldBeFalse("its region is hidden behind the Kanban tab");
 
             BoardShell.Chord(window, Key.A, PhysicalKey.A);
-            ViewHarness.Settle(window);
+            ShellHarness.Settle(window);
 
-            starter.Sizes.ShouldBeEmpty("returning to the Agents tab never starts omp for a retired record");
-            starter.Sessions.ShouldBeEmpty();
             ShellTree.NamedVisible<Border>(main, "ClosedNotice").ShouldNotBeNull("the retired banner shows");
             main.FindControl<ContentControl>("ComposerHost")!.IsVisible.ShouldBeFalse("a retired terminal has no steer composer");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>Enter on the card of a persisted terminal session opens it in the Agents tab as retired: no starter runs and there is no terminal view, only the retired banner.</summary>
+    /// <summary>Enter on the card of a persisted terminal session opens it in the Agents tab as retired: only the retired banner.</summary>
     [Fact]
     public async Task EnterOnATerminalCardOpensItAsRetired()
     {
@@ -187,20 +171,17 @@ public sealed class AgentPanelTerminalSessionTests
             ViewHarness.Press(window, Key.Enter, PhysicalKey.Enter);
             await ShellWait.UntilAsync(window, () => fixture.Host.Runtimes.ContainsKey("terminal-1") && fixture.Runtime("terminal-1").IsRetiredTerminal && !main.IsKanbanShown, "the retired runtime to be shown", token).ConfigureAwait(true);
 
-            var (runtime, starter, _) = Parts(fixture, "terminal-1");
-            runtime.Terminal.ShouldBeNull();
-            starter.Sizes.ShouldBeEmpty("opening the card never launches omp for a retired record");
-            starter.Sessions.ShouldBeEmpty();
+            var (runtime, _) = Parts(fixture, "terminal-1");
+            runtime.IsRetiredTerminal.ShouldBeTrue();
             var thread = main.FindControl<ContentControl>("TranscriptHost")!.Content;
             thread.ShouldBeOfType<SessionView>();
-            thread.ShouldNotBeOfType<OmpTerminalView>();
             ShellTree.NamedVisible<Border>(main, "ClosedNotice").ShouldNotBeNull("the retired banner shows");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>A terminal session restored closed still lists as retired: the retired banner (not the closed one) shows and omp never starts.</summary>
+    /// <summary>A terminal session restored closed still lists as retired: the retired banner (not the closed one) shows.</summary>
     [Fact]
-    public async Task ATerminalRestoredClosedListsAsRetiredWithNoStarter()
+    public async Task ATerminalRestoredClosedListsAsRetired()
     {
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
@@ -215,12 +196,9 @@ public sealed class AgentPanelTerminalSessionTests
             var main = ShellHarness.MainViewOf(window);
             fixture.Panel.SelectSession("terminal-1");
             await ShellWait.UntilAsync(window, () => fixture.Host.Runtimes.ContainsKey("terminal-1") && fixture.Runtime("terminal-1").IsRetiredTerminal, "the retired runtime", token).ConfigureAwait(true);
-            var (runtime, starter, _) = Parts(fixture, "terminal-1");
+            var (runtime, _) = Parts(fixture, "terminal-1");
 
             runtime.IsRetiredTerminal.ShouldBeTrue();
-            runtime.Terminal.ShouldBeNull();
-            starter.Sizes.ShouldBeEmpty("omp never starts for a retired record, closed or not");
-            starter.Sessions.ShouldBeEmpty();
             ShellTree.NamedVisible<Border>(main, "ClosedNotice").ShouldNotBeNull("the retired banner shows");
             main.FindControl<TextBlock>("ClosedHeading")!.Text.ShouldBe(AgentPanelCopy.RetiredTerminalHeading, "retired wins over closed for a persisted terminal");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -263,7 +241,7 @@ public sealed class AgentPanelTerminalSessionTests
             var window = fixture.BoardWindow!;
             fixture.Panel.SelectSession("terminal-1");
             await ShellWait.UntilAsync(window, () => fixture.Host.Runtimes.ContainsKey("terminal-1"), "the terminal runtime", token).ConfigureAwait(true);
-            ViewHarness.Settle(window);
+            ShellHarness.Settle(window);
             var families = FontTokens
                 .Select(key => ((FontFamily)Application.Current!.FindResource(key)!).Name)
                 .ToHashSet(StringComparer.Ordinal);
@@ -271,7 +249,7 @@ public sealed class AgentPanelTerminalSessionTests
             Fonts(main).Except(families, StringComparer.Ordinal).ShouldBeEmpty("the Agents tab draws only token fonts");
 
             BoardShell.Chord(window, Key.K, PhysicalKey.K);
-            ViewHarness.Settle(window);
+            ShellHarness.Settle(window);
 
             Fonts(main).Except(families, StringComparer.Ordinal).ShouldBeEmpty("the Kanban tab draws only token fonts");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -284,13 +262,13 @@ public sealed class AgentPanelTerminalSessionTests
             .Select(static block => block.FontFamily.Name)
             .ToHashSet(StringComparer.Ordinal);
 
-    private static (AgentSessionRuntime Runtime, FakeOmpTerminalStarter Starter, FakeSteeringChannel Channel) Parts(ShellFixture fixture, string id)
+    private static (AgentSessionRuntime Runtime, FakeSteeringChannel Channel) Parts(ShellFixture fixture, string id)
     {
         var script = fixture.Script(id);
-        return (fixture.Runtime(id), (FakeOmpTerminalStarter)script.TerminalStarter!, (FakeSteeringChannel)script.Steering!);
+        return (fixture.Runtime(id), (FakeSteeringChannel)script.Steering!);
     }
 
-    private static async Task<(AgentSessionRuntime Runtime, FakeOmpTerminalStarter Starter, FakeSteeringChannel Channel)> OpenRetiredAsync(
+    private static async Task<(AgentSessionRuntime Runtime, FakeSteeringChannel Channel)> OpenRetiredAsync(
         ShellFixture fixture,
         MainWindow window,
         CancellationToken token)

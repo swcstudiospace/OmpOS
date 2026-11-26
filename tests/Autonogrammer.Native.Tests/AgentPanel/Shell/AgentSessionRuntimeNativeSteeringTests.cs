@@ -2,9 +2,7 @@ using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.AgentLoop.Steering;
 using Autonogrammer.Native.Engine;
-using Autonogrammer.Native.Tests.Terminal;
 using Autonogrammer.Native.Views.Sessions;
-using Autonogrammer.Native.Views.Terminal;
 using Autonogrammer.Presentation.AgentPanel;
 using Shouldly;
 using Xunit;
@@ -260,7 +258,7 @@ public sealed class AgentSessionRuntimeNativeSteeringTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>A persisted terminal row is retired: no terminal is created, omp never starts, and neither channel is asked — a submit finds no run instead of reaching an inbox.</summary>
+    /// <summary>A persisted terminal row is retired: neither channel is asked — a submit finds no run instead of reaching an inbox.</summary>
     [Fact]
     public async Task ATerminalRowIsRetiredWithNoInboxOrSteeringSurface()
     {
@@ -270,15 +268,11 @@ public sealed class AgentSessionRuntimeNativeSteeringTests
             var token = TestContext.Current.CancellationToken;
             var native = new FakeLiveSteering();
             var inbox = new FakeSteeringChannel();
-            var starter = new FakeOmpTerminalStarter();
-            var runtime = CreateTerminal(starter, native, inbox);
+            var runtime = CreateTerminal(native, inbox);
             await using var runtimeScope = runtime.ConfigureAwait(true);
 
             runtime.IsRetiredTerminal.ShouldBeTrue();
             runtime.Kind.ShouldBe(SessionKind.Terminal);
-            runtime.Terminal.ShouldBeNull("a retired record has no terminal view model");
-            starter.Sizes.ShouldBeEmpty("omp is never launched for a retired record");
-            starter.Sessions.ShouldBeEmpty();
 
             (await runtime.ViewModel.Steering.SubmitAsync("turn left", SteeringMode.Steer, token).ConfigureAwait(true)).ShouldBe(SteeringSubmitOutcome.NoActiveRun);
 
@@ -321,7 +315,7 @@ public sealed class AgentSessionRuntimeNativeSteeringTests
         });
     }
 
-    private static AgentSessionRuntime CreateTerminal(IOmpTerminalStarter starter, IOmpLiveSteering native, ISteeringChannel inbox)
+    private static AgentSessionRuntime CreateTerminal(IOmpLiveSteering native, ISteeringChannel inbox)
     {
         const string SessionId = "session-native-terminal";
         return new AgentSessionRuntime(new AgentSessionRuntimeOptions
@@ -334,7 +328,6 @@ public sealed class AgentSessionRuntimeNativeSteeringTests
             Context = new ScriptedTaskContext(null),
             Steering = inbox,
             NativeSteering = native,
-            TerminalStarter = starter,
         });
     }
 

@@ -488,13 +488,13 @@ public partial class MainView : UserControl, IDisposable
         }
 
         ThreadHeaderHost.Content = pane?.Header;
-        TranscriptHost.Content = pane is null ? _landingView : pane.TerminalView ?? (Control)pane.Transcript;
+        TranscriptHost.Content = pane is null ? _landingView : (Control)pane.Transcript;
         PipelineHost.Content = pane?.Strip;
         SearchHost.Content = pane?.SearchView;
         SearchHost.IsVisible = pane is { SearchOpen: true };
         RunControlsHost.Content = pane?.RunControls;
         ConfirmBarHost.Content = pane?.ConfirmBar;
-        ComposerHost.Content = pane is null ? null : pane.SteerView ?? (Control)pane.Composer;
+        ComposerHost.Content = pane is null ? null : (Control)pane.Composer;
         SideChatHost.Content = pane?.SideChatView;
         ChangesHost.Content = pane?.ChangesView;
         CheckpointsHost.Content = pane?.CheckpointsView;
@@ -593,25 +593,14 @@ public partial class MainView : UserControl, IDisposable
     /// <returns>True when the review belongs to a pane other than the shown one, so Apply would write another session's hunks.</returns>
     internal static bool IsStaleDiffReview(object? reviewPane, object? shownPane) => reviewPane is not null && !ReferenceEquals(reviewPane, shownPane);
 
-    // A terminal session shows omp in the thread and steers it from a steer-only composer. The views are kept with the pane, so
-    // another tab or session never restarts omp: the runtime keeps omp running and stops it when the session closes.
-    // A persisted terminal record is retired (Phase 81): the pane marks it retired and the closed-notice banner carries the retired copy; no terminal view and no steer view are created.
-    private void WireTerminal(SessionPane pane, AgentSessionRuntime? runtime, AgentSessionViewModel viewModel)
+    // A persisted terminal record is retired (Phase 81): the pane marks it retired and the closed-notice banner carries the retired copy.
+    // No terminal view and no steer view exist any more: the thread always shows the transcript.
+    private static void WireTerminal(SessionPane pane, AgentSessionRuntime? runtime, AgentSessionViewModel viewModel)
     {
         if (runtime?.IsRetiredTerminal == true)
         {
             pane.IsRetiredTerminal = true;
-            return;
         }
-
-        if (runtime?.Terminal is not { } terminal)
-        {
-            return;
-        }
-
-        pane.TerminalView = (OmpTerminalView)ViewMapping.Create(terminal);
-        pane.SteerView = new TerminalSteerView { DataContext = viewModel };
-        pane.SteerView.StatusMessage += (_, e) => ReportFor(pane, e.Message);
     }
 
     private SessionPane CreatePane(AgentSessionViewModel viewModel)
@@ -855,15 +844,7 @@ public partial class MainView : UserControl, IDisposable
 
         if (_current is { } pane)
         {
-            if (pane.TerminalView is null)
-            {
-                pane.Transcript.FocusTranscript();
-            }
-            else
-            {
-                FocusThread();
-            }
-
+            pane.Transcript.FocusTranscript();
             return;
         }
 
@@ -1109,7 +1090,7 @@ public partial class MainView : UserControl, IDisposable
 
     private void OpenSearch()
     {
-        if (_current is not { } pane || pane.TerminalView is not null || _kanbanShown || _openTool is not null || AgentsToggle.IsChecked == true)
+        if (_current is not { } pane || _kanbanShown || _openTool is not null || AgentsToggle.IsChecked == true)
         {
             return;
         }
@@ -1239,11 +1220,7 @@ public partial class MainView : UserControl, IDisposable
     {
         if (_current is { } pane)
         {
-            if (pane.TerminalView is { } terminalView)
-            {
-                terminalView.FindControl<Control>("Output").FocusWhenReady();
-            }
-            else if (ComposerHost.IsVisible)
+            if (ComposerHost.IsVisible)
             {
                 pane.Composer.FocusPrompt();
             }
@@ -1578,7 +1555,7 @@ public partial class MainView : UserControl, IDisposable
     // own terminal, and no transcript block reports the edit. Without an existing workspace folder there is nothing to read or write.
     private ChangeSetModel? CreateChangeSet(SessionPane pane, AgentSessionRuntime? runtime)
     {
-        if (runtime?.Terminal is not null)
+        if (runtime?.IsRetiredTerminal == true)
         {
             return null;
         }
@@ -1810,14 +1787,8 @@ public partial class MainView : UserControl, IDisposable
         /// <summary>Gets or sets whether the transcript search is open for this session.</summary>
         public bool SearchOpen { get; set; }
 
-        /// <summary>Gets or sets whether this pane shows a persisted terminal record, which is retired (Phase 81): no terminal view, no steer view and no composer input.</summary>
+        /// <summary>Gets or sets whether this pane shows a persisted terminal record, which is retired (Phase 81): no terminal engine, no steer view and no composer input.</summary>
         public bool IsRetiredTerminal { get; set; }
-
-        /// <summary>Gets or sets the omp terminal view of a terminal session, or null for a chat. It is kept while another tab or session is shown.</summary>
-        public OmpTerminalView? TerminalView { get; set; }
-
-        /// <summary>Gets or sets the steer-only composer of a terminal session, or null for a chat.</summary>
-        public TerminalSteerView? SteerView { get; set; }
 
         /// <summary>Gets or sets the action that unsubscribes the pane from its runtime.</summary>
         public Action? Detach { get; set; }
@@ -1866,7 +1837,6 @@ public partial class MainView : UserControl, IDisposable
         {
             Detach?.Invoke();
             Detach = null;
-            TerminalView?.Release();
             Search.Dispose();
             Changes?.Dispose();
             CheckpointRecorder?.Dispose();

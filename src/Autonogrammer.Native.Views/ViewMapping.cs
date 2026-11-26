@@ -14,7 +14,6 @@ using Autonogrammer.Native.Views.Explorer;
 using Autonogrammer.Native.Views.Kanban;
 using Autonogrammer.Native.Views.Mcp;
 using Autonogrammer.Native.Views.Search;
-using Autonogrammer.Native.Views.Terminal;
 using Autonogrammer.Native.Views.Workspace;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Agents;
@@ -71,7 +70,6 @@ internal static class ViewMapping
             CoworkConversationModel conversation => new CoworkConversationView { DataContext = conversation },
             CoworkComposerModel composerSurface => new CoworkComposerView { DataContext = composerSurface },
             CoworkApprovalCardModel approval => new CoworkApprovalCard { DataContext = approval },
-            OmpTerminalViewModel terminal => new OmpTerminalView { DataContext = terminal },
             DispatchPageModel dispatchPage => new DispatchPageView { DataContext = dispatchPage },
             DispatchApprovalModel dispatchApproval => new DispatchApprovalView { DataContext = dispatchApproval },
             RemoteTaskStripModel remoteStrip => new RemoteTaskStripView { DataContext = remoteStrip },

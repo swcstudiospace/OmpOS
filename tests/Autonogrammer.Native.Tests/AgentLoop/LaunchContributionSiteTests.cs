@@ -8,21 +8,19 @@ using static Autonogrammer.Native.Tests.AgentLoop.AgentLoopFixtures;
 namespace Autonogrammer.Native.Tests.AgentLoop;
 
 /// <summary>
-/// Pins the Native application site for Phase 82 Task 2: <see cref="SessionEngineSet"/> applies launch contributors in
-/// <c>ComposeEngineAsync</c> after the planner and after <c>ConfigOverlayWriter.Write</c> ran with the planner's
-/// <c>OverlayEntries</c> in <c>BuildPlanAsync</c>. Arguments and environment merge into the composed ACP options and the
-/// first wrapper wins, while contributed overlay entries are dropped: BundleLaunchContributor's
-/// <c>skills.customDirectories=</c> entries registered on the host are therefore proven dropped on the Native main path
-/// (handed to Task 7 with a fix-or-record decision; this task changes no production code).
+/// Pins the Native application site for Phase 82 Task 2 as fixed by Task 7: <see cref="SessionEngineSet"/> applies launch contributors in
+/// <c>BuildPlanAsync</c> right after the planner, before the overlay file is finalised, so contributed overlay entries (BundleLaunchContributor's
+/// <c>skills.customDirectories=</c> entries) reach the single <c>ConfigOverlayWriter.Write</c> call. Arguments and environment merge into the
+/// planned launch once, the wrapper wins, and the prompt paragraph/first-prompt block reach no argv.
 /// </summary>
 public sealed class LaunchContributionSiteTests
 {
     /// <summary>
-    /// A host-registered contributor: its arguments, environment and wrapper reach the composed engine, its overlay
-    /// entries reach no file and no argv, and the planned launch itself carries none of it.
+    /// A host-registered contributor: its arguments, environment, overlay entries and wrapper reach the planned launch (once) and the
+    /// composed engine, and the overlay file carries the entries.
     /// </summary>
     [Fact]
-    public async Task NativeContributorsMergeArgumentsEnvironmentAndWrapperButDropOverlayEntries()
+    public async Task NativeContributorsMergeArgumentsEnvironmentOverlayEntriesAndWrapperExactlyOnce()
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
@@ -38,9 +36,11 @@ public sealed class LaunchContributionSiteTests
         var (id, slot) = await NewSlotAsync(head, ct).ConfigureAwait(true);
         var plan = await slot.PlanAsync(ct).ConfigureAwait(true);
 
-        // The planner never saw the host-registered contributor.
-        plan.Launch.ExtraArguments.ShouldNotContain("--native-contrib", StringComparer.Ordinal);
-        plan.Launch.Environment.ShouldNotContainKey("NATIVE_CONTRIB");
+        // The planner never saw the host-registered contributor; BuildPlanAsync applied it to the planned launch.
+        plan.Launch.ExtraArguments.Count(static argument => string.Equals(argument, "--native-contrib", StringComparison.Ordinal)).ShouldBe(1);
+        plan.Launch.Environment["NATIVE_CONTRIB"].ShouldBe("1");
+        plan.Launch.ConfigOverlayPath.ShouldNotBeNull();
+        plan.Launch.OverlayEntries.ShouldContain("skills.customDirectories=/native-skills", StringComparer.Ordinal);
 
         await SendAsync(slot, "hi", ct).ConfigureAwait(true);
 
@@ -51,11 +51,9 @@ public sealed class LaunchContributionSiteTests
         string.Join('\n', launch.ExtraArguments).ShouldNotContain("PARAGRAPH-MARKER", Case.Sensitive);
         string.Join('\n', launch.ExtraArguments).ShouldNotContain("FIRSTPROMPT-MARKER", Case.Sensitive);
 
-        // Overlay entries are dropped: no written file under the state root carries them.
-        foreach (string file in Directory.EnumerateFiles(tree.State, "*", SearchOption.AllDirectories))
-        {
-            (await File.ReadAllTextAsync(file, ct).ConfigureAwait(true)).ShouldNotContain("skills.customDirectories=/native-skills", Case.Sensitive);
-        }
+        // Overlay entries reach the written overlay file the plan names.
+        (await File.ReadAllTextAsync(plan.Launch.ConfigOverlayPath!, ct).ConfigureAwait(true)).ShouldContain("skills.customDirectories=/native-skills", Case.Sensitive);
+        launch.ExtraArguments.Count(static argument => string.Equals(argument, "--native-contrib", StringComparison.Ordinal)).ShouldBe(1);
 
         _ = id;
     }

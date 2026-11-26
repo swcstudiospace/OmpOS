@@ -1,6 +1,5 @@
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Native.Tests.AgentPanel.Views;
-using Autonogrammer.Native.Tests.Terminal;
 using Autonogrammer.Native.Views;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -141,7 +140,6 @@ public sealed class AgentPanelKanbanHostingTests
             var token = TestContext.Current.CancellationToken;
             var script = new SessionScript
             {
-                TerminalStarter = new FakeOmpTerminalStarter(),
                 Steering = new FakeSteeringChannel(),
                 Context = new ScriptedTaskContext(new TaskContext
                 {

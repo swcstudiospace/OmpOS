@@ -98,7 +98,6 @@ internal sealed class ScriptedShellHost(FakeAgentCatalog catalog, ShellClock clo
             Context = script.Context,
             RecordSteering = script.RecordSteering,
             Steering = script.Steering,
-            TerminalStarter = script.TerminalStarter,
             SessionCommands = script.SessionCommands,
             MentionSources = script.MentionSources,
             Forker = script.Forker,
