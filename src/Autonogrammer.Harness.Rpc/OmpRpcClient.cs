@@ -28,6 +28,13 @@ public sealed class OmpRpcClient
         {
             throw new ArgumentException("The client working directory is required.", nameof(options));
         }
+
+        ArgumentNullException.ThrowIfNull(options.ExtraArguments, nameof(options));
+        foreach (var argument in options.ExtraArguments)
+        {
+            ArgumentNullException.ThrowIfNull(argument, nameof(options));
+        }
+
         _options = options;
     }
 
@@ -60,7 +67,7 @@ public sealed class OmpRpcClient
                 $"omp {version} is outside the pinned {OmpVersion.PinnedMajor}.{OmpVersion.PinnedMinor}.x range.");
         }
 
-        OmpRpcProcess process = OmpRpcProcess.Start(_options.OmpPath, _options.Cwd, _options.EnvironmentVariables);
+        OmpRpcProcess process = OmpRpcProcess.Start(_options.OmpPath, _options.Cwd, _options.EnvironmentVariables, _options.ExtraArguments);
         var session = new OmpRpcSession(process, _options.HandshakeTimeout, _options.CommandTimeout);
         return await StartSessionAsync(session, start).ConfigureAwait(false);
     }

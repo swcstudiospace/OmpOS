@@ -32,4 +32,11 @@ public sealed record OmpRpcClientOptions
     /// transport does not resolve allowlists or learn configuration.
     /// </summary>
     public IReadOnlyDictionary<string, string>? EnvironmentVariables { get; init; }
+
+    /// <summary>
+    /// Gets the arguments appended after <c>--mode rpc --no-ui --cwd &lt;cwd&gt;</c> on the omp command line, one argv
+    /// element each and in order, for example <c>--no-extensions</c>, <c>-e</c> and a path. Defaults to none. Do not
+    /// put secrets here: argv is visible to other processes.
+    /// </summary>
+    public IReadOnlyList<string> ExtraArguments { get; init; } = [];
 }
