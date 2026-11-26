@@ -93,9 +93,7 @@ public sealed class ProviderKeyHeadTests
 
         var plan = await slot.PlanAsync(Token).ConfigureAwait(true);
         plan.Launch.Environment.ContainsKey(Name).ShouldBeFalse("the planner never holds a provider key");
-        plan.Launch.ForTerminal().Environment.ContainsKey(Name).ShouldBeFalse("the terminal derivation never holds it either");
         plan.Launch.ToString().ShouldNotContain(ModelsForms.Canary, Case.Sensitive);
-        plan.Launch.ForTerminal().ToString().ShouldNotContain(ModelsForms.Canary, Case.Sensitive);
         fake.AcpKeyNames().ShouldBeNull("no omp child is started without a prompt");
         await models.Keys.RefreshAsync(Token).ConfigureAwait(true);
         models.Keys.Merge(plan.Launch.Environment)[Name].ShouldBe(ModelsForms.Canary, "the merged ACP overlay still carries the key");

@@ -308,7 +308,6 @@ public sealed class OmpLaunchPlannerTests
             var plan = Plan(settings);
 
             plan.Environment["SWARM_GSD_STATE_FILE"].ShouldBe("/state/sessions/s1/swarm/gsd-state.md");
-            plan.ForTerminal().Environment["SWARM_GSD_STATE_FILE"].ShouldBe("/state/sessions/s1/swarm/gsd-state.md");
             plan.Environment.ContainsKey("SWARM_AGENT").ShouldBeFalse();
             plan.Environment.ContainsKey("SWARM_TASK_ID").ShouldBeFalse();
             plan.Environment.ContainsKey("SWARM_ROOT").ShouldBeFalse();

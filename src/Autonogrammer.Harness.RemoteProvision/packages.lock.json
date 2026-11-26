@@ -62,10 +62,7 @@
         "type": "Project"
       },
       "autonogrammer.harness.omplauncher": {
-        "type": "Project",
-        "dependencies": {
-          "Autonogrammer.Harness.Terminal": "[0.20.18, )"
-        }
+        "type": "Project"
       },
       "autonogrammer.harness.plugins": {
         "type": "Project"

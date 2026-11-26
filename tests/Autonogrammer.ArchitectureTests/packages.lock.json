@@ -847,12 +847,6 @@
           "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.20.18, )"
         }
       },
-      "autonogrammer.harness.herdr": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
-        }
-      },
       "autonogrammer.harness.inmemory": {
         "type": "Project",
         "dependencies": {
@@ -896,10 +890,7 @@
         }
       },
       "autonogrammer.harness.omplauncher": {
-        "type": "Project",
-        "dependencies": {
-          "Autonogrammer.Harness.Terminal": "[0.20.18, )"
-        }
+        "type": "Project"
       },
       "autonogrammer.harness.pluginbundles": {
         "type": "Project",

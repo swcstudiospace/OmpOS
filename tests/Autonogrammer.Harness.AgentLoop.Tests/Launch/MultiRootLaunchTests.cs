@@ -111,13 +111,11 @@ public sealed class MultiRootLaunchTests
     }
 
     [Fact]
-    public void TheTerminalCommandKeepsTheAddDirPairsAheadOfTheResumeReference()
+    public void ThePlanKeepsTheAddDirPairsAsItsOwnArguments()
     {
         var plan = Plan(Settings(), ["/repos/web"]);
 
-        var command = plan.ForTerminal(new OmpTerminalOptions { NativeSessionId = "native-1" });
-
-        command.Arguments.ShouldBe(["--no-extensions", "--add-dir", "/repos/web", "--resume", "native-1"]);
+        plan.ExtraArguments.ShouldBe(["--no-extensions", "--add-dir", "/repos/web"]);
     }
 
     [Fact]

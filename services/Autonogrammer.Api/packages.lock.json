@@ -287,10 +287,7 @@
         }
       },
       "autonogrammer.harness.omplauncher": {
-        "type": "Project",
-        "dependencies": {
-          "Autonogrammer.Harness.Terminal": "[0.20.18, )"
-        }
+        "type": "Project"
       },
       "autonogrammer.harness.plugins": {
         "type": "Project"
@@ -306,12 +303,6 @@
       },
       "autonogrammer.harness.secrets": {
         "type": "Project"
-      },
-      "autonogrammer.harness.terminal": {
-        "type": "Project",
-        "dependencies": {
-          "Porta.Pty": "[2.2.3, )"
-        }
       },
       "autonogrammer.harness.workspace": {
         "type": "Project",
@@ -383,26 +374,11 @@
         "resolved": "1.9.0",
         "contentHash": "Z4IDEH6iOb6d+Y2QUjsbq1Fp5I/kwZzNdr/evBTbCGq+ShAjE4baLm7lX1tfjV2p34QI3V9kctCQziFuuKqeCA=="
       },
-      "Microsoft.Windows.Console.ConPTY": {
-        "type": "CentralTransitive",
-        "requested": "[1.24.260710001, )",
-        "resolved": "1.24.260710001",
-        "contentHash": "JR1xAkZbNnAALBjzFpqSwEx7YZfD1LI228jF9j9cgKknBPCiFy9mpphlgH+TpTN8vajTUpcgg9Miy5Y8eUAH9g=="
-      },
       "Npgsql": {
         "type": "CentralTransitive",
         "requested": "[10.0.3, )",
         "resolved": "10.0.3",
         "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w=="
-      },
-      "Porta.Pty": {
-        "type": "CentralTransitive",
-        "requested": "[2.2.3, )",
-        "resolved": "2.2.3",
-        "contentHash": "Q+U4BOiKQP8AR68Fjy6h+rLlcXcH5ao+qwIO7xAejO0U4MqFqM9/SdtcG/cZwOlQydciagiA0I7HWVRkfealyQ==",
-        "dependencies": {
-          "Microsoft.Windows.Console.ConPTY": "1.24.260710001"
-        }
       },
       "YamlDotNet": {
         "type": "CentralTransitive",

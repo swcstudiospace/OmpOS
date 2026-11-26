@@ -119,16 +119,16 @@ public sealed class HookBridgeLaunchTests
         plan.ExtraArguments.TakeLast(4).ShouldBe(["-e", "/p/autonogrammer-hooks-omp", "--add-dir", "/work/other"]);
     }
 
-    /// <summary>A terminal session gets the same extension and variables as the chat engine, and never the word acp.</summary>
+    /// <summary>The plan carries the hook extension argument and its environment variables, and never the word acp.</summary>
     [Fact]
-    public void ATerminalLaunchCarriesTheSameWiring()
+    public void ThePlanCarriesTheHookWiring()
     {
-        var command = Plan(new HookBridgeEndpoint(BridgeEnvironment, ReadyBridge())).ForTerminal();
+        var plan = Plan(new HookBridgeEndpoint(BridgeEnvironment, ReadyBridge()));
 
-        command.Arguments.TakeLast(2).ShouldBe(["-e", "/p/autonogrammer-hooks-omp"]);
-        command.Arguments.ShouldNotContain("acp", StringComparer.Ordinal);
-        command.Environment[HookBridgeEnvironment.Url].ShouldBe("http://127.0.0.1:49152/v1/hook");
-        command.Environment[HookBridgeEnvironment.StartupFile].ShouldBe("/state/sessions/s1/hooks/startup.json");
+        plan.ExtraArguments.TakeLast(2).ShouldBe(["-e", "/p/autonogrammer-hooks-omp"]);
+        plan.ExtraArguments.ShouldNotContain("acp", StringComparer.Ordinal);
+        plan.Environment[HookBridgeEnvironment.Url].ShouldBe("http://127.0.0.1:49152/v1/hook");
+        plan.Environment[HookBridgeEnvironment.StartupFile].ShouldBe("/state/sessions/s1/hooks/startup.json");
     }
 
     /// <summary>The description of an endpoint and of a plan never shows the token.</summary>
