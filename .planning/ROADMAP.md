@@ -2045,11 +2045,11 @@ Source: owner directive (parent brief) via task T9013-arch (correlation 901308c5
   2. The close-out names 66.1, 66.2, 66.3, 66.4, 69, 68 (68-09 SEC-77-07), 74.1, 75-12 and SEC-77-01 unchanged; v0.16.0 is not archived (AC-307, AC-308).
   3. Tracker payloads exist as 1 file per phase; any tracker error is recorded verbatim and 0 identifiers are fabricated (AC-309, AC-310).
 
-**Plans**: TBD (authored when the phase is sequenced; plan-and-return until then)
+**Plans**: 84-01-PLAN.md — executed 2026-11-26 (flip landed; see `.planning/phases/84-sota-quality-and-cutover-gate/84-VERIFICATION.md`)
 
 ### Progress (v0.17.0)
 
-Planned 2026-11-23. Phases 79 and 80 executed and verified 2026-11-24 (80 passed with the bootstrap caveat in `80-VERIFICATION.md`); 81-01 and 82-01 plans authored. ADR-0038 is Proposed and moves to Accepted only at the Phase 84 cutover gate.
+Planned 2026-11-23. Phases 79 and 80 executed and verified 2026-11-24 (80 passed with the bootstrap caveat in `80-VERIFICATION.md`); 81-01 and 82-01 plans authored. ADR-0038 Accepted 2026-11-26 at the Phase 84 cutover gate (RPC default flip landed; `Harness:Adapter=Acp` remains the supported rollback).
 
 | Phase | Plans | Current status |
 |-------|-------|----------------|
@@ -2058,4 +2058,4 @@ Planned 2026-11-23. Phases 79 and 80 executed and verified 2026-11-24 (80 passed
 | 81. Terminal engine retirement | TBD | Planned; gated on OQ-527 and UX states |
 | 82. Plugin code-connectivity | TBD | Planned; depends on Phase 80 |
 | 83. ACP/RPC boundary and remote parity | TBD | Planned; depends on Phases 80, 82 |
-| 84. SOTA quality and cutover gate | TBD | Planned; depends on Phases 79-83 |
+| 84. SOTA quality and cutover gate | 84-01-PLAN.md | Complete (flip landed 2026-11-26; RPC default, ACP rollback) |
