@@ -217,11 +217,22 @@
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
+      "autonogrammer.harness.agentloop": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.20.18, )",
+          "Autonogrammer.Harness.Abstractions": "[0.20.18, )",
+          "Autonogrammer.Harness.Acp": "[0.20.18, )",
+          "Autonogrammer.Harness.Plugins": "[0.20.18, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
+        }
+      },
       "autonogrammer.harness.contracttests": {
         "type": "Project",
         "dependencies": {
           "Autonogrammer.Harness.Abstractions": "[0.20.18, )",
           "Autonogrammer.Harness.Acp": "[0.20.18, )",
+          "Autonogrammer.Harness.AgentLoop": "[0.20.18, )",
           "Autonogrammer.Harness.Rpc": "[0.20.18, )",
           "Microsoft.Testing.Extensions.TrxReport": "[2.5.1, )",
           "Shouldly": "[4.3.0, )",
@@ -235,6 +246,9 @@
           "Autonogrammer.Contracts": "[0.20.18, )",
           "Autonogrammer.Harness.Abstractions": "[0.20.18, )"
         }
+      },
+      "autonogrammer.harness.plugins": {
+        "type": "Project"
       },
       "autonogrammer.harness.rpc": {
         "type": "Project",

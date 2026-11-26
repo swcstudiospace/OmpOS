@@ -33,3 +33,17 @@ The launch-plan diff tests pass for both adapters, the inventory covers 100% of 
 - `docs/open-questions.md` (OQ-526, OQ-528)
 - `.planning/REQUIREMENTS.md` (RPC-82-1 to RPC-82-3)
 </canonical_refs>
+
+## Task 8 gate state (evidence pack, 2026-11-26 — owner decision pending, q4 default: unavailable)
+
+No init and no removal performed by the executor. Observed state at execution time:
+
+- `git submodule status` reports ` f28a3acc319d9805c2d2487c05d12a075a2c8ad7 plugins/agent-realm (v0.3.38)`
+  (leading space = initialized); `git ls-files -s plugins/agent-realm` = `160000 f28a3acc…` (gitlink, mode 160000).
+- The recorded-vs-observed discrepancy stands: OQ-528/this context say NOT initialized, while the working tree is
+  populated at the gitlink — yet `plugins/agent-realm/dist/` is absent, so the declared extension
+  (`./dist/src/omp/extension.js`) cannot load either way, and "initialized" alone would still require
+  `npm ci && npm run build` on Node ≥ 22.13.
+- Licence note unchanged: submodule `AGPL-3.0-only` vs repo `AGPL-3.0-or-later`; no recorded owner decision.
+- Realm stays `unavailable` everywhere it is listed; no other pin moved. The owner's init-or-remove call (OQ-528)
+  remains the blocker for executing Task 8.

@@ -55,8 +55,9 @@ internal sealed record EngineCompositionOptions
     /// Gets the transport the session is composed over. The default is <see cref="EngineTransport.Acp"/>. With
     /// <see cref="EngineTransport.Rpc"/> the plan-based composition refuses everything RPC cannot yet honour honestly: a remote
     /// session (Phase 83), an approval-capable flow — admitted kinds, <see cref="RunModePolicy"/> or
-    /// <see cref="PermissionResolverFactory"/> — (OQ-525), and launch contributions such as extra arguments, MCP servers,
-    /// <see cref="HookGate"/> or <see cref="ProcessWrapper"/> (Phase 82). Only the plan-based
+    /// <see cref="PermissionResolverFactory"/> — (OQ-525), and the launch contributions omp RPC has no observed
+    /// channel for: plan or extra MCP servers, a <see cref="HookGate"/>, a <see cref="ProcessWrapper"/>, or overlay
+    /// entries with no settings overlay file (OQ-526). Only the plan-based
     /// <see cref="EngineComposition.Compose(IReadOnlyCollection{string}, Autonogrammer.Harness.AgentLoop.Launch.OmpLaunchPlan, Func{AcpClientOptions, IAcpTransport}, Microsoft.Extensions.Logging.ILoggerFactory, string, string, EngineCompositionOptions)"/>
     /// reads it; the non-plan overload always composes ACP.
     /// </summary>

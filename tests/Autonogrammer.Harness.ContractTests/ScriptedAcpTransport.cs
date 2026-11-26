@@ -51,6 +51,10 @@ internal sealed class ScriptedAcpTransport : IAcpTransport
         }
     }
 
+    /// <summary>Injects one <c>available_commands_update</c> notification carrying the supplied <c>availableCommands</c> JSON array, in the <c>session/update</c> shape the ACP suite scripts.</summary>
+    /// <param name="availableCommandsJson">A JSON array of command objects with <c>name</c>, optional <c>description</c> and optional <c>input.hint</c>.</param>
+    public void DeliverAvailableCommands(string availableCommandsJson) => Deliver(Utf8("{\"jsonrpc\":\"2.0\",\"method\":\"session/update\",\"params\":{\"sessionId\":\"" + CapturedSessionId + "\",\"update\":{\"sessionUpdate\":\"available_commands_update\",\"availableCommands\":" + availableCommandsJson + "}}}"));
+
     /// <summary>Waits until the engine has seen a <c>session/prompt</c> request.</summary>
     /// <param name="cancellationToken">Cancels the wait.</param>
     public async Task WaitForPromptAsync(CancellationToken cancellationToken) =>

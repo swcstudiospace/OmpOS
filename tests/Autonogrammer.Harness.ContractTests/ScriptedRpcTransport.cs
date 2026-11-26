@@ -55,6 +55,10 @@ internal sealed class ScriptedRpcTransport : IRpcTransport
         }
     }
 
+    /// <summary>Injects one <c>available_commands_update</c> frame carrying the supplied <c>commands</c> JSON array, in the frozen 19.1.1 capture shape (ledger R-UNSOLICITED).</summary>
+    /// <param name="commandsJson">A JSON array of command objects with <c>name</c>, optional <c>description</c> and optional <c>input.hint</c>.</param>
+    public void DeliverAvailableCommands(string commandsJson) => Emit($$"""{"type":"available_commands_update","commands":{{commandsJson}}}""");
+
     /// <summary>Waits until the engine has seen a plain prompt command.</summary>
     /// <param name="cancellationToken">Cancels the wait.</param>
     public async Task WaitForPromptAsync(CancellationToken cancellationToken) =>

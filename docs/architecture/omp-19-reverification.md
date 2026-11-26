@@ -262,3 +262,21 @@ Consequences for later tasks: Tasks 3/4/5 may implement the argv channel for P1,
 existence and acceptance are observed; *honouring* of P3/P4/P12 is claimed only where the table says observed).
 P2, P4–P6 need the Task 5/7 captures; P7–P9 are recorded as the phase's named transport difference unless a
 Task 6 capture observes a carrier — an unobserved candidate is never implemented on spec.
+
+### Per-plugin load verdicts (Task 5 opt-in half, 2026-11-26; evidence is the Task 1 `full` probe above)
+
+The `full` probe passed `--no-extensions -e <ultrathink> -e <swarm/omp> -e <gsd>` and its
+`available_commands_update` (60 commands vs 53 in `basic`) adds exactly these 10 names, each observed byte-identical
+on omp 19.1.1 under `--mode rpc`:
+
+- `ultrathink` — loaded: all 8 expected commands present (`ultrathink-off`, `ultrathink-on`, `ultrathink-quick`,
+  `ultrathink-skip`, `ultrathink-status`, `ultrathink-swarm`, `ultrathink-track`, `ultrathink-ui`); the gsd-core-omp
+  connection report names the same 8 plus `autoresearch`/`gsd-core`/`swarm` (11 total, `mode: "rpc"`). No name is
+  missing and none failed.
+- `swarm` — loaded: `swarm` present; the `swarm_*` tools are not part of the `available_commands_update` surface on
+  either transport, so only the command claim is recorded.
+- `gsd` — loaded: `gsd-core` present.
+- `substrate` — not exercised by this probe: no substrate endpoint was configured in the fixture. No verdict claimed.
+- `realm` — excluded (unavailable; Task 8). No verdict claimed.
+- Hooks bridge — not exercised: no bridge endpoint exists in the fixture. No verdict claimed; the bridge registers no
+  commands (no `registerCommand` in `plugins/autonogrammer-hooks-omp/src`), so its scripted case is the empty set.

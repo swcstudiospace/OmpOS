@@ -60,11 +60,12 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
     /// <see cref="InProcessEngineHost.ForRpc"/> for a plain local session instead. The composition carries the same
     /// <see cref="PendingPermissionResolver"/> and approval bridge objects, but RPC sessions cannot reach them — omp RPC has no
     /// observed permission-request surface (OQ-525), so they are never fed and no RPC path grants a permission. What RPC cannot
-    /// yet honour is refused rather than dropped: remote resources (Phase 83); an approval-capable flow, that is non-empty
+    /// yet honour is refused rather than dropped: a remote session (Phase 83); an approval-capable flow, that is non-empty
     /// <paramref name="allowedKinds"/>, a <see cref="EngineCompositionOptions.RunModePolicy"/> or a
-    /// <see cref="EngineCompositionOptions.PermissionResolverFactory"/> (OQ-525); and launch contributions — the plan's extra
-    /// arguments or MCP servers, extra MCP servers, a settings overlay, a hook gate or a process wrapper — until Phase 82 proves
-    /// the shared launch plan under <c>--mode rpc</c>. <paramref name="transportFactory"/> and
+    /// <see cref="EngineCompositionOptions.PermissionResolverFactory"/> (OQ-525); and the launch contributions omp RPC has no
+    /// observed channel for — plan or extra MCP servers, overlay entries with no settings overlay file, a hook gate or a
+    /// process wrapper (OQ-526). The plan's extra arguments, including <c>--config</c>, reach RPC byte-for-byte through
+    /// <see cref="OmpRpcClientOptions.ExtraArguments"/>. <paramref name="transportFactory"/> and
     /// <paramref name="loggerFactory"/> configure ACP sessions only and are not consulted on the RPC path;
     /// <see cref="EngineCompositionOptions.RpcSessionFactory"/> is its scripted-test seam.
     /// </para>
@@ -86,7 +87,7 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
     /// <exception cref="ArgumentException">
     /// <see cref="EngineCompositionOptions.PermissionResolverFactory"/> is set together with <see cref="EngineCompositionOptions.RunModePolicy"/>, or the factory returns null;
     /// or, on the RPC path, the composition carries a remote session (Phase 83), an approval-capable flow (OQ-525) or a launch
-    /// contribution (Phase 82) — see the remarks.
+    /// contribution RPC has no observed channel for (OQ-526) — see the remarks.
     /// </exception>
     public static EngineComposition Compose(
         IReadOnlyCollection<string> allowedKinds,
@@ -200,14 +201,29 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
             throw new ArgumentException("The RPC engine transport cannot compose an approval-capable flow (run mode or permission resolver): omp RPC has no observed permission surface and stays deny-by-default, so such sessions stay on ACP (OQ-525).", nameof(options));
         }
 
-        if (plan.ExtraArguments.Count != 0 || plan.McpServers.Count != 0 || plan.ConfigOverlayPath is not null || plan.OverlayEntries.Count != 0)
+        if (plan.McpServers.Count != 0)
         {
-            throw new ArgumentException("The RPC engine transport cannot honour launch plan contributions (extra arguments, MCP servers or a settings overlay) until Phase 82 proves the shared launch plan under '--mode rpc'; such sessions stay on ACP.", nameof(plan));
+            throw new ArgumentException("The RPC engine transport has no observed channel for plan MCP servers (OQ-526); sessions that carry MCP servers stay on ACP.", nameof(plan));
         }
 
-        if (options.ExtraMcpServers.Count != 0 || options.HookGate is not null || options.ProcessWrapper is not null)
+        if (plan.OverlayEntries.Count != 0 && plan.ConfigOverlayPath is null)
         {
-            throw new ArgumentException("The RPC engine transport cannot honour launch contributions (MCP servers, a hook gate or a process wrapper) until Phase 82 proves the shared launch plan under '--mode rpc'; such sessions stay on ACP.", nameof(options));
+            throw new ArgumentException("The RPC engine transport cannot honour overlay entries with no settings overlay file on the plan; the caller writes the overlay before composing (OQ-526).", nameof(plan));
+        }
+
+        if (options.ExtraMcpServers.Count != 0)
+        {
+            throw new ArgumentException("The RPC engine transport has no observed channel for user MCP servers (OQ-526); sessions that carry MCP servers stay on ACP.", nameof(options));
+        }
+
+        if (options.HookGate is not null)
+        {
+            throw new ArgumentException("The RPC engine transport cannot honour a hook gate (OQ-526); sessions with hooks stay on ACP.", nameof(options));
+        }
+
+        if (options.ProcessWrapper is not null)
+        {
+            throw new ArgumentException("The RPC engine transport cannot honour a process wrapper (OQ-526); wrapped sessions stay on ACP.", nameof(options));
         }
 
         var rpcOptions = new OmpRpcClientOptions
@@ -215,6 +231,7 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
             Cwd = plan.WorkingDirectory,
             OmpPath = ompPath ?? "omp",
             EnvironmentVariables = ResolveRpcEnvironment(plan, options),
+            ExtraArguments = plan.ExtraArguments,
         };
         var pending = new PendingPermissionResolver();
         var bridge = new EngineToolApprovalBridge(pending, allowedKinds);
