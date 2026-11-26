@@ -1,0 +1,6 @@
+status-after:
+?? .bg-shell/
+?? .gsd/
+?? .mcp.json
+?? docs/runbooks/evidence/phase-84-preflip-2026-11-26/
+?? tests/Autonogrammer.Sessions.Postgres.Tests/Dispatch/DispatchLegacyMigrationRoundTripTests.cs

@@ -1,0 +1,9 @@
+HEAD: fdafc70b1b418793814d4d3984a51d75ee63d532
+status-before:
+?? .bg-shell/
+?? .gsd/
+?? .mcp.json
+?? docs/runbooks/evidence/phase-84-preflip-2026-11-26/
+dotnet: 10.0.402
+global.json SDK: 10.0.402
+build summary: Autonogrammer.Linux.slnf
