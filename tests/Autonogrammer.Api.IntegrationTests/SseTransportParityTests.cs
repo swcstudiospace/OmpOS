@@ -32,6 +32,16 @@ namespace Autonogrammer.Api.IntegrationTests;
 /// <c>TextDeltaEvent</c>, <c>CompletedEvent</c>), as <c>TransportParityScenarios</c> asserts over
 /// both scripted transports. Bytes are compared on the captured stream, never on a re-serialised
 /// model, and no normaliser is applied.
+/// What the byte-equality proves (OQ-529): serializer identity given identical <c>HarnessEvent</c>s
+/// — i.e. that <c>HarnessEventProjection</c>/<c>EventStreamEndpoints</c> emits the same SSE bytes
+/// when both adapters hand it the same event sequence. It does NOT prove end-to-end mapper parity:
+/// production <c>RpcEventMapper</c> embeds the raw RPC frame (<c>frame.GetRawText()</c>) and
+/// production <c>AcpWireMapping</c> embeds the raw ACP update (<c>update.GetRawText()</c>) in
+/// <c>PayloadJson</c>, so production SSE <c>PayloadJson</c> diverges by construction for tool events.
+/// This test's RPC scripted seam deliberately hand-aligns its <c>PayloadJson</c> to the ACP shape
+/// so the comparison exercises only the serializer; <c>AcpTaskToolActivitySource</c> parses
+/// <c>title</c>/<c>kind</c>/<c>rawInput</c> out of <c>PayloadJson</c>, so tool-activity parsing works
+/// only for ACP-shaped <c>PayloadJson</c> (see OQ-529, Linear SPE-37896). No assertion change.
 /// </summary>
 public sealed class SseTransportParityTests : IDisposable
 {
