@@ -15,7 +15,8 @@ namespace Autonogrammer.Api.Harness;
 /// instead of the API's working directory, and a run with worktrees configured shares <see cref="WorktreeRunSession"/> — minus
 /// everything permission-shaped: omp RPC has no observed permission-request surface (OQ-525), so there is no per-run
 /// permission resolver to build and nothing to route a decision to. RPC sessions stay deny-by-default and advertise
-/// <c>approvals=denied</c>; approval-configured flows stay on the ACP adapter.
+/// <c>approvals=denied</c>; approval-configured flows stay on the ACP adapter. Each call mints a fresh client/process for
+/// the run (per-session isolation); admission of how many runs exist is the run lease in DirectSessionRunner, not here.
 /// </summary>
 internal sealed class OmpRpcHarnessSessionFactory : IHarnessSessionFactory
 {

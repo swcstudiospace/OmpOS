@@ -36,7 +36,9 @@ namespace Autonogrammer.Native.Agents;
 
 /// <summary>
 /// The head's implementation of <see cref="IAgentPanelHost"/>: it owns the session registry and one <see cref="SessionSlot"/> per opened
-/// session, so N sessions keep their own state directory, launch plan, engine (one <c>omp acp</c> child each), stage sources and runtime.
+/// session, so N sessions keep their own state directory, launch plan, engine (one omp child each, over its composed
+/// transport), stage sources and runtime. The slots are this head's admission: each slot composes one engine host, and a
+/// host binds one session at a time.
 /// </summary>
 /// <remarks>
 /// <para>

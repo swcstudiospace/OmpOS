@@ -10,7 +10,9 @@ namespace Autonogrammer.EngineHost;
 
 /// <summary>
 /// Desktop host: binds one <see cref="IOmpSession"/> at a time, created by an injectable factory,
-/// so tests substitute scripted sessions and never spawn omp.
+/// so tests substitute scripted sessions and never spawn omp. The one-at-a-time binding is this host's admission
+/// (slice-single): multi-session concurrency is composed by creating one host per session (a SessionEngineSet
+/// slot), never by binding a second session here.
 /// </summary>
 public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
 {

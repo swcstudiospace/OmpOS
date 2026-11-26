@@ -13,7 +13,11 @@ using Xunit;
 namespace Autonogrammer.Native.Tests.Composition;
 
 /// <summary>
-/// Phase 82 Task 4 (SC1, RPC-82-1): one fixed session request composed down both adapters to the last host-side
+/// Phase 82 Task 4 (SC1, RPC-82-1), promoted in Phase 83 (RPC-83-3) to the permanent canonical
+/// shared-plan suite — this class is the one entry point for the plan-diff guarantee; the
+/// command-surface half lives in <c>TransportParityScenarios</c> and the per-plugin half in
+/// <c>PluginCommandParityTests</c> (Autonogrammer.Harness.ContractTests), both cross-link here.
+/// One fixed session request composed down both adapters to the last host-side
 /// value before process spawn, asserting byte parity modulo the transport delta enumerated here and nowhere else:
 /// the ACP child argv is <c>acp</c> followed by <c>plan.ExtraArguments</c> (<c>AcpStdioTransport.StartProcess</c>);
 /// the RPC child argv is <c>--mode rpc --no-ui --cwd &lt;wd&gt;</c> followed by the same <c>plan.ExtraArguments</c>
@@ -82,6 +86,46 @@ public sealed class LaunchPlanParityTests
         // The fixture carries no MCP servers until Task 6 lands their channel, and both sides deliver none.
         plan.McpServers.ShouldBeEmpty();
         acpLaunch.McpServers.ShouldBeEmpty();
+    }
+
+    /// <summary>
+    /// Phase 83 (RPC-83-3): one plan built once by <c>OmpLaunchPlanner.Plan</c> and handed to both
+    /// factories — both receive the identical plan instance values, so neither adapter re-plans.
+    /// The shared <c>ExtraArguments</c> list instance reaching both sides is the observable proof:
+    /// a second planner run would hand each side a different list.
+    /// </summary>
+    [Fact]
+    public async Task SinglePlanHandedToBothFactories_ReceivesIdenticalInstanceValues()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var tree = new TempTree();
+        var settings = new AgentLoopSettings
+        {
+            PluginsRoot = tree.Plugins,
+            StateRoot = tree.State,
+            UltrathinkEnabled = false,
+            SwarmEnabled = false,
+            SubstrateEnabled = false,
+            GsdEnabled = false,
+            RealmEnabled = false,
+        };
+        OmpLaunchPlan plan = OmpLaunchPlanner.Plan(settings, [], "s-parity-once", tree.Workspace, null);
+
+        var omp = new ScriptedOmp();
+        var acp = EngineComposition.Compose([], plan, omp.TransportFactory);
+        await using (acp.Host.ConfigureAwait(true))
+        {
+            await acp.Host.ConnectAsync(ct).ConfigureAwait(true);
+        }
+
+        var rpcOptions = await ComposeRpcAsync(plan, ct).ConfigureAwait(true);
+        var acpLaunch = omp.Launches.ShouldHaveSingleItem();
+
+        acpLaunch.ExtraArguments.ShouldBeSameAs(plan.ExtraArguments);
+        rpcOptions.ExtraArguments.ShouldBeSameAs(plan.ExtraArguments);
+        acpLaunch.WorkingDirectory.ShouldBe(plan.WorkingDirectory);
+        rpcOptions.Cwd.ShouldBe(plan.WorkingDirectory);
+        acpLaunch.EnvironmentVariables.ShouldBeSameAs(plan.Environment);
     }
 
     /// <summary>The one fixed session-request fixture: substrate disabled so no network or secret enters it.</summary>

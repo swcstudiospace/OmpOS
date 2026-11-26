@@ -188,7 +188,7 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
     {
         if (options.Remote is not null)
         {
-            throw new ArgumentException("The RPC engine transport cannot compose a session on a remote host; remote sessions stay on ACP until Phase 83.", nameof(options));
+            throw new ArgumentException("The RPC engine transport cannot compose a session on a remote host; remote sessions stay on ACP: RPC has no verified remote endpoint (Phase 83, ADR-0038 D2).", nameof(options));
         }
 
         if (allowedKinds.Count != 0)
@@ -203,7 +203,7 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
 
         if (plan.McpServers.Count != 0)
         {
-            throw new ArgumentException("The RPC engine transport has no observed channel for plan MCP servers (OQ-526); sessions that carry MCP servers stay on ACP.", nameof(plan));
+            throw new ArgumentException("The RPC engine transport has no observed channel for plan MCP servers (no channel observed at the Phase 83 re-probe, 2026-11-26: no MCP/server spelling for --mode rpc in omp --help, no MCP-shaped command in the RPC command table, and the overlay mcpServers key is inert — OQ-526); sessions that carry MCP servers stay on ACP.", nameof(plan));
         }
 
         if (plan.OverlayEntries.Count != 0 && plan.ConfigOverlayPath is null)
@@ -213,17 +213,17 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
 
         if (options.ExtraMcpServers.Count != 0)
         {
-            throw new ArgumentException("The RPC engine transport has no observed channel for user MCP servers (OQ-526); sessions that carry MCP servers stay on ACP.", nameof(options));
+            throw new ArgumentException("The RPC engine transport has no observed channel for user MCP servers (no channel observed at the Phase 83 re-probe, 2026-11-26: no MCP/server spelling for --mode rpc in omp --help, no MCP-shaped command in the RPC command table, and the overlay mcpServers key is inert — OQ-526); sessions that carry MCP servers stay on ACP.", nameof(options));
         }
 
         if (options.HookGate is not null)
         {
-            throw new ArgumentException("The RPC engine transport cannot honour a hook gate (OQ-526); sessions with hooks stay on ACP.", nameof(options));
+            throw new ArgumentException("The RPC engine transport cannot honour a hook gate (no channel observed at the Phase 83 re-probe, 2026-11-26: the RPC prompt path carries no gate surface — OQ-526); sessions with hooks stay on ACP.", nameof(options));
         }
 
         if (options.ProcessWrapper is not null)
         {
-            throw new ArgumentException("The RPC engine transport cannot honour a process wrapper (OQ-526); wrapped sessions stay on ACP.", nameof(options));
+            throw new ArgumentException("The RPC engine transport cannot honour a process wrapper (no channel observed at the Phase 83 re-probe, 2026-11-26: OmpRpcProcess.Start takes the omp path directly with no wrapper seam — OQ-526); wrapped sessions stay on ACP.", nameof(options));
         }
 
         var rpcOptions = new OmpRpcClientOptions

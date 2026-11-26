@@ -280,3 +280,73 @@ on omp 19.1.1 under `--mode rpc`:
 - `realm` — excluded (unavailable; Task 8). No verdict claimed.
 - Hooks bridge — not exercised: no bridge endpoint exists in the fixture. No verdict claimed; the bridge registers no
   commands (no `registerCommand` in `plugins/autonogrammer-hooks-omp/src`), so its scripted case is the empty set.
+
+## Phase 83 OQ-526 remainder re-probe (Task 1, 2026-11-26, no live turn)
+
+Phase 83 plan 83-01 Task 1 repeats the Phase 82 probe set against the OQ-526 remainder
+(MCP P7–P9, isolation wrapper P6, hook gate P2) before any boundary assertion builds on it.
+Every verdict below is **observed** (citing the help/capture text of this run) or
+**unobserved — refusal stays**. No carrier is asserted without a cited observation, and no
+probe sent `prompt`, `authenticate` or `session/new`; each ran with a fresh `HOME` under
+`/tmp`, a credential-scrubbed environment, `--session-dir` under `/tmp` with `--no-session`,
+and ended by closing stdin (EOF → exit 0). Raw probe output stayed in `/tmp` scratch and is
+not committed; only byte counts, exit codes and hashes are frozen here.
+
+**Binary drift (recorded, not claimed as parity):** `omp --version` on this host now prints
+`omp/19.2.1`, not the 19.1.1 this ledger was verified against. The probes below therefore
+re-observe the remainder on 19.2.1; they do not re-verify the Phase 79/82 19.1.1 rows above,
+and the version pin (`OmpVersion` 18.12.x) is untouched by this task.
+
+### Help (observed-19.2.1)
+
+- argv: `~/.local/bin/omp --help`, exit 0, stdout 19670 bytes,
+  sha256 `7a9afd254900402fb24c16fb1a3b3c247d2e71be9911e02a5460464f70c04e7d`.
+  Spelling search over the full help text for `mcp`, `wrapper`, `hook`, `gate`:
+  - `mcp` appears only inside `--no-tools` ("load no MCP, LSP, extensions, custom tools or memory").
+    No MCP launch flag exists at launch on this binary — same "no MCP flag" shape as 19.1.1,
+    now observed on 19.2.1.
+  - `wrapper` does not appear in the help at all: no wrapper launch flag exists.
+  - `--hook=<value>` exists ("Load a hook/extension file (can be used multiple times)").
+    This is an omp-side hook/extension *file* load spelling. It is **not** observed as a
+    carrier for the OQ-526 hook gate: `AcpClientOptions.HookGate` is a client-side
+    `IAcpHookGate` callback (`BeforePromptAsync`/observe points in
+    `src/Autonogrammer.Harness.Acp/IAcpHookGate.cs`, asked by `AcpAgentSession`), and no probe
+    observed an RPC prompt-path surface that asks such a gate or accepts a gate file with
+    gate semantics. Recorded as "flag observed, gate channel unobserved", never as parity.
+  - `gate` appears only in gateway/auth-gateway help lines; no hook-gate flag exists.
+- argv: `~/.local/bin/omp acp --help`, exit 0, stdout 79 bytes (ACP stdio usage, unchanged shape).
+
+### Handshake probes (observed-19.2.1, `negotiate_protocol` + `get_state` only, then EOF)
+
+| Probe | argv (after R1) | exit | stdout | effect |
+|---|---|---|---|---|
+| basic | `omp --mode rpc --no-ui --cwd <ws> --session-dir <sessions> --no-session --model opus` | 0 | 17172 B, 4 lines, sha256 `be8b37ba048cdbe9…` (prefix) | `ready`, `available_commands_update`, negotiate + get_state `success:true`; stderr empty |
+| mcpfile | basic with cwd `<ws-mcp>` containing `.omp/mcp.json` = `{"mcpServers": {"probe-srv": {"type": "stdio", "command": "/tmp/nope-server", "args": []}}}` | 0 | 17172 B, 4 lines, sha256 `be8b37ba048cdbe9…` — byte-identical to basic | the project MCP file had no handshake-level effect under `--mode rpc` |
+| mcp-cmd | basic, sent `{"type":"mcp_list","id":"2"}` between `negotiate_protocol` and `get_state` | 0 | 4 lines | `response command=mcp_list success:false error="Unknown command: mcp_list"`; negotiate and get_state still `success:true` — no RPC MCP-shaped command observed |
+
+Source check (this repo, not the binary): `grep -rn mcpServers
+src/Autonogrammer.Harness.AgentLoop/Launch/ src/Autonogrammer.Harness.Rpc/` returns no
+reader of an overlay `mcpServers` key on the RPC path, and `OmpRpcProcess.Start`
+(`src/Autonogrammer.Harness.Rpc/OmpRpcProcess.cs`, lines 78–142) builds argv from exactly
+`--mode rpc --no-ui --cwd <cwd>` plus verbatim `extraArguments`, with an optional complete
+child environment — no wrapper seam, no MCP argument, no gate argument exists in that start
+path. The RPC command table in `src/Autonogrammer.Harness.Rpc/RpcProtocol/` is exactly
+`negotiate_protocol`, `get_state`, `prompt`, `abort`, `abort_and_restore_queue`,
+`switch_session` (+ the test-only `UnknownCommandProbe`): no MCP-shaped command is registered
+for serialization.
+
+### Verdict table (Phase 83 re-probe of the OQ-526 remainder)
+
+| Point | Candidate channel probed | Verdict | `ComposeRpc` clause retained if unobserved |
+|---|---|---|---|
+| P7 substrate MCP | help spelling; project `.omp/mcp.json` handshake effect; RPC command table + `mcp_list` probe; overlay `mcpServers` reader (source) | **unobserved — refusal stays** (no MCP flag in help; mcpfile byte-identical to basic; `Unknown command: mcp_list`; no overlay reader on the RPC path) | `plan.McpServers` refusal ("no observed channel for plan MCP servers (OQ-526)") |
+| P8 Cowork gateway MCP | same probes as P7 (same carrier gap) | **unobserved — refusal stays** (same evidence) | `options.ExtraMcpServers` refusal ("no observed channel for user MCP servers (OQ-526)") |
+| P9 Native user MCP | same probes as P7 (same carrier gap) | **unobserved — refusal stays** (same evidence) | `options.ExtraMcpServers` refusal (same clause as P8) |
+| P6 isolation wrapper | help spelling; `OmpRpcProcess.Start` start path (source) | **unobserved — refusal stays** (`wrapper` absent from help; `Start` has no wrapper seam — argv + complete environment only) | `options.ProcessWrapper` refusal ("cannot honour a process wrapper (OQ-526)") |
+| P2 hook gate | help spelling; `OmpRpcProcess.Start` start path; RPC prompt-path command table (source) | **unobserved — refusal stays** (`--hook=<value>` file-load flag observed in help, but no RPC surface observed that asks a client-side `IAcpHookGate` or accepts gate semantics; not a gate carrier) | `options.HookGate` refusal ("cannot honour a hook gate (OQ-526)") |
+
+Standing set after this re-probe: exactly `McpServers` / `ExtraMcpServers` / `HookGate` /
+`ProcessWrapper` (plus `OverlayEntries`-without-path, untouched by this probe) refuse in
+`ComposeRpc`; OQ-525 (approval-capable flow) is untouched and OQ-526 stays open for exactly
+these points. Note: `docs/open-questions.md` was not edited by this task (per lane
+instruction); the OQ-526 row re-point at this appendix is Task 10's close-out edit.

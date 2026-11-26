@@ -17,7 +17,9 @@ namespace Autonogrammer.Harness.ContractTests;
 /// has no <c>registerCommand</c> — so its case asserts the empty set on both sides; its load channel (extension plus
 /// <c>AUTONOGRAMMER_HOOKS_*</c> environment through the argv channel) is proven by the Task 4 fixture, not by frames.
 /// Swarm's <c>swarm_*</c> tools never appear on the commands surface on either transport; the commands-surface claim
-/// covers <c>swarm</c> only. No omp process is spawned and no prompt is sent.
+/// covers <c>swarm</c> only. The argv/overlay/environment half of the shared-plan guarantee is the canonical suite
+/// <c>Autonogrammer.Native.Tests.Composition.LaunchPlanParityTests</c> (RPC-83-3); this class covers the
+/// per-plugin <c>available_commands_update</c> surfacing over both scripted transports.
 /// </summary>
 public sealed class PluginCommandParityTests
 {

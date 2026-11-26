@@ -15,7 +15,10 @@ namespace Autonogrammer.Harness.ContractTests;
 /// shapes. Event assertions compare <see cref="HarnessEvent"/> types and payloads through <see cref="Describe"/>
 /// (D-04): below the session-source selection nothing branches on transport. The one selection-level difference
 /// carried as data is the terminal reason each wire vocabulary produces (<c>end_turn</c> on ACP, <c>completed</c>
-/// on RPC).
+/// on RPC). The launch-plan half of the shared-plan guarantee (argv/overlay/environment byte parity, built once
+/// and handed to both factories) is the canonical suite
+/// <c>Autonogrammer.Native.Tests.Composition.LaunchPlanParityTests</c> (RPC-83-3); this class covers the
+/// command/event surface over the same two scripted transports.
 /// </summary>
 /// <remarks>
 /// Scenario outcomes (parity unless named a gap):

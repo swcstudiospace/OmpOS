@@ -15,7 +15,7 @@ Not delivered: RPC over any network transport (no verified remote RPC endpoint e
 ## Implementation Decisions
 
 - **D-01:** Boundary assertions live in `tests/Autonogrammer.ArchitectureTests`: `Harness.Remote` references the ACP client and not `Harness.Rpc`; `DirectSessionRunner`'s file names no `Acp*` concrete type; LayerMap rows for both harness projects stay harness-layer with no upward edge.
-- **D-02:** Shared launch plan: the launch composition (contributors, overlays, MCP set, approval policy defaults) is built once and handed to either transport factory; Phase 82's plan-diff tests move here as permanent architecture coverage.
+- **D-02:** Shared launch plan: the launch composition (contributors, overlays, MCP set, approval policy defaults) is built once and handed to either transport factory; Phase 82's plan-diff tests move here as permanent architecture coverage. Permanent suite: `tests/Autonogrammer.Native.Tests/Composition/LaunchPlanParityTests.cs` (canonical — argv/overlay/environment byte parity modulo the enumerated transport delta, plus the once-vs-twice test proving one `OmpLaunchPlanner.Plan` output is handed to both factories as the identical instance); `tests/Autonogrammer.Harness.ContractTests/TransportParityScenarios.cs` and `PluginCommandParityTests.cs` cross-link to it for their command/event halves. No live trait, no fixture self-skip.
 - **D-03:** SSE parity: a scripted session producing an identical event sequence over each local transport yields byte-equal SSE frames and the same resume point in the Api integration fixtures; any difference is a phase-stopping defect, not a mapping note.
 </decisions>
 

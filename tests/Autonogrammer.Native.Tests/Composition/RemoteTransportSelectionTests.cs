@@ -62,6 +62,32 @@ public sealed class RemoteTransportSelectionTests
         localLaunches.ShouldBe(0);
         script.Calls().Any(static call => Regex.IsMatch(call, @"\bacp\b", RegexOptions.None, TimeSpan.FromSeconds(1))).ShouldBeTrue("ssh was started for omp acp");
     }
+    /// <summary>Remote sessions stay on ACP under <see cref="EngineTransport.Rpc"/> (Phase 83, ADR-0038 D2): composing RPC
+    /// over remote resources refuses and names the remote combination, so the RPC flag can never silently downgrade a
+    /// remote session to a local RPC session.</summary>
+    [Fact]
+    public async Task AnRpcSelectionWithRemoteResourcesIsRefusedNamingRemote()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "The ssh stand-in is a POSIX shell script.");
+        using var tree = new TempTree();
+        var script = FakeSsh.Write(tree.Root);
+        using var resources = await RemoteSessionResources.CreateAsync(
+            new SshProfile { Alias = "build-box", RemoteWorkspaceRoot = "/srv/work" },
+            Plan(),
+            new RemoteLaunchOptions { SessionId = "session-1", RemoteHomeDirectory = "/", LocalStateRoot = tree.State },
+            null,
+            new SshClientOptions { SshPath = script.Path },
+            null,
+            Token).ConfigureAwait(true);
+
+        var error = Should.Throw<ArgumentException>(() => EngineComposition.Compose(
+            [],
+            Plan(),
+            options: new EngineCompositionOptions { Transport = EngineTransport.Rpc, Remote = resources }));
+
+        error.Message.ShouldContain("remote");
+    }
+
 
     /// <summary>Without remote resources the head's factory builds the transport and there is nothing to reconnect.</summary>
     [Fact]
