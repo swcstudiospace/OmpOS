@@ -11,7 +11,7 @@
     <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
   </local:SettingsPageViewBase.Styles>
 
-  <!-- The Agents page: the terminal auto-run switch, off by default, with its warning while it is on. Changing it is a draft until Save. -->
+  <!-- The Agents page: the terminal auto-run switch was removed (Phase 81); the page carries the one-time announcement and the approval note. -->
   <Panel>
 
     <local:PageStatusView x:Name="StateView" />
@@ -27,18 +27,11 @@
         <TextBlock Classes="settings-description"
                    Text="{x:Static set:SettingsCopy.AgentsDescription}" />
 
-        <CheckBox x:Name="AutoRunBox"
-                  Content="{x:Static set:SettingsCopy.AutoRunLabel}"
-                  AutomationProperties.Name="{x:Static set:SettingsCopy.AutoRunLabel}"
-                  AutomationProperties.HelpText="{x:Static set:SettingsCopy.AutoRunHelp}" />
-        <TextBlock Classes="settings-help"
-                   Text="{x:Static set:SettingsCopy.AutoRunHelp}" />
-        <TextBlock x:Name="AutoRunWarning"
-                   Classes="tone-warning settings-body"
-                   IsVisible="{CompiledBinding IsAutoRunWarningVisible}"
-                   Text="{x:Static set:SettingsCopy.AutoRunWarning}"
+        <TextBlock x:Name="AutoRunRemoved"
+                   Classes="settings-body"
+                   Text="{x:Static set:SettingsCopy.AutoRunRemovedNote}"
                    AutomationProperties.LiveSetting="Polite"
-                   AutomationProperties.Name="{x:Static set:SettingsCopy.AutoRunWarning}" />
+                   AutomationProperties.Name="{x:Static set:SettingsCopy.AutoRunRemovedNote}" />
 
         <TextBlock x:Name="SaveFailedHeading"
                    Classes="tone-error settings-body"

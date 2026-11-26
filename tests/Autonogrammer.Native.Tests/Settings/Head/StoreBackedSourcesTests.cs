@@ -76,10 +76,10 @@ public sealed class StoreBackedSourcesTests : IDisposable
     {
         var ct = TestContext.Current.CancellationToken;
         var store = new FileSettingsStore(_state.Root);
-        var page = new AgentsPage(new AgentsSettingsSource(store));
+        var page = new GeneralPage(new GeneralSettingsSource(store));
         await page.LoadAsync(ct).ConfigureAwait(true);
         _ = _state.Write("config/settings.json", "{ nope");
-        page.SetTerminalAutoRun(enabled: true);
+        page.SetMotion(MotionPreference.Full);
 
         var saved = await page.SaveAsync(ct).ConfigureAwait(true);
 
@@ -88,23 +88,18 @@ public sealed class StoreBackedSourcesTests : IDisposable
         page.IsDirty.ShouldBeTrue();
     }
 
-    /// <summary>Auto-run is off until the Agents page saves it, and the Terminal tool's settings follow the saved value.</summary>
+    /// <summary>The auto-run switch was removed (Phase 81): the Terminal tool's settings are always approval-always, whatever was saved.</summary>
     [Fact]
-    public async Task TheSavedAutoRunChoiceIsTheTerminalToolsSettings()
+    public async Task TheTerminalToolsSettingsAreAlwaysApprovalAlways()
     {
         var ct = TestContext.Current.CancellationToken;
         var store = new FileSettingsStore(_state.Root);
         AgentsSettingsSource.ToTerminalSettings(store).AutoRunEnabled.ShouldBeFalse();
         var page = new AgentsPage(new AgentsSettingsSource(store));
         await page.LoadAsync(ct).ConfigureAwait(true);
-        page.TerminalAutoRun.ShouldBeFalse();
 
-        page.SetTerminalAutoRun(enabled: true);
-        AgentsSettingsSource.ToTerminalSettings(store).AutoRunEnabled.ShouldBeFalse("an unsaved draft changes nothing");
-        (await page.SaveAsync(ct).ConfigureAwait(true)).ShouldBeTrue();
-
-        AgentsSettingsSource.ToTerminalSettings(store).AutoRunEnabled.ShouldBeTrue();
-        page.SetTerminalAutoRun(enabled: false);
+        page.State.ShouldBe(SettingsPageState.Ready);
+        page.IsDirty.ShouldBeFalse();
         (await page.SaveAsync(ct).ConfigureAwait(true)).ShouldBeTrue();
         AgentsSettingsSource.ToTerminalSettings(store).AutoRunEnabled.ShouldBeFalse();
     }
@@ -114,7 +109,6 @@ public sealed class StoreBackedSourcesTests : IDisposable
     public void AnUnusableFileKeepsEveryCommandBehindAnApproval()
     {
         var store = new FileSettingsStore(_state.Root);
-        store.SetTerminalAutoRun(autoRun: true);
         _ = _state.Write("config/settings.json", "{\"terminal\":{\"autoRun\":true},\"motion\":42}");
 
         AgentsSettingsSource.ToTerminalSettings(store).AutoRunEnabled.ShouldBeFalse();

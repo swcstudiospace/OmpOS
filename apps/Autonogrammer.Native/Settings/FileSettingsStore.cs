@@ -8,8 +8,9 @@ using Autonogrammer.Presentation.Settings.Ignore;
 namespace Autonogrammer.Native.Settings;
 
 /// <summary>
-/// The head's preferences: <c>settings.json</c> in the <c>config</c> folder of the state directory. It holds the motion setting, the
-/// terminal auto-run choice and the runtime windows, and never key material: the engine owns models, providers and credentials.
+/// The head's preferences: <c>settings.json</c> in the <c>config</c> folder of the state directory. It holds the motion setting and the runtime
+/// windows, and never key material: the engine owns models, providers and credentials. A stored <c>terminal</c> section is kept as unread
+/// data (parse-and-ignore): the terminal auto-run switch was removed (Phase 81), so it never takes effect.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -104,15 +105,6 @@ internal sealed class FileSettingsStore
             document.Theme = ThemeText(theme);
         });
 
-    /// <summary>Saves the terminal auto-run choice.</summary>
-    /// <param name="autoRun">True to run proposed terminal commands without an approval.</param>
-    /// <exception cref="SettingsSourceException">The file cannot be read or written; nothing is changed.</exception>
-    public void SetTerminalAutoRun(bool autoRun) =>
-        Update(document =>
-        {
-            document.Terminal ??= new SettingsTerminalSection();
-            document.Terminal.AutoRun = autoRun;
-        });
 
     /// <summary>Saves the runtime windows.</summary>
     /// <param name="values">The values, within <see cref="RuntimeSettingsLimits"/>.</param>
@@ -338,7 +330,7 @@ internal sealed class FileSettingsStore
             throw new SettingsSourceException(HeadSettingsCopy.SettingsBadMember(path, SurfaceMember));
         }
 
-        return new StoredSettings(motion, theme, document.Terminal?.AutoRun ?? false, new RuntimeSettingsValues(idle, retention))
+        return new StoredSettings(motion, theme, new RuntimeSettingsValues(idle, retention))
         {
             Surface = document.Surface,
         };

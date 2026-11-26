@@ -1,3 +1,4 @@
+using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.UI.Components.Settings;
 using Bunit;
@@ -133,8 +134,8 @@ public sealed class SettingsDialogTests : UiTestContext
         var window = SettingsFixtures.Window(out _, out _, []);
         var changes = new List<bool>();
         var cut = RenderDialog(window, onChange: changes.Add);
-        ToggleAutoRun(cut);
-        cut.Find("nav button[aria-label='Agents, unsaved changes']").ShouldNotBeNull();
+        EditGeneralPage(cut);
+        cut.Find("nav button[aria-label='General, unsaved changes']").ShouldNotBeNull();
 
         cut.Find("[role='dialog']").KeyDown(new KeyboardEventArgs { Key = "Escape" });
 
@@ -156,10 +157,10 @@ public sealed class SettingsDialogTests : UiTestContext
     public void KeepEditingDismissesThePrompt(string how)
     {
         SetupDialogModule();
-        var window = SettingsFixtures.Window(out _, out var agents, []);
+        var window = SettingsFixtures.Window(out var general, out _, []);
         var changes = new List<bool>();
         var cut = RenderDialog(window, onChange: changes.Add);
-        ToggleAutoRun(cut);
+        EditGeneralPage(cut);
         cut.Find("[role='dialog']").KeyDown(new KeyboardEventArgs { Key = "Escape" });
 
         if (string.Equals(how, "button", StringComparison.Ordinal))
@@ -175,8 +176,8 @@ public sealed class SettingsDialogTests : UiTestContext
         cut.FindAll("[role='dialog']").Count.ShouldBe(1);
         changes.ShouldBeEmpty();
         window.HasUnsavedChanges.ShouldBeTrue();
-        agents.Saved.ShouldBeEmpty();
-        cut.Find("button[role='switch']").GetAttribute("aria-checked").ShouldBe("true");
+        general.Saved.ShouldBeEmpty();
+        cut.FindAll(".autonogrammer-segment").Any(static segment => string.Equals(segment.GetAttribute("aria-pressed"), "true", StringComparison.Ordinal)).ShouldBeTrue();
     }
 
     /// <summary>Discard and close throws the edits away and closes.</summary>
@@ -184,17 +185,17 @@ public sealed class SettingsDialogTests : UiTestContext
     public void DiscardAndCloseThrowsTheEditsAwayAndCloses()
     {
         SetupDialogModule();
-        var window = SettingsFixtures.Window(out _, out var agents, []);
+        var window = SettingsFixtures.Window(out var general, out _, []);
         var changes = new List<bool>();
         var cut = RenderDialog(window, onChange: changes.Add);
-        ToggleAutoRun(cut);
+        EditGeneralPage(cut);
         cut.Find("[role='dialog']").KeyDown(new KeyboardEventArgs { Key = "Escape" });
 
         cut.FindAll("[role='alertdialog'] button").Single(static button => string.Equals(button.TextContent, SettingsCopy.ClosePromptDiscardLabel, StringComparison.Ordinal)).Click();
 
         cut.WaitForAssertion(() => changes.ShouldBe([false]));
         window.HasUnsavedChanges.ShouldBeFalse();
-        agents.Saved.ShouldBeEmpty();
+        general.Saved.ShouldBeEmpty();
         cut.FindAll("[role='dialog']").Count.ShouldBe(0);
     }
 
@@ -203,16 +204,16 @@ public sealed class SettingsDialogTests : UiTestContext
     public void SaveAndCloseWritesTheDirtyPagesAndCloses()
     {
         SetupDialogModule();
-        var window = SettingsFixtures.Window(out _, out var agents, []);
+        var window = SettingsFixtures.Window(out var general, out _, []);
         var changes = new List<bool>();
         var cut = RenderDialog(window, onChange: changes.Add);
-        ToggleAutoRun(cut);
+        EditGeneralPage(cut);
         cut.Find("[role='dialog']").KeyDown(new KeyboardEventArgs { Key = "Escape" });
 
         cut.FindAll("[role='alertdialog'] button").Single(static button => string.Equals(button.TextContent, SettingsCopy.ClosePromptSaveLabel, StringComparison.Ordinal)).Click();
 
         cut.WaitForAssertion(() => changes.ShouldBe([false]));
-        agents.Saved.ShouldBe([new AgentsSettingsValues(TerminalAutoRun: true)]);
+        general.Saved.ShouldBe([new GeneralSettingsValues(MotionPreference.System, ThemePreference.System)]);
         window.HasUnsavedChanges.ShouldBeFalse();
     }
 
@@ -248,11 +249,11 @@ public sealed class SettingsDialogTests : UiTestContext
         cut.FindAll("[style]").Count.ShouldBe(0);
     }
 
-    private static void ToggleAutoRun(IRenderedComponent<SettingsDialog> cut)
+    private static void EditGeneralPage(IRenderedComponent<SettingsDialog> cut)
     {
-        cut.FindAll("nav button").Single(static button => string.Equals(button.TextContent.Trim(), "Agents", StringComparison.Ordinal)).Click();
-        cut.WaitForAssertion(() => cut.Find("button[role='switch']").ShouldNotBeNull());
-        cut.Find("button[role='switch']").Click();
+        cut.FindAll("nav button").Single(static button => string.Equals(button.TextContent.Trim(), "General", StringComparison.Ordinal)).Click();
+        cut.WaitForAssertion(() => cut.FindAll(".autonogrammer-segment").Count.ShouldBeGreaterThan(0));
+        cut.FindAll(".autonogrammer-segment").First(static segment => string.Equals(segment.GetAttribute("aria-pressed"), "false", StringComparison.Ordinal)).Click();
     }
 
     private BunitJSModuleInterop SetupDialogModule()

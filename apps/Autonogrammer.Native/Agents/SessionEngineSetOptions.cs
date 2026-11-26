@@ -1,9 +1,7 @@
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.AgentLoop.Steering;
-using Autonogrammer.Harness.OmpLauncher;
 using Autonogrammer.Harness.Rpc;
-using Autonogrammer.Harness.Terminal;
 using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Settings.Models;
 using Autonogrammer.Presentation;
@@ -53,11 +51,6 @@ internal sealed class SessionEngineSetOptions
     /// <summary>Gets how often the maintenance timer runs. A value that is not positive starts no timer.</summary>
     public TimeSpan MaintenanceInterval { get; init; } = DefaultMaintenanceInterval;
 
-    /// <summary>Gets how a terminal session starts omp: the backend that opens the pseudo-terminal. Null uses <see cref="LocalPtyBackend.ForCurrentOperatingSystem"/>.</summary>
-    public ITerminalBackend? TerminalBackend { get; init; }
-
-    /// <summary>Gets how omp is located for a terminal session, or null to search <c>PATH</c> and the known install places, after <see cref="OmpPath"/> when that is set.</summary>
-    public OmpLocatorOptions? TerminalLocator { get; init; }
 
     /// <summary>Gets the longest time a steering message waits for omp to acknowledge it before it is reported as sent but not acknowledged.</summary>
     public TimeSpan SteerAckTimeout { get; init; } = DefaultSteerAckTimeout;
@@ -73,8 +66,7 @@ internal sealed class SessionEngineSetOptions
 
     /// <summary>
     /// Gets the provider API keys of the providers Autonogrammer wrote to <c>models.yml</c>, or null for none. They are merged into the environment of
-    /// every omp the set starts (the engine of a chat session and the omp of a terminal session), after planning, so the planner and the plan
-    /// it returns never hold a key.
+    /// every omp the set starts, after planning, so the planner and the plan it returns never hold a key.
     /// </summary>
     public ProviderKeyEnvironment? ProviderKeys { get; init; }
 

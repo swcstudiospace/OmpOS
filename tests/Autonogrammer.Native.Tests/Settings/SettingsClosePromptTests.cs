@@ -153,7 +153,6 @@ public sealed class SettingsClosePromptTests
             window.Closed += (_, _) => closed = true;
             _ = EditRuntime(fixture);
             fixture.General.SetMotion(MotionPreference.Reduced);
-            fixture.Agents.SetTerminalAutoRun(true);
 
             Press(fixture, Key.Escape, PhysicalKey.Escape);
             SettingsTree.Click(window, window.PromptSave);
@@ -162,7 +161,7 @@ public sealed class SettingsClosePromptTests
             closed.ShouldBeTrue();
             fixture.RuntimeSaved.ShouldHaveSingleItem().IdleStopHours.ShouldBe(48);
             fixture.GeneralSource.Saved.ShouldHaveSingleItem().Motion.ShouldBe(MotionPreference.Reduced);
-            fixture.AgentsSource.Saved.ShouldHaveSingleItem().TerminalAutoRun.ShouldBeTrue();
+            fixture.AgentsSource.Saved.ShouldBeEmpty("the Agents page has no editable value since the auto-run switch was removed");
         }, ct).ConfigureAwait(true);
     }
 

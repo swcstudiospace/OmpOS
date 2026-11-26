@@ -101,35 +101,25 @@ public sealed class SettingsPagesTests : UiTestContext
 
         await page.LoadAsync(Xunit.TestContext.Current.CancellationToken).ConfigureAwait(true);
 
-        await cut.WaitForAssertionAsync(() => cut.FindAll("button[role='switch']").Count.ShouldBe(1)).ConfigureAwait(true);
+        await cut.WaitForAssertionAsync(() => cut.Find(".autonogrammer-live-region[role='status']").TextContent.ShouldBe(SettingsCopy.AutoRunRemovedNote)).ConfigureAwait(true);
+        cut.FindAll("button[role='switch']").Count.ShouldBe(0);
     }
 
-    /// <summary>The Agents switch is a named switch; turning it on shows the warning and the unsaved line, and Save writes it.</summary>
+    /// <summary>The Agents page has no switch: the removal announcement and the approval note are named, and the page is never dirty.</summary>
     [Fact]
-    public async Task AgentsSwitchWritesThroughThePage()
+    public async Task AgentsPageCarriesNoSwitchAndIsNeverDirty()
     {
         var source = new SettingsFixtures.AgentsSource();
         var page = new AgentsPage(source);
         await page.LoadAsync(Xunit.TestContext.Current.CancellationToken).ConfigureAwait(true);
         var cut = Render<AgentsSettingsView>(parameters => parameters.Add(p => p.Page, page));
-        var toggle = cut.Find("button[role='switch']");
-        cut.Find("label[for='" + toggle.Id + "']").TextContent.ShouldBe(SettingsCopy.AutoRunLabel);
-        toggle.GetAttribute("aria-checked").ShouldBe("false");
+
+        cut.FindAll("button[role='switch']").Count.ShouldBe(0);
         cut.FindAll(".autonogrammer-settings-warning").Count.ShouldBe(0);
-        cut.Find(".autonogrammer-live-region[role='status']").TextContent.ShouldBeEmpty();
-
-        await toggle.ClickAsync().ConfigureAwait(true);
-
-        cut.Find("button[role='switch']").GetAttribute("aria-checked").ShouldBe("true");
-        cut.Find(".autonogrammer-settings-warning").TextContent.ShouldBe(SettingsCopy.AutoRunWarning);
-        cut.Find(".autonogrammer-settings-warning").GetAttribute("role").ShouldBeNull();
-        cut.Find(".autonogrammer-live-region[role='status']").TextContent.ShouldBe(SettingsCopy.AutoRunWarning);
-        SaveLine(cut).TextContent.ShouldBe(SettingsCopy.UnsavedBadge);
-
-        await cut.Find("button.autonogrammer-btn--primary").ClickAsync().ConfigureAwait(true);
-
-        await cut.WaitForAssertionAsync(() => SaveLine(cut).TextContent.ShouldBe(SettingsWebCopy.Saved)).ConfigureAwait(true);
-        source.Saved.ShouldBe([new AgentsSettingsValues(TerminalAutoRun: true)]);
+        cut.Find(".autonogrammer-live-region[role='status']").TextContent.ShouldBe(SettingsCopy.AutoRunRemovedNote);
+        cut.Markup.ShouldContain(SettingsCopy.ApprovalPolicyNote);
+        SaveLine(cut).TextContent.ShouldBeEmpty();
+        source.Saved.ShouldBeEmpty();
         AssertAccessible(cut);
     }
 

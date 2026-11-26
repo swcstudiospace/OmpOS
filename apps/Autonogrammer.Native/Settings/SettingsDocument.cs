@@ -20,8 +20,8 @@ internal sealed class SettingsDocument
     /// <summary>Gets or sets the theme setting: <c>system</c>, <c>light</c> or <c>dark</c>. Absent means light.</summary>
     public string? Theme { get; set; }
 
-    /// <summary>Gets or sets the terminal settings.</summary>
-    public SettingsTerminalSection? Terminal { get; set; }
+    /// <summary>The terminal section is unread since the terminal auto-run switch was removed (Phase 81): an existing <c>terminal</c> member falls
+    /// into <see cref="Extra"/> and is parsed-and-ignored, never acted on.</summary>
 
     /// <summary>Gets or sets the runtime settings.</summary>
     public SettingsRuntimeSection? Runtime { get; set; }

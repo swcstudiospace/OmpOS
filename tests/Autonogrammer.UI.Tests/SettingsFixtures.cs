@@ -40,7 +40,7 @@ internal static class SettingsFixtures
         internal List<AgentsSettingsValues> Saved { get; } = [];
 
         /// <inheritdoc />
-        public Task<AgentsSettingsValues> LoadAsync(CancellationToken cancellationToken) => Task.FromResult(new AgentsSettingsValues(TerminalAutoRun: false));
+        public Task<AgentsSettingsValues> LoadAsync(CancellationToken cancellationToken) => Task.FromResult(AgentsSettingsValues.Defaults);
 
         /// <inheritdoc />
         public Task SaveAsync(AgentsSettingsValues values, CancellationToken cancellationToken)

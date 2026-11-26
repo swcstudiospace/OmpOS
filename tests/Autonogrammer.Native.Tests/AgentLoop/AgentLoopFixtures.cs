@@ -1,6 +1,5 @@
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Harness.Abstractions;
-using Autonogrammer.Harness.OmpLauncher;
 using Autonogrammer.Native.Agents;
 
 namespace Autonogrammer.Native.Tests.AgentLoop;
@@ -34,7 +33,6 @@ internal static class AgentLoopFixtures
         string? ompPath = null,
         TimeSpan? detailsRefresh = null,
         TimeSpan? steerAck = null,
-        OmpLocatorOptions? terminalLocator = null,
         Autonogrammer.Native.Composition.HeadServices? services = null) => new()
         {
             PluginsRoot = tree.Plugins,
@@ -49,7 +47,6 @@ internal static class AgentLoopFixtures
             OmpPath = ompPath,
             DetailsRefreshInterval = detailsRefresh ?? Timeout.InfiniteTimeSpan,
             SteerAckTimeout = steerAck,
-            TerminalLocator = terminalLocator,
             Services = services,
         };
 

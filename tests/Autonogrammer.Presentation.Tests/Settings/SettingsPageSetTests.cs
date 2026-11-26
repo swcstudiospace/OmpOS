@@ -39,10 +39,8 @@ public sealed class SettingsPageSetTests
         var window = BuildWindow(out var sources);
         await window.LoadAllAsync(token).ConfigureAwait(true);
         var general = window.Pages.OfType<GeneralPage>().Single();
-        var agents = window.Pages.OfType<AgentsPage>().Single();
 
         general.SetMotion(MotionPreference.Full);
-        agents.SetTerminalAutoRun(true);
 
         sources.General.SaveCalls.ShouldBe(0);
         sources.Agents.SaveCalls.ShouldBe(0);
@@ -52,7 +50,7 @@ public sealed class SettingsPageSetTests
         (await window.ResolveClosePromptAsync(SettingsClosePromptChoice.Save, token).ConfigureAwait(true)).ShouldBeTrue();
 
         sources.General.Values.Motion.ShouldBe(MotionPreference.Full);
-        sources.Agents.Values.TerminalAutoRun.ShouldBeTrue();
+        sources.Agents.SaveCalls.ShouldBe(0);
     }
 
     /// <summary>Every page needs its source; none can be built without one, and the read-only pages' sources have no write.</summary>

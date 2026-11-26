@@ -201,17 +201,11 @@ public static class SettingsCopy
     /// <summary>The sentence under the title of the Agents page.</summary>
     public const string AgentsDescription = "How Autonogrammer runs the terminal commands an agent proposes.";
 
-    /// <summary>The label of the terminal auto-run switch.</summary>
-    public const string AutoRunLabel = "Run terminal commands without asking";
-
-    /// <summary>The help text of the terminal auto-run switch.</summary>
-    public const string AutoRunHelp = "Off by default. When off, every terminal command an agent proposes waits for your approval. Changing it takes effect when you save.";
-
-    /// <summary>The warning shown while the terminal auto-run switch is on.</summary>
-    public const string AutoRunWarning = "Terminal commands an agent proposes will run as soon as it proposes them.";
+    /// <summary>The one-time announcement that the terminal auto-run switch was removed: every proposed shell-terminal command now waits for an approval.</summary>
+    public const string AutoRunRemovedNote = "Terminal auto-run was removed. Every terminal command an agent proposes now waits for your approval.";
 
     /// <summary>The note that every tool call follows the engine's approval policy.</summary>
-    public const string ApprovalPolicyNote = "Every tool call follows the engine's approval policy. This page only changes how Autonogrammer runs terminal commands it proposes.";
+    public const string ApprovalPolicyNote = "Every tool call follows the engine's approval policy. Every terminal command an agent proposes waits for your approval.";
 
     /// <summary>The heading of the Tab page.</summary>
     public const string TabHeading = "Tab";
