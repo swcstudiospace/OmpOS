@@ -1,6 +1,6 @@
 # ADR-0039: Cowork artifact grants — device/session proof and approved-destination enforcement (decision inputs)
 
-- Status: Proposed 2026-11-26 (decision inputs only; nothing in this record is built, and no code was changed for this record)
+- Status: Proposed 2026-11-26 (decision inputs only; nothing in this record is built, and no code was changed for this record). Owner decisions recorded 2026-11-26 (Phase 84 Task 4, decider: product owner): Gate A = A1 (reuse the Dispatch ES256 device credential with an artifact-specific audience + server-validated session id) and Gate B = B4 (no-network default for v0.16.0; grants recorded but network-inert). Status stays Proposed because the 71-08 Tasks 2/3 code (grant proof, browser implementation, destination-evidence route) is not yet written; the decisions above are the recorded calls that unblock that code, not a claim it exists.
 - Date: 2026-11-26
 - Owner: autonogrammer-maintainers
 - Deciders: autonogrammer-maintainers (the integrator; the two decisions in this record need explicit approval before 71-08 Tasks 2/3 code lands)
@@ -47,7 +47,7 @@ Recommendation recorded for the decider: B4 for v0.16.0, with B1 as an explicit,
 
 ## Candidate chosen
 
-Pending. Recommended: A1 (Dispatch device credential, artifact audience) + server-validated session id for Gate A; B4 (no-network default, grants recorded but network-inert) for Gate B in v0.16.0. Alternatives and their costs are in the Decision section above. The integrator's approval must record which option per gate, plus the browser implementation for A and the evidence route for B; then 71-08 Tasks 2/3 proceed per the audit work orders.
+Decided 2026-11-26 by the owner (Phase 84 Task 4): A1 (Dispatch ES256 device credential, artifact-specific audience) + server-validated session id for Gate A; B4 (no-network default, grants recorded but network-inert) for Gate B in v0.16.0. The integrator's approval (option per gate, browser implementation for A, evidence route for B) is recorded in the Status header above; 71-08 Tasks 2/3 proceed per the audit work orders under these calls. Alternatives and their costs are in the Decision section above.
 
 ## Licence
 
