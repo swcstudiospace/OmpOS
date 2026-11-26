@@ -5,9 +5,9 @@ namespace Autonogrammer.Api.Options;
 
 /// <summary>
 /// Binds the <c>Harness</c> configuration section: which harness adapter serves prompts. <c>InMemory</c> is the development
-/// echo adapter and the default in <c>appsettings.json</c>, so the build-time OpenAPI generator can start the host with no
-/// environment variables set. <c>Acp</c> runs <c>omp acp</c> over stdio and remains the shipped default transport; <c>Rpc</c>
-/// runs omp in RPC mode over stdio and is opt-in. Outside Development the adapter must be <c>Acp</c> or <c>Rpc</c>.
+/// echo adapter (the build-time OpenAPI generator can start the host with it, explicitly setting <c>Development</c>). <c>Rpc</c>
+/// runs omp in RPC mode over stdio and is the shipped default transport (Phase 84 cutover); <c>Acp</c> runs <c>omp acp</c> over
+/// stdio and stays as the supported rollback and the remote-boundary transport. Outside Development the adapter must be <c>Acp</c> or <c>Rpc</c>.
 /// </summary>
 internal sealed class HarnessOptions
 {
@@ -20,7 +20,7 @@ internal sealed class HarnessOptions
     /// <summary>Gets the ACP adapter name: omp in ACP mode over stdio.</summary>
     public const string AcpAdapter = "Acp";
 
-    /// <summary>Gets the RPC adapter name: omp in RPC mode over stdio (opt-in; <see cref="AcpAdapter"/> stays the shipped default).</summary>
+    /// <summary>Gets the RPC adapter name: omp in RPC mode over stdio (default transport since Phase 84; <see cref="AcpAdapter"/> stays as the supported rollback).</summary>
     public const string RpcAdapter = "Rpc";
 
     /// <summary>Gets or sets the adapter name: <c>InMemory</c>, <c>Acp</c> or <c>Rpc</c>.</summary>

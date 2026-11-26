@@ -52,7 +52,7 @@ internal sealed record EngineCompositionOptions
     public IProcessLaunchWrapper? ProcessWrapper { get; init; }
 
     /// <summary>
-    /// Gets the transport the session is composed over. The default is <see cref="EngineTransport.Acp"/>. With
+    /// Gets the transport the session is composed over. The default is <see cref="EngineTransport.Rpc"/> (Phase 84 cutover; <see cref="EngineTransport.Acp"/> stays as the supported rollback / remote composition). With
     /// <see cref="EngineTransport.Rpc"/> the plan-based composition refuses everything RPC cannot yet honour honestly: a remote
     /// session (Phase 83), an approval-capable flow — admitted kinds, <see cref="RunModePolicy"/> or
     /// <see cref="PermissionResolverFactory"/> — (OQ-525), and the launch contributions omp RPC has no observed
@@ -61,7 +61,7 @@ internal sealed record EngineCompositionOptions
     /// <see cref="EngineComposition.Compose(IReadOnlyCollection{string}, Autonogrammer.Harness.AgentLoop.Launch.OmpLaunchPlan, Func{AcpClientOptions, IAcpTransport}, Microsoft.Extensions.Logging.ILoggerFactory, string, string, EngineCompositionOptions)"/>
     /// reads it; the non-plan overload always composes ACP.
     /// </summary>
-    public EngineTransport Transport { get; init; } = EngineTransport.Acp;
+    public EngineTransport Transport { get; init; } = EngineTransport.Rpc;
 
     /// <summary>
     /// Gets the seam a test uses to supply a scripted session for the RPC path instead of spawning <c>omp --mode rpc</c>, mirroring

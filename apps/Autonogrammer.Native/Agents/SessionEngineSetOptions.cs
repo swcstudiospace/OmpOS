@@ -78,11 +78,11 @@ internal sealed class SessionEngineSetOptions
 
     /// <summary>
     /// Gets the transport the main local sessions of the set are composed over, fixed when the set is constructed. The default is
-    /// <see cref="EngineTransport.Acp"/>; <see cref="EngineTransport.Rpc"/> is the Phase 80 opt-in and threads to the main local
+    /// <see cref="EngineTransport.Rpc"/> (Phase 84 cutover); <see cref="EngineTransport.Acp"/> stays as the supported rollback and threads to the main local
     /// composition site only — child sessions (side chats, unattended candidates) and remote sessions keep composing ACP:
     /// child sessions are approval-capable flows (OQ-525) and remote sessions are Phase 83.
     /// </summary>
-    public EngineTransport Transport { get; init; } = EngineTransport.Acp;
+    public EngineTransport Transport { get; init; } = EngineTransport.Rpc;
 
     /// <summary>
     /// Gets the seam a test uses to supply a scripted session for RPC-composed main local sessions instead of spawning

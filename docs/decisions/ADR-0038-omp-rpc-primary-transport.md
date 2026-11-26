@@ -1,6 +1,6 @@
 # ADR-0038: omp RPC primary transport
 
-- Status: Proposed 2026-11-23 (design only; nothing in this record is built, and nothing was run; Phase 84 records acceptance at the cutover gate)
+- Status: Accepted 2026-11-26 (Phase 84 cutover; the cutover commit flips the default `Harness:Adapter` / `EngineTransport` to `Rpc` with `Harness:Adapter=Acp` as the supported rollback)
 - Date: 2026-11-23
 - Owner: autonogrammer-maintainers
 - Deciders: autonogrammer-maintainers

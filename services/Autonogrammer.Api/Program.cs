@@ -55,7 +55,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOptions<ApiOptions>().BindConfiguration(ApiOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<ApiOptions>, ApiCorsOptionsValidator>();
 builder.Services.AddOptions<ApiRateLimitOptions>().BindConfiguration($"{ApiOptions.SectionName}:RateLimit").ValidateDataAnnotations().ValidateOnStart();
-// Harness:Adapter selects the harness. Outside Development the in-memory echo adapter is refused: the hosted path runs omp over ACP (default) or RPC (opt-in).
+// Harness:Adapter selects the harness. Outside Development the in-memory echo adapter is refused: the hosted path runs omp over RPC (default since Phase 84) or ACP (supported rollback / remote boundary).
 var harnessInDevelopment = builder.Environment.IsDevelopment();
 builder.Services.AddOptions<HarnessOptions>()
     .BindConfiguration(HarnessOptions.SectionName)
