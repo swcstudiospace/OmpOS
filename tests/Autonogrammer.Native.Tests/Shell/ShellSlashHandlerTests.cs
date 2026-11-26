@@ -25,9 +25,12 @@ public sealed class ShellSlashHandlerTests
     /// <summary>The commands that need an engine feature the scripted sessions of these tests lack: a session fork and a side chat engine.</summary>
     private static readonly string[] NeedEngineFeatures = ["fork", "branch", "duplicate", "side", "btw"];
 
+    /// <summary>The commands whose terminal surface was removed (Phase 81): /shell and its aliases opened a new terminal session.</summary>
+    private static readonly string[] RetiredTerminalCommands = ["shell", "sh", "run"];
+
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    /// <summary>In a window with every service, each command that is not Unavailable and runs a native action is enabled in the palette, except the ones that need the engine to fork or answer side chats.</summary>
+    /// <summary>In a window with every service, each command that is not Unavailable and runs a native action is enabled in the palette, except the ones that need the engine to fork or answer side chats, and the retired terminal commands whose surface was removed.</summary>
     [Fact]
     public async Task EveryListedNativeCommandIsEnabledOrNeedsTheEngine()
     {
@@ -48,9 +51,9 @@ public sealed class ShellSlashHandlerTests
             foreach (var command in native)
             {
                 var entry = palette.Entries.Single(candidate => string.Equals(candidate.Name, command.Name, StringComparison.Ordinal));
-                var needsEngine = NeedEngineFeatures.Contains(command.Name, StringComparer.Ordinal);
-                entry.IsEnabled.ShouldBe(!needsEngine, $"/{command.Name} ({command.HandlerId})");
-                if (needsEngine)
+                var expectedDisabled = NeedEngineFeatures.Contains(command.Name, StringComparer.Ordinal) || RetiredTerminalCommands.Contains(command.Name, StringComparer.Ordinal);
+                entry.IsEnabled.ShouldBe(!expectedDisabled, $"/{command.Name} ({command.HandlerId})");
+                if (expectedDisabled)
                 {
                     entry.DisabledReason.ShouldBe(SlashPaletteCopy.ActionNotInThisWindow);
                 }

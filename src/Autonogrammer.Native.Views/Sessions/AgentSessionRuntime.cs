@@ -171,16 +171,27 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         ViewModel = CreateViewModel(options);
         RunControls.Approvals.CollectionChanged += OnApprovalsChanged;
         Registry.AddOrUpdate(ViewModel, this);
-        if (options.TerminalStarter is { } starter)
+        IsRetiredTerminal = options.Row.Summary.Kind == SessionKind.Terminal;
+        if (!IsRetiredTerminal)
         {
-            // The runtime owns the terminal for as long as the session lives, so a view that is hidden by a tab or session switch leaves omp running.
-            _terminalClosed = ViewModel.IsClosed;
-            _terminalLost = ViewModel.IsLost;
-            Terminal = new OmpTerminalViewModel(starter) { KeepRunningWhenDetached = true, AutoStart = !_terminalClosed && !_terminalLost };
-            Terminal.PropertyChanged += OnTerminalChanged;
-            Terminal.CloseRequested += OnTerminalCloseRequested;
-            ViewModel.PropertyChanged += OnViewModelChanged;
+            StartTerminal(options);
         }
+    }
+
+    private void StartTerminal(AgentSessionRuntimeOptions options)
+    {
+        if (options.TerminalStarter is not { } starter)
+        {
+            return;
+        }
+
+        // The runtime owns the terminal for as long as the session lives, so a view that is hidden by a tab or session switch leaves omp running.
+        _terminalClosed = ViewModel.IsClosed;
+        _terminalLost = ViewModel.IsLost;
+        Terminal = new OmpTerminalViewModel(starter) { KeepRunningWhenDetached = true, AutoStart = !_terminalClosed && !_terminalLost };
+        Terminal.PropertyChanged += OnTerminalChanged;
+        Terminal.CloseRequested += OnTerminalCloseRequested;
+        ViewModel.PropertyChanged += OnViewModelChanged;
     }
 
     private AgentSessionViewModel CreateViewModel(AgentSessionRuntimeOptions options)
@@ -230,14 +241,17 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// <summary>Gets the view model of the session that the Agent Panel shows. It is created with the runtime and lives until the panel releases it.</summary>
     public AgentSessionViewModel ViewModel { get; }
 
-    /// <summary>Gets what the session is: a chat over the engine behind the Agent Panel, or an omp terminal.</summary>
-    public SessionKind Kind => Terminal is null ? SessionKind.Chat : SessionKind.Terminal;
+    /// <summary>Gets what the session is: a chat over the engine behind the Agent Panel, or a persisted terminal record.</summary>
+    public SessionKind Kind => IsRetiredTerminal || Terminal is not null ? SessionKind.Terminal : SessionKind.Chat;
+
+    /// <summary>Gets whether this runtime is a persisted terminal record (Phase 81): it is retired, so no starter is called, no terminal view model exists, and the pane shows the retired state.</summary>
+    public bool IsRetiredTerminal { get; }
 
     /// <summary>
-    /// Gets the omp terminal of a terminal runtime, or null for a chat. The view starts omp when it is first shown; the runtime stops it
+    /// Gets the omp terminal of a terminal runtime, or null for a chat and for a retired terminal record. The view starts omp when it is first shown; the runtime stops it
     /// when the session is closed or the runtime is disposed.
     /// </summary>
-    internal OmpTerminalViewModel? Terminal { get; }
+    internal OmpTerminalViewModel? Terminal { get; private set; }
 
     /// <summary>Gets the pending tool-approval requests of the session and the coordinator that sends each decision.</summary>
     internal RunControlsViewModel RunControls { get; }

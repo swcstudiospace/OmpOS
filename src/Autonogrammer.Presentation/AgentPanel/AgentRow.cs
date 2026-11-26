@@ -63,7 +63,7 @@ public sealed record AgentRow
     /// <summary>Gets whether the row is the first of its group in the list it belongs to, so the view draws the group header above it.</summary>
     public bool IsGroupStart { get; init; }
 
-    /// <summary>Gets whether the session is an omp terminal rather than a chat behind the Agent Panel.</summary>
+    /// <summary>Gets whether the row is a persisted terminal record. Terminal creation is retired: this is the retired-record signal, so the row renders with the word tag "Terminal" and the retired word status; it is never a creation hint.</summary>
     public bool IsTerminal => Summary.Kind == SessionKind.Terminal;
 
     /// <summary>Gets the runtime status of the card, or null when the lifecycle is unknown.</summary>

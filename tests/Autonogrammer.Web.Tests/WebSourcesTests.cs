@@ -169,34 +169,6 @@ public sealed class WebSourcesTests : IDisposable
         model.LocalAvailability.IsAvailable.ShouldBeFalse();
     }
 
-    /// <summary>The Demo terminal resumes after the acknowledged sequence and stays attached until cancelled.</summary>
-    /// <returns>A task that completes when the assertions ran.</returns>
-    [Fact]
-    public async Task DemoTerminalResumesAfterTheAcknowledgedSequence()
-    {
-        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        var transport = new DemoTerminalTransport(_host.Time, TimeSpan.Zero);
-        var chunks = new List<RemoteTerminalChunk>();
-
-        try
-        {
-            await foreach (var chunk in transport.AttachAsync("t-1", 10, cancellation.Token).ConfigureAwait(true))
-            {
-                chunks.Add(chunk);
-                if (chunks.Count == 2)
-                {
-                    await cancellation.CancelAsync().ConfigureAwait(true);
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // After the last chunk the attachment stays open until the view detaches: the cancellation above ends it.
-        }
-
-        chunks.Select(static chunk => chunk.Sequence).ShouldBe(new long[] { 11, 12 });
-        chunks[0].Text.ShouldNotBeNullOrEmpty();
-    }
 
     /// <summary>The Changes mirror holds the agent's text, refuses a stale write and a missing file, and is never the local file system.</summary>
     [Fact]
@@ -254,19 +226,19 @@ public sealed class WebSourcesTests : IDisposable
         opened.ShouldBe(new[] { "models", string.Empty });
     }
 
-    /// <summary>The panel host cannot create an omp terminal in the browser and says why; creating a chat adds it to the catalogue.</summary>
+    /// <summary>Terminal creation is retired: the web panel host has no such method, and creating a chat adds it to the catalogue.</summary>
     /// <returns>A task that completes when the assertions ran.</returns>
     [Fact]
-    public async Task PanelHostRefusesATerminalAndCreatesAChat()
+    public async Task PanelHostHasNoTerminalCreationAndCreatesAChat()
     {
         var ct = TestContext.Current.CancellationToken;
         var catalog = new WebSessionCatalog();
         var host = new WebAgentPanelHost(_host.Api, catalog, _ => throw new InvalidOperationException("not opened here"), _ => Task.CompletedTask);
 
-        var terminal = await Should.ThrowAsync<InvalidOperationException>(() => host.CreateTerminalSessionAsync(ct)).ConfigureAwait(true);
+        typeof(WebAgentPanelHost).GetMethods().ShouldAllBe(static method => !string.Equals(method.Name, "CreateTerminalSessionAsync", StringComparison.Ordinal));
+        typeof(Autonogrammer.Presentation.AgentPanel.IAgentPanelHost).GetMethods().ShouldAllBe(static method => !string.Equals(method.Name, "CreateTerminalSessionAsync", StringComparison.Ordinal));
         var id = await host.CreateSessionAsync(ct).ConfigureAwait(true);
 
-        terminal.Message.ShouldBe(TerminalAvailability.WebReason);
         catalog.Find(id).ShouldNotBeNull().RowStatus.ShouldBe(Autonogrammer.Contracts.Catalog.CatalogRowStatus.Ready);
         catalog.Entries.Count.ShouldBe(7);
         await host.CloseSessionAsync(id, ct).ConfigureAwait(true);

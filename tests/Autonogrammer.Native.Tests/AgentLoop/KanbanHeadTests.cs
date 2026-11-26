@@ -27,7 +27,7 @@ public sealed class KanbanHeadTests
 
         head.Board.State.ShouldBe(BoardState.Empty);
         var chat = await head.Host.CreateSessionAsync(ct).ConfigureAwait(true);
-        var terminal = await head.Host.CreateTerminalSessionAsync(ct).ConfigureAwait(true);
+        var terminal = head.Host.Registry!.Create("omp terminal 1", tree.Workspace, SessionKind.Terminal).Id;
         head.Catalog.Refresh();
         head.Board.State.ShouldBe(BoardState.Ready);
         head.Board.Cards.Count.ShouldBe(2);

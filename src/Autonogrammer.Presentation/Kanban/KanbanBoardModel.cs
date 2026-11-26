@@ -642,6 +642,7 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
         };
     }
 
+    // A persisted terminal record keeps the word tag "Terminal" (retired-record signal); new terminal sessions cannot be created.
     private static string KindTextOf(SessionKind kind) => kind switch
     {
         SessionKind.Terminal => "Terminal",

@@ -15,7 +15,7 @@ internal static class DemoFixtures
     /// <summary>The session that waits for a tool approval.</summary>
     internal const string ApprovalId = "5e1c0002-0000-4000-8000-00000000d002";
 
-    /// <summary>The omp terminal session.</summary>
+    /// <summary>The retired terminal session: listed with its persisted kind, never startable, and no fake PTY output (Phase 81, D-03).</summary>
     internal const string TerminalId = "5e1c0003-0000-4000-8000-00000000d003";
 
     /// <summary>The completed session with three changed files.</summary>

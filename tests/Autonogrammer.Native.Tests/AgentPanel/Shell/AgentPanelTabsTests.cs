@@ -1,3 +1,4 @@
+using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Native.Tests.AgentPanel.Views;
 using Autonogrammer.Presentation;
 using Avalonia.Animation;
@@ -152,9 +153,9 @@ public sealed class AgentPanelTabsTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>The shortcuts that start a session work from the Kanban tab and bring the Agents layout back first.</summary>
+    /// <summary>The New agent shortcut works from the Kanban tab and brings the Agents layout back first.</summary>
     [Fact]
-    public async Task CtrlNAndCtrlShiftTStartASessionAndShowTheAgentsLayout()
+    public async Task CtrlNStartsASessionAndShowTheAgentsLayout()
     {
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
@@ -170,13 +171,9 @@ public sealed class AgentPanelTabsTests
             await ShellWait.UntilAsync(window, () => string.Equals(fixture.Panel.Selected?.Id, "new-1", StringComparison.Ordinal), "the new agent", token).ConfigureAwait(true);
 
             main.IsKanbanShown.ShouldBeFalse("New agent shows the thread it creates");
-
-            BoardShell.Chord(window, Key.K, PhysicalKey.K);
-            BoardShell.Chord(window, Key.T, PhysicalKey.T);
-            await ShellWait.UntilAsync(window, () => fixture.Host.CreatedTerminals.Count == 1, "the new terminal", token).ConfigureAwait(true);
-
-            main.IsKanbanShown.ShouldBeFalse("New omp terminal shows the thread it creates");
-            fixture.Panel.Selected.ShouldNotBeNull().Id.ShouldBe(fixture.Host.CreatedTerminals[0]);
+            fixture.Host.Created.ShouldBe(["new-1"]);
+            fixture.Panel.Selected.ShouldNotBeNull().Row.IsTerminal.ShouldBeFalse("New agent creates a chat, not a terminal");
+            fixture.Panel.Selected.ShouldNotBeNull().Row.Summary.Kind.ShouldBe(SessionKind.Chat);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 

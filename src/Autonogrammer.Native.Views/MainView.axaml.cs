@@ -529,15 +529,17 @@ public partial class MainView : UserControl, IDisposable
         }
     }
 
-    // A closed or lost session has no engine to send to: the composer hides and the closed notice shows instead.
+    // A closed or lost session has no engine to send to: the composer hides and the closed notice shows instead. A retired terminal record
+    // (Phase 81) reuses the same banner with the retired copy: no composer, no steer input, and nothing was ever started.
     private void RefreshAvailability()
     {
         var viewModel = _current?.ViewModel;
-        var unavailable = viewModel is { IsClosed: true } or { IsLost: true };
+        var retired = _current?.IsRetiredTerminal == true;
+        var unavailable = viewModel is { IsClosed: true } or { IsLost: true } || retired;
         ComposerHost.IsVisible = viewModel is not null && !unavailable;
-        ClosedNotice.IsVisible = viewModel is { IsClosed: true };
-        ClosedHeading.Text = AgentPanelCopy.ClosedHeading;
-        ClosedBody.Text = AgentPanelCopy.ClosedBody;
+        ClosedNotice.IsVisible = retired || viewModel is { IsClosed: true };
+        ClosedHeading.Text = retired ? AgentPanelCopy.RetiredTerminalHeading : AgentPanelCopy.ClosedHeading;
+        ClosedBody.Text = retired ? AgentPanelCopy.RetiredTerminalBody + " " + AgentPanelCopy.RetiredTerminalSteeringUnavailable : AgentPanelCopy.ClosedBody;
     }
 
     private SessionPane GetPane(AgentSessionViewModel viewModel)
@@ -593,8 +595,15 @@ public partial class MainView : UserControl, IDisposable
 
     // A terminal session shows omp in the thread and steers it from a steer-only composer. The views are kept with the pane, so
     // another tab or session never restarts omp: the runtime keeps omp running and stops it when the session closes.
+    // A persisted terminal record is retired (Phase 81): the pane marks it retired and the closed-notice banner carries the retired copy; no terminal view and no steer view are created.
     private void WireTerminal(SessionPane pane, AgentSessionRuntime? runtime, AgentSessionViewModel viewModel)
     {
+        if (runtime?.IsRetiredTerminal == true)
+        {
+            pane.IsRetiredTerminal = true;
+            return;
+        }
+
         if (runtime?.Terminal is not { } terminal)
         {
             return;
@@ -1800,6 +1809,9 @@ public partial class MainView : UserControl, IDisposable
 
         /// <summary>Gets or sets whether the transcript search is open for this session.</summary>
         public bool SearchOpen { get; set; }
+
+        /// <summary>Gets or sets whether this pane shows a persisted terminal record, which is retired (Phase 81): no terminal view, no steer view and no composer input.</summary>
+        public bool IsRetiredTerminal { get; set; }
 
         /// <summary>Gets or sets the omp terminal view of a terminal session, or null for a chat. It is kept while another tab or session is shown.</summary>
         public OmpTerminalView? TerminalView { get; set; }

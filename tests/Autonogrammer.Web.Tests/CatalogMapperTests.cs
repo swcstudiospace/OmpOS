@@ -64,6 +64,34 @@ public sealed class CatalogMapperTests
         CatalogMapper.IsRunActive(SessionStatus.Completed).ShouldBeFalse();
     }
 
+    /// <summary>A persisted terminal entry maps to a retired row: listed with SessionKind.Terminal, never converted to Chat.</summary>
+    [Fact]
+    public void TerminalEntryMapsToRetiredRow()
+    {
+        var summary = CatalogMapper.ToSummary(Entry("t-1", CatalogRowStatus.Completed, kind: CatalogSessionKind.Terminal));
+
+        summary.Kind.ShouldBe(SessionKind.Terminal);
+        summary.Id.ShouldBe("t-1");
+        var row = new AgentRow
+        {
+            Summary = summary,
+            Id = summary.Id,
+            Title = summary.Title,
+            Status = AgentRowStatus.Completed,
+            Group = AgentRowGroup.Finished,
+            StatusText = AgentPanelCopy.RetiredTerminalStatus,
+            IconKey = string.Empty,
+            LastActivityText = string.Empty,
+            AccessibleName = summary.Title,
+            IsLongRunning = false,
+            IsStale = false,
+            IsLost = false,
+        };
+        row.IsTerminal.ShouldBeTrue("a mapped terminal summary is the retired-row signal");
+        CatalogMapper.ToSummary(Entry("a-1", CatalogRowStatus.Ready, kind: CatalogSessionKind.Agent)).Kind.ShouldBe(SessionKind.Chat);
+        CatalogMapper.ToSummary(Entry("c-1", CatalogRowStatus.Ready, kind: CatalogSessionKind.Cloud)).Kind.ShouldBe(SessionKind.Chat);
+    }
+
     private static SessionCatalogEntry Entry(string id, CatalogRowStatus status, IReadOnlyList<Message>? messages = null, bool closed = false, CatalogSessionKind kind = CatalogSessionKind.Agent) => new()
     {
         Id = id,

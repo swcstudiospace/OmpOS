@@ -63,6 +63,7 @@ public sealed class AgentSessionRuntimeOptions
     /// <summary>
     /// Gets the starter of the omp terminal of the session. Non-null makes a terminal runtime: its <see cref="AgentSessionRuntime.Kind"/> is
     /// <see cref="SessionKind.Terminal"/>, the thread shows the terminal view, and <see cref="Prompts"/> is an <see cref="UnconnectedPromptChannel"/>.
+    /// A persisted terminal record (<see cref="Row"/> of kind Terminal) is retired (Phase 81): the runtime never calls the starter for it.
     /// </summary>
     public IOmpTerminalStarter? TerminalStarter { get; init; }
 

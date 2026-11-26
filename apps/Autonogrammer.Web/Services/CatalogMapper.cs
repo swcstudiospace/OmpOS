@@ -25,6 +25,7 @@ internal static class CatalogMapper
             CreatedAt = entry.CreatedAt,
             LastActivity = entry.LastActivityAt,
             GraphId = entry.GraphId,
+            // A persisted terminal entry stays listed as SessionKind.Terminal (the retired-record signal); it is never mapped to a startable session.
             Kind = entry.Kind == CatalogSessionKind.Terminal ? SessionKind.Terminal : SessionKind.Chat,
         };
     }

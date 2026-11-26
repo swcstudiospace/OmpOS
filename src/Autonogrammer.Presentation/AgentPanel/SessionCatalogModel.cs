@@ -417,15 +417,13 @@ public sealed class SessionCatalogModel : ObservableModel, IDisposable
             look = (cloudLook.Status, cloudLook.RuntimeStatus, cloudLook.Group, cloudLook.StatusText, cloudLook.IconKey);
         }
 
+        var statusText = summary.Kind == SessionKind.Terminal ? AgentPanelCopy.RetiredTerminalStatus : look.Text; // a persisted terminal is retired: word tag plus retired status, never its lifecycle status
         var running = look.Status == AgentRowStatus.Running;
         var idle = now - summary.LastActivity;
         var isStale = running && idle > _options.StaleAfter;
         var isLongRunning = running && now - summary.CreatedAt > _options.LongRunningAfter;
         var title = PanelText.Plain(summary.Title, MaxTitleChars);
-        if (title.Length == 0)
-        {
-            title = AgentPanelCopy.UntitledAgent;
-        }
+        if (title.Length == 0) title = AgentPanelCopy.UntitledAgent;
 
         var lastActivity = RelativeTimeText.Format(summary.LastActivity, now);
         var quietMinutes = isStale ? Math.Max(1, (long)idle.TotalMinutes) : (long?)null;
@@ -437,7 +435,7 @@ public sealed class SessionCatalogModel : ObservableModel, IDisposable
             ? RemoteRailMap.AccessibleName(title, state, lastActivity)
             : cloud is not null
                 ? CloudAgentRailMap.AccessibleName(title, cloud.Status, lastActivity)
-                : $"{title}, {look.Text}, {lastActivity}";
+                : $"{title}, {statusText}, {lastActivity}";
         return new AgentRow
         {
             Summary = summary,
@@ -446,7 +444,7 @@ public sealed class SessionCatalogModel : ObservableModel, IDisposable
             Status = look.Status,
             Group = look.Group,
             Card = look.Runtime is { } runtime ? new KanbanCardState(runtime, isStale) : null,
-            StatusText = look.Text,
+            StatusText = statusText,
             IconKey = look.Icon,
             LastActivityText = lastActivity,
             IsLongRunning = isLongRunning,

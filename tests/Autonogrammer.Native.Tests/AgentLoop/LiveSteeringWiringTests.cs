@@ -1,4 +1,4 @@
-using System.Runtime.Versioning;
+using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Harness.AgentLoop.Connection;
 using Autonogrammer.Harness.AgentLoop.Launch;
 using Autonogrammer.Harness.AgentLoop.Plugins;
@@ -131,40 +131,28 @@ public sealed class LiveSteeringWiringTests
         }, ct).ConfigureAwait(true);
     }
 
-    /// <summary>The composer of a running omp terminal steers through the same channel: the terminal's omp is the run, and a send now reaches the inbox of the terminal's own session.</summary>
+    /// <summary>Terminal creation is retired: the panel and hosts expose no terminal creation, and the only creation path makes a chat.</summary>
     [Fact]
-    [SupportedOSPlatform("linux")]
-    public async Task ASendNowFromARunningTerminalReachesItsInboxAndIsReportedDelivered()
+    public async Task TerminalCreationIsRetiredAndOnlyChatCreationRemains()
     {
-        if (!OperatingSystem.IsLinux())
-        {
-            Assert.Skip("The fake omp is a POSIX shell script.");
-        }
+        typeof(AgentPanelViewModel).GetMethod("NewTerminalAsync").ShouldBeNull("the panel has no terminal creation path");
+        typeof(IAgentPanelHost).GetMethods().Select(static method => method.Name).ShouldNotContain("CreateTerminalSessionAsync", StringComparer.Ordinal);
 
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var fake = FakeTerminalOmp.Waiting(tree);
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
-            var head = await AgentHead.CreateAsync(Options(tree, omp: null, ompPath: fake.Path)).ConfigureAwait(true);
+            var head = await AgentHead.CreateAsync(Options(tree, new ScriptedOmp())).ConfigureAwait(true);
             try
             {
                 await head.InitializeAsync(ct).ConfigureAwait(true);
-                await head.Panel.NewTerminalAsync(ct).ConfigureAwait(true);
+                await head.Panel.NewSessionAsync(ct).ConfigureAwait(true);
                 var selected = head.Panel.Selected.ShouldNotBeNull();
-                var terminal = AgentSessionRuntime.For(selected).ShouldNotBeNull().Terminal.ShouldNotBeNull();
+                selected.Row.IsTerminal.ShouldBeFalse("the only creation path makes a chat");
                 head.Host.Registry!.TryGet(selected.Id, out var record).ShouldBeTrue();
-                FakeSteerPlugin.WriteAlive(record!.StateDirectory, DateTimeOffset.UtcNow);
-                await terminal.StartAsync().ConfigureAwait(true);
-                await RunControlsHarness.UntilAsync(() => selected.Steering.IsRunActive, "omp to be running in the terminal", ct).ConfigureAwait(true);
-
-                var acknowledging = FakeSteerPlugin.AckNextAsync(record.StateDirectory, "delivered", null, ct);
-                await selected.Steering.SubmitAsync(Text, SteeringMode.Steer, ct).ConfigureAwait(true);
-                var directive = await acknowledging.ConfigureAwait(true);
-
-                directive["text"]!.GetValue<string>().ShouldBe(Text);
-                selected.Steering.History.Single().DeliveryStatus.ShouldBe(SteeringDeliveryStatus.Delivered);
+                record!.Kind.ShouldBe(SessionKind.Chat);
+                head.Host.Catalog.Snapshot().Count(static summary => summary.Kind == SessionKind.Terminal).ShouldBe(0);
             }
             finally
             {

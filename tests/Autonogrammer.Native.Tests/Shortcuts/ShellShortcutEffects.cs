@@ -131,19 +131,6 @@ internal static class ShellShortcutEffects
         ShellHarness.Prompt(window).IsFocused.ShouldBeTrue();
     }
 
-    /// <summary>Ctrl+Shift+T creates a terminal agent and selects it.</summary>
-    internal static async Task NewTerminalAsync(KeyGesture gesture, CancellationToken cancellationToken)
-    {
-        var fixture = ShellFixture.CreateWithSession();
-        await using var fixtureScope = fixture.ConfigureAwait(true);
-        var window = ShellHarness.Show(fixture);
-
-        ShortcutKeys.Press(window, gesture);
-        await ShellWait.UntilAsync(window, () => string.Equals(fixture.Panel.Selected?.Id, "terminal-1", StringComparison.Ordinal), "the terminal session", cancellationToken).ConfigureAwait(true);
-
-        fixture.Host.CreatedTerminals.ShouldBe(["terminal-1"]);
-    }
-
     /// <summary>Ctrl+Shift+A brings the Agents tab back from the Kanban tab and focuses the prompt.</summary>
     internal static async Task ShowAgentsTabAsync(KeyGesture gesture, CancellationToken cancellationToken)
     {

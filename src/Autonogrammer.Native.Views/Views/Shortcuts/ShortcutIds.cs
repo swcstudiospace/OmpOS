@@ -36,9 +36,6 @@ public static class ShortcutIds
     /// <summary>Ctrl+N starts a new agent.</summary>
     public const string NewAgent = "agents.new";
 
-    /// <summary>Ctrl+Shift+T starts a new terminal agent.</summary>
-    public const string NewTerminal = "agents.terminal";
-
     /// <summary>Ctrl+Shift+A shows the Agents tab.</summary>
     public const string ShowAgentsTab = "agents.tab";
 

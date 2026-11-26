@@ -254,12 +254,12 @@ public sealed class AgentRailTests : UiTestContext
             .Add(p => p.OnOpenSettings, () => settings++));
 
         cut.Find("button[aria-label='New conversation']").ShouldNotBeNull();
-        cut.FindAll($"button[aria-label='{AgentPanelCopy.NewTerminal}']").ShouldBeEmpty("the rail no longer offers terminal creation");
+        cut.FindAll("button[aria-label='New omp terminal']").ShouldBeEmpty("the rail no longer offers terminal creation");
         cut.FindAll(".autonogrammer-new-terminal").ShouldBeEmpty("the rail no longer offers terminal creation");
 
         await cut.Find("button[aria-label='Settings']").ClickAsync().ConfigureAwait(true);
 
-        harness.Host.CreatedTerminals.ShouldBeEmpty("no terminal session is created from the rail");
+        harness.Host.Created.ShouldBeEmpty("no session is created from the rail");
         settings.ShouldBe(1);
     }
 

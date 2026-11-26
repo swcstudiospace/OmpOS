@@ -16,7 +16,6 @@ using Autonogrammer.Harness.AgentLoop.Substrate;
 using Autonogrammer.Harness.OmpLauncher;
 using Autonogrammer.Harness.Remote;
 using Autonogrammer.Harness.Remote.Containers;
-using Autonogrammer.Harness.Terminal;
 using Autonogrammer.Native.Composition;
 using Autonogrammer.Native.Composition.Activity;
 using Autonogrammer.Native.Composition.Checkpoints;
@@ -68,11 +67,6 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         LogLevel.Warning,
         new EventId(2, "AgentSessionDisposeFailed"),
         "Disposing an agent session failed ({ExceptionType}); the other sessions are still stopped.");
-
-    private static readonly Action<ILogger, string, Exception?> TerminalNoticeFailed = LoggerMessage.Define<string>(
-        LogLevel.Warning,
-        new EventId(3, "TerminalResumeNoticeFailed"),
-        "The notice that a terminal starts a new omp session could not be published ({ExceptionType}).");
 
     private readonly SessionEngineSetOptions _options;
     private readonly ReloadableSessionCatalog _catalog = new();
@@ -178,23 +172,6 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         return id;
     }
 
-    /// <summary>
-    /// Creates a session of kind terminal in the registry, titled "omp terminal N", and its private directories. No omp starts here: the
-    /// terminal view starts it through the session's planner-built launch, the same plugin set as a chat session.
-    /// </summary>
-    /// <param name="cancellationToken">Cancels the creation.</param>
-    /// <returns>The identifier of the new session.</returns>
-    public async Task<string> CreateTerminalSessionAsync(CancellationToken cancellationToken)
-    {
-        var registry = await EnsureRegistryAsync(cancellationToken).ConfigureAwait(false);
-        var number = registry.SnapshotRecords().Count(static record => record.Kind == SessionKind.Terminal) + 1;
-        var title = string.Create(CultureInfo.InvariantCulture, $"omp terminal {number}");
-
-        // A terminal runs omp on this machine: whatever environment the new-session picker chose is not used and must not carry over to the next session.
-        _ = _services?.NewSessionTarget.Take();
-        _ = _services?.NewSessionTarget.TakeRoots();
-        return PrepareSession(registry, registry.Create(title, _options.Loop.WorkspaceRoot, SessionKind.Terminal));
-    }
 
     /// <summary>
     /// Creates the chat session of one automation run in the registry: titled with the automation's name, local, in <paramref name="workspaceRoot"/>. Unlike <see cref="CreateSessionAsync"/> it leaves the
@@ -286,7 +263,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         Motion = _options.Motion,
         TimeProvider = _options.TimeProvider,
         Steering = _options.LiveSteering || isTerminal ? slot.Steering : null,
-        TerminalStarter = isTerminal ? CreateTerminalStarter(slot) : null,
+        TerminalStarter = null,
 
         // Only a chat session has a model to choose: a terminal's omp owns its own.
         Models = isTerminal ? null : slot.Models,
@@ -313,26 +290,6 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             ?? throw new InvalidOperationException("This session has no remote host."),
     };
 
-    private PlannedOmpTerminalStarter CreateTerminalStarter(SessionSlot slot)
-    {
-        var backend = _options.TerminalBackend ?? LocalPtyBackend.ForCurrentOperatingSystem();
-        var launcher = _options.TerminalLocator is { } locator
-            ? new OmpTerminalLauncher(backend, locator)
-            : new OmpTerminalLauncher(backend, ResolveTerminalOmpAsync);
-        return new PlannedOmpTerminalStarter(
-            slot,
-            () => Registry is { } registry && registry.TryGet(slot.Id, out var record) ? record.ResumeReference : null,
-            launcher,
-            _options.ProviderKeys);
-    }
-
-    /// <summary>Resolves the omp a terminal session runs at its launch: the head's resolution, or the PATH search when the head has no services. Null when none is runnable.</summary>
-    /// <param name="cancellationToken">Cancels the resolution.</param>
-    /// <returns>The executable, or null.</returns>
-    private Task<string?> ResolveTerminalOmpAsync(CancellationToken cancellationToken) =>
-        _services is { } services
-            ? services.ResolveOmpForLaunchAsync(cancellationToken)
-            : Task.FromResult(OmpLocator.Locate(OmpLocatorOptions.FromEnvironment(_options.OmpPath)) is OmpFound found ? found.ExecutablePath : null);
 
     /// <summary>
     /// Returns the slot of a session, creating it on first use: its live scope, send path, approval bridge and stage sources. The slot
@@ -1370,7 +1327,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     /// <param name="slot">The slot of the session.</param>
     /// <param name="cancellationToken">Cancels the call before it changes anything.</param>
     /// <returns>A completed task.</returns>
-    internal async Task ReattachAsync(SessionSlot slot, CancellationToken cancellationToken)
+    internal Task ReattachAsync(SessionSlot slot, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         slot.ReopenEngine();
@@ -1379,13 +1336,8 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             _closed.Remove(slot.Id);
         }
 
-        var registry = Registry;
-        var freshTerminal = registry is not null && registry.TryGet(slot.Id, out var record) && record.Kind == SessionKind.Terminal && record.ResumeReference is null;
-        registry?.SetLifecycle(slot.Id, SessionLifecycle.Created);
-        if (freshTerminal)
-        {
-            await PublishFreshTerminalNoticeAsync(slot, cancellationToken).ConfigureAwait(false);
-        }
+        Registry?.SetLifecycle(slot.Id, SessionLifecycle.Created);
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -1429,32 +1381,6 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         registry.Touch(slot.Id);
     }
 
-    private async Task PublishFreshTerminalNoticeAsync(SessionSlot slot, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var plan = await slot.PlanAsync(cancellationToken).ConfigureAwait(false);
-            plan.Recheck.Publish(new StageEvent
-            {
-                SessionId = slot.Id,
-                Source = StageSource.Omp,
-                StageId = "terminal-resume",
-                Title = "omp terminal",
-                Status = StageStatus.Degraded,
-                Timestamp = Now,
-                Detail = "omp does not report the session of a terminal, so this terminal starts a new omp session. The earlier conversation is not resumed.",
-                GraphId = slot.Scope.Current.GraphId,
-            });
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
-        {
-            // The notice is informational: a plan that cannot be built is reported by the session's own stages.
-            if (_logger is not null)
-            {
-                TerminalNoticeFailed(_logger, exception.GetType().Name, null);
-            }
-        }
-    }
 
     /// <summary>Mirrors what a runtime reports about its run into the registry: started is Running, completed is Completed (Created when the operator stopped the run), faulted is Failed.</summary>
     /// <param name="slot">The slot of the session whose run changed.</param>

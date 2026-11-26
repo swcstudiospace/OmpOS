@@ -1,5 +1,4 @@
 using Autonogrammer.Contracts.Agents;
-using Autonogrammer.Native.Tests.Terminal;
 using Autonogrammer.Native.Views.Sessions;
 using Autonogrammer.Presentation.AgentPanel;
 
@@ -32,18 +31,10 @@ internal sealed class ScriptedShellHost(FakeAgentCatalog catalog, ShellClock clo
     /// <summary>Gets the plugin sources the panel asked the host to re-check, with their session.</summary>
     public List<(string SessionId, StageSource Source)> Rechecked { get; } = [];
 
+    /// <summary>Gets the identifiers of the sessions New agent created, in order.</summary>
+    public List<string> Created { get; } = [];
     /// <summary>Gets or sets the script of a session that New agent creates. Null creates a session over an unconnected send path.</summary>
     public Func<string, SessionScript>? NewSessionScript { get; set; }
-
-    /// <summary>Gets the identifiers of the terminal sessions New omp terminal created, in order.</summary>
-    public List<string> CreatedTerminals { get; } = [];
-
-    /// <summary>
-    /// Gets or sets the script of a terminal session that New omp terminal creates. Null creates a terminal over a fake omp starter and a
-    /// fake steering channel.
-    /// </summary>
-    public Func<string, SessionScript>? NewTerminalScript { get; set; }
-
     /// <summary>Registers the script of a session before the panel opens it.</summary>
     /// <param name="sessionId">The session identifier.</param>
     /// <param name="script">The script.</param>
@@ -74,6 +65,7 @@ internal sealed class ScriptedShellHost(FakeAgentCatalog catalog, ShellClock clo
             _scripts[id] = factory(id);
         }
 
+        Created.Add(id);
         catalog.Put(new SessionSummary
         {
             Id = id,
@@ -85,26 +77,6 @@ internal sealed class ScriptedShellHost(FakeAgentCatalog catalog, ShellClock clo
         return Task.FromResult(id);
     }
 
-    /// <inheritdoc />
-    public Task<string> CreateTerminalSessionAsync(CancellationToken cancellationToken)
-    {
-        _created++;
-        var id = $"terminal-{_created}";
-        var now = clock.Now;
-        _scripts[id] = NewTerminalScript?.Invoke(id)
-            ?? new SessionScript { TerminalStarter = new FakeOmpTerminalStarter(), Steering = new FakeSteeringChannel() };
-        CreatedTerminals.Add(id);
-        catalog.Put(new SessionSummary
-        {
-            Id = id,
-            Title = $"New omp terminal {_created}",
-            Lifecycle = SessionLifecycle.Created,
-            CreatedAt = now,
-            LastActivity = now,
-            Kind = SessionKind.Terminal,
-        });
-        return Task.FromResult(id);
-    }
 
     /// <inheritdoc />
     public Task<AgentSessionViewModel> OpenSessionAsync(AgentRow row, CancellationToken cancellationToken)

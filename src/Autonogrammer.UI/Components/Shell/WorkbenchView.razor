@@ -120,7 +120,7 @@
                     }
                     else if (selected.Row.IsTerminal)
                     {
-                        <TerminalView @key="selected.Id" SessionId="@selected.Id" />
+                        <TerminalView @key="selected.Id" SessionId="@selected.Id" Retired="true" />
                     }
                     else
                     {

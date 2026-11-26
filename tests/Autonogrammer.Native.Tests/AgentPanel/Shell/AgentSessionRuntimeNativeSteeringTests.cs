@@ -11,10 +11,9 @@ using Xunit;
 
 namespace Autonogrammer.Native.Tests.AgentPanel.Shell;
 
-/// <summary>
 /// Native live steering in a chat runtime: while omp supports it a steer or a follow-up goes to omp's own steering and the history says what
-/// omp answered (injected, a turn that had already ended, a refusal); an omp without it, and every terminal, keep the steering inbox.
-/// </summary>
+/// omp answered (injected, a turn that had already ended, a refusal); an omp without it uses the steering inbox, and a persisted terminal
+/// row is retired with no steering surface at all.
 public sealed class AgentSessionRuntimeNativeSteeringTests
 {
     /// <summary>An injected steer is Delivered into the running turn: it goes to omp's steering on the steering queue, never to the inbox, and is recorded.</summary>
@@ -261,9 +260,9 @@ public sealed class AgentSessionRuntimeNativeSteeringTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>A terminal runs its own omp, which has no ACP: omp's steering is never asked, even when one is composed, and the inbox carries the message.</summary>
+    /// <summary>A persisted terminal row is retired: no terminal is created, omp never starts, and neither channel is asked — a submit finds no run instead of reaching an inbox.</summary>
     [Fact]
-    public async Task ATerminalKeepsTheInbox()
+    public async Task ATerminalRowIsRetiredWithNoInboxOrSteeringSurface()
     {
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
@@ -274,12 +273,18 @@ public sealed class AgentSessionRuntimeNativeSteeringTests
             var starter = new FakeOmpTerminalStarter();
             var runtime = CreateTerminal(starter, native, inbox);
             await using var runtimeScope = runtime.ConfigureAwait(true);
-            await runtime.Terminal.ShouldNotBeNull().StartAsync().ConfigureAwait(true);
 
-            (await runtime.ViewModel.Steering.SubmitAsync("turn left", SteeringMode.Steer, token).ConfigureAwait(true)).ShouldBe(SteeringSubmitOutcome.Accepted);
+            runtime.IsRetiredTerminal.ShouldBeTrue();
+            runtime.Kind.ShouldBe(SessionKind.Terminal);
+            runtime.Terminal.ShouldBeNull("a retired record has no terminal view model");
+            starter.Sizes.ShouldBeEmpty("omp is never launched for a retired record");
+            starter.Sessions.ShouldBeEmpty();
+
+            (await runtime.ViewModel.Steering.SubmitAsync("turn left", SteeringMode.Steer, token).ConfigureAwait(true)).ShouldBe(SteeringSubmitOutcome.NoActiveRun);
 
             native.Requests.ShouldBeEmpty();
-            inbox.Sent.ShouldHaveSingleItem().Text.ShouldBe("turn left");
+            inbox.Sent.ShouldBeEmpty("there is no inbox surface for a retired record");
+            runtime.ViewModel.Steering.History.ShouldBeEmpty();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 

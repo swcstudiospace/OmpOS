@@ -503,6 +503,7 @@ public sealed class WebWorkbenchTests : IDisposable
         var session = workbench.Panel.Selected.ShouldNotBeNull();
 
         session.Row.IsTerminal.ShouldBeTrue();
+        session.Row.StatusText.ShouldBe(AgentPanelCopy.RetiredTerminalStatus, "a persisted terminal lists with the retired word status");
         session.Composer.ModelPicker.ShouldBeNull();
         session.Composer.SlashPalette.ShouldBeNull();
         session.Composer.Draft = "hello";
