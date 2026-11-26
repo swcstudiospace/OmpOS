@@ -154,5 +154,5 @@ public sealed class ArtifactDirectoryPostgresTests : IAsyncLifetime
     }
 
     private Task<ArtifactPutOutcome> PutAsync(string account, string id, int number, byte[] content, ArtifactOptions limits, ArtifactKind kind = ArtifactKind.Markdown) =>
-        _directory!.PutAsync(account, id, number, kind, content, ArtifactWireContract.Hash(content), limits, Token);
+        _directory!.PutAsync(account, id, number, kind, content, ArtifactWireContract.Hash(content), [], limits, Token);
 }

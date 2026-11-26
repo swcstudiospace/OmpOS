@@ -5,13 +5,12 @@ using System.Text.Json.Serialization;
 using Autonogrammer.Contracts.Artifacts;
 
 using Autonogrammer.Cowork.Artifacts.Model;
-using ArtifactGrantBinding = Autonogrammer.Cowork.Artifacts.Stores.ArtifactWireContract.Grant;
 namespace Autonogrammer.Cowork.Artifacts.Stores;
 
 /// <summary>
 /// Authoritative desktop store. Versions are write-once files under a per-account tenant folder. The head is the highest version file.
 /// </summary>
-public sealed partial class FileArtifactStore : IArtifactStore
+public sealed partial class FileArtifactStore : IArtifactStore, IArtifactGrantStore
 {
     private const UnixFileMode OwnerDirectory = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
     private const UnixFileMode OwnerFile = UnixFileMode.UserRead | UnixFileMode.UserWrite;
@@ -97,11 +96,25 @@ public sealed partial class FileArtifactStore : IArtifactStore
         }
     }
 
-    /// <summary>Saves a grant beside the artifact. A hard delete removes it with the versions.</summary>
-    /// <param name="grant">The grant binding.</param>
-    internal void SaveGrant(ArtifactGrantBinding grant)
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<ArtifactGrantBinding>> ListAsync(string artifactId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(artifactId);
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_catalog)
+        {
+            lock (Gate(artifactId))
+            {
+                return ValueTask.FromResult<IReadOnlyList<ArtifactGrantBinding>>(ReadGrants(artifactId));
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask UpsertAsync(ArtifactGrantBinding grant, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(grant);
+        cancellationToken.ThrowIfCancellationRequested();
         lock (_catalog)
         {
             lock (Gate(grant.ArtifactId))
@@ -110,21 +123,27 @@ public sealed partial class FileArtifactStore : IArtifactStore
                 WriteGrants(grant.ArtifactId, grants);
             }
         }
+
+        return ValueTask.CompletedTask;
     }
 
-    /// <summary>Lists grants stored for one artifact in this account.</summary>
-    /// <param name="artifactId">The artifact identifier.</param>
-    /// <returns>The grants.</returns>
-    internal IReadOnlyList<ArtifactGrantBinding> Grants(string artifactId)
+    /// <inheritdoc />
+    public ValueTask DeleteAsync(string artifactId, int number, string scope, string device, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(artifactId);
+        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentNullException.ThrowIfNull(device);
+        cancellationToken.ThrowIfCancellationRequested();
         lock (_catalog)
         {
             lock (Gate(artifactId))
             {
-                return ReadGrants(artifactId);
+                var grants = ReadGrants(artifactId).Where(existing => existing.Number != number || !string.Equals(existing.Scope, scope, StringComparison.Ordinal) || !string.Equals(existing.Device, device, StringComparison.Ordinal)).ToArray();
+                WriteGrants(artifactId, grants);
             }
         }
+
+        return ValueTask.CompletedTask;
     }
 
     private Lock Gate(string artifactId)
@@ -212,6 +231,16 @@ public sealed partial class FileArtifactStore : IArtifactStore
             throw new ArtifactIntegrityException();
         }
 
+        IReadOnlyList<ArtifactOriginRequest> requests;
+        try
+        {
+            requests = (document.Requests ?? []).Select(static stored => new ArtifactOriginRequest(stored.Origin, stored.Reason)).ToArray();
+        }
+        catch (ArgumentException)
+        {
+            throw new ArtifactIntegrityException();
+        }
+
         var content = File.ReadAllBytes(contentPath);
         return new ArtifactVersionRecord(
             artifactId,
@@ -222,7 +251,8 @@ public sealed partial class FileArtifactStore : IArtifactStore
             document.ParentContentSha256,
             author,
             document.CreatedAt,
-            document.ChangeNote);
+            document.ChangeNote,
+            requests);
     }
 
     private static void Verify(List<ArtifactVersionRecord> versions)
@@ -292,6 +322,7 @@ public sealed partial class FileArtifactStore : IArtifactStore
             Author = version.Author.ToString(),
             CreatedAt = version.CreatedAt,
             ChangeNote = version.ChangeNote,
+            Requests = version.Requests.Select(static request => new RequestDocument { Origin = request.Origin, Reason = request.Reason }).ToList(),
         };
         var stem = "v" + version.Number.ToString("D4", CultureInfo.InvariantCulture);
         var folder = Folder(version.ArtifactId);
@@ -334,13 +365,13 @@ public sealed partial class FileArtifactStore : IArtifactStore
             return [];
         }
 
-        return JsonSerializer.Deserialize(File.ReadAllBytes(path), FileJsonContext.Default.ListGrant) ?? [];
+        return JsonSerializer.Deserialize(File.ReadAllBytes(path), FileJsonContext.Default.ListArtifactGrantBinding) ?? [];
     }
 
     private void WriteGrants(string artifactId, IReadOnlyList<ArtifactGrantBinding> grants)
     {
         EnsureDirectory(Folder(artifactId));
-        AtomicCreate(Path.Combine(Folder(artifactId), "grants.json"), JsonSerializer.SerializeToUtf8Bytes(grants.ToList(), FileJsonContext.Default.ListGrant));
+        AtomicCreate(Path.Combine(Folder(artifactId), "grants.json"), JsonSerializer.SerializeToUtf8Bytes(grants.ToList(), FileJsonContext.Default.ListArtifactGrantBinding));
     }
 
     private static bool SameGrant(ArtifactGrantBinding left, ArtifactGrantBinding right) =>
@@ -609,13 +640,23 @@ public sealed partial class FileArtifactStore : IArtifactStore
         public required DateTimeOffset CreatedAt { get; set; }
 
         public string? ChangeNote { get; set; }
+
+        public List<RequestDocument>? Requests { get; set; }
+    }
+
+    private sealed class RequestDocument
+    {
+        public required string Origin { get; set; }
+
+        public required string Reason { get; set; }
     }
 
     [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
     [JsonSerializable(typeof(HeaderDocument))]
     [JsonSerializable(typeof(ManifestDocument))]
-    [JsonSerializable(typeof(List<ArtifactWireContract.Grant>))]
+    [JsonSerializable(typeof(List<ArtifactGrantBinding>))]
     private sealed partial class FileJsonContext : JsonSerializerContext
     {
     }
 }
+

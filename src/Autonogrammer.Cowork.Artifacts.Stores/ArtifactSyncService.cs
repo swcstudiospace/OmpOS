@@ -127,7 +127,7 @@ public sealed class ArtifactSyncService
         else
         {
             var version = pending.Version;
-            result = await _remote.PushVersionAsync(version.ArtifactId, version.Number, version.Content, version.ContentSha256, pending.Artifact.Kind.ToString(), cancellationToken).ConfigureAwait(false);
+            result = await _remote.PushVersionAsync(version.ArtifactId, version.Number, version.Content, version.ContentSha256, pending.Artifact.Kind.ToString(), version.Requests, cancellationToken).ConfigureAwait(false);
         }
 
         if (result.Status == ArtifactRemoteStatus.SignedOut)
@@ -177,7 +177,7 @@ public sealed class ArtifactSyncService
             pending.Artifact.Language,
             pending.Artifact.SessionId,
             new ArtifactDerivation(source.ArtifactId, source.Number, source.ContentSha256));
-        var version = new ArtifactVersionRecord(id, 1, source.Content.ToArray(), source.ContentSha256, null, null, ArtifactAuthor.Agent, source.CreatedAt, null);
+        var version = new ArtifactVersionRecord(id, 1, source.Content.ToArray(), source.ContentSha256, null, null, ArtifactAuthor.Agent, source.CreatedAt, null, source.Requests);
         _ = await _store.MutateAsync(
             mutation =>
             {

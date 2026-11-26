@@ -13,6 +13,7 @@ namespace Autonogrammer.Cowork.Artifacts.Model;
 /// <param name="Author">Host-set author.</param>
 /// <param name="CreatedAt">Host clock.</param>
 /// <param name="ChangeNote">Optional note of at most 280 characters.</param>
+/// <param name="Requests">Bounded network requests declared for this version only. A request is never a grant.</param>
 public sealed record ArtifactVersionRecord(
     string ArtifactId,
     int Number,
@@ -22,4 +23,5 @@ public sealed record ArtifactVersionRecord(
     string? ParentContentSha256,
     ArtifactAuthor Author,
     DateTimeOffset CreatedAt,
-    string? ChangeNote);
+    string? ChangeNote,
+    IReadOnlyList<ArtifactOriginRequest> Requests);

@@ -24,7 +24,11 @@ public sealed class ArtifactSyncServiceTests : IDisposable
         using var client = new HttpClient(handler, disposeHandler: false) { BaseAddress = new Uri("https://account.example/") };
         var (service, store) = Create(client, enabled: false);
         const string privateContent = "private-artifact-content-3191";
-        var created = await CreateNoteAsync(store, Encoding.UTF8.GetBytes(privateContent)).ConfigureAwait(true);
+        var serviceLayer = new ArtifactService(store, TimeProvider.System, Options.Create(new ArtifactOptions()));
+        var requestOrigin = "https://private.example";
+        var requestReason = "private-reason-3191";
+        var createdWithRequests = await serviceLayer.CreateAsync(ArtifactKind.Markdown, "Notes", Encoding.UTF8.GetBytes(privateContent), null, null, null, null, ArtifactAuthor.Agent, Token, [new ArtifactOriginRequest(requestOrigin, requestReason)]).ConfigureAwait(true);
+        var created = createdWithRequests.Value!.ArtifactId;
         service.StatusText.ShouldBe(ArtifactSyncService.SyncOffText);
         (await service.PushAsync(created, Token).ConfigureAwait(true)).Status.ShouldBe(HttpArtifactRemote.RemoteStatus.Offline);
         (await service.RetryAsync(Token).ConfigureAwait(true)).Status.ShouldBe(HttpArtifactRemote.RemoteStatus.Accepted);
@@ -39,6 +43,7 @@ public sealed class ArtifactSyncServiceTests : IDisposable
         }
 
         handler.MediaTypes.ShouldAllBe(static mediaType => mediaType == ArtifactWireContract.MetadataMediaType);
+        handler.RequestsHeaders.ShouldAllBe(static header => header.Length == 0);
         handler.Headers.ShouldAllBe(header => !header.Contains(privateContent, StringComparison.Ordinal));
         handler.Headers.ShouldAllBe(static header =>
             !header.Contains("grant", StringComparison.OrdinalIgnoreCase) &&
@@ -100,6 +105,44 @@ public sealed class ArtifactSyncServiceTests : IDisposable
         handler.Writes.ShouldBe(2);
     }
 
+    /// <summary>Enabled sync sends the selected version's exact requests, not another version's. Retry keeps them; fork copies them.</summary>
+    [Fact]
+    public async Task Enabled_sync_sends_selected_version_requests_and_fork_preserves_them()
+    {
+        using var handler = new RecordingHandler { FailuresRemaining = 1 };
+        using var client = new HttpClient(handler, disposeHandler: false) { BaseAddress = new Uri("https://account.example/") };
+        var (service, store) = Create(client, enabled: true);
+        var serviceLayer = new ArtifactService(store, TimeProvider.System, Options.Create(new ArtifactOptions()));
+        var first = new ArtifactOriginRequest("https://first.example", "first reason");
+        var second = new ArtifactOriginRequest("https://second.example", "second reason");
+        var created = await serviceLayer.CreateAsync(ArtifactKind.Markdown, "Notes", "v1"u8.ToArray(), null, null, null, null, ArtifactAuthor.Agent, Token, [first]).ConfigureAwait(true);
+        var id = created.Value!.ArtifactId;
+        await serviceLayer.UpdateAsync(id, 1, "v2"u8.ToArray(), null, ArtifactAuthor.Agent, Token, [second]).ConfigureAwait(true);
+
+        (await service.PushAsync(id, Token).ConfigureAwait(true)).Status.ShouldBe(HttpArtifactRemote.RemoteStatus.Offline);
+        (await service.RetryAsync(Token).ConfigureAwait(true)).Status.ShouldBe(HttpArtifactRemote.RemoteStatus.Accepted);
+        handler.RequestsHeaders.Count.ShouldBe(2);
+        foreach (var header in handler.RequestsHeaders)
+        {
+            ArtifactWireContract.TryParseRequests(header, out var requests).ShouldBeTrue();
+            requests.ShouldBe([second]);
+        }
+
+        handler.Bodies[1].ShouldBe("v2"u8.ToArray());
+        foreach (var header in handler.RequestsHeaders)
+        {
+            ArtifactWireContract.TryParseRequests(header, out var wrong).ShouldBeTrue();
+            wrong.Any(static request => string.Equals(request.Origin, "https://first.example", StringComparison.Ordinal)).ShouldBeFalse();
+        }
+
+        handler.Seed(id, 2, ArtifactWireContract.Hash("other"u8));
+        var divergent = await service.PushAsync(id, Token).ConfigureAwait(true);
+        divergent.Status.ShouldBe(HttpArtifactRemote.RemoteStatus.Divergence);
+        divergent.ForkedArtifactId.ShouldNotBeNull();
+        var fork = await store.GetVersionsAsync(divergent.ForkedArtifactId, Token).ConfigureAwait(true);
+        fork.ShouldHaveSingleItem().Requests.ShouldBe([second]);
+    }
+
     public void Dispose()
     {
         foreach (var root in _roots)
@@ -140,6 +183,8 @@ public sealed class ArtifactSyncServiceTests : IDisposable
 
         internal List<string> Accepted { get; } = [];
 
+
+        internal List<string> RequestsHeaders { get; } = [];
         internal int Writes { get; private set; }
 
         internal int FailuresRemaining { get; set; }
@@ -152,6 +197,7 @@ public sealed class ArtifactSyncServiceTests : IDisposable
             Bodies.Add(body);
             MediaTypes.Add(request.Content?.Headers.ContentType?.MediaType ?? string.Empty);
             Headers.AddRange(request.Headers.Select(static header => header.Key + ":" + string.Join(",", header.Value)));
+            RequestsHeaders.Add(request.Headers.TryGetValues(ArtifactWireContract.RequestsHeader, out var requests) ? string.Join(",", requests) : string.Empty);
             if (request.Content is not null)
             {
                 Headers.AddRange(request.Content.Headers.Select(static header => header.Key + ":" + string.Join(",", header.Value)));

@@ -1,3 +1,4 @@
+using Autonogrammer.Cowork.Artifacts.Model;
 using System.Text.Json.Serialization;
 
 namespace Autonogrammer.Api.Cowork.Artifacts;
@@ -8,6 +9,7 @@ namespace Autonogrammer.Api.Cowork.Artifacts;
 [JsonSerializable(typeof(ArtifactSummaryDocument))]
 [JsonSerializable(typeof(ArtifactGrantDocument))]
 [JsonSerializable(typeof(List<ArtifactGrantDocument>))]
+[JsonSerializable(typeof(List<ArtifactOriginRequest>))]
 [JsonSerializable(typeof(AuditPayload))]
 [JsonSerializable(typeof(RenderTicketDocument))]
 internal sealed partial class ArtifactsJsonContext : JsonSerializerContext

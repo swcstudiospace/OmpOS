@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
+using System.Text.Json;
 using System.Text.Json.Serialization;
-
+using Autonogrammer.Cowork.Artifacts.Model;
+using Autonogrammer.Cowork.Artifacts.Tools;
 
 namespace Autonogrammer.Cowork.Artifacts.Stores;
 
@@ -35,6 +37,9 @@ public static partial class ArtifactWireContract
 
     /// <summary>Different bytes for an existing number. The desktop forks; nothing is merged.</summary>
     public const int StatusDivergence = 409;
+
+    /// <summary>Header carrying the selected version's bounded network requests, as Base64 UTF-8 JSON. Sent only on the enabled-content form; the metadata-only form never carries it. A request is never a grant.</summary>
+    public const string RequestsHeader = "X-Artifact-Requests";
 
     /// <summary>The body exceeds the store cap. Maps to <c>too_large</c>.</summary>
     public const int StatusTooLarge = 413;
@@ -72,7 +77,7 @@ public static partial class ArtifactWireContract
     }
 
 
-    /// <summary>A grant bound to a version hash. The sync payload never includes content, a title or an account id.</summary>
+    /// <summary>A grant bound to a version hash. Transport-only mapping surface: it is never persisted and never an authority. Map it to <see cref="ArtifactGrantBinding"/> at the boundary; the store behind <see cref="IArtifactGrantStore"/> is the only grant owner.</summary>
     /// <param name="ArtifactId">The artifact identifier.</param>
     /// <param name="Number">The version number.</param>
     /// <param name="ContentSha256">The version hash.</param>
@@ -81,6 +86,51 @@ public static partial class ArtifactWireContract
     /// <param name="Device">The device the grant names.</param>
     /// <param name="GrantedAt">When the grant was bound.</param>
     internal sealed record Grant(string ArtifactId, int Number, string ContentSha256, IReadOnlyList<string> Origins, string Scope, string Device, DateTimeOffset GrantedAt);
+
+    /// <summary>Serializes a version's requests for the enabled-content form.</summary>
+    /// <param name="requests">The bounded requests.</param>
+    /// <returns>Base64 UTF-8 JSON.</returns>
+    public static string SerializeRequests(IReadOnlyList<ArtifactOriginRequest> requests)
+    {
+        ArgumentNullException.ThrowIfNull(requests);
+        var json = JsonSerializer.SerializeToUtf8Bytes(requests.ToList(), JsonContext.Default.ListArtifactOriginRequest);
+        return Convert.ToBase64String(json);
+    }
+
+    /// <summary>Parses and bounds requests from the enabled-content header.</summary>
+    /// <param name="header">The header value, or null when it is absent (no requests).</param>
+    /// <param name="requests">The requests, empty when the header is absent.</param>
+    /// <returns>True when the value parses and every origin is an allowed request origin.</returns>
+    public static bool TryParseRequests(string? header, out IReadOnlyList<ArtifactOriginRequest> requests)
+    {
+        requests = [];
+        if (string.IsNullOrWhiteSpace(header))
+        {
+            return true;
+        }
+
+        try
+        {
+            var json = Convert.FromBase64String(header.Trim());
+            var parsed = JsonSerializer.Deserialize(json, JsonContext.Default.ListArtifactOriginRequest);
+            if (parsed is null || parsed.Count > ArtifactOriginRules.MaxOrigins)
+            {
+                return false;
+            }
+
+            if (parsed.Any(static request => !ArtifactOriginRules.IsAllowed(request.Origin)))
+            {
+                return false;
+            }
+
+            requests = parsed.ToArray();
+            return true;
+        }
+        catch (Exception exception) when (exception is FormatException or JsonException or ArgumentException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>Metadata that may leave the device while sync is off. It has no body bytes.</summary>
     internal sealed class SyncMetadata
@@ -112,6 +162,7 @@ public static partial class ArtifactWireContract
     [JsonSerializable(typeof(SyncMetadata))]
     [JsonSerializable(typeof(List<Grant>))]
     [JsonSerializable(typeof(List<string>))]
+    [JsonSerializable(typeof(List<ArtifactOriginRequest>))]
     internal sealed partial class JsonContext : JsonSerializerContext
     {
     }

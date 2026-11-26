@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using Autonogrammer.Cowork.Artifacts.Model;
 using ArtifactMetadataDocument = Autonogrammer.Cowork.Artifacts.Stores.ArtifactWireContract.SyncMetadata;
 using ArtifactRemoteResult = Autonogrammer.Cowork.Artifacts.Stores.HttpArtifactRemote.RemoteResult;
 using ArtifactRemoteStatus = Autonogrammer.Cowork.Artifacts.Stores.HttpArtifactRemote.RemoteStatus;
@@ -91,12 +92,13 @@ public sealed class HttpArtifactRemote
         }
     }
 
-    /// <summary>Puts raw version bytes. Same hash is idempotent; different bytes for an existing number are a divergence.</summary>
+    /// <summary>Puts raw version bytes with the selected version's bounded requests. Same hash is idempotent; different bytes for an existing number are a divergence. A request is never a grant.</summary>
     /// <param name="artifactId">The artifact identifier.</param>
     /// <param name="number">The version number.</param>
     /// <param name="content">The version bytes.</param>
     /// <param name="contentSha256">The lowercase hex hash.</param>
     /// <param name="kind">The kind name.</param>
+    /// <param name="requests">The selected version's bounded requests.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The mapped result.</returns>
     internal async Task<ArtifactRemoteResult> PushVersionAsync(
@@ -105,11 +107,13 @@ public sealed class HttpArtifactRemote
         ReadOnlyMemory<byte> content,
         string contentSha256,
         string kind,
+        IReadOnlyList<ArtifactOriginRequest> requests,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(artifactId);
         ArgumentNullException.ThrowIfNull(contentSha256);
         ArgumentNullException.ThrowIfNull(kind);
+        ArgumentNullException.ThrowIfNull(requests);
         HttpRequestMessage? request = null;
         try
         {
@@ -122,6 +126,10 @@ public sealed class HttpArtifactRemote
             request.Headers.TryAddWithoutValidation(ArtifactWireContract.VersionHeader, number.ToString(CultureInfo.InvariantCulture));
             request.Headers.TryAddWithoutValidation(ArtifactWireContract.ContentSha256Header, contentSha256);
             request.Headers.TryAddWithoutValidation(ArtifactWireContract.KindHeader, kind);
+            if (requests.Count > 0)
+            {
+                request.Headers.TryAddWithoutValidation(ArtifactWireContract.RequestsHeader, ArtifactWireContract.SerializeRequests(requests));
+            }
             var result = await SendAsync(request, cancellationToken).ConfigureAwait(false);
             request = null;
             return result;

@@ -140,7 +140,7 @@ public sealed class FileArtifactStoreTests : ArtifactStoreContract, IDisposable
         new(id, Autonogrammer.Contracts.Artifacts.ArtifactKind.Markdown, "Notes", "text/markdown", null, null, null);
 
     private static ArtifactVersionRecord Version(string id, int number, byte[] content, int? parent, string? parentHash) =>
-        new(id, number, content, Hash(content), parent, parentHash, ArtifactAuthor.Agent, DateTimeOffset.UnixEpoch, null);
+        new(id, number, content, Hash(content), parent, parentHash, ArtifactAuthor.Agent, DateTimeOffset.UnixEpoch, null, []);
 
     private static string Hash(ReadOnlySpan<byte> content) => ArtifactWireContract.Hash(content);
 

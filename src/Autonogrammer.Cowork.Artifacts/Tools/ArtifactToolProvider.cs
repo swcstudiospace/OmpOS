@@ -148,7 +148,7 @@ public sealed class ArtifactToolProvider : ICoworkToolProvider
             return Error("kind_invalid");
         }
 
-        if (!ArtifactOriginRules.TryRead(invocation.Arguments, out var origins, out var warnings, out var originError))
+        if (!ArtifactOriginRules.TryReadRequests(invocation.Arguments, out var requests, out var warnings, out var originError))
         {
             return Error(originError!);
         }
@@ -172,7 +172,8 @@ public sealed class ArtifactToolProvider : ICoworkToolProvider
             ReadString(invocation.Arguments, "media_type"),
             ReadString(invocation.Arguments, "change_note"),
             ArtifactAuthor.Agent,
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken,
+            requests).ConfigureAwait(false);
         if (!created.IsSuccess || created.Value is null)
         {
             return Error(created.Failure?.Code ?? "rejected");
@@ -192,7 +193,7 @@ public sealed class ArtifactToolProvider : ICoworkToolProvider
             return Error("arguments_invalid");
         }
 
-        if (!ArtifactOriginRules.TryRead(invocation.Arguments, out _, out var warnings, out var originError))
+        if (!ArtifactOriginRules.TryReadRequests(invocation.Arguments, out var requests, out var warnings, out var originError))
         {
             return Error(originError!);
         }
@@ -213,7 +214,7 @@ public sealed class ArtifactToolProvider : ICoworkToolProvider
             return limited!;
         }
 
-        var updated = await _service.UpdateAsync(id, baseVersion.GetInt32(), bytes, ReadString(invocation.Arguments, "change_note"), ArtifactAuthor.Agent, cancellationToken).ConfigureAwait(false);
+        var updated = await _service.UpdateAsync(id, baseVersion.GetInt32(), bytes, ReadString(invocation.Arguments, "change_note"), ArtifactAuthor.Agent, cancellationToken, requests).ConfigureAwait(false);
         if (!updated.IsSuccess || updated.Value is null)
         {
             var code = updated.Failure?.Code ?? "rejected";
