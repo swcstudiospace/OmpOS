@@ -1,13 +1,13 @@
 {
   "SPDXID": "SPDXRef-DOCUMENT",
   "creationInfo": {
-    "created": "2026-11-16T14:40:10Z",
+    "created": "2026-11-26T18:34:11Z",
     "creators": [
       "Tool: generate-sbom.py"
     ]
   },
   "dataLicense": "CC0-1.0",
-  "documentNamespace": "https://github.com/swcstudiospace/OmpOS/sbom/6a948e2ff336355ced4361163fdb42d2dae0f812c7e53eae777e1cd2e2a5320b",
+  "documentNamespace": "https://github.com/swcstudiospace/OmpOS/sbom/4375878e2482f1fb5e571fa9af824fd3d2a13b0a066a3248f05b91a72e38c7c0",
   "name": "Autonogrammer",
   "packages": [
     {
@@ -4354,15 +4354,6 @@
       "name": "src/Autonogrammer.Harness.ComputerUse.X11"
     },
     {
-      "SPDXID": "SPDXRef-Project-src-Autonogrammer.Harness.Herdr",
-      "copyrightText": "NOASSERTION",
-      "downloadLocation": "NOASSERTION",
-      "filesAnalyzed": false,
-      "licenseConcluded": "NOASSERTION",
-      "licenseDeclared": "AGPL-3.0-or-later",
-      "name": "src/Autonogrammer.Harness.Herdr"
-    },
-    {
       "SPDXID": "SPDXRef-Project-src-Autonogrammer.Harness.InMemory",
       "copyrightText": "NOASSERTION",
       "downloadLocation": "NOASSERTION",
@@ -4876,15 +4867,6 @@
       "name": "tests/Autonogrammer.Harness.ContractTests"
     },
     {
-      "SPDXID": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests",
-      "copyrightText": "NOASSERTION",
-      "downloadLocation": "NOASSERTION",
-      "filesAnalyzed": false,
-      "licenseConcluded": "NOASSERTION",
-      "licenseDeclared": "AGPL-3.0-or-later",
-      "name": "tests/Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
       "SPDXID": "SPDXRef-Project-tests-Autonogrammer.Harness.InMemory.Tests",
       "copyrightText": "NOASSERTION",
       "downloadLocation": "NOASSERTION",
@@ -5376,11 +5358,6 @@
       "spdxElementId": "SPDXRef-DOCUMENT"
     },
     {
-      "relatedSpdxElement": "SPDXRef-Project-src-Autonogrammer.Harness.Herdr",
-      "relationshipType": "DESCRIBES",
-      "spdxElementId": "SPDXRef-DOCUMENT"
-    },
-    {
       "relatedSpdxElement": "SPDXRef-Project-src-Autonogrammer.Harness.InMemory",
       "relationshipType": "DESCRIBES",
       "spdxElementId": "SPDXRef-DOCUMENT"
@@ -5662,11 +5639,6 @@
     },
     {
       "relatedSpdxElement": "SPDXRef-Project-tests-Autonogrammer.Harness.ContractTests",
-      "relationshipType": "DESCRIBES",
-      "spdxElementId": "SPDXRef-DOCUMENT"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests",
       "relationshipType": "DESCRIBES",
       "spdxElementId": "SPDXRef-DOCUMENT"
     },
@@ -7211,11 +7183,6 @@
       "spdxElementId": "SPDXRef-Project-services-Autonogrammer.Api"
     },
     {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Windows.Console.ConPTY-1.24.260710001",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-services-Autonogrammer.Api"
-    },
-    {
       "relatedSpdxElement": "SPDXRef-Package-Npgsql-10.0.3",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-services-Autonogrammer.Api"
@@ -7252,11 +7219,6 @@
     },
     {
       "relatedSpdxElement": "SPDXRef-Package-OpenTelemetry.Instrumentation.AspNetCore-1.20.0",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-services-Autonogrammer.Api"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Porta.Pty-2.2.3",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-services-Autonogrammer.Api"
     },
@@ -8108,36 +8070,6 @@
     {
       "relatedSpdxElement": "SPDXRef-Package-Meziantou.Analyzer-3.0.315",
       "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.Herdr"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.CodeAnalysis.BannedApiAnalyzers-5.6.0",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.Herdr"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.DependencyInjection.Abstractions-10.0.13",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.Herdr"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Logging.Abstractions-10.0.13",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.Herdr"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.NET.ILLink.Tasks-10.0.13",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.Herdr"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.VisualStudio.Threading.Analyzers-18.12.1",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.Herdr"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Meziantou.Analyzer-3.0.315",
-      "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.InMemory"
     },
     {
@@ -8376,16 +8308,6 @@
       "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.OmpConfig"
     },
     {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Windows.Console.ConPTY-1.24.260710001",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.OmpConfig"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Porta.Pty-2.2.3",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.OmpConfig"
-    },
-    {
       "relatedSpdxElement": "SPDXRef-Package-Meziantou.Analyzer-3.0.315",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.OmpLauncher"
@@ -8402,16 +8324,6 @@
     },
     {
       "relatedSpdxElement": "SPDXRef-Package-Microsoft.VisualStudio.Threading.Analyzers-18.12.1",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.OmpLauncher"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Windows.Console.ConPTY-1.24.260710001",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.OmpLauncher"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Porta.Pty-2.2.3",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-src-Autonogrammer.Harness.OmpLauncher"
     },
@@ -15364,196 +15276,6 @@
       "relatedSpdxElement": "SPDXRef-Package-xunit.v3.runner.inproc.console-4.0.2",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.ContractTests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-DiffEngine-11.3.0",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-EmptyFiles-4.4.0",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Meziantou.Analyzer-3.0.315",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.ApplicationInsights-2.23.0",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Bcl.AsyncInterfaces-6.0.0",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.CodeAnalysis.BannedApiAnalyzers-5.6.0",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration-10.0.13",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration.Abstractions-10.0.13",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration.FileExtensions-10.0.13",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Configuration.Json-10.0.13",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.DependencyInjection-10.0.13",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.DependencyInjection.Abstractions-10.0.13",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.FileProviders.Abstractions-10.0.13",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.FileProviders.Physical-10.0.13",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.FileSystemGlobbing-10.0.13",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Logging.Abstractions-10.0.13",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Extensions.Primitives-10.0.13",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Testing.Extensions.Telemetry-2.5.1",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Testing.Extensions.TrxReport-2.5.1",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Testing.Extensions.TrxReport.Abstractions-2.5.1",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Testing.Platform-2.5.1",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Testing.Platform.MSBuild-2.5.1",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.VisualStudio.Threading.Analyzers-18.12.1",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Microsoft.Win32.Registry-5.0.0",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-Shouldly-4.3.0",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-System.CodeDom-6.0.0",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-System.Management-6.0.1",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-System.Security.AccessControl-6.0.1",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-coverlet.MTP-10.1.0",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-xunit.analyzers-2.2.0",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-xunit.v3-4.0.2",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-xunit.v3.assert-4.0.2",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-xunit.v3.common-4.0.2",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-xunit.v3.core.mtp-v2-4.0.2",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-xunit.v3.extensibility.core-4.0.2",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-xunit.v3.mtp-v2-4.0.2",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-xunit.v3.runner.common-4.0.2",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
-    },
-    {
-      "relatedSpdxElement": "SPDXRef-Package-xunit.v3.runner.inproc.console-4.0.2",
-      "relationshipType": "DEPENDS_ON",
-      "spdxElementId": "SPDXRef-Project-tests-Autonogrammer.Harness.Herdr.Tests"
     },
     {
       "relatedSpdxElement": "SPDXRef-Package-DiffEngine-11.3.0",
