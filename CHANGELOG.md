@@ -7,6 +7,18 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMAP.md`). They overlapped in time, and only 0.9.1 was closed formally: the date of each other version is the day of its last recorded work or audit. Phase numbers refer to that roadmap.
 
 ## [Unreleased]
+## [0.20.19] - 2026-11-27
+
+### Changed
+
+- v0.17.0 Omp RPC engine rearchitecture (Phases 79-84, PR #40): RPC (`omp --mode rpc`) is now the primary local engine transport behind `IOmpSession` (default flipped Acp→Rpc at the Phase 84 cutover gate, ADR-0038 Accepted same commit; `Harness:Adapter=Acp` remains the supported rollback and remote boundary). Capability-based transport fallback: remote/approval-capable/MCP compositions stay on ACP per OQ-525; deny-by-default sessions compose over RPC by default (integration-audit fixes: remote composition + approval-capable default + approval-site ACP pins, all regression-pinned).
+- Terminal engine retired (Phase 81): omp-TUI-in-PTY removed, `Harness.Herdr` deleted (provisioning `OmpManagedInstaller`/`OmpLocator` kept), `TerminalAutoRun` removed; persisted terminal records render retired/read-only in both heads (OQ-527 closed).
+- Plugin code-connectivity (Phase 82): launch-plan byte parity, per-plugin command parity (Ultrathink first), realm initialised at `f28a3acc` (OQ-528 closed); MCP/wrapper/gate remain refusals (no observed RPC channel, OQ-526/OQ-526-83 open).
+- ACP/RPC boundary (Phase 83): `Harness.Remote` ACP-only, `DirectSessionRunner` transport-agnostic, SSE serializer parity + Last-Event-ID resume; end-to-end PayloadJson mapper-shape divergence named as OQ-529 (open).
+
+### Changed (tracked milestone; v0.16.0 stays tracked)
+
+- Milestone audit `.planning/v0.17.0-MILESTONE-AUDIT.md` (tech_debt): 21/23 requirements satisfied; RPC-84-2/RPC-84-4 partial (bootstrap/web-smoke/secret-scan host-gated; tracker payloads posted to Linear but born as authored-only files). Owner decisions 2026-11-26: realm init, ADR-0039 Gate A=A1 + Gate B=B4. SEC-77-01 open at 0 waivers.
 
 ## [0.20.18] - 2026-11-23
 
@@ -635,6 +647,7 @@ Foundation through verified handoff (Phases 1 to 5).
 
 [Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.18...HEAD
 [0.20.18]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.17...v0.20.18
+[0.20.19]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.18...v0.20.19
 [0.20.17]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.16...v0.20.17
 [0.20.16]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.15...v0.20.16
 [0.20.15]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.14...v0.20.15
