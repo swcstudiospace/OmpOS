@@ -245,8 +245,9 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         Stages = slot.Stages,
         Context = slot.Context,
         RecordSteering = slot.RecordSteeringAsync,
-        Resume = cancellationToken => ReattachAsync(slot, cancellationToken),
-        Reopen = cancellationToken => ReattachAsync(slot, cancellationToken),
+        // A retired terminal has no engine to resume or reopen: offering either would let the next prompt compose one. Neither is offered.
+        Resume = isTerminal ? null : cancellationToken => ReattachAsync(slot, cancellationToken),
+        Reopen = isTerminal ? null : cancellationToken => ReattachAsync(slot, cancellationToken),
         StageRecheck = slot.RecheckAsync,
         Motion = _options.Motion,
         TimeProvider = _options.TimeProvider,
@@ -582,6 +583,9 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     internal async Task<EngineComposition> ComposeEngineAsync(SessionPlan plan, string? resumeSessionId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(plan);
+        // A retired terminal record (Phase 81) has no engine: composing one would revive it.
+        if (IsRetiredTerminal(plan)) throw new InvalidOperationException("A retired terminal session has no engine to compose.");
+
         var launch = plan.Launch;
         IEnvironmentSessionResources? remote = null;
         IReadOnlyList<AcpMcpServer> extraServers = [];
@@ -609,22 +613,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             }
             // A remote plan runs omp on its own host, so the local launcher is not consulted; it gets the configured path, as before the launcher wiring.
             var ompPath = plan.Extras.IsRemote ? _options.OmpPath : await ResolveOmpPathAsync(cancellationToken).ConfigureAwait(false);
-            var holder = plan.RunModes;
-            // The transport selection threads to this main local composition site only. The child sites (side chats,
-            // unattended candidates) still do not read the transport option: they are approval-capable flows (OQ-525),
-            // so they compose ACP by construction. A remote plan here carries Remote, which the RPC path refuses (Phase 83).
-            var composition = new EngineCompositionOptions
-            {
-                ExtraMcpServers = extraServers,
-                HookGate = plan.Hooks?.Gate,
-                RunModePolicy = holder is null ? null : () => holder.Current,
-                RunModeAudit = _services?.RunModeHub.Audit,
-                Remote = remote,
-                Clock = _options.TimeProvider,
-                ProcessWrapper = ProcessWrapper,
-                Transport = _options.Transport,
-                RpcSessionFactory = _options.RpcSessionFactory,
-            };
+            var composition = CompositionOptions(plan, launch, remote, extraServers);
             return EngineComposition.Compose(_options.AllowedKinds, launch, _options.TransportFactory, _options.LoggerFactory, ompPath, resumeSessionId, composition);
         }
         catch
@@ -634,6 +623,47 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Builds the composition options of one main session, applying the capability transport fallback: the effective transport is
+    /// Acp when any <c>ComposeRpc</c> refusal predicate holds, and the configured transport otherwise. This is the single owner of
+    /// the fallback at the main local composition site; child sites compose ACP by construction, and
+    /// <c>EngineComposition.ComposeRpc</c>'s refusals remain the backstop for every other caller.
+    /// </summary>
+    private EngineCompositionOptions CompositionOptions(SessionPlan plan, OmpLaunchPlan launch, IEnvironmentSessionResources? remote, IReadOnlyList<AcpMcpServer> extraServers)
+    {
+        var holder = plan.RunModes;
+        var composition = new EngineCompositionOptions
+        {
+            ExtraMcpServers = extraServers,
+            HookGate = plan.Hooks?.Gate,
+            RunModePolicy = holder is null ? null : () => holder.Current,
+            RunModeAudit = _services?.RunModeHub.Audit,
+            Remote = remote,
+            Clock = _options.TimeProvider,
+            ProcessWrapper = ProcessWrapper,
+            Transport = _options.Transport,
+            RpcSessionFactory = _options.RpcSessionFactory,
+        };
+        return RequiresAcp(_options.AllowedKinds, launch, composition)
+            ? composition with { Transport = EngineTransport.Acp }
+            : composition;
+    }
+
+    /// <summary>
+    /// Returns whether the composition carries anything RPC cannot yet honour honestly (OQ-525 approval flows, OQ-526 launch
+    /// contributions) or a remote session (Phase 83), so it must stay on ACP. Deny-by-default sessions with no contribution return false.
+    /// </summary>
+    private static bool RequiresAcp(IReadOnlyCollection<string> allowedKinds, OmpLaunchPlan launch, EngineCompositionOptions composition) =>
+        composition.Remote is not null
+        || allowedKinds.Count != 0
+        || composition.RunModePolicy is not null
+        || composition.PermissionResolverFactory is not null
+        || launch.McpServers.Count != 0
+        || (launch.OverlayEntries.Count != 0 && launch.ConfigOverlayPath is null)
+        || composition.ExtraMcpServers.Count != 0
+        || composition.HookGate is not null
+        || composition.ProcessWrapper is not null;
+ 
     /// <summary>Gets or sets the activity tee. When set, RuntimeOptions wraps slot.Prompts and leaves AgentSessionRuntime unedited.</summary>
     internal ActivityComposition? Activity { get; set; }
 
@@ -725,8 +755,8 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
     /// <summary>
     /// Composes the engine of a side chat: a plain omp in the parent's workspace that asks before every tool call (<c>--approval-mode always-ask</c>) under an approval policy that admits no tool kind, so
-    /// every call is denied before anyone is asked. Child sessions stay on ACP whatever
-    /// <see cref="SessionEngineSetOptions.Transport"/> selects for main sessions: the approval flow is OQ-525.
+    /// every call is denied before anyone is asked. Empty kinds and no resolver compose on the configured transport (RPC by default,
+    /// deny-by-default per OQ-525) instead of ACP.
     /// </summary>
     /// <param name="workspaceRoot">The workspace of the parent session.</param>
     /// <returns>The engine. It starts no process until a prompt is submitted.</returns>
@@ -740,7 +770,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     internal async Task<EngineComposition> ComposeUnattendedEngineAsync(string workspaceRoot, CancellationToken cancellationToken)
     {
         var ompPath = await ResolveOmpPathAsync(cancellationToken).ConfigureAwait(false);
-        return EngineComposition.Compose(RunModeLaunchMapper.AcpToolKinds, ChildPlan(workspaceRoot, RunMode.RunEverything), _options.TransportFactory, _options.LoggerFactory, ompPath);
+        return EngineComposition.Compose(RunModeLaunchMapper.AcpToolKinds, ChildPlan(workspaceRoot, RunMode.RunEverything), _options.TransportFactory, _options.LoggerFactory, ompPath, null, new EngineCompositionOptions { Transport = EngineTransport.Acp });
     }
 
     /// <summary>The omp a synchronous launch runs: the one the last launch resolved, or the configured path before any launch has resolved one.</summary>
@@ -1370,6 +1400,12 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     internal Task ReattachAsync(SessionSlot slot, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (IsRetiredTerminal(slot))
+        {
+            // A retired terminal record stays retired: reopening it must not revive an engine (Phase 81).
+            return Task.CompletedTask;
+        }
+
         slot.ReopenEngine();
         lock (_gate)
         {
@@ -1379,6 +1415,28 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         Registry?.SetLifecycle(slot.Id, SessionLifecycle.Created);
         return Task.CompletedTask;
     }
+
+    /// <summary>Returns whether the slot belongs to a retired terminal record (Phase 81): its runtime says so, or its registry record still does.</summary>
+    /// <param name="slot">The slot of the session.</param>
+    /// <returns>True when the session is a retired terminal.</returns>
+    private bool IsRetiredTerminal(SessionSlot slot)
+    {
+        if (slot.Runtime is { IsRetiredTerminal: true })
+        {
+            return true;
+        }
+
+        return Registry is { } registry && registry.TryGet(slot.Id, out var record) && record.Kind == SessionKind.Terminal;
+    }
+
+    /// <summary>Returns whether the session of a launch plan is a retired terminal record (Phase 81), so no engine is composed for it.</summary>
+    /// <param name="plan">The plan of the session.</param>
+    /// <returns>True when the session is a retired terminal.</returns>
+    private bool IsRetiredTerminal(SessionPlan plan) =>
+        !string.IsNullOrEmpty(plan.SessionId)
+        && Registry is { } registry
+        && registry.TryGet(plan.SessionId, out var record)
+        && record.Kind == SessionKind.Terminal;
 
     /// <summary>Mirrors what a runtime reports about its run into the registry: started is Running, completed is Completed (Created when the operator stopped the run), faulted is Failed.</summary>
     /// <param name="slot">The slot of the session whose run changed.</param>

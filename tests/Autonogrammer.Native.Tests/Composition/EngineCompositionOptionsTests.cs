@@ -25,7 +25,8 @@ public sealed class EngineCompositionOptionsTests
     private static async Task<AcpClientOptions> LaunchAsync(EngineCompositionOptions? options, OmpLaunchPlan plan, CancellationToken cancellationToken)
     {
         var omp = new ScriptedOmp { AdvertiseAuthentication = true };
-        var engine = EngineComposition.Compose(["read"], plan, omp.TransportFactory, options: options);
+        var acpOptions = (options ?? new EngineCompositionOptions()) with { Transport = EngineTransport.Acp };
+        var engine = EngineComposition.Compose(["read"], plan, omp.TransportFactory, options: acpOptions);
         await using var host = engine.Host.ConfigureAwait(true);
         await engine.Host.ConnectAsync(cancellationToken).ConfigureAwait(true);
         return omp.Launches.ShouldHaveSingleItem();
@@ -78,6 +79,7 @@ public sealed class EngineCompositionOptionsTests
     {
         var options = new EngineCompositionOptions
         {
+            Transport = EngineTransport.Acp,
             RunModePolicy = () => new RunModePolicy(RunMode.AutoReview, EffectivePermissions.Empty, EffectiveSandbox.Default, "/work", null),
             PermissionResolverFactory = pending => pending,
         };

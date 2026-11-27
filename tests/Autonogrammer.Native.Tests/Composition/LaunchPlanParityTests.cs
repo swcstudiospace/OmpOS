@@ -66,7 +66,7 @@ public sealed class LaunchPlanParityTests
         var plan = FixturePlan(tree, overlayPath, overlayEntries);
 
         var omp = new ScriptedOmp();
-        var acp = EngineComposition.Compose([], plan, omp.TransportFactory);
+        var acp = EngineComposition.Compose([], plan, omp.TransportFactory, options: new EngineCompositionOptions { Transport = EngineTransport.Acp });
         await using (acp.Host.ConfigureAwait(true))
         {
             await acp.Host.ConnectAsync(ct).ConfigureAwait(true);
@@ -112,7 +112,7 @@ public sealed class LaunchPlanParityTests
         OmpLaunchPlan plan = OmpLaunchPlanner.Plan(settings, [], "s-parity-once", tree.Workspace, null);
 
         var omp = new ScriptedOmp();
-        var acp = EngineComposition.Compose([], plan, omp.TransportFactory);
+        var acp = EngineComposition.Compose([], plan, omp.TransportFactory, options: new EngineCompositionOptions { Transport = EngineTransport.Acp });
         await using (acp.Host.ConfigureAwait(true))
         {
             await acp.Host.ConnectAsync(ct).ConfigureAwait(true);

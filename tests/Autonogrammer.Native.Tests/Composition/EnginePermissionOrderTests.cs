@@ -209,7 +209,7 @@ public sealed class EnginePermissionOrderTests
                 allowedKinds,
                 Plan,
                 peer.TransportFactory,
-                options: new EngineCompositionOptions { HookGate = gate, RunModePolicy = () => holder.Current, RunModeAudit = audit });
+                options: new EngineCompositionOptions { Transport = EngineTransport.Acp, HookGate = gate, RunModePolicy = () => holder.Current, RunModeAudit = audit });
             await engine.Host.ConnectAsync(Token).ConfigureAwait(true);
             return new Rig(engine, peer, holder);
         }
