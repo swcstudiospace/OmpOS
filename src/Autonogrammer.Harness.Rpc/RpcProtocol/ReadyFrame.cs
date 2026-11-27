@@ -17,4 +17,10 @@ public sealed record ReadyFrame
 
     /// <summary>Gets the maximum UTF-8 size of one reassembled logical frame.</summary>
     public int MaxReassembledFrameBytes { get; init; }
+
+    /// <summary>
+    /// Gets whether the engine can exclude bash output from the model context. Additive on omp 19.1.1
+    /// (ledger R-READY); 18.12.x frames do not carry it and deserialize as <see langword="false"/>.
+    /// </summary>
+    public bool SupportsBashExcludeFromContext { get; init; }
 }

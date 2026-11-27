@@ -11,8 +11,12 @@ namespace Autonogrammer.Harness.Rpc;
 /// <remarks>
 /// A session starts at most once. A failed start leaves it <see cref="HarnessState.Faulted"/>, and a replacement
 /// must be created from the factory. Disposing a session that never started is a no-op for the engine.
+/// The started session's satellite surfaces (live steering, identity, commands, read-only model control and
+/// the empty options surface) are forwarded through this wrapper so hosts that bind satellites by casting
+/// the factory-produced session see them; before the start they report their empty/refusing values.
 /// </remarks>
-internal sealed class RpcHarnessSession : IOmpSession
+internal sealed class RpcHarnessSession
+    : IOmpSession, IOmpLiveSteering, IOmpSessionIdentity, IOmpSessionCommands, IOmpModelControl, IOmpSessionOptions
 {
     private readonly IRpcSessionStarter _starter;
     private readonly System.Threading.Lock _gate = new();
@@ -53,6 +57,47 @@ internal sealed class RpcHarnessSession : IOmpSession
         }
     }
 
+    /// <inheritdoc />
+    public string? NativeSessionId => (Started as IOmpSessionIdentity)?.NativeSessionId;
+
+    /// <inheritdoc />
+    public IReadOnlyList<OmpCommand> Commands => (Started as IOmpSessionCommands)?.Commands ?? [];
+
+    /// <inheritdoc />
+    public event EventHandler? CommandsChanged;
+
+    /// <inheritdoc />
+    public IReadOnlyList<OmpModelChoice> ModelChoices => (Started as IOmpModelControl)?.ModelChoices ?? [];
+
+    /// <inheritdoc />
+    public string? CurrentModelId => (Started as IOmpModelControl)?.CurrentModelId;
+
+    /// <inheritdoc />
+    public bool? SupportsImages => (Started as IOmpModelControl)?.SupportsImages;
+
+    /// <inheritdoc />
+    public event EventHandler? ModelChanged;
+
+    /// <inheritdoc />
+    public IReadOnlyList<OmpSessionOption> Options => (Started as IOmpSessionOptions)?.Options ?? [];
+
+    /// <inheritdoc />
+    public event EventHandler? OptionsChanged;
+
+    /// <inheritdoc />
+    public bool IsSupported => (Started as IOmpLiveSteering)?.IsSupported ?? false;
+
+    private IOmpSession? Started
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _started;
+            }
+        }
+    }
+
     /// <summary>Starts omp with a new session and completes the pinned handshake.</summary>
     /// <param name="cancellationToken">Cancels the start.</param>
     /// <exception cref="ProcessStartHarnessException">omp is missing or outside the pinned release line.</exception>
@@ -79,13 +124,46 @@ internal sealed class RpcHarnessSession : IOmpSession
     /// <remarks>A session that never started has no prompt in flight, so cancelling it completes immediately.</remarks>
     public Task CancelAsync(CancellationToken cancellationToken)
     {
-        IOmpSession? started;
-        lock (_gate)
-        {
-            started = _started;
-        }
-
+        IOmpSession? started = Started;
         return started is null ? Task.CompletedTask : started.CancelAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>Before the start this reports <see cref="OmpSteerOutcome.NotRunning"/> and sends nothing, mirroring <see cref="CancelAsync"/>.</remarks>
+    public Task<OmpSteerResult> SteerAsync(string text, OmpSteerLane queue, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        return Started switch
+        {
+            null => Task.FromResult(new OmpSteerResult(OmpSteerOutcome.NotRunning, queue, "No turn is running.")),
+            IOmpLiveSteering steering => steering.SteerAsync(text, queue, cancellationToken),
+            _ => Task.FromResult(new OmpSteerResult(OmpSteerOutcome.Unsupported, queue, "This session does not offer live steering.")),
+        };
+    }
+
+    /// <inheritdoc />
+    public Task<OmpModelSwitchResult> SetModelAsync(string value, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return Started switch
+        {
+            null => Task.FromResult(new OmpModelSwitchResult(OmpModelSwitchOutcome.NotOpen, null, "The session is not open.")),
+            IOmpModelControl control => control.SetModelAsync(value, cancellationToken),
+            _ => Task.FromResult(new OmpModelSwitchResult(OmpModelSwitchOutcome.NoModelOption, null, "This session offers no model control.")),
+        };
+    }
+
+    /// <inheritdoc />
+    public Task<OmpOptionSetResult> SetOptionAsync(string configId, string value, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(configId);
+        ArgumentNullException.ThrowIfNull(value);
+        return Started switch
+        {
+            null => Task.FromResult(new OmpOptionSetResult(OmpOptionSetOutcome.NotOpen, null, "The session is not open.")),
+            IOmpSessionOptions options => options.SetOptionAsync(configId, value, cancellationToken),
+            _ => Task.FromResult(new OmpOptionSetResult(OmpOptionSetOutcome.UnknownOption, null, "This session offers no options.")),
+        };
     }
 
     /// <inheritdoc />
@@ -106,6 +184,7 @@ internal sealed class RpcHarnessSession : IOmpSession
 
         if (started is not null)
         {
+            Detach(started);
             await started.DisposeAsync().ConfigureAwait(false);
         }
     }
@@ -156,7 +235,64 @@ internal sealed class RpcHarnessSession : IOmpSession
             await session.DisposeAsync().ConfigureAwait(false);
             throw new ObjectDisposedException(nameof(RpcHarnessSession));
         }
+
+        Attach(session);
     }
+
+    /// <summary>
+    /// Forwards the started session's change events under this wrapper. Subscribers that attached before the
+    /// start also get one raise per non-empty surface, since frames processed during the handshake preceded
+    /// the forwarding.
+    /// </summary>
+    private void Attach(IOmpSession session)
+    {
+        if (session is IOmpSessionCommands commands)
+        {
+            commands.CommandsChanged += OnInnerCommandsChanged;
+            if (commands.Commands.Count > 0)
+            {
+                CommandsChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        if (session is IOmpModelControl control)
+        {
+            control.ModelChanged += OnInnerModelChanged;
+            if (control.CurrentModelId is not null)
+            {
+                ModelChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        if (session is IOmpSessionOptions options)
+        {
+            options.OptionsChanged += OnInnerOptionsChanged;
+        }
+    }
+
+    private void Detach(IOmpSession session)
+    {
+        if (session is IOmpSessionCommands commands)
+        {
+            commands.CommandsChanged -= OnInnerCommandsChanged;
+        }
+
+        if (session is IOmpModelControl control)
+        {
+            control.ModelChanged -= OnInnerModelChanged;
+        }
+
+        if (session is IOmpSessionOptions options)
+        {
+            options.OptionsChanged -= OnInnerOptionsChanged;
+        }
+    }
+
+    private void OnInnerCommandsChanged(object? sender, EventArgs args) => CommandsChanged?.Invoke(this, EventArgs.Empty);
+
+    private void OnInnerModelChanged(object? sender, EventArgs args) => ModelChanged?.Invoke(this, EventArgs.Empty);
+
+    private void OnInnerOptionsChanged(object? sender, EventArgs args) => OptionsChanged?.Invoke(this, EventArgs.Empty);
 
     /// <summary>Returns the started session, or throws when a prompt is submitted before the start.</summary>
     /// <returns>The started session.</returns>

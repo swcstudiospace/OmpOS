@@ -49,4 +49,7 @@ public sealed record ArtifactSnapshot
 
     /// <summary>Gets the optional change note.</summary>
     public string? ChangeNote { get; init; }
+
+    /// <summary>Gets the bounded network requests declared for this version. A request is never a grant.</summary>
+    public IReadOnlyList<ArtifactOriginRequest> Requests { get; init; } = [];
 }

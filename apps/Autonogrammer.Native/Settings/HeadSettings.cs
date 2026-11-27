@@ -297,10 +297,6 @@ internal sealed class HeadSettings : IAsyncDisposable
             application.RequestedThemeVariant = VariantOf(now.Theme);
         }
 
-        if (now.TerminalAutoRun != before.TerminalAutoRun)
-        {
-            _main?.ApplyTerminalSettings();
-        }
 
         if (now.Runtime != before.Runtime)
         {

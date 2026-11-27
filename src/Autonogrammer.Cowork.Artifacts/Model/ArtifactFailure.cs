@@ -30,6 +30,9 @@ public abstract record ArtifactFailure(string Code)
     /// <summary>The image media type or code language was rejected.</summary>
     public static ArtifactFailure MediaInvalid { get; } = new MediaInvalidFailure();
 
+    /// <summary>A declared origin request was rejected. Nothing is granted.</summary>
+    public static ArtifactFailure OriginInvalid { get; } = new OriginInvalidFailure();
+
     private sealed record TitleInvalidFailure() : ArtifactFailure("title_invalid");
 
     private sealed record StaleBaseFailure(int LatestNumber) : ArtifactFailure("stale_base");
@@ -43,4 +46,6 @@ public abstract record ArtifactFailure(string Code)
     private sealed record NotFoundFailure() : ArtifactFailure("not_found");
 
     private sealed record MediaInvalidFailure() : ArtifactFailure("media_invalid");
+
+    private sealed record OriginInvalidFailure() : ArtifactFailure("origin_rejected");
 }

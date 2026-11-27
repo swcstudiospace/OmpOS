@@ -55,14 +55,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOptions<ApiOptions>().BindConfiguration(ApiOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<ApiOptions>, ApiCorsOptionsValidator>();
 builder.Services.AddOptions<ApiRateLimitOptions>().BindConfiguration($"{ApiOptions.SectionName}:RateLimit").ValidateDataAnnotations().ValidateOnStart();
-// Harness:Adapter selects the harness. Outside Development the in-memory echo adapter is refused: the hosted path runs omp over ACP.
+// Harness:Adapter selects the harness. Outside Development the in-memory echo adapter is refused: the hosted path runs omp over RPC (default since Phase 84) or ACP (supported rollback / remote boundary).
 var harnessInDevelopment = builder.Environment.IsDevelopment();
 builder.Services.AddOptions<HarnessOptions>()
     .BindConfiguration(HarnessOptions.SectionName)
     .ValidateDataAnnotations()
-    .Validate(static options => HarnessOptions.IsSupportedAdapter(options.Adapter), "Harness:Adapter must be InMemory or Acp.")
-    .Validate(options => harnessInDevelopment || !HarnessOptions.IsInMemoryAdapter(options.Adapter), "Harness:Adapter must be Acp outside the Development environment; InMemory is a development-only adapter.")
+    .Validate(static options => HarnessOptions.IsSupportedAdapter(options.Adapter), "Harness:Adapter must be InMemory, Acp or Rpc.")
+    .Validate(options => harnessInDevelopment || !HarnessOptions.IsInMemoryAdapter(options.Adapter), "Harness:Adapter must be Acp or Rpc outside the Development environment; InMemory is a development-only adapter.")
     .Validate(static options => !HarnessOptions.IsAcpAdapter(options.Adapter) || !string.IsNullOrWhiteSpace(options.Acp.OmpPath), "Harness:Acp:OmpPath must be set when Harness:Adapter is Acp.")
+    .Validate(static options => !HarnessOptions.IsRpcAdapter(options.Adapter) || !string.IsNullOrWhiteSpace(options.Rpc.OmpPath), "Harness:Rpc:OmpPath must be set when Harness:Adapter is Rpc.")
+    .Validate(static options => !HarnessOptions.IsRpcAdapter(options.Adapter) || options.Acp.Approval.Kinds.Count == 0, "Harness:Acp:Approval:Kinds is configured but Harness:Adapter is Rpc: omp RPC has no observed permission-request surface (OQ-525), so RPC cannot honour configured approval kinds and stays deny-by-default. Keep approval-configured flows on Harness:Adapter=Acp, or clear Harness:Acp:Approval:Kinds to run Rpc.")
     .ValidateOnStart();
 builder.Services.AddEngineIsolation(builder.Environment);
 builder.Services.AddOptions<SessionsOptions>()
@@ -108,10 +110,11 @@ builder.Services.AddDataPlane();
 builder.Services.AddSingleton<SessionService>();
 builder.Services.AddOmpParser();
 builder.Services.AddSingleton<RunRegistry>();
-// Harness:Adapter picks the factory. Acp runs omp over stdio through OmpAcpClient, which takes its permission resolver from DI;
-// InMemory is the development echo adapter.
+// Harness:Adapter picks the factory, exhaustively: Acp runs omp over ACP stdio through OmpAcpClient, which takes its permission resolver from DI;
+// Rpc runs omp over RPC stdio; InMemory is the development echo adapter. Any other value throws instead of falling through to InMemory.
 builder.Services.AddSingleton<OmpAcpClient>(static services => new OmpAcpClient(services.GetService<IPermissionResolver>()));
 builder.Services.AddSingleton<AcpHarnessSessionFactory>();
+builder.Services.AddSingleton<OmpRpcHarnessSessionFactory>();
 builder.Services.AddSingleton<InMemoryHarnessSessionFactory>();
 builder.Services.AddSingleton<IHarnessSessionFactory>(static services =>
 {
@@ -121,7 +124,17 @@ builder.Services.AddSingleton<IHarnessSessionFactory>(static services =>
         return services.GetRequiredService<AcpHarnessSessionFactory>();
     }
 
-    return services.GetRequiredService<InMemoryHarnessSessionFactory>();
+    if (HarnessOptions.IsRpcAdapter(adapter))
+    {
+        return services.GetRequiredService<OmpRpcHarnessSessionFactory>();
+    }
+
+    if (HarnessOptions.IsInMemoryAdapter(adapter))
+    {
+        return services.GetRequiredService<InMemoryHarnessSessionFactory>();
+    }
+
+    throw new InvalidOperationException($"Unsupported Harness:Adapter '{adapter}'. Supported values: InMemory, Acp, Rpc.");
 });
 builder.Services.AddSingleton<PromptRunner>();
 builder.Services.AddSessionWebServices();

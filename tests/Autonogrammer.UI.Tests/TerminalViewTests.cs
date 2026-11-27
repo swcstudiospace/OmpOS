@@ -240,6 +240,45 @@ public sealed class TerminalViewTests : UiTestContext
         module.VerifyInvoke("dispose").Arguments.ShouldBe([ScreenToken]);
     }
 
+    /// <summary>A retired terminal record renders the unavailable frame with the retired copy: heading focusable, reason announced once, no screen, no Reconnect, no steer controls.</summary>
+    [Fact]
+    public void ARetiredTerminalRendersTheRetiredUnavailableFrame()
+    {
+        var module = JSInterop.SetupModule(TerminalModule);
+
+        var cut = Render<TerminalView>(parameters => parameters
+            .Add(p => p.SessionId, SessionId)
+            .Add(p => p.Retired, true));
+
+        cut.Find(".autonogrammer-terminal").GetAttribute("data-state").ShouldBe("unavailable");
+        cut.Find("h2").TextContent.ShouldBe(TerminalCopy.RetiredHeading);
+        cut.Find("h2").GetAttribute("tabindex").ShouldBe("-1", "focus lands on the unavailable heading on open");
+        cut.Find(".autonogrammer-terminal-unavailable-reason").TextContent.ShouldBe(TerminalCopy.RetiredReason);
+        cut.Find(".autonogrammer-terminal-unavailable-reason").GetAttribute("role").ShouldBe("status");
+        cut.FindAll(".autonogrammer-terminal-screen").Count.ShouldBe(0);
+        cut.FindAll("button[aria-label='" + TerminalCopy.ReconnectName + "']").Count.ShouldBe(0);
+        cut.FindAll("textarea").Count.ShouldBe(0);
+        cut.FindAll(".autonogrammer-terminal-steer button").Count.ShouldBe(0);
+        module.Invocations.Count.ShouldBe(0, "no screen is created for a retired terminal");
+    }
+
+    /// <summary>A retired terminal never resolves a transport or a steering service, even when the head registers both: nothing attaches and nothing steers.</summary>
+    [Fact]
+    public void ARetiredTerminalResolvesNoTransportAndNoSteering()
+    {
+        SetupScreen();
+        var transport = AddTransport((_, _, token) => ScriptedTerminalTransport.StreamAsync([(1, "alive")], hold: true, cancellationToken: token));
+        Services.AddSingleton<ICardSteering>(new WorkspaceCardSteering());
+
+        var cut = Render<TerminalView>(parameters => parameters
+            .Add(p => p.SessionId, SessionId)
+            .Add(p => p.Retired, true));
+
+        cut.Find(".autonogrammer-terminal").GetAttribute("data-state").ShouldBe("unavailable");
+        transport.Attaches.ShouldBeEmpty("a retired session resolves no transport");
+        cut.Find("[role='group'][aria-label='" + TerminalCopy.SteerName + "']").TextContent.ShouldContain(TerminalCopy.SteerUnavailable);
+    }
+
     private const int ScreenToken = 7;
 
     private static List<string> WrittenText(BunitJSModuleInterop module) =>

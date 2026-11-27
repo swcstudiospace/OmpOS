@@ -162,7 +162,7 @@ internal sealed class DemoWorld : IDisposable
 
         if (session.Kind == CatalogSessionKind.Terminal)
         {
-            throw new DemoProblemException(409, "session_not_promptable", "This session takes no prompts.", "An omp terminal is driven in its terminal.");
+            throw new DemoProblemException(409, "session_not_promptable", "This session takes no prompts.", "Terminal sessions are retired: start a new agent instead.");
         }
 
         if (session.IsActive)
@@ -239,7 +239,7 @@ internal sealed class DemoWorld : IDisposable
     {
         var session = Find(id);
         return session.Stages.Count == 0
-            ? new SessionStagesResponse { SessionId = id, Available = false, Reason = "An omp terminal runs its own engine and reports no stages.", Stages = [] }
+            ? new SessionStagesResponse { SessionId = id, Available = false, Reason = "This terminal session is retired and reports no stages.", Stages = [] }
             : new SessionStagesResponse { SessionId = id, Available = true, Stages = [.. session.Stages] };
     }
 
@@ -261,7 +261,7 @@ internal sealed class DemoWorld : IDisposable
     {
         var session = Find(id);
         return session.Kind == CatalogSessionKind.Terminal
-            ? new SessionConfigOptionsResponse { SessionId = id, Available = false, Live = false, Reason = "An omp terminal owns its model, mode and thinking level.", Options = [] }
+            ? new SessionConfigOptionsResponse { SessionId = id, Available = false, Live = false, Reason = "This terminal session is retired and has no engine options.", Options = [] }
             : new SessionConfigOptionsResponse { SessionId = id, Available = true, Live = !session.Closed, Options = [.. session.Options] };
     }
 
@@ -306,7 +306,7 @@ internal sealed class DemoWorld : IDisposable
     {
         var session = Find(id);
         return session.Kind == CatalogSessionKind.Terminal
-            ? new SessionCommandsResponse { SessionId = id, Available = false, Live = false, Reason = "An omp terminal shows its own commands.", Commands = [] }
+            ? new SessionCommandsResponse { SessionId = id, Available = false, Live = false, Reason = "This terminal session is retired and shows no commands.", Commands = [] }
             : new SessionCommandsResponse { SessionId = id, Available = true, Live = !session.Closed, Commands = DemoCatalogue.Commands };
     }
 

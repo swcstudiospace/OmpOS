@@ -41,29 +41,29 @@
       "autonogrammer.genui": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.17.0, )"
+          "Autonogrammer.Contracts": "[0.20.18, )"
         }
       },
       "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.17.0, )"
+          "Autonogrammer.Contracts": "[0.20.18, )"
         }
       },
       "autonogrammer.harness.acp": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.17.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.20.18, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.harness.agentloop": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.17.0, )",
-          "Autonogrammer.Harness.Abstractions": "[0.17.0, )",
-          "Autonogrammer.Harness.Acp": "[0.17.0, )",
-          "Autonogrammer.Harness.Plugins": "[0.17.0, )",
+          "Autonogrammer.Contracts": "[0.20.18, )",
+          "Autonogrammer.Harness.Abstractions": "[0.20.18, )",
+          "Autonogrammer.Harness.Acp": "[0.20.18, )",
+          "Autonogrammer.Harness.Plugins": "[0.20.18, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
@@ -82,23 +82,23 @@
       "autonogrammer.harness.workspace": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Harness.Abstractions": "[0.17.0, )"
+          "Autonogrammer.Harness.Abstractions": "[0.20.18, )"
         }
       },
       "autonogrammer.parser": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.17.0, )",
+          "Autonogrammer.Contracts": "[0.20.18, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.presentation": {
         "type": "Project",
         "dependencies": {
-          "Autonogrammer.Contracts": "[0.17.0, )",
-          "Autonogrammer.GenUi": "[0.17.0, )",
-          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.17.0, )",
-          "Autonogrammer.Parser": "[0.17.0, )",
+          "Autonogrammer.Contracts": "[0.20.18, )",
+          "Autonogrammer.GenUi": "[0.20.18, )",
+          "Autonogrammer.Harness.ComputerUse.Abstractions": "[0.20.18, )",
+          "Autonogrammer.Parser": "[0.20.18, )",
           "Markdig": "[1.4.2, )"
         }
       },

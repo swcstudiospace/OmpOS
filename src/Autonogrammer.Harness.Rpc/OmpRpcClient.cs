@@ -5,8 +5,16 @@ namespace Autonogrammer.Harness.Rpc;
 
 /// <summary>
 /// Composition root for the omp RPC client. Each session start probes the installed version, enforces the
-/// <c>18.12.x</c> pin, spawns the engine, and completes the handshake. A failed start tears the process down.
+/// <c>19.1.x</c> pin, spawns the engine, and completes the handshake. A failed start tears the process down.
 /// </summary>
+/// <remarks>
+/// The pin moved 18.12.x → 19.1.x in Phase 80 on the Phase 79 ledger
+/// (<c>docs/architecture/omp-19-reverification.md</c>, "Pin decision (D-03)", OQ-524 closed 2026-11-23):
+/// R-READY/R-NEGOTIATE/R-CAPS are same-or-additive on 19.1.1 and the launch flags
+/// (<c>--mode rpc --no-ui --cwd</c>) are observed-19.1.1. The 19.1.1 prompt path itself is still proven only
+/// by replay of verified-18.12.6 capture shapes (OD-07: no live model turn), which is why RPC stays opt-in
+/// in this phase while ACP remains the shipped default.
+/// </remarks>
 public sealed class OmpRpcClient
 {
     private readonly OmpRpcClientOptions _options;
@@ -20,6 +28,13 @@ public sealed class OmpRpcClient
         {
             throw new ArgumentException("The client working directory is required.", nameof(options));
         }
+
+        ArgumentNullException.ThrowIfNull(options.ExtraArguments, nameof(options));
+        foreach (var argument in options.ExtraArguments)
+        {
+            ArgumentNullException.ThrowIfNull(argument, nameof(options));
+        }
+
         _options = options;
     }
 
@@ -52,7 +67,7 @@ public sealed class OmpRpcClient
                 $"omp {version} is outside the pinned {OmpVersion.PinnedMajor}.{OmpVersion.PinnedMinor}.x range.");
         }
 
-        OmpRpcProcess process = OmpRpcProcess.Start(_options.OmpPath, _options.Cwd);
+        OmpRpcProcess process = OmpRpcProcess.Start(_options.OmpPath, _options.Cwd, _options.EnvironmentVariables, _options.ExtraArguments);
         var session = new OmpRpcSession(process, _options.HandshakeTimeout, _options.CommandTimeout);
         return await StartSessionAsync(session, start).ConfigureAwait(false);
     }

@@ -34,7 +34,6 @@
     <Project Path="src/Autonogrammer.Harness.OmpLauncher/Autonogrammer.Harness.OmpLauncher.csproj" />
     <Project Path="src/Autonogrammer.Harness.Providers/Autonogrammer.Harness.Providers.csproj" />
     <Project Path="src/Autonogrammer.Harness.Secrets/Autonogrammer.Harness.Secrets.csproj" />
-    <Project Path="src/Autonogrammer.Harness.Herdr/Autonogrammer.Harness.Herdr.csproj" />
     <Project Path="src/Autonogrammer.Harness.Agent/Autonogrammer.Harness.Agent.csproj" />
     <Project Path="src/Autonogrammer.Native.Views/Autonogrammer.Native.Views.csproj" />
     <Project Path="src/Autonogrammer.Parser/Autonogrammer.Parser.csproj" />
@@ -98,7 +97,6 @@
     <Project Path="tests/Autonogrammer.Harness.OmpLauncher.Tests/Autonogrammer.Harness.OmpLauncher.Tests.csproj" />
     <Project Path="tests/Autonogrammer.Harness.Providers.Tests/Autonogrammer.Harness.Providers.Tests.csproj" />
     <Project Path="tests/Autonogrammer.Harness.Secrets.Tests/Autonogrammer.Harness.Secrets.Tests.csproj" />
-    <Project Path="tests/Autonogrammer.Harness.Herdr.Tests/Autonogrammer.Harness.Herdr.Tests.csproj" />
     <Project Path="tests/Autonogrammer.Harness.Agent.Tests/Autonogrammer.Harness.Agent.Tests.csproj" />
     <Project Path="tests/Autonogrammer.Sessions.Tests/Autonogrammer.Sessions.Tests.csproj" />
     <Project Path="tests/Autonogrammer.Sessions.Postgres.Tests/Autonogrammer.Sessions.Postgres.Tests.csproj" />

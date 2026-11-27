@@ -4,7 +4,6 @@ using Autonogrammer.Harness.AgentLoop.Steering;
 using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Tests.Parity;
 using Autonogrammer.Native.Views.Sessions;
-using Autonogrammer.Native.Views.Terminal;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Approvals;
 using Autonogrammer.Presentation.Mentions;
@@ -32,9 +31,6 @@ internal sealed class SessionScript
 
     /// <summary>Gets the steering channel of the session, or null to queue messages sent during a run for the end of the turn.</summary>
     public ISteeringChannel? Steering { get; init; }
-
-    /// <summary>Gets the starter of the omp terminal of the session, or null for a chat session.</summary>
-    public IOmpTerminalStarter? TerminalStarter { get; init; }
 
     /// <summary>Gets the slash commands the session's engine advertises, or null for a session without a slash palette.</summary>
     public IOmpSessionCommands? SessionCommands { get; init; }

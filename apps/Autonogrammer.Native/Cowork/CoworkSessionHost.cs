@@ -85,7 +85,6 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
     }
 
 
-
     /// <inheritdoc />
     public async Task<string> CreateSessionAsync(CancellationToken cancellationToken)
     {
@@ -93,10 +92,6 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
         await Task.CompletedTask.ConfigureAwait(false);
         return id;
     }
-
-    /// <inheritdoc />
-    public Task<string> CreateTerminalSessionAsync(CancellationToken cancellationToken) =>
-        throw new NotSupportedException("Cowork has no terminal sessions.");
 
     /// <inheritdoc />
     [SuppressMessage("Maintainability", "MA0051", Justification = "The acquire, transfer and cleanup steps stay in one flow so the cleanup guarantee sits beside the owners it protects.")]
@@ -690,7 +685,6 @@ internal sealed class CoworkSessionHost : IAgentPanelHost, IAsyncDisposable
             }
         }
     }
-
 
     private AgentSessionRuntimeOptions RuntimeOptions(AgentRow row, string directory, EngineComposition engine) => new()
     {

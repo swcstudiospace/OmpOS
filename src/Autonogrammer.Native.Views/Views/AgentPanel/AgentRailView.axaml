@@ -122,36 +122,6 @@
         </Grid>
       </Button>
 
-      <Button x:Name="NewTerminalButton"
-              Classes="ghost sm"
-              HorizontalAlignment="Stretch"
-              HorizontalContentAlignment="Stretch"
-              AutomationProperties.Name="{x:Static copy:AgentPanelCopy.NewTerminal}"
-              ToolTip.Tip="{x:Static copy:AgentPanelCopy.NewTerminalTooltip}">
-        <Grid ColumnDefinitions="Auto,*,Auto"
-              ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
-          <Path Classes="btn-glyph"
-                Data="M2.5 4l4 4-4 4M8 12.5h5.5"
-                Width="{DynamicResource Autonogrammer.Size.IconSizeSm}"
-                Height="{DynamicResource Autonogrammer.Size.IconSizeSm}"
-                VerticalAlignment="Center"
-                Stretch="Uniform"
-                StrokeThickness="1.5"
-                StrokeLineCap="Round"
-                StrokeJoin="Round"
-                AutomationProperties.AccessibilityView="Raw" />
-          <TextBlock Grid.Column="1"
-                     Classes="btn-label"
-                     Text="{x:Static copy:AgentPanelCopy.NewTerminal}"
-                     VerticalAlignment="Center"
-                     TextTrimming="CharacterEllipsis" />
-          <Border Grid.Column="2"
-                  Classes="kbd"
-                  VerticalAlignment="Center">
-            <TextBlock x:Name="NewTerminalKeys" />
-          </Border>
-        </Grid>
-      </Button>
 
       <!-- The filter: a 28 px search box with a magnifier glyph inside on the left. -->
       <TextBox x:Name="AgentFilter"

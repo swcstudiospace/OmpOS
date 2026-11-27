@@ -271,17 +271,16 @@ public sealed class SettingsWindowTests
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
-            using var fixture = await SettingsFixture.OpenAsync(ct, static f => f.AgentsSource.SaveFailure = "The disk is full.").ConfigureAwait(true);
+            using var fixture = await SettingsFixture.OpenAsync(ct, static f => f.GeneralSource.SaveFailure = "The disk is full.").ConfigureAwait(true);
             var window = fixture.Window;
-            var view = (AgentsPageView)fixture.Show(SettingsSection.Agents);
+            var view = (GeneralPageView)fixture.Show(SettingsSection.General);
 
-            view.AutoRun.IsChecked = true;
+            fixture.General.SetMotion(MotionPreference.Full);
             fixture.Settle();
-            view.Warning.IsVisible.ShouldBeTrue("turning auto-run on shows its warning");
             SettingsTree.Click(window, window.Save);
 
-            fixture.Agents.IsDirty.ShouldBeTrue();
-            fixture.Agents.SaveError.ShouldBe("The disk is full.");
+            fixture.General.IsDirty.ShouldBeTrue();
+            fixture.General.SaveError.ShouldBe("The disk is full.");
             SettingsTree.Texts(view).ShouldContain("The disk is full.", StringComparer.Ordinal);
             SettingsTree.Texts(view).ShouldContain(SettingsCopy.SaveFailedHeading, StringComparer.Ordinal);
             window.Footer.Text.ShouldBe(SettingsCopy.UnsavedBadge, "the page is still dirty");

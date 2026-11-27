@@ -1,21 +1,21 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using Autonogrammer.Contracts.Artifacts;
 
 using Autonogrammer.Cowork.Artifacts.Model;
 using Npgsql;
 using NpgsqlTypes;
-using ArtifactGrantBinding = Autonogrammer.Cowork.Artifacts.Stores.ArtifactWireContract.Grant;
 using ArtifactWireJsonContext = Autonogrammer.Cowork.Artifacts.Stores.ArtifactWireContract.JsonContext;
 namespace Autonogrammer.Cowork.Artifacts.Stores;
 
 /// <summary>
 /// Account store over the M0006 tables. It takes a data source from the host, writes no migration, and filters every query by account id.
 /// </summary>
-public sealed class PostgresArtifactStore : IArtifactStore, IDisposable
+public sealed class PostgresArtifactStore : IArtifactStore, IArtifactGrantStore, IDisposable
 {
     private const string HeaderSql = "SELECT a.id, a.title, a.kind, a.derived_from, v.session_id, v.media_type, v.permissions::text FROM artifacts a LEFT JOIN artifact_versions v ON v.artifact_id = a.id AND v.version = 1 AND v.account_id = a.account_id WHERE a.id = @id AND a.account_id = @account_id";
-    private const string VersionsSql = "SELECT artifact_id, version, content_sha256, parent_number, parent_content_sha256, author, change_note, created_at, content FROM artifact_versions WHERE artifact_id = @artifact_id AND account_id = @account_id ORDER BY version";
+    private const string VersionsSql = "SELECT artifact_id, version, content_sha256, parent_number, parent_content_sha256, author, change_note, created_at, content, permissions::text FROM artifact_versions WHERE artifact_id = @artifact_id AND account_id = @account_id ORDER BY version";
     private readonly NpgsqlDataSource _dataSource;
     private readonly string _accountId;
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -120,32 +120,8 @@ public sealed class PostgresArtifactStore : IArtifactStore, IDisposable
         }
     }
 
-    /// <summary>Saves a grant for this account. Another account's read cannot see it.</summary>
-    /// <param name="grant">The grant binding.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A task that completes when the grant is stored.</returns>
-    internal async ValueTask SaveGrantAsync(ArtifactGrantBinding grant, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(grant);
-        cancellationToken.ThrowIfCancellationRequested();
-        var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            using var command = new NpgsqlCommand("INSERT INTO artifact_grants (artifact_id, version, account_id, content_sha256, origins, scope, device, granted_at) VALUES (@artifact_id, @version, @account_id, @content_sha256, @origins::jsonb, @scope, @device, @granted_at)", connection);
-            AddGrant(command, grant, _accountId);
-            _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-        finally
-        {
-            await connection.DisposeAsync().ConfigureAwait(false);
-        }
-    }
-
-    /// <summary>Lists grants for one artifact in this account.</summary>
-    /// <param name="artifactId">The artifact identifier.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>The grants.</returns>
-    internal async ValueTask<IReadOnlyList<ArtifactGrantBinding>> GrantsAsync(string artifactId, CancellationToken cancellationToken)
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<ArtifactGrantBinding>> ListAsync(string artifactId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(artifactId);
         cancellationToken.ThrowIfCancellationRequested();
@@ -170,6 +146,48 @@ public sealed class PostgresArtifactStore : IArtifactStore, IDisposable
             }
 
             return grants;
+        }
+        finally
+        {
+            await connection.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
+    /// <inheritdoc />
+    public async ValueTask UpsertAsync(ArtifactGrantBinding grant, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(grant);
+        cancellationToken.ThrowIfCancellationRequested();
+        var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            using var command = new NpgsqlCommand("INSERT INTO artifact_grants (artifact_id, version, account_id, content_sha256, origins, scope, device, granted_at) VALUES (@artifact_id, @version, @account_id, @content_sha256, @origins::jsonb, @scope, @device, @granted_at) ON CONFLICT (artifact_id, version, scope, device) DO UPDATE SET content_sha256 = EXCLUDED.content_sha256, origins = EXCLUDED.origins, granted_at = EXCLUDED.granted_at WHERE artifact_grants.account_id = @account_id", connection);
+            AddGrant(command, grant, _accountId);
+            _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            await connection.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
+    /// <inheritdoc />
+    public async ValueTask DeleteAsync(string artifactId, int number, string scope, string device, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(artifactId);
+        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentNullException.ThrowIfNull(device);
+        cancellationToken.ThrowIfCancellationRequested();
+        var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            using var command = new NpgsqlCommand("DELETE FROM artifact_grants WHERE artifact_id = @artifact_id AND version = @version AND scope = @scope AND device = @device AND account_id = @account_id", connection);
+            command.Parameters.AddWithValue("artifact_id", artifactId);
+            command.Parameters.AddWithValue("version", number);
+            command.Parameters.AddWithValue("scope", scope);
+            command.Parameters.AddWithValue("device", device);
+            command.Parameters.AddWithValue("account_id", _accountId);
+            _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -296,7 +314,8 @@ public sealed class PostgresArtifactStore : IArtifactStore, IDisposable
     private static ArtifactVersionRecord MapVersion(NpgsqlDataReader reader)
     {
         var content = reader.IsDBNull(8) ? [] : reader.GetFieldValue<byte[]>(8);
-        return new ArtifactVersionRecord(reader.GetString(0), reader.GetInt32(1), content, reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetInt32(3), reader.IsDBNull(4) ? null : reader.GetString(4), Enum.Parse<ArtifactAuthor>(reader.GetString(5)), reader.GetFieldValue<DateTimeOffset>(7), reader.IsDBNull(6) ? null : reader.GetString(6));
+        var requests = ParseRequests(reader.IsDBNull(9) ? "[]" : reader.GetString(9));
+        return new ArtifactVersionRecord(reader.GetString(0), reader.GetInt32(1), content, reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetInt32(3), reader.IsDBNull(4) ? null : reader.GetString(4), Enum.Parse<ArtifactAuthor>(reader.GetString(5)), reader.GetFieldValue<DateTimeOffset>(7), reader.IsDBNull(6) ? null : reader.GetString(6), requests);
     }
 
     private static ArtifactGrantBinding ReadGrant(NpgsqlDataReader reader) =>
@@ -340,7 +359,76 @@ public sealed class PostgresArtifactStore : IArtifactStore, IDisposable
     private static string? DerivedJson(ArtifactDerivation? derived) =>
         derived is null ? null : "{\"artifactId\":\"" + derived.ArtifactId + "\",\"version\":" + derived.Version.ToString(CultureInfo.InvariantCulture) + ",\"contentSha256\":\"" + derived.ContentSha256 + "\"}";
 
-    private static string PermissionsJson(string? language) => string.IsNullOrEmpty(language) ? "[]" : "{\"language\":\"" + language + "\"}";
+    private static string PermissionsJson(string? language, IReadOnlyList<ArtifactOriginRequest> requests)
+    {
+        if (string.IsNullOrEmpty(language) && requests.Count == 0)
+        {
+            return "[]";
+        }
+
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            writer.WriteStartObject();
+            if (!string.IsNullOrEmpty(language))
+            {
+                writer.WriteString("language", language);
+            }
+
+            if (requests.Count > 0)
+            {
+                writer.WriteStartArray("requests");
+                foreach (var request in requests)
+                {
+                    writer.WriteStartObject();
+                    writer.WriteString("origin", request.Origin);
+                    writer.WriteString("reason", request.Reason);
+                    writer.WriteEndObject();
+                }
+
+                writer.WriteEndArray();
+            }
+
+            writer.WriteEndObject();
+        }
+
+        return Encoding.UTF8.GetString(stream.ToArray());
+    }
+
+    private static List<ArtifactOriginRequest> ParseRequests(string permissions)
+    {
+        if (permissions.Length == 0 || permissions[0] != '{')
+        {
+            return [];
+        }
+
+        using var document = JsonDocument.Parse(permissions);
+        if (!document.RootElement.TryGetProperty("requests", out var stored) || stored.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var requests = new List<ArtifactOriginRequest>(stored.GetArrayLength());
+        foreach (var entry in stored.EnumerateArray())
+        {
+            if (entry.ValueKind != JsonValueKind.Object || !entry.TryGetProperty("origin", out var origin) || origin.ValueKind != JsonValueKind.String)
+            {
+                throw new ArtifactIntegrityException();
+            }
+
+            var reason = entry.TryGetProperty("reason", out var storedReason) && storedReason.ValueKind == JsonValueKind.String ? storedReason.GetString() ?? string.Empty : string.Empty;
+            try
+            {
+                requests.Add(new ArtifactOriginRequest(origin.GetString()!, reason));
+            }
+            catch (ArgumentException)
+            {
+                throw new ArtifactIntegrityException();
+            }
+        }
+
+        return requests;
+    }
 
     private static async Task InsertRowsAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, string accountId, ArtifactRecord artifact, ArtifactVersionRecord version, CancellationToken cancellationToken)
     {
@@ -374,7 +462,7 @@ public sealed class PostgresArtifactStore : IArtifactStore, IDisposable
         command.Parameters.AddWithValue("parent_content_sha256", (object?)version.ParentContentSha256 ?? DBNull.Value);
         command.Parameters.AddWithValue("author", version.Author.ToString());
         command.Parameters.AddWithValue("change_note", (object?)version.ChangeNote ?? DBNull.Value);
-        command.Parameters.AddWithValue("permissions", PermissionsJson(language));
+        command.Parameters.AddWithValue("permissions", PermissionsJson(language, version.Requests));
         command.Parameters.AddWithValue("created_at", version.CreatedAt);
         _ = command.Parameters.Add(new NpgsqlParameter("content", NpgsqlDbType.Bytea) { Value = version.Content.ToArray() });
         _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);

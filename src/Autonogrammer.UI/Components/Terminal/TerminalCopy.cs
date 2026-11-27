@@ -32,6 +32,12 @@ public static class TerminalCopy
     /// <summary>The heading shown when the view cannot run in this head.</summary>
     public const string UnavailableHeading = "The omp terminal is not available in this head";
 
+    /// <summary>The heading shown for a retired terminal record (Phase 81): the persisted record is read-only history.</summary>
+    public const string RetiredHeading = "This terminal session is retired.";
+
+    /// <summary>The reason shown for a retired terminal record: it states the retirement, offers New Agent (Chat) as the next action, and promises no transcript replay.</summary>
+    public const string RetiredReason = "Terminal sessions are retired and cannot be started again. Their output is not kept as a transcript. Start a new agent to continue.";
+
     /// <summary>The reason shown when the screen itself could not be created.</summary>
     public const string ScreenFailed = "The terminal screen could not be loaded in this browser.";
 

@@ -6,11 +6,12 @@ using Microsoft.Extensions.Options;
 namespace Autonogrammer.Api.Harness;
 
 /// <summary>
-/// Validates the engine keys of <see cref="HarnessOptions"/> on start. For the ACP adapter, outside Development the engine must not
-/// inherit the API's environment unless <c>Harness:Acp:AllowInheritedEnvironment</c> says so, an allow-list entry must be a usable name or
-/// prefix, <c>Harness:Acp:WorkspaceRoot</c> must be an absolute path, and the engine must have a working directory of its own: a run worktree
-/// (<c>Worktrees:Root</c> and <c>Worktrees:Repository</c>) or <c>Harness:Acp:WorkspaceRoot</c>. For every adapter, the <c>Harness:Acp:Approval</c> keys
-/// must be well formed (<see cref="HarnessApprovalValidation"/>). Messages name keys, never values.
+/// Validates the engine keys of <see cref="HarnessOptions"/> on start. For the ACP adapter (<c>Harness:Acp:*</c> keys) and the RPC
+/// adapter (<c>Harness:Rpc:*</c> keys) alike, outside Development the engine must not inherit the API's environment unless the
+/// adapter's <c>AllowInheritedEnvironment</c> key says so, an allow-list entry must be a usable name or prefix, the adapter's
+/// <c>WorkspaceRoot</c> must be an absolute path, and the engine must have a working directory of its own: a run worktree
+/// (<c>Worktrees:Root</c> and <c>Worktrees:Repository</c>) or the adapter's <c>WorkspaceRoot</c>. For every adapter, the
+/// <c>Harness:Acp:Approval</c> keys must be well formed (<see cref="HarnessApprovalValidation"/>). Messages name keys, never values.
 /// </summary>
 internal sealed class EngineIsolationOptionsValidator : IValidateOptions<HarnessOptions>
 {
@@ -32,39 +33,53 @@ internal sealed class EngineIsolationOptionsValidator : IValidateOptions<Harness
         ArgumentNullException.ThrowIfNull(options);
         var failures = new List<string>();
         HarnessApprovalValidation.Collect(options.Acp.Approval, failures);
-        if (!HarnessOptions.IsAcpAdapter(options.Adapter))
+        if (HarnessOptions.IsAcpAdapter(options.Adapter))
         {
-            return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
+            ValidateIsolation(
+                EngineIsolationSettings.Resolve(options.Acp, _environment.IsDevelopment()),
+                "Harness:Acp",
+                options.Acp.AllowInheritedEnvironment,
+                failures);
+        }
+        else if (HarnessOptions.IsRpcAdapter(options.Adapter))
+        {
+            ValidateIsolation(
+                EngineIsolationSettings.Resolve(options.Rpc, _environment.IsDevelopment()),
+                "Harness:Rpc",
+                options.Rpc.AllowInheritedEnvironment,
+                failures);
         }
 
+        return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
+    }
+
+    private void ValidateIsolation(EngineIsolationSettings settings, string keyPrefix, bool allowInheritedEnvironment, List<string> failures)
+    {
         var development = _environment.IsDevelopment();
-        var settings = EngineIsolationSettings.Resolve(options.Acp, development);
-        if (!development && settings.Mode == EngineEnvironmentMode.Inherit && !options.Acp.AllowInheritedEnvironment)
+        if (!development && settings.Mode == EngineEnvironmentMode.Inherit && !allowInheritedEnvironment)
         {
             failures.Add(
-                "Harness:Acp:Environment:Mode is Inherit outside the Development environment, which hands every secret of the API process to the engine and its tools. " +
-                "Use Allowlist (the default), or set Harness:Acp:AllowInheritedEnvironment=true to accept the risk; that is unsafe.");
+                $"{keyPrefix}:Environment:Mode is Inherit outside the Development environment, which hands every secret of the API process to the engine and its tools. " +
+                $"Use Allowlist (the default), or set {keyPrefix}:AllowInheritedEnvironment=true to accept the risk; that is unsafe.");
         }
 
         for (var index = 0; index < settings.Allow.Count; index++)
         {
             if (!EngineEnvironmentPolicy.IsValidAllowEntry(settings.Allow[index]))
             {
-                failures.Add($"Harness:Acp:Environment:Allow:{index} must be a variable name, or a prefix ending in '*'; it must not be blank or contain '=', whitespace or a misplaced '*'.");
+                failures.Add($"{keyPrefix}:Environment:Allow:{index} must be a variable name, or a prefix ending in '*'; it must not be blank or contain '=', whitespace or a misplaced '*'.");
             }
         }
 
         if (settings.WorkspaceRoot is { } root && !Path.IsPathFullyQualified(root))
         {
-            failures.Add("Harness:Acp:WorkspaceRoot must be an absolute path when set.");
+            failures.Add($"{keyPrefix}:WorkspaceRoot must be an absolute path when set.");
         }
 
         if (!development && settings.WorkspaceRoot is null && !HasWorktrees(_worktrees.Value))
         {
-            failures.Add("Harness:Acp:WorkspaceRoot is required outside the Development environment when Worktrees:Root and Worktrees:Repository are not both set; without it the engine would start in the API's own working directory.");
+            failures.Add($"{keyPrefix}:WorkspaceRoot is required outside the Development environment when Worktrees:Root and Worktrees:Repository are not both set; without it the engine would start in the API's own working directory.");
         }
-
-        return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
 
     private static bool HasWorktrees(WorktreesOptions options) =>

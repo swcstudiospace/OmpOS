@@ -4,7 +4,8 @@ using Autonogrammer.Harness.Acp;
 namespace Autonogrammer.Api.Harness;
 
 /// <summary>
-/// The isolation the API applies to the engine it spawns, resolved from <see cref="HarnessOptions.AcpSettings"/> and the host environment:
+/// The isolation the API applies to the engine it spawns, resolved from the selected adapter's settings
+/// (<see cref="HarnessOptions.AcpSettings"/> or <see cref="HarnessOptions.RpcSettings"/>) and the host environment:
 /// which environment variables the engine inherits and under which directory sessions without a run worktree get their working directory.
 /// </summary>
 /// <param name="Mode">How the engine obtains its environment.</param>
@@ -23,8 +24,23 @@ internal sealed record EngineIsolationSettings(EngineEnvironmentMode Mode, IRead
     public static EngineIsolationSettings Resolve(HarnessOptions.AcpSettings acp, bool development)
     {
         ArgumentNullException.ThrowIfNull(acp);
-        var mode = acp.Environment.Mode ?? (development ? EngineEnvironmentMode.Inherit : EngineEnvironmentMode.Allowlist);
-        var root = string.IsNullOrWhiteSpace(acp.WorkspaceRoot) ? null : acp.WorkspaceRoot.Trim();
-        return new EngineIsolationSettings(mode, [.. acp.Environment.Allow], root);
+        return Resolve(acp.Environment, acp.WorkspaceRoot, development);
+    }
+
+    /// <summary>Resolves the settings from the bound <c>Harness:Rpc</c> section; same rules as the ACP overload.</summary>
+    /// <param name="rpc">The bound <c>Harness:Rpc</c> section.</param>
+    /// <param name="development">Whether the host runs in the Development environment.</param>
+    /// <returns>The resolved settings.</returns>
+    public static EngineIsolationSettings Resolve(HarnessOptions.RpcSettings rpc, bool development)
+    {
+        ArgumentNullException.ThrowIfNull(rpc);
+        return Resolve(rpc.Environment, rpc.WorkspaceRoot, development);
+    }
+
+    private static EngineIsolationSettings Resolve(HarnessOptions.AcpEnvironmentSettings environment, string? workspaceRoot, bool development)
+    {
+        var mode = environment.Mode ?? (development ? EngineEnvironmentMode.Inherit : EngineEnvironmentMode.Allowlist);
+        var root = string.IsNullOrWhiteSpace(workspaceRoot) ? null : workspaceRoot.Trim();
+        return new EngineIsolationSettings(mode, [.. environment.Allow], root);
     }
 }

@@ -4,10 +4,9 @@ using Porta.Pty;
 namespace Autonogrammer.Harness.Terminal;
 
 /// <summary>
-/// The pseudo-terminal machinery shared by <see cref="PtyProcessRunner"/>, <see cref="LinuxLocalPtyBackend"/> and <see cref="WindowsLocalPtyBackend"/>:
-/// it spawns a command from an argument list in an explicit working directory, reports its exit, reads its output,
-/// writes bytes to its input, resizes it and kills it. It makes no decision about what may be written; each caller
-/// decides what to send. The one-shot runner sends only its end-of-input byte.
+/// The pseudo-terminal machinery used by <see cref="PtyProcessRunner"/>: it spawns a command from an argument list in an explicit
+/// working directory, reports its exit, reads its output, writes bytes to its input, resizes it and kills it. It makes no
+/// decision about what may be written; each caller decides what to send. The one-shot runner sends only its end-of-input byte.
 /// </summary>
 internal sealed class PtyCore : IDisposable
 {

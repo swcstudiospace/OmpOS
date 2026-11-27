@@ -83,10 +83,6 @@ public static class UnconnectedAgentPanel
             Task.FromException<string>(new InvalidOperationException(UnconnectedPromptChannel.UnavailableText));
 
         /// <inheritdoc />
-        public Task<string> CreateTerminalSessionAsync(CancellationToken cancellationToken) =>
-            Task.FromException<string>(new InvalidOperationException(UnconnectedPromptChannel.UnavailableText));
-
-        /// <inheritdoc />
         public Task<AgentSessionViewModel> OpenSessionAsync(AgentRow row, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(row);

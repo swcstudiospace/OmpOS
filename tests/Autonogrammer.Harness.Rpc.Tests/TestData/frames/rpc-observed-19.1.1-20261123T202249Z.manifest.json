@@ -1,0 +1,119 @@
+{
+  "contract_id": "OMP19-protocol-evidence",
+  "contract_version": "1.0.0",
+  "capture_id": "rpc-observed-19.1.1-20261123T202249Z",
+  "captured_at": "2026-11-23T20:22:49Z",
+  "transport": "rpc",
+  "evidence_kind": "frames",
+  "omp_version": "19.1.1",
+  "evidence_label": "observed-19.1.1",
+  "omp_binary_path": "~/.local/bin/omp",
+  "argv": [
+    "~/.local/bin/omp",
+    "--mode",
+    "rpc",
+    "--no-ui",
+    "--cwd",
+    "/tmp/omp79final/rpc/cwd",
+    "--session-dir",
+    "/tmp/omp79final/rpc/sessions",
+    "--no-session",
+    "--model",
+    "opus"
+  ],
+  "live_model_turn": false,
+  "frames_file": "rpc-observed-19.1.1-20261123T202249Z.ndjson",
+  "frames_sha256": "sha256:29da29f0c7334c3ecb9cda7f4bf9659bf11fe419c98745b9ab4ce42476dd68bd",
+  "frames_bytes": 19718,
+  "frame_count": 8,
+  "redaction_applied": true,
+  "redaction_rules": [
+    "R1",
+    "R4"
+  ],
+  "ledger_refs": [
+    "OQ-520",
+    "OQ-521",
+    "OQ-522",
+    "OQ-523",
+    "OQ-524"
+  ],
+  "frames": [
+    {
+      "seq": 1,
+      "direction": "in",
+      "t_offset_ms": 1648,
+      "frame_type": "ready",
+      "byte_length": 168,
+      "line_sha256": "sha256:0190791ec6fb87b9a1fb295e8fb30594632a47f008570cd5f0611051b639c911",
+      "redacted": false
+    },
+    {
+      "seq": 2,
+      "direction": "out",
+      "t_offset_ms": 1648,
+      "frame_type": "negotiate_protocol",
+      "byte_length": 58,
+      "line_sha256": "sha256:3bea4ac7ba5616640232f397c35882c5856e2ebb05ce950c3193a4ad2bf3f77d",
+      "redacted": false
+    },
+    {
+      "seq": 3,
+      "direction": "in",
+      "t_offset_ms": 1658,
+      "frame_type": "available_commands_update",
+      "byte_length": 16804,
+      "line_sha256": "sha256:0292fe204849f86f7ca6752362d7c848097badeed9455a157c712367f9a3bbd1",
+      "redacted": false
+    },
+    {
+      "seq": 4,
+      "direction": "in",
+      "t_offset_ms": 1659,
+      "frame_type": "response",
+      "byte_length": 103,
+      "line_sha256": "sha256:3501496da550ecc6e2753c9ae5d9dc190b49675a30a32b6d63529b3aeb5ca922",
+      "redacted": false
+    },
+    {
+      "seq": 5,
+      "direction": "out",
+      "t_offset_ms": 1659,
+      "frame_type": "get_state",
+      "byte_length": 29,
+      "line_sha256": "sha256:5c474a7f6644f673516f6e5dad504d3bc96a26d280c2db0291715c6e34fa388f",
+      "redacted": false
+    },
+    {
+      "seq": 6,
+      "direction": "in",
+      "t_offset_ms": 1685,
+      "frame_type": "response",
+      "byte_length": 2431,
+      "line_sha256": "sha256:0cb6f6c004fca8fdbe82d85956edc20943ceda95ebc9ccfda29ddad839367bd7",
+      "redacted": true,
+      "redacted_paths": [
+        "/data/systemPrompt",
+        "/data/dumpTools"
+      ]
+    },
+    {
+      "seq": 7,
+      "direction": "out",
+      "t_offset_ms": 1685,
+      "frame_type": "nope",
+      "byte_length": 24,
+      "line_sha256": "sha256:4fc583e3f6d7589079cd21f626b056eea9e1ecdfc431cced191ecc1b64ca2abd",
+      "redacted": false
+    },
+    {
+      "seq": 8,
+      "direction": "in",
+      "t_offset_ms": 1703,
+      "frame_type": "response",
+      "byte_length": 93,
+      "line_sha256": "sha256:437f1c3e5d4eb0f27838204ffa9d14f3b27746e6f2750f4e46b06c8b12ac6918",
+      "redacted": false
+    }
+  ]
+}

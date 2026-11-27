@@ -1,6 +1,7 @@
 #pragma warning disable CA2007
 
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using Autonogrammer.Contracts.Agents;
@@ -39,11 +40,15 @@ public sealed class CoworkSessionHostTests
     }
 
     [Fact]
-    public async Task CreateTerminalSessionAsyncThrows()
+    public async Task TerminalCreationIsRemovedFromTheHost()
     {
+        typeof(IAgentPanelHost).GetMethods().Select(static method => method.Name).ShouldNotContain("CreateTerminalSessionAsync", StringComparer.Ordinal);
+        typeof(CoworkSessionHost).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic).Select(static method => method.Name).ShouldNotContain("CreateTerminalSessionAsync", StringComparer.Ordinal);
+
         using var root = new TempDir();
         await using var host = Host(root.Path, new ScriptedOmp());
-        await Should.ThrowAsync<NotSupportedException>(() => host.CreateTerminalSessionAsync(TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        var id = await host.CreateSessionAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        id.ShouldNotBeNullOrWhiteSpace("chat creation is the only creation path left");
     }
 
     [Fact]

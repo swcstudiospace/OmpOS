@@ -1,8 +1,7 @@
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.AgentLoop.Steering;
-using Autonogrammer.Harness.OmpLauncher;
-using Autonogrammer.Harness.Terminal;
+using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Settings.Models;
 using Autonogrammer.Presentation;
 using Microsoft.Extensions.Logging;
@@ -26,6 +25,9 @@ internal sealed class AgentHeadOptions
 
     /// <summary>Gets the transport factory of every session, or null to spawn <c>omp acp</c>.</summary>
     public Func<AcpClientOptions, IAcpTransport>? TransportFactory { get; init; }
+
+    /// <summary>Gets the wire transport the head's sessions compose over. The default is <see cref="EngineTransport.Rpc"/> (Phase 84 cutover); a test that injects a scripted ACP transport through <see cref="TransportFactory"/> sets <see cref="EngineTransport.Acp"/>.</summary>
+    public EngineTransport Transport { get; init; } = EngineTransport.Rpc;
 
     /// <summary>Gets the clock, or null for the system clock.</summary>
     public TimeProvider? TimeProvider { get; init; }
@@ -57,11 +59,6 @@ internal sealed class AgentHeadOptions
     /// <summary>Gets a value indicating whether <see cref="AgentHead.InitializeAsync"/> selects the most recent saved session, which opens it. The default is true; a test that has no UI thread turns it off.</summary>
     public bool SelectMostRecentSession { get; init; } = true;
 
-    /// <summary>Gets how a terminal session starts omp, or null for the Linux pseudo-terminal backend.</summary>
-    public ITerminalBackend? TerminalBackend { get; init; }
-
-    /// <summary>Gets how omp is located for a terminal session, or null to search <c>PATH</c> and the known install places, after <see cref="OmpPath"/> when that is set.</summary>
-    public OmpLocatorOptions? TerminalLocator { get; init; }
 
     /// <summary>Gets how long a steering message waits for omp to acknowledge it, or null for the default of 3 seconds.</summary>
     public TimeSpan? SteerAckTimeout { get; init; }

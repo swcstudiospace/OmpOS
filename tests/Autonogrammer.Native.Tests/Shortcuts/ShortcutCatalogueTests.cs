@@ -46,7 +46,6 @@ public sealed class ShortcutCatalogueTests
             ShortcutIds.SearchConversations => RunAsync(() => ShellShortcutEffects.SearchConversations(gesture)),
             ShortcutIds.Dismiss => RunAsync(() => ShellShortcutEffects.Dismiss(gesture, GestureOf(ShortcutIds.SearchTranscript))),
             ShortcutIds.NewAgent => ShellShortcutEffects.NewAgentAsync(gesture, token),
-            ShortcutIds.NewTerminal => ShellShortcutEffects.NewTerminalAsync(gesture, token),
             ShortcutIds.ShowAgentsTab => ShellShortcutEffects.ShowAgentsTabAsync(gesture, token),
             ShortcutIds.ShowKanbanTab => ShellShortcutEffects.ShowKanbanTabAsync(gesture),
             ShortcutIds.OpenAgent => RunAsync(() => ShellShortcutEffects.OpenAgent(gesture, focusList)),
@@ -98,12 +97,20 @@ public sealed class ShortcutCatalogueTests
     {
         var texts = ShortcutCatalogue.Entries.Select(static entry => KeyboardSettingsSource.Format(entry.Gesture)).ToHashSet(StringComparer.Ordinal);
 
-        foreach (var expected in new[] { "Ctrl+,", "Ctrl+N", "Ctrl+Shift+T", "Ctrl+Shift+A", "Ctrl+Shift+K", "Ctrl+1", "Ctrl+2", "F6", "Ctrl+F", "Enter", "Shift+Enter", "Ctrl+Enter", "Ctrl+Shift+Enter" })
+        foreach (var expected in new[] { "Ctrl+,", "Ctrl+N", "Ctrl+Shift+A", "Ctrl+Shift+K", "Ctrl+1", "Ctrl+2", "F6", "Ctrl+F", "Enter", "Shift+Enter", "Ctrl+Enter", "Ctrl+Shift+Enter" })
         {
             texts.ShouldContain(expected, StringComparer.Ordinal);
         }
 
         ShortcutCatalogue.Entries.Select(static entry => entry.Scope).Distinct(StringComparer.Ordinal).Count().ShouldBe(KeyboardCopy.ScopeOrder.Count);
+    }
+
+    /// <summary>The retired terminal shortcut is gone: no catalogue entry is for a terminal, and Ctrl+Shift+T is unbound.</summary>
+    [Fact]
+    public void NoTerminalShortcutIsCatalogued()
+    {
+        ShortcutCatalogue.Entries.ShouldAllBe(static entry => !entry.Id.Contains("terminal", StringComparison.OrdinalIgnoreCase));
+        ShortcutCatalogue.Entries.ShouldAllBe(static entry => KeyboardSettingsSource.Format(entry.Gesture) != "Ctrl+Shift+T");
     }
 
     /// <summary>Meta+Shift+1 and Meta+Shift+2 switch the surface even when the catalogue gesture uses Control.</summary>

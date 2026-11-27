@@ -16,8 +16,9 @@ namespace Autonogrammer.Harness.Rpc;
 /// </para>
 /// <para>
 /// Pin behaviour: every start goes through <see cref="OmpRpcClient"/>, which probes <c>omp --version</c> and refuses
-/// any release outside the 18.12.x line with a <see cref="ProcessStartHarnessException"/> before the engine is spawned.
-/// No path in this factory skips that probe.
+/// any release outside the 19.1.x line with a <see cref="ProcessStartHarnessException"/> before the engine is spawned
+/// (Phase 79 ledger "Pin decision (D-03)", OQ-524 closed; the 19.1.1 prompt path remains replay-proven over
+/// verified-18.12.6 shapes, so RPC stays opt-in). No path in this factory skips that probe.
 /// </para>
 /// <para>
 /// The <c>prompt</c> argument is accepted for interface parity. The session submits the prompt passed to

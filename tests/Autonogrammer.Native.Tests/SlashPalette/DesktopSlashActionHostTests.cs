@@ -19,7 +19,6 @@ public sealed class DesktopSlashActionHostTests
         {
             OpenSettings = _ => true,
             NewChat = _ => Task.CompletedTask,
-            NewTerminal = _ => Task.CompletedTask,
             SetMode = (_, _) => Task.FromResult<string?>(null),
             PickModel = (_, _) => Task.FromResult(string.Empty),
             OpenSideChat = (_, _) => Task.CompletedTask,
@@ -27,8 +26,9 @@ public sealed class DesktopSlashActionHostTests
         });
         string[] actions =
         [
-            SlashActionIds.SettingsOpen, SlashActionIds.ChatNew, SlashActionIds.TerminalNew, SlashActionIds.ModeSet, SlashActionIds.ModelPick, SlashActionIds.SideOpen, SlashActionIds.HelpShow,
+            SlashActionIds.SettingsOpen, SlashActionIds.ChatNew, SlashActionIds.ModeSet, SlashActionIds.ModelPick, SlashActionIds.SideOpen, SlashActionIds.HelpShow,
         ];
+        all.CanRun(SlashActionIds.TerminalNew).ShouldBeFalse("the terminal slash action is retired");
 
         actions.ShouldAllBe(action => !none.CanRun(action));
         actions.ShouldAllBe(action => all.CanRun(action));
@@ -56,24 +56,23 @@ public sealed class DesktopSlashActionHostTests
         missing.Message.ShouldBe("Settings has no bedrock page.");
     }
 
-    /// <summary>A new chat and a new terminal run their targets and say so.</summary>
+    /// <summary>A new chat runs its target and says so; the retired terminal action cannot run.</summary>
     [Fact]
-    public async Task NewChatAndNewTerminalRunTheirTargets()
+    public async Task NewChatRunsItsTarget()
     {
         var calls = new List<string>();
         var host = new DesktopSlashActionHost(new DesktopSlashTargets
         {
             NewChat = _ => { calls.Add("chat"); return Task.CompletedTask; },
-            NewTerminal = _ => { calls.Add("terminal"); return Task.CompletedTask; },
         });
         var token = TestContext.Current.CancellationToken;
 
         var chat = await host.RunAsync(Request(SlashActionIds.ChatNew), token).ConfigureAwait(true);
         var terminal = await host.RunAsync(Request(SlashActionIds.TerminalNew, typed: "ls"), token).ConfigureAwait(true);
 
-        calls.ShouldBe(["chat", "terminal"]);
+        calls.ShouldBe(["chat"]);
         chat.Message.ShouldBe("Started a new chat.");
-        terminal.Message.ShouldBe("Started a new terminal.");
+        terminal.ShouldBe(SlashActionResult.NotAvailable(SlashPaletteCopy.ActionNotInThisWindow));
     }
 
     /// <summary>A mode switch that succeeds returns the typed text as the prompt to send in that mode; one that is refused fails with the reason and carries no prompt.</summary>
@@ -154,7 +153,10 @@ public sealed class DesktopSlashActionHostTests
         var host = new DesktopSlashActionHost(new DesktopSlashTargets
         {
             NewChat = _ => throw new InvalidOperationException("no workspace"),
-            NewTerminal = token => Task.FromCanceled(token),
+        });
+        var cancellingHost = new DesktopSlashActionHost(new DesktopSlashTargets
+        {
+            NewChat = token => Task.FromCanceled(token),
         });
         using var cancelled = new CancellationTokenSource();
         await cancelled.CancelAsync().ConfigureAwait(true);
@@ -163,7 +165,7 @@ public sealed class DesktopSlashActionHostTests
 
         failed.Outcome.ShouldBe(SlashActionOutcome.Failed);
         failed.Message.ShouldBe("The command failed: no workspace");
-        await Should.ThrowAsync<TaskCanceledException>(() => host.RunAsync(Request(SlashActionIds.TerminalNew), cancelled.Token)).ConfigureAwait(true);
+        await Should.ThrowAsync<TaskCanceledException>(() => cancellingHost.RunAsync(Request(SlashActionIds.ChatNew), cancelled.Token)).ConfigureAwait(true);
     }
 
     /// <summary>Null input is refused.</summary>

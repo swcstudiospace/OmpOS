@@ -10,7 +10,6 @@
     <div class="autonogrammer-rail-header">
         <h2 class="autonogrammer-rail-title">Agents</h2>
         <button type="button" class="autonogrammer-btn autonogrammer-btn--primary autonogrammer-new-agent" aria-label="New conversation" @onclick="NewAgentAsync"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14" /></svg>New conversation</button>
-        <button type="button" class="autonogrammer-btn autonogrammer-btn--ghost autonogrammer-new-terminal" aria-label="@AgentPanelCopy.NewTerminal" @onclick="NewTerminalAsync"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 4l4 4-4 4M8 12.5h5.5" /></svg>@AgentPanelCopy.NewTerminal</button>
         <input type="search"
                class="autonogrammer-input autonogrammer-agent-filter"
                aria-label="Filter agents"
@@ -178,9 +177,6 @@
     [Parameter]
     public EventCallback OnNewCompleted { get; set; }
 
-    /// <summary>Gets the callback invoked after a new omp terminal was started.</summary>
-    [Parameter]
-    public EventCallback OnNewTerminalCompleted { get; set; }
 
     /// <summary>Gets the callback invoked when the Settings button is pressed.</summary>
     [Parameter]
@@ -279,16 +275,6 @@
         }
     }
 
-    private async Task NewTerminalAsync()
-    {
-        _error = null;
-        await Panel.NewTerminalCommand.ExecuteAsync(null).ConfigureAwait(true);
-        await OnNewTerminalCompleted.InvokeAsync().ConfigureAwait(true);
-        if (Shell is not null)
-        {
-            await Shell.CloseDrawerAsync().ConfigureAwait(true);
-        }
-    }
 
     private Task RetryLoadingAsync() => Panel.RetryLoadingCommand.ExecuteAsync(null);
 

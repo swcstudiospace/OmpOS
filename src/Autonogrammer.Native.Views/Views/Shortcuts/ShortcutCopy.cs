@@ -36,9 +36,6 @@ public static class ShortcutCopy
     /// <summary>The label of the shortcut that starts a new agent.</summary>
     public const string NewAgent = "Start a new agent";
 
-    /// <summary>The label of the shortcut that starts a new terminal agent.</summary>
-    public const string NewTerminal = "Start a new terminal agent";
-
     /// <summary>The label of the shortcut that shows the Agents tab.</summary>
     public const string ShowAgentsTab = "Show the Agents tab";
 

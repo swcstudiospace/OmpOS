@@ -133,9 +133,9 @@ public sealed class SettingsEntryTests
         }
     }
 
-    /// <summary>The saved auto-run choice is what the Terminal tool reads: the provider follows the file at every call.</summary>
+    /// <summary>The auto-run switch was removed (Phase 81): the provider the Terminal tool reads is always approval-always.</summary>
     [Fact]
-    public async Task TheTerminalToolReadsTheSavedAutoRunChoice()
+    public async Task TheTerminalToolReadsApprovalAlways()
     {
         using var tree = new TempTree();
         var engines = NewEngines(tree);
@@ -149,12 +149,6 @@ public sealed class SettingsEntryTests
                 var window = ShellHarness.Show();
                 settings.Attach(window);
                 var provider = ShellHarness.MainViewOf(window).TerminalSettingsProvider.ShouldNotBeNull();
-                provider().AutoRunEnabled.ShouldBeFalse();
-
-                store.SetTerminalAutoRun(autoRun: true);
-                provider().AutoRunEnabled.ShouldBeTrue();
-
-                store.SetTerminalAutoRun(autoRun: false);
                 provider().AutoRunEnabled.ShouldBeFalse();
             }, TestContext.Current.CancellationToken).ConfigureAwait(true);
         }

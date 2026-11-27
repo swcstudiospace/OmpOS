@@ -47,6 +47,8 @@ internal static class CoworkEngineComposer
         // Matches NativeSteering assignment in CoworkSessionHost.RuntimeOptions.
         var options = new EngineCompositionOptions
         {
+            // Cowork always wires a PermissionResolverFactory, so it is an approval-capable flow RPC must refuse (OQ-525): pin to ACP.
+            Transport = EngineTransport.Acp,
             ExtraMcpServers = extra,
             EnvironmentMode = EngineEnvironmentMode.Allowlist,
             EnvironmentAllowList = OperatingSystem.IsWindows() ? WindowsExtras : [],

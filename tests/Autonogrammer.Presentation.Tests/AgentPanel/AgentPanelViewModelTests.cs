@@ -898,25 +898,21 @@ public sealed class AgentPanelViewModelTests : IDisposable
         source.Requests.ShouldBeEmpty();
     }
 
-    /// <summary>Creation does not finish before asynchronous selection startup, for agents and omp terminals alike.</summary>
-    /// <param name="terminal">Whether to create an omp terminal rather than an agent.</param>
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task CreatingASessionAwaitsItsSelectionStartup(bool terminal)
+    /// <summary>Creating an agent does not finish before its selection startup. Terminal creation is retired and has no panel path.</summary>
+    [Fact]
+    public async Task CreatingASessionAwaitsItsSelectionStartup()
     {
         var opened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         _host.OpenGate = (_, token) => opened.Task.WaitAsync(token);
         var panel = NewPanel();
 
-        var create = terminal ? panel.NewTerminalAsync(TestContext.Current.CancellationToken)
-            : panel.NewSessionAsync(TestContext.Current.CancellationToken);
+        var create = panel.NewSessionAsync(TestContext.Current.CancellationToken);
         create.IsCompleted.ShouldBeFalse();
         panel.Selected.ShouldBeNull();
         opened.SetResult();
         await create.ConfigureAwait(true);
 
-        panel.Selected!.Id.ShouldBe(terminal ? "terminal-1" : "new-1");
+        panel.Selected!.Id.ShouldBe("new-1");
         panel.SelectionLoad.IsCompletedSuccessfully.ShouldBeTrue();
     }
 

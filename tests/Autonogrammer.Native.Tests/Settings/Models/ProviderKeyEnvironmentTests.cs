@@ -1,7 +1,6 @@
 using System.Text.RegularExpressions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.AgentLoop.Launch;
-using Autonogrammer.Harness.OmpLauncher;
 using Autonogrammer.Harness.Secrets;
 using Autonogrammer.Harness.Terminal;
 using Autonogrammer.Native.Settings.Models;
@@ -173,7 +172,6 @@ public sealed partial class ProviderKeyEnvironmentTests
             PlanningEvents = [],
         };
         var options = new AcpClientOptions { EnvironmentVariables = overlay };
-        var request = new OmpTerminalLaunchRequest("/workspace", [], 80, 24, new NullSink()) { Environment = keys.Merge(planned) };
         var session = new TerminalSessionOptions("/bin/omp", [], "/workspace", 80, 24, new NullSink()) { Environment = keys.Merge(planned) };
 
         var renderings = new[]
@@ -181,16 +179,13 @@ public sealed partial class ProviderKeyEnvironmentTests
             keys.ToString(),
             overlay.ToString()!,
             plan.ToString(),
-            plan.ForTerminal().ToString(),
             options.ToString(),
-            request.ToString(),
             session.ToString(),
         };
 
         renderings.ShouldAllBe(text => !text.Contains(ModelsForms.Canary, StringComparison.Ordinal));
         renderings[0].ShouldContain(Name, Case.Sensitive);
         plan.ToString().ShouldContain(Name, Case.Sensitive);
-        request.ToString().ShouldContain(Name, Case.Sensitive);
     }
 
     [GeneratedRegex("^[A-Z][A-Z0-9_]*$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]

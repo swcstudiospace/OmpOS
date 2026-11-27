@@ -80,6 +80,8 @@ internal sealed class SendShell : IAsyncDisposable
             WorkspaceRoot = workspaceRoot,
             AllowedKinds = allowedKinds,
             TransportFactory = transportFactory,
+            // The scripted peer speaks ACP, so pin the transport to Acp: the shipped default is Rpc since the Phase 84 flip and would ignore the scripted transport factory.
+            Transport = EngineTransport.Acp,
             MaintenanceInterval = TimeSpan.Zero,
             Dispatch = RunOnUiThread,
 

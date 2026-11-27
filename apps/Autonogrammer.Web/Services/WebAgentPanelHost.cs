@@ -1,12 +1,10 @@
 using Autonogrammer.Presentation.AgentPanel;
-using Autonogrammer.Presentation.Terminal;
 
 namespace Autonogrammer.Web.Services;
 
 /// <summary>
 /// The <see cref="IAgentPanelHost"/> of the web head. The API owns the engines and the registry; the host asks it to create, close and list
-/// sessions and keeps <see cref="WebSessionCatalog"/> current. An omp terminal cannot be created from a browser: that operation fails with the
-/// reason the head shows next to the New terminal button.
+/// sessions and keeps <see cref="WebSessionCatalog"/> current. Terminal creation is retired: a persisted terminal record loads as retired.
 /// </summary>
 internal sealed class WebAgentPanelHost : IAgentPanelHost
 {
@@ -46,10 +44,6 @@ internal sealed class WebAgentPanelHost : IAgentPanelHost
         _catalog.EnsureCreated(created);
         return created.Id;
     }
-
-    /// <inheritdoc />
-    public Task<string> CreateTerminalSessionAsync(CancellationToken cancellationToken) =>
-        Task.FromException<string>(new InvalidOperationException(TerminalAvailability.WebReason));
 
     /// <inheritdoc />
     public Task<AgentSessionViewModel> OpenSessionAsync(AgentRow row, CancellationToken cancellationToken)

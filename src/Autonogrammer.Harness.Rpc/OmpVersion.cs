@@ -13,15 +13,15 @@ namespace Autonogrammer.Harness.Rpc;
 public readonly partial record struct OmpVersion(int Major, int Minor, int Patch)
 {
     /// <summary>The major release line this client is pinned to.</summary>
-    public const int PinnedMajor = 18;
+    public const int PinnedMajor = 19;
 
     /// <summary>The minor release line this client is pinned to.</summary>
-    public const int PinnedMinor = 12;
+    public const int PinnedMinor = 1;
 
-    /// <summary>Gets whether this version is on the pinned <c>18.12.x</c> line.</summary>
+    /// <summary>Gets whether this version is on the pinned <c>19.1.x</c> line.</summary>
     public bool IsPinnedRelease => Major == PinnedMajor && Minor == PinnedMinor;
 
-    /// <summary>Parses the first <c>major.minor.patch</c> triple in <paramref name="text"/>, such as <c>omp/18.12.3</c>.</summary>
+    /// <summary>Parses the first <c>major.minor.patch</c> triple in <paramref name="text"/>, such as <c>omp/19.1.1</c>.</summary>
     /// <param name="text">The output of <c>omp --version</c>.</param>
     /// <returns>The parsed version.</returns>
     /// <exception cref="ProcessStartHarnessException">The text contains no version triple.</exception>

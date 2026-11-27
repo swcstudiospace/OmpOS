@@ -4,9 +4,10 @@ using Autonogrammer.Presentation.Settings;
 namespace Autonogrammer.Native.Settings;
 
 /// <summary>
-/// The Agents page's values over the head's settings file. The saved auto-run choice is the one source of truth for the Terminal tool:
-/// <see cref="ToTerminalSettings"/> builds the settings the tool reads each time it builds its panel. No environment variable overrides
-/// it: Autonogrammer has none for the terminal, so the file alone decides.
+/// The Agents page's values over the head's settings file. The terminal auto-run switch was removed (Phase 81), so the page carries no
+/// editable value: <see cref="ToTerminalSettings"/> always builds the settings the Terminal tool reads with auto-run off, which maps the
+/// removed toggle to approval-always for the shell terminal — every proposed command waits for an approval. A stored <c>terminal</c>
+/// section in an existing settings file is parse-and-ignore data; it never takes effect.
 /// </summary>
 internal sealed class AgentsSettingsSource : IAgentsSettingsSource
 {
@@ -21,31 +22,28 @@ internal sealed class AgentsSettingsSource : IAgentsSettingsSource
         _store = store;
     }
 
-    /// <summary>Builds the terminal settings from the settings file. A file that cannot be used gives the defaults, which never run a command without an approval.</summary>
-    /// <param name="store">The settings file.</param>
+    /// <summary>Builds the terminal settings for the Terminal tool. Approval-always since the auto-run switch was removed (Phase 81).</summary>
+    /// <param name="store">The settings file. Ignored: the removed toggle no longer reads it.</param>
     /// <returns>The settings the Terminal tool builds its panel with.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="store"/> is null.</exception>
     public static TerminalSettings ToTerminalSettings(FileSettingsStore store)
     {
         ArgumentNullException.ThrowIfNull(store);
-        try
-        {
-            return new TerminalSettings { AutoRunEnabled = store.Read().TerminalAutoRun };
-        }
-        catch (SettingsSourceException)
-        {
-            return new TerminalSettings();
-        }
+        return new TerminalSettings();
     }
 
     /// <inheritdoc/>
     public Task<AgentsSettingsValues> LoadAsync(CancellationToken cancellationToken) =>
-        SettingsTask.ReadAsync(() => new AgentsSettingsValues(_store.Read().TerminalAutoRun));
+        SettingsTask.ReadAsync(() =>
+        {
+            _ = _store.Read();
+            return AgentsSettingsValues.Defaults;
+        });
 
     /// <inheritdoc/>
     public Task SaveAsync(AgentsSettingsValues values, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(values);
-        return SettingsTask.WriteAsync(() => _store.SetTerminalAutoRun(values.TerminalAutoRun));
+        return Task.CompletedTask;
     }
 }

@@ -65,7 +65,9 @@ internal sealed class ApiFactory : WebApplicationFactory<Program>
     /// </summary>
     private Dictionary<string, string?> EffectiveConfig()
     {
-        var effective = new Dictionary<string, string?>(StringComparer.Ordinal) { ["Hosting:RequestTimeoutSeconds"] = "600" };
+        // The test host always runs the in-memory echo adapter unless a test overrides it: it needs no omp executable and answers prompts
+        // without model calls. The shipped default is Rpc since the Phase 84 flip, so pin it explicitly here.
+        var effective = new Dictionary<string, string?>(StringComparer.Ordinal) { ["Hosting:RequestTimeoutSeconds"] = "600", ["Harness:Adapter"] = "InMemory" };
         if (_environment is null || string.Equals(_environment, Environments.Development, StringComparison.Ordinal))
         {
             effective["Api:Auth:AllowDevelopmentPrincipal"] = "true";

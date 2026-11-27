@@ -1,0 +1,47 @@
+{
+  "contract_id": "OMP19-protocol-evidence",
+  "contract_version": "1.0.0",
+  "capture_id": "acp-observed-19.1.1-20261123T202251Z",
+  "captured_at": "2026-11-23T20:22:51Z",
+  "transport": "acp",
+  "evidence_kind": "frames",
+  "omp_version": "19.1.1",
+  "evidence_label": "observed-19.1.1",
+  "omp_binary_path": "~/.local/bin/omp",
+  "argv": [
+    "~/.local/bin/omp",
+    "acp"
+  ],
+  "live_model_turn": false,
+  "frames_file": "acp-observed-19.1.1-20261123T202251Z.ndjson",
+  "frames_sha256": "sha256:5864a2c1a529b77b88904c24ebf38177ddbfb74facf05c729dac31d7dac9400e",
+  "frames_bytes": 684,
+  "frame_count": 2,
+  "redaction_applied": true,
+  "redaction_rules": [
+    "R1"
+  ],
+  "ledger_refs": [
+    "ACP-INITIALIZE"
+  ],
+  "frames": [
+    {
+      "seq": 1,
+      "direction": "out",
+      "t_offset_ms": 0,
+      "frame_type": "initialize",
+      "byte_length": 150,
+      "line_sha256": "sha256:e6b718098d6ce3b9b7c4329dce43204a68bf62189974e0b96eb1331c21b65072",
+      "redacted": false
+    },
+    {
+      "seq": 2,
+      "direction": "in",
+      "t_offset_ms": 1322,
+      "frame_type": "result:1",
+      "byte_length": 532,
+      "line_sha256": "sha256:fced10c441691d3132868063f6f60532463507883a17c23f11b6fb39ce4335ad",
+      "redacted": false
+    }
+  ]
+}

@@ -435,4 +435,63 @@ public sealed class SessionEngineSetTests
         head.Host.Plugins.Count(static plugin => plugin.Health == PluginHealth.Ready).ShouldBe(4, "the four enabled plugins are ready; the substrate is switched off");
         head.Host.Catalog.Snapshot().ShouldHaveSingleItem().Id.ShouldBe(id);
     }
+
+    /// <summary>A retired terminal record (Phase 81) opens as retired and stays retired: reattaching it neither reopens the engine nor marks it created, and composing its engine is refused, so no engine is ever started for it.</summary>
+    [Fact]
+    public async Task AOpenedTerminalRecordStaysRetiredAndComposesNoEngine()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var tree = new TempTree();
+        var omp = new ScriptedOmp();
+        var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
+        await using var headLifetime = head.ConfigureAwait(true);
+        await head.InitializeAsync(ct).ConfigureAwait(true);
+
+        var record = head.Host.Registry!.Create("Shell", tree.Workspace, SessionKind.Terminal);
+        var slot = head.Host.CreateSlot(record.Id, record.WorkspaceRoot, null);
+        slot.MarkEngineClosed();
+
+        await head.Host.ReattachAsync(slot, ct).ConfigureAwait(true);
+
+        slot.EngineClosed.ShouldBeTrue("reattaching a retired terminal must not reopen its engine");
+        head.Host.Registry!.TryGet(record.Id, out var after).ShouldBeTrue();
+        after!.Lifecycle.ShouldBe(SessionLifecycle.Created);
+
+        var plan = await slot.PlanAsync(ct).ConfigureAwait(true);
+        var failure = await Should.ThrowAsync<InvalidOperationException>(() => head.Host.ComposeEngineAsync(plan, null, ct)).ConfigureAwait(true);
+        failure.Message.ShouldContain("retired terminal");
+        omp.Launches.ShouldBeEmpty("no engine is started for a retired terminal");
+    }
+
+    /// <summary>An unattended candidate composes over ACP under the default transport (RPC): its admission of every tool kind is an approval-capable flow RPC must refuse (OQ-525), so it pins ACP and its factory launch succeeds.</summary>
+    [Fact]
+    public async Task AnUnattendedCandidateComposesOverAcpUnderDefaultTransport()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var tree = new TempTree();
+        var omp = new ScriptedOmp { AdvertiseAuthentication = true };
+        var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
+        await using var headScope = head.ConfigureAwait(true);
+
+        var engine = await head.Host.ComposeUnattendedEngineAsync(tree.Workspace, ct).ConfigureAwait(true);
+        await using var host = engine.Host.ConfigureAwait(true);
+        await engine.Host.ConnectAsync(ct).ConfigureAwait(true);
+
+        omp.Launches.ShouldHaveSingleItem().WorkingDirectory.ShouldBe(tree.Workspace);
+    }
+
+    /// <summary>A side chat composes without throwing under the default transport (RPC): empty tool kinds and no resolver carry nothing RPC must refuse, so it stays deny-by-default per OQ-525.</summary>
+    [Fact]
+    public async Task ASideChatComposesUnderDefaultTransport()
+    {
+        using var tree = new TempTree();
+        var omp = new ScriptedOmp();
+        var head = await AgentHead.CreateAsync(Options(tree, omp)).ConfigureAwait(true);
+        await using var headScope = head.ConfigureAwait(true);
+
+        var engine = head.Host.ComposeSideChatEngine(tree.Workspace);
+        await using var host = engine.Host.ConfigureAwait(true);
+
+        omp.Launches.ShouldBeEmpty("composing a side chat starts no process until a prompt is submitted");
+    }
 }

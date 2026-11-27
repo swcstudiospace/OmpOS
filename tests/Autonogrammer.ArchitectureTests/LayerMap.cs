@@ -51,7 +51,6 @@ internal static class LayerMap
         ["Autonogrammer.Harness.PluginBundles"] = 2,
         ["Autonogrammer.Harness.Isolation"] = 2,
         ["Autonogrammer.Harness.Notifications"] = 2,
-        ["Autonogrammer.Harness.Herdr"] = 2,
         ["Autonogrammer.Harness.Agent"] = 2,
         ["Autonogrammer.Harness.AgentLoop"] = 2,
         ["Autonogrammer.Harness.Remote"] = 2,
@@ -98,8 +97,6 @@ internal static class LayerMap
         ("Autonogrammer.Parser", "Autonogrammer.Sandbox.Abstractions"),
         // intentional: the MCP gateway serves the tool registry that the MCP library owns
         ("Autonogrammer.Harness.McpGateway", "Autonogrammer.Harness.Mcp"),
-        // intentional: the omp launcher starts omp through the terminal library's process host
-        ("Autonogrammer.Harness.OmpLauncher", "Autonogrammer.Harness.Terminal"),
         // intentional: the omp configuration client finds the omp executable through the launcher's locator and wraps API keys in the secrets library's SecretString
         ("Autonogrammer.Harness.OmpConfig", "Autonogrammer.Harness.OmpLauncher"),
         ("Autonogrammer.Harness.OmpConfig", "Autonogrammer.Harness.Secrets"),

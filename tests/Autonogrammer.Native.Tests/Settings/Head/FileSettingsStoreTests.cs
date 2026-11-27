@@ -70,14 +70,12 @@ public sealed class FileSettingsStoreTests : IDisposable
         var first = new FileSettingsStore(_state.Root);
         first.SetMotion(MotionPreference.Reduced);
         first.SetTheme(ThemePreference.Light);
-        first.SetTerminalAutoRun(autoRun: true);
         first.SetRuntime(new RuntimeSettingsValues(12, 3));
 
         var read = new FileSettingsStore(_state.Root).Read();
 
         read.Motion.ShouldBe(MotionPreference.Reduced);
         read.Theme.ShouldBe(ThemePreference.Light);
-        read.TerminalAutoRun.ShouldBeTrue();
         read.Runtime.ShouldBe(new RuntimeSettingsValues(12, 3));
     }
 
@@ -108,12 +106,9 @@ public sealed class FileSettingsStoreTests : IDisposable
         store.SetRuntime(new RuntimeSettingsValues(5, 2));
         store.SetMotion(MotionPreference.Full);
 
-        store.SetTerminalAutoRun(autoRun: true);
-
         var read = store.Read();
         read.Motion.ShouldBe(MotionPreference.Full);
         read.Runtime.ShouldBe(new RuntimeSettingsValues(5, 2));
-        read.TerminalAutoRun.ShouldBeTrue();
     }
 
     /// <summary>The folder is owner-only (0700) and the file is owner-read-write (0600).</summary>
@@ -163,7 +158,7 @@ public sealed class FileSettingsStoreTests : IDisposable
         var path = _state.Write("config/settings.json", "{ this is not json");
 
         var read = Should.Throw<SettingsSourceException>(() => store.Read());
-        var write = Should.Throw<SettingsSourceException>(() => store.SetTerminalAutoRun(autoRun: true));
+        var write = Should.Throw<SettingsSourceException>(() => store.SetMotion(MotionPreference.Full));
 
         read.Message.ShouldContain("is not valid", Case.Sensitive);
         read.Message.ShouldContain(path, Case.Sensitive);
@@ -216,21 +211,26 @@ public sealed class FileSettingsStoreTests : IDisposable
         var path = _state.Write("config/settings.json", content);
 
         var read = Should.Throw<SettingsSourceException>(() => store.Read());
-        _ = Should.Throw<SettingsSourceException>(() => store.SetTerminalAutoRun(autoRun: true));
+        _ = Should.Throw<SettingsSourceException>(() => store.SetMotion(MotionPreference.Full));
 
         read.Message.ShouldContain($"'{member}'", Case.Sensitive);
         File.ReadAllText(path).ShouldBe(content);
     }
 
-    /// <summary>A text value for auto-run is not the literal true: the file is unusable and auto-run never turns on from it.</summary>
+    /// <summary>An orphaned <c>terminal</c> section from before the auto-run switch was removed (Phase 81) parses and is ignored: the file reads,
+    /// auto-run never turns on from it (approval-always), and a rewrite keeps the unread section unchanged.</summary>
     [Fact]
-    public void ATextAutoRunNeverTurnsAutoRunOn()
+    public void AnOrphanedTerminalSectionIsParsedAndIgnored()
     {
         var store = new FileSettingsStore(_state.Root);
-        _ = _state.Write("config/settings.json", "{\"terminal\":{\"autoRun\":\"true\"}}");
+        _ = _state.Write("config/settings.json", "{\"terminal\":{\"autoRun\":true}}");
 
-        _ = Should.Throw<SettingsSourceException>(() => store.Read());
+        store.Read().ShouldBe(StoredSettings.Defaults);
         AgentsSettingsSource.ToTerminalSettings(store).AutoRunEnabled.ShouldBeFalse();
+
+        store.SetRuntime(new RuntimeSettingsValues(9, 4));
+        using var document = JsonDocument.Parse(File.ReadAllText(store.FilePath));
+        document.RootElement.GetProperty("terminal").GetProperty("autoRun").GetBoolean().ShouldBeTrue();
     }
 
     /// <summary>Members this build does not know are written back unchanged, at the top level and inside the known objects.</summary>
@@ -242,14 +242,13 @@ public sealed class FileSettingsStoreTests : IDisposable
             "config/settings.json",
             "{\"schemaVersion\":1,\"future\":{\"nested\":[1,2,3]},\"terminal\":{\"autoRun\":false,\"shellPath\":\"/bin/zsh\"},\"runtime\":{\"idleStopHours\":6,\"warnAfter\":4}}");
 
-        store.SetTerminalAutoRun(autoRun: true);
         store.SetRuntime(new RuntimeSettingsValues(9, 4));
 
         using var document = JsonDocument.Parse(File.ReadAllText(store.FilePath));
         var root = document.RootElement;
         root.GetProperty("future").GetProperty("nested").GetArrayLength().ShouldBe(3);
         root.GetProperty("terminal").GetProperty("shellPath").GetString().ShouldBe("/bin/zsh");
-        root.GetProperty("terminal").GetProperty("autoRun").GetBoolean().ShouldBeTrue();
+        root.GetProperty("terminal").GetProperty("autoRun").GetBoolean().ShouldBeFalse();
         root.GetProperty("runtime").GetProperty("warnAfter").GetInt32().ShouldBe(4);
         root.GetProperty("runtime").GetProperty("idleStopHours").GetInt32().ShouldBe(9);
         root.GetProperty("schemaVersion").GetInt32().ShouldBe(FileSettingsStore.CurrentSchemaVersion);
@@ -261,7 +260,6 @@ public sealed class FileSettingsStoreTests : IDisposable
     {
         var store = new FileSettingsStore(_state.Root);
         store.SetMotion(MotionPreference.Reduced);
-        store.SetTerminalAutoRun(autoRun: true);
         store.SetRuntime(new RuntimeSettingsValues(3, 3));
 
         var text = File.ReadAllText(store.FilePath);

@@ -38,13 +38,13 @@ public sealed class OmpPinMismatchTests : IDisposable
         }
     }
 
-    /// <summary>Each out-of-pin release, on either side of the 18.12 line, is refused before any engine spawn.</summary>
+    /// <summary>Each out-of-pin release, on either side of the 19.1 line, is refused before any engine spawn.</summary>
     /// <param name="version">The out-of-pin release the fake omp reports.</param>
     [Theory]
     [InlineData("19.0.0")]
-    [InlineData("18.13.0")]
-    [InlineData("18.11.9")]
-    [InlineData("17.12.4")]
+    [InlineData("19.2.0")]
+    [InlineData("18.12.6")]
+    [InlineData("20.1.0")]
     [SupportedOSPlatform("linux")]
     public async Task CreateSessionAsync_OutOfPinVersion_ThrowsBeforeEngineSpawn(string version)
     {
@@ -62,7 +62,7 @@ public sealed class OmpPinMismatchTests : IDisposable
         ProcessStartHarnessException failure = await Should.ThrowAsync<ProcessStartHarnessException>(
             () => client.CreateSessionAsync(ct)).ConfigureAwait(true);
 
-        failure.Message.ShouldContain($"omp {version} is outside the pinned 18.12.x range.");
+        failure.Message.ShouldContain($"omp {version} is outside the pinned 19.1.x range.");
         string invocations = await File.ReadAllTextAsync(_invocationLog, ct).ConfigureAwait(true);
         invocations.ShouldBe("--version\n");
     }
@@ -86,7 +86,7 @@ public sealed class OmpPinMismatchTests : IDisposable
         ProcessStartHarnessException failure = await Should.ThrowAsync<ProcessStartHarnessException>(
             () => client.ResumeSessionAsync(Path.Combine(_directory, "session.jsonl"), ct)).ConfigureAwait(true);
 
-        failure.Message.ShouldContain("omp 19.0.0 is outside the pinned 18.12.x range.");
+        failure.Message.ShouldContain("omp 19.0.0 is outside the pinned 19.1.x range.");
         string invocations = await File.ReadAllTextAsync(_invocationLog, ct).ConfigureAwait(true);
         invocations.ShouldBe("--version\n");
     }

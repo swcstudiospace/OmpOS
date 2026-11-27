@@ -26,7 +26,6 @@ public static class ShortcutCatalogue
         new(ShortcutIds.SearchConversations, ShortcutCopy.SearchConversations, new KeyGesture(Key.K, KeyModifiers.Control), KeyboardCopy.ScopeApplication),
         new(ShortcutIds.Dismiss, ShortcutCopy.Dismiss, new KeyGesture(Key.Escape), KeyboardCopy.ScopeApplication),
         new(ShortcutIds.NewAgent, ShortcutCopy.NewAgent, new KeyGesture(Key.N, KeyModifiers.Control), KeyboardCopy.ScopeAgents),
-        new(ShortcutIds.NewTerminal, ShortcutCopy.NewTerminal, new KeyGesture(Key.T, KeyModifiers.Control | KeyModifiers.Shift), KeyboardCopy.ScopeAgents),
         new(ShortcutIds.ShowAgentsTab, ShortcutCopy.ShowAgentsTab, new KeyGesture(Key.A, KeyModifiers.Control | KeyModifiers.Shift), KeyboardCopy.ScopeAgents),
         new(ShortcutIds.OpenAgent, ShortcutCopy.OpenAgent, new KeyGesture(Key.Enter), KeyboardCopy.ScopeAgents),
         new(ShortcutIds.CloseAgent, ShortcutCopy.CloseAgent, new KeyGesture(Key.Delete), KeyboardCopy.ScopeAgents),

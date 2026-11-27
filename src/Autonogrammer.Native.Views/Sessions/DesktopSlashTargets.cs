@@ -15,9 +15,6 @@ public sealed record DesktopSlashTargets
     /// <summary>Gets the callback that starts a new chat.</summary>
     public Func<CancellationToken, Task>? NewChat { get; init; }
 
-    /// <summary>Gets the callback that starts a new terminal session.</summary>
-    public Func<CancellationToken, Task>? NewTerminal { get; init; }
-
     /// <summary>Gets the callback that switches the session mode. Its argument is the mode name; it returns <see langword="null"/> when the mode changed, or the reason it did not.</summary>
     public Func<string, CancellationToken, Task<string?>>? SetMode { get; init; }
 

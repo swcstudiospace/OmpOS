@@ -5,6 +5,7 @@ using Autonogrammer.Contracts.Controls;
 using Autonogrammer.Contracts.DataPlane;
 using Autonogrammer.Contracts.Serialization;
 using Autonogrammer.Web.Demo;
+using Autonogrammer.Web.Services;
 using Shouldly;
 using Xunit;
 
@@ -70,6 +71,24 @@ public sealed class DemoFixturesContractTests : IDisposable
         problem["status"]!.GetValue<int>().ShouldBe(409);
         problem["title"]!.GetValue<string>().ShouldNotBeNullOrWhiteSpace();
         problem["detail"]!.GetValue<string>().ShouldNotBeNullOrWhiteSpace();
+    }
+
+    /// <summary>The Demo terminal fixture is retired and listed (Phase 81, D-03): it stays in the catalogue with its persisted kind, and no Demo path starts it as a terminal.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Fact]
+    public async Task TheTerminalFixtureIsRetiredAndListed()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        var entry = _host.World.ListEntries().Single(static entry => string.Equals(entry.Id, DemoFixtures.TerminalId, StringComparison.Ordinal));
+        entry.Kind.ShouldBe(CatalogSessionKind.Terminal, "the persisted terminal stays listed, never dropped or converted to chat");
+        _host.World.Find(DemoFixtures.TerminalId).Kind.ShouldBe(CatalogSessionKind.Terminal);
+
+        var session = await _host.Api.GetSessionAsync(DemoFixtures.TerminalId, ct).ConfigureAwait(true);
+        session.Id.ShouldBe(DemoFixtures.TerminalId, "the retired terminal still answers its stored form; it is history, not a live session");
+
+        var refusal = await Should.ThrowAsync<ApiProblemException>(() => _host.Api.SubmitPromptAsync(DemoFixtures.TerminalId, "hello", ct)).ConfigureAwait(true);
+        refusal.Code.ShouldBe("session_not_promptable", "a retired terminal takes no prompt and starts nothing");
     }
 
     /// <inheritdoc />

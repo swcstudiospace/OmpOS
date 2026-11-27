@@ -10,7 +10,7 @@
         @if (_state == TerminalViewState.Unavailable)
         {
             <div class="autonogrammer-terminal-unavailable">
-                <h2 class="autonogrammer-terminal-unavailable-heading">@TerminalCopy.UnavailableHeading</h2>
+                <h2 class="autonogrammer-terminal-unavailable-heading" tabindex="-1">@HeadingText</h2>
                 <p class="autonogrammer-terminal-unavailable-reason" role="status">@_reason</p>
             </div>
         }
@@ -79,6 +79,10 @@
     [Parameter]
     public ICardSteering? Steering { get; set; }
 
+    /// <summary>Gets whether this session is a retired terminal record (Phase 81). A retired session renders the unavailable frame with the retired copy, resolves no transport and no steering service, and never starts a stream.</summary>
+    [Parameter]
+    public bool Retired { get; set; }
+
     /// <summary>Gets the pause before the first reconnect attempt; each further attempt doubles it, up to 30 seconds. After five failed attempts in a row the view stops and offers Reconnect.</summary>
     [Parameter]
     public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(1);
@@ -109,6 +113,14 @@
     /// <inheritdoc />
     protected override void OnInitialized()
     {
+        if (Retired)
+        {
+            // A retired record never resolves a transport: the frame below is the whole surface.
+            _state = TerminalViewState.Unavailable;
+            _reason = TerminalCopy.RetiredReason;
+            return;
+        }
+
         _transport = Services.GetService(typeof(IRemoteTerminalTransport)) as IRemoteTerminalTransport;
         _timeProvider = Services.GetService(typeof(TimeProvider)) as TimeProvider ?? TimeProvider.System;
         if (_transport is null)
@@ -120,7 +132,9 @@
 
     /// <inheritdoc />
     protected override void OnParametersSet() =>
-        _steering = Steering ?? Services.GetService(typeof(ICardSteering)) as ICardSteering;
+        _steering = Retired ? null : Steering ?? Services.GetService(typeof(ICardSteering)) as ICardSteering;
+
+    private string HeadingText => Retired ? TerminalCopy.RetiredHeading : TerminalCopy.UnavailableHeading;
 
     /// <inheritdoc />
     protected override async Task OnAfterRenderAsync(bool firstRender)

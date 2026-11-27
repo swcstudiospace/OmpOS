@@ -46,7 +46,7 @@ public sealed class LiveOmpOptionChipsTests
         try
         {
             var plan = SandboxPlan(home, agentDirectory, workspace);
-            var engine = EngineComposition.Compose(["read"], plan, ompPath: found.ExecutablePath);
+            var engine = EngineComposition.Compose(["read"], plan, ompPath: found.ExecutablePath, options: new EngineCompositionOptions { Transport = EngineTransport.Acp });
             await using var hostScope = engine.Host.ConfigureAwait(true);
             await using var session = TestAppBuilder.StartSession();
             await session.RunAsync(async () =>

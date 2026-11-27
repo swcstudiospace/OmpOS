@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <Content Include="TestData/frames/*.ndjson" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="TestData/frames/*.manifest.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

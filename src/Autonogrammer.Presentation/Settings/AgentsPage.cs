@@ -1,8 +1,9 @@
 namespace Autonogrammer.Presentation.Settings;
 
 /// <summary>
-/// The Agents page: the terminal auto-run switch, off by default, and a read-only note that every tool call follows omp's approval
-/// policy. Changing the switch is a draft until <see cref="EditableSettingsPage{TValues}.SaveAsync"/> writes it through the source; it is not instant.
+/// The Agents page: the terminal auto-run switch was removed (Phase 81), so the page carries the one-time removal announcement and the note that
+/// every tool call follows omp's approval policy. Every proposed shell-terminal command waits for an approval (approval-always); there is no
+/// editable value left to save.
 /// </summary>
 public sealed class AgentsPage : EditableSettingsPage<AgentsSettingsValues>
 {
@@ -18,16 +19,6 @@ public sealed class AgentsPage : EditableSettingsPage<AgentsSettingsValues>
         _source = source;
     }
 
-    /// <summary>Gets a value indicating whether the draft lets terminal commands run without an approval.</summary>
-    public bool TerminalAutoRun => Draft.TerminalAutoRun;
-
-    /// <summary>Gets a value indicating whether the auto-run warning is showing: it shows while the draft turns auto-run on.</summary>
-    public bool IsAutoRunWarningVisible => Draft.TerminalAutoRun;
-
-    /// <summary>Sets the auto-run switch in the draft. Ignored while the page is not ready.</summary>
-    /// <param name="enabled">True to run proposed terminal commands without an approval.</param>
-    public void SetTerminalAutoRun(bool enabled) => SetDraft(Draft with { TerminalAutoRun = enabled });
-
     /// <inheritdoc/>
     protected override Task<AgentsSettingsValues> LoadValuesAsync(CancellationToken cancellationToken) => _source.LoadAsync(cancellationToken);
 
@@ -38,7 +29,6 @@ public sealed class AgentsPage : EditableSettingsPage<AgentsSettingsValues>
     /// <inheritdoc/>
     protected override void NotifyValueProperties()
     {
-        NotifyPropertyChanged(nameof(TerminalAutoRun));
-        NotifyPropertyChanged(nameof(IsAutoRunWarningVisible));
+        // The page carries no editable value after the auto-run switch was removed (Phase 81); there is no value property to announce.
     }
 }

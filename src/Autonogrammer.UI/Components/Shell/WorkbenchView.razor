@@ -44,7 +44,7 @@
         }
         else if (!IsCowork)
         {
-            <AgentRail Panel="Panel" OnOpened="OnOpenedAsync" OnNewCompleted="OnNewCompletedAsync" OnNewTerminalCompleted="OnNewCompletedAsync" OnOpenSettings="OpenSettings" />
+            <AgentRail Panel="Panel" OnOpened="OnOpenedAsync" OnNewCompleted="OnNewCompletedAsync" OnOpenSettings="OpenSettings" />
         }
     </Rail>
     <ChildContent>
@@ -120,7 +120,7 @@
                     }
                     else if (selected.Row.IsTerminal)
                     {
-                        <TerminalView @key="selected.Id" SessionId="@selected.Id" />
+                        <TerminalView @key="selected.Id" SessionId="@selected.Id" Retired="true" />
                     }
                     else
                     {

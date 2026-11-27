@@ -95,7 +95,7 @@ internal sealed class ArtifactAccountDirectory
 
             var versions = await store.GetVersionsAsync(artifactId, cancellationToken).ConfigureAwait(false);
             var version = versions.FirstOrDefault(row => row.Number == number);
-            return version is null ? null : new ArtifactSummaryDocument(artifact.Id, artifact.Title, artifact.Kind.ToString(), version.Number, version.ContentSha256);
+            return version is null ? null : new ArtifactSummaryDocument(artifact.Id, artifact.Title, artifact.Kind.ToString(), version.Number, version.ContentSha256, version.Requests);
         }
         finally
         {
@@ -131,24 +131,54 @@ internal sealed class ArtifactAccountDirectory
     /// <param name="kind">The kind.</param>
     /// <param name="content">The bytes. Empty for the metadata-only form.</param>
     /// <param name="hash">The lowercase hex hash.</param>
+    /// <param name="requests">The version's declared requests. A request is never a grant.</param>
     /// <param name="limits">The service limits.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The outcome.</returns>
-    public async Task<ArtifactPutOutcome> PutAsync(string accountId, string artifactId, int number, ArtifactKind kind, byte[] content, string hash, ArtifactOptions limits, CancellationToken cancellationToken)
+    public async Task<ArtifactPutOutcome> PutAsync(string accountId, string artifactId, int number, ArtifactKind kind, byte[] content, string hash, IReadOnlyList<ArtifactOriginRequest> requests, ArtifactOptions limits, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(requests);
         ArgumentNullException.ThrowIfNull(limits);
         _ = accountId;
 
         var store = Open(accountId);
         try
         {
-            var outcome = await store.MutateAsync(mutation => Put(mutation, artifactId, number, kind, content, hash, limits), cancellationToken).ConfigureAwait(false);
+            var outcome = await store.MutateAsync(mutation => Put(mutation, artifactId, number, kind, content, hash, requests, limits), cancellationToken).ConfigureAwait(false);
             if (outcome is ArtifactPutOutcome.Created or ArtifactPutOutcome.SameHash && store is InMemoryArtifactStore)
             {
                 _ids.GetOrAdd(accountId, static _ => new ConcurrentDictionary<string, byte>(StringComparer.Ordinal))[artifactId] = 0;
             }
 
             return outcome;
+        }
+        finally
+        {
+            DisposeIfPostgres(store);
+        }
+    }
+
+    /// <summary>Checks a metadata-only listing against stored state without writing bytes or requests.</summary>
+    /// <param name="accountId">The owner.</param>
+    /// <param name="artifactId">The artifact identifier.</param>
+    /// <param name="expectedHash">The latest version hash the listing claims.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>True when the artifact is absent (listing-only, nothing stored) or its latest hash matches.</returns>
+    public async Task<bool> VerifyMetadataAsync(string accountId, string artifactId, string expectedHash, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(expectedHash);
+        var store = Open(accountId);
+        try
+        {
+            var artifact = await store.GetArtifactAsync(artifactId, cancellationToken).ConfigureAwait(false);
+            if (artifact is null)
+            {
+                return true;
+            }
+
+            var versions = await store.GetVersionsAsync(artifactId, cancellationToken).ConfigureAwait(false);
+            var latest = versions.Count == 0 ? null : versions[^1];
+            return latest is not null && string.Equals(latest.ContentSha256, expectedHash, StringComparison.Ordinal);
         }
         finally
         {
@@ -192,7 +222,7 @@ internal sealed class ArtifactAccountDirectory
         }
     }
 
-    private static ArtifactPutOutcome Put(IArtifactMutation mutation, string artifactId, int number, ArtifactKind kind, byte[] content, string hash, ArtifactOptions limits)
+    private static ArtifactPutOutcome Put(IArtifactMutation mutation, string artifactId, int number, ArtifactKind kind, byte[] content, string hash, IReadOnlyList<ArtifactOriginRequest> requests, ArtifactOptions limits)
     {
         var existing = mutation.Find(artifactId);
         var versions = mutation.Versions(artifactId);
@@ -240,12 +270,12 @@ internal sealed class ArtifactAccountDirectory
         if (existing is null)
         {
             var record = new ArtifactRecord(artifactId, kind, "synced", Media(kind), null, null, null);
-            mutation.Insert(record, new ArtifactVersionRecord(artifactId, number, content, hash, null, null, ArtifactAuthor.Agent, createdAt, null));
+            mutation.Insert(record, new ArtifactVersionRecord(artifactId, number, content, hash, null, null, ArtifactAuthor.Agent, createdAt, null, requests));
             return ArtifactPutOutcome.Created;
         }
 
         var parent = versions.Count == 0 ? null : versions[^1];
-        mutation.Append(new ArtifactVersionRecord(artifactId, number, content, hash, parent?.Number, parent?.ContentSha256, ArtifactAuthor.Agent, createdAt, null));
+        mutation.Append(new ArtifactVersionRecord(artifactId, number, content, hash, parent?.Number, parent?.ContentSha256, ArtifactAuthor.Agent, createdAt, null, requests));
         return ArtifactPutOutcome.Created;
     }
 
@@ -264,7 +294,7 @@ internal sealed class ArtifactAccountDirectory
                 {
                     while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                     {
-                        rows.Add(new ArtifactSummaryDocument(reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(3), string.Empty));
+                        rows.Add(new ArtifactSummaryDocument(reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(3), string.Empty, []));
                     }
                 }
                 finally
@@ -295,7 +325,7 @@ internal sealed class ArtifactAccountDirectory
 
         var versions = await store.GetVersionsAsync(artifactId, cancellationToken).ConfigureAwait(false);
         var latest = versions.Count == 0 ? null : versions[^1];
-        return new ArtifactSummaryDocument(artifact.Id, artifact.Title, artifact.Kind.ToString(), latest?.Number ?? 0, latest?.ContentSha256 ?? string.Empty);
+        return new ArtifactSummaryDocument(artifact.Id, artifact.Title, artifact.Kind.ToString(), latest?.Number ?? 0, latest?.ContentSha256 ?? string.Empty, latest?.Requests ?? []);
     }
 
     private IArtifactStore Open(string accountId) => _postgres ? new PostgresArtifactStore(_dataSource!, accountId) : Memory(accountId);

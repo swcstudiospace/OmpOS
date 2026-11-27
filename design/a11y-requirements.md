@@ -101,3 +101,31 @@ The NFR-A2 row is deliberately `not audited`: the design lane does
 not fabricate smoke evidence; the exact closing steps are in
 66-VERIFICATION (SC3/SC4) and 77-VERIFICATION (AG-77-13), and the
 spec renders `gaps_found` until a recorded bundle exists.
+
+## T9013 session-terminal impact (T9013-ux, this run)
+
+Task: T9013-ux, correlation 901308c5-825d-45fe-8832-36b59c0771ae.
+Tokens unchanged at 1.4.0; every value below is this run's tool
+output (one malformed token-name input of mine — a `/` for a `.` —
+was corrected once and re-run; the file itself was conforming).
+
+| Area | WCAG 2.2 SC | Threshold | Measured (this run) | Status |
+|---|---|---|---|---|
+| Token file + scripts (py + bun, `--file design/tokens.json`) | W3C shape, AA floor | pairs below 4.5 are major | python: 77 tokens, 20 colours, 9 pairs all aa (lowest 4.83 border-strong); bun: ok, 0 findings; verdict pass. Bun without `--file` scans unrelated files and flags them — an invocation artefact, not a token finding | pass |
+| Token names | design policy | kebab dot-path, depth ≤4, roots color/space/size/typography/motion/radius/breakpoint | 77 checked, 0 invalid, 0 duplicates, conforming true | pass |
+| Normal text light (on `--autonogrammer-surface` #fafaf9) | 1.4.3 | 4.5 | text 16.34, secondary 7.09, error 6.25 (lowest), accent-fill #ffffff on #6d28d9 7.10 — `ux_contrast` SUCCESS each | pass |
+| Normal text dark (on #181818) | 1.4.3 | 4.5 | #ececec 15.03, #a78bfa 6.52 (lowest measured) | pass |
+| Focus indicator light (#5b21b6 on #fafaf9/#ffffff/#f0f0ee/#ebebe8) | 1.4.11 | 3.0 | 8.60, 8.98, 7.87, 7.52 (lowest 7.52), meets true | pass |
+| Target size (terminal targets: new-terminal, reconnect-small, steer follow-up/send-now + 32/28/24 controls) | 2.5.8 | 24 CSS px | 8 of 8 meet minimum, 0 failing, compliant true | pass |
+| Animation bound | 2.2.2 (policy ≤5000 ms + reduced variant) | max 5000 ms | max observed 200 ms, 2 of 2 have reduced-motion variant, compliant true | pass |
+| Spacing grid / surface ramp / breakpoints | design policy | base 2 px multiples; monotonic luminance; ascending from 0 | multiples 1,2,3,4,6,8,12 on_scale; luminance 1→0.7131 monotonic, violations []; base 0, sm 560, md 840, lg 1200, xl 1440 valid | pass |
+| Session-terminal states & announcements | 4.1.3 Status Messages, 2.4.3 Focus Order | every state worded in a persistent `role=status`; status never colour-alone; unavailable heading receives focus | Design requirement in ux-spec SCR-SessionTerminal (7 states, coverage complete); runtime axe/smoke is A08's — not audited in this design lane | pass (design); runtime not audited |
+
+`shared_verdict` over this run's severities: see T9013-ux result
+(all `info` — no major/critical/blocker; palette unchanged and
+SCR-SessionTerminal can ship as a plan). Wave 1 ships no UI change
+at all (AC-304); A06 applies the retirement rows only in the later
+phase A03 sequences. A08 baseline from this addendum: terminal
+states connecting/live/reconnecting/ended/unavailable each keep
+`role=status` wording, Reconnect at ≥24 px, and 0 axe errors; a
+retired terminal opens as `error.unavailable` with no Reconnect.

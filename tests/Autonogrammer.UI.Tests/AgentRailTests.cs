@@ -244,22 +244,22 @@ public sealed class AgentRailTests : UiTestContext
         cut.Instance.IsDrawerOpen.ShouldBeFalse();
     }
 
-    /// <summary>New omp terminal starts a terminal session; Settings reports to the page.</summary>
+    /// <summary>The rail offers New conversation and no terminal button after the retirement; Settings still reports to the page.</summary>
     [Fact]
-    public async Task TerminalAndSettingsButtonsReachTheirHandlers()
+    public async Task NoTerminalButtonRendersAndSettingsReachesItsHandler()
     {
         using var harness = PanelHarness.With();
         var settings = 0;
-        var terminals = 0;
         var cut = RenderRail(harness, parameters => parameters
-            .Add(p => p.OnOpenSettings, () => settings++)
-            .Add(p => p.OnNewTerminalCompleted, () => terminals++));
+            .Add(p => p.OnOpenSettings, () => settings++));
 
-        await cut.Find($"button[aria-label='{AgentPanelCopy.NewTerminal}']").ClickAsync().ConfigureAwait(true);
+        cut.Find("button[aria-label='New conversation']").ShouldNotBeNull();
+        cut.FindAll("button[aria-label='New omp terminal']").ShouldBeEmpty("the rail no longer offers terminal creation");
+        cut.FindAll(".autonogrammer-new-terminal").ShouldBeEmpty("the rail no longer offers terminal creation");
+
         await cut.Find("button[aria-label='Settings']").ClickAsync().ConfigureAwait(true);
 
-        harness.Host.CreatedTerminals.Count.ShouldBe(1);
-        terminals.ShouldBe(1);
+        harness.Host.Created.ShouldBeEmpty("no session is created from the rail");
         settings.ShouldBe(1);
     }
 

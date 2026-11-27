@@ -3,13 +3,16 @@ using Autonogrammer.Contracts.Sandboxes;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.InMemory;
+using Autonogrammer.Harness.Rpc;
 using Microsoft.Extensions.Logging;
 
 namespace Autonogrammer.EngineHost;
 
 /// <summary>
 /// Desktop host: binds one <see cref="IOmpSession"/> at a time, created by an injectable factory,
-/// so tests substitute scripted sessions and never spawn omp.
+/// so tests substitute scripted sessions and never spawn omp. The one-at-a-time binding is this host's admission
+/// (slice-single): multi-session concurrency is composed by creating one host per session (a SessionEngineSet
+/// slot), never by binding a second session here.
 /// </summary>
 public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
 {
@@ -169,6 +172,27 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
             ? new OmpAcpClient(permissionResolver, loggerFactory: loggerFactory)
             : new OmpAcpClient(transportFactory, permissionResolver, loggerFactory: loggerFactory);
         return ForAcp(client, options, descriptor, resumeSessionId, resumeAfterFault);
+    }
+
+    /// <summary>Creates a host over a local omp child process via <c>omp --mode rpc</c>.</summary>
+    /// <param name="client">The RPC client each session is created from. Not owned; not disposed.</param>
+    /// <param name="descriptor">The descriptor to report, or the in-process default.</param>
+    /// <param name="resumeSessionId">
+    /// The RPC session file path the first session resumes with <c>switch_session</c>, or null to create a new session.
+    /// omp RPC addresses sessions by file path (see <c>get_state.sessionFile</c>), so this must be an id a previous RPC
+    /// session reported — never an ACP session id, which is not an RPC resume key.
+    /// </param>
+    /// <param name="resumeAfterFault">Whether a session bound after a fault resumes the engine session last reported instead of creating a new one; see <see cref="ResumesAfterFault"/>.</param>
+    /// <returns>A host whose sessions speak RPC over stdio. Creating the host spawns nothing: omp starts lazily on the first session's create or resume.</returns>
+    public static InProcessEngineHost ForRpc(OmpRpcClient client, EngineHostDescriptor? descriptor = null, string? resumeSessionId = null, bool resumeAfterFault = false)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        var factory = new RpcHarnessSessionFactory(client);
+        return new InProcessEngineHost(
+            () => factory.CreateSession(string.Empty),
+            descriptor ?? new EngineHostDescriptor { Kind = EngineHostKind.InProcess, Isolation = Isolation.Process, Attestation = Attestation.None },
+            resumeSessionId,
+            resumeAfterFault);
     }
 
     /// <inheritdoc />

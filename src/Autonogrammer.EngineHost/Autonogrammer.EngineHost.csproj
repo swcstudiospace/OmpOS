@@ -5,6 +5,7 @@
     <ProjectReference Include="../Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
     <ProjectReference Include="../Autonogrammer.Harness.InMemory/Autonogrammer.Harness.InMemory.csproj" />
     <ProjectReference Include="../Autonogrammer.Harness.Acp/Autonogrammer.Harness.Acp.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Rpc/Autonogrammer.Harness.Rpc.csproj" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 

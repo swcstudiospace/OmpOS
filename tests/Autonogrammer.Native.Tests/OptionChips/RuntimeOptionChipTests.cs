@@ -1,7 +1,6 @@
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Tests.AgentPanel.Shell;
-using Autonogrammer.Native.Tests.Terminal;
 using Autonogrammer.Native.Views.Sessions;
 using Autonogrammer.Presentation.AgentPanel;
 using Shouldly;
@@ -165,7 +164,6 @@ public sealed class RuntimeOptionChipTests
             Stages = new ScriptedStageSource(),
             Context = new ScriptedTaskContext(null),
             SessionOptions = control,
-            TerminalStarter = kind == SessionKind.Terminal ? new FakeOmpTerminalStarter() : null,
         });
     }
 }

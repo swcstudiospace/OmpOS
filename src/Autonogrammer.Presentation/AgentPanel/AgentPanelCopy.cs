@@ -18,11 +18,17 @@ public static class AgentPanelCopy
     /// <summary>The product name the top bar shows when the view has no workspace folder to name.</summary>
     public const string ProductName = "Autonogrammer";
 
-    /// <summary>The rail control that creates an engine terminal session beside New agent.</summary>
-    public const string NewTerminal = "New omp terminal";
+    /// <summary>The word status a retired terminal record shows in the rail: the session kind is retired, not startable.</summary>
+    public const string RetiredTerminalStatus = "Retired";
 
-    /// <summary>The tooltip of the New engine terminal control, with its shortcut.</summary>
-    public const string NewTerminalTooltip = "New omp terminal (Ctrl+Shift+T)";
+    /// <summary>The heading of the retired-terminal pane: the persisted record is read-only history.</summary>
+    public const string RetiredTerminalHeading = "This terminal session is retired.";
+
+    /// <summary>The body of the retired-terminal pane: what happened, and the only next action (a new agent). No PTY replay is promised.</summary>
+    public const string RetiredTerminalBody = "Terminal sessions are retired and cannot be started again. Their output is not kept as a transcript. Start a new agent to continue.";
+
+    /// <summary>The steering-unavailable sentence a retired terminal shows in place of steer controls.</summary>
+    public const string RetiredTerminalSteeringUnavailable = "Steering is not available for a retired terminal session.";
 
     /// <summary>The accessible name of the message box of the steer-only composer of an engine terminal session.</summary>
     public const string TerminalMessageName = "Steer message";

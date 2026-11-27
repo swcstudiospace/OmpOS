@@ -1,10 +1,9 @@
 using Microsoft.AspNetCore.Components;
-using Autonogrammer.Presentation.Terminal;
 using Autonogrammer.Web.Services;
 
 namespace Autonogrammer.Web.Demo;
 
-/// <summary>Registers the Demo: the in-browser API handler replaces the network, and the terminal transport is the scripted one.</summary>
+/// <summary>Registers the Demo: the in-browser API handler replaces the network. No terminal transport is registered here (Phase 81): the Demo shows no startable terminal and streams no fake PTY chunks, so the real head's unavailable transport answers.</summary>
 internal static class DemoRegistration
 {
     /// <summary>Registers every service of the web head over a <see cref="DemoApiHandler"/>. No API origin, token or network is involved.</summary>
@@ -14,7 +13,6 @@ internal static class DemoRegistration
     {
         ArgumentNullException.ThrowIfNull(services);
         services.AddSingleton(sp => new DemoWorld(sp.GetRequiredService<TimeProvider>()));
-        services.AddScoped<IRemoteTerminalTransport>(sp => new DemoTerminalTransport(sp.GetRequiredService<TimeProvider>()));
         return services.AddAutonogrammerWebServices(
             sp => new DemoApiHandler(sp.GetRequiredService<DemoWorld>()),
             sp => new Uri(sp.GetRequiredService<NavigationManager>().BaseUri, UriKind.Absolute),

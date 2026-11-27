@@ -175,7 +175,8 @@ public sealed class AcpApprovalPolicyRoundTripTests
 
     private static Dictionary<string, string?> Config(string[] kinds, string[] grantable, int? timeoutSeconds = null)
     {
-        var config = new Dictionary<string, string?>(StringComparer.Ordinal);
+        // The approval policy is an ACP surface (Rpc has no permission-request surface, OQ-525), so pin Acp explicitly: the shipped default is Rpc since the Phase 84 flip.
+        var config = new Dictionary<string, string?>(StringComparer.Ordinal) { ["Harness:Adapter"] = "Acp" };
         for (var index = 0; index < kinds.Length; index++)
         {
             config[$"Harness:Acp:Approval:Kinds:{index}"] = kinds[index];

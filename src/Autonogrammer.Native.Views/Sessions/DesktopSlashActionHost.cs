@@ -45,7 +45,6 @@ public sealed class DesktopSlashActionHost : ISlashActionHost
             {
                 SlashActionIds.SettingsOpen => targets.OpenSettings is not null,
                 SlashActionIds.ChatNew => targets.NewChat is not null,
-                SlashActionIds.TerminalNew => targets.NewTerminal is not null,
                 SlashActionIds.ModeSet => targets.SetMode is not null,
                 SlashActionIds.ModelPick => targets.PickModel is not null,
                 SlashActionIds.SideOpen => targets.OpenSideChat is not null,
@@ -70,7 +69,6 @@ public sealed class DesktopSlashActionHost : ISlashActionHost
                 {
                     SlashActionIds.SettingsOpen => OpenSettings(request),
                     SlashActionIds.ChatNew => await RunTargetAsync(targets.NewChat!, "Started a new chat.", cancellationToken).ConfigureAwait(true),
-                    SlashActionIds.TerminalNew => await RunTargetAsync(targets.NewTerminal!, "Started a new terminal.", cancellationToken).ConfigureAwait(true),
                     SlashActionIds.ModeSet => await SetModeAsync(request, cancellationToken).ConfigureAwait(true),
                     SlashActionIds.ModelPick => SlashActionResult.Completed(await targets.PickModel!(ModelFilter(request), cancellationToken).ConfigureAwait(true)),
                     SlashActionIds.SideOpen => await OpenSideAsync(request, cancellationToken).ConfigureAwait(true),

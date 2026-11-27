@@ -12,8 +12,7 @@ namespace Autonogrammer.Harness.Terminal;
 /// A pseudo-terminal merges standard error into the output stream, so <see cref="ProcessOutcome.StandardError"/> is empty.
 /// The runner never writes keyboard input to the command. Its only write is an end-of-input character sent once at start,
 /// which closes standard input for a command that reads it, as <see cref="SystemProcessRunner"/> does by closing its pipe.
-/// The spawn, output, resize and exit machinery is <see cref="PtyCore"/>, which <see cref="LinuxLocalPtyBackend"/> also uses
-/// for interactive sessions. Production code calls <see cref="RunAsync"/> only through <see cref="TerminalGate"/>.
+/// The spawn, output, resize and exit machinery is <see cref="PtyCore"/>. Production code calls <see cref="RunAsync"/> only through <see cref="TerminalGate"/>.
 /// </remarks>
 public sealed class PtyProcessRunner : IProcessRunner
 {

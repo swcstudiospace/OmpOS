@@ -20,6 +20,10 @@ public sealed class PostgresDispatchStore : IDispatchStore
 {
     private const string Platform = "unspecified";
     private const string Queued = "queued";
+    private const string KeyedOrigin = "keyed";
+    private const string UnkeyedOrigin = "unkeyed";
+    // Storage prefix for unkeyed rows. Space (0x20) is outside the header-valid key range (0x21-0x7E, see IdempotencyKeyHeader.TryRead) and is storable in PostgreSQL text (NUL is not), so no caller key can equal a sentinel key.
+    private const string UnkeyedPrefix = " unkeyed:";
     private const string DeviceSelect =
         "SELECT id, account_id, name, public_key, coalesce(credential_jti, ''), coalesce(credential_expires_at::text, ''), coalesce(capabilities::text, '[]'), coalesce(paired_session_id, ''), coalesce(last_seen_at::text, ''), coalesce(revoked_at::text, ''), coalesce(revoke_reason, ''), coalesce(last_source_prefix, '') FROM dispatch_devices";
 
@@ -551,6 +555,12 @@ public sealed class PostgresDispatchStore : IDispatchStore
                 {
                     return replay;
                 }
+                // Unkeyed rows occupy the sentinel namespace, which no caller key can reach and ReadIdempotentAsync never probes.
+                // Fail closed if that namespace is already occupied instead of violating the unique constraint.
+                if (request.IdempotencyKey is not { Length: > 0 } && await StorageKeyTakenAsync(connection, transaction, request, cancellationToken).ConfigureAwait(false))
+                {
+                    return new DispatchEnqueueResult(DispatchEnqueueStatus.IdempotencyKeyReused, null);
+                }
                 if (!await LockLiveDeviceAsync(connection, transaction, request, cancellationToken).ConfigureAwait(false))
                 {
                     return new DispatchEnqueueResult(DispatchEnqueueStatus.NotFound, null);
@@ -977,6 +987,12 @@ public sealed class PostgresDispatchStore : IDispatchStore
             }
 
             var meta = CommandMeta.Read(reader.GetString(2));
+            // Belt and braces: new unkeyed rows store a sentinel key no caller key can equal, so they can never match above.
+            // If one ever did, its origin says unkeyed: no replay, no guessed classification. Legacy rows (unknown origin) keep prior behavior.
+            if (string.Equals(meta.KeyOrigin, UnkeyedOrigin, StringComparison.Ordinal))
+            {
+                return null;
+            }
             if (!string.Equals(meta.Fingerprint, request.Fingerprint, StringComparison.Ordinal))
             {
                 return new DispatchEnqueueResult(DispatchEnqueueStatus.IdempotencyKeyReused, null);
@@ -984,6 +1000,19 @@ public sealed class PostgresDispatchStore : IDispatchStore
 
             return new DispatchEnqueueResult(DispatchEnqueueStatus.Replayed, Accepted(reader.GetString(0), reader.GetInt64(1)));
         }
+    }
+
+    private static string StorageKey(EnqueueDispatchCommand request) =>
+        request.IdempotencyKey is { Length: > 0 } key ? key : UnkeyedPrefix + request.CommandId;
+
+    private static async Task<bool> StorageKeyTakenAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, EnqueueDispatchCommand request, CancellationToken cancellationToken)
+    {
+        using var command = PostgresSql.Create(connection, transaction);
+        command.CommandText = "SELECT EXISTS (SELECT 1 FROM dispatch_commands WHERE account_id = @account_id AND device_id = @device_id AND idempotency_key = @key)";
+        command.Parameters.AddWithValue("account_id", request.AccountId);
+        command.Parameters.AddWithValue("device_id", request.DeviceId);
+        command.Parameters.AddWithValue("key", StorageKey(request));
+        return await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) is true;
     }
 
     private static async Task<long> CountQueuedAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, EnqueueDispatchCommand request, CancellationToken cancellationToken)
@@ -1007,7 +1036,8 @@ public sealed class PostgresDispatchStore : IDispatchStore
 
     private static async Task InsertCommandAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, EnqueueDispatchCommand request, long seq, CancellationToken cancellationToken)
     {
-        var meta = new CommandMeta(request.Fingerprint, DispatchCapabilityWire.ToWire(request.Capability), request.IssuedAt.ToString("o", CultureInfo.InvariantCulture), string.Empty, string.Empty, string.Empty);
+        var keyed = request.IdempotencyKey is { Length: > 0 };
+        var meta = new CommandMeta(request.Fingerprint, DispatchCapabilityWire.ToWire(request.Capability), request.IssuedAt.ToString("o", CultureInfo.InvariantCulture), string.Empty, string.Empty, string.Empty, 0, keyed ? KeyedOrigin : UnkeyedOrigin);
         using var insert = PostgresSql.Create(connection, transaction);
         insert.CommandText =
             "INSERT INTO dispatch_commands (id, device_id, account_id, seq, op, state, idempotency_key, expires_at, body, result, created_at, updated_at) " +
@@ -1018,7 +1048,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
         insert.Parameters.AddWithValue("seq", seq);
         insert.Parameters.AddWithValue("op", DispatchOpWire.ToWire(request.Op));
         insert.Parameters.AddWithValue("state", Queued);
-        insert.Parameters.AddWithValue("key", request.IdempotencyKey ?? request.CommandId);
+        insert.Parameters.AddWithValue("key", StorageKey(request));
         insert.Parameters.AddWithValue("expires", request.ExpiresAt);
         insert.Parameters.AddWithValue("body", request.BodyJson);
         insert.Parameters.AddWithValue("result", meta.Write());
@@ -1369,7 +1399,7 @@ public sealed class PostgresDispatchStore : IDispatchStore
         long Seq,
         string State,
         string Op,
-        string Key,
+        string? Key,
         string? Body,
         DateTimeOffset IssuedAt,
         DateTimeOffset ExpiresAt,
@@ -1393,11 +1423,12 @@ public sealed class PostgresDispatchStore : IDispatchStore
                 reason = parsed;
             }
 
-            return new DispatchCommandRecord(AccountId, DeviceId, CommandId, Seq, state, capability, op, Meta.Fingerprint, Key, Body, IssuedAt, ExpiresAt, reason, Meta.Text.Length == 0 ? null : Meta.Text);
+            // New unkeyed rows project null; legacy rows (unknown origin) keep the stored value, untouched.
+            return new DispatchCommandRecord(AccountId, DeviceId, CommandId, Seq, state, capability, op, Meta.Fingerprint, string.Equals(Meta.KeyOrigin, UnkeyedOrigin, StringComparison.Ordinal) ? null : Key, Body, IssuedAt, ExpiresAt, reason, Meta.Text.Length == 0 ? null : Meta.Text);
         }
     }
 
-    private sealed record CommandMeta(string Fingerprint, string Capability, string IssuedAt, string Reason, string Text, string TerminalAt, int ProgressCount = 0)
+    private sealed record CommandMeta(string Fingerprint, string Capability, string IssuedAt, string Reason, string Text, string TerminalAt, int ProgressCount = 0, string? KeyOrigin = null)
     {
         public string Write()
         {
@@ -1416,6 +1447,12 @@ public sealed class PostgresDispatchStore : IDispatchStore
             builder.Append(TerminalAt.Length == 0 ? "null" : JsonQuote(TerminalAt));
             builder.Append(",\"progressCount\":");
             builder.Append(ProgressCount.ToString(CultureInfo.InvariantCulture));
+            // Legacy documents omit the member entirely, so a transition or purge rewrite leaves them byte-identical in shape.
+            if (KeyOrigin is not null)
+            {
+                builder.Append(",\"keyOrigin\":");
+                builder.Append(JsonQuote(KeyOrigin));
+            }
             builder.Append('}');
             return builder.ToString();
         }
@@ -1436,7 +1473,8 @@ public sealed class PostgresDispatchStore : IDispatchStore
                 root.GetProperty("reason").ValueKind == JsonValueKind.Null ? string.Empty : root.GetProperty("reason").GetString() ?? string.Empty,
                 root.GetProperty("text").ValueKind == JsonValueKind.Null ? string.Empty : root.GetProperty("text").GetString() ?? string.Empty,
                 root.GetProperty("terminalAt").ValueKind == JsonValueKind.Null ? string.Empty : root.GetProperty("terminalAt").GetString() ?? string.Empty,
-                root.TryGetProperty("progressCount", out var count) ? count.GetInt32() : 0);
+                root.TryGetProperty("progressCount", out var count) ? count.GetInt32() : 0,
+                root.TryGetProperty("keyOrigin", out var origin) && origin.ValueKind != JsonValueKind.Null ? origin.GetString() : null);
         }
     }
 }

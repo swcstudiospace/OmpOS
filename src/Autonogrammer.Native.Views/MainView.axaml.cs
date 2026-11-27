@@ -204,7 +204,6 @@ public partial class MainView : UserControl, IDisposable
         _rail = (AgentRailView)ViewMapping.Create(panel.Catalog);
         _rail.Panel = panel;
         _rail.NewAgentCompleted += OnNewAgentCompleted;
-        _rail.NewTerminalCompleted += OnNewAgentCompleted;
         _rail.RowActivated += OnRowActivated;
         _rail.CloseRequested += OnRailCloseRequested;
         RailHost.Content = _rail;
@@ -489,13 +488,13 @@ public partial class MainView : UserControl, IDisposable
         }
 
         ThreadHeaderHost.Content = pane?.Header;
-        TranscriptHost.Content = pane is null ? _landingView : pane.TerminalView ?? (Control)pane.Transcript;
+        TranscriptHost.Content = pane is null ? _landingView : (Control)pane.Transcript;
         PipelineHost.Content = pane?.Strip;
         SearchHost.Content = pane?.SearchView;
         SearchHost.IsVisible = pane is { SearchOpen: true };
         RunControlsHost.Content = pane?.RunControls;
         ConfirmBarHost.Content = pane?.ConfirmBar;
-        ComposerHost.Content = pane is null ? null : pane.SteerView ?? (Control)pane.Composer;
+        ComposerHost.Content = pane is null ? null : (Control)pane.Composer;
         SideChatHost.Content = pane?.SideChatView;
         ChangesHost.Content = pane?.ChangesView;
         CheckpointsHost.Content = pane?.CheckpointsView;
@@ -530,15 +529,17 @@ public partial class MainView : UserControl, IDisposable
         }
     }
 
-    // A closed or lost session has no engine to send to: the composer hides and the closed notice shows instead.
+    // A closed or lost session has no engine to send to: the composer hides and the closed notice shows instead. A retired terminal record
+    // (Phase 81) reuses the same banner with the retired copy: no composer, no steer input, and nothing was ever started.
     private void RefreshAvailability()
     {
         var viewModel = _current?.ViewModel;
-        var unavailable = viewModel is { IsClosed: true } or { IsLost: true };
+        var retired = _current?.IsRetiredTerminal == true;
+        var unavailable = viewModel is { IsClosed: true } or { IsLost: true } || retired;
         ComposerHost.IsVisible = viewModel is not null && !unavailable;
-        ClosedNotice.IsVisible = viewModel is { IsClosed: true };
-        ClosedHeading.Text = AgentPanelCopy.ClosedHeading;
-        ClosedBody.Text = AgentPanelCopy.ClosedBody;
+        ClosedNotice.IsVisible = retired || viewModel is { IsClosed: true };
+        ClosedHeading.Text = retired ? AgentPanelCopy.RetiredTerminalHeading : AgentPanelCopy.ClosedHeading;
+        ClosedBody.Text = retired ? AgentPanelCopy.RetiredTerminalBody + " " + AgentPanelCopy.RetiredTerminalSteeringUnavailable : AgentPanelCopy.ClosedBody;
     }
 
     private SessionPane GetPane(AgentSessionViewModel viewModel)
@@ -592,18 +593,14 @@ public partial class MainView : UserControl, IDisposable
     /// <returns>True when the review belongs to a pane other than the shown one, so Apply would write another session's hunks.</returns>
     internal static bool IsStaleDiffReview(object? reviewPane, object? shownPane) => reviewPane is not null && !ReferenceEquals(reviewPane, shownPane);
 
-    // A terminal session shows omp in the thread and steers it from a steer-only composer. The views are kept with the pane, so
-    // another tab or session never restarts omp: the runtime keeps omp running and stops it when the session closes.
-    private void WireTerminal(SessionPane pane, AgentSessionRuntime? runtime, AgentSessionViewModel viewModel)
+    // A persisted terminal record is retired (Phase 81): the pane marks it retired and the closed-notice banner carries the retired copy.
+    // No terminal view and no steer view exist any more: the thread always shows the transcript.
+    private static void WireTerminal(SessionPane pane, AgentSessionRuntime? runtime, AgentSessionViewModel viewModel)
     {
-        if (runtime?.Terminal is not { } terminal)
+        if (runtime?.IsRetiredTerminal == true)
         {
-            return;
+            pane.IsRetiredTerminal = true;
         }
-
-        pane.TerminalView = (OmpTerminalView)ViewMapping.Create(terminal);
-        pane.SteerView = new TerminalSteerView { DataContext = viewModel };
-        pane.SteerView.StatusMessage += (_, e) => ReportFor(pane, e.Message);
     }
 
     private SessionPane CreatePane(AgentSessionViewModel viewModel)
@@ -847,15 +844,7 @@ public partial class MainView : UserControl, IDisposable
 
         if (_current is { } pane)
         {
-            if (pane.TerminalView is null)
-            {
-                pane.Transcript.FocusTranscript();
-            }
-            else
-            {
-                FocusThread();
-            }
-
+            pane.Transcript.FocusTranscript();
             return;
         }
 
@@ -879,10 +868,6 @@ public partial class MainView : UserControl, IDisposable
             case Key.N when control && !shift:
                 e.Handled = true;
                 _ = StartNewAgentAsync();
-                break;
-            case Key.T when control && shift:
-                e.Handled = true;
-                _ = StartNewTerminalAsync();
                 break;
             case Key.K when control && shift && _boardView is not null:
                 e.Handled = true;
@@ -980,7 +965,6 @@ public partial class MainView : UserControl, IDisposable
         HandOffToCloud = HandOffToCloudAsync,
         Handlers = CreateHandlers(pane),
         NewChat = _ => StartNewAgentAsync(),
-        NewTerminal = _ => StartNewTerminalAsync(),
     };
 
     private async Task StartNewAgentAsync()
@@ -1008,13 +992,6 @@ public partial class MainView : UserControl, IDisposable
         await _selectionFocusCommand.ExecuteAsync(null).ConfigureAwait(true);
     }
 
-    private async Task StartNewTerminalAsync()
-    {
-        ShowAgentsTab();
-        ShowThread();
-        await _panel.NewTerminalCommand.ExecuteAsync(null).ConfigureAwait(true);
-        await _selectionFocusCommand.ExecuteAsync(null).ConfigureAwait(true);
-    }
 
     // The top-level tabs. Selecting the Kanban tab hides the rail and the thread, which keep their state, and shows the board in their place.
     private void SetKanbanShown(bool shown)
@@ -1113,7 +1090,7 @@ public partial class MainView : UserControl, IDisposable
 
     private void OpenSearch()
     {
-        if (_current is not { } pane || pane.TerminalView is not null || _kanbanShown || _openTool is not null || AgentsToggle.IsChecked == true)
+        if (_current is not { } pane || _kanbanShown || _openTool is not null || AgentsToggle.IsChecked == true)
         {
             return;
         }
@@ -1243,11 +1220,7 @@ public partial class MainView : UserControl, IDisposable
     {
         if (_current is { } pane)
         {
-            if (pane.TerminalView is { } terminalView)
-            {
-                terminalView.FindControl<Control>("Output").FocusWhenReady();
-            }
-            else if (ComposerHost.IsVisible)
+            if (ComposerHost.IsVisible)
             {
                 pane.Composer.FocusPrompt();
             }
@@ -1582,7 +1555,7 @@ public partial class MainView : UserControl, IDisposable
     // own terminal, and no transcript block reports the edit. Without an existing workspace folder there is nothing to read or write.
     private ChangeSetModel? CreateChangeSet(SessionPane pane, AgentSessionRuntime? runtime)
     {
-        if (runtime?.Terminal is not null)
+        if (runtime?.IsRetiredTerminal == true)
         {
             return null;
         }
@@ -1709,7 +1682,6 @@ public partial class MainView : UserControl, IDisposable
         _keyHost?.RemoveHandler(KeyDownEvent, OnKeyDownTunnel);
         _keyHost = null;
         _rail.NewAgentCompleted -= OnNewAgentCompleted;
-        _rail.NewTerminalCompleted -= OnNewAgentCompleted;
         _rail.RowActivated -= OnRowActivated;
         _rail.CloseRequested -= OnRailCloseRequested;
         CloseShell();
@@ -1815,11 +1787,8 @@ public partial class MainView : UserControl, IDisposable
         /// <summary>Gets or sets whether the transcript search is open for this session.</summary>
         public bool SearchOpen { get; set; }
 
-        /// <summary>Gets or sets the omp terminal view of a terminal session, or null for a chat. It is kept while another tab or session is shown.</summary>
-        public OmpTerminalView? TerminalView { get; set; }
-
-        /// <summary>Gets or sets the steer-only composer of a terminal session, or null for a chat.</summary>
-        public TerminalSteerView? SteerView { get; set; }
+        /// <summary>Gets or sets whether this pane shows a persisted terminal record, which is retired (Phase 81): no terminal engine, no steer view and no composer input.</summary>
+        public bool IsRetiredTerminal { get; set; }
 
         /// <summary>Gets or sets the action that unsubscribes the pane from its runtime.</summary>
         public Action? Detach { get; set; }
@@ -1868,7 +1837,6 @@ public partial class MainView : UserControl, IDisposable
         {
             Detach?.Invoke();
             Detach = null;
-            TerminalView?.Release();
             Search.Dispose();
             Changes?.Dispose();
             CheckpointRecorder?.Dispose();

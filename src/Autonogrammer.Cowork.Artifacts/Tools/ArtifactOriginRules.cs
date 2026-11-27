@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Autonogrammer.Cowork.Artifacts.Model;
 
 namespace Autonogrammer.Cowork.Artifacts.Tools;
 
@@ -17,9 +18,22 @@ public static class ArtifactOriginRules
     /// <returns>True when the declaration may be stored.</returns>
     public static bool TryRead(JsonElement arguments, out string[] origins, out string[] warnings, out string? error)
     {
-        var originList = new List<string>();
+        var read = TryReadRequests(arguments, out var requests, out warnings, out error);
+        origins = requests.Select(static request => request.Origin).ToArray();
+        return read;
+    }
+
+    /// <summary>Reads permissions as bounded requests with agent-written reasons. Invalid origins or reasons are refused. Storage other than <c>none</c> is a warning.</summary>
+    /// <param name="arguments">The tool arguments.</param>
+    /// <param name="requests">The accepted requests, in declaration order.</param>
+    /// <param name="warnings">Notices, including a storage refusal notice.</param>
+    /// <param name="error">The typed error when requests are rejected.</param>
+    /// <returns>True when the declaration may be stored.</returns>
+    public static bool TryReadRequests(JsonElement arguments, out IReadOnlyList<ArtifactOriginRequest> requests, out string[] warnings, out string? error)
+    {
+        var requestList = new List<ArtifactOriginRequest>();
         var warningList = new List<string>();
-        origins = [];
+        requests = [];
         warnings = [];
         error = null;
         if (arguments.ValueKind != JsonValueKind.Object || !arguments.TryGetProperty("permissions", out var permissions) || permissions.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
@@ -52,28 +66,62 @@ public static class ArtifactOriginRules
 
         foreach (var entry in network.EnumerateArray())
         {
-            var origin = entry.ValueKind == JsonValueKind.String
-                ? entry.GetString()
-                : entry.ValueKind == JsonValueKind.Object && entry.TryGetProperty("origin", out var named) && named.ValueKind == JsonValueKind.String ? named.GetString() : null;
-            if (origin is null || !IsAllowed(origin))
+            if (!TryReadEntry(entry, out var request))
             {
                 error = "origin_rejected";
                 return false;
             }
 
-            originList.Add(origin);
+            requestList.Add(request);
         }
 
-        if (originList.Count > MaxOrigins)
+        if (requestList.Count > MaxOrigins)
         {
             error = "origin_rejected";
             return false;
         }
 
-        origins = originList.ToArray();
+        requests = requestList.ToArray();
         warnings = warningList.ToArray();
         return true;
     }
+
+    private static bool TryReadEntry(JsonElement entry, out ArtifactOriginRequest request)
+    {
+        request = null!;
+        string? origin;
+        var reason = string.Empty;
+        if (entry.ValueKind == JsonValueKind.String)
+        {
+            origin = entry.GetString();
+        }
+        else if (entry.ValueKind == JsonValueKind.Object && entry.TryGetProperty("origin", out var named) && named.ValueKind == JsonValueKind.String)
+        {
+            origin = named.GetString();
+            if (entry.TryGetProperty("reason", out var namedReason))
+            {
+                if (namedReason.ValueKind != JsonValueKind.String || namedReason.GetString() is not { Length: <= ArtifactOriginRequest.MaxReasonLength } text)
+                {
+                    return false;
+                }
+
+                reason = text;
+            }
+        }
+        else
+        {
+            origin = null;
+        }
+
+        if (origin is null || !IsAllowed(origin))
+        {
+            return false;
+        }
+
+        request = new ArtifactOriginRequest(origin, reason);
+        return true;
+    }
+
 
     /// <summary>Returns whether an origin is https, host-only, and not a local or metadata address.</summary>
     /// <param name="origin">The declared origin.</param>

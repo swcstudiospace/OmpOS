@@ -25,9 +25,6 @@ internal sealed class ScriptedPanelHost : IAgentPanelHost
     /// <summary>Gets the identifiers of the sessions created, in order.</summary>
     internal List<string> Created { get; } = [];
 
-    /// <summary>Gets the identifiers of the omp terminal sessions created, in order.</summary>
-    internal List<string> CreatedTerminals { get; } = [];
-
     /// <summary>Gets the identifiers passed to <see cref="OpenSessionAsync"/>, in order.</summary>
     internal List<string> Opened { get; } = [];
 
@@ -80,22 +77,6 @@ internal sealed class ScriptedPanelHost : IAgentPanelHost
         var now = _clock.GetUtcNow();
         Created.Add(id);
         _catalog.Put(AgentPanelTestData.Summary(id, SessionLifecycle.Created, now, now));
-        return Task.FromResult(id);
-    }
-
-    /// <inheritdoc />
-    public Task<string> CreateTerminalSessionAsync(CancellationToken cancellationToken)
-    {
-        if (CreateFailure is not null)
-        {
-            return Task.FromException<string>(CreateFailure);
-        }
-
-        _created++;
-        var id = $"terminal-{_created}";
-        var now = _clock.GetUtcNow();
-        CreatedTerminals.Add(id);
-        _catalog.Put(AgentPanelTestData.Summary(id, SessionLifecycle.Created, now, now) with { Kind = SessionKind.Terminal });
         return Task.FromResult(id);
     }
 

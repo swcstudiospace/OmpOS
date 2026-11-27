@@ -1,12 +1,13 @@
 using System.Collections.Concurrent;
+using Autonogrammer.Cowork.Artifacts.Model;
 using Autonogrammer.Cowork.Artifacts.Stores;
 
 namespace Autonogrammer.Api.Cowork.Artifacts;
 
-/// <summary>Version-bound grants. A new version is not covered by an older grant.</summary>
+/// <summary>Version-bound grants. A new version is not covered by an older grant. Bindings are the internal representation; the wire grant is transport-only mapping, never an authority.</summary>
 internal sealed class ArtifactGrants
 {
-    private readonly ConcurrentDictionary<string, List<ArtifactGrantDocument>> _grants = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, List<ArtifactGrantBinding>> _grants = new(StringComparer.Ordinal);
 
     /// <summary>Lists grants for one owner's artifact.</summary>
     /// <param name="accountId">The owner.</param>
@@ -14,7 +15,7 @@ internal sealed class ArtifactGrants
     /// <returns>The grants.</returns>
     public IReadOnlyList<ArtifactGrantDocument> List(string accountId, string artifactId)
     {
-        return _grants.TryGetValue(Key(accountId, artifactId), out var grants) ? grants.ToArray() : [];
+        return _grants.TryGetValue(Key(accountId, artifactId), out var grants) ? grants.Select(ToDocument).ToArray() : [];
     }
 
     /// <summary>Binds a grant to a version hash.</summary>
@@ -23,11 +24,12 @@ internal sealed class ArtifactGrants
     public void Save(string accountId, ArtifactGrantDocument grant)
     {
         ArgumentNullException.ThrowIfNull(grant);
+        var binding = ToBinding(grant);
         var list = _grants.GetOrAdd(Key(accountId, grant.ArtifactId), static _ => []);
         lock (list)
         {
-            list.RemoveAll(existing => existing.Number == grant.Number && string.Equals(existing.Scope, grant.Scope, StringComparison.Ordinal) && string.Equals(existing.Device, grant.Device, StringComparison.Ordinal));
-            list.Add(grant);
+            list.RemoveAll(existing => existing.Number == binding.Number && string.Equals(existing.Scope, binding.Scope, StringComparison.Ordinal) && string.Equals(existing.Device, binding.Device, StringComparison.Ordinal));
+            list.Add(binding);
         }
     }
 
@@ -57,11 +59,29 @@ internal sealed class ArtifactGrants
         }
     }
 
-    /// <summary>Copies a wire grant into the API document.</summary>
+    /// <summary>Copies a transport wire grant into the API document via the binding mapping.</summary>
     /// <param name="grant">The wire grant.</param>
     /// <returns>The document.</returns>
     public static ArtifactGrantDocument FromWire(ArtifactWireContract.Grant grant) =>
+        ToDocument(ToBinding(grant));
+
+    /// <summary>Maps a transport wire grant onto the binding type. The wire DTO never persists.</summary>
+    /// <param name="grant">The wire grant.</param>
+    /// <returns>The binding.</returns>
+    public static ArtifactGrantBinding ToBinding(ArtifactWireContract.Grant grant) =>
         new(grant.ArtifactId, grant.Number, grant.ContentSha256, grant.Origins, grant.Scope, grant.Device, grant.GrantedAt);
+
+    /// <summary>Maps an API grant document onto the binding type.</summary>
+    /// <param name="document">The document.</param>
+    /// <returns>The binding.</returns>
+    public static ArtifactGrantBinding ToBinding(ArtifactGrantDocument document) =>
+        new(document.ArtifactId, document.Number, document.ContentSha256, document.Origins, document.Scope, document.Device, document.GrantedAt);
+
+    /// <summary>Maps a binding onto the API document.</summary>
+    /// <param name="binding">The binding.</param>
+    /// <returns>The document.</returns>
+    public static ArtifactGrantDocument ToDocument(ArtifactGrantBinding binding) =>
+        new(binding.ArtifactId, binding.Number, binding.ContentSha256, binding.Origins, binding.Scope, binding.Device, binding.GrantedAt);
 
     private static string Key(string accountId, string artifactId) => accountId + "\n" + artifactId;
 }

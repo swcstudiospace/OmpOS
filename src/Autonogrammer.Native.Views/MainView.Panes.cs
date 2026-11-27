@@ -23,7 +23,7 @@ public partial class MainView
     // Brings the shell's per-session models and views in. A terminal session has no transcript to checkpoint or queue behind, so it gets none of them.
     private void AttachShellPane(SessionPane pane, AgentSessionRuntime? runtime)
     {
-        if (runtime is null || runtime.Terminal is not null)
+        if (runtime is null || runtime.IsRetiredTerminal)
         {
             return;
         }

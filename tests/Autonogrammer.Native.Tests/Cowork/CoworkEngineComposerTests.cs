@@ -60,6 +60,18 @@ public sealed class CoworkEngineComposerTests
         composed.Notices.ShouldContain(CoworkEngineComposer.CoworkNameClashNotice);
     }
 
+    /// <summary>Cowork composes over ACP under the default transport (RPC): it always wires a permission resolver, an approval-capable flow RPC must refuse (OQ-525), so the composer pins ACP and its factory launch succeeds.</summary>
+    [Fact]
+    public async Task CoworkComposesOverAcpUnderDefaultTransport()
+    {
+        using var root = new TempDir();
+        var omp = new ScriptedOmp { AdvertiseAuthentication = true };
+        var composed = CoworkEngineComposer.Compose(Request(root.Path, omp, null));
+        await using var host = composed.Engine.Host;
+        await host.ConnectAsync(TestContext.Current.CancellationToken);
+        omp.Launches.ShouldHaveSingleItem().WorkingDirectory.ShouldBe(root.Path);
+    }
+
     private static CoworkEngineRequest Request(string root, ScriptedOmp omp, ProviderKeyEnvironment? keys) =>
         new(root, root, [root], new CoworkPathBoundary(root), static () => false)
         {

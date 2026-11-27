@@ -4,17 +4,8 @@
 <SettingsPageFrame Page="Page" Title="@SettingsCopy.AgentsHeading" Description="@SettingsCopy.AgentsDescription" Editable="@(Page.State == SettingsPageState.Ready)">
     @if (Page.State == SettingsPageState.Ready)
     {
-        <SettingsField For="@AutoRunId" Label="@SettingsCopy.AutoRunLabel" Help="@SettingsCopy.AutoRunHelp">
-            <button type="button" id="@AutoRunId" role="switch" class="autonogrammer-toggle autonogrammer-settings-toggle"
-                    aria-checked="@(Page.TerminalAutoRun ? "true" : "false")"
-                    aria-describedby="@SettingsField.DescribedBy(AutoRunId, true)"
-                    @onclick="Toggle"></button>
-        </SettingsField>
-        <span class="autonogrammer-live-region" role="status" aria-live="polite" aria-atomic="true">@(Page.IsAutoRunWarningVisible ? SettingsCopy.AutoRunWarning : null)</span>
-        if (Page.IsAutoRunWarningVisible)
-        {
-            <p class="autonogrammer-settings-warning">@SettingsCopy.AutoRunWarning</p>
-        }
+        <span class="autonogrammer-live-region" role="status" aria-live="polite" aria-atomic="true">@SettingsCopy.AutoRunRemovedNote</span>
+        <p class="autonogrammer-settings-help">@SettingsCopy.AutoRunRemovedNote</p>
 
         <p class="autonogrammer-settings-help">@SettingsCopy.ApprovalPolicyNote</p>
     }
@@ -25,9 +16,5 @@
 </SettingsPageFrame>
 
 @code {
-    private const string AutoRunId = "autonogrammer-setting-auto-run";
-
-    private void Toggle() => Page.SetTerminalAutoRun(!Page.TerminalAutoRun);
-
     private Task Retry() => Page.LoadAsync(CancellationToken.None);
 }

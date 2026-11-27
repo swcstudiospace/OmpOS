@@ -74,7 +74,7 @@ public sealed class IsolationCompositionTests
             WorkingDirectory = "/work",
             PlanningEvents = [],
         };
-        var engine = EngineComposition.Compose(["read"], plan, omp.TransportFactory, options: new EngineCompositionOptions { ProcessWrapper = wrapper });
+        var engine = EngineComposition.Compose(["read"], plan, omp.TransportFactory, options: new EngineCompositionOptions { Transport = EngineTransport.Acp, ProcessWrapper = wrapper });
         await using var host = engine.Host.ConfigureAwait(true);
         await engine.Host.ConnectAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
         return omp.Launches.ShouldHaveSingleItem();

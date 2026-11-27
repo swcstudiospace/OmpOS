@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Text;
+using System.Text.Json;
 using Autonogrammer.Api.Hosting;
 using Autonogrammer.Api.Security;
 using Autonogrammer.Api.Services;
@@ -166,12 +167,10 @@ internal static class ArtifactEndpoints
         }
 
 
-
         var metadata = context.Request.ContentType is not null && context.Request.ContentType.StartsWith(ArtifactWireContract.MetadataMediaType, StringComparison.OrdinalIgnoreCase);
         if (metadata)
         {
-            context.Response.Headers[ArtifactWireContract.SameHashHeader] = "true";
-            return Results.StatusCode(StatusCodes.Status200OK);
+            return await FinishMetadataPutAsync(context, user, directory, id, read.Bytes, cancellationToken).ConfigureAwait(false);
         }
 
         var declared = context.Request.Headers[ArtifactWireContract.ContentSha256Header].ToString();
@@ -180,6 +179,12 @@ internal static class ArtifactEndpoints
         {
             metrics.Add(kindText, "rejected");
             return WebProblems.Of(StatusCodes.Status400BadRequest, "hash_mismatch", "Hash mismatch.", "The declared hash does not match the body.");
+        }
+
+        if (!ArtifactWireContract.TryParseRequests(context.Request.Headers[ArtifactWireContract.RequestsHeader].ToString(), out var requests))
+        {
+            metrics.Add(kindText, "rejected");
+            return WebProblems.Of(StatusCodes.Status400BadRequest, "requests_rejected", "Requests rejected.", "The version requests are invalid.");
         }
 
         if (!Enum.TryParse<ArtifactKind>(kindText, out var kind))
@@ -191,7 +196,7 @@ internal static class ArtifactEndpoints
         ArtifactPutOutcome outcome;
         try
         {
-            outcome = await directory.PutAsync(user.Name, id, n, kind, metadata ? [] : read.Bytes, hash, limits.Value, cancellationToken).ConfigureAwait(false);
+            outcome = await directory.PutAsync(user.Name, id, n, kind, read.Bytes, hash, requests, limits.Value, cancellationToken).ConfigureAwait(false);
         }
         catch (ArtifactQuotaException)
         {
@@ -237,6 +242,42 @@ internal static class ArtifactEndpoints
         }
 
         return outcome == ArtifactPutOutcome.Created ? Results.StatusCode(StatusCodes.Status201Created) : Results.StatusCode(StatusCodes.Status200OK);
+    }
+
+    private static async Task<IResult> FinishMetadataPutAsync(HttpContext context, IUserContext user, ArtifactAccountDirectory directory, string id, byte[] body, CancellationToken cancellationToken)
+    {
+        if (!TryParseMetadata(body, out var hashes))
+        {
+            return WebProblems.Of(StatusCodes.Status400BadRequest, "metadata_rejected", "Metadata rejected.", "The metadata-only listing is invalid.");
+        }
+
+        if (!await directory.VerifyMetadataAsync(user.Name, id, hashes[^1], cancellationToken).ConfigureAwait(false))
+        {
+            return WebProblems.Of(StatusCodes.Status409Conflict, "divergence", "Divergent version.", "The listing does not match the stored version.");
+        }
+
+        context.Response.Headers[ArtifactWireContract.SameHashHeader] = "true";
+        return Results.StatusCode(StatusCodes.Status200OK);
+    }
+
+    private static bool TryParseMetadata(byte[] body, out IReadOnlyList<string> hashes)
+    {
+        hashes = [];
+        try
+        {
+            var document = JsonSerializer.Deserialize(body, ArtifactWireContract.JsonContext.Default.SyncMetadata);
+            if (document is null || document.Hashes.Count == 0)
+            {
+                return false;
+            }
+
+            hashes = document.Hashes;
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     private static async Task<IResult> DeleteAsync(string id, IUserContext user, ArtifactAccountDirectory directory, CancellationToken cancellationToken)

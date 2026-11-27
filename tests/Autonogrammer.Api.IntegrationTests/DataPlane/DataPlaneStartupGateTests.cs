@@ -93,15 +93,10 @@ public sealed class DataPlaneStartupGateTests
         (await current.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Behind);
         await AssertWaitExpiresAsync(current, token).ConfigureAwait(true);
 
-        await schema.RunAsync(MigrationRegistry.All, token).ConfigureAwait(true);
-        (await current.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Ahead);
-        var ten = (IMigrationStep)Activator.CreateInstance(
-            typeof(MigrationRunner).Assembly.GetType("Autonogrammer.Sessions.Postgres.Migrations.M0010_DispatchDeviceState", throwOnError: true)!,
-            nonPublic: true)!;
-        var future = MigrationRegistry.All.Append(ten).OrderBy(static step => step.Version).ToArray();
-        var later = schema.Probe(future);
+        var later = schema.Probe(MigrationRegistry.All);
         (await later.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Behind);
-        await AssertWaitOpensAfterMigrationAsync(schema, later, future, token).ConfigureAwait(true);
+        await AssertWaitOpensAfterMigrationAsync(schema, later, MigrationRegistry.All, token).ConfigureAwait(true);
+        (await current.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Ahead);
 
         await schema.ExecuteAsync("UPDATE schema_migrations SET checksum = 'wrong' WHERE version = 11", token).ConfigureAwait(true);
         (await later.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Behind);
@@ -133,7 +128,7 @@ public sealed class DataPlaneStartupGateTests
         WaitForTimer(time);
         service.ExecuteTask!.IsCompleted.ShouldBeFalse();
         var applied = await schema.RunAsync(steps, token).ConfigureAwait(true);
-        applied.Count.ShouldBe(1);
+        applied.Count.ShouldBe(6);
         applied[0].ShouldBe(10);
         (await probe.GetAsync(true, token).ConfigureAwait(true)).ShouldBe(SchemaState.Ahead);
         time.Advance(TimeSpan.FromSeconds(2));

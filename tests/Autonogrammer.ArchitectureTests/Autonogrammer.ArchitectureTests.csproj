@@ -21,7 +21,6 @@
     <ProjectReference Include="../../src/Autonogrammer.Harness.OmpConfig/Autonogrammer.Harness.OmpConfig.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Providers/Autonogrammer.Harness.Providers.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Secrets/Autonogrammer.Harness.Secrets.csproj" />
-    <ProjectReference Include="../../src/Autonogrammer.Harness.Herdr/Autonogrammer.Harness.Herdr.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Agent/Autonogrammer.Harness.Agent.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.AgentLoop/Autonogrammer.Harness.AgentLoop.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Remote/Autonogrammer.Harness.Remote.csproj" />

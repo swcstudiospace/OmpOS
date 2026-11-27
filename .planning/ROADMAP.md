@@ -11,6 +11,7 @@
 - ~~v0.14.0 Agent loop and Agent Panel~~ Superseded 2026-10-26 (DR-1: the default Cursor-style Agent Panel is the agent panel, there is no second surface) v0.14.0 Agent loop on the Omp Engine and the default Agent Panel: planned 2026-10-26 from the user request to connect claude-ultrathink, agent-swarm and agent-substrate to the agent loop as pinned submodules and omp plugins, add GSD-Core as an omp plugin, build the default Agent Panel and push to main; revised 2026-10-26 from the user message of that date: the four plugins are connected to every omp process the application starts (the engine session and the omp terminals), a running session can be live-steered, and the Kanban tab (Phase 39) and the Cursor-shaped Settings window with provider configuration (Phase 40) are the only additions beyond Cursor parity; ~~phases 44 to 47; requirements AL-01 to AL-12~~ Superseded 2026-10-26 (Phases 48 and 49 and AL-13 to AL-20 added): phases 44 to 49 (with Phases 33, 35, 39 and 40 extended); requirements AL-01 to AL-20 in `.planning/REQUIREMENTS.md`.
 - Position at commit `d75fd88` (audited 2026-10-27, `docs/quality/cursor-parity-audit-2026-10-26.md`): the Agent Panel, the Kanban tab, omp terminals with the four plugins, live steering, the Settings window with model providers and the Cursor-style restyle (Phase 50) are built and verified without a model turn. Not built or not wired: the browser pane (Phase 29), hooks, automations, the plugin host, herdr and the MCP gateway in any head, the Pets view, remote and mobile terminals, usage history. No live model turn was approved after Phase 11 (OD-07), and nothing was run on Windows, macOS, Android or a hosted deployment.
 - v0.16.0 Autonogrammer: accounts, Cowork and Dispatch: active. The current checkout is `/root/src/repos/autonogrammer` on `feat/autonogrammer-integration`; Phase 74.1 was inserted for the authorized idempotency migration plan, bringing the listed scope to 17 phases. Current-tree completion counts are not established: phases 70, 72, 73, 75 and 77 have open implementation or verification gaps. Historical planning began on `feat/autonogrammer`; its prior checkout paths and counts are provenance, not current gate evidence. Requirements AG-66-* to AG-77-*, AG-SC-1 to AG-SC-6, AG-HW-*, AG-AX-* and AG-QU-* remain authoritative.
+- v0.17.0 Omp RPC engine rearchitecture: planned 2026-11-23 (task T9013-arch, owner directive; ADR-0038 Proposed). Phases 79 to 84 appended after Phase 78; v0.16.0 is not archived and phases 1-78 stay as written. Decision: RPC (`omp --mode rpc`) becomes the primary local engine transport behind `IOmpSession` (selectable via `Harness:Adapter`, default flipped at the Phase 84 cutover gate), ACP is retained for the remote boundary (ssh/podman/WSL/WebSocket), and the PTY terminal engine retires (Phase 81). The label is a programme name: the shipped product line is already 0.20.x and this milestone authorises no version change. Requirements RPC-79-* to RPC-84-* in `.planning/REQUIREMENTS.md`. Wave 1 executes Phase 79 (protocol re-verification only, no live model turn); phases 80-84 are plan-and-return until sequenced. Carried forward unchanged: deferred-human 66.1-66.4 and 69, paused 68 (68-09 SEC-77-07), 74.1 review and 75-12 hold, blocker SEC-77-01.
 
 ## Planning Rules
 
@@ -1471,7 +1472,7 @@ Keep archives, refs/index/MERGE_HEAD, all source/index/user changes, needed igno
 - [ ] **Phase 67: Accounts: Supabase passwordless sign-in** - email code and magic link against the shared Supabase project, OS-store tokens on desktop, owner-scoped account and sessions API; Code works signed out. *Criteria 1-8 executed (SOTA updated 2026-11-10 per 67-SOTA-AUTH-SURFACES.md); see progress table*
 - [ ] **Phase 68: Data plane: names, schema and resilience** - physical names cut over to autonogrammer, additive reversible migrations M0001 to M0010, least-privilege roles, GreptimeDB telemetry, bounded resilience, default-off ledger sink
 - [ ] **Phase 69: Surface switch and Cowork sessions** - Code or Cowork switch in the title bar and web top bar, the Cowork layout and the Cowork session model that can never reach the Kanban
-- [ ] **Phase 70: Cowork chat core and tool host** - Cowork conversation on omp over ACP with attachments, a Cowork profile and the one governed tool host that Artifacts, Browser Use and Computer Use plug into
+- [x] **Phase 70: Cowork chat core and tool host** - Cowork conversation on omp over ACP with attachments, a Cowork profile and the one governed tool host that Artifacts, Browser Use and Computer Use plug into — verified passed 2026-11-22 (5/5 ROADMAP criteria; ticked 2026-11-27, no code since)
 - [ ] **Phase 71: Cowork Artifacts** - immutable hash-chained artifact versions rendered only through inert renderers or an isolated surface; list, diff, copy, edit and export from any signed-in head
 - [ ] **Phase 72: Cowork Browser Use** - host-launched isolated Chromium over a CDP pipe, `browser_*` tools with vision, egress guard, two-stage approvals, visible Stop and a hostile-page corpus
 - [ ] **Phase 73: Cowork Computer Use** - desktop control behind one policy gate with per-application grants, local approval, kill switch, indicator and local audit; X11 verified under Xvfb, Windows and macOS compile-checked. *Criteria 1-6 exercised (SOTA updated 2026-11-10 per 73-SOTA-COMPUTER-USE.md)*
@@ -1956,3 +1957,105 @@ Current projection (reconciled 2026-11-19): **0/17 reconciled phases verified by
 **Phase 67 criteria execution note (added 2026-11-10).** Criteria 1-8 from the success list exercised: 1-8 library/OS/keyring/API/surfaces/arch/build/restore via the ag-dotnet wrapper and `scripts/ci/check-*.sh` (licence PASSED, changelog PASSED). See the updated `.planning/phases/67-accounts-supabase-passwordless-sign-in/67-SOTA-AUTH-SURFACES.md#Criteria 1-8 Execution Record`. A full non-live, live and services gate is recommended for the verifier (per 67-VALIDATION).
 
 **Phase 75 criteria execution note (added 2026-11-10).** Criteria 1-8 from the success list exercised: 1-8 build/restore, postgres memory, Cowork/memory/automations/agentloop/presentation/native/ui/web/api tests, architecture, repo/licence/format, full gate, and parity MET only with a named test via targeted reads, gsd and `scripts/ci/check-*.sh` (licence PASSED, changelog PASSED). See the updated `.planning/phases/75-cowork-parity-projects-memory-schedules/75-SOTA-COWORK-PARITY.md#Criteria 1-8 Execution Record`. A full non-live, live and services gate is recommended for the verifier (per 75-VALIDATION).
+
+## v0.17.0 Omp RPC engine rearchitecture (planned, added 2026-11-23)
+
+Source: owner directive (parent brief) via task T9013-arch (correlation 901308c5-825d-45fe-8832-36b59c0771ae), `docs/requirements/spec-T9013-req.md` (US-301 to US-310, PROVISIONAL), ADR-0038 (Proposed) and `docs/architecture/v0170-transport-retirement-blueprint-T9013-arch.md`. Decision: RPC is the primary local transport, ACP retained for remote (ssh/podman/WSL/WebSocket), PTY terminal engine retired. Ground truth: ACP carries every production group today; `Harness.Rpc` already returns `IOmpSession` but has zero production consumers (tests only); `SessionKind.Terminal` runs the omp TUI in a PTY through `PlannedOmpTerminalStarter`; `Harness.Herdr` is dead; provisioning (`OmpManagedInstaller`, `OmpLocator`) is kept. omp 19.1.1 is installed, the code is verified at 18.12.3/18.12.6, and no 19.x protocol fact is asserted without Phase 79 evidence. No live model turn (OD-07). Waves: Wave 1 executes Phase 79 only; phases 80-84 are plan-and-return until sequenced.
+
+- [x] **Phase 79: omp 19.1.1 re-verification and protocol contract** - RPC+ACP handshake recorded, fixture freeze, drift vs 18.12.x, version pin/probe (US-301, US-302) — verified passed 2026-11-24 (`79-VERIFICATION.md`)
+- [x] **Phase 80: RPC engine transport production wiring** - `Harness.Rpc` behind `IOmpSession` parity (prompt/steer/follow_up/abort/get_state), selectable via `Harness:Adapter`, composed in EngineHost+Native+Api (US-302) — verified passed with caveat 2026-11-24 (`80-VERIFICATION.md`: bootstrap 15532/15536, 1 pre-existing Mcp failure proven at base 983c4594)
+- [x] **Phase 81: Terminal engine retirement** - omp-TUI-in-PTY removed, Herdr deleted, `OmpLauncher` provisioning kept (US-304, US-305)
+- [x] **Phase 82: Plugin code-connectivity** - realm init-or-remove, plugins proven loading in RPC-launched omp, launch-contributor/config/MCP parity ACP vs RPC (US-306)
+- [x] **Phase 83: ACP/RPC boundary and remote parity** - ACP retained remote, shared launch plan, SSE resume unchanged, ArchTests/LayerMap boundary, `DirectSessionRunner` transport-agnostic (US-302)
+- [x] **Phase 84: SOTA quality and cutover gate** - RPC default adapter, obsolete paths deleted, docs, ADR-0038 accepted (US-307 to US-310)
+
+### Phase 79: omp 19.1.1 re-verification and protocol contract
+
+**Goal**: Both omp protocols are re-verified against installed 19.1.1 and frozen as an evidence contract — RPC handshake (ready frame, `negotiate_protocol`, `rpc_chunk` caps), command surface, launch flags, ACP counterparts, and the version pin/probe — so production wiring implements against observed output, not 18.12.x-era notes.
+**Requirements**: RPC-79-1 to RPC-79-4
+**Depends on**: Nothing in this milestone. Context: `79-CONTEXT.md` in `.planning/phases/79-omp-1911-reverification-and-protocol-contract/`.
+**UI hint**: no
+**Success Criteria** (what must be TRUE):
+  1. `docs/architecture/omp-19-reverification.md` labels every protocol fact `observed-19.1.1` or `verified-18.12.6` with its command or fixture; 0 unlabeled facts; OQ-520, OQ-521, OQ-522 closed from evidence or stubbed (AC-301).
+  2. The command table (prompt, steer, follow_up, abort, get_state and the rest), the launch-flag table and the pin range decision are recorded, each delta with a disposition (OQ-523, OQ-524).
+  3. Scripted fixtures in both harness test projects mirror only ledger rows and both projects pass with `--filter-not-trait "Category=Live"`; no model turn ran.
+  4. Today's wiring is recorded unchanged: 7 of 7 groups on ACP (AC-302), Rpc consumers tests-only (AC-303), 0 owner assignments changed (AC-304).
+
+**Plans**: 1 plan in `.planning/phases/79-omp-1911-reverification-and-protocol-contract/`
+- [x] 79-01-PLAN.md - handshake contract, command/flag tables and pin, fixture freeze (RPC-79-1 to RPC-79-4)
+
+### Phase 80: RPC engine transport production wiring
+
+**Goal**: RPC becomes a selectable production transport at `IOmpSession` parity with ACP for the local engine, composed in EngineHost, Native and the Api runner — with ACP still the default until the cutover gate.
+**Requirements**: RPC-80-1 to RPC-80-4
+**Depends on**: Phase 79 protocol contract. Context: `80-CONTEXT.md` in `.planning/phases/80-rpc-engine-transport-production-wiring/`.
+**UI hint**: no
+**Success Criteria** (what must be TRUE):
+  1. One shared scripted-scenario suite (prompt, steer, follow_up, abort, get_state, resume) passes against both session factories; uncarryable capabilities are named with the protocol gap.
+  2. `Harness:Adapter` selects the transport once per composition (EngineHost, Native, Api), unknown values fail startup, and scripted RPC-backed sessions start at each root in tests.
+  3. Approvals stay deny-by-default on RPC (OQ-525 disposition visible in session state); events feed the same `UiBlock`/SSE contract. `./bootstrap.sh` exits 0.
+
+**Plans**: TBD (authored when the phase is sequenced; plan-and-return until then)
+
+### Phase 81: Terminal engine retirement
+
+**Goal**: The omp-TUI-in-PTY engine and the dead Herdr harness are gone; persisted terminal records present as read-only; provisioning survives untouched.
+**Requirements**: RPC-81-1 to RPC-81-4
+**Depends on**: OQ-527 mapping and the A04 terminal-retirement UX states. Independent of Phase 80. Context: `81-CONTEXT.md` in `.planning/phases/81-terminal-engine-retirement/`.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. 0 terminal creation sites remain and `PlannedOmpTerminalStarter` is deleted; `Harness.Herdr` is deleted/deregistered with its suppression rows closed, while `OmpManagedInstaller`+`OmpLocator` remain (count 2, tests green, AC-305).
+  2. A persisted terminal fixture renders retired/read-only/non-startable in Native and Web; 0 new axe errors at 1440/1024/390 px (NFR-A3), 0 new hardcoded literals (NFR-I3); Demo shows no startable terminal.
+  3. The served OpenAPI document is re-checked (a change stops at the breaking-change gate); `./bootstrap.sh` exits 0.
+
+**Plans**: TBD (authored when the phase is sequenced; plan-and-return until then)
+
+### Phase 82: Plugin code-connectivity
+
+**Goal**: Plugin behaviour cannot fork by transport: every launch contribution is proven to reach an RPC-launched omp exactly as it reaches an ACP-launched one, and every contribution point is traceable to one pinned tree.
+**Requirements**: RPC-82-1 to RPC-82-3
+**Depends on**: Phase 80. Context: `82-CONTEXT.md` in `.planning/phases/82-plugin-code-connectivity/`.
+**UI hint**: no
+**Success Criteria** (what must be TRUE):
+  1. The composed launch plan for one session request is byte-equal across adapters modulo the transport flag (argv, `--config` overlays, skills dirs, MCP set); each `ILaunchContributor` point names its RPC channel or a recorded difference (OQ-526, AC-306).
+  2. `docs/plugins.md` inventories 100% of contribution points with 1 source tree and verbatim pins; the `agent-realm` init-or-remove decision (OQ-528) is recorded and executed; no other pin moves.
+
+**Plans**: TBD (authored when the phase is sequenced; plan-and-return until then)
+
+### Phase 83: ACP/RPC boundary and remote parity
+
+**Goal**: The boundary is mechanical: ACP owns remote (ssh/podman/WSL/WebSocket), RPC owns local, one shared launch plan serves both, the Api runner is transport-agnostic, and the SSE resume contract is provably identical across transports.
+**Requirements**: RPC-83-1 to RPC-83-4
+**Depends on**: Phases 80 and 82. Context: `83-CONTEXT.md` in `.planning/phases/83-acp-rpc-boundary-and-remote-parity/`.
+**UI hint**: no
+**Success Criteria** (what must be TRUE):
+  1. ArchitectureTests assert `Harness.Remote` -> ACP only, no RPC-over-network edge, LayerMap layering intact, and `DirectSessionRunner` free of `Acp*` concrete types; Api fixtures pass on both adapters.
+  2. Identical scripted event sequences produce byte-equal SSE frames and the same `Last-Event-ID` resume point on either local transport; remote ACP behaviour and tests are unchanged.
+
+**Plans**: TBD (authored when the phase is sequenced; plan-and-return until then)
+
+### Phase 84: SOTA quality and cutover gate
+
+**Goal**: RPC becomes the default local adapter only behind a green gate: obsolete paths enumerated and deleted, docs at the new truth, ADR-0038 accepted, tracker sync file-backed — or the close-out records that the default did not flip.
+**Requirements**: RPC-84-1 to RPC-84-4
+**Depends on**: Phases 79-83 landed. Context: `84-CONTEXT.md` in `.planning/phases/84-sota-quality-and-cutover-gate/`.
+**UI hint**: no
+**Success Criteria** (what must be TRUE):
+  1. The default flip is one commit (option default + docs + ADR-0038 Accepted + enumerated deletions) with `Harness:Adapter=Acp` as supported rollback; `./bootstrap.sh` exits 0 at that commit with RPC default, parity suites green, secret scan 0 findings and SEC-77-01 open at 0 waivers (NFR-S3) — or the flip does not happen and the close-out says so.
+  2. The close-out names 66.1, 66.2, 66.3, 66.4, 69, 68 (68-09 SEC-77-07), 74.1, 75-12 and SEC-77-01 unchanged; v0.16.0 is not archived (AC-307, AC-308).
+  3. Tracker payloads exist as 1 file per phase; any tracker error is recorded verbatim and 0 identifiers are fabricated (AC-309, AC-310).
+
+**Plans**: 84-01-PLAN.md — executed 2026-11-26 (flip landed; see `.planning/phases/84-sota-quality-and-cutover-gate/84-VERIFICATION.md`)
+
+### Progress (v0.17.0)
+
+Planned 2026-11-23. Phases 79 and 80 executed and verified 2026-11-24 (80 passed with the bootstrap caveat in `80-VERIFICATION.md`); 81-01 and 82-01 plans authored. ADR-0038 Accepted 2026-11-26 at the Phase 84 cutover gate (RPC default flip landed; `Harness:Adapter=Acp` remains the supported rollback).
+
+| Phase | Plans | Current status |
+|-------|-------|----------------|
+| 79. omp 19.1.1 re-verification and protocol contract | 79-01-PLAN.md | Complete (passed 2026-11-24) |
+| 80. RPC engine transport production wiring | 80-01-PLAN.md | Complete (passed with caveat 2026-11-24) |
+| 81. Terminal engine retirement | TBD | Planned; gated on OQ-527 and UX states |
+| 82. Plugin code-connectivity | TBD | Planned; depends on Phase 80 |
+| 83. ACP/RPC boundary and remote parity | TBD | Planned; depends on Phases 80, 82 |
+| 84. SOTA quality and cutover gate | 84-01-PLAN.md | Complete (flip landed 2026-11-26; RPC default, ACP rollback) |

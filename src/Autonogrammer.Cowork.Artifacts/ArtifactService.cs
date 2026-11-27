@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using Autonogrammer.Contracts.Artifacts;
 using Autonogrammer.Cowork.Artifacts.Model;
+using Autonogrammer.Cowork.Artifacts.Tools;
 using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Cowork.Artifacts;
@@ -48,6 +49,7 @@ public sealed class ArtifactService
     /// <param name="changeNote">An optional note of at most 280 characters.</param>
     /// <param name="author">The host-set author.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="requests">Bounded network requests for version 1 only. A request is never a grant.</param>
     /// <returns>The first version, or a typed failure.</returns>
     public Task<ArtifactResult<ArtifactSnapshot>> CreateAsync(
         ArtifactKind kind,
@@ -58,12 +60,13 @@ public sealed class ArtifactService
         string? mediaType,
         string? changeNote,
         ArtifactAuthor author,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlyList<ArtifactOriginRequest>? requests = null)
     {
         ArgumentNullException.ThrowIfNull(title);
         ArgumentNullException.ThrowIfNull(content);
         return MutateAsync(
-            mutation => Create(mutation, kind, title, content, sessionId, language, mediaType, changeNote, author, derivedFrom: null),
+            mutation => Create(mutation, kind, title, content, sessionId, language, mediaType, changeNote, author, derivedFrom: null, RequestsOf(requests)),
             sessionId,
             cancellationToken);
     }
@@ -75,6 +78,7 @@ public sealed class ArtifactService
     /// <param name="changeNote">An optional note.</param>
     /// <param name="author">The host-set author.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="requests">Bounded network requests for the new version only. A request is never a grant.</param>
     /// <returns>The stored version, or a typed failure. A stale user save is refused with no merge.</returns>
     public Task<ArtifactResult<ArtifactSnapshot>> UpdateAsync(
         string artifactId,
@@ -82,12 +86,13 @@ public sealed class ArtifactService
         byte[] content,
         string? changeNote,
         ArtifactAuthor author,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlyList<ArtifactOriginRequest>? requests = null)
     {
         ArgumentNullException.ThrowIfNull(artifactId);
         ArgumentNullException.ThrowIfNull(content);
         return MutateAsync(
-            mutation => Update(mutation, artifactId, baseVersion, content, changeNote, author),
+            mutation => Update(mutation, artifactId, baseVersion, content, changeNote, author, RequestsOf(requests)),
             sessionId: null,
             cancellationToken);
     }
@@ -196,7 +201,8 @@ public sealed class ArtifactService
                 source.MediaType,
                 changeNote: null,
                 ArtifactAuthor.Agent,
-                new ArtifactDerivation(source.ArtifactId, source.Number, source.ContentSha256)),
+                new ArtifactDerivation(source.ArtifactId, source.Number, source.ContentSha256),
+                []),
             source.SessionId,
             cancellationToken).ConfigureAwait(false);
     }
@@ -253,11 +259,17 @@ public sealed class ArtifactService
         string? mediaType,
         string? changeNote,
         ArtifactAuthor author,
-        ArtifactDerivation? derivedFrom)
+        ArtifactDerivation? derivedFrom,
+        IReadOnlyList<ArtifactOriginRequest> requests)
     {
         if (!IsTitleValid(title))
         {
             return ArtifactResults.Fail<ArtifactSnapshot>(ArtifactFailure.TitleInvalid);
+        }
+
+        if (!RequestsAreValid(requests))
+        {
+            return ArtifactResults.Fail<ArtifactSnapshot>(ArtifactFailure.OriginInvalid);
         }
 
         if (!TryMedia(kind, language, mediaType, out var resolvedLanguage, out var resolvedType))
@@ -285,7 +297,7 @@ public sealed class ArtifactService
         var hash = Hash(content);
         var createdAt = _timeProvider.GetUtcNow();
         var artifact = new ArtifactRecord(id, kind, title, resolvedType, resolvedLanguage, sessionId, derivedFrom);
-        var version = new ArtifactVersionRecord(id, 1, content.ToArray(), hash, null, null, author, createdAt, changeNote);
+        var version = new ArtifactVersionRecord(id, 1, content.ToArray(), hash, null, null, author, createdAt, changeNote, requests);
         mutation.Insert(artifact, version);
         return ArtifactResults.Ok(ToSnapshot(artifact, version));
     }
@@ -296,8 +308,14 @@ public sealed class ArtifactService
         int baseVersion,
         byte[] content,
         string? changeNote,
-        ArtifactAuthor author)
+        ArtifactAuthor author,
+        IReadOnlyList<ArtifactOriginRequest> requests)
     {
+        if (!RequestsAreValid(requests))
+        {
+            return ArtifactResults.Fail<ArtifactSnapshot>(ArtifactFailure.OriginInvalid);
+        }
+
         var artifact = mutation.Find(artifactId);
         if (artifact is null)
         {
@@ -334,6 +352,19 @@ public sealed class ArtifactService
             return ArtifactResults.Fail<ArtifactSnapshot>(ArtifactFailure.StaleBase(latest.Number));
         }
 
+        return AppendVersion(mutation, artifact, versions, content, hash, changeNote, author, requests);
+    }
+
+    private ArtifactResult<ArtifactSnapshot> AppendVersion(
+        IArtifactMutation mutation,
+        ArtifactRecord artifact,
+        IReadOnlyList<ArtifactVersionRecord> versions,
+        byte[] content,
+        string hash,
+        string? changeNote,
+        ArtifactAuthor author,
+        IReadOnlyList<ArtifactOriginRequest> requests)
+    {
         if (!IsNoteValid(changeNote) || content.Length > Cap(artifact.Kind))
         {
             return ArtifactResults.Fail<ArtifactSnapshot>(ArtifactFailure.TooLarge);
@@ -344,8 +375,9 @@ public sealed class ArtifactService
             return ArtifactResults.Fail<ArtifactSnapshot>(ArtifactFailure.QuotaExceeded);
         }
 
+        var latest = versions[^1];
         var next = new ArtifactVersionRecord(
-            artifactId,
+            artifact.Id,
             latest.Number + 1,
             content.ToArray(),
             hash,
@@ -353,7 +385,8 @@ public sealed class ArtifactService
             latest.ContentSha256,
             author,
             _timeProvider.GetUtcNow(),
-            changeNote);
+            changeNote,
+            requests);
         mutation.Append(next);
         return ArtifactResults.Ok(ToSnapshot(artifact, next));
     }
@@ -550,5 +583,26 @@ public sealed class ArtifactService
         Author = version.Author,
         CreatedAt = version.CreatedAt,
         ChangeNote = version.ChangeNote,
+        Requests = version.Requests,
     };
+
+    private static IReadOnlyList<ArtifactOriginRequest> RequestsOf(IReadOnlyList<ArtifactOriginRequest>? requests) => requests ?? [];
+
+    private static bool RequestsAreValid(IReadOnlyList<ArtifactOriginRequest> requests)
+    {
+        if (requests.Count > ArtifactOriginRules.MaxOrigins)
+        {
+            return false;
+        }
+
+        foreach (var request in requests)
+        {
+            if (!ArtifactOriginRules.IsAllowed(request.Origin))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

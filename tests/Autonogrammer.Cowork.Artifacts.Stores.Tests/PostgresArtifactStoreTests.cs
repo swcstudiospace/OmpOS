@@ -34,7 +34,7 @@ public sealed class PostgresArtifactStoreTests : ArtifactStoreContract, IAsyncLi
             {
                 mutation.Insert(
                     new ArtifactRecord("cap-id", Autonogrammer.Contracts.Artifacts.ArtifactKind.Image, "Big", "image/png", null, null, null),
-                    new ArtifactVersionRecord("cap-id", 1, oversized, ArtifactWireContract.Hash(oversized), null, null, ArtifactAuthor.Agent, DateTimeOffset.UnixEpoch, null));
+                    new ArtifactVersionRecord("cap-id", 1, oversized, ArtifactWireContract.Hash(oversized), null, null, ArtifactAuthor.Agent, DateTimeOffset.UnixEpoch, null, []));
                 return true;
             },
             Token).AsTask()).ConfigureAwait(true);
@@ -76,16 +76,16 @@ public sealed class PostgresArtifactStoreTests : ArtifactStoreContract, IAsyncLi
             {
                 mutation.Insert(
                     new ArtifactRecord(id, Autonogrammer.Contracts.Artifacts.ArtifactKind.Markdown, "Secret", "text/markdown", null, "session", null),
-                    new ArtifactVersionRecord(id, 1, "hidden"u8.ToArray(), ArtifactWireContract.Hash("hidden"u8), null, null, ArtifactAuthor.Agent, DateTimeOffset.UnixEpoch, null));
+                    new ArtifactVersionRecord(id, 1, "hidden"u8.ToArray(), ArtifactWireContract.Hash("hidden"u8), null, null, ArtifactAuthor.Agent, DateTimeOffset.UnixEpoch, null, []));
                 return true;
             },
             Token).ConfigureAwait(true);
-        await left.SaveGrantAsync(new ArtifactWireContract.Grant(id, 1, ArtifactWireContract.Hash("hidden"u8), ["https://desk.example"], "read", "desk", DateTimeOffset.UnixEpoch), Token).ConfigureAwait(true);
+        await left.UpsertAsync(new ArtifactGrantBinding(id, 1, ArtifactWireContract.Hash("hidden"u8), ["https://desk.example"], "read", "desk", DateTimeOffset.UnixEpoch), Token).ConfigureAwait(true);
 
         (await right.GetArtifactAsync(id, Token).ConfigureAwait(true)).ShouldBeNull();
         (await right.GetVersionsAsync(id, Token).ConfigureAwait(true)).ShouldBeEmpty();
-        (await right.GrantsAsync(id, Token).ConfigureAwait(true)).ShouldBeEmpty();
-        var seen = await left.GrantsAsync(id, Token).ConfigureAwait(true);
+        (await right.ListAsync(id, Token).ConfigureAwait(true)).ShouldBeEmpty();
+        var seen = await left.ListAsync(id, Token).ConfigureAwait(true);
         seen.Count.ShouldBe(1);
         seen[0].Device.ShouldBe("desk");
     }
@@ -238,6 +238,6 @@ public sealed class PostgresArtifactStoreTests : ArtifactStoreContract, IAsyncLi
     private static ArtifactVersionRecord Version(string id, int number, string text, ArtifactVersionRecord? parent)
     {
         var bytes = System.Text.Encoding.UTF8.GetBytes(text);
-        return new ArtifactVersionRecord(id, number, bytes, ArtifactWireContract.Hash(bytes), parent?.Number, parent?.ContentSha256, ArtifactAuthor.Agent, DateTimeOffset.UnixEpoch, null);
+        return new ArtifactVersionRecord(id, number, bytes, ArtifactWireContract.Hash(bytes), parent?.Number, parent?.ContentSha256, ArtifactAuthor.Agent, DateTimeOffset.UnixEpoch, null, []);
     }
 }

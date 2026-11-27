@@ -5,9 +5,9 @@ namespace Autonogrammer.Native.Tests.Settings;
 /// <summary>A scripted source of the Agents page.</summary>
 internal sealed class FakeAgentsSource : FakeSettingsSource<AgentsSettingsValues>, IAgentsSettingsSource
 {
-    /// <summary>Creates a source whose saved auto-run switch is off.</summary>
+    /// <summary>Creates a source whose saved values are the defaults.</summary>
     public FakeAgentsSource()
-        : base(new AgentsSettingsValues(TerminalAutoRun: false))
+        : base(AgentsSettingsValues.Defaults)
     {
     }
 

@@ -120,6 +120,13 @@ internal sealed class WebSessionRuntime : IAsyncDisposable
         }
 
         _started = true;
+        if (_isTerminal)
+        {
+            // Retired terminal record: no history load, no stream, no transport. The view renders the retired frame from the row alone.
+            Session.MarkHistoryLoaded();
+            return;
+        }
+
         _observation = ViewModel.ObserveAsync(Stages, _lifetime.Token);
         _ = ViewModel.ActivateAsync();
         _ = LoadAsync();
