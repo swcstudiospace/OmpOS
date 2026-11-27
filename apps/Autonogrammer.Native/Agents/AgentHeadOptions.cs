@@ -1,6 +1,7 @@
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.AgentLoop.Steering;
+using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Settings.Models;
 using Autonogrammer.Presentation;
 using Microsoft.Extensions.Logging;
@@ -24,6 +25,9 @@ internal sealed class AgentHeadOptions
 
     /// <summary>Gets the transport factory of every session, or null to spawn <c>omp acp</c>.</summary>
     public Func<AcpClientOptions, IAcpTransport>? TransportFactory { get; init; }
+
+    /// <summary>Gets the wire transport the head's sessions compose over. The default is <see cref="EngineTransport.Rpc"/> (Phase 84 cutover); a test that injects a scripted ACP transport through <see cref="TransportFactory"/> sets <see cref="EngineTransport.Acp"/>.</summary>
+    public EngineTransport Transport { get; init; } = EngineTransport.Rpc;
 
     /// <summary>Gets the clock, or null for the system clock.</summary>
     public TimeProvider? TimeProvider { get; init; }

@@ -257,6 +257,7 @@ internal sealed class AgentHead : IAsyncDisposable
                     AllowedKinds = options.AllowedKinds,
                     TimeProvider = options.TimeProvider ?? TimeProvider.System,
                     TransportFactory = options.TransportFactory,
+                    Transport = options.Transport,
                     LoggerFactory = options.LoggerFactory,
                     OmpPath = options.OmpPath,
                     Motion = options.Motion,

@@ -18,7 +18,7 @@ public sealed class AgentsPageTests
         page.State.ShouldBe(SettingsPageState.Ready);
         page.IsDirty.ShouldBeFalse();
         SettingsCopy.AutoRunRemovedNote.ShouldContain("Terminal auto-run was removed", Case.Sensitive);
-        SettingsCopy.ApprovalPolicyNote.ShouldContain("every terminal command an agent proposes waits for your approval", Case.Sensitive);
+        SettingsCopy.ApprovalPolicyNote.ShouldContain("Every terminal command an agent proposes waits for your approval", Case.Sensitive);
     }
 
     /// <summary>There is no editable value, so saving never writes to the source.</summary>
