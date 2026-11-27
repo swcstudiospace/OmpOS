@@ -663,7 +663,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         || composition.ExtraMcpServers.Count != 0
         || composition.HookGate is not null
         || composition.ProcessWrapper is not null;
- 
+
     /// <summary>Gets or sets the activity tee. When set, RuntimeOptions wraps slot.Prompts and leaves AgentSessionRuntime unedited.</summary>
     internal ActivityComposition? Activity { get; set; }
 

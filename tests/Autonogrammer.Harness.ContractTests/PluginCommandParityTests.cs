@@ -1,6 +1,6 @@
 using Autonogrammer.Harness.Abstractions;
-using Autonogrammer.Harness.AgentLoop.Plugins;
 using Autonogrammer.Harness.Acp;
+using Autonogrammer.Harness.AgentLoop.Plugins;
 using Autonogrammer.Harness.Rpc;
 using Shouldly;
 using Xunit;

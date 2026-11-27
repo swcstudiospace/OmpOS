@@ -271,23 +271,23 @@ public sealed class RemoteTransportSelectionTests
         IReadOnlyCollection<string> allowedKinds,
         ScriptedOmp omp,
         Func<OmpRpcClientOptions, IOmpSession> rpcFactory) => new(new SessionEngineSetOptions
-    {
-        Loop = AgentLoopEnvironment.Resolve(
-            name => name switch
-            {
-                AgentLoopEnvironment.PluginsRootVariable => tree.Plugins,
-                AgentLoopEnvironment.StateDirectoryVariable => tree.State,
-                _ => null,
-            },
-            tree.Workspace,
-            tree.Workspace,
-            tree.Root),
-        AllowedKinds = allowedKinds,
-        TransportFactory = omp.TransportFactory,
-        RpcSessionFactory = rpcFactory,
-        OmpPath = "/bin/true",
-        MaintenanceInterval = Timeout.InfiniteTimeSpan,
-    });
+        {
+            Loop = AgentLoopEnvironment.Resolve(
+                name => name switch
+                {
+                    AgentLoopEnvironment.PluginsRootVariable => tree.Plugins,
+                    AgentLoopEnvironment.StateDirectoryVariable => tree.State,
+                    _ => null,
+                },
+                tree.Workspace,
+                tree.Workspace,
+                tree.Root),
+            AllowedKinds = allowedKinds,
+            TransportFactory = omp.TransportFactory,
+            RpcSessionFactory = rpcFactory,
+            OmpPath = "/bin/true",
+            MaintenanceInterval = Timeout.InfiniteTimeSpan,
+        });
 
     private static SessionPlan MinimalPlan() => new(Plan(), new EmptyStageSource(), new EmptyTaskContextSource(), null, new RecheckStageSource(), null, false, null);
 

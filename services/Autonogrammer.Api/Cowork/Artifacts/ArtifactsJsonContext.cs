@@ -1,5 +1,5 @@
-using Autonogrammer.Cowork.Artifacts.Model;
 using System.Text.Json.Serialization;
+using Autonogrammer.Cowork.Artifacts.Model;
 
 namespace Autonogrammer.Api.Cowork.Artifacts;
 
