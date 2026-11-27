@@ -9,4 +9,4 @@ Payload text:
 
 > Phase 84 status: cutover flip landed 2026-11-26 — `Harness:Adapter` / `EngineTransport` defaults flipped Acp→Rpc at F1-F5 in one commit (69b844f0), ADR-0038 Accepted same commit, `Harness:Adapter=Acp` kept as the supported rollback (validators unchanged). Task 3 deletion manifest: 0 deletes. Owner decisions recorded 2026-11-26: OQ-528 closed (realm `init`, already initialised at `f28a3acc`); ADR-0039 Gate A=A1 + Gate B=B4 decided (status stays Proposed). SEC-77-01 carried open at 0 waivers; v0.16.0 not archived. Evidence: `docs/runbooks/evidence/phase-84-preflip-2026-11-26/` (Tasks 1-3), `docs/runbooks/evidence/phase-84-cutover-2026-11-26/` (Tasks 4-7), `84-VERIFICATION.md`.
 
-Sync status: authored-only (no tracker error; no comment posted in this assignment).
+Sync status: SYNCED 2026-11-27: Linear comment posted to parent issue (0 tracker errors).

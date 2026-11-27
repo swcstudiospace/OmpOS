@@ -9,4 +9,4 @@ Payload text:
 
 > Phase 83 status: ACP/RPC boundary + remote parity landed (Tasks 1-10; `AcprpcBoundaryTests` Remote→ACP-only, no RPC-over-network, LayerMap, consumer-set freeze; Api both-adapter fixtures; `LaunchPlanParityTests` / `PluginCommandParityTests` / `TransportParityScenarios` promoted). SC2 re-scoped 2026-11-26 (commit 184c5500): serializer identity given identical `HarnessEvent`s; mapper-shape divergence named OQ-529 (open). Remainder points stay open as OQ-526-83 (MCP P7-P9, wrapper P6, hook gate P2, overlay-entries-without-path). Evidence: 83-VERIFICATION.md.
 
-Sync status: authored-only (no tracker error; no comment posted in this assignment).
+Sync status: SYNCED 2026-11-27: Linear comment posted to parent issue (0 tracker errors).

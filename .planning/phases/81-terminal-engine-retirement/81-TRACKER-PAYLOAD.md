@@ -9,4 +9,4 @@ Payload text:
 
 > Phase 81 status: terminal engine retired (`TerminalAutoRun` removed, launcher family deleted, Herdr deleted with 0 production consumers, PTY recount kept the plain shell; `SessionKind.Terminal` retained read-only, OQ-527 closed). Pinned by `TerminalRetirementArchitectureTests`; guard fixtures `RetiredTerminalRuntimeTests` / `AgentPanelRetiredTerminalTests` retained as live guards (Phase 84 Task 3, Keep). Summary: 81-01-SUMMARY.md.
 
-Sync status: authored-only (no tracker error; no comment posted in this assignment).
+Sync status: SYNCED 2026-11-27: Linear comment posted to parent issue (0 tracker errors).
