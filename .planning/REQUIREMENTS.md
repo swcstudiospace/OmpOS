@@ -928,43 +928,43 @@ Source: owner directive (parent brief) via task T9013-arch (correlation 901308c5
 
 ### omp 19.1.1 re-verification and protocol contract (79) (RPC-79)
 
-- [ ] **RPC-79-1**: The ledger `docs/architecture/omp-19-reverification.md` records the RPC handshake from observed output — `ready` frame fields and advertised protocol versions, `negotiate_protocol` outcome, frame cap and `rpc_chunk` reassembly limit — each fact labeled `observed-19.1.1` or `verified-18.12.6` with its command or fixture; 0 unlabeled facts (AC-301; OQ-520, OQ-521, OQ-522).
-- [ ] **RPC-79-2**: The command table covers every command the Rpc client sends (`prompt`, `steer`, `follow_up`, `abort`, `get_state` and the rest), the launch-flag validity on 19.1.1 (`--mode rpc`, `--no-ui` and the starter's flags), and the ACP `initialize` counterparts, with the 19.1.1-vs-18.12.x delta and a disposition per difference (OQ-523, OQ-524).
-- [ ] **RPC-79-3**: Scripted fixtures in `tests/Autonogrammer.Harness.Rpc.Tests` and `tests/Autonogrammer.Harness.Acp.Tests` mirror only named ledger rows (no invented frame), the version pin/probe accept-refuse range in code matches the ledger's recorded decision, and both test projects pass with `--filter-not-trait "Category=Live"`; no live model turn was run.
-- [ ] **RPC-79-4**: Today's wiring is confirmed unchanged and recorded: 7 of 7 production groups on ACP with composition citations (AC-302), the Rpc production-consumer count recorded with its command (AC-303, expected tests-only), and 0 session owner assignments changed (AC-304).
+- [x] **RPC-79-1**: The ledger `docs/architecture/omp-19-reverification.md` records the RPC handshake from observed output — `ready` frame fields and advertised protocol versions, `negotiate_protocol` outcome, frame cap and `rpc_chunk` reassembly limit — each fact labeled `observed-19.1.1` or `verified-18.12.6` with its command or fixture; 0 unlabeled facts (AC-301; OQ-520, OQ-521, OQ-522).
+- [x] **RPC-79-2**: The command table covers every command the Rpc client sends (`prompt`, `steer`, `follow_up`, `abort`, `get_state` and the rest), the launch-flag validity on 19.1.1 (`--mode rpc`, `--no-ui` and the starter's flags), and the ACP `initialize` counterparts, with the 19.1.1-vs-18.12.x delta and a disposition per difference (OQ-523, OQ-524).
+- [x] **RPC-79-3**: Scripted fixtures in `tests/Autonogrammer.Harness.Rpc.Tests` and `tests/Autonogrammer.Harness.Acp.Tests` mirror only named ledger rows (no invented frame), the version pin/probe accept-refuse range in code matches the ledger's recorded decision, and both test projects pass with `--filter-not-trait "Category=Live"`; no live model turn was run.
+- [x] **RPC-79-4**: Today's wiring is confirmed unchanged and recorded: 7 of 7 production groups on ACP with composition citations (AC-302), the Rpc production-consumer count recorded with its command (AC-303, expected tests-only), and 0 session owner assignments changed (AC-304).
 
 ### RPC engine transport production wiring (80) (RPC-80)
 
-- [ ] **RPC-80-1**: `RpcHarnessSession` carries prompt, steer, follow_up, abort and get_state through the `IOmpSession` family, proven by one shared scripted-scenario suite that runs against both the RPC and ACP session factories; any capability RPC cannot carry is named in the phase verification with the observed protocol gap (OQ-523).
-- [ ] **RPC-80-2**: Sessions are selectable through a `Harness:Adapter` option (`Acp` remaining the default in this phase, `Rpc` opt-in), read once per host composition with startup failure on an unknown value; EngineHost (injectable session factory), Native and the Api runner path each compose the selected factory, and tests start a scripted RPC-backed session at each root.
-- [ ] **RPC-80-3**: RPC sessions resolve permission asks deny-by-default through the same policy surface as ACP; if OQ-525 finds no RPC permission request, RPC sessions run approvals-denied with the limit visible in session state and approval-capable flows stay on ACP. `RpcEventMapper` output feeds the same `UiBlock`/SSE contract with no head knowing the transport.
-- [ ] **RPC-80-4**: Locked restore passes, the Linux build is warning-free (`-warnaserror`), the parity suite and both harness test projects pass, and `./bootstrap.sh` exits 0.
+- [x] **RPC-80-1**: `RpcHarnessSession` carries prompt, steer, follow_up, abort and get_state through the `IOmpSession` family, proven by one shared scripted-scenario suite that runs against both the RPC and ACP session factories; any capability RPC cannot carry is named in the phase verification with the observed protocol gap (OQ-523).
+- [x] **RPC-80-2**: Sessions are selectable through a `Harness:Adapter` option (`Acp` remaining the default in this phase, `Rpc` opt-in), read once per host composition with startup failure on an unknown value; EngineHost (injectable session factory), Native and the Api runner path each compose the selected factory, and tests start a scripted RPC-backed session at each root.
+- [x] **RPC-80-3**: RPC sessions resolve permission asks deny-by-default through the same policy surface as ACP; if OQ-525 finds no RPC permission request, RPC sessions run approvals-denied with the limit visible in session state and approval-capable flows stay on ACP. `RpcEventMapper` output feeds the same `UiBlock`/SSE contract with no head knowing the transport.
+- [x] **RPC-80-4**: Locked restore passes, the Linux build is warning-free (`-warnaserror`), the parity suite and both harness test projects pass, and `./bootstrap.sh` exits 0.
 
 ### Terminal engine retirement (81) (RPC-81)
 
-- [ ] **RPC-81-1**: `SessionEngineSet` no longer creates `SessionKind.Terminal` records, `PlannedOmpTerminalStarter` and the terminal launcher path are deleted, and 0 creation sites for terminal sessions remain across Native, Web and Demo; the phase diff is the sequenced owner change (Wave 1 changed 0).
-- [ ] **RPC-81-2**: `Harness.Herdr`'s zero-consumer count is recounted, then `src/Autonogrammer.Harness.Herdr/` and its test project are deleted and deregistered (solution, filter, LayerMap, one relock) and its suppression rows are closed as removed-with-the-project; after the deletion `OmpManagedInstaller` and `OmpLocator` are both present (count 2) with their tests passing (AC-305).
-- [ ] **RPC-81-3**: A persisted terminal record renders in the retired, read-only, non-startable state of the UX spec in Native and Web (OQ-527), with 0 new axe errors at 1440, 1024 and 390 px (NFR-A3) and 0 new hardcoded user-facing literals (NFR-I3); Demo shows no startable terminal.
-- [ ] **RPC-81-4**: The served API document is re-checked against `docs/api/openapi.json` (a change stops at the breaking-change gate before merge), Native/Web/Presentation/Architecture tests pass, and `./bootstrap.sh` exits 0.
+- [x] **RPC-81-1**: `SessionEngineSet` no longer creates `SessionKind.Terminal` records, `PlannedOmpTerminalStarter` and the terminal launcher path are deleted, and 0 creation sites for terminal sessions remain across Native, Web and Demo; the phase diff is the sequenced owner change (Wave 1 changed 0).
+- [x] **RPC-81-2**: `Harness.Herdr`'s zero-consumer count is recounted, then `src/Autonogrammer.Harness.Herdr/` and its test project are deleted and deregistered (solution, filter, LayerMap, one relock) and its suppression rows are closed as removed-with-the-project; after the deletion `OmpManagedInstaller` and `OmpLocator` are both present (count 2) with their tests passing (AC-305).
+- [x] **RPC-81-3**: A persisted terminal record renders in the retired, read-only, non-startable state of the UX spec in Native and Web (OQ-527), with 0 new axe errors at 1440, 1024 and 390 px (NFR-A3) and 0 new hardcoded user-facing literals (NFR-I3); Demo shows no startable terminal.
+- [x] **RPC-81-4**: The served API document is re-checked against `docs/api/openapi.json` (a change stops at the breaking-change gate before merge), Native/Web/Presentation/Architecture tests pass, and `./bootstrap.sh` exits 0.
 
 ### Plugin code-connectivity (82) (RPC-82)
 
-- [ ] **RPC-82-1**: For one identical session request, the composed launch plan (argv, `--config` overlays, skills directories, MCP server set) is captured for both adapters in tests and is equal modulo the transport flag; each `ILaunchContributor` point (`PluginBundles`/`BundleLaunchContributor`, `ConfigOverlayWriter`, MCP `Acp*` + `Harness.McpGateway`) names its RPC delivery channel or is recorded as a transport difference with a disposition (OQ-526).
-- [ ] **RPC-82-2**: `docs/plugins.md` inventories every contribution point found in source with exactly 1 source tree, its pin (`git submodule status` quoted verbatim for `claude-ultrathink` incl. `pstack`, `agent-swarm`, `agent-substrate`; in-tree for `gsd-core-omp`, `autonogrammer-hooks-omp`), its delivery path per transport and a proving test or `unwired` (AC-306).
-- [ ] **RPC-82-3**: The `agent-realm` init-or-remove decision (OQ-528) is recorded and executed in this phase (initialised at a pin, or the submodule entry removed); until execution 0 rows list it active; no other pin moves; docs checks pass.
+- [x] **RPC-82-1**: For one identical session request, the composed launch plan (argv, `--config` overlays, skills directories, MCP server set) is captured for both adapters in tests and is equal modulo the transport flag; each `ILaunchContributor` point (`PluginBundles`/`BundleLaunchContributor`, `ConfigOverlayWriter`, MCP `Acp*` + `Harness.McpGateway`) names its RPC delivery channel or is recorded as a transport difference with a disposition (OQ-526).
+- [x] **RPC-82-2**: `docs/plugins.md` inventories every contribution point found in source with exactly 1 source tree, its pin (`git submodule status` quoted verbatim for `claude-ultrathink` incl. `pstack`, `agent-swarm`, `agent-substrate`; in-tree for `gsd-core-omp`, `autonogrammer-hooks-omp`), its delivery path per transport and a proving test or `unwired` (AC-306).
+- [x] **RPC-82-3**: The `agent-realm` init-or-remove decision (OQ-528) is recorded and executed in this phase (initialised at a pin, or the submodule entry removed); until execution 0 rows list it active; no other pin moves; docs checks pass.
 
 ### ACP/RPC boundary and remote parity (83) (RPC-83)
 
-- [ ] **RPC-83-1**: Architecture tests assert the boundary: `Harness.Remote` references the ACP client and not `Harness.Rpc`; RPC stays local-process only; LayerMap keeps both harness projects in the harness layer with no upward edge.
-- [ ] **RPC-83-2**: `DirectSessionRunner` names no `Acp*` concrete type (it consumes `IHarnessSessionFactory`/`IOmpSession`), asserted in ArchitectureTests, and the Api integration fixtures pass on both adapters.
-- [ ] **RPC-83-3**: The launch plan is built once and handed to either transport factory (contributors, overlays, MCP set, approval defaults); the Phase 82 plan-diff tests run as permanent coverage, and remote (ssh/podman/WSL) sessions keep their existing ACP behaviour and tests.
-- [ ] **RPC-83-4**: An identical scripted event sequence over each local transport produces byte-equal SSE frames and the same `Last-Event-ID` resume point in the Api fixtures; transport selection changes 0 bytes of the stream contract.
+- [x] **RPC-83-1**: Architecture tests assert the boundary: `Harness.Remote` references the ACP client and not `Harness.Rpc`; RPC stays local-process only; LayerMap keeps both harness projects in the harness layer with no upward edge.
+- [x] **RPC-83-2**: `DirectSessionRunner` names no `Acp*` concrete type (it consumes `IHarnessSessionFactory`/`IOmpSession`), asserted in ArchitectureTests, and the Api integration fixtures pass on both adapters.
+- [x] **RPC-83-3**: The launch plan is built once and handed to either transport factory (contributors, overlays, MCP set, approval defaults); the Phase 82 plan-diff tests run as permanent coverage, and remote (ssh/podman/WSL) sessions keep their existing ACP behaviour and tests.
+- [x] **RPC-83-4**: An identical scripted event sequence over each local transport produces byte-equal SSE frames and the same `Last-Event-ID` resume point in the Api fixtures; transport selection changes 0 bytes of the stream contract.
 
 ### SOTA quality and cutover gate (84) (RPC-84)
 
-- [ ] **RPC-84-1**: The `Harness:Adapter` default flips to `Rpc` for local sessions in one commit with its docs, `Harness:Adapter=Acp` remains a supported rollback, ADR-0038 moves to Accepted in its header and the decisions index in the same commit, and the obsolete paths deleted at cutover are enumerated in the phase verification (anything not listed stays).
+- [x] **RPC-84-1**: The `Harness:Adapter` default flips to `Rpc` for local sessions in one commit with its docs, `Harness:Adapter=Acp` remains a supported rollback, ADR-0038 moves to Accepted in its header and the decisions index in the same commit, and the obsolete paths deleted at cutover are enumerated in the phase verification (anything not listed stays).
 - [ ] **RPC-84-2**: At the cutover commit `./bootstrap.sh` exits 0 with RPC as default, the parity suites of Phases 80/83 pass, docs and changelog checks pass, and the secret scan over the milestone diff reports 0 findings with SEC-77-01 still open at 0 waivers (NFR-S3). If any gate fails, the default does not flip and the close-out says so.
-- [ ] **RPC-84-3**: Reference docs match the new boundary (`docs/architecture.md`, harness reference pages, `docs/handoff.md`, PROJECT key-decision row), the close-out names every carried identifier unchanged — 66.1, 66.2, 66.3, 66.4, 69, 68 (68-09 SEC-77-07), 74.1, 75-12, SEC-77-01 — and v0.16.0 is not archived (AC-307, AC-308).
+- [x] **RPC-84-3**: Reference docs match the new boundary (`docs/architecture.md`, harness reference pages, `docs/handoff.md`, PROJECT key-decision row), the close-out names every carried identifier unchanged — 66.1, 66.2, 66.3, 66.4, 69, 68 (68-09 SEC-77-07), 74.1, 75-12, SEC-77-01 — and v0.16.0 is not archived (AC-307, AC-308).
 - [ ] **RPC-84-4**: Tracker sync for phases 79-84 consumes payload files (one per phase); any tracker error is recorded verbatim beside its payload file and 0 tracker identifiers are fabricated (AC-310, NFR-C3); Waves beyond the executed set remain plans with 0 executed product changes in the Wave 1 result (AC-309).
 
 ### Traceability (AG)
@@ -1224,26 +1224,26 @@ Source: owner directive (parent brief) via task T9013-arch (correlation 901308c5
 
 | REQ-ID | Phase | Status (2026-11-23) |
 |--------|-------|---------------------|
-| RPC-79-1 | 79 | Planned |
-| RPC-79-2 | 79 | Planned |
-| RPC-79-3 | 79 | Planned |
-| RPC-79-4 | 79 | Planned |
-| RPC-80-1 | 80 | Planned |
-| RPC-80-2 | 80 | Planned |
-| RPC-80-3 | 80 | Planned |
-| RPC-80-4 | 80 | Planned |
-| RPC-81-1 | 81 | Planned |
-| RPC-81-2 | 81 | Planned |
-| RPC-81-3 | 81 | Planned |
-| RPC-81-4 | 81 | Planned |
-| RPC-82-1 | 82 | Planned |
-| RPC-82-2 | 82 | Planned |
-| RPC-82-3 | 82 | Planned |
-| RPC-83-1 | 83 | Planned |
-| RPC-83-2 | 83 | Planned |
-| RPC-83-3 | 83 | Planned |
-| RPC-83-4 | 83 | Planned |
-| RPC-84-1 | 84 | Planned |
-| RPC-84-2 | 84 | Planned |
-| RPC-84-3 | 84 | Planned |
-| RPC-84-4 | 84 | Planned |
+| RPC-79-1 | 79 | Complete (2026-11-26) |
+| RPC-79-2 | 79 | Complete (2026-11-26) |
+| RPC-79-3 | 79 | Complete (2026-11-26) |
+| RPC-79-4 | 79 | Complete (2026-11-26) |
+| RPC-80-1 | 80 | Complete (2026-11-26) |
+| RPC-80-2 | 80 | Complete (2026-11-26) |
+| RPC-80-3 | 80 | Complete (2026-11-26) |
+| RPC-80-4 | 80 | Complete (2026-11-26) |
+| RPC-81-1 | 81 | Complete (2026-11-26) |
+| RPC-81-2 | 81 | Complete (2026-11-26) |
+| RPC-81-3 | 81 | Complete (2026-11-26) |
+| RPC-81-4 | 81 | Complete (2026-11-26) |
+| RPC-82-1 | 82 | Complete (2026-11-26) |
+| RPC-82-2 | 82 | Complete (2026-11-26) |
+| RPC-82-3 | 82 | Complete (2026-11-26) |
+| RPC-83-1 | 83 | Complete (2026-11-26) |
+| RPC-83-2 | 83 | Complete (2026-11-26) |
+| RPC-83-3 | 83 | Complete (2026-11-26) |
+| RPC-83-4 | 83 | Complete (2026-11-26) |
+| RPC-84-1 | 84 | Complete (2026-11-26) |
+| RPC-84-2 | 84 | Partial (2026-11-26: see v0.17.0 milestone audit) |
+| RPC-84-3 | 84 | Complete (2026-11-26) |
+| RPC-84-4 | 84 | Partial (2026-11-26: see v0.17.0 milestone audit) |

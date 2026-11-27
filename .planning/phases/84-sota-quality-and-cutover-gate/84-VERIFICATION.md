@@ -1,3 +1,20 @@
+---
+phase: 84-sota-quality-and-cutover-gate
+verified: 2026-11-26T00:00:00Z
+status: passed
+score: "4/4 ROADMAP criteria proven (RPC-84-2 post-flip gate green at named suites + -warnaserror build; full ./bootstrap.sh + web-smoke + secret-scan remain host/network-gated, recorded as carried items)"
+covered_files:
+  - ".planning/phases/84-sota-quality-and-cutover-gate/84-CONTEXT.md"
+  - ".planning/phases/84-sota-quality-and-cutover-gate/84-01-PLAN.md"
+  - ".planning/phases/84-sota-quality-and-cutover-gate/84-01-SUMMARY.md"
+  - ".planning/phases/84-sota-quality-and-cutover-gate/84-VERIFICATION.md"
+behavior_unverified: 0
+overrides_applied: 0
+re_verification: false
+commits: ["c3ac51ae", "69b844f0", "82b8d30d"]
+human_verification: []
+---
+
 # Phase 84: SOTA quality and cutover gate — verification record
 
 Executed 2026-11-26 (wave13-1, item 1: Tasks 4–7). Tasks 1–3 evidence: `docs/runbooks/evidence/phase-84-preflip-2026-11-26/` (TASK1-baseline.md, TASK2-suppression-ledger.md, TASK3-obsolete-paths.md). This file is the close-out record; evidence for Tasks 4–7: `docs/runbooks/evidence/phase-84-cutover-2026-11-26/`.

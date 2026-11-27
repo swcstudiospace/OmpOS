@@ -1964,10 +1964,10 @@ Source: owner directive (parent brief) via task T9013-arch (correlation 901308c5
 
 - [x] **Phase 79: omp 19.1.1 re-verification and protocol contract** - RPC+ACP handshake recorded, fixture freeze, drift vs 18.12.x, version pin/probe (US-301, US-302) — verified passed 2026-11-24 (`79-VERIFICATION.md`)
 - [x] **Phase 80: RPC engine transport production wiring** - `Harness.Rpc` behind `IOmpSession` parity (prompt/steer/follow_up/abort/get_state), selectable via `Harness:Adapter`, composed in EngineHost+Native+Api (US-302) — verified passed with caveat 2026-11-24 (`80-VERIFICATION.md`: bootstrap 15532/15536, 1 pre-existing Mcp failure proven at base 983c4594)
-- [ ] **Phase 81: Terminal engine retirement** - omp-TUI-in-PTY removed, Herdr deleted, `OmpLauncher` provisioning kept (US-304, US-305)
-- [ ] **Phase 82: Plugin code-connectivity** - realm init-or-remove, plugins proven loading in RPC-launched omp, launch-contributor/config/MCP parity ACP vs RPC (US-306)
-- [ ] **Phase 83: ACP/RPC boundary and remote parity** - ACP retained remote, shared launch plan, SSE resume unchanged, ArchTests/LayerMap boundary, `DirectSessionRunner` transport-agnostic (US-302)
-- [ ] **Phase 84: SOTA quality and cutover gate** - RPC default adapter, obsolete paths deleted, docs, ADR-0038 accepted (US-307 to US-310)
+- [x] **Phase 81: Terminal engine retirement** - omp-TUI-in-PTY removed, Herdr deleted, `OmpLauncher` provisioning kept (US-304, US-305)
+- [x] **Phase 82: Plugin code-connectivity** - realm init-or-remove, plugins proven loading in RPC-launched omp, launch-contributor/config/MCP parity ACP vs RPC (US-306)
+- [x] **Phase 83: ACP/RPC boundary and remote parity** - ACP retained remote, shared launch plan, SSE resume unchanged, ArchTests/LayerMap boundary, `DirectSessionRunner` transport-agnostic (US-302)
+- [x] **Phase 84: SOTA quality and cutover gate** - RPC default adapter, obsolete paths deleted, docs, ADR-0038 accepted (US-307 to US-310)
 
 ### Phase 79: omp 19.1.1 re-verification and protocol contract
 

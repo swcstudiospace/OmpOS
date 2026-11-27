@@ -1,3 +1,19 @@
+---
+phase: 83-acp-rpc-boundary-and-remote-parity
+verified: 2026-11-26T00:00:00Z
+status: passed
+score: "4/4 ROADMAP criteria proven (RPC-83-4 proven at the scripted-event level; end-to-end mapper-shape parity open as OQ-529)"
+covered_files:
+  - ".planning/phases/83-acp-rpc-boundary-and-remote-parity/83-CONTEXT.md"
+  - ".planning/phases/83-acp-rpc-boundary-and-remote-parity/83-01-PLAN.md"
+  - ".planning/phases/83-acp-rpc-boundary-and-remote-parity/83-VERIFICATION.md"
+behavior_unverified: 0
+overrides_applied: 0
+re_verification: false
+commits: ["9cac6e05"]
+human_verification: []
+---
+
 # Phase 83 verification inputs (Tasks 6–10 lane, 2026-11-26)
 
 Written by the Tasks 6–10 lane (`wave11-2`). Tasks 1–5 are the parallel lane; where this file cites a
