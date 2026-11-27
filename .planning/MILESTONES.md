@@ -21,3 +21,14 @@
 - 2026-10-21 · **Implementation:** gsd-executor `P4EngineShell`; review fixes `P4Fix`, `P4Approval`, `P4Fix2` · **Verified by:** orchestrator (EngineHost tests; inspection for the MAUI head)
 
 ---
+
+## v0.17.0 Omp RPC engine rearchitecture (Section complete 2026-11-27; tracked milestone remains v0.16.0)
+
+**Phases completed:** 6 phases (79–84), 6 plans
+
+**Key accomplishments:**
+- RPC (`omp --mode rpc`) is the primary local engine transport behind `IOmpSession`; default flipped Acp→Rpc at the Phase 84 cutover gate (one commit, `69b844f0`); ADR-0038 Accepted same commit; `Harness:Adapter=Acp` rollback + remote boundary intact.
+- PTY terminal engine + Herdr deleted; persisted terminal records render retired/read-only in both heads (OQ-527 closed).
+- Per-plugin command parity proven over the frozen 19.1.1 capture; launch-plan byte parity; remote transports ACP-only (`AcprpcBoundaryTests`).
+- Integration audit found + fixed two production breaks (remote composition + approval-capable default under the flip) with capability-based transport fallback and approval-site ACP pins.
+- Audit: `.planning/v0.17.0-MILESTONE-AUDIT.md` (tech_debt; 21/23 requirements satisfied, RPC-84-2/84-4 partial with host/payload caveats; OQ-529 + OQ-526-83 open).
