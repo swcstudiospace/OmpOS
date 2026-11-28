@@ -43,11 +43,23 @@ internal partial class App : Application
     }
 
     /// <summary>
-    /// Loads the application XAML. The stderr trace listener is installed first, so traces raised from here on reach the operator.
+    /// Loads the application XAML. The trace listener is installed first (to a log file; the app has no console), so traces raised from here on reach the operator.
     /// </summary>
     public override void Initialize()
     {
-        InstallStderrTraceListener(Console.Error);
+        // The app is a WinExe (no console); traces go to a log file, never Console.Error.
+        try
+        {
+            var logDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autonogrammer", "logs");
+            Directory.CreateDirectory(logDirectory);
+            var logPath = Path.Combine(logDirectory, $"autonogrammer-{DateTime.Now:yyyy-MM-dd}.log");
+            InstallStderrTraceListener(new StreamWriter(logPath, append: true) { AutoFlush = true });
+        }
+        catch (Exception)
+        {
+            // Best-effort only: a missing log directory must never break startup.
+        }
+
         AvaloniaXamlLoader.Load(this);
     }
 
