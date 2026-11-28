@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Autonogrammer.Native.Agents;
 using Autonogrammer.Native.Settings;
 using Autonogrammer.Native.Views.Branding;
@@ -26,6 +27,8 @@ internal partial class App : Application
     private AgentHead? _head;
     private Task _initialisation = Task.CompletedTask;
     private int _shutdownState;
+    private static readonly Lock LogListenerLock = new();
+    private static bool _logListenerInstalled;
 
     /// <summary>Creates the application with the production head, which reads the plugins, the state and the Substrate from the process environment.</summary>
     public App()
@@ -43,11 +46,43 @@ internal partial class App : Application
     }
 
     /// <summary>
-    /// Loads the application XAML. The stderr trace listener is installed first, so traces raised from here on reach the operator.
+    /// Loads the application XAML. The trace listener is installed first (to a log file; the app has no console), so traces raised from here on reach the operator.
     /// </summary>
+    [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: the created StreamWriter is hosted by the installed StderrTraceListener, which flushes and disposes it when replaced via InstallStderrTraceListener or when a later App instance supersedes it.")]
     public override void Initialize()
     {
-        InstallStderrTraceListener(Console.Error);
+        // The app is a WinExe (no console); traces go to a log file, never Console.Error. The listener is process-global, so it
+        // is installed at most once: headless PerTest isolation constructs many App instances, and one undisposed StreamWriter
+        // per instance would leak the log handle and make later opens race on FileShare.
+        var install = false;
+        lock (LogListenerLock)
+        {
+            if (!_logListenerInstalled)
+            {
+                _logListenerInstalled = true;
+                install = true;
+            }
+        }
+
+        if (install)
+        {
+            try
+            {
+                var logDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autonogrammer", "logs");
+                Directory.CreateDirectory(logDirectory);
+                var logPath = Path.Combine(logDirectory, $"autonogrammer-{DateTime.Now:yyyy-MM-dd}.log");
+                InstallStderrTraceListener(new StreamWriter(logPath, append: true) { AutoFlush = true });
+            }
+            catch (IOException)
+            {
+                // Best-effort only: a missing log directory must never break startup.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Best-effort only: a missing log directory must never break startup.
+            }
+        }
+
         AvaloniaXamlLoader.Load(this);
     }
 
@@ -64,6 +99,7 @@ internal partial class App : Application
         foreach (var previous in Trace.Listeners.OfType<StderrTraceListener>().ToArray())
         {
             Trace.Listeners.Remove(previous);
+            previous.Dispose();
         }
 
         var listener = new StderrTraceListener(error);
@@ -173,12 +209,24 @@ internal partial class App : Application
     /// A trace listener that writes each trace line to the given writer. The application points it at standard error, so the head's
     /// traces reach the operator who launched it.
     /// </summary>
-    internal sealed class StderrTraceListener(TextWriter error) : TraceListener
+    internal sealed class StderrTraceListener(TextWriter error) : TraceListener, IDisposable
     {
         /// <inheritdoc/>
         public override void Write(string? message) => error.Write(message);
 
         /// <inheritdoc/>
         public override void WriteLine(string? message) => error.WriteLine(message);
+
+        /// <inheritdoc/>
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                error.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
     }
 }

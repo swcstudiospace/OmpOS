@@ -2,7 +2,7 @@
 
   <!-- Not trimmable (OQ-42): a trimmed publish fails (IL2026 from ReflectionBinding in XAML; IL2104 from third-party Avalonia.Controls.DataGrid and Iciclecreek.Avalonia.Terminal). No shipped publish trims. -->
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <IsPackable>false</IsPackable>
     <ApplicationIcon>Assets/Brand/autonogrammer.ico</ApplicationIcon>
     <IsTrimmable>false</IsTrimmable>
