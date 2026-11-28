@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using Autonogrammer.Native.Agents;
 using Autonogrammer.Native.Settings;
@@ -47,11 +48,12 @@ internal partial class App : Application
     /// <summary>
     /// Loads the application XAML. The trace listener is installed first (to a log file; the app has no console), so traces raised from here on reach the operator.
     /// </summary>
+    [SuppressMessage("Reliability", "CA2000", Justification = "Ownership transfer: the created StreamWriter is hosted by the installed StderrTraceListener, which flushes and disposes it when replaced via InstallStderrTraceListener or when a later App instance supersedes it.")]
     public override void Initialize()
     {
         // The app is a WinExe (no console); traces go to a log file, never Console.Error. The listener is process-global, so it
-        // is installed at most once: headless PerTest isolation constructs many App instances, and one undisposed StreamWriter per
-        // instance leaks the log file handle until finalization (FileShare then makes later opens fail).
+        // is installed at most once: headless PerTest isolation constructs many App instances, and one undisposed StreamWriter
+        // per instance would leak the log handle and make later opens race on FileShare.
         var install = false;
         lock (LogListenerLock)
         {
@@ -71,7 +73,11 @@ internal partial class App : Application
                 var logPath = Path.Combine(logDirectory, $"autonogrammer-{DateTime.Now:yyyy-MM-dd}.log");
                 InstallStderrTraceListener(new StreamWriter(logPath, append: true) { AutoFlush = true });
             }
-            catch (Exception)
+            catch (IOException)
+            {
+                // Best-effort only: a missing log directory must never break startup.
+            }
+            catch (UnauthorizedAccessException)
             {
                 // Best-effort only: a missing log directory must never break startup.
             }
@@ -212,6 +218,6 @@ internal partial class App : Application
         public override void WriteLine(string? message) => error.WriteLine(message);
 
         /// <inheritdoc/>
-        public void Dispose() => error.Dispose();
+        public new void Dispose() => error.Dispose();
     }
 }
