@@ -653,6 +653,7 @@ Foundation through verified handoff (Phases 1 to 5).
 [Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.18...HEAD
 [0.20.18]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.17...v0.20.18
 [0.20.19]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.18...v0.20.19
+[0.20.20]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.19...v0.20.20
 [0.20.17]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.16...v0.20.17
 [0.20.16]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.15...v0.20.16
 [0.20.15]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.14...v0.20.15
