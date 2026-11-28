@@ -1,5 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Autonogrammer.Native.Agents;
 using Autonogrammer.Native.Settings;
 using Autonogrammer.Native.Views.Branding;
