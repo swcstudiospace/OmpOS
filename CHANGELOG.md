@@ -7,8 +7,13 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMAP.md`). They overlapped in time, and only 0.9.1 was closed formally: the date of each other version is the day of its last recorded work or audit. Phase numbers refer to that roadmap.
 
 ## [Unreleased]
-## [0.20.20] - 2026-11-28
+## [0.20.21] - 2026-11-28
 
+### Changed
+
+- Phase 77 Wave 1 verification refresh (PR #42): 77-VERIFICATION.md records fresh current-HEAD evidence (CoworkAudit 16/16, StyleAccessibility 17/17, parity counts OK, docs gate 0 errors, API-half a11y HEAD bundle success with 0 errors) under `docs/runbooks/evidence/web-accessibility-2026-11-28/`. Gaps narrowed from 4 to 2: SEC-77-01/02 now fixed (SEC-77-04 still open, needs the Phase 74.1 review); all five Cowork runbooks exist and pass audit; the parity-audit elevation page with its SOTA section exists. Verdict stays `gaps_found` while SEC-77-04 and the human a11y items remain.
+
+## [0.20.20] - 2026-11-28
 ### Fixed
 
 - Desktop app opens standalone with no console window (PR #41): `apps/Autonogrammer.Native` built as a console-subsystem PE (`OutputType Exe`), so Windows allocated a console window on every launch. Flipped to `WinExe` (GUI subsystem); the startup trace listener now writes to `%LocalAppData%/Autonogrammer/logs/autonogrammer-<date>.log` instead of `Console.Error`, installed at most once per process and disposed (with its writer) when replaced.
@@ -654,6 +659,7 @@ Foundation through verified handoff (Phases 1 to 5).
 [0.20.18]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.17...v0.20.18
 [0.20.19]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.18...v0.20.19
 [0.20.20]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.19...v0.20.20
+[0.20.21]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.20...v0.20.21
 [0.20.17]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.16...v0.20.17
 [0.20.16]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.15...v0.20.16
 [0.20.15]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.14...v0.20.15
