@@ -218,6 +218,15 @@ internal partial class App : Application
         public override void WriteLine(string? message) => error.WriteLine(message);
 
         /// <inheritdoc/>
-        public new void Dispose() => error.Dispose();
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                error.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
     }
 }
