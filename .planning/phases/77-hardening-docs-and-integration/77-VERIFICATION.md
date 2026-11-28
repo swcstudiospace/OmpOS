@@ -1,8 +1,8 @@
 ---
 phase: 77-hardening-docs-and-integration
-verified: 2026-11-22T01:53:17Z
+verified: 2026-11-28T04:55:00Z
 status: gaps_found
-score: "machine gates pass; security/runbook/a11y remain"
+score: "machine gates pass; SEC-77-04 + a11y human remain"
 covered_files:
   - ".planning/phases/77-hardening-docs-and-integration/77-01-PLAN.md"
   - ".planning/phases/77-hardening-docs-and-integration/77-01-SUMMARY.md"
@@ -34,27 +34,21 @@ covered_files:
   - ".planning/phases/77-hardening-docs-and-integration/77-VALIDATION.md"
   - ".planning/phases/77-hardening-docs-and-integration/77-VERIFICATION.md"
 covered_digest: "v1:sha256:92d47bc1d0fd1fa24b796c70fb36fdebada5dce4f1163d2d0d94abe77375ecaa"
-behavior_unverified: 4
+behavior_unverified: 2
 overrides_applied: 0
 re_verification: true
 previous_status: unknown
 previous_score: "unknown"
-commits: ["b46fd81f"]
+commits: ["c2696496"]
 gaps:
-  - truth: "Security review open SEC-77-01/02/04 (AG-77-10/11)."
+  - truth: "Security review open SEC-77-04 only (AG-77-10/11; SEC-77-01/02 now fixed)."
     status: unverified
-    closing_step: "Close with owners; never downgrade while High open."
-  - truth: "Missing runbooks cowork/computer-use/v0.16.0-owner-actions; stubs dispatch/browser-use."
+    closing_step: "Complete the Phase 74.1 review and Phase 75 production integration (Wave 2). Never downgrade while a High is open."
+  - truth: "A11y Demo-half bundle pending + matrix cells Pending + screen-reader human (AG-77-13, OQ-483). API-half HEAD bundle success with 0 errors recorded."
     status: unverified
-    closing_step: "Author pages; complete stubs; run CoworkAuditTests.Security."
-  - truth: "Missing parity-audit-elevation.md + SOTA elevation section."
-    status: unverified
-    closing_step: "Write elevation file + SOTA section."
-  - truth: "A11y matrix Pending + no a11y-report bundle on HEAD (AG-77-13, OQ-483)."
-    status: unverified
-    closing_step: "Record bundle on HEAD; fill matrix; keep screen-reader human."
+    closing_step: "Record Demo-half bundle on HEAD; fill matrix; keep screen-reader human."
 human_verification:
-  - "Screen-reader (OQ-483); device a11y; keyring/pairing; Accounts:Enabled transition; owner runbook review."
+  - "Screen-reader (OQ-483); populated-device a11y matrix cells; owner runbook review."
 ---
 
 ---
@@ -136,3 +130,25 @@ human_verification:
 ## Next
 
 Close gaps 1-4 (runbooks, elevation, recorded a11y run, security fixes by owners 72/75-12). Do not re-open AG-77-10/11 as passed while a High is open.
+
+## Refresh 2026-11-28 (current HEAD c2696496, Wave 1)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. PR #41 CI on this head region: build-test pass 47m, desktop linux/macos/windows pass, android pass, image-scan pass; targeted gates below re-run locally on current HEAD.*
+
+| Check | Command | Result |
+|---|---|---|
+| CoworkAudit (incl. Security) | `dotnet test tests/Autonogrammer.ArchitectureTests -c Release --no-build --filter FullyQualifiedName~CoworkAudit` | 16/16 |
+| StyleAccessibility | `dotnet test tests/Autonogrammer.UI.Tests -c Release --no-build --filter FullyQualifiedName~StyleAccessibility` | 17/17 |
+| parity counts | `python3 scripts/docs/parity_counts.py --check` | OK: parity counts match |
+| docs gate | `bash scripts/ci/check-docs.sh` | 257 markdown files, 0 errors |
+| a11y bundle (API half, HEAD bundle) | `bash scripts/web-smoke/run-smoke.sh --a11y-report <dir>` | API half success: 0 errors in all 8 groups (routes, first-load-focus, keyboard, axe 22 runs, media, reflow, target-size, text-spacing); Demo half timed out at 28-min cap. Evidence: `docs/runbooks/evidence/web-accessibility-2026-11-28/api/a11y-report.json` (commit 59607f00, 2026-11-28, Chrome 153, axe-core 4.14.0) |
+
+*Gap dispositions on current evidence:*
+1. **SEC-77-01/02 fixed, SEC-77-04 still open** — the security review now records SEC-77-01 and SEC-77-02 `fixed`; SEC-77-04 (memory idempotency, Medium) stays `open` with its closing step unchanged: complete the Phase 74.1 review and Phase 75 production integration. Gap narrowed to one item; the integration hold from T9013 Wave 2 is the owner.
+2. **Runbooks: closed on evidence** — `docs/runbooks/{cowork,computer-use,dispatch,browser-use,v0.16.0-owner-actions}.md` all exist; dispatch/browser-use pages are authored densifications of the old stubs; `CoworkAuditTests.Security` passes 16/16 on current HEAD.
+3. **Elevation: closed on evidence** — `docs/quality/v0.16.0-parity-audit-elevation.md` exists with its SOTA states table (verified 2026-11-23); `parity_counts.py --check` OK on current HEAD.
+4. **A11y: machine-green, human remainder** — API-half HEAD bundle success with 0 errors; Demo half timed out at the 28-minute cap (no bundle recorded); the v0.16.0-accessibility-pass.md matrix still carries Pending/Not-established device cells and the screen-reader pass (OQ-483) remains human-needed.
+
+*Verdict remains `gaps_found`* (correctly: `isPhaseComplete` reads `status: passed` only, and SEC-77-04 is a genuine open code-side item). Two gaps remain, both routed: SEC-77-04 → Phase 74.1 verification refresh (Wave 2), a11y → Demo-half smoke bundle + human screen-reader.
+
+*History above retained (2026-11-22 refresh and original verification); gaps disposition updated only by this section and the frontmatter.*
