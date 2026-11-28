@@ -1,6 +1,6 @@
 ---
 phase: 78-desktop-release-pipeline-and-per-machine-windows-installer
-verified: 2026-11-22T12:00:00Z
+verified: 2026-11-28T05:05:00Z
 status: gaps_found
 score: "SC1/SC3 re-proven on clean committed scope (A08 T8783-qa, clean HEAD worktree: repo-checks/check-docs/check-changelog exit 0); SC2/SC4/SC5 re-proven; SC6 human checklist open"
 covered_files:
@@ -24,7 +24,7 @@ overrides_applied: 0
 re_verification: true
 previous_status: prose-pass (no frontmatter)
 previous_score: "PASS prose at 08601167, 2026-11-21"
-commits: ["52eb2c55"]
+commits: ["994f02b0"]
 gaps:
   - truth: "SC6 human checklist for Windows/macOS installs not recorded; v0.20.0 asset check not re-run (release v0.20.0-rc.1 only was downloaded+verified today)."
     status: unverified
@@ -72,3 +72,8 @@ human_verification:
 | SC4 | `gh run list --workflow desktop-release.yml --branch fix/phase35-review-closure --limit 1` | run 44524125822, event workflow_dispatch, conclusion success (exists — recorded) |
 | SC5 | `gh release download v0.20.0-rc.1` + `verify_desktop_assets.py --dir <desktop-only> --version 0.20.0-rc.1` + `sha256sum -c SHA256SUMS-desktop` | 6 files verified, exit 0; all 6 OK (54.6M–111.8M). Unfiltered dir errors on SHA256SUMS-images/image tars/SBOM as unexpected — verifier expects desktop-only dir |
 | SC6 | Human checklist (docs/guides/install.md) | open — stays human_verification; v0.20.0 page not downloaded (rc.1 only) |
+## Refresh 2026-11-28 (current HEAD 994f02b0, Wave 2)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. v0.20.0 asset re-check attempted via `gh release download v0.20.0` (the release exists, 2026-11-19): `sha256sum -c SHA256SUMS-desktop` passes for all six desktop assets (linux-x64 deb/tar.gz, osx-arm64 dmg/zip, win-x64 Setup.exe/zip). A default `--platform all` re-run of `verify_desktop_assets.py` flags 4 extra non-desktop files (SHA256SUMS-images + two image tars + spdx) as unexpected — the script's desktop expected-set does not know the image assets, so the all-run did not pass; per-platform checks name only the six desktop assets and sha256 passes. That second-half failure is recorded honestly here, not repaired.
+
+*Remaining (honest):* the Windows/macOS human install checklist (docs/guides/install.md) result remains unrecorded and human. Verdict remains `gaps_found`.*

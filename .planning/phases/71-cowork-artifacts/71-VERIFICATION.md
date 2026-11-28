@@ -1,6 +1,6 @@
 ---
 phase: 71-cowork-artifacts
-verified: 2026-11-22T01:53:17Z
+verified: 2026-11-28T05:05:00Z
 status: gaps_found
 score: "7/7 runnable pass; web access-flow gap remains"
 covered_files:
@@ -43,7 +43,7 @@ overrides_applied: 0
 re_verification: true
 previous_status: gaps_found
 previous_score: "7/7 runnable roadmap criteria executed 2026-11-21; integrated access-flow gap remains"
-commits: ["b46fd81f"]
+commits: ["994f02b0"]
 gaps:
   - truth: "No production web opener for artifact access dialog; 71-07..71-12 blocked (rollout, identity proof, DNS-rebinding). AG-71-17 open."
     status: unverified
@@ -207,3 +207,7 @@ Automated verification in the re-verification was executed on SDK 10.0.402 with 
 ---
 _Re-verified: 2026-11-21 (SDK 10.0.402, worktree auto-78 @ c04095ba; supersedes 2026-11-10 verdicts where they conflict)_
 _Verifier: gsd-verify-71 (Claude per gsd-verifier process)_
+
+## Refresh 2026-11-28 (current HEAD 994f02b0, Wave 2)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. Production web opener for the artifact access dialog and plans 71-07..71-12 (rollout, identity proof, DNS-rebinding) remain code-side work; full gate green on current HEAD does not close them. AG-71-17 open per the milestone register. Verdict remains `gaps_found`.*

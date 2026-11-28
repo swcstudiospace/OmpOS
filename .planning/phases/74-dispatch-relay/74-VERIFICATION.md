@@ -1,6 +1,6 @@
 ---
 phase: 74-dispatch-relay
-verified: 2026-11-22T01:53:17Z
+verified: 2026-11-28T05:05:00Z
 status: gaps_found
 score: "DB execution now proven; 74-11 not shipped"
 covered_files:
@@ -38,7 +38,7 @@ overrides_applied: 0
 re_verification: true
 previous_status: gaps_found
 previous_score: "gaps_found"
-commits: ["b46fd81f"]
+commits: ["994f02b0"]
 gaps:
   - truth: "74-11 store idempotency projection not shipped."
     status: unverified
@@ -106,3 +106,7 @@ human_verification:
 - SC6: `dotnet test tests/Autonogrammer.Api.IntegrationTests -c Release --filter-class "GuardTests"` (OpenAPI equality vs `docs/api/openapi.json`).
 - SC4: Native 2353/2353 confirmed (re-run above); no outstanding re-run needed.
 - Live-only: real phone/Android controller and Windows/macOS credential-store behaviour remain OS-verification items (ROADMAP Mac-channel note); never claimed passed here.
+
+## Refresh 2026-11-28 (current HEAD 994f02b0, Wave 2)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. 74-11 store idempotency projection remains unshipped (code work); legacy-row owner decision remains human. Full gate green on current HEAD does not close them. Verdict remains `gaps_found`.*

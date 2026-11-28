@@ -1,6 +1,6 @@
 ---
 phase: 69-surface-switch-and-cowork-sessions
-verified: 2026-11-22T12:00:00Z
+verified: 2026-11-28T05:05:00Z
 status: human_needed
 score: "unit pass; assistive/visual human"
 covered_files:
@@ -29,7 +29,7 @@ overrides_applied: 0
 re_verification: true
 previous_status: human_needed
 previous_score: "human_needed"
-commits: ["52eb2c55"]
+commits: ["994f02b0"]
 human_verification:
   - "Screen-reader pass Native+Web incl. hidden-surface announcement."
   - "Pointer/visual check 1280x800."
@@ -195,3 +195,7 @@ _Re-verification after SOTA for assistive/pointer/shortcuts_
 | SC4 | UI.Tests 882 + Web.Tests 444 | exit 0 |
 | SC5 | Api.IntegrationTests vs ag67-8382 (CoworkSessionEndpointsTests, AccountBoardSurfaceTests inside full run) | 1580/1580 exit 0 |
 | SC6 | `dotnet build -c Release --no-restore -warnaserror` + `generate-third-party-notices.py --check` | exit 0 + exit 0 |
+
+## Refresh 2026-11-28 (current HEAD 994f02b0, Wave 2)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. Screen-reader + pointer/visual + shortcut-conflict items remain human; automated a11y machine gates green (StyleAccessibility 17/17; API-half HEAD bundle 0 errors from Wave 1), human checks unchanged. Verdict remains `human_needed`.*

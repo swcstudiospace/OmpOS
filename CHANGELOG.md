@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMAP.md`). They overlapped in time, and only 0.9.1 was closed formally: the date of each other version is the day of its last recorded work or audit. Phase numbers refer to that roadmap.
 
 ## [Unreleased]
+## [0.20.22] - 2026-11-28
+
+### Changed
+
+- Wave 2 verification refresh (PR #43): the eleven still-open v0.16.0 phases (67, 68, 69, 71, 72, 73, 74, 74.1, 75, 76, 78) receive Refresh sections with fresh current-HEAD evidence. Closures on evidence: phase 68's full-set gap (PR #42 full gate 47m14s), phase 75 SEC-77-02 (fixed in the security register) and Memory.Postgres depth (37/37 vs throwaway DB), phase 76 live isolation (31/31 incl. live Bubblewrap probe, bubblewrap 0.9.0). The v0.20.0 desktop assets re-check: per-platform sha256 all OK; the platform-all expected-set flags the extra image assets (recorded honestly, not repaired). Live CDP genuinely fails on this host (both live BrowserUse test classes fail to spawn the browser), so phase 72's gap stands. No verdict flips this wave; unshipped plans, live models, and human checklists remain open.
 ## [0.20.21] - 2026-11-28
 
 ### Changed
@@ -660,6 +665,7 @@ Foundation through verified handoff (Phases 1 to 5).
 [0.20.19]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.18...v0.20.19
 [0.20.20]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.19...v0.20.20
 [0.20.21]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.20...v0.20.21
+[0.20.22]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.21...v0.20.22
 [0.20.17]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.16...v0.20.17
 [0.20.16]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.15...v0.20.16
 [0.20.15]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.14...v0.20.15

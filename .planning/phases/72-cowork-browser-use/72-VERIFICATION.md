@@ -1,6 +1,6 @@
 ---
 phase: 72-cowork-browser-use
-verified: 2026-11-22T01:53:17Z
+verified: 2026-11-28T05:05:00Z
 status: gaps_found
 score: "offline 124/124; prod wiring absent; live CDP fails"
 covered_files:
@@ -44,7 +44,7 @@ overrides_applied: 0
 re_verification: true
 previous_status: gaps_found
 previous_score: "3/5 runnable criteria pass as executed; live CDP fails on this host; production wiring absent"
-commits: ["b46fd81f"]
+commits: ["994f02b0"]
 gaps:
   - truth: "Prod Wire omits Configure/Pages; browser_* not offered; egress proxy absent (72-12)."
     status: unverified
@@ -218,3 +218,7 @@ _Verifier: gsd-verify-72 (re-verification after gap-closure planning; static + l
 **72-09 implementation blockers:** The session returned by `BrowserSessionHost` exposes version and frame capture but not a page or CDP session for navigating, reading or capturing screenshots. `BrowserReadTool` expects synthetic top-level `nodes`, not the real DOMSnapshot response; `BrowserNavigateTool` attempts to read a final URL from `Page.navigate`, which does not supply it. The production launcher does not consume `AUTONOGRAMMER_BROWSER_ALLOW_NO_SANDBOX`. Site redirect zero-hit, hostile corpus extraction and taint, screenshot ladder and budget, and actual pane/provider state transitions remain unproved. These require supported integration and real private-fixture browser verification; no live model or external site is needed.
 
 **Launch and cancellation:** `ChromiumProcessLauncherTests` passed 1/1 against a deliberately stalled local child; cancellation stopped the handshake and terminated that child. The pinned PuppeteerSharp pipe transport also requires `Start()` to begin receiving; after adding it, the isolated real Chromium smoke passed 1/1 with a test-only explicit no-sandbox wrapper. This does not verify production sandboxing, headed behavior, egress, approval or audit.
+
+## Refresh 2026-11-28 (current HEAD 994f02b0, Wave 2)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. Fresh live-CDP probe TODAY: AUTONOGRAMMER_LIVE_BROWSER=1 CHROME_BIN=/usr/bin/google-chrome dotnet test tests/Autonogrammer.Harness.BrowserUse.Tests -c Release --filter FullyQualifiedName~Live — 1 pass, 2 fail: HeadfulSmokeLiveTests and PipeConnectLiveTests both raise PuppeteerSharp.ProcessException: Failed to create connection ... Target closed (Chrome 153 exists on this host but the browser cannot be spawned here). Prod wiring (72-12) and plans 72-13/72-14 remain code-side. Verdict remains `gaps_found`.*
