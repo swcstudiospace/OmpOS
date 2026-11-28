@@ -1,6 +1,6 @@
 ---
 phase: 75-cowork-parity-projects-memory-schedules
-verified: 2026-11-22T01:53:17Z
+verified: 2026-11-28T05:05:00Z
 status: gaps_found
 score: "suites pass; DB depth + SEC-77-02 remain"
 covered_files:
@@ -41,7 +41,7 @@ overrides_applied: 0
 re_verification: true
 previous_status: gaps_found
 previous_score: "gaps_found"
-commits: ["b46fd81f"]
+commits: ["994f02b0"]
 gaps:
   - truth: "Memory.Postgres depth thin (1/1); phase-gate depth not proven."
     status: unverified
@@ -136,3 +136,7 @@ tree and records the 75-07..13 SUMMARYs written this lane.
   build-capable host; `Harness.AgentLoop.Tests` is 1328/1328 (re-run above).
 - SC5: `bash scripts/ci/repo-checks.sh` on an idle, non-full disk; `./bootstrap.sh` owner run.
 - SC7: live-model/host verification (omp `memory.backend: off` consumption; wake-from-sleep).
+
+## Refresh 2026-11-28 (current HEAD 994f02b0, Wave 2)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. Memory.Postgres depth re-proven today: Cowork.Memory.Postgres.Tests 37/37 pass vs throwaway Postgres (autonogrammer-test-postgres-ag67-8382, 127.0.0.1:33233), the 22-method Live suite, not the old 1/1. SEC-77-02 is fixed per the milestone security register (atomic authenticated project-owner row lock; foreign/missing-project + both deletion-race orderings covered). Remaining open: criterion 7 (omp memory.backend: off, live model, OD-07) and criterion 8 (75-11 scheduled tick NOT SHIPPED) plus owner-runbook human review. PR #42 full gate (47m14s) green. Verdict remains `gaps_found`.*

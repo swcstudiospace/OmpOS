@@ -1,6 +1,6 @@
 ---
 phase: 73-cowork-computer-use
-verified: 2026-11-22T01:53:17Z
+verified: 2026-11-28T05:05:00Z
 status: gaps_found
 score: "criteria 1-6 pass; prod wiring gap remains"
 covered_files:
@@ -40,7 +40,7 @@ overrides_applied: 0
 re_verification: true
 previous_status: gaps_found
 previous_score: "gaps_found"
-commits: ["b46fd81f"]
+commits: ["994f02b0"]
 gaps:
   - truth: "No provider registered from head; kill/indicator unverified; 73-07/09/10 blocked."
     status: unverified
@@ -156,3 +156,7 @@ human_verification:
 
 - 73-02 and 73-03 extra type files exist only for MA0048 (73-02-SUMMARY.md:53, 73-03-SUMMARY.md:54). Accepted.
 - 73-06 frontmatter lists `CoworkHead.cs` as absent; the summary's "not on disk" note is stale (see gap 1).
+
+## Refresh 2026-11-28 (current HEAD 994f02b0, Wave 2)
+
+*Evidence first, then verdict (ADR-0002). No product code touched. No provider registered from head, kill/indicator and 73-07/09/10 remain code-side; real-display proof needs a real display. Full gate green on current HEAD does not close them. Verdict remains `gaps_found`.*
