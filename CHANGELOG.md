@@ -7,6 +7,20 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMAP.md`). They overlapped in time, and only 0.9.1 was closed formally: the date of each other version is the day of its last recorded work or audit. Phase numbers refer to that roadmap.
 
 ## [Unreleased]
+## [0.20.23] - 2026-11-28
+
+### Added
+
+- Milestone archive for v0.16.0 closed as tech_debt (audit `.planning/milestones/v0.16.0-MILESTONE-AUDIT.md`; 28 residuals R-01-R-28): archived roadmap section `.planning/milestones/v0.16.0-ROADMAP.md`, archived requirements snapshot `.planning/milestones/v0.16.0-REQUIREMENTS.md`; milestone tagged `v0.16.0` on the archive commit.
+
+### Changed
+
+- Planning surfaces mark v0.16.0 shipped: ROADMAP compact Milestone v0.16.0 section replaces the 1435-1960 planning section (registry updated); PROJECT.md current-milestone pointer marks v0.16.0 shipped (next milestone pending); REQUIREMENTS.md ticks the AG set to Complete (2/18: AG-SC, AG-70) / Partial (16/18) per the audit; STATE.md archive record appended. No product code changed.
+
+### Verified
+
+- `bash scripts/ci/check-changelog.sh` passes.
+
 ## [0.20.22] - 2026-11-28
 
 ### Changed
@@ -666,6 +680,7 @@ Foundation through verified handoff (Phases 1 to 5).
 [0.20.20]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.19...v0.20.20
 [0.20.21]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.20...v0.20.21
 [0.20.22]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.21...v0.20.22
+[0.20.23]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.21...v0.20.23
 [0.20.17]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.16...v0.20.17
 [0.20.16]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.15...v0.20.16
 [0.20.15]: https://github.com/swcstudiospace/OmpOS/compare/v0.20.14...v0.20.15
