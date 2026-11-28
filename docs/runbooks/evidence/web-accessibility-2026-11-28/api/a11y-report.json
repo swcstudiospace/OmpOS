@@ -1,0 +1,749 @@
+{
+  "kind": "api",
+  "baseUrl": "http://127.0.0.1:5180/",
+  "axeCore": "4.14.0",
+  "commit": "59607f00",
+  "runDate": "2026-11-28",
+  "state": "success",
+  "findings": [
+    {
+      "check": "routes",
+      "id": "app-loaded-first",
+      "severity": "info",
+      "message": "state=success: app rendered at http://127.0.0.1:5180/ on first attempt",
+      "viewport": "inapp"
+    },
+    {
+      "check": "first-load-focus",
+      "id": "app-loaded-first",
+      "severity": "info",
+      "message": "state=success: app rendered at http://127.0.0.1:5180/ on first attempt",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "keyboard",
+      "id": "app-loaded-first",
+      "severity": "info",
+      "message": "state=success: app rendered at http://127.0.0.1:5180/ on first attempt",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "keyboard",
+      "id": "app-loaded-first",
+      "severity": "info",
+      "message": "state=success: app rendered at http://127.0.0.1:5180/ on first attempt",
+      "viewport": "320x568"
+    },
+    {
+      "check": "keyboard",
+      "id": "backward-path-set-differs",
+      "severity": "warning",
+      "message": "1 stop(s) are met by one direction of the walk only (an element that appears or goes away as focus moves): body:2>div:2>div:2>div:3>main:2>div:1>div:2>section:4>button:3",
+      "state": "agents view",
+      "viewport": "320x568",
+      "wcag": "2.4.3"
+    },
+    {
+      "check": "axe",
+      "id": "app-loaded-first",
+      "severity": "info",
+      "message": "state=success: app rendered at http://127.0.0.1:5180/ on first attempt",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "axe",
+      "id": "state-empty-guidance",
+      "severity": "info",
+      "message": "state=empty: guidance provided for new-conversation",
+      "state": "new-conversation",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "axe",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"account-menu\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "account-menu",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "axe",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-dock-tabs\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-dock-tabs",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "axe",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-approval\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-approval",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "axe",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-artifact\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-artifact",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "axe",
+      "id": "app-loaded-first",
+      "severity": "info",
+      "message": "state=success: app rendered at http://127.0.0.1:5180/ on first attempt",
+      "viewport": "320x568"
+    },
+    {
+      "check": "axe",
+      "id": "state-empty-guidance",
+      "severity": "info",
+      "message": "state=empty: guidance provided for new-conversation",
+      "state": "new-conversation",
+      "viewport": "320x568"
+    },
+    {
+      "check": "axe",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"account-menu\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "account-menu",
+      "viewport": "320x568"
+    },
+    {
+      "check": "axe",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-dock-tabs\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-dock-tabs",
+      "viewport": "320x568"
+    },
+    {
+      "check": "axe",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-approval\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-approval",
+      "viewport": "320x568"
+    },
+    {
+      "check": "axe",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-artifact\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-artifact",
+      "viewport": "320x568"
+    },
+    {
+      "check": "axe",
+      "id": "axe-incomplete-color-contrast",
+      "severity": "info",
+      "message": "axe could not decide color-contrast on 5 node(s)",
+      "state": "dispatch-devices",
+      "viewport": "320x568",
+      "target": "li:nth-child(22) > .autonogrammer-settings-nav-item > span"
+    },
+    {
+      "check": "axe",
+      "id": "axe-incomplete-color-contrast",
+      "severity": "info",
+      "message": "axe could not decide color-contrast on 5 node(s)",
+      "state": "settings-dialog",
+      "viewport": "320x568",
+      "target": "li:nth-child(22) > .autonogrammer-settings-nav-item > span"
+    },
+    {
+      "check": "axe",
+      "id": "axe-incomplete-color-contrast",
+      "severity": "info",
+      "message": "axe could not decide color-contrast on 4 node(s)",
+      "state": "settings-models",
+      "viewport": "320x568",
+      "target": "li:nth-child(22) > .autonogrammer-settings-nav-item > span"
+    },
+    {
+      "check": "media",
+      "id": "app-loaded-first",
+      "severity": "info",
+      "message": "state=success: app rendered at http://127.0.0.1:5180/ on first attempt",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "media",
+      "id": "icon-button-without-boundary",
+      "severity": "warning",
+      "message": "2 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "state": "prefers-contrast agents",
+      "viewport": "1440x900",
+      "wcag": "1.4.11",
+      "target": "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "detail": [
+        "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+        "button.autonogrammer-icon-btn.autonogrammer-thread-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-thread-close\" aria-label=\"Close this agent\" title=\"Close\"><!--!--><svg wid"
+      ]
+    },
+    {
+      "check": "media",
+      "id": "icon-button-without-boundary",
+      "severity": "warning",
+      "message": "1 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "state": "prefers-contrast kanban",
+      "viewport": "1440x900",
+      "wcag": "1.4.11",
+      "target": "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "detail": [
+        "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag"
+      ]
+    },
+    {
+      "check": "media",
+      "id": "icon-button-without-boundary",
+      "severity": "warning",
+      "message": "1 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "state": "prefers-contrast about",
+      "viewport": "1440x900",
+      "wcag": "1.4.11",
+      "target": "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "detail": [
+        "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag"
+      ]
+    },
+    {
+      "check": "media",
+      "id": "icon-button-without-boundary",
+      "severity": "warning",
+      "message": "3 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "state": "prefers-contrast settings-dialog",
+      "viewport": "1440x900",
+      "wcag": "1.4.11",
+      "target": "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "detail": [
+        "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+        "button.autonogrammer-icon-btn.autonogrammer-thread-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-thread-close\" aria-label=\"Close this agent\" title=\"Close\"><!--!--><svg wid",
+        "button.autonogrammer-icon-btn <button type=\"button\" class=\"autonogrammer-icon-btn\" aria-label=\"Close settings\"><!--!--><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fil"
+      ]
+    },
+    {
+      "check": "reflow",
+      "id": "app-loaded-first",
+      "severity": "info",
+      "message": "state=success: app rendered at http://127.0.0.1:5180/ on first attempt",
+      "viewport": "320x568@1x"
+    },
+    {
+      "check": "reflow",
+      "id": "state-empty-guidance",
+      "severity": "info",
+      "message": "state=empty: guidance provided for new-conversation",
+      "state": "new-conversation",
+      "viewport": "320x568@1x"
+    },
+    {
+      "check": "reflow",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"account-menu\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "account-menu",
+      "viewport": "320x568@1x"
+    },
+    {
+      "check": "reflow",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-dock-tabs\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-dock-tabs",
+      "viewport": "320x568@1x"
+    },
+    {
+      "check": "reflow",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-approval\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-approval",
+      "viewport": "320x568@1x"
+    },
+    {
+      "check": "reflow",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-artifact\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-artifact",
+      "viewport": "320x568@1x"
+    },
+    {
+      "check": "reflow",
+      "id": "app-loaded-first",
+      "severity": "info",
+      "message": "state=success: app rendered at http://127.0.0.1:5180/ on first attempt",
+      "viewport": "320x256@4x (400% of 1280x1024)"
+    },
+    {
+      "check": "reflow",
+      "id": "state-empty-guidance",
+      "severity": "info",
+      "message": "state=empty: guidance provided for new-conversation",
+      "state": "new-conversation",
+      "viewport": "320x256@4x (400% of 1280x1024)"
+    },
+    {
+      "check": "reflow",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"account-menu\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "account-menu",
+      "viewport": "320x256@4x (400% of 1280x1024)"
+    },
+    {
+      "check": "reflow",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-dock-tabs\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-dock-tabs",
+      "viewport": "320x256@4x (400% of 1280x1024)"
+    },
+    {
+      "check": "reflow",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-approval\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-approval",
+      "viewport": "320x256@4x (400% of 1280x1024)"
+    },
+    {
+      "check": "reflow",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-artifact\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-artifact",
+      "viewport": "320x256@4x (400% of 1280x1024)"
+    },
+    {
+      "check": "reflow",
+      "id": "app-loaded-first",
+      "severity": "info",
+      "message": "state=success: app rendered at http://127.0.0.1:5180/ on first attempt",
+      "viewport": "1280x1024@4x"
+    },
+    {
+      "check": "reflow",
+      "id": "state-empty-guidance",
+      "severity": "info",
+      "message": "state=empty: guidance provided for new-conversation",
+      "state": "new-conversation",
+      "viewport": "1280x1024@4x"
+    },
+    {
+      "check": "reflow",
+      "id": "wide-content-in-undeclared-container",
+      "severity": "warning",
+      "message": "content reaches 1440px inside div.autonogrammer-kanban-columns <div class=\"autonogrammer-kanban-columns\" role=\"group\" aria-label=\"Kanban columns\"><div class=\"autonogrammer-kanban-column\" role=\"group\" ari (overflow-x auto) that is not a named, focusable scroll region",
+      "state": "kanban",
+      "viewport": "1280x1024@4x",
+      "wcag": "1.4.10",
+      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Awaiting input, 0 tasks\" data-column=\"awaiting-input\"><div class=\"autonogr"
+    },
+    {
+      "check": "reflow",
+      "id": "wide-content-in-undeclared-container",
+      "severity": "warning",
+      "message": "content reaches 1728px inside div.autonogrammer-kanban-columns <div class=\"autonogrammer-kanban-columns\" role=\"group\" aria-label=\"Kanban columns\"><div class=\"autonogrammer-kanban-column\" role=\"group\" ari (overflow-x auto) that is not a named, focusable scroll region",
+      "state": "kanban",
+      "viewport": "1280x1024@4x",
+      "wcag": "1.4.10",
+      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Needs attention, 0 tasks\" data-column=\"needs-attention\"><div class=\"autono"
+    },
+    {
+      "check": "reflow",
+      "id": "wide-content-in-undeclared-container",
+      "severity": "warning",
+      "message": "content reaches 2016px inside div.autonogrammer-kanban-columns <div class=\"autonogrammer-kanban-columns\" role=\"group\" aria-label=\"Kanban columns\"><div class=\"autonogrammer-kanban-column\" role=\"group\" ari (overflow-x auto) that is not a named, focusable scroll region",
+      "state": "kanban",
+      "viewport": "1280x1024@4x",
+      "wcag": "1.4.10",
+      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Paused, 0 tasks\" data-column=\"paused\"><div class=\"autonogrammer-kanban-col"
+    },
+    {
+      "check": "reflow",
+      "id": "wide-content-in-undeclared-container",
+      "severity": "warning",
+      "message": "content reaches 2304px inside div.autonogrammer-kanban-columns <div class=\"autonogrammer-kanban-columns\" role=\"group\" aria-label=\"Kanban columns\"><div class=\"autonogrammer-kanban-column\" role=\"group\" ari (overflow-x auto) that is not a named, focusable scroll region",
+      "state": "kanban",
+      "viewport": "1280x1024@4x",
+      "wcag": "1.4.10",
+      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Completed, 1 task\" data-column=\"completed\"><div class=\"autonogrammer-kanba"
+    },
+    {
+      "check": "reflow",
+      "id": "wide-content-in-undeclared-container",
+      "severity": "warning",
+      "message": "content reaches 2592px inside div.autonogrammer-kanban-columns <div class=\"autonogrammer-kanban-columns\" role=\"group\" aria-label=\"Kanban columns\"><div class=\"autonogrammer-kanban-column\" role=\"group\" ari (overflow-x auto) that is not a named, focusable scroll region",
+      "state": "kanban",
+      "viewport": "1280x1024@4x",
+      "wcag": "1.4.10",
+      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Failed, 0 tasks\" data-column=\"failed\"><div class=\"autonogrammer-kanban-col"
+    },
+    {
+      "check": "reflow",
+      "id": "wide-content-in-undeclared-container",
+      "severity": "warning",
+      "message": "content reaches 2880px inside div.autonogrammer-kanban-columns <div class=\"autonogrammer-kanban-columns\" role=\"group\" aria-label=\"Kanban columns\"><div class=\"autonogrammer-kanban-column\" role=\"group\" ari (overflow-x auto) that is not a named, focusable scroll region",
+      "state": "kanban",
+      "viewport": "1280x1024@4x",
+      "wcag": "1.4.10",
+      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Unreachable, 0 tasks\" data-column=\"unreachable\"><div class=\"autonogrammer-"
+    },
+    {
+      "check": "reflow",
+      "id": "wide-content-in-undeclared-container",
+      "severity": "warning",
+      "message": "content reaches 3168px inside div.autonogrammer-kanban-columns <div class=\"autonogrammer-kanban-columns\" role=\"group\" aria-label=\"Kanban columns\"><div class=\"autonogrammer-kanban-column\" role=\"group\" ari (overflow-x auto) that is not a named, focusable scroll region",
+      "state": "kanban",
+      "viewport": "1280x1024@4x",
+      "wcag": "1.4.10",
+      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Archived, 0 tasks\" data-column=\"archived\"><div class=\"autonogrammer-kanban"
+    },
+    {
+      "check": "reflow",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"account-menu\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "account-menu",
+      "viewport": "1280x1024@4x"
+    },
+    {
+      "check": "reflow",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-dock-tabs\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-dock-tabs",
+      "viewport": "1280x1024@4x"
+    },
+    {
+      "check": "reflow",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-approval\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-approval",
+      "viewport": "1280x1024@4x"
+    },
+    {
+      "check": "reflow",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-artifact\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-artifact",
+      "viewport": "1280x1024@4x"
+    },
+    {
+      "check": "target-size",
+      "id": "app-loaded-first",
+      "severity": "info",
+      "message": "state=success: app rendered at http://127.0.0.1:5180/ on first attempt",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "target-size",
+      "id": "state-empty-guidance",
+      "severity": "info",
+      "message": "state=empty: guidance provided for new-conversation",
+      "state": "new-conversation",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "target-size",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"account-menu\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "account-menu",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "target-size",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-dock-tabs\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-dock-tabs",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "target-size",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-approval\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-approval",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "target-size",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-artifact\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-artifact",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "target-size",
+      "id": "app-loaded-first",
+      "severity": "info",
+      "message": "state=success: app rendered at http://127.0.0.1:5180/ on first attempt",
+      "viewport": "320x568"
+    },
+    {
+      "check": "target-size",
+      "id": "state-empty-guidance",
+      "severity": "info",
+      "message": "state=empty: guidance provided for new-conversation",
+      "state": "new-conversation",
+      "viewport": "320x568"
+    },
+    {
+      "check": "target-size",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"account-menu\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "account-menu",
+      "viewport": "320x568"
+    },
+    {
+      "check": "target-size",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-dock-tabs\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-dock-tabs",
+      "viewport": "320x568"
+    },
+    {
+      "check": "target-size",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-approval\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-approval",
+      "viewport": "320x568"
+    },
+    {
+      "check": "target-size",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-artifact\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-artifact",
+      "viewport": "320x568"
+    },
+    {
+      "check": "text-spacing",
+      "id": "app-loaded-first",
+      "severity": "info",
+      "message": "state=success: app rendered at http://127.0.0.1:5180/ on first attempt",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "text-spacing",
+      "id": "state-empty-guidance",
+      "severity": "info",
+      "message": "state=empty: guidance provided for new-conversation",
+      "state": "new-conversation",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "text-spacing",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"account-menu\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "account-menu",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "text-spacing",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-dock-tabs\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-dock-tabs",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "text-spacing",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-approval\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-approval",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "text-spacing",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-artifact\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-artifact",
+      "viewport": "1440x900"
+    },
+    {
+      "check": "text-spacing",
+      "id": "app-loaded-first",
+      "severity": "info",
+      "message": "state=success: app rendered at http://127.0.0.1:5180/ on first attempt",
+      "viewport": "320x568"
+    },
+    {
+      "check": "text-spacing",
+      "id": "state-empty-guidance",
+      "severity": "info",
+      "message": "state=empty: guidance provided for new-conversation",
+      "state": "new-conversation",
+      "viewport": "320x568"
+    },
+    {
+      "check": "text-spacing",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"account-menu\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "account-menu",
+      "viewport": "320x568"
+    },
+    {
+      "check": "text-spacing",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-dock-tabs\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-dock-tabs",
+      "viewport": "320x568"
+    },
+    {
+      "check": "text-spacing",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-approval\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-approval",
+      "viewport": "320x568"
+    },
+    {
+      "check": "text-spacing",
+      "id": "state-unreachable",
+      "severity": "warning",
+      "message": "state=success: the state \"cowork-artifact\" was not reached (its screen did not render; the first attempt: its screen did not render). empty guidance: optional state may be absent on this bundle",
+      "state": "cowork-artifact",
+      "viewport": "320x568"
+    }
+  ],
+  "counters": {
+    "connect:views": 1,
+    "axe:runs": 22,
+    "reflow:views": 32,
+    "target-size:targets": 569,
+    "text-spacing:views": 22,
+    "load:attempt:1:routes": 1,
+    "success:first-attempt:load:routes": 1,
+    "routes:head:titleElements=1": 9,
+    "routes:head:titleBeforeBase=false": 9,
+    "routes:head:titleLastChild=true": 9,
+    "routes:inapp": 9,
+    "load:attempt:1:first-load-focus": 1,
+    "success:first-attempt:load:first-load-focus": 1,
+    "first-load-focus:loads": 1,
+    "load:attempt:1:keyboard": 3,
+    "success:first-attempt:load:keyboard": 3,
+    "success:first-attempt:state:agents": 16,
+    "keyboard:states": 3,
+    "keyboard:stops": 101,
+    "dialog:tab-presses": 74,
+    "load:attempt:1:axe": 2,
+    "success:first-attempt:load:axe": 2,
+    "axe:states": 20,
+    "axe:state:loaded": 2,
+    "axe:state:empty": 2,
+    "success:first-attempt:state:kanban": 13,
+    "axe:state:success": 12,
+    "success:first-attempt:state:cowork-shell": 9,
+    "success:first-attempt:state:dispatch-devices": 9,
+    "success:first-attempt:state:about": 13,
+    "success:first-attempt:state:settings-dialog": 13,
+    "success:first-attempt:state:settings-models": 9,
+    "success:first-attempt:state:session-not-found": 9,
+    "axe:state:error": 4,
+    "success:first-attempt:state:page-not-found": 9,
+    "load:attempt:1:media": 2,
+    "success:first-attempt:load:media": 2,
+    "media:states": 16,
+    "media:forced-colors:controls": 113,
+    "media:forced-colors-stops": 21,
+    "media:prefers-contrast:controls": 113,
+    "media:reduced-motion:views": 4,
+    "media:dark:axe-runs": 4,
+    "load:attempt:1:reflow": 3,
+    "success:first-attempt:load:reflow": 3,
+    "reflow:states": 30,
+    "load:attempt:1:target-size": 2,
+    "success:first-attempt:load:target-size": 2,
+    "target-size:states": 20,
+    "load:attempt:1:text-spacing": 2,
+    "success:first-attempt:load:text-spacing": 2,
+    "text-spacing:states": 20
+  },
+  "skipped": [
+    {
+      "check": "routes",
+      "reason": "direct loads of /kanban, /sessions/<id>, /settings, /about and an unknown path: the static server of the real-bundle smoke has no SPA rewrite (covered by the Demo half)"
+    }
+  ],
+  "summary": {
+    "routes": {
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1
+    },
+    "first-load-focus": {
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1
+    },
+    "keyboard": {
+      "errors": 0,
+      "warnings": 1,
+      "infos": 2
+    },
+    "axe": {
+      "errors": 0,
+      "warnings": 8,
+      "infos": 7
+    },
+    "media": {
+      "errors": 0,
+      "warnings": 4,
+      "infos": 1
+    },
+    "reflow": {
+      "errors": 0,
+      "warnings": 19,
+      "infos": 6
+    },
+    "target-size": {
+      "errors": 0,
+      "warnings": 8,
+      "infos": 4
+    },
+    "text-spacing": {
+      "errors": 0,
+      "warnings": 8,
+      "infos": 4
+    }
+  },
+  "screenshotFiles": [
+    "screenshots/forced-colors-agents.png",
+    "screenshots/forced-colors-kanban.png",
+    "screenshots/forced-colors-about.png",
+    "screenshots/forced-colors-settings-dialog.png",
+    "screenshots/prefers-contrast-agents.png",
+    "screenshots/prefers-contrast-kanban.png",
+    "screenshots/prefers-contrast-about.png",
+    "screenshots/prefers-contrast-settings-dialog.png",
+    "screenshots/reduced-motion-agents.png",
+    "screenshots/reduced-motion-kanban.png",
+    "screenshots/reduced-motion-about.png",
+    "screenshots/reduced-motion-settings-dialog.png",
+    "screenshots/dark-agents.png",
+    "screenshots/dark-kanban.png",
+    "screenshots/dark-about.png",
+    "screenshots/dark-settings-dialog.png"
+  ]
+}
