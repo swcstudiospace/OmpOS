@@ -26,6 +26,8 @@ internal partial class App : Application
     private AgentHead? _head;
     private Task _initialisation = Task.CompletedTask;
     private int _shutdownState;
+    private static readonly Lock LogListenerLock = new();
+    private static bool _logListenerInstalled;
 
     /// <summary>Creates the application with the production head, which reads the plugins, the state and the Substrate from the process environment.</summary>
     public App()
@@ -47,17 +49,32 @@ internal partial class App : Application
     /// </summary>
     public override void Initialize()
     {
-        // The app is a WinExe (no console); traces go to a log file, never Console.Error.
-        try
+        // The app is a WinExe (no console); traces go to a log file, never Console.Error. The listener is process-global, so it
+        // is installed at most once: headless PerTest isolation constructs many App instances, and one undisposed StreamWriter per
+        // instance leaks the log file handle until finalization (FileShare then makes later opens fail).
+        var install = false;
+        lock (LogListenerLock)
         {
-            var logDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autonogrammer", "logs");
-            Directory.CreateDirectory(logDirectory);
-            var logPath = Path.Combine(logDirectory, $"autonogrammer-{DateTime.Now:yyyy-MM-dd}.log");
-            InstallStderrTraceListener(new StreamWriter(logPath, append: true) { AutoFlush = true });
+            if (!_logListenerInstalled)
+            {
+                _logListenerInstalled = true;
+                install = true;
+            }
         }
-        catch (Exception)
+
+        if (install)
         {
-            // Best-effort only: a missing log directory must never break startup.
+            try
+            {
+                var logDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autonogrammer", "logs");
+                Directory.CreateDirectory(logDirectory);
+                var logPath = Path.Combine(logDirectory, $"autonogrammer-{DateTime.Now:yyyy-MM-dd}.log");
+                InstallStderrTraceListener(new StreamWriter(logPath, append: true) { AutoFlush = true });
+            }
+            catch (Exception)
+            {
+                // Best-effort only: a missing log directory must never break startup.
+            }
         }
 
         AvaloniaXamlLoader.Load(this);
@@ -76,6 +93,7 @@ internal partial class App : Application
         foreach (var previous in Trace.Listeners.OfType<StderrTraceListener>().ToArray())
         {
             Trace.Listeners.Remove(previous);
+            previous.Dispose();
         }
 
         var listener = new StderrTraceListener(error);
@@ -185,12 +203,15 @@ internal partial class App : Application
     /// A trace listener that writes each trace line to the given writer. The application points it at standard error, so the head's
     /// traces reach the operator who launched it.
     /// </summary>
-    internal sealed class StderrTraceListener(TextWriter error) : TraceListener
+    internal sealed class StderrTraceListener(TextWriter error) : TraceListener, IDisposable
     {
         /// <inheritdoc/>
         public override void Write(string? message) => error.Write(message);
 
         /// <inheritdoc/>
         public override void WriteLine(string? message) => error.WriteLine(message);
+
+        /// <inheritdoc/>
+        public void Dispose() => error.Dispose();
     }
 }
