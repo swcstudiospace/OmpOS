@@ -611,12 +611,12 @@ Source: the user request of 2026-10-28, the ultrathink plan graph ut-mvs8ru79-82
 
 ### Scaffold (AG-SC, Phase 66.1)
 
-- [ ] **AG-SC-1**: Create the 21 source projects (3 at L1, 15 at L2, 3 at L3) and the 19 test projects of `docs/plans/v0.16.0-research/briefs/00-scaffold-manifest.md`, each with a csproj of only `ItemGroup`s, `InternalsVisibleTo` for its test project and an `AssemblyMarker.cs` only, so that every project builds with no behaviour.
-- [ ] **AG-SC-2**: Register every new project in `tests/Autonogrammer.ArchitectureTests/LayerMap.cs` (21 `Layers` rows) and declare exactly the six `SameLayerAllowed` tuples of the manifest (`Accounts` to `Harness.Secrets`; `Harness.Secrets.Os` to `Harness.Secrets`; `Cowork` to `Harness.AgentLoop`; `Cowork.Artifacts.Stores` to `Cowork.Artifacts`; `UI` to `Cowork.Artifacts`; `Cowork.Memory.Postgres` to `Cowork.Memory`), each with an `// intentional:` comment and no other tuple.
-- [ ] **AG-SC-3**: Register every new project in `Autonogrammer.slnx` and `Autonogrammer.Linux.slnf` (40 lines each), add the 21 `ProjectReference` lines to the architecture test project, one row per project in `docs/architecture.md` and a `CHANGELOG.md` entry under Unreleased, and add the `ProjectReference` and `PackageReference` edits to the existing projects listed in section 3 of the manifest.
-- [ ] **AG-SC-4**: `ProcessSpawningAssemblies` in `ProjectGraphTests.cs` gains `Harness.BrowserUse`, `Harness.ComputerUse.MacOS`, `Harness.Isolation` and `Harness.Notifications`; `Directory.Packages.props` pins `System.Security.Cryptography.ProtectedData` 10.0.13, `PuppeteerSharp` 25.15.0 and `Avalonia.Controls.DataGrid` 12.1.2 with their `Label` groups, and relabels the `Avalonia.Controls.WebView` group from spike to production.
-- [ ] **AG-SC-5**: `ContractVersion.Current` is bumped ONCE from 1.5.0 to 1.6.0 in the scaffold step (no phase edits it), the Contracts folders are added additively, and the step checks that no type in `Contracts/Plugins` references a `Contracts/Ui` type (if the check fails the single bump becomes 2.0.0).
-- [ ] **AG-SC-6**: ONE relock (`--force-evaluate`) commits the new and changed `packages.lock.json` files, ONE notices regeneration updates `THIRD-PARTY-NOTICES.md`, the locked restore passes and the gate of report 09 section 5 is green on a scaffold commit that adds no behaviour.
+- [x] **AG-SC-1**: Create the 21 source projects (3 at L1, 15 at L2, 3 at L3) and the 19 test projects of `docs/plans/v0.16.0-research/briefs/00-scaffold-manifest.md`, each with a csproj of only `ItemGroup`s, `InternalsVisibleTo` for its test project and an `AssemblyMarker.cs` only, so that every project builds with no behaviour.
+- [x] **AG-SC-2**: Register every new project in `tests/Autonogrammer.ArchitectureTests/LayerMap.cs` (21 `Layers` rows) and declare exactly the six `SameLayerAllowed` tuples of the manifest (`Accounts` to `Harness.Secrets`; `Harness.Secrets.Os` to `Harness.Secrets`; `Cowork` to `Harness.AgentLoop`; `Cowork.Artifacts.Stores` to `Cowork.Artifacts`; `UI` to `Cowork.Artifacts`; `Cowork.Memory.Postgres` to `Cowork.Memory`), each with an `// intentional:` comment and no other tuple.
+- [x] **AG-SC-3**: Register every new project in `Autonogrammer.slnx` and `Autonogrammer.Linux.slnf` (40 lines each), add the 21 `ProjectReference` lines to the architecture test project, one row per project in `docs/architecture.md` and a `CHANGELOG.md` entry under Unreleased, and add the `ProjectReference` and `PackageReference` edits to the existing projects listed in section 3 of the manifest.
+- [x] **AG-SC-4**: `ProcessSpawningAssemblies` in `ProjectGraphTests.cs` gains `Harness.BrowserUse`, `Harness.ComputerUse.MacOS`, `Harness.Isolation` and `Harness.Notifications`; `Directory.Packages.props` pins `System.Security.Cryptography.ProtectedData` 10.0.13, `PuppeteerSharp` 25.15.0 and `Avalonia.Controls.DataGrid` 12.1.2 with their `Label` groups, and relabels the `Avalonia.Controls.WebView` group from spike to production.
+- [x] **AG-SC-5**: `ContractVersion.Current` is bumped ONCE from 1.5.0 to 1.6.0 in the scaffold step (no phase edits it), the Contracts folders are added additively, and the step checks that no type in `Contracts/Plugins` references a `Contracts/Ui` type (if the check fails the single bump becomes 2.0.0).
+- [x] **AG-SC-6**: ONE relock (`--force-evaluate`) commits the new and changed `packages.lock.json` files, ONE notices regeneration updates `THIRD-PARTY-NOTICES.md`, the locked restore passes and the gate of report 09 section 5 is green on a scaffold commit that adds no behaviour.
 
 ### Rebrand (66) (AG-66)
 
@@ -746,20 +746,20 @@ Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.m
 
 ### Cowork chat core and tool host (70) (AG-70)
 
-- [ ] **AG-70-1**: `CoworkSessionProfile` produces the omp launch of a Cowork session: `--no-extensions`, an approval mode from the Cowork permission mode, `--add-dir` per trusted folder, an absolute `--append-system-prompt` file path, and a `--config` overlay with `browser.enabled: false` and `computer.enabled: false`.
-- [ ] **AG-70-2**: `CoworkPermissionResolver` denies paths outside the trusted and Storage folders, always asks before a delete, allows `mcp__cowork_*` tools at the omp level, and follows Manual, Auto or Skip (`CoworkPermissionMode`; Auto is shown as "Auto (rules)") for the rest.
+- [x] **AG-70-1**: `CoworkSessionProfile` produces the omp launch of a Cowork session: `--no-extensions`, an approval mode from the Cowork permission mode, `--add-dir` per trusted folder, an absolute `--append-system-prompt` file path, and a `--config` overlay with `browser.enabled: false` and `computer.enabled: false`.
+- [x] **AG-70-2**: `CoworkPermissionResolver` denies paths outside the trusted and Storage folders, always asks before a delete, allows `mcp__cowork_*` tools at the omp level, and follows Manual, Auto or Skip (`CoworkPermissionMode`; Auto is shown as "Auto (rules)") for the rest.
 - [x] **AG-70-3**: `CoworkSessionHost` implements `IAgentPanelHost` over the Cowork registry and composes engines with `EngineComposition.Compose`, never through the Code planner.
 - [x] **AG-70-4**: A Cowork conversation supports send, stop, retry, steer, resume from history (`session/load`), file attachments and image attachments, and refuses images with a specific message when the model reads none.
-- [ ] **AG-70-5**: Tool-call updates carry images: `ToolUpdateContent.Images`, an image block in the transcript fold, the views, the export and the web projection, with alt text.
-- [ ] **AG-70-6**: `Autonogrammer.Cowork.Abstractions` holds exactly the contract of ADR-0032 D5 and nothing else.
-- [ ] **AG-70-7**: `CoworkToolHost` runs the eight-step call sequence of D5 for every call and enforces the descriptor rules and result caps.
-- [ ] **AG-70-8**: `McpGatewayServer.Start(registry, invoker, coworkTools)` serves Cowork tools beside registry tools with disjoint names and maps results, images included, to `CallToolResult`.
-- [ ] **AG-70-9**: `CoworkPolicyGate`, `CoworkApprovalBroker`, the grant store and the audit hook implement D6; `EveryCallOnExecutingDevice` is never satisfied by a grant, a mode or a remote decision.
-- [ ] **AG-70-10**: `CoworkToolServer` starts one loopback gateway for Cowork, health-checks it before `session/new` and degrades with a visible notice, never by failing the session.
+- [x] **AG-70-5**: Tool-call updates carry images: `ToolUpdateContent.Images`, an image block in the transcript fold, the views, the export and the web projection, with alt text.
+- [x] **AG-70-6**: `Autonogrammer.Cowork.Abstractions` holds exactly the contract of ADR-0032 D5 and nothing else.
+- [x] **AG-70-7**: `CoworkToolHost` runs the eight-step call sequence of D5 for every call and enforces the descriptor rules and result caps.
+- [x] **AG-70-8**: `McpGatewayServer.Start(registry, invoker, coworkTools)` serves Cowork tools beside registry tools with disjoint names and maps results, images included, to `CallToolResult`.
+- [x] **AG-70-9**: `CoworkPolicyGate`, `CoworkApprovalBroker`, the grant store and the audit hook implement D6; `EveryCallOnExecutingDevice` is never satisfied by a grant, a mode or a remote decision.
+- [x] **AG-70-10**: `CoworkToolServer` starts one loopback gateway for Cowork, health-checks it before `session/new` and degrades with a visible notice, never by failing the session.
 - [x] **AG-70-11**: Cowork conversation models and views (Native and Web) show the transcript, composer, approval cards, provider status chips and the dock host.
-- [ ] **AG-70-12**: `FakeCoworkToolProvider` and a contract test base let ADR-0033, 0034 and 0035 prove their providers against the same rules.
-- [ ] **AG-70-13**: The host taints a session when a result carries untrusted content, raises `CoworkToolEvent`s (started, approval requested, completed, failed, denied), and in a tainted session Auto and Skip no longer apply to actuating calls or to `edit`, `delete`, `move` and `execute` (tests in units 1 and 3).
-- [ ] **AG-70-14**: `ConfigOverlayWriter.WriteYaml(sessionStateDirectory, yaml)` (new, `Autonogrammer.Harness.AgentLoop/Launch`, owner-only mode, deleted on dispose) writes the Cowork overlay; the Cowork environment holds provider keys only and `CoworkPathBoundary` refuses the secrets, `~/.omp`, `~/.ssh` and account folders as trusted folders (tests in units 3 and 4).
+- [x] **AG-70-12**: `FakeCoworkToolProvider` and a contract test base let ADR-0033, 0034 and 0035 prove their providers against the same rules.
+- [x] **AG-70-13**: The host taints a session when a result carries untrusted content, raises `CoworkToolEvent`s (started, approval requested, completed, failed, denied), and in a tainted session Auto and Skip no longer apply to actuating calls or to `edit`, `delete`, `move` and `execute` (tests in units 1 and 3).
+- [x] **AG-70-14**: `ConfigOverlayWriter.WriteYaml(sessionStateDirectory, yaml)` (new, `Autonogrammer.Harness.AgentLoop/Launch`, owner-only mode, deleted on dispose) writes the Cowork overlay; the Cowork environment holds provider keys only and `CoworkPathBoundary` refuses the secrets, `~/.omp`, `~/.ssh` and account folders as trusted folders (tests in units 3 and 4).
 
 ### Cowork Artifacts (71) (AG-71)
 
@@ -971,254 +971,254 @@ Source: owner directive (parent brief) via task T9013-arch (correlation 901308c5
 
 | REQ-ID | Phase | Status (2026-10-28) |
 |--------|-------|---------------------|
-| AG-SC-1 | 66.1 | Planned |
-| AG-SC-2 | 66.1 | Planned |
-| AG-SC-3 | 66.1 | Planned |
-| AG-SC-4 | 66.1 | Planned |
-| AG-SC-5 | 66.1 | Planned |
-| AG-SC-6 | 66.1 | Planned |
-| AG-66-1 | 66 | Planned |
-| AG-66-2 | 66 | Planned |
-| AG-66-3 | 66 | Planned |
-| AG-66-4 | 66 | Planned |
-| AG-66-5 | 66 | Planned |
-| AG-66-6 | 66 | Planned |
-| AG-66-7 | 66 | Planned |
-| AG-66-8 | 66 | Planned |
-| AG-66-9 | 66 | Planned |
-| AG-66-10 | 66 | Planned |
-| AG-66-11 | 66 | Planned |
-| AG-66-12 | 66 | Planned |
-| AG-66-13 | 66 | Planned |
-| AG-66-14 | 66 | Planned |
-| AG-HW-1 | 66.2 | Met |
-| AG-HW-2 | 66.2 | Met |
-| AG-HW-3 | 66.2 | Met |
-| AG-HW-4 | 66.2 | Met |
-| AG-HW-5 | 66.2 | Met |
-| AG-HW-6 | 66.2 | Met (the effect inside a container is not observed) |
-| AG-HW-7 | 66.2 | Met |
-| AG-HW-8 | 66.2 | Met |
-| AG-HW-9 | 66.2 | Met (API flow, real omp, scripted model, one machine; run 2026-11-20 — browser flow deferred, no scriptable sign-in per OQ-312) |
-| AG-HW-10 | 66.2 | Met |
-| AG-HW-11 | 66.2 | Met (nothing deployed; the owner's approval is pending) |
-| AG-HW-12 | 66.2 | Met |
-| AG-AX-1 | 66.3 | Met |
-| AG-AX-2 | 66.3 | Met |
-| AG-AX-3 | 66.3 | Met (final runs in CI on current main — rerun on 2026-11-19/20: all halves exit 0; gate repeats them) |
-| AG-AX-4 | 66.3 | Met |
-| AG-AX-5 | 66.3 | Met |
-| AG-AX-6 | 66.3 | Met (draft statement, partially conformant) |
-| AG-AX-7 | 66.3 | Met (written, not carried out) |
-| AG-AX-8 | 66.3 | Met |
-| AG-QU-1 | 66.4 | Met |
-| AG-QU-2 | 66.4 | Met (image scan green on main, 44613832248; base digests re-resolved 2026-11-19) |
-| AG-QU-3 | 66.4 | Met (CodeQL 43858138039 and Scorecard 44096396024 success; alerts dismissed with recorded dispositions) |
-| AG-QU-4 | 66.4 | Met |
-| AG-QU-5 | 66.4 | Met |
-| AG-QU-6 | 66.4 | Met |
-| AG-QU-7 | 66.4 | Met (two recorded local passes stand; final-commit pass is the mirrored CI run on the shipped tree) |
-| AG-QU-8 | 66.4 | Met |
-| AG-67-1 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-2 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-3 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-4 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-5 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-6 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-7 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-8 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-9 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-10 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-11 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-12 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-13 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-14 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-15 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-16 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-17 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-18 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-19 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-20 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-21 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-22 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-23 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-67-24 | 67 | Met (implemented and static-verified; live/external smoke per the phase Mac-channel note and recon outstanding items) |
-| AG-68-1 | 68 | Planned |
-| AG-68-2 | 68 | Planned |
-| AG-68-3 | 68 | Planned |
-| AG-68-4 | 68 | Planned |
-| AG-68-5 | 68 | Planned |
-| AG-68-6 | 68 | Planned |
-| AG-68-7 | 68 | Planned |
-| AG-68-8 | 68 | Planned |
-| AG-68-9 | 68 | Planned |
-| AG-68-10 | 68 | Planned |
-| AG-68-11 | 68 | Planned |
-| AG-68-12 | 68 | Planned |
-| AG-68-13 | 68 | Planned |
-| AG-68-14 | 68 | Planned |
-| AG-69-1 | 69 | Planned |
-| AG-69-2 | 69 | Planned |
-| AG-69-3 | 69 | Planned |
-| AG-69-4 | 69 | Planned |
-| AG-69-5 | 69 | Planned |
-| AG-69-6 | 69 | Planned |
-| AG-69-7 | 69 | Planned |
-| AG-69-8 | 69 | Planned |
-| AG-69-9 | 69 | Planned |
-| AG-69-10 | 69 | Planned |
-| AG-69-11 | 69 | Planned |
-| AG-69-12 | 69 | Planned |
-| AG-69-13 | 69 | Planned |
-| AG-70-1 | 70 | Planned |
-| AG-70-2 | 70 | Planned |
-| AG-70-3 | 70 | Planned |
-| AG-70-4 | 70 | Planned |
-| AG-70-5 | 70 | Planned |
-| AG-70-6 | 70 | Planned |
-| AG-70-7 | 70 | Planned |
-| AG-70-8 | 70 | Planned |
-| AG-70-9 | 70 | Planned |
-| AG-70-10 | 70 | Planned |
-| AG-70-11 | 70 | Planned |
-| AG-70-12 | 70 | Planned |
-| AG-70-13 | 70 | Planned |
-| AG-70-14 | 70 | Planned |
-| AG-71-1 | 71 | Planned |
-| AG-71-2 | 71 | Planned |
-| AG-71-3 | 71 | Planned |
-| AG-71-4 | 71 | Planned |
-| AG-71-5 | 71 | Planned |
-| AG-71-6 | 71 | Planned |
-| AG-71-7 | 71 | Planned |
-| AG-71-8 | 71 | Planned |
-| AG-71-9 | 71 | Planned |
-| AG-71-10 | 71 | Planned |
-| AG-71-11 | 71 | Planned |
-| AG-71-12 | 71 | Planned |
-| AG-71-13 | 71 | Planned |
-| AG-71-14 | 71 | Planned |
-| AG-71-15 | 71 | Planned |
-| AG-71-16 | 71 | Planned |
-| AG-71-17 | 71 | Planned |
-| AG-71-18 | 71 | Planned |
-| AG-71-19 | 71 | Planned |
-| AG-71-20 | 71 | Planned |
-| AG-71-21 | 71 | Planned |
-| AG-71-22 | 71 | Planned |
-| AG-71-23 | 71 | Planned |
-| AG-71-24 | 71 | Planned |
-| AG-72-1 | 72 | Planned |
-| AG-72-2 | 72 | Planned |
-| AG-72-3 | 72 | Planned |
-| AG-72-4 | 72 | Planned |
-| AG-72-5 | 72 | Planned |
-| AG-72-6 | 72 | Planned |
-| AG-72-7 | 72 | Planned |
-| AG-72-8 | 72 | Planned |
-| AG-72-9 | 72 | Planned |
-| AG-72-10 | 72 | Planned |
-| AG-72-11 | 72 | Planned |
-| AG-72-12 | 72 | Planned |
-| AG-72-13 | 72 | Planned |
-| AG-72-14 | 72 | Planned |
-| AG-72-15 | 72 | Planned |
-| AG-72-16 | 72 | Planned |
-| AG-73-1 | 73 | Planned |
-| AG-73-2 | 73 | Planned |
-| AG-73-3 | 73 | Planned |
-| AG-73-4 | 73 | Planned |
-| AG-73-5 | 73 | Planned |
-| AG-73-6 | 73 | Planned |
-| AG-73-7 | 73 | Planned |
-| AG-73-8 | 73 | Planned |
-| AG-73-9 | 73 | Planned |
-| AG-73-10 | 73 | Planned |
-| AG-73-11 | 73 | Planned |
-| AG-73-12 | 73 | Planned |
-| AG-73-13 | 73 | Planned |
-| AG-73-14 | 73 | Planned |
-| AG-73-15 | 73 | Planned |
-| AG-73-16 | 73 | Planned |
-| AG-73-17 | 73 | Planned |
-| AG-73-18 | 73 | Planned |
-| AG-73-19 | 73 | Planned |
-| AG-73-20 | 73 | Planned |
-| AG-73-21 | 73 | Planned |
-| AG-73-22 | 73 | Planned |
-| AG-73-23 | 73 | Planned |
-| AG-73-24 | 73 | Planned |
-| AG-74-1 | 74 | Planned |
-| AG-74-2 | 74 | Planned |
-| AG-74-3 | 74 | Planned |
-| AG-74-4 | 74 | Planned |
-| AG-74-5 | 74 | Planned |
-| AG-74-6 | 74 | Planned |
-| AG-74-7 | 74 | Planned |
-| AG-74-8 | 74 | Planned |
-| AG-74-9 | 74 | Planned |
-| AG-74-10 | 74 | Planned |
-| AG-74-11 | 74 | Planned |
-| AG-74-12 | 74 | Planned |
-| AG-74-13 | 74 | Planned |
-| AG-74-14 | 74 | Planned |
-| AG-74-15 | 74 | Planned |
-| AG-74-16 | 74 | Planned |
-| AG-74-17 | 74 | Planned |
-| AG-74-18 | 74 | Planned |
-| AG-75-1 | 75 | Planned |
-| AG-75-2 | 75 | Planned |
-| AG-75-3 | 75 | Planned |
-| AG-75-4 | 75 | Planned |
-| AG-75-5 | 75 | Planned |
-| AG-75-6 | 75 | Planned |
-| AG-75-7 | 75 | Planned |
-| AG-75-8 | 75 | Planned |
-| AG-75-9 | 75 | Planned |
-| AG-75-10 | 75 | Planned |
-| AG-75-11 | 75 | Planned |
-| AG-76-1 | 76 | Planned |
-| AG-76-2 | 76 | Planned |
-| AG-76-3 | 76 | Planned |
-| AG-76-4 | 76 | Planned |
-| AG-76-5 | 76 | Planned |
-| AG-76-6 | 76 | Planned |
-| AG-76-7 | 76 | Planned |
-| AG-76-8 | 76 | Planned |
-| AG-76-9 | 76 | Planned |
-| AG-76-10 | 76 | Planned |
-| AG-76-11 | 76 | Planned |
-| AG-76-12 | 76 | Planned |
-| AG-76-13 | 76 | Planned |
-| AG-76-14 | 76 | Planned |
-| AG-77-1 | 77 | Planned |
-| AG-77-2 | 77 | Planned |
-| AG-77-3 | 77 | Planned |
-| AG-77-4 | 77 | Planned |
-| AG-77-5 | 77 | Planned |
-| AG-77-6 | 77 | Planned |
-| AG-77-7 | 77 | Planned |
-| AG-77-8 | 77 | Planned |
-| AG-77-9 | 77 | Planned |
-| AG-77-10 | 77 | Planned |
-| AG-77-11 | 77 | Planned |
-| AG-77-12 | 77 | Planned |
-| AG-77-13 | 77 | Planned |
-| AG-77-14 | 77 | Planned |
-| AG-77-15 | 77 | Planned |
-| AG-77-16 | 77 | Planned |
-| AG-77-17 | 77 | Planned |
-| AG-78-1 | 78 | Planned |
-| AG-78-2 | 78 | Planned |
-| AG-78-3 | 78 | Planned |
-| AG-78-4 | 78 | Planned |
-| AG-78-5 | 78 | Planned |
-| AG-78-6 | 78 | Planned |
-| AG-78-7 | 78 | Planned |
-| AG-78-8 | 78 | Planned |
-| AG-78-9 | 78 | Planned |
-| AG-78-10 | 78 | Planned |
-| AG-78-11 | 78 | Planned |
+| AG-SC-1 | 66.1 | Complete (2026-11-28) |
+| AG-SC-2 | 66.1 | Complete (2026-11-28) |
+| AG-SC-3 | 66.1 | Complete (2026-11-28) |
+| AG-SC-4 | 66.1 | Complete (2026-11-28) |
+| AG-SC-5 | 66.1 | Complete (2026-11-28) |
+| AG-SC-6 | 66.1 | Complete (2026-11-28) |
+| AG-66-1 | 66 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-66-2 | 66 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-66-3 | 66 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-66-4 | 66 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-66-5 | 66 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-66-6 | 66 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-66-7 | 66 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-66-8 | 66 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-66-9 | 66 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-66-10 | 66 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-66-11 | 66 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-66-12 | 66 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-66-13 | 66 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-66-14 | 66 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-HW-1 | 66.2 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-HW-2 | 66.2 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-HW-3 | 66.2 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-HW-4 | 66.2 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-HW-5 | 66.2 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-HW-6 | 66.2 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-HW-7 | 66.2 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-HW-8 | 66.2 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-HW-9 | 66.2 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-HW-10 | 66.2 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-HW-11 | 66.2 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-HW-12 | 66.2 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-AX-1 | 66.3 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-AX-2 | 66.3 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-AX-3 | 66.3 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-AX-4 | 66.3 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-AX-5 | 66.3 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-AX-6 | 66.3 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-AX-7 | 66.3 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-AX-8 | 66.3 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-QU-1 | 66.4 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-QU-2 | 66.4 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-QU-3 | 66.4 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-QU-4 | 66.4 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-QU-5 | 66.4 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-QU-6 | 66.4 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-QU-7 | 66.4 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-QU-8 | 66.4 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-1 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-2 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-3 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-4 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-5 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-6 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-7 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-8 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-9 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-10 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-11 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-12 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-13 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-14 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-15 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-16 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-17 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-18 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-19 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-20 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-21 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-22 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-23 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-67-24 | 67 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-68-1 | 68 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-68-2 | 68 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-68-3 | 68 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-68-4 | 68 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-68-5 | 68 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-68-6 | 68 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-68-7 | 68 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-68-8 | 68 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-68-9 | 68 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-68-10 | 68 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-68-11 | 68 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-68-12 | 68 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-68-13 | 68 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-68-14 | 68 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-69-1 | 69 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-69-2 | 69 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-69-3 | 69 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-69-4 | 69 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-69-5 | 69 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-69-6 | 69 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-69-7 | 69 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-69-8 | 69 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-69-9 | 69 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-69-10 | 69 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-69-11 | 69 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-69-12 | 69 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-69-13 | 69 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-70-1 | 70 | Complete (2026-11-28) |
+| AG-70-2 | 70 | Complete (2026-11-28) |
+| AG-70-3 | 70 | Complete (2026-11-28) |
+| AG-70-4 | 70 | Complete (2026-11-28) |
+| AG-70-5 | 70 | Complete (2026-11-28) |
+| AG-70-6 | 70 | Complete (2026-11-28) |
+| AG-70-7 | 70 | Complete (2026-11-28) |
+| AG-70-8 | 70 | Complete (2026-11-28) |
+| AG-70-9 | 70 | Complete (2026-11-28) |
+| AG-70-10 | 70 | Complete (2026-11-28) |
+| AG-70-11 | 70 | Complete (2026-11-28) |
+| AG-70-12 | 70 | Complete (2026-11-28) |
+| AG-70-13 | 70 | Complete (2026-11-28) |
+| AG-70-14 | 70 | Complete (2026-11-28) |
+| AG-71-1 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-2 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-3 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-4 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-5 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-6 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-7 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-8 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-9 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-10 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-11 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-12 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-13 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-14 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-15 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-16 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-17 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-18 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-19 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-20 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-21 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-22 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-23 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-71-24 | 71 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-1 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-2 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-3 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-4 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-5 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-6 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-7 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-8 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-9 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-10 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-11 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-12 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-13 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-14 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-15 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-72-16 | 72 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-1 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-2 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-3 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-4 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-5 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-6 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-7 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-8 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-9 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-10 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-11 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-12 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-13 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-14 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-15 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-16 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-17 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-18 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-19 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-20 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-21 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-22 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-23 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-73-24 | 73 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-1 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-2 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-3 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-4 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-5 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-6 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-7 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-8 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-9 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-10 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-11 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-12 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-13 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-14 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-15 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-16 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-17 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-74-18 | 74 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-75-1 | 75 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-75-2 | 75 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-75-3 | 75 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-75-4 | 75 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-75-5 | 75 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-75-6 | 75 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-75-7 | 75 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-75-8 | 75 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-75-9 | 75 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-75-10 | 75 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-75-11 | 75 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-76-1 | 76 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-76-2 | 76 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-76-3 | 76 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-76-4 | 76 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-76-5 | 76 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-76-6 | 76 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-76-7 | 76 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-76-8 | 76 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-76-9 | 76 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-76-10 | 76 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-76-11 | 76 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-76-12 | 76 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-76-13 | 76 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-76-14 | 76 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-1 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-2 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-3 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-4 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-5 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-6 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-7 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-8 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-9 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-10 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-11 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-12 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-13 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-14 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-15 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-16 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-77-17 | 77 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-78-1 | 78 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-78-2 | 78 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-78-3 | 78 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-78-4 | 78 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-78-5 | 78 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-78-6 | 78 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-78-7 | 78 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-78-8 | 78 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-78-9 | 78 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-78-10 | 78 | Partial (2026-11-28: see v0.16.0 milestone audit) |
+| AG-78-11 | 78 | Partial (2026-11-28: see v0.16.0 milestone audit) |
 
 ### Traceability (RPC, v0.17.0)
 
