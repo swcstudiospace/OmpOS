@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMAP.md`). They overlapped in time, and only 0.9.1 was closed formally: the date of each other version is the day of its last recorded work or audit. Phase numbers refer to that roadmap.
 
 ## [Unreleased]
+## [0.20.20] - 2026-11-28
+
+### Fixed
+
+- Desktop app opens standalone with no console window (PR #41): `apps/Autonogrammer.Native` built as a console-subsystem PE (`OutputType Exe`), so Windows allocated a console window on every launch. Flipped to `WinExe` (GUI subsystem); the startup trace listener now writes to `%LocalAppData%/Autonogrammer/logs/autonogrammer-<date>.log` instead of `Console.Error`, installed at most once per process and disposed (with its writer) when replaced.
 ## [0.20.19] - 2026-11-27
 
 ### Changed
